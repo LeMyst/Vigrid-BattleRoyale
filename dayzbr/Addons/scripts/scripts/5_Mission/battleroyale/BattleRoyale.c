@@ -2,8 +2,11 @@ class BattleRoyale extends BattleRoyaleBase
 {
 	static vector debug_position = "14829.2 72.3148 14572.3";
 	static vector cherno_center = "6497.66 6.01245 2519.26";
+	
 	static int minimum_players = 2;
 	static float play_area_size = 500.0;
+	static float shrink_coefficient = 0.75;
+	
 	
 	ref ScriptCallQueue br_CallQueue;
 	//GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(this.ClientSpawning, 1000, true, newChar);
@@ -290,7 +293,7 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN 1 MINUTE.");
 		
-		new_play_area = active_play_area * 0.85; //Shrink by 85% each round (ex: first tick- 1000m to 850m in diameter)
+		new_play_area = active_play_area * shrink_coefficient; //Shrink by 85% each round (ex: first tick- 1000m to 850m in diameter)
 		//TODO: calculate a new circle_center based on new_play_area
 		
 		Print("==== ZONE LOGIC ====");
