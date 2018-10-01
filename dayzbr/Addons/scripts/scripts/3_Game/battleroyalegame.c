@@ -30,7 +30,7 @@ modded class DayZGame
 			}
 			if (rpc_type == MRPCs.RPC_CLIENT_ACTION_SPECTATOR)
 			{
-				
+				GetGame().SelectSpectator( sender, "DayZSpectator", GetPosition() );
 			}
 		}
 	}
