@@ -18,6 +18,25 @@ As stated, we are still in early alpha. Alpha 1.0 will be released when the last
 Kegan - Lead Dev
  
   
+## Download & Setup for Pre-Alpha
+-----
+### Download link for packed files (unsigned)
+[Download from our website](http://lystic.net/DayZBR/dayzbr.rar)
+
+### Server setup.
+- Fresh install dayz server
+- copy dayzbr folder into the server root
+- Edit serverDZ.cfg and set  verifySignatures = 0;
+- Run server with -mod=dayzbr
+
+Note, servers will auto start the round with 2 players. You need to modify the game files to change this for now.
+
+### Client setup
+- copy dayzbr folder into  steamapps\common\DayZ
+- Add *-mod=dayzbr* to your DayZ launch parameters
+
+### DZSA Launcher
+Also, keep in mind, Maca134 is making DZSA Launcher and it supports automatically downloading mod files for players joining your server through it.
   
 ## Current Development Status
 ------
