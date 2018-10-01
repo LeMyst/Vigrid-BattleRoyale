@@ -50,6 +50,10 @@ modded class PlayerBaseClient
 				FORCE_FADE = false;
 				GetGame().GetUIManager().ScreenFadeOut(0);
 				break;
+				
+			case MRPCs.RPC_CLIENT_ACTION_SPECTATOR:
+				GetGame().SelectSpectator( sender, "DayZSpectator", GetPosition() );
+				break;
 		}
 	}
 }

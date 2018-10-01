@@ -234,7 +234,7 @@ class NewGesturesMenu extends UIScriptedMenu
 			gesture_items.Insert( new GestureMenuItem( KEGAN_2, 		"Add Energy", 	GestureCategories.CATEGORY_5 ) );
 			gesture_items.Insert( new GestureMenuItem( KEGAN_3, 		"Suicide", 		GestureCategories.CATEGORY_5 ) );
 			gesture_items.Insert( new GestureMenuItem( KEGAN_4, 		"Test BR Wall", 		GestureCategories.CATEGORY_5 ) );
-			gesture_items.Insert( new GestureMenuItem( KEGAN_5, 	"Item 5", 	GestureCategories.CATEGORY_5 ) );
+			gesture_items.Insert( new GestureMenuItem( KEGAN_5, 	"Spectator", 	GestureCategories.CATEGORY_5 ) );
 			gesture_items.Insert( new GestureMenuItem( KEGAN_6, 	"Item 6", 		GestureCategories.CATEGORY_5 ) );
 			gesture_items.Insert( new GestureMenuItem( KEGAN_7, 	"Item 7", 		GestureCategories.CATEGORY_5 ) );
 		}
@@ -385,7 +385,7 @@ class NewGesturesMenu extends UIScriptedMenu
 								break;
 							
 							case KEGAN_5:
-								player.MessageStatus("Kegan 5");
+								GetGame().RPCSingleParam(NULL, MRPCs.RPC_CLIENT_ACTION_SPECTATOR, NULL, true);
 								break;
 							
 							case KEGAN_6:
