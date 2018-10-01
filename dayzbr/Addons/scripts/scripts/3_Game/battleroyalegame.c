@@ -28,6 +28,10 @@ modded class DayZGame
 				Human human = Human.Cast(GetGame().GetPlayer());
 				human.GetInputController().SetDisabled(p_input.param1);
 			}
+			if (rpc_type == MRPCs.RPC_CLIENT_ACTION_SPECTATOR)
+			{
+				GetGame().SelectSpectator( sender, "DayZSpectator", GetPosition() );
+			}
 		}
 	}
 }
