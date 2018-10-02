@@ -197,7 +197,7 @@ class BattleRoyale extends BattleRoyaleBase
 		else
 			return;
 		//Initialize player wait ticker (every 5 seconds we check if we have the required players)
-		br_CallQueue.CallLater(this.Tick_WaitingForPlayers, 5000, true); //every 5 seconds, run our wait checker
+		br_CallQueue.CallLater(this.Tick_WaitingForPlayers, m_BattleRoyaleData.wait_for_players * 1000, true); //every 5 seconds, run our wait checker
 		br_CallQueue.CallLater(this.Tick_DebugLock,2000,true); //Debug zone distance locker
 		
 		CreatePlayAreaCircle();
@@ -250,18 +250,20 @@ class BattleRoyale extends BattleRoyaleBase
 			//Wait is over
 			br_CallQueue.Remove(this.Tick_WaitingForPlayers);
 			
-			SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN 30 SECONDS.");
+			SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
 			
 			RoundStarted = true;
 			active_play_area = m_BattleRoyaleData.play_area_size;
 			circle_center = m_BattleRoyaleData.cherno_center;
 			new_center = m_BattleRoyaleData.cherno_center;
 
-			br_CallQueue.CallLater(this.Tick_StartRound, 30000, false); //in 30 seconds, start our round function
+			br_CallQueue.CallLater(this.Tick_StartRound, m_BattleRoyaleData.start_timer * 1000, false); //in 30 seconds, start our round function
 		}
 		else
 		{
-			SendMessageAll("DAYZBR: WAITING FOR PLAYERS...",false);
+			int players_needed = m_BattleRoyaleData.minimum_players - m_DebugPlayers.Count();
+
+			SendMessageAll("DAYZBR: WAITING FOR " + players_needed.ToString() + " PLAYER(S)...",false);
 		}
 	}
 	void HeavyRoundStart()
@@ -287,13 +289,23 @@ class BattleRoyale extends BattleRoyaleBase
 	//Zone Timing Logic
 	void Tick_ShrinkZone()
 	{
-		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN 1 MINUTE.");
+		int zone_lock_minutes = Math.Ceil(m_BattleRoyaleData.zone_lock_time / 60);
+
+		string sTime = zone_lock_minutes.ToString();
+
+		if ( zone_lock_minutes == 1 )
+		{
+			sTime = sTime + " MINUTE."
+		} else {
+			sTime = sTime + " MINUTES."
+		}
+
+		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
 		
 		new_play_area = active_play_area * m_BattleRoyaleData.shrink_coefficient; //Shrink by 85% each round (ex: first tick- 1000m to 850m in diameter)
 		//TODO: calculate a new circle_center based on new_play_area
 		
 		Print("==== ZONE LOGIC ====");
-		
 		
 		float distance = Math.RandomFloatInclusive(0,active_play_area - new_play_area);
 		Print(distance);
@@ -322,7 +334,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		Print("====================");
 		
-		br_CallQueue.CallLater(this.Tick_LockZone, 60*1000,false); // in 1 minute, lock the zone
+		br_CallQueue.CallLater(this.Tick_LockZone, m_BattleRoyaleData.zone_lock_time * 1000, false);
 	}
 	void Tick_LockZone()
 	{
@@ -359,7 +371,7 @@ class BattleRoyale extends BattleRoyaleBase
 			}
 			
 			//Restart The Game
-			br_CallQueue.CallLater(this.Tick_WaitingForPlayers, 5000, true); 
+			br_CallQueue.CallLater(this.Tick_WaitingForPlayers, m_BattleRoyaleData.wait_for_players * 1000, true); 
 		}
 		
 		
@@ -751,8 +763,8 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		allowZoneDamage = true;
 		
-		br_CallQueue.CallLater(this.Tick_ShrinkZone, 120*1000,false); // in 2 minutes, start zoning logic
-		br_CallQueue.CallLater(this.Tick_CheckRoundEnd, 5000, true);
+		br_CallQueue.CallLater(this.Tick_ShrinkZone, m_BattleRoyaleData.start_shrink_zone*1000,false); // in 2 minutes, start zoning logic
+		br_CallQueue.CallLater(this.Tick_CheckRoundEnd, m_BattleRoyaleData.check_round_end, true);
 		
 		
 		SendMessageAll("LET THE GAMES BEGIN");
