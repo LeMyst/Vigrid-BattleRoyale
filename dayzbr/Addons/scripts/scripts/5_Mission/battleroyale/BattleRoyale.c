@@ -381,7 +381,8 @@ class BattleRoyale extends BattleRoyaleBase
 				player.SetHealth("", "", 0.0);
 			}
 			
-			CleanBodies();
+			br_CallQueue.CallLater(this.CleanBodies, 5000, false);
+			
 			//Restart The Game
 			br_CallQueue.CallLater(this.Tick_WaitingForPlayers, m_BattleRoyaleData.wait_for_players * 1000, true); 
 			
