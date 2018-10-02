@@ -11,5 +11,7 @@ enum MRPCs
 	RPC_BR_SEND_GLOBAL_MSG,
 	RPC_BR_SET_INPUT,
 	RPC_BR_FADE_IN,
-	RPC_BR_FADE_OUT
+	RPC_BR_FADE_OUT,
+	// Ignore, though BattleRoyale class was also ran client side.
+	// RPC_BR_SET_GAME_DATA
 }

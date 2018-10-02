@@ -32,6 +32,10 @@ modded class DayZGame
 			{
 				//GetGame().SelectSpectator( sender, "DayZSpectator", GetPosition() );
 			}
+			if (rpc_type == MRPCs.RPC_BR_SET_GAME_DATA)
+			{
+				//GetGame().SelectSpectator( sender, "DayZSpectator", GetPosition() );
+			}
 		}
 	}
 }

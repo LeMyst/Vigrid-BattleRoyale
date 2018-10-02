@@ -252,6 +252,9 @@ modded class MissionServer
 		player.SetPosition(debug_position);
 		GetGame().SelectPlayer(identity, player);
 		BR_GAME.OnPlayerConnected(player);
+
+		// Ignore, though BattleRoyale class was also ran client side.
+		// GetGame().RPCSingleParam( MRPCs.RPC_BR_SET_GAME_DATA, new Param1<StaticBRData>(BR_GAME.m_BattleRoyaleData), true, identity );
 	}
 	
 	//NOTE: This should fire every time a player joins. Their "spawn position" is overriden with the debug zone location

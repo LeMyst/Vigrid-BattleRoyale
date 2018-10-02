@@ -1,13 +1,7 @@
 class BattleRoyale extends BattleRoyaleBase
 {
-	static vector debug_position = "14829.2 72.3148 14572.3";
-	static vector cherno_center = "6497.66 6.01245 2519.26";
-	
-	static int minimum_players = 2;
-	static float play_area_size = 500.0;
-	static float shrink_coefficient = 0.75;
-	
-	
+	ref StaticBRData m_BattleRoyaleData;
+
 	ref ScriptCallQueue br_CallQueue;
 	//GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(this.ClientSpawning, 1000, true, newChar);
 	
@@ -38,13 +32,15 @@ class BattleRoyale extends BattleRoyaleBase
 	
 	void BattleRoyale(MissionServer server_class)
 	{
+		m_BattleRoyaleData = StaticBRData.LoadDataServer();
+
 		allowZoneDamage = false;
 		spawnMarkers = false;
 		updateMarkers = false;
 		Zone_Markers = new array<Object>();
-		active_play_area = play_area_size;
-		circle_center = cherno_center;
-		new_center = cherno_center;
+		active_play_area = m_BattleRoyaleData.play_area_size;
+		circle_center = m_BattleRoyaleData.cherno_center;
+		new_center = m_BattleRoyaleData.cherno_center;
 		hasInit = false;
 		map_Buildings = new array<Object>();
 		last_round_items = new array<EntityAI>();
@@ -208,7 +204,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		ref array<Object> allObjects = new array<Object>();
 		ref array<CargoBase> proxies = new array<CargoBase>();
-		GetGame().GetObjectsAtPosition(cherno_center, play_area_size, allObjects, proxies);
+		GetGame().GetObjectsAtPosition(m_BattleRoyaleData.cherno_center, m_BattleRoyaleData.play_area_size, allObjects, proxies);
 		for(int i = 0; i < allObjects.Count();i++)
 		{
 			Object obj = allObjects.Get(i);
@@ -238,10 +234,10 @@ class BattleRoyale extends BattleRoyaleBase
 			PlayerBase target = m_DebugPlayers.Get(i);
 			vector playerPos = target.GetPosition();
 			
-			float distance = vector.Distance(playerPos,debug_position);
+			float distance = vector.Distance(playerPos, m_BattleRoyaleData.debug_position);
 			if(distance > 45)
 			{
-				target.SetPosition(debug_position);
+				target.SetPosition(m_BattleRoyaleData.debug_position);
 			}
 			
 		}
@@ -249,7 +245,7 @@ class BattleRoyale extends BattleRoyaleBase
 	//Pre Round Logic (and starting)
 	void Tick_WaitingForPlayers()
 	{
-		if(m_DebugPlayers.Count() >= minimum_players)
+		if(m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
 		{
 			//Wait is over
 			br_CallQueue.Remove(this.Tick_WaitingForPlayers);
@@ -257,9 +253,9 @@ class BattleRoyale extends BattleRoyaleBase
 			SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN 30 SECONDS.");
 			
 			RoundStarted = true;
-			active_play_area = play_area_size;
-			circle_center = cherno_center;
-			new_center = cherno_center;
+			active_play_area = m_BattleRoyaleData.play_area_size;
+			circle_center = m_BattleRoyaleData.cherno_center;
+			new_center = m_BattleRoyaleData.cherno_center;
 
 			br_CallQueue.CallLater(this.Tick_StartRound, 30000, false); //in 30 seconds, start our round function
 		}
@@ -293,7 +289,7 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN 1 MINUTE.");
 		
-		new_play_area = active_play_area * shrink_coefficient; //Shrink by 85% each round (ex: first tick- 1000m to 850m in diameter)
+		new_play_area = active_play_area * m_BattleRoyaleData.shrink_coefficient; //Shrink by 85% each round (ex: first tick- 1000m to 850m in diameter)
 		//TODO: calculate a new circle_center based on new_play_area
 		
 		Print("==== ZONE LOGIC ====");
@@ -544,7 +540,7 @@ class BattleRoyale extends BattleRoyaleBase
 		for(int i = 0; i < 5;i++)
 		{	
 			//Spawn a backpack, fill it with items defined in the Config, place it at cherno center, and insert all items into the SpawnedItems list
-			SpawnedItems.InsertAll(SpawnLootInBackpack("AliceBag_Camo",GetBackpackSpawn(),cherno_center));
+			SpawnedItems.InsertAll(SpawnLootInBackpack("AliceBag_Camo",GetBackpackSpawn(),m_BattleRoyaleData.cherno_center));
 		}
 		//Insert items into garbage collector
 		last_round_items.InsertAll(SpawnedItems); //Add items to end-of-round garbage collector
@@ -691,12 +687,12 @@ class BattleRoyale extends BattleRoyaleBase
 	}
 	void CreatePlayAreaCircle()
 	{
-		float x = cherno_center[0];
+		float x = m_BattleRoyaleData.cherno_center[0];
 		float y = 0;
-		float z = cherno_center[2];
+		float z = m_BattleRoyaleData.cherno_center[2];
 		
 		//constant angle calcs
-		float distance = play_area_size; //10m out from center
+		float distance = m_BattleRoyaleData.play_area_size; //10m out from center
 		int objCount = 100;//NOTE @ 500m radius, circle circumfrence is 3142m, at this scale, each object will need to be > 3m in size
 		float deltaAngle = 360.0 / objCount;
 		for(int i = 0; i < objCount;i++)
@@ -716,7 +712,7 @@ class BattleRoyale extends BattleRoyaleBase
 			
 			
 			vector objpos = Vector(objX,objY,objZ)
-			vector objdir = vector.Direction(cherno_center, objpos).Normalized();
+			vector objdir = vector.Direction(m_BattleRoyaleData.cherno_center, objpos).Normalized();
 			Print(objdir);
 			Object wall = GetGame().CreateObject("Land_Prison_Wall_Large",objpos);
 			wall.SetDirection(objdir);
@@ -778,9 +774,9 @@ class BattleRoyale extends BattleRoyaleBase
 	}
 	void TeleportPlayers()
 	{
-		float x = cherno_center[0];
+		float x = m_BattleRoyaleData.cherno_center[0];
 		float y = 0.22; //default y coords
-		float z = cherno_center[2];
+		float z = m_BattleRoyaleData.cherno_center[2];
 		
 		//constant angle calcs
 		float distance = 10.0; //10m out from center
@@ -806,7 +802,7 @@ class BattleRoyale extends BattleRoyaleBase
 			PlayerBase player = m_RoundPlayers.Get(i);
 			vector playerPos = Vector(plrX,plrY,plrZ);
 			player.SetPosition(playerPos);
-			player.SetDirection(vector.Direction(playerPos,cherno_center).Normalized());
+			player.SetDirection(vector.Direction(playerPos,m_BattleRoyaleData.cherno_center).Normalized());
 			player.SetAllowDamage( true );
 		}
 		
