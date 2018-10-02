@@ -32,6 +32,7 @@ Kegan - Lead Dev
 Note, servers will auto start the round with 2 players. You need to modify the game files to change this for now.
 
 ### Client setup
+- MAKE SURE YOU HAVE THE EXPERIMENTAL BUILD OF DAYZ
 - copy dayzbr folder into  steamapps\common\DayZ
 - Add *-mod=dayzbr* to your DayZ launch parameters
 
