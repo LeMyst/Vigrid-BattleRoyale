@@ -12,6 +12,7 @@ class BattleRoyale extends BattleRoyaleBase
 	ref array<PlayerBase> m_AllPlayers;
 	ref array<PlayerBase> m_RoundPlayers;
 	ref array<PlayerBase> m_DebugPlayers;
+	ref array<PlayerBase> m_DeadBodies;
 	
 	ref array<Object> map_Buildings; //stores all cherno buildings
 	ref array<EntityAI> last_round_items;
@@ -48,6 +49,7 @@ class BattleRoyale extends BattleRoyaleBase
 		br_CallQueue = new ScriptCallQueue(); 
 		server = server_class;
 		RoundStarted = false;
+		m_DeadBodies = new array<PlayerBase>;
 		m_AllPlayers = new array<PlayerBase>;
 		m_RoundPlayers = new array<PlayerBase>;
 		m_DebugPlayers = new array<PlayerBase>;
@@ -277,6 +279,7 @@ class BattleRoyale extends BattleRoyaleBase
 	void Tick_StartRound()
 	{
 		allowZoneDamage = false;
+		m_DeadBodies.Clear();
 		m_RoundPlayers.InsertAll(m_DebugPlayers);
 		m_DebugPlayers.Clear();
 		
@@ -352,6 +355,14 @@ class BattleRoyale extends BattleRoyaleBase
 		br_CallQueue.CallLater(this.Tick_ShrinkZone, 120*1000,false); // in 2 minutes, shrink the zone again
 	}
 	
+	void CleanBodies()
+	{
+		for(int i = 0; i < m_DeadBodies.Count();i++)
+		{
+			m_DeadBodies.Get(i).Delete();
+		}
+	}
+	
 	//Round end logic
 	void Tick_CheckRoundEnd()
 	{
@@ -370,8 +381,11 @@ class BattleRoyale extends BattleRoyaleBase
 				player.SetHealth("", "", 0.0);
 			}
 			
+			br_CallQueue.CallLater(this.CleanBodies, 5000, false);
+			
 			//Restart The Game
 			br_CallQueue.CallLater(this.Tick_WaitingForPlayers, m_BattleRoyaleData.wait_for_players * 1000, true); 
+			
 		}
 		
 		
@@ -504,6 +518,7 @@ class BattleRoyale extends BattleRoyaleBase
 		m_AllPlayers.RemoveItem(player);
 		m_RoundPlayers.RemoveItem(player);
 		m_DebugPlayers.RemoveItem(player);
+		m_DeadBodies.Insert(player);
 		
 		//Player Death Messages
 		int newPlayerCount = m_RoundPlayers.Count();
