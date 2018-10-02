@@ -1,5 +1,7 @@
 modded class PlayerBase
 {
+	
+	float timeTillNextHealTick = 0;
 	float timeTillNextDmgTick = 0;
 	
 	ref BattleRoyaleBase BR_BASE;

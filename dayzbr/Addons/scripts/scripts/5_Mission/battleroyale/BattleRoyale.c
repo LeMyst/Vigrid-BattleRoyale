@@ -295,9 +295,9 @@ class BattleRoyale extends BattleRoyaleBase
 
 		if ( zone_lock_minutes == 1 )
 		{
-			sTime = sTime + " MINUTE."
+			sTime = sTime + " MINUTE.";
 		} else {
-			sTime = sTime + " MINUTES."
+			sTime = sTime + " MINUTES.";
 		}
 
 		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
@@ -318,7 +318,7 @@ class BattleRoyale extends BattleRoyaleBase
 		float dZ = distance * Math.Cos(moveDir);
 		
 		float newX = oldX + dX;
-		float newZ = oldZ + dZ
+		float newZ = oldZ + dZ;
 		float newY = GetGame().SurfaceY(newX,newZ);
 		
 		Print(oldX);
@@ -458,6 +458,15 @@ class BattleRoyale extends BattleRoyaleBase
 			}
 			
 		}
+		else if(m_DebugPlayers.Find(player) >= 0)
+		{
+			if(player.timeTillNextHealTick <= 0)
+			{
+				player.timeTillNextHealTick = 1;
+				player.SetHealth(player.GetMaxHealth());
+			}
+			player.timeTillNextHealTick = player.timeTillNextHealTick - ticktime;
+		}
 		
 	}
 	void OnPlayerConnected(PlayerBase player)
@@ -509,7 +518,7 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		//TODO: figure out how to spawn backpacks and fill their inventory
 		ref array<EntityAI> spawnedItems = new array<EntityAI>();
-		
+		/*
 		Object obj = GetGame().CreateObject(backpackType,world_pos);
 		EntityAI backpack = EntityAI.Cast(obj);
 		spawnedItems.Insert(backpack);
@@ -525,7 +534,7 @@ class BattleRoyale extends BattleRoyaleBase
 			backpack.PredictiveTakeEntityToInventory(FindInventoryLocationType.CARGO,item);
 		}
 		
-		
+		*/
 		
 		
 		return spawnedItems;
@@ -723,7 +732,7 @@ class BattleRoyale extends BattleRoyaleBase
 			float objY = GetGame().SurfaceY(objX,objZ);
 			
 			
-			vector objpos = Vector(objX,objY,objZ)
+			vector objpos = Vector(objX,objY,objZ);
 			vector objdir = vector.Direction(m_BattleRoyaleData.cherno_center, objpos).Normalized();
 			Print(objdir);
 			Object wall = GetGame().CreateObject("Land_Prison_Wall_Large",objpos);
@@ -764,7 +773,7 @@ class BattleRoyale extends BattleRoyaleBase
 		allowZoneDamage = true;
 		
 		br_CallQueue.CallLater(this.Tick_ShrinkZone, m_BattleRoyaleData.start_shrink_zone*1000,false); // in 2 minutes, start zoning logic
-		br_CallQueue.CallLater(this.Tick_CheckRoundEnd, m_BattleRoyaleData.check_round_end, true);
+		br_CallQueue.CallLater(this.Tick_CheckRoundEnd, m_BattleRoyaleData.check_round_end*1000, true);
 		
 		
 		SendMessageAll("LET THE GAMES BEGIN");
