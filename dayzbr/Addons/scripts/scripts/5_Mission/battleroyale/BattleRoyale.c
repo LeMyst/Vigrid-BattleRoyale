@@ -299,7 +299,7 @@ class BattleRoyale extends BattleRoyaleBase
 		} else {
 			sTime = sTime + " MINUTES.";
 		}
-
+		
 		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
 		
 		new_play_area = active_play_area * m_BattleRoyaleData.shrink_coefficient; //Shrink by 85% each round (ex: first tick- 1000m to 850m in diameter)
@@ -444,7 +444,8 @@ class BattleRoyale extends BattleRoyaleBase
 					Print(distance);
 					Print("============================");
 					player.DecreaseHealthCoef(0.1); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
-					player.timeTillNextDmgTick = 2;
+					player.timeTillNextDmgTick = 5;
+					SendMessage(player,"YOU ARE TAKING ZONE DAMAGE",false);
 				}
 				else
 				{
