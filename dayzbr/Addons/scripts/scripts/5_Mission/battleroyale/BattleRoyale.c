@@ -477,7 +477,7 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			if(player.timeTillNextHealTick <= 0)
 			{
-				player.timeTillNextHealTick = 1;
+				player.timeTillNextHealTick = 5;
 				
 				// GetMaxHealth by default seems to only restore health to 100 but unconsciousness etc
 				player.SetHealth("", "Health", player.GetMaxHealth("", "Health"));
