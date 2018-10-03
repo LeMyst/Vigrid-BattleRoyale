@@ -47,10 +47,8 @@ NOTE: IF YOU ARE GOING TO USE DZSA LAUNCHER **YOU MUST DELETE THE MOD FILES FROM
 ## Current Development Status
 ------
 
-The current files are considered **UNSTABLE**. Therefore, no direct download links are being provided. If you wish to test out this unstable build, you must pack the file yourself. When we reach Alpha 1.0, the mod files and the sign files will be provided through a one click download along with detailed server hosting instructions.
+The current files are considered **UNSTABLE**. If you wish to test out this unstable build, you can download the files above or use the DZSA Launcher. When we reach Alpha 1.0, detailed hosting and client installation instructions will be provided.
 
-If you are looking to host a server. You just need to include the mod files on the server and the clients.
+If you are looking to host a server. I recommend using dzsa launcher and telling players to, not install the mod files, but just join through the launcher. It will handle downloading the mod files. You can read more from the links above.
 
-Lastly, there are development contols provided with this Pre-Alpha build. If you wish to host a server without those tools, you will need to modify the files yourself.
-
-Sorry, but we expect Alpha 1.0 to be done by the end of this first week.
+Sorry, but we expect Alpha 1.0 to be done by the end of this first week. You can follow development from the Issues board.
