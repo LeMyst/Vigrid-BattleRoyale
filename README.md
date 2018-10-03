@@ -42,6 +42,8 @@ NOTE: I RECOMMEND YOU USE [DZSA LAUNCHER](https://www.dayzsalauncher.com/#/tools
 ### DZSA Launcher
 Also, keep in mind, Maca134 is making DZSA Launcher and it supports automatically downloading mod files for players joining your server through it.
   
+NOTE: IF YOU ARE GOING TO USE DZSA LAUNCHER **YOU MUST DELETE THE MOD FILES FROM YOUR steamapps\common\DayZ FOLDER** 
+  
 ## Current Development Status
 ------
 
