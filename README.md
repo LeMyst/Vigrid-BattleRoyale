@@ -20,7 +20,7 @@ Kegan - Lead Dev
   
 ## Download & Setup for Pre-Alpha
 -----
-### Download link for packed files (unsigned)
+### Download link for packed files
 [Download from our website](http://lystic.net/DayZBR/dayzbr.rar)
 
 ### Server setup.
