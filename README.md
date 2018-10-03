@@ -24,12 +24,15 @@ Kegan - Lead Dev
 [Download from our website](http://lystic.net/DayZBR/dayzbr.rar)
 
 ### Server setup.
-- Fresh install dayz server
+NOTE: I RECOMMEND YOU USE [DZSA LAUNCHER](https://www.dayzsalauncher.com/#/tools) WITH YOUR SERVER.
+- Fresh install dayz 0.63 or greater server
 - copy dayzbr folder into the server root
-- Edit serverDZ.cfg and set  verifySignatures = 0;
-- Run server with -mod=dayzbr
+- Run server with *-mod=dayzbr*
+- Do not forget the server key!
 
-Note, servers will auto start the round with 2 players. You need to modify the game files to change this for now.
+- After you run the server for the first time, a config will be created. It is located in your server profile directory in a file called BRData.json
+-- This contains information for battle royale. Minimum players, start delay, and more.
+
 
 ### Client setup
 - MAKE SURE YOU HAVE THE EXPERIMENTAL BUILD OF DAYZ
