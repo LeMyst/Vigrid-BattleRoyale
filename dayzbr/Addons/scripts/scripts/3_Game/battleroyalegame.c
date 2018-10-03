@@ -19,14 +19,24 @@ modded class DayZGame
 				ctx.Read( p_text );
 				
 				string display_text = p_text.param1;
-				GetGame().Chat(  display_text, "colorImportant"  );
+				if(GetGame())
+					GetGame().Chat(  display_text, "colorImportant"  );
 			}
 			if(rpc_type == MRPCs.RPC_BR_SET_INPUT)
 			{
 				ref Param1<bool> p_input = new Param1<bool>(false);
 				ctx.Read(p_input);
-				Human human = Human.Cast(GetGame().GetPlayer());
-				human.GetInputController().SetDisabled(p_input.param1);
+				if(GetGame())
+				{
+					if(GetGame().GetPlayer())
+					{
+						Human human = Human.Cast(GetGame().GetPlayer());
+						if(human)
+						{
+							human.GetInputController().SetDisabled(p_input.param1);
+						}
+					}
+				}
 			}
 			if (rpc_type == MRPCs.RPC_CLIENT_ACTION_SPECTATOR)
 			{
