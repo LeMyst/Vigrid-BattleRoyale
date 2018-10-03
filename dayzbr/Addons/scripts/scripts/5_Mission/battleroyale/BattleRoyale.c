@@ -478,7 +478,48 @@ class BattleRoyale extends BattleRoyaleBase
 			if(player.timeTillNextHealTick <= 0)
 			{
 				player.timeTillNextHealTick = 1;
-				player.SetHealth(player.GetMaxHealth());
+				
+				// GetMaxHealth by default seems to only restore health to 100 but unconsciousness etc
+				player.SetHealth("", "Health", player.GetMaxHealth("", "Health"));
+				player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood")); ￼
+				player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock")); ￼
+				
+				// GetStatStomachSolid + GetStatStomachWater > 100 == STUFFED!
+				player.GetStatStomachSolid().Set(250);
+				player.GetStatStomachWater().Set(250);
+				
+				// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
+				player.GetStatWater().Set(5000);
+				player.GetStatEnergy().Set(5000);
+				// is get max an good idea?
+				// player.GetStatWater().Set(player.GetStatWater().GetMax());
+				// player.GetStatEnergy().Set(player.GetStatEnergy().GetMax());
+				
+				
+				// default body temperature is  37.4 -> HYPOTHERMIC_TEMPERATURE_TRESHOLD = 35.8
+				player.GetStatTemperature().Set(37.4);
+				
+				// BURNING_TRESHOLD = 199 -> 100 should be fine
+				player.GetStatHeatComfort().Set(100);
+				
+				// seems unused
+				// player.GetStatHeatIsolation().Set(100);
+				
+				// we don't want shaking -> limit is 0.008
+				player.GetStatTremor().Set(player.GetStatTremor().GetMin());
+				
+				// wet if > 0.2
+				player.GetStatWet().Set(0);
+				
+				// unknow effect, don't alter yet
+				// player.GetStatStomachEnergy().Set(100);
+				// player.GetStatDiet().Set(100);
+				
+				// think max stamima does not break the game
+				player.GetStatStamina().Set(player.GetStatStamina().GetMax());
+				
+				// required for repairing and stuff, so no need to change for godmode
+				//player.GetStatSpecialty().Set(100);
 			}
 			player.timeTillNextHealTick = player.timeTillNextHealTick - ticktime;
 		}
