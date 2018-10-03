@@ -481,8 +481,8 @@ class BattleRoyale extends BattleRoyaleBase
 				
 				// GetMaxHealth by default seems to only restore health to 100 but unconsciousness etc
 				player.SetHealth("", "Health", player.GetMaxHealth("", "Health"));
-				player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood")); ￼
-				player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock")); ￼
+				player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood"));
+				player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock"));
 				
 				// GetStatStomachSolid + GetStatStomachWater > 1000 == STUFFED!
 				player.GetStatStomachSolid().Set(250);
