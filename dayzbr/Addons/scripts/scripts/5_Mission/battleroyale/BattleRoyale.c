@@ -532,26 +532,25 @@ class BattleRoyale extends BattleRoyaleBase
 	
 	array<EntityAI> SpawnLootInBackpack(string backpackType, array<string> itemList,vector world_pos)
 	{
-		//TODO: figure out how to spawn backpacks and fill their inventory
+		
 		ref array<EntityAI> spawnedItems = new array<EntityAI>();
-		/*
+		
 		Object obj = GetGame().CreateObject(backpackType,world_pos);
+		obj.PlaceOnSurface();
+		
 		EntityAI backpack = EntityAI.Cast(obj);
+		
+		
 		spawnedItems.Insert(backpack);
 		
 		for(int i = 0; i < itemList.Count();i++)
 		{
 			string itemName = itemList.Get(i);
-			Object itemObj = GetGame().CreateObject(itemName,world_pos);
-			EntityAI item = EntityAI.Cast(itemObj);
+	
+			EntityAI item = backpack.GetInventory().CreateEntityInCargo(itemName);
 			
 			spawnedItems.Insert(item);
-			
-			backpack.PredictiveTakeEntityToInventory(FindInventoryLocationType.CARGO,item);
 		}
-		
-		*/
-		
 		
 		return spawnedItems;
 	}
@@ -564,6 +563,7 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			string itemName = itemList.Get(i);
 			Object obj = GetGame().CreateObject(itemName,world_pos);
+			obj.PlaceOnSurface();
 			EntityAI item = EntityAI.Cast(obj);
 			
 			outItems.Insert(item);
