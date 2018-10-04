@@ -433,6 +433,55 @@ class BattleRoyale extends BattleRoyaleBase
 		GetGame().RPCSingleParam(NULL,MRPCs.RPC_BR_SEND_GLOBAL_MSG,value_string,required,NULL);
 	}
 	
+	void DayZBRHealPlayer(PlayerBase player, bool fast = false)
+	{
+		// GetMaxHealth by default seems to only restore health to 100 but unconsciousness etc
+		player.SetHealth("", "Health", player.GetMaxHealth("", "Health"));
+		player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood"));
+		player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock"));
+		
+		// only set the health if we are told to make it fast
+		if (!fast)
+		{
+			// GetStatStomachSolid + GetStatStomachWater > 1000 == STUFFED!
+			player.GetStatStomachSolid().Set(250);
+			player.GetStatStomachWater().Set(250);
+			
+			// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
+			player.GetStatWater().Set(5000);
+			player.GetStatEnergy().Set(5000);
+			// is get max an good idea?
+			// player.GetStatWater().Set(player.GetStatWater().GetMax());
+			// player.GetStatEnergy().Set(player.GetStatEnergy().GetMax());
+			
+			
+			// default body temperature is  37.4 -> HYPOTHERMIC_TEMPERATURE_TRESHOLD = 35.8
+			player.GetStatTemperature().Set(37.4);
+			
+			// BURNING_TRESHOLD = 199 -> 100 should be fine
+			player.GetStatHeatComfort().Set(100);
+			
+			// seems unused
+			// player.GetStatHeatIsolation().Set(100);
+			
+			// we don't want shaking -> limit is 0.008
+			player.GetStatTremor().Set(player.GetStatTremor().GetMin());
+			
+			// wet if > 0.2
+			player.GetStatWet().Set(0);
+			
+			// unknow effect, don't alter yet
+			// player.GetStatStomachEnergy().Set(100);
+			// player.GetStatDiet().Set(100);
+			
+			// think max stamima does not break the game
+			player.GetStatStamina().Set(player.GetStatStamina().GetMax());
+			
+			// required for repairing and stuff, so no need to change for godmode
+			//player.GetStatSpecialty().Set(100);
+		}
+	}
+	
 	//Events
 	override void OnPlayerTick(PlayerBase player, float ticktime)
 	{
@@ -477,8 +526,10 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			if(player.timeTillNextHealTick <= 0)
 			{
-				player.timeTillNextHealTick = 1;
-				player.SetHealth(player.GetMaxHealth());
+				player.timeTillNextHealTick = 5;
+				
+				// to save some ressources only heal the player but don't clear their stats
+				DayZBRHealPlayer(player, true);
 			}
 			player.timeTillNextHealTick = player.timeTillNextHealTick - ticktime;
 		}
@@ -775,6 +826,9 @@ class BattleRoyale extends BattleRoyaleBase
 		for(int i = 0; i < m_RoundPlayers.Count();i++)
 		{
 			PlayerBase player = m_RoundPlayers.Get(i);
+			
+			// heal the player a last time and also clear their stats
+			DayZBRHealPlayer(player, false);
 			
 			GetGame().RPCSingleParam(player,MRPCs.RPC_BR_FADE_IN,NULL,true,player.GetIdentity());
 			
