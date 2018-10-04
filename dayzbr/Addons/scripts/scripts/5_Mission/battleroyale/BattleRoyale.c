@@ -829,6 +829,10 @@ class BattleRoyale extends BattleRoyaleBase
 			
 			// heal the player a last time and also clear their stats
 			DayZBRHealPlayer(player, false);
+			player.RemoveAllItems();
+			player.GetInventory().CreateInInventory("TrackSuitJacket_Red");
+			player.GetInventory().CreateInInventory("TrackSuitPants_Red");
+			player.GetInventory().CreateInInventory("JoggingShoes_Red");
 			
 			GetGame().RPCSingleParam(player,MRPCs.RPC_BR_FADE_IN,NULL,true,player.GetIdentity());
 			
