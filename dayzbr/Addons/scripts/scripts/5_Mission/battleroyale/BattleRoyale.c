@@ -72,6 +72,14 @@ class BattleRoyale extends BattleRoyaleBase
 	}
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
 	bool isUpdating;
 	int marker_index;
 	void Update_Markers()
@@ -190,6 +198,8 @@ class BattleRoyale extends BattleRoyaleBase
 			Update_Markers();
 		if(spawnMarkers)
 			Create_Markers();
+		
+		SpawnLootInBackpackSafe_OnUpdate(); //If needed, process our backpack spawner
 	}
 	
 	void OnInit()
@@ -580,6 +590,71 @@ class BattleRoyale extends BattleRoyaleBase
 		
 	}
 	
+	
+	
+	bool backpack_process = false;
+	bool backpack_first_process;
+	ref array<string> backpack_items;
+	int backpack_items_count;
+	int backpack_process_per_tick;
+	int backpack_current_item;
+	EntityAI backpack_item;
+	ref array<EntityAI> backpack_spawned_items;
+	void SpawnLootInBackpackSafe_OnUpdate()
+	{
+		if(backpack_first_process)
+		{
+			backpack_current_item = 0;
+			backpack_spawned_items = new array<string>();
+			backpack_first_process = false;
+		}
+		for(int i = 0;i < backpack_process_per_tick;i++)
+		{
+			int itemIndex = backpack_current_item + i;
+			
+			if(itemIndex >= backpack_items_count)
+			{
+				SpawnLootInBackpackCallback();
+				return;
+			}
+			
+			string itemName = backpack_items.Get(itemIndex);
+			
+			EntityAI item = backpack_item.GetInventory().CreateEntityInCargo(itemName);
+			
+			backpack_spawned_items.Insert(item);
+			
+			backpack_current_item++;
+		}
+	}
+	void SpawnLootInBackpackSafe(string backpackType, array<string> itemList, vector world_pos, int items_per_update = 5)
+	{
+		int itemCount = itemList.Count();
+		
+		//Spawn our backpack
+		Object obj = GetGame().CreateObject(backpackType,world_pos);
+		obj.PlaceOnSurface();
+		
+		EntityAI backpack = EntityAI.Cast(obj);
+		
+		//Register global variables used in the onUpdate
+		backpack_items = itemList;
+		backpack_items_count = count;
+		backpack_process_per_tick = items_per_update;
+		backpack_item = backpack; 
+		
+		//start the processing of our item queues
+		backpack_first_process = true;
+		backpack_process = true;
+	}
+	
+	void SpawnLootInBackpackCallback()
+	{
+		backpack_spawned_items.Insert(backpack_item);
+		
+		last_round_items.InsertAll(backpack_spawned_items);
+		
+	}
 	
 	array<EntityAI> SpawnLootInBackpack(string backpackType, array<string> itemList,vector world_pos)
 	{
