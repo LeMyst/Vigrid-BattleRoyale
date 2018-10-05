@@ -36,6 +36,7 @@ NOTE: I RECOMMEND YOU USE [DZSA LAUNCHER](https://www.dayzsalauncher.com/#/tools
 
 ### Client setup - DZSA Launcher
 - MAKE SURE YOU HAVE THE EXPERIMENTAL BUILD OF DAYZ
+
 To play Battle Royale. I Strongly Recommend you use [DZSA Launcher](https://www.dayzsalauncher.com/#/home)
 
 If you choose to install the files by hand, note that you will not be able to use DZSA Launcher. 
