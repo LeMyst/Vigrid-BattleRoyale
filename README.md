@@ -18,7 +18,7 @@ As stated, we are still in early alpha. Alpha 1.0 will be released when the last
 Kegan - Lead Dev
  
   
-## Download & Setup for Pre-Alpha
+## Download & Setup for Pre-Alpha v 0.92 (Updated on Thursday, October 4th, 2018)
 -----
 ### Download link for packed files
 [Download from our website](http://lystic.net/DayZBR/dayzbr.rar)
@@ -27,22 +27,22 @@ Kegan - Lead Dev
 NOTE: I RECOMMEND YOU USE [DZSA LAUNCHER](https://www.dayzsalauncher.com/#/tools) WITH YOUR SERVER.
 - Fresh install dayz 0.63 or greater server
 - copy dayzbr folder into the server root
+- move dayzbr/Keys/dayzbr.key to the DayZServer\Keys folder for your server
 - Run server with *-mod=dayzbr*
-- Do not forget the server key!
 
 - After you run the server for the first time, a config will be created. It is located in your server profile directory in a file called BRData.json
 -- This contains information for battle royale. Minimum players, start delay, and more.
 
 
-### Client setup
+### Client setup - DZSA Launcher
 - MAKE SURE YOU HAVE THE EXPERIMENTAL BUILD OF DAYZ
+To play Battle Royale. I Strongly Recommend you use [DZSA Launcher](https://www.dayzsalauncher.com/#/home)
+
+If you choose to install the files by hand, note that you will not be able to use DZSA Launcher. 
+
 - copy dayzbr folder into  steamapps\common\DayZ
 - Add *-mod=dayzbr* to your DayZ launch parameters
-
-### DZSA Launcher
-Also, keep in mind, Maca134 is making DZSA Launcher and it supports automatically downloading mod files for players joining your server through it.
-  
-NOTE: IF YOU ARE GOING TO USE DZSA LAUNCHER **YOU MUST DELETE THE MOD FILES FROM YOUR steamapps\common\DayZ FOLDER** 
+ 
   
 ## Current Development Status
 ------
