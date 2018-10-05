@@ -31,8 +31,8 @@ NOTE: I RECOMMEND YOU USE [DZSA LAUNCHER](https://www.dayzsalauncher.com/#/tools
 - Run server with *-mod=dayzbr*
 - Lastly, Open serverDZ.cfg and add *equalModRequired = 1;* 
 
-- After you run the server for the first time, a config will be created. It is located in your server profile directory in a file called BRData.json
--- This contains information for battle royale. Minimum players, start delay, and more.
+After you run the server for the first time, a config will be created. It is located in your server profile directory in a file called BRData.json
+This contains information for battle royale. Minimum players, start delay, and more.
 
 
 ### Client setup - DZSA Launcher
