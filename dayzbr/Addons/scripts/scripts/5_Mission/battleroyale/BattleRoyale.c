@@ -72,6 +72,14 @@ class BattleRoyale extends BattleRoyaleBase
 	}
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
 	bool isUpdating;
 	int marker_index;
 	void Update_Markers()
@@ -580,6 +588,33 @@ class BattleRoyale extends BattleRoyaleBase
 		
 	}
 	
+	
+	
+	
+	void SpawnLootInBackpackSafe(string backpackType, array<string> itemList, vector world_pos, func callback, int items_per_update = 5)
+	{
+		int itemCount = itemList.Count();
+		int start = 0;
+		int end = items_per_update;
+		
+		//Spawn our backpack
+		Object obj = GetGame().CreateObject(backpackType,world_pos);
+		obj.PlaceOnSurface();
+		
+		EntityAI backpack = EntityAI.Cast(obj);
+		
+		//Register global variables used in the onUpdate
+		//TODO: register our item list
+		//TODO: register our item count
+		//TODO: register our items_per_update
+		//TODO: register our callback functionality
+		//TODO: register our backpack
+		
+		//start the processing of our item queues
+		
+		
+		
+	}
 	
 	array<EntityAI> SpawnLootInBackpack(string backpackType, array<string> itemList,vector world_pos)
 	{
