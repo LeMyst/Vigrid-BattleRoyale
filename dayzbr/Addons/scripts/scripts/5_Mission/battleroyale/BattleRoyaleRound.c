@@ -131,10 +131,20 @@ class BattleRoyaleRound
 		//Handle Round End
 	}
 	
-	void StartRound(array<PlayerBase> players_for_round)
+	
+	void PlayerCountReached()
+	{
+		inProgress = true;
+		SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + br_game.m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
+		round_CallQueue.CallLater(this.StartRound, br_game.m_BattleRoyaleData.start_timer * 1000, false);
+		
+	}
+	
+	void StartRound()
 	{
 		allowZoneDamage = false;
-		m_RoundPlayers.InsertAll(players_for_round);
+		ref array<PlayerBase> round_players = br_game.m_BattleRoyaleDebug.RemoveAllPlayers();
+		m_RoundPlayers.InsertAll(round_players);
 		//TODO: start the round
 		
 		SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + br_game.m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");

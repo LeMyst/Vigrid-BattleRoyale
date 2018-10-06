@@ -73,14 +73,11 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
 			{
-				//TODO: don't grab players from debug until the start delay has fired
 				BRLOG("DAYZBR: ROUND START CALL");
-				ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
-				m_BattleRoyaleRound.StartRound(round_players);
+				m_BattleRoyaleRound.PlayerCountReached();
 			}
 		}
 	}
-	
 	
 	//player connected. add them to the debug zone and prep them for BR
 	void OnPlayerConnected(PlayerBase player)
