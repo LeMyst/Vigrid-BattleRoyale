@@ -116,8 +116,16 @@ class BattleRoyaleRound
 		int newPlayerCount = m_RoundPlayers.Count();
 		if(newPlayerCount < oldPlayerCount)
 		{
-			SendMessageAll(newPlayerCount.ToString() + " PLAYERS REMAIN");
+			if(e_killer && killed && killed.GetIdentity() && e_killer.GetIdentity())
+			{
+				SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
+			}
+			else
+			{
+				SendMessageAll(newPlayerCount.ToString() + " PLAYERS REMAIN");
+			}
 		}
+		
 	}
 	
 	void OnPlayerTick(PlayerBase player, float ticktime)
