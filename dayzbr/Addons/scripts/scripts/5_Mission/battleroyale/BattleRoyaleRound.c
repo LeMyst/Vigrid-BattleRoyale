@@ -320,7 +320,7 @@ class BattleRoyaleRound
 					Teleport_Players = false;
 					master_index = m_RoundPlayers.Count();
 					BRLOG("PLAYER TELEPORT DONE");
-					m_BattleRoyaleLoot.SpawnLoot(); //Start loot spawner
+					m_BattleRoyaleLoot.SpawnLoot(map_Buildings); //Start loot spawner
 					Wait_For_Loot = true;
 					return;
 				}
