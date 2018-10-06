@@ -41,6 +41,14 @@ class BattleRoyaleDebug
 	}
 	
 	
+	array<PlayerBase> RemoveAllPlayers()
+	{
+		ref array<PlayerBase> result_array = new array<PlayerBase>();
+		result_array.InsertAll(m_DebugPlayers);
+		m_DebugPlayers.Clear();
+		return result_array;
+	}
+	
 	void AddPlayer(PlayerBase player)
 	{
 		m_DebugPlayers.Insert(player);

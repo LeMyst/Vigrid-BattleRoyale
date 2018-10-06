@@ -52,6 +52,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		
 		m_BattleRoyaleDebug.Init();
+		br_CallQueue.CallLater(this.ProcessRoundStart, 5000, true);
 	}
 	
 	
@@ -66,6 +67,18 @@ class BattleRoyale extends BattleRoyaleBase
 	}
 	
 	
+	void ProcessRoundStart()
+	{
+		if(!m_BattleRoyaleRound.inProgress)
+		{
+			if(m_BattleRoyaleDebug.m_DebugPlayers >= m_BattleRoyaleData.minimum_players)
+			{
+				//Start round
+				ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
+				m_BattleRoyaleRound.StartRound(round_players);
+			}
+		}
+	}
 	
 	
 	//player connected. add them to the debug zone and prep them for BR
@@ -104,7 +117,7 @@ class BattleRoyale extends BattleRoyaleBase
 		}
 		else
 		{
-			//TODO: process clients that are bugged
+			//TODO: process clients that are bugged (they could also be between states)
 		}
 		
 	}

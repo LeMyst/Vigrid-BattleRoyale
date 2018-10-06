@@ -10,6 +10,8 @@ class BattleRoyaleRound
 	bool inProgress;
 	bool allowZoneDamage;
 	
+	ref ScriptCallQueue round_CallQueue;
+	
 	void BattleRoyaleRound(BattleRoyale game)
 	{
 		br_game = game;
@@ -18,6 +20,8 @@ class BattleRoyaleRound
 		m_BattleRoyaleLoot = new BattleRoyaleLoot();
 		m_RoundPlayers = new array<PlayerBase>();
 		m_DeadBodies = new array<PlayerBase>();
+		
+		round_CallQueue = new ScriptCallQueue();
 	}
 	
 	void Init()
@@ -122,10 +126,18 @@ class BattleRoyaleRound
 	}
 	
 	
+	void EndRound()
+	{
+		//Handle Round End
+	}
+	
 	void StartRound(array<PlayerBase> players_for_round)
 	{
 		allowZoneDamage = false;
+		m_RoundPlayers.InsertAll(players_for_round);
 		//TODO: start the round
+		
+		SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + br_game.m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
 	}
 	
 }
