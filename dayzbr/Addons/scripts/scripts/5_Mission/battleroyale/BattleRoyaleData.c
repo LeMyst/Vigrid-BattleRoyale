@@ -7,7 +7,12 @@ class StaticBRData
 	
 	int minimum_players = 2;
 	float play_area_size = 500.0;
+	int shrink_type = 0; // 0 == coefficient, 1 == exponential
 	float shrink_coefficient = 0.75;
+
+	float shrink_base = 2.718281828459; // ~ e
+	float shrink_exponent = 3.0;
+	float shrink_max_playtime = 30.0; // Measured in minutes
 
     int start_timer = 60; // Measured in seconds
     int zone_lock_time = 60; // Measured in seconds
