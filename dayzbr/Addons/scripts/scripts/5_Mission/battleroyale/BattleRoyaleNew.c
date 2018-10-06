@@ -71,7 +71,7 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		if(!m_BattleRoyaleRound.inProgress)
 		{
-			if(m_BattleRoyaleDebug.m_DebugPlayers >= m_BattleRoyaleData.minimum_players)
+			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
 			{
 				//Start round
 				ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
