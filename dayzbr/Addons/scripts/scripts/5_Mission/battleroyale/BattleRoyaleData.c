@@ -1,4 +1,4 @@
-static string BRDataFileSaveLocation = "$currentDir:BRData.json";// game root?
+static string BRDataFileSaveLocation = "$profile:BRData.json";
 
 class StaticBRData 
 {
