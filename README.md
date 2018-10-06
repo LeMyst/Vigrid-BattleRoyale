@@ -15,7 +15,7 @@ As stated, we are still in early alpha. Alpha 1.0 will be released when the last
 
 #### Thanks,
 
-Kegan - Lead Dev
+Kegan - Lead Dev :)
  
   
 ## Download & Setup for Pre-Alpha v 0.92 (Updated on Thursday, October 4th, 2018)
