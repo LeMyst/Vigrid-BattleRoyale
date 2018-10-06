@@ -87,6 +87,7 @@ class BattleRoyaleRound
 	
 	void OnUpdate(float ticktime)
 	{
+		round_CallQueue.Tick(ticktime);
 		m_BattleRoyaleZone.OnUpdate(ticktime);
 		m_BattleRoyaleLoot.OnUpdate(ticktime);
 		
