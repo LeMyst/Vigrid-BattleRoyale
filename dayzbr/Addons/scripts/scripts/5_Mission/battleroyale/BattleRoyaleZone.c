@@ -17,7 +17,7 @@ class BattleRoyaleZone
 	
 	void BattleRoyaleZone(BattleRoyaleRound round)
 	{
-		
+		zone_CallQueue = new ScriptCallQueue();
 		isZoning = true;
 		number_of_shrinks = 0;
 		new_size = 0;

@@ -52,6 +52,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		
 		m_BattleRoyaleDebug.Init();
+		m_BattleRoyaleRound.Init();
 		br_CallQueue.CallLater(this.ProcessRoundStart, 5000, true);
 	}
 	

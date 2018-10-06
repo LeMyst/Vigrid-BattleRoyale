@@ -43,11 +43,13 @@ class BattleRoyaleLoot
 	
 	void ProcessGroundLootSpawn()
 	{
-			//this gets called on every tick. to stop, set spawn_loot to false
+		//this gets called on every tick. to stop, set spawn_loot to false
+		spawn_loot = false;
 	} 
 	void ProcessBagLootSpawn()
 	{
 		//this gets called on every tick. to stop, set spawn_bags to false
+		spawn_bags = false;
 	}
 	
 	//TODO:
