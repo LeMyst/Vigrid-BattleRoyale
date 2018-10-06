@@ -1,5 +1,6 @@
-class BattleRoyale extends BattleRoyaleBase
+class BattleRoyaleOld extends BattleRoyaleBase
 {
+	/*
 	ref StaticBRData m_BattleRoyaleData;
 
 	ref ScriptCallQueue br_CallQueue;
@@ -493,6 +494,7 @@ class BattleRoyale extends BattleRoyaleBase
 	}
 	
 	//Events
+	
 	override void OnPlayerTick(PlayerBase player, float ticktime)
 	{
 		if(allowZoneDamage && m_RoundPlayers.Find(player) >= 0)
@@ -545,6 +547,8 @@ class BattleRoyale extends BattleRoyaleBase
 		}
 		
 	}
+	
+	
 	void OnPlayerConnected(PlayerBase player)
 	{
 		log("DAYZBR: PLAYER CONNECTED");
@@ -980,4 +984,5 @@ class BattleRoyale extends BattleRoyaleBase
 		br_CallQueue.CallLater(this.HeavyRoundStart,2000,false);
 		
 	}
+	*/
 }
