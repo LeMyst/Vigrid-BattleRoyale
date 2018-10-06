@@ -1,6 +1,6 @@
 modded class DayZPlayerImplement
 {
-	//Our modded player RPC events (server or client)
+	//This is entirely for the admin/gesture commands (not used anymore can probably be removed)
 	override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 	{
 		super.OnRPC(sender, rpc_type, ctx);

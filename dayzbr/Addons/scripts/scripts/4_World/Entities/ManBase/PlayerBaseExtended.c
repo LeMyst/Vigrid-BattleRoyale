@@ -2,6 +2,8 @@ modded class PlayerBaseClient
 {	
 	bool FORCE_FADE = false;
 
+	//Used by BR for client events
+	
 	override void OnRPC(PlayerIdentity sender, int rpc_type, ParamsReadContext ctx)
 	{
 		super.OnRPC(sender, rpc_type, ctx);

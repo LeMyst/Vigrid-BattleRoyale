@@ -4,6 +4,7 @@ modded class MissionGameplay
 	{
 	}
 
+	//Unlock gesture menu
 	override void OnKeyPress(int key)
 	{
 		super.OnKeyPress(key);
@@ -32,6 +33,8 @@ modded class MissionGameplay
 		}
 	}
 	
+	
+	//Fix for UI fade
 	override void OnUpdate(float timeslice)
 	{
 		Man player = GetGame().GetPlayer();

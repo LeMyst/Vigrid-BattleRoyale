@@ -1,5 +1,6 @@
 modded class DayZGame
 {
+	//Thisis used for BR global RPCs
 	override void OnRPC(PlayerIdentity sender, Object target, int rpc_type, ParamsReadContext ctx)
 	{
 		Event_OnRPC.Invoke( sender, target, rpc_type, ctx );
