@@ -120,6 +120,7 @@ class BattleRoyaleDebug
 	void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
 		//This should not happen? if it does, remove them from this class
+		BRLOG("DAYZBR: DEBUG PLAYER KILLED -- BUG?");
 		m_DebugPlayers.RemoveItem(killed);
 	}
 	

@@ -16,7 +16,7 @@ class BattleRoyaleRound
 	{
 		br_game = game;
 		inProgress = false;
-		m_BattleRoyaleZone = new BattleRoyaleZone();
+		m_BattleRoyaleZone = new BattleRoyaleZone(this);
 		m_BattleRoyaleLoot = new BattleRoyaleLoot();
 		m_RoundPlayers = new array<PlayerBase>();
 		m_DeadBodies = new array<PlayerBase>();

@@ -73,7 +73,8 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
 			{
-				//Start round
+				//TODO: don't grab players from debug until the start delay has fired
+				BRLOG("DAYZBR: ROUND START CALL");
 				ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
 				m_BattleRoyaleRound.StartRound(round_players);
 			}
