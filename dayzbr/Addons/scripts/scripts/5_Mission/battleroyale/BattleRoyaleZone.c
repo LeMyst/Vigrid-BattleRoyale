@@ -79,6 +79,10 @@ class BattleRoyaleZone
 	
 	void StartZoning()
 	{
+		//Reset the zone locations
+		this.current_size = GetMaxSize();
+		this.current_center = GetCenter();
+		
 		zone_CallQueue.CallLater(this.Shrink_Zone, br_round.br_game.m_BattleRoyaleData.start_shrink_zone*1000,false);
 		isZoning = true;
 	}
