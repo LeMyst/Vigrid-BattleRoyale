@@ -26,10 +26,9 @@ Kegan - Lead Dev
 ### Server setup.
 NOTE: I RECOMMEND YOU USE [DZSA LAUNCHER](https://www.dayzsalauncher.com/#/tools) WITH YOUR SERVER.
 - Fresh install dayz 0.63 or greater server
-- copy dayzbr folder into the server root
-- move dayzbr/Keys/dayzbr.key to the DayZServer\Keys folder for your server
+- copy the server files into the server folder
+- edit the serverDZ.cfg file with your own server preferences.
 - Run server with *-mod=dayzbr*
-- Lastly, Open serverDZ.cfg and add *equalModRequired = 1;* 
 
 After you run the server for the first time, a config will be created. It is located in your server profile directory in a file called BRData.json
 This contains information for battle royale. Minimum players, start delay, and more.
