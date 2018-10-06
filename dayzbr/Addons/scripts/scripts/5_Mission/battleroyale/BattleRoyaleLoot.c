@@ -107,7 +107,7 @@ class BattleRoyaleLoot
 			for(int i = 0; i < count;i++)
 			{
 				//TODO randomize if we can spawn here
-				if(Math.RandomIntInclusive(0,1) == 1)
+				if(Math.RandomIntInclusive(0,1) == 1 || i == 0)
 				{
 					string pos_name;
 					GetGame().ConfigGetChildName(path, i, pos_name);
