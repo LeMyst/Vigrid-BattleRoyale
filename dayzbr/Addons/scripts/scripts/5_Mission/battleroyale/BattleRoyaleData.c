@@ -1,4 +1,4 @@
-static string BRDataFileSaveLocation = "BRData.json";// game root?
+static string BRDataFileSaveLocation = "$currentDir:BRData.json";// game root?
 
 class StaticBRData 
 {
@@ -9,7 +9,7 @@ class StaticBRData
 	float play_area_size = 500.0;
 	float shrink_coefficient = 0.75;
 
-    int start_timer = 180; // Measured in seconds
+    int start_timer = 60; // Measured in seconds
     int zone_lock_time = 60; // Measured in seconds
 
     int wait_for_players = 5; // Measured in seconds

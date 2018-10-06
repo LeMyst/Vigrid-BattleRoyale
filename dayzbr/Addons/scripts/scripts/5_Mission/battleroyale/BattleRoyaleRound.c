@@ -213,6 +213,7 @@ class BattleRoyaleRound
 	void EndRound()
 	{
 		//Handle Round End
+		inProgress = false;
 	}
 	
 	
@@ -231,7 +232,7 @@ class BattleRoyaleRound
 		ref array<PlayerBase> round_players = br_game.m_BattleRoyaleDebug.RemoveAllPlayers();
 		m_RoundPlayers.InsertAll(round_players);
 		
-		
+		BRLOG("STARTING ROUND");
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
@@ -267,8 +268,9 @@ class BattleRoyaleRound
 				{
 					Prepare_Players = false;
 					master_index = m_RoundPlayers.Count();
+					BRLOG("PLAYER PREP DONE");
 					Teleport_Players = true;
-					
+					return;
 				}
 			}
 		}
@@ -317,8 +319,10 @@ class BattleRoyaleRound
 				{
 					Teleport_Players = false;
 					master_index = m_RoundPlayers.Count();
+					BRLOG("PLAYER TELEPORT DONE");
 					m_BattleRoyaleLoot.SpawnLoot(); //Start loot spawner
 					Wait_For_Loot = true;
+					return;
 				}
 			}
 		}
@@ -332,7 +336,9 @@ class BattleRoyaleRound
 			{
 				Wait_For_Loot = false;
 				master_index = map_Buildings.Count();
+				BRLOG("LOOT DONE");
 				Repair_Buildings = true;
+				return;
 			}
 		}
 	}
@@ -350,7 +356,9 @@ class BattleRoyaleRound
 				{
 					Repair_Buildings = false;
 					master_index = m_RoundPlayers.Count();
+					BRLOG("BUILDING REPAIR DONE");
 					Fade_Players = true;
+					return;
 				}
 			}
 		}
@@ -369,7 +377,9 @@ class BattleRoyaleRound
 				if(master_index == 0)
 				{
 					Fade_Players = false;
-					round_CallQueue.CallLater(this.NotifyTimeTillStart, 1000, false,5);
+					BRLOG("FADE PLAYERS DONE");
+					round_CallQueue.CallLater(this.NotifyTimeTillStart, 5000, false,5);
+					return;
 				}
 			}
 		}
@@ -384,6 +394,7 @@ class BattleRoyaleRound
 		if(seconds_remaining == 0)
 		{
 			round_CallQueue.CallLater(this.StartRoundForPlayers, 1000, false,seconds_remaining);
+			BRLOG("TIME TILL START DONE");
 			return;
 		}
 		round_CallQueue.CallLater(this.NotifyTimeTillStart, 1000, false,seconds_remaining);
@@ -399,7 +410,7 @@ class BattleRoyaleRound
 		RoundStarted = true;
 		round_CallQueue.CallLater(this.CheckRoundEnd, br_game.m_BattleRoyaleData.check_round_end*1000, true);
 		
-		
+		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll("LET THE GAMES BEGIN");
 		ref Param1<bool> value_string = new Param1<bool>(false);
 		GetGame().RPCSingleParam(NULL,MRPCs.RPC_BR_SET_INPUT,value_string,true,NULL);
@@ -439,7 +450,7 @@ class BattleRoyaleRound
 		{
 			PlayerBase winner = m_RoundPlayers.Get(0);
 			RoundStarted = false;
-			
+			BRLOG("ROUND OVER");
 			SendMessage(winner,"YOU WIN DAYZ BR");
 			for(int j = 0; j < br_game.m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
 			{
@@ -458,9 +469,11 @@ class BattleRoyaleRound
 	
 	void CleanBodies()
 	{
+		BRLOG("CLEANING BODIES");
 		for(int i = 0; i < m_DeadBodies.Count();i++)
 		{
 			m_DeadBodies.Get(i).Delete();
 		}
+		EndRound();
 	}
 }
