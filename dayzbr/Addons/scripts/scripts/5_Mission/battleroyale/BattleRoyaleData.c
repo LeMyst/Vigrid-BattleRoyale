@@ -7,7 +7,7 @@ class StaticBRData
 	
 	int minimum_players = 2;
 	float play_area_size = 500.0;
-	int shrink_type = 0; // 0 == coefficient, 1 == exponential
+	int shrink_type = 1; // 0 == coefficient, 1 == exponential, 2 == linear
 	float shrink_coefficient = 0.75;
 
 	float shrink_base = 2.718281828459; // ~ e
