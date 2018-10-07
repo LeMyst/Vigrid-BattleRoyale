@@ -116,16 +116,31 @@ class BattleRoyaleRound
 		int newPlayerCount = m_RoundPlayers.Count();
 		if(newPlayerCount < oldPlayerCount)
 		{
-			if(br_game.m_BattleRoyaleData.death_show_names == 1 && killed && killed.GetIdentity())
+			if(br_game.m_BattleRoyaleData.death_show_names > 0 && killed && killed.GetIdentity())
 			{
 				if(e_killer && e_killer.GetIdentity())
 				{
-					SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " +
-							newPlayerCount.ToString() + " PLAYERS REMAIN");
+					// show names > 1 means also show the distance too
+					if(br_game.m_BattleRoyaleData.death_show_names > 1)
+					{
+						float distance = vector.Distance(e_killer.GetPosition(), killed.GetPosition());
+
+						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " +
+								killed.GetIdentity().GetName() + " FROM " +
+								distance.ToString() + " METER " +
+								newPlayerCount.ToString() + " PLAYERS REMAIN");
+					}
+					else
+					{
+						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " +
+								killed.GetIdentity().GetName() + "! " +
+								newPlayerCount.ToString() + " PLAYERS REMAIN");
+					}
 				}
 				else
 				{
-					SendMessageAll(killed.GetIdentity().GetName() + " DIED! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
+					SendMessageAll(killed.GetIdentity().GetName() + " DIED! " +
+							newPlayerCount.ToString() + " PLAYERS REMAIN");
 				}
 			}
 			else
