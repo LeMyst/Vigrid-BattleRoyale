@@ -89,10 +89,11 @@ class BattleRoyaleZone
 				float shrinkfactor = Math.Pow(base, shrinkexponent) + yoffset;
 
 				return zonesizefactor * shrinkfactor;
+
 			case 2: // linear
 				// code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
 				float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
-				float gradient = -1.0 * (br_round.br_game.m_BattleRoyaleData.play_area_size/br_round.br_game.m_BattleRoyaleData.shrink_max_playtime);
+				float gradient = -1.0 * (br_round.br_game.m_BattleRoyaleData.play_area_size / br_round.br_game.m_BattleRoyaleData.shrink_max_playtime);
 
 				return gradient * minutes + br_round.br_game.m_BattleRoyaleData.play_area_size;
 
