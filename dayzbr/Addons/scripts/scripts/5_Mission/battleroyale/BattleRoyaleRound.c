@@ -98,8 +98,8 @@ class BattleRoyaleRound
 		RepairBuildingsTick();
 		FadePlayersOutTick();
 	}
-	
-	
+
+
 	void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
 		PlayerBase player = killed;
@@ -108,24 +108,31 @@ class BattleRoyaleRound
 		{
 			e_killer = PlayerBase.Cast(killer);
 		}
-		
+
 		int oldPlayerCount = m_RoundPlayers.Count();
 		m_RoundPlayers.RemoveItem(player);
 		m_DeadBodies.Insert(player);
-		
+
 		int newPlayerCount = m_RoundPlayers.Count();
 		if(newPlayerCount < oldPlayerCount)
 		{
-			if(e_killer && killed && killed.GetIdentity() && e_killer.GetIdentity())
+			if(killed && killed.GetIdentity())
 			{
-				SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
+				if(e_killer && e_killer.GetIdentity())
+				{
+					SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " +
+							newPlayerCount.ToString() + " PLAYERS REMAIN");
+				}
+				else
+				{
+					SendMessageAll(killed.GetIdentity().GetName() + " DIED! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
+				}
 			}
 			else
 			{
 				SendMessageAll(newPlayerCount.ToString() + " PLAYERS REMAIN");
 			}
 		}
-		
 	}
 	
 	void OnPlayerTick(PlayerBase player, float ticktime)
