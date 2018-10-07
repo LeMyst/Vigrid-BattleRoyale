@@ -116,7 +116,7 @@ class BattleRoyaleRound
 		int newPlayerCount = m_RoundPlayers.Count();
 		if(newPlayerCount < oldPlayerCount)
 		{
-			if(killed && killed.GetIdentity())
+			if(br_game.m_BattleRoyaleData.death_show_names == 1 && killed && killed.GetIdentity())
 			{
 				if(e_killer && e_killer.GetIdentity())
 				{
