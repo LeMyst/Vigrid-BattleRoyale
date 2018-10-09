@@ -21,12 +21,9 @@ class BattleRoyaleBase
 		Param1< string > data;
 		if( !ctx.Read( data ) ) return;
         
-		if ( type == CallType.Server )
+		if( GetGame() )
 		{
-			if( GetGame() )
-			{
-				GetGame().Chat( data.param1, "colorImportant" );
-			}
+			GetGame().Chat( data.param1, "colorImportant" );
 		}
 	}
 
@@ -108,6 +105,12 @@ class BattleRoyaleBase
 			PlayerBase player = PlayerBase.Cast( target );
 
 			player.GetInputController().SetDisabled( data.param1 );
+
+			player.GetInputController().OverrideMovementSpeed( data.param1, 0 );
+			
+			player.GetInputController().OverrideMeleeEvade( data.param1, false );
+			player.GetInputController().OverrideRaise( data.param1, false );
+			player.GetInputController().OverrideMovementAngle( data.param1, 0 );
 		}
 	}
 

@@ -259,7 +259,6 @@ class BattleRoyaleRound
 					player.GetInventory().CreateInInventory("JoggingShoes_Red");
 					player.GetInventory().CreateInInventory("ItemMap");
 					
-					
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", NULL, true, player.GetIdentity(), player );
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true, player.GetIdentity(), player );
 				}
@@ -310,10 +309,15 @@ class BattleRoyaleRound
 					//teleport
 					vector playerPos = Vector(plrX,plrY,plrZ);
 					player.SetPosition(playerPos);
-					player.SetDirection(vector.Direction(playerPos,m_BattleRoyaleZone.GetCenter()).Normalized());
+					vector playerDir = vector.Direction(playerPos,m_BattleRoyaleZone.GetCenter()).Normalized();
+					player.SetDirection(playerDir);
 					
-					
-					
+					// player.GetInputController().SetDisabled( true );
+
+					player.GetInputController().OverrideMovementSpeed( true, 0 );
+					player.GetInputController().OverrideMeleeEvade( true, false );
+					player.GetInputController().OverrideRaise( true, false );
+					player.GetInputController().OverrideMovementAngle( true, -playerDir.VectorToYaw() );
 				}
 				if(master_index == 0)
 				{
@@ -378,7 +382,10 @@ class BattleRoyaleRound
 				{
 					Fade_Players = false;
 					BRLOG("FADE PLAYERS DONE");
-					round_CallQueue.CallLater(this.NotifyTimeTillStart, 5000, false,5);
+
+					int start_countdown_time = 5;
+
+					round_CallQueue.CallLater(this.NotifyTimeTillStart, start_countdown_time * 1000, false, start_countdown_time);
 					return;
 				}
 			}
@@ -412,8 +419,21 @@ class BattleRoyaleRound
 		
 		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll("LET THE GAMES BEGIN");
-		ref Param1<bool> value_string = new Param1<bool>(false);
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", value_string, true, NULL, NULL );
+
+		for(int i = 0; i < m_RoundPlayers.Count(); i++)
+		{
+			PlayerBase player = m_RoundPlayers.Get( i );
+
+			ref Param1<bool> value_string = new Param1<bool>(false);
+			
+			player.GetInputController().SetDisabled( value_string.param1 );
+			player.GetInputController().OverrideMovementSpeed( value_string.param1, 0 );
+			player.GetInputController().OverrideMeleeEvade( value_string.param1, false );
+			player.GetInputController().OverrideRaise( value_string.param1, false );
+			player.GetInputController().OverrideMovementAngle( value_string.param1, 0 );
+
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", value_string, true, player.GetIdentity(), player );
+		}
 	}
 	
 	void CheckRoundEnd()
