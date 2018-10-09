@@ -260,10 +260,8 @@ class BattleRoyaleRound
 					player.GetInventory().CreateInInventory("ItemMap");
 					
 					
-					GetGame().RPCSingleParam(player,MRPCs.RPC_BR_FADE_IN,NULL,true,player.GetIdentity());
-					
-					ref Param1<bool> value_string = new Param1<bool>(true);
-					GetGame().RPCSingleParam(player,MRPCs.RPC_BR_SET_INPUT,value_string,true,player.GetIdentity());
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", NULL, true, player.GetIdentity(), player );
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true, player.GetIdentity(), player );
 				}
 				
 				if(master_index == 0)
@@ -374,7 +372,7 @@ class BattleRoyaleRound
 				master_index--;
 				
 				PlayerBase player = m_RoundPlayers.Get(master_index);
-				GetGame().RPCSingleParam(player,MRPCs.RPC_BR_FADE_OUT,NULL,true,player.GetIdentity());
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeOut", NULL, true, player.GetIdentity(), player );
 				
 				if(master_index == 0)
 				{
@@ -415,7 +413,7 @@ class BattleRoyaleRound
 		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll("LET THE GAMES BEGIN");
 		ref Param1<bool> value_string = new Param1<bool>(false);
-		GetGame().RPCSingleParam(NULL,MRPCs.RPC_BR_SET_INPUT,value_string,true,NULL);
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", value_string, true, player.GetIdentity(), player );
 	}
 	
 	void CheckRoundEnd()

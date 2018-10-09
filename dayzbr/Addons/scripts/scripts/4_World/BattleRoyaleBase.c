@@ -5,12 +5,44 @@ class BattleRoyaleBase
 	void BattleRoyaleBase()
 	{
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendClientMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "RequestAutowalk", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "IncreaseStats", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "RequestSuicide", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeOut", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EnterSpectator", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "LeaveSpectator", this );
+	}
+
+	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+        
+		if ( type == CallType.Server )
+		{
+			if( GetGame() )
+			{
+				GetGame().Chat( data.param1, "colorImportant" );
+			}
+		}
+	}
+
+	void SendClientMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+        
+		if ( type == CallType.Client )
+		{
+			PlayerBase player = PlayerBase.Cast( target );
+
+			if ( !player ) return;
+
+			player.MessageImportant( data.param1 );
+		}
 	}
 
 	void RequestAutowalk( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
@@ -96,18 +128,12 @@ class BattleRoyaleBase
 		}
 	}
 
-	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	void EnterSpectator( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
-		Param1< string > data;
-		if( !ctx.Read( data ) ) return;
-        
-		if ( type == CallType.Server )
-		{
-			if( GetGame() )
-			{
-				GetGame().Chat( data.param1, "colorImportant" );
-			}
-		}
+	}
+
+	void LeaveSpectator( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
 	}
 
 	void OnPlayerKilled(PlayerBase killed, Object killer)

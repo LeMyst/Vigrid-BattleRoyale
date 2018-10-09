@@ -2,14 +2,15 @@
 void SendMessage(PlayerBase target, string msg, bool required = true)
 {
 	ref Param1<string> value_string = new Param1<string>(msg);
-	GetGame().RPCSingleParam(target,MRPCs.RPC_BR_SEND_CLIENT_MSG,value_string,required,target.GetIdentity());
-	
+    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SendClientMessage", value_string, required, target.GetIdentity(), target );
 }
+
 void SendMessageAll(string msg, bool required = true)
 {
 	ref Param1<string> value_string = new Param1<string>(msg);
-	GetGame().RPCSingleParam(NULL,MRPCs.RPC_BR_SEND_GLOBAL_MSG,value_string,required,NULL);
+    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", value_string, required );
 }
+
 void BRLOG(string msg)
 {
 	Print("=============DayZBR LOG================");
@@ -19,6 +20,7 @@ void BRLOG(string msg)
 	Debug.Log(msg);
 	Debug.Log("=============DayZBR LOG================");
 }
+
 class BattleRoyale extends BattleRoyaleBase
 {
 	ref StaticBRData m_BattleRoyaleData;

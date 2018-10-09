@@ -352,31 +352,29 @@ class NewGesturesMenu extends UIScriptedMenu
 								if(m_Base.autowalk)
 								{
 									player.MessageStatus("Autowalk On");
-									GetGame().RPCSingleParam(GetGame().GetPlayer(), MRPCs.RPC_CLIENT_REQUEST_AUTOWALK, rp, true);
 									player.GetInputController().OverrideMovementSpeed( true, 2 );
 									player.GetInputController().OverrideMovementAngle( true, 1 );
 								}
 								else
 								{
 									player.MessageStatus("Autowalk Off");
-									GetGame().RPCSingleParam(GetGame().GetPlayer(), MRPCs.RPC_CLIENT_REQUEST_AUTOWALK, rp, true);
 									player.GetInputController().OverrideMovementSpeed( false, 0 );
 									player.GetInputController().OverrideMovementAngle( false, 0 );
-								}				
+								}
+								
+								GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "RequestAutowalk", rp, true, NULL, GetGame().GetPlayer() );
 								break;
 								
 							case KEGAN_2:
 								Param1<float> k2_rpc = new Param1<float>(100);
 								
-								PlayerBaseClient player_client = PlayerBaseClient.Cast(GetGame().GetPlayer());
-								
-								GetGame().RPCSingleParam(player_client, MRPCs.RPC_CLIENT_INCREASE_STATS, k2_rpc, true);
+								GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "IncreaseStats", k2_rpc, true, NULL, GetGame().GetPlayer() );
 								player.MessageStatus("Increased Energy/Water Ect.");
 								break;
 								
 							case KEGAN_3:
 								player.MessageStatus("Suicide");
-								GetGame().RPCSingleParam(GetGame().GetPlayer(), MRPCs.RPC_CLIENT_REQUEST_SUICIDE, NULL, true);
+								GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "RequestSuicide", NULL, true, NULL, GetGame().GetPlayer() );
 								break;
 							
 							case KEGAN_4:
@@ -385,7 +383,7 @@ class NewGesturesMenu extends UIScriptedMenu
 								break;
 							
 							case KEGAN_5:
-								GetGame().RPCSingleParam(NULL, MRPCs.RPC_CLIENT_ACTION_SPECTATOR, NULL, true);
+								GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "EnterSpectator", NULL, true, NULL, GetGame().GetPlayer() );
 								break;
 							
 							case KEGAN_6:
