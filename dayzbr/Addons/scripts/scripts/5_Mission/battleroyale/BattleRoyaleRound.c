@@ -413,7 +413,7 @@ class BattleRoyaleRound
 		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll("LET THE GAMES BEGIN");
 		ref Param1<bool> value_string = new Param1<bool>(false);
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", value_string, true, player.GetIdentity(), player );
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", value_string, true, NULL, NULL );
 	}
 	
 	void CheckRoundEnd()
