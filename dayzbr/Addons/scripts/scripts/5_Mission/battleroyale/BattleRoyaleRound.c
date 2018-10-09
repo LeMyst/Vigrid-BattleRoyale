@@ -311,13 +311,15 @@ class BattleRoyaleRound
 					player.SetPosition(playerPos);
 					vector playerDir = vector.Direction(playerPos,m_BattleRoyaleZone.GetCenter()).Normalized();
 					player.SetDirection(playerDir);
-					
-					// player.GetInputController().SetDisabled( true );
 
 					player.GetInputController().OverrideMovementSpeed( true, 0 );
 					player.GetInputController().OverrideMeleeEvade( true, false );
 					player.GetInputController().OverrideRaise( true, false );
-					player.GetInputController().OverrideMovementAngle( true, -playerDir.VectorToYaw() );
+
+					float headingChange = playerDir.VectorToYaw() - player.GetInputController().GetHeadingAngle();
+
+					player.GetInputController().OverrideAimChangeY( true, headingChange );
+					player.GetInputController().OverrideMovementAngle( true, 0 );
 				}
 				if(master_index == 0)
 				{
@@ -367,6 +369,7 @@ class BattleRoyaleRound
 			}
 		}
 	}
+
 	void FadePlayersOutTick()
 	{
 		if(Fade_Players)
@@ -376,7 +379,12 @@ class BattleRoyaleRound
 				master_index--;
 				
 				PlayerBase player = m_RoundPlayers.Get(master_index);
+				
+				player.GetInputController().OverrideAimChangeY( false, 0 );
+				player.GetInputController().OverrideMovementAngle( false, 0 );
+
 				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeOut", NULL, true, player.GetIdentity(), player );
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AllowLookInput", NULL, true, player.GetIdentity(), player );
 				
 				if(master_index == 0)
 				{
@@ -385,13 +393,12 @@ class BattleRoyaleRound
 
 					int start_countdown_time = 5;
 
-					round_CallQueue.CallLater(this.NotifyTimeTillStart, start_countdown_time * 1000, false, start_countdown_time);
+					round_CallQueue.CallLater(this.NotifyTimeTillStart, 5000, false, start_countdown_time);
 					return;
 				}
 			}
 		}
 	}
-	
 	
 	void NotifyTimeTillStart(int seconds_remaining)
 	{
@@ -405,7 +412,6 @@ class BattleRoyaleRound
 			return;
 		}
 		round_CallQueue.CallLater(this.NotifyTimeTillStart, 1000, false,seconds_remaining);
-		
 	}
 	
 	void StartRoundForPlayers()

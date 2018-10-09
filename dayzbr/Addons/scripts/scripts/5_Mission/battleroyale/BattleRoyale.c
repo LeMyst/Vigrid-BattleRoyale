@@ -104,7 +104,6 @@ class BattleRoyale extends BattleRoyaleBase
 		player.BR_BASE = this; //Register the player for Player based event calls
 		
 		m_BattleRoyaleDebug.AddPlayer(player);
-		
 	}
 	
 	//player disconnected. remove them from whichever class they are in

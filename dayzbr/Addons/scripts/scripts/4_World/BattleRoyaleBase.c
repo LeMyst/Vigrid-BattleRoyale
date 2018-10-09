@@ -104,13 +104,28 @@ class BattleRoyaleBase
 		{
 			PlayerBase player = PlayerBase.Cast( target );
 
-			player.GetInputController().SetDisabled( data.param1 );
+			if ( !player ) return;
+
+			// player.GetInputController().SetDisabled( data.param1 );
+			player.GetInputController().SetDisabled( false );
 
 			player.GetInputController().OverrideMovementSpeed( data.param1, 0 );
-			
 			player.GetInputController().OverrideMeleeEvade( data.param1, false );
 			player.GetInputController().OverrideRaise( data.param1, false );
 			player.GetInputController().OverrideMovementAngle( data.param1, 0 );
+			player.GetInputController().OverrideAimChangeY( data.param1, 0 );
+		}
+	}
+
+	void AllowLookInput( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		if ( type == CallType.Client )
+		{
+			PlayerBase player = PlayerBase.Cast( target );
+
+			if ( !player ) return;
+
+			player.GetInputController().OverrideAimChangeY( false, 0 );
 		}
 	}
 
@@ -118,8 +133,11 @@ class BattleRoyaleBase
 	{
 		if ( type == CallType.Client )
 		{
+			PlayerBase player = GetGame().GetPlayer();
+			player.FORCE_FADE = true;
+
 			string text = "DayZ Battle Royale";
-			GetGame().GetUIManager().ScreenFadeIn(0, text, FadeColors.BLACK, FadeColors.WHITE); //FadeColors.DARK_RED
+			GetGame().GetUIManager().ScreenFadeIn( 0, text, FadeColors.BLACK, FadeColors.WHITE ); //FadeColors.DARK_RED
 		}
 	}
 
@@ -127,14 +145,18 @@ class BattleRoyaleBase
 	{
 		if ( type == CallType.Client )
 		{
-			GetGame().GetUIManager().ScreenFadeOut(0);
+			PlayerBase player = GetGame().GetPlayer();
+			player.FORCE_FADE = false;
+			GetGame().GetUIManager().ScreenFadeOut( 0.5 );
 		}
 	}
 
+	// TODO: Implement
 	void EnterSpectator( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 	}
 
+	// TODO: Implement
 	void LeaveSpectator( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 	}

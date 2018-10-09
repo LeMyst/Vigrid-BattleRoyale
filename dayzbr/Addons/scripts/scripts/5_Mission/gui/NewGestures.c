@@ -173,7 +173,7 @@ class NewGesturesMenu extends UIScriptedMenu
 			gesture_items.Insert( new GestureMenuItem( GestureCategories.CATEGORY_2, "Taunts", 	GestureCategories.CATEGORIES ) );
 			gesture_items.Insert( new GestureMenuItem( GestureCategories.CATEGORY_3, "Misc.", 	GestureCategories.CATEGORIES ) );
 			gesture_items.Insert( new GestureMenuItem( GestureCategories.CATEGORY_4, "Regards", GestureCategories.CATEGORIES ) );
-			gesture_items.Insert( new GestureMenuItem( GestureCategories.CATEGORY_5, "Kegan", 	GestureCategories.CATEGORIES ) );
+			// gesture_items.Insert( new GestureMenuItem( GestureCategories.CATEGORY_5, "Kegan", 	GestureCategories.CATEGORIES ) );
 		}
 		//Category 1 - comms
 		else if ( category == GestureCategories.CATEGORY_1 )
