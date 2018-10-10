@@ -72,8 +72,8 @@ class BattleRoyaleZone
 
 	float GetNewZoneSize()
 	{
-	    // since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
-	    float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
+		// since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
+		float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
 	    
 		switch(br_round.br_game.m_BattleRoyaleData.shrink_type)
 		{
