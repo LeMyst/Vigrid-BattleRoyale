@@ -7,7 +7,7 @@ REM REMEMBER TO UPDATE THE SETTINGS BELOW
 title DayZ BR Development Script
 
 set PORT=2302
-set MOD=dayzbr
+set MOD=RPCFramework;dayzbr
 set LOG=true
 set CONFIG=serverDZ.cfg
 set FREEZE=true

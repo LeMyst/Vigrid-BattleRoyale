@@ -1,6 +1,7 @@
 modded class PlayerBase
 {
-	
+	bool FORCE_FADE = false;
+
 	float timeTillNextHealTick = 0;
 	float timeTillNextDmgTick = 0;
 	

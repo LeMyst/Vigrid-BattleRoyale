@@ -2,14 +2,15 @@
 void SendMessage(PlayerBase target, string msg, bool required = true)
 {
 	ref Param1<string> value_string = new Param1<string>(msg);
-	GetGame().RPCSingleParam(target,MRPCs.RPC_BR_SEND_CLIENT_MSG,value_string,required,target.GetIdentity());
-	
+    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SendClientMessage", value_string, required, target.GetIdentity(), target );
 }
+
 void SendMessageAll(string msg, bool required = true)
 {
 	ref Param1<string> value_string = new Param1<string>(msg);
-	GetGame().RPCSingleParam(NULL,MRPCs.RPC_BR_SEND_GLOBAL_MSG,value_string,required,NULL);
+    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", value_string, required );
 }
+
 void BRLOG(string msg)
 {
 	Print("=============DayZBR LOG================");
@@ -19,6 +20,7 @@ void BRLOG(string msg)
 	Debug.Log(msg);
 	Debug.Log("=============DayZBR LOG================");
 }
+
 class BattleRoyale extends BattleRoyaleBase
 {
 	ref StaticBRData m_BattleRoyaleData;
@@ -33,17 +35,25 @@ class BattleRoyale extends BattleRoyaleBase
 	//NOTE missionserver is passed in the event that we need it in the future (it is unused at this momemnt)
 	void BattleRoyale(MissionServer server_class)
 	{
-		hasInit = false;
-		m_BattleRoyaleData = StaticBRData.LoadDataServer();
-		
-		m_BattleRoyaleRound = new BattleRoyaleRound(this);
-		m_BattleRoyaleDebug = new BattleRoyaleDebug(this);
-		
-		br_CallQueue = new ScriptCallQueue(); 
+		if ( GetGame().IsServer() )
+		{
+			hasInit = false;
+			m_BattleRoyaleData = StaticBRData.LoadDataServer();
+			
+			m_BattleRoyaleRound = new BattleRoyaleRound(this);
+			m_BattleRoyaleDebug = new BattleRoyaleDebug(this);
+			
+			br_CallQueue = new ScriptCallQueue(); 
+		} else
+		{
+			hasInit = true;
+		}
 	}
 	
 	void OnInit()
 	{
+		if ( !GetGame().IsServer() ) return;
+		
 		//prevent double inits
 		if(!hasInit)
 			hasInit = true;
@@ -59,6 +69,8 @@ class BattleRoyale extends BattleRoyaleBase
 	
 	void OnUpdate(float timespan)
 	{
+		if ( !GetGame().IsServer() ) return;
+
 		//Run any items on the call queue
 		br_CallQueue.Tick(timespan);
 		
@@ -70,6 +82,8 @@ class BattleRoyale extends BattleRoyaleBase
 	
 	void ProcessRoundStart()
 	{
+		if ( !GetGame().IsServer() ) return;
+
 		if(!m_BattleRoyaleRound.inProgress)
 		{
 			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
@@ -83,17 +97,20 @@ class BattleRoyale extends BattleRoyaleBase
 	//player connected. add them to the debug zone and prep them for BR
 	void OnPlayerConnected(PlayerBase player)
 	{
+		if ( !GetGame().IsServer() ) return;
+
 		BRLOG("DAYZBR: PLAYER CONNECTED");
 		
 		player.BR_BASE = this; //Register the player for Player based event calls
 		
 		m_BattleRoyaleDebug.AddPlayer(player);
-		
 	}
 	
 	//player disconnected. remove them from whichever class they are in
 	void OnPlayerDisconnected(PlayerBase player)
 	{
+		if ( !GetGame().IsServer() ) return;
+
 		BRLOG("DAYZBR: PLAYER DISCONNECTED");
 		
 		m_BattleRoyaleRound.RemovePlayer(player);
@@ -101,10 +118,11 @@ class BattleRoyale extends BattleRoyaleBase
 		
 	}
 	
-	
 	//player tick. process them for which class they are in
 	override void OnPlayerTick(PlayerBase player, float ticktime)
 	{
+		if ( !GetGame().IsServer() ) return;
+
 		//on player tick
 		if(m_BattleRoyaleDebug.ContainsPlayer(player))
 		{
@@ -118,10 +136,12 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			//TODO: process clients that are bugged (they could also be between states)
 		}
-		
 	}
+
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
+		if ( !GetGame().IsServer() ) return;
+
 		// on player killed
 		if(m_BattleRoyaleDebug.ContainsPlayer(killed))
 		{
