@@ -100,6 +100,9 @@ class BattleRoyaleZone
 			default: // shrink by constant factor each tick
 				return GetCurrentSize() * GetShrinkCoefficient();
 		}
+		
+		// we are forced to return something, even if we never get here
+		return 0.0;
 	}
 
 	void OnUpdate(float ticktime)
