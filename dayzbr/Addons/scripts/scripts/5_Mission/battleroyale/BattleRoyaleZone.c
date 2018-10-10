@@ -72,12 +72,13 @@ class BattleRoyaleZone
 
 	float GetNewZoneSize()
 	{
+	    // since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
+	    float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
+	    
 		switch(br_round.br_game.m_BattleRoyaleData.shrink_type)
 		{
 			case 1: // exponential
 				// code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
-				float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
-
 				float base = br_round.br_game.m_BattleRoyaleData.shrink_base; // default 2.718281828459 ~ e
 				float exponent = br_round.br_game.m_BattleRoyaleData.shrink_exponent; // default 3
 				float max_playtime = br_round.br_game.m_BattleRoyaleData.shrink_max_playtime; // default m = 30
@@ -92,7 +93,6 @@ class BattleRoyaleZone
 
 			case 2: // linear
 				// code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
-				float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
 				float gradient = -1.0 * (br_round.br_game.m_BattleRoyaleData.play_area_size / br_round.br_game.m_BattleRoyaleData.shrink_max_playtime);
 
 				return gradient * minutes + br_round.br_game.m_BattleRoyaleData.play_area_size;
