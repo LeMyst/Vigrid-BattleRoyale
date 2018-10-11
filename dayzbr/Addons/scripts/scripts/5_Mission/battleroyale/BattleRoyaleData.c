@@ -12,7 +12,7 @@ class StaticBRData
 
 	float shrink_base = 2.718281828459; // ~ e
 	float shrink_exponent = 3.0;
-	float shrink_max_playtime = 30.0; // Measured in minutes
+	float shrink_max_playtime = 15.0; // Measured in minutes
 
     int start_timer = 60; // Measured in seconds
     int zone_lock_time = 60; // Measured in seconds
