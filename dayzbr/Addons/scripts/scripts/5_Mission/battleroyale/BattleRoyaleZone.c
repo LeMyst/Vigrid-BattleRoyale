@@ -148,6 +148,11 @@ class BattleRoyaleZone
 		
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
+		
+		if ( new_size < 2 )
+		{
+		    new_size = 2;
+		}
 
 		//Calculate new center on lock
 		float distance = Math.RandomFloatInclusive(0,GetCurrentSize() - new_size);
