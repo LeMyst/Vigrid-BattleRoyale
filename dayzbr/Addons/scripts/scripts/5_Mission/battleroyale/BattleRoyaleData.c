@@ -20,6 +20,7 @@ class StaticBRData
     int wait_for_players = 5; // Measured in seconds
     int check_round_end = 5; // Measured in seconds
     int start_shrink_zone = 120; // Measured in seconds
+	int shrink_zone_every = 120; // Measured in seconds
 
     static ref StaticBRData LoadDataServer()
     {

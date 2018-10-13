@@ -73,8 +73,9 @@ class BattleRoyaleZone
 	float GetNewZoneSize()
 	{
 		// since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
-		float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) * number_of_shrinks; // x
-	    
+		float minutes = Math.Ceil(br_round.br_game.m_BattleRoyaleData.start_shrink_zone / 60) + (Math.Ceil(br_round.br_game.m_BattleRoyaleData.zone_lock_time / 60) + Math.Ceil(br_round.br_game.m_BattleRoyaleData.shrink_zone_every / 60)) * number_of_shrinks; // x
+		Print("MINUTES UNTIL END " + (minutes - br_round.br_game.m_BattleRoyaleData.shrink_max_playtime));
+
 		switch(br_round.br_game.m_BattleRoyaleData.shrink_type)
 		{
 			case 1: // exponential
@@ -116,8 +117,8 @@ class BattleRoyaleZone
 		//Reset the zone locations
 		this.current_size = GetMaxSize();
 		this.current_center = GetCenter();
-		
-		zone_CallQueue.CallLater(this.Shrink_Zone, br_round.br_game.m_BattleRoyaleData.start_shrink_zone*1000,false);
+
+		zone_CallQueue.CallLater(this.Shrink_Zone, br_round.br_game.m_BattleRoyaleData.start_shrink_zone * 1000, false);
 		isZoning = true;
 	}
 	void StopZoning()
@@ -168,7 +169,7 @@ class BattleRoyaleZone
 		
 		new_center = Vector(newX,newY,newZ);
 		
-		Print("==== ZONE LOGIC - SRHINK DONE ====");
+		Print("==== ZONE LOGIC - SHRINK DONE ====");
 		Print(GetCurrentCenter());
 		Print(new_center);
 		Print(GetCurrentSize());
@@ -193,7 +194,7 @@ class BattleRoyaleZone
 		Print("==================================");
 		
 		//Queue up next shrink
-		zone_CallQueue.CallLater(this.Shrink_Zone, 120*1000,false); //in 2 minutes, call next shrink
+		zone_CallQueue.CallLater(this.Shrink_Zone, br_round.br_game.m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
 	}
 	
 	/*
