@@ -8,7 +8,12 @@ class StaticBRData
 	int minimum_players = 2;
 	int death_show_names = 1; // 0 == off, 1 == on, 2 == including distance
 	float play_area_size = 500.0;
+	int shrink_type = 1; // 0 == coefficient, 1 == exponential, 2 == linear
 	float shrink_coefficient = 0.75;
+
+	float shrink_base = 2.718281828459; // ~ e
+	float shrink_exponent = 2.0;
+	float shrink_max_playtime = 15.0; // Measured in minutes
 
     int start_timer = 60; // Measured in seconds
     int zone_lock_time = 60; // Measured in seconds
@@ -16,6 +21,7 @@ class StaticBRData
     int wait_for_players = 5; // Measured in seconds
     int check_round_end = 5; // Measured in seconds
     int start_shrink_zone = 120; // Measured in seconds
+	int shrink_zone_every = 120; // Measured in seconds
 
     static ref StaticBRData LoadDataServer()
     {
