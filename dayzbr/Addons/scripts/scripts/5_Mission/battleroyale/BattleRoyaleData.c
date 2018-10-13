@@ -2,6 +2,9 @@ static string BRDataFileSaveLocation = "$profile:BRData.json";
 
 class StaticBRData 
 {
+	//Array of items/clothing to give the player before the round starts.
+	ref array<string> Player_Items = {"TrackSuitJacket_Red","TrackSuitPants_Red","JoggingShoes_Red"};
+	
     vector debug_position = "14829.2 72.3148 14572.3";
 	vector cherno_center = "6497.66 6.01245 2519.26";
 	
