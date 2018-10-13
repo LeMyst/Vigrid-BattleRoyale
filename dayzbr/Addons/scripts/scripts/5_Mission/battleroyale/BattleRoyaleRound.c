@@ -125,22 +125,16 @@ class BattleRoyaleRound
 					{
 						float distance = vector.Distance(e_killer.GetPosition(), killed.GetPosition());
 
-						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " +
-								killed.GetIdentity().GetName() + " FROM " +
-								distance.ToString() + " METER " +
-								newPlayerCount.ToString() + " PLAYERS REMAIN");
+						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + " FROM " + distance.ToString() + " METER " + newPlayerCount.ToString() + " PLAYERS REMAIN");														
 					}
 					else
 					{
-						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " +
-								killed.GetIdentity().GetName() + "! " +
-								newPlayerCount.ToString() + " PLAYERS REMAIN");
+						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
 					}
 				}
 				else
 				{
-					SendMessageAll(killed.GetIdentity().GetName() + " DIED! " +
-							newPlayerCount.ToString() + " PLAYERS REMAIN");
+					SendMessageAll(killed.GetIdentity().GetName() + " DIED! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
 				}
 			}
 			else
