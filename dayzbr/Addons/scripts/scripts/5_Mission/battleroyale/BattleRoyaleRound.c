@@ -1,9 +1,13 @@
 
 class BattleRoyaleRound
 {
+	ref StaticBRData m_BattleRoyaleData;
+	ref BattleRoyaleDebug m_BattleRoyaleDebug;
+	ref BattleRoyaleZoneManager m_BattleRoyaleZoneManager;
+
 	ref BattleRoyaleZone m_BattleRoyaleZone;
 	ref BattleRoyaleLoot m_BattleRoyaleLoot;
-	ref BattleRoyale br_game;
+
 	ref array<PlayerBase> m_RoundPlayers;
 	ref array<PlayerBase> m_DeadBodies;
 	ref array<Object> map_Buildings;
@@ -24,11 +28,17 @@ class BattleRoyaleRound
 	int master_index;
 	
 	
-	void BattleRoyaleRound(BattleRoyale game)
+	void BattleRoyaleRound(StaticBRData staticdata, BattleRoyaleDebug debugarea, BattleRoyaleZoneManager zonemanager)
 	{
-		br_game = game;
+		m_BattleRoyaleData = staticdata;
+		m_BattleRoyaleDebug = debugarea;
+		m_BattleRoyaleZoneManager = zonemanager;
+
+		// initialize with an ranzom zone just in case ...
+		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
+		Print("INITIALIZED ROUND WITH ZONE: " + m_BattleRoyaleZone.GetZoneName());
+
 		inProgress = false;
-		m_BattleRoyaleZone = new BattleRoyaleZone(this);
 		m_BattleRoyaleLoot = new BattleRoyaleLoot();
 		m_RoundPlayers = new array<PlayerBase>();
 		m_DeadBodies = new array<PlayerBase>();
@@ -116,12 +126,12 @@ class BattleRoyaleRound
 		int newPlayerCount = m_RoundPlayers.Count();
 		if(newPlayerCount < oldPlayerCount)
 		{
-			if(br_game.m_BattleRoyaleData.death_show_names > 0 && killed && killed.GetIdentity())
+			if(m_BattleRoyaleData.death_show_names > 0 && killed && killed.GetIdentity())
 			{
 				if(e_killer && e_killer.GetIdentity())
 				{
 					// show names > 1 means also show the distance too
-					if(br_game.m_BattleRoyaleData.death_show_names > 1)
+					if(m_BattleRoyaleData.death_show_names > 1)
 					{
 						float distance = vector.Distance(e_killer.GetPosition(), killed.GetPosition());
 
@@ -245,18 +255,23 @@ class BattleRoyaleRound
 	{
 		inProgress = true;
 		
-		SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + br_game.m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
+		SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
 		
-		round_CallQueue.CallLater(this.StartRound, br_game.m_BattleRoyaleData.start_timer * 1000, false);
+		round_CallQueue.CallLater(this.StartRound, m_BattleRoyaleData.start_timer * 1000, false);
 	}
 	
 	void StartRound()
 	{
 		allowZoneDamage = false;
-		ref array<PlayerBase> round_players = br_game.m_BattleRoyaleDebug.RemoveAllPlayers();
+
+		// get a zone
+		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
+
+		// get all players
+		ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
 		m_RoundPlayers.InsertAll(round_players);
 		
-		BRLOG("STARTING ROUND");
+		BRLOG("STARTING ROUND IN ZONE " + m_BattleRoyaleZone.GetZoneName());
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
@@ -445,7 +460,7 @@ class BattleRoyaleRound
 		m_BattleRoyaleZone.StartZoning();
 		
 		RoundStarted = true;
-		round_CallQueue.CallLater(this.CheckRoundEnd, br_game.m_BattleRoyaleData.check_round_end*1000, true);
+		round_CallQueue.CallLater(this.CheckRoundEnd, m_BattleRoyaleData.check_round_end*1000, true);
 		
 		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll("LET THE GAMES BEGIN");
@@ -502,9 +517,9 @@ class BattleRoyaleRound
 			RoundStarted = false;
 			BRLOG("ROUND OVER");
 			SendMessage(winner,"YOU WIN DAYZ BR");
-			for(int j = 0; j < br_game.m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
+			for(int j = 0; j < m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
 			{
-				PlayerBase loser = br_game.m_BattleRoyaleDebug.m_DebugPlayers.Get(j);
+				PlayerBase loser = m_BattleRoyaleDebug.m_DebugPlayers.Get(j);
 				SendMessage(loser,"SOMEONE JUST WON DAYZ BR");
 			}
 		}
