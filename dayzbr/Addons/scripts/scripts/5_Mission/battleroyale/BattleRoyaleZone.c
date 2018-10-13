@@ -41,7 +41,7 @@ class BattleRoyaleZoneManager
 			zones = FindFile(BattleRoyaleZoneFolderSaveLocation + "/*.json", fileName, fileAttr, 0);
 			if(!zones)
 			{
-				Print("failed to get at least the default BR Zone even if we just should have created it...");
+				Print("ERROR: FAILED TO GET AT LEAST THE DEFAULT BR ZONE EVEN IF WE JUST SHOULD HAVE CREATED IT...");
 				return;
 			}
 		}
@@ -56,7 +56,7 @@ class BattleRoyaleZoneManager
 		while(FindNextFile(zones, fileName, fileAttr))
 		{
 			ref BattleRoyaleZoneData new_zone_data = new BattleRoyaleZoneData();
-			Print("found another file: " + BattleRoyaleZoneFolderSaveLocation + "/" + fileName);
+			Print("FOUND ANOTHER FILE: " + BattleRoyaleZoneFolderSaveLocation + "/" + fileName);
 			JsonFileLoader<BattleRoyaleZoneData>.JsonLoadFile(BattleRoyaleZoneFolderSaveLocation + "/" + fileName, new_zone_data);
 			Print(new_zone_data.zone_name);
 			Print(new_zone_data.center);
@@ -68,7 +68,8 @@ class BattleRoyaleZoneManager
 		for(int i = 0; i < ZoneList.Count(); i++)
 		{
 			ref	BattleRoyaleZone zone = ZoneList.Get(i);
-			Print("found zone: " + zone.GetZoneName());
+			zone.Init();
+			Print("INITIALIZED ZONE: " + zone.GetZoneName());
 		}
 	}
 
@@ -84,6 +85,8 @@ class BattleRoyaleZone
 	ref StaticBRData m_BattleRoyaleData;
 	ref BattleRoyaleZoneData m_BattleRoyaleZoneData;
 
+	ref array<Object> map_Buildings;
+
 	vector current_center;
 	vector new_center;
 	float current_size;
@@ -96,6 +99,8 @@ class BattleRoyaleZone
 	void BattleRoyaleZone(StaticBRData staticdata, BattleRoyaleZoneData zonedata)
 	{
 		zone_CallQueue = new ScriptCallQueue();
+		map_Buildings = new array<Object>();
+
 		isZoning = true;
 		number_of_shrinks = 0;
 		new_size = 0;
@@ -106,6 +111,22 @@ class BattleRoyaleZone
 		m_BattleRoyaleZoneData = zonedata;
 
 		MarkerSetup();
+	}
+
+	void Init()
+	{
+		ref array<Object> allObjects = new array<Object>();
+		ref array<CargoBase> proxies = new array<CargoBase>();
+		GetGame().GetObjectsAtPosition(GetCenter(), GetMaxSize(), allObjects, proxies);
+		for(int i = 0; i < allObjects.Count(); i++)
+		{
+			Object obj = allObjects.Get(i);
+			if(obj.IsBuilding())
+			{
+				obj.SetHealth(obj.GetMaxHealth()); //heal building to max
+				map_Buildings.Insert(obj);
+			}
+		}
 	}
 
 	//Get config values (used for initialization)

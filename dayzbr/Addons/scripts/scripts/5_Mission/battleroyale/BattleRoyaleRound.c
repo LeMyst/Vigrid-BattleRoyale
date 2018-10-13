@@ -10,8 +10,7 @@ class BattleRoyaleRound
 
 	ref array<PlayerBase> m_RoundPlayers;
 	ref array<PlayerBase> m_DeadBodies;
-	ref array<Object> map_Buildings;
-	
+
 	bool inProgress;
 	bool allowZoneDamage;
 	
@@ -42,8 +41,7 @@ class BattleRoyaleRound
 		m_BattleRoyaleLoot = new BattleRoyaleLoot();
 		m_RoundPlayers = new array<PlayerBase>();
 		m_DeadBodies = new array<PlayerBase>();
-		map_Buildings = new array<Object>();
-		
+
 		round_CallQueue = new ScriptCallQueue();
 		
 		//used for ticking
@@ -57,18 +55,7 @@ class BattleRoyaleRound
 	
 	void Init()
 	{
-		ref array<Object> allObjects = new array<Object>();
-		ref array<CargoBase> proxies = new array<CargoBase>();
-		GetGame().GetObjectsAtPosition(m_BattleRoyaleZone.GetCenter(), m_BattleRoyaleZone.GetMaxSize(), allObjects, proxies);
-		for(int i = 0; i < allObjects.Count();i++)
-		{
-			Object obj = allObjects.Get(i);
-			if(obj.IsBuilding())
-			{
-				obj.SetHealth(obj.GetMaxHealth());//heal building to max
-				map_Buildings.Insert(obj);
-			}				
-		}
+		return;
 	}
 	
 	
@@ -365,7 +352,7 @@ class BattleRoyaleRound
 					Teleport_Players = false;
 					master_index = m_RoundPlayers.Count();
 					BRLOG("PLAYER TELEPORT DONE");
-					m_BattleRoyaleLoot.SpawnLoot(map_Buildings); //Start loot spawner
+					m_BattleRoyaleLoot.SpawnLoot(m_BattleRoyaleZone.map_Buildings); //Start loot spawner
 					Wait_For_Loot = true;
 					return;
 				}
@@ -380,7 +367,7 @@ class BattleRoyaleRound
 			if(!m_BattleRoyaleLoot.isRunning)
 			{
 				Wait_For_Loot = false;
-				master_index = map_Buildings.Count();
+				master_index = m_BattleRoyaleZone.map_Buildings.Count();
 				BRLOG("LOOT DONE");
 				Repair_Buildings = true;
 				return;
@@ -394,7 +381,7 @@ class BattleRoyaleRound
 			for(int i = 0; i < 5; i++)
 			{
 				master_index--;
-				Object obj = map_Buildings.Get(master_index);
+				Object obj = m_BattleRoyaleZone.map_Buildings.Get(master_index);
 				obj.SetHealth(obj.GetMaxHealth());
 				
 				if(master_index == 0)
