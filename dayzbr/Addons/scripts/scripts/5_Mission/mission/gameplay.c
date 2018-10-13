@@ -1,7 +1,16 @@
 modded class MissionGameplay
 {
+	ref BattleRoyale BR_GAME;
+	
 	void MissionGameplay()
 	{
+	}
+	
+	override void OnInit()
+	{
+		super.OnInit();
+		
+		BR_GAME = new BattleRoyale( NULL );
 	}
 
 	//Unlock gesture menu
