@@ -149,9 +149,9 @@ class BattleRoyaleZone
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
 		
-		if ( new_size < 2 )
+		if ( new_size < 18 )
 		{
-		    new_size = 2;
+		    new_size = 18;
 		}
 
 		//Calculate new center on lock
