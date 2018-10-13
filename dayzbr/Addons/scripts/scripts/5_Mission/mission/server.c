@@ -1,7 +1,18 @@
 modded class MissionServer
 {
-	//TODO:Replace all instances where this is used with BattleRoyale.debug_position
-	vector debug_position = "14829.2 72.3148 14572.3";
+	void GetDebugPostion()
+	{
+		if(BR_GAME)
+		{
+			if(BR_GAME.m_BattleRoyaleData)
+			{
+				return BR_GAME.m_BattleRoyaleData.debug_position;
+			}
+		}
+		Print("ERROR: BR GAME NOT READY FOR DEBUG ZONE");
+		
+		return "14829.2 72.3148 14572.3"; //No debug position?
+	}
 	
 	
 	ref BattleRoyale BR_GAME;
@@ -41,7 +52,7 @@ modded class MissionServer
 				player.SetHealth("", "", 0.0);
 			}
 			vector playerPos = player.GetPosition();
-			float distance = vector.Distance(playerPos,debug_position);
+			float distance = vector.Distance(playerPos,GetDebugPostion());
 			
 			//TODO: calculate if body is in debug zone, if so, delete
 			if(distance <= 50)
@@ -130,7 +141,7 @@ modded class MissionServer
 			characterName = GetGame().ListAvailableCharacters().Get(m_skin);
 		}
 		
-		if (CreateCharacter(identity, debug_position, ctx, characterName))
+		if (CreateCharacter(identity, GetDebugPostion(), ctx, characterName))
 		{
 			BR_GAME.OnPlayerConnected(m_player);
 			EquipCharacter();
@@ -139,7 +150,7 @@ modded class MissionServer
 		if(m_player != null)
 		{
 			log("Forced debug spawn");
-			m_player.SetPosition(debug_position);
+			m_player.SetPosition(GetDebugPostion());
 			//TODO: give m_player god mode
 		}
 		
@@ -249,7 +260,7 @@ modded class MissionServer
 	void OnClientReadyEvent(PlayerIdentity identity, PlayerBase player)
 	{
 		log("Client Ready Event");
-		player.SetPosition(debug_position);
+		player.SetPosition(GetDebugPostion());
 		GetGame().SelectPlayer(identity, player);
 		BR_GAME.OnPlayerConnected(player);
 
@@ -267,7 +278,7 @@ modded class MissionServer
 		
 		GetGame().SelectPlayer(identity, m_player);
 		
-		//m_player.SetPosition(debug_position); 
+		//m_player.SetPosition(GetDebugPostion()); 
 		
 		return m_player;
 		//moduleDefaultCharacter.FileDelete(moduleDefaultCharacter.GetFileName());
@@ -314,7 +325,7 @@ modded class MissionServer
 		log("Handle Body");
 		
 		vector playerPos = player.GetPosition();
-		float distance = vector.Distance(playerPos,debug_position);
+		float distance = vector.Distance(playerPos,GetDebugPostion());
 		
 		//TODO: calculate if body is in debug zone, if so, delete
 		if(distance <= 50)

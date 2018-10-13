@@ -6,6 +6,7 @@ class StaticBRData
 	vector cherno_center = "6497.66 6.01245 2519.26";
 	
 	int minimum_players = 2;
+	int death_show_names = 1; // 0 == off, 1 == on, 2 == including distance
 	float play_area_size = 500.0;
 	float shrink_coefficient = 0.75;
 
