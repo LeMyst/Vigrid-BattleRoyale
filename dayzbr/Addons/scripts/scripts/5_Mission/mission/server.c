@@ -1,6 +1,6 @@
 modded class MissionServer
 {
-	void GetDebugPostion()
+	vector GetDebugPostion()
 	{
 		if(BR_GAME)
 		{
