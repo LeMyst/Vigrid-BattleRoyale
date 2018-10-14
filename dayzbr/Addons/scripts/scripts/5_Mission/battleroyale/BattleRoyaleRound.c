@@ -281,9 +281,9 @@ class BattleRoyaleRound
 					
 					player.RemoveAllItems();
 					//For each item that exist in the array, we spawn on the player.
-					for(int counter = 0; counter < br_game.m_BattleRoyaleData.Player_Items.Count();counter++)
+					for(int counter = 0; counter < m_BattleRoyaleData.Player_Items.Count();counter++)
 					{	
-						player.GetInventory().CreateInInventory(br_game.m_BattleRoyaleData.Player_Items[counter]);
+						player.GetInventory().CreateInInventory(m_BattleRoyaleData.Player_Items[counter]);
 					}
 					
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", NULL, true, player.GetIdentity(), player );
