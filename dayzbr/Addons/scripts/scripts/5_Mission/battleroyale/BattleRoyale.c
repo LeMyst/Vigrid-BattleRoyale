@@ -120,6 +120,13 @@ class BattleRoyale extends BattleRoyaleBase
 		
 	}
 	
+	override bool allowFallDamage(PlayerBase plr)
+	{
+		if(m_BattleRoyaleRound.ContainsPlayer(plr))
+			return m_BattleRoyaleRound.RoundStarted; //if round has started, allow it, else, do not.
+		
+		return true;
+	}
 	//player tick. process them for which class they are in
 	override void OnPlayerTick(PlayerBase player, float ticktime)
 	{

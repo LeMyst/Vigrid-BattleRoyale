@@ -16,6 +16,11 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "LeaveSpectator", this );
 	}
 
+	bool allowFallDamage(PlayerBase plr)
+	{
+		return true;
+	}	
+	
 	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 		Param1< string > data;
