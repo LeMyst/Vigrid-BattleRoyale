@@ -280,10 +280,11 @@ class BattleRoyaleRound
 					HealPlayer(player);
 					
 					player.RemoveAllItems();
-					player.GetInventory().CreateInInventory("TrackSuitJacket_Red");
-					player.GetInventory().CreateInInventory("TrackSuitPants_Red");
-					player.GetInventory().CreateInInventory("JoggingShoes_Red");
-					player.GetInventory().CreateInInventory("ItemMap");
+					//For each item that exist in the array, we spawn on the player.
+					for(int counter = 0; counter < br_game.m_BattleRoyaleData.Player_Items.Count();counter++)
+					{	
+						player.GetInventory().CreateInInventory(br_game.m_BattleRoyaleData.Player_Items[counter]);
+					}
 					
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", NULL, true, player.GetIdentity(), player );
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true, player.GetIdentity(), player );
