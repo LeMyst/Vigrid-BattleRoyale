@@ -24,7 +24,8 @@ void BRLOG(string msg)
 class BattleRoyale extends BattleRoyaleBase
 {
 	ref StaticBRData m_BattleRoyaleData;
-	
+
+	ref BattleRoyaleZoneManager m_BattleRoyaleZoneManager;
 	ref BattleRoyaleRound m_BattleRoyaleRound;
 	ref BattleRoyaleDebug m_BattleRoyaleDebug;
 	
@@ -39,10 +40,11 @@ class BattleRoyale extends BattleRoyaleBase
 		{
 			hasInit = false;
 			m_BattleRoyaleData = StaticBRData.LoadDataServer();
-			
-			m_BattleRoyaleRound = new BattleRoyaleRound(this);
 			m_BattleRoyaleDebug = new BattleRoyaleDebug(this);
-			
+			m_BattleRoyaleZoneManager = new BattleRoyaleZoneManager(m_BattleRoyaleData);
+
+			m_BattleRoyaleRound = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager);
+
 			br_CallQueue = new ScriptCallQueue(); 
 		} else
 		{
