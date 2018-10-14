@@ -489,28 +489,30 @@ class BattleRoyaleRound
 			
 			
 		}
-		
-		
-		
-		if(playerCount == 0)
+		else 
 		{
-			//We fucked up no player to win the match ?
-			RoundStarted = false;
-
-		}
-		else if(playerCount == 1)
-		{
-			PlayerBase winner = m_RoundPlayers.Get(0);
-			RoundStarted = false;
-			BRLOG("ROUND OVER");
-			SendMessage(winner,"YOU WIN DAYZ BR");
-			for(int j = 0; j < m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
+		
+		
+		
+			if(playerCount == 0)
 			{
-				PlayerBase loser = m_BattleRoyaleDebug.m_DebugPlayers.Get(j);
-				SendMessage(loser,"SOMEONE JUST WON DAYZ BR");
+				//We fucked up no player to win the match ?
+				RoundStarted = false;
+
+			}
+			else if(playerCount == 1)
+			{
+				PlayerBase winner = m_RoundPlayers.Get(0);
+				RoundStarted = false;
+				BRLOG("ROUND OVER");
+				SendMessage(winner,"YOU WIN DAYZ BR");
+				for(int j = 0; j < m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
+				{
+					PlayerBase loser = m_BattleRoyaleDebug.m_DebugPlayers.Get(j);
+					SendMessage(loser,"SOMEONE JUST WON DAYZ BR");
+				}
 			}
 		}
-		
 		//Immediate round cleanup (these calls need to be killed so they do not happen during the end-of round delay)
 		if(!RoundStarted)
 		{
