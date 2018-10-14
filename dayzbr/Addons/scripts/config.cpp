@@ -2340,13 +2340,13 @@ class CfgLoot
 	{
 		num_items = 9;
 		Gear_1[] = {"BandageDressing","Morphine","Splint"};
-		Gear_2[] = {"Morphine","Rag","FirstAidKit"};
-		Gear_3[] = {"Morphine","Rag","FirstAidKit"};
-		Gear_4[] = {"SalineBagIV","Rag","FirstAidKit"};
-		Gear_5[] = {"SalineBagIV","Rag","FirstAidKit"};
+		Gear_2[] = {"Morphine","Rag"};
+		Gear_3[] = {"Rag","BandageDressing"};
+		Gear_4[] = {"SalineBagIV","Rag"};
+		Gear_5[] = {"SalineBagIV","Rag","Morphine"};
 		Gear_6[] = {"BandageDressing","Morphine"};
 		Gear_7[] = {"BandageDressing","Splint"};
-		Gear_8[] = {"BandageDressing","Splint"};
+		Gear_8[] = {"Rag","Splint"};
 		Gear_9[] = {"BandageDressing","Morphine"};
 	};
 	
@@ -2371,17 +2371,17 @@ class CfgLoot
 		Gear_1[] = {"DryBag_Black","BallisticHelmet_Black","HighCapacityVest_Black"};
 		Gear_2[] = {"GorkaPants_Summer","GorkaEJacket_Summer","HighCapacityVest_Black"};
 		Gear_3[] = {"GorkaEJacket_Flat","GorkaPants_Flat","HighCapacityVest_Black"};
-		Gear_4[] = {"GorkaPants_PautRev","GorkaEJacket_PautRev","HighCapacityVest_Black","CarBattery"};
-		Gear_5[] = {"USMCPants_Desert","USMCJacket_Desert","Ammo_556x45"};
+		Gear_4[] = {"GorkaPants_PautRev","GorkaEJacket_PautRev","UKAssVest_Camo","CarBattery"};
+		Gear_5[] = {"USMCPants_Desert","USMCJacket_Desert","Ssh68Helmet"};
 		Gear_6[] = {"USMCPants_Woodland","USMCJacket_Woodland","Ammo_556x45"};
 		Gear_7[] = {"MedicalScrubsPants_Blue","MedicalScrubsShirt_Blue","MedicalScrubsHat_Blue"};
 		Gear_8[] = {"MedicalScrubsPants_Green","MedicalScrubsShirt_Green","MedicalScrubsHat_Green"};
 		Gear_9[] = {"MedicalScrubsPants_White","MedicalScrubsShirt_White","MedicalScrubsHat_White","CarBattery"};
-		Gear_10[] = {"GorkaHelmetComplete","AmmoBox_762x39_20Rnd","Mag_AKM_30Rnd"};
+		Gear_10[] = {"Ssh68Helmet","AmmoBox_762x39_20Rnd","Mag_AKM_30Rnd"};
 		Gear_11[] = {"MotoHelmet_Black","AmmoBox_762x39_20Rnd","HighCapacityVest_Black"};
 		Gear_12[] = {"MotoHelmet_Lime","AmmoBox_762x39_20Rnd","Ammo_556x45"};
 		Gear_13[] = {"BallisticHelmet_Black","HighCapacityVest_Black","Ammo_556x45"};
-		Gear_14[] = {"BallisticHelmet_UN","HighCapacityVest_Black","Ammo_556x45"};
+		Gear_14[] = {"BallisticHelmet_UN","UKAssVest_Camo","Ammo_556x45"};
 		Gear_15[] = {"GorkaHelmetComplete","M65Jacket_Olive","Ammo_556x45"};
 		Gear_16[] = {"BallisticHelmet_Green","AmmoBox_762x39_20Rnd","AssaultBag_Black"};
 		Gear_17[] = {"GorkaHelmetComplete","M65Jacket_Black","ImprovisedBag","CarBattery"};
