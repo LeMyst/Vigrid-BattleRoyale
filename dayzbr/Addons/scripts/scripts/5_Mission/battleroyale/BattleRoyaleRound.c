@@ -1,4 +1,3 @@
-
 class BattleRoyaleRound
 {
 	ref StaticBRData m_BattleRoyaleData;
@@ -113,7 +112,7 @@ class BattleRoyaleRound
 		int newPlayerCount = m_RoundPlayers.Count();
 		if(newPlayerCount < oldPlayerCount)
 		{
-			if(m_BattleRoyaleData.death_show_names > 0 && killed && killed.GetIdentity())
+			if(false && m_BattleRoyaleData.death_show_names > 0 && killed && killed.GetIdentity())
 			{
 				if(e_killer && e_killer.GetIdentity())
 				{
