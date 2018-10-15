@@ -24,6 +24,8 @@ modded class PlayerBase
 	
 	override void EEKilled( Object killer )
 	{
+		super.EEKilled(killer);
+		/*
 		Print("EEKilled, you have died");
 		if( GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT )
 		{
@@ -56,7 +58,7 @@ modded class PlayerBase
 		{
 			GetHive().CharacterKill(this);
 		}
-		
+		*/
 		if( GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_SERVER)
 		{
 			if(BR_BASE)
