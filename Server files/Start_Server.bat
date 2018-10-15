@@ -11,7 +11,7 @@ set MOD=RPCFramework;dayzbr
 set LOG=true
 set CONFIG=serverDZ.cfg
 set FREEZE=true
-set PROFILE=D:\SteamLibrary\steamapps\common\DayZServer\profiles\Server
+set PROFILE=D:\SteamLibrary\steamapps\common\DayZServer\Profile
 
 
 cls
