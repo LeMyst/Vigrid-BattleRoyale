@@ -13,18 +13,21 @@ class BrChatMenu extends ChatInputMenu
 
 	override Widget Init()
 	{
-		layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/day_z_chat_input.layout");
+		layoutRoot = super.Init();
 		new_m_edit_box = EditBoxWidget.Cast( layoutRoot.FindAnyWidget("InputEditBoxWidget") );
 		new_m_channel_text = TextWidget.Cast( layoutRoot.FindAnyWidget("ChannelText") );
 		
+		new_m_channel_text.Show(true);
 		UpdateChannel();
 		return layoutRoot;
 	}
 	
 	override bool OnKeyDown(Widget w, int x, int y, int key)
 	{
-		if(key == KeyCode.KC_TAB)
+		GetGame().ChatPlayer(m_current_channel, "KEY PRESSED " + key.ToString());
+		if(key == KeyCode.KC_NEXT)
 		{
+			
 			switch(m_current_channel)
 			{
 				case 0:
@@ -49,6 +52,32 @@ class BrChatMenu extends ChatInputMenu
 			UpdateChannel();
 			return true;
 		}
+		else if(key == KeyCode.KC_PRIOR)
+		{
+			switch(m_current_channel)
+			{
+				case 0:
+					m_current_channel = 19;
+					break;
+				case 1:
+					m_current_channel = 0;
+					break;
+				case 3:
+					m_current_channel = 1;
+					break;
+				case 6:
+					m_current_channel = 3;
+					break;
+				case 18:
+					m_current_channel = 6;
+					break;
+				case 19:
+					m_current_channel = 18;
+					break;
+			}	
+			UpdateChannel();
+			return true;
+		}
 		
 		return super.OnKeyDown(w,x,y,key);
 	}
@@ -60,7 +89,10 @@ class BrChatMenu extends ChatInputMenu
 	
 	override bool OnChange(Widget w, int x, int y, bool finished)
 	{
-		super.OnChange(w, x, y, finished);
+		if(!finished)
+		{
+			super.OnChange(w, x, y, finished);
+		}
 		
 		if (!finished) return false;
 		
