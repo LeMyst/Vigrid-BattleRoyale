@@ -179,7 +179,7 @@ class BattleRoyaleZone
 	{
 		// since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
 		float minutes = Math.Ceil(m_BattleRoyaleData.start_shrink_zone / 60) + (Math.Ceil(m_BattleRoyaleData.zone_lock_time / 60) + Math.Ceil(m_BattleRoyaleData.shrink_zone_every / 60)) * number_of_shrinks; // x
-		Print("MINUTES UNTIL END " + (minutes - m_BattleRoyaleData.shrink_max_playtime));
+		Print("MINUTES UNTIL END " + (m_BattleRoyaleData.shrink_max_playtime - minutes));
 
 		switch(m_BattleRoyaleData.shrink_type)
 		{
