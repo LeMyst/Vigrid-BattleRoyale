@@ -76,7 +76,7 @@ modded class MissionBase
 			menu = new ScriptConsoleRenamePresetDialog;
 			break;
 		case MENU_CHAT_INPUT:
-			menu = new ChatInputMenu;
+			menu = new BrChatMenu;
 			break;
 		case MENU_CONTROLS_PRESET:
 			menu = new PresetsMenu;
