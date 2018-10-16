@@ -27,17 +27,17 @@ class BrChatMenu extends ChatInputMenu
 		{
 			switch(m_current_channel)
 			{
-				case CCNone:
+				case ChatChannel.CCNone:
 					m_current_channel = ChatChannel.CCGlobal;
-				case CCGlobal:
+				case ChatChannel.CCGlobal:
 					m_current_channel = ChatChannel.CCItemTransmitter;
-				case CCItemTransmitter:
+				case ChatChannel.CCItemTransmitter:
 					m_current_channel = ChatChannel.CCDirect;
-				case CCDirect:
+				case ChatChannel.CCDirect:
 					m_current_channel = ChatChannel.CCStatus;
-				case CCStatus:
+				case ChatChannel.CCStatus:
 					m_current_channel = ChatChannel.CCSystem;
-				case CCSystem:
+				case ChatChannel.CCSystem:
 					m_current_channel = ChatChannel.CCNone;
 			}	
 			UpdateChannel();
@@ -88,17 +88,17 @@ class BrChatMenu extends ChatInputMenu
 	{
 		switch(channel)
 		{
-			case CCNone:
+			case ChatChannel.CCNone:
 				return "None";
-			case CCGlobal:
+			case ChatChannel.CCGlobal:
 				return "Global";
-			case CCItemTransmitter:
+			case ChatChannel.CCItemTransmitter:
 				return "Radio"; 
-			case CCDirect:
+			case ChatChannel.CCDirect:
 				return "Direct";      
-			case CCStatus:
+			case ChatChannel.CCStatus:
 				return "Status";   
-			case CCSystem:
+			case ChatChannel.CCSystem:
 				return "System";   
 		}	
 		
