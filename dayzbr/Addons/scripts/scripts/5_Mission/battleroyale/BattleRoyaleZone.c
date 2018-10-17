@@ -292,8 +292,12 @@ class BattleRoyaleZone
 
 		HandleMarkers();
 
-		//Queue up the lock
-		zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
+		// stop zone shrink once the min value is reached
+		if (new_size > 18)
+		{
+			//Queue up the lock
+			zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
+		}
 	}
 	void Lock_Zone()
 	{
