@@ -258,10 +258,11 @@ class BattleRoyaleZone
 		}
 
 		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
-		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
 
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
+
+		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
 
 		if ( new_size < 18 )
 		{
