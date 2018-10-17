@@ -1,9 +1,9 @@
 class BrChatMenu extends ChatInputMenu
 {
-	private EditBoxWidget new_m_edit_box;
-	private TextWidget new_m_channel_text;
-	private ref Timer new_m_close_timer;
-	static ChatChannel m_current_channel = 0;
+	EditBoxWidget new_m_edit_box;
+	TextWidget new_m_channel_text;
+	ref Timer new_m_close_timer;
+	static int m_current_channel = 0;
 	
 	
 	void BrChatMenu()
@@ -18,68 +18,10 @@ class BrChatMenu extends ChatInputMenu
 		new_m_channel_text = TextWidget.Cast( layoutRoot.FindAnyWidget("ChannelText") );
 		
 		new_m_channel_text.Show(true);
+		
+		
 		UpdateChannel();
 		return layoutRoot;
-	}
-	
-	override bool OnKeyDown(Widget w, int x, int y, int key)
-	{
-		GetGame().ChatPlayer(m_current_channel, "KEY PRESSED " + key.ToString());
-		if(key == KeyCode.KC_NEXT)
-		{
-			
-			switch(m_current_channel)
-			{
-				case 0:
-					m_current_channel = 1;
-					break;
-				case 1:
-					m_current_channel = 3;
-					break;
-				case 3:
-					m_current_channel = 6;
-					break;
-				case 6:
-					m_current_channel = 18;
-					break;
-				case 18:
-					m_current_channel = 19;
-					break;
-				case 19:
-					m_current_channel = 0;
-					break;
-			}	
-			UpdateChannel();
-			return true;
-		}
-		else if(key == KeyCode.KC_PRIOR)
-		{
-			switch(m_current_channel)
-			{
-				case 0:
-					m_current_channel = 19;
-					break;
-				case 1:
-					m_current_channel = 0;
-					break;
-				case 3:
-					m_current_channel = 1;
-					break;
-				case 6:
-					m_current_channel = 3;
-					break;
-				case 18:
-					m_current_channel = 6;
-					break;
-				case 19:
-					m_current_channel = 18;
-					break;
-			}	
-			UpdateChannel();
-			return true;
-		}
-		
-		return super.OnKeyDown(w,x,y,key);
 	}
 	
 	override bool UseKeyboard() 
@@ -100,7 +42,18 @@ class BrChatMenu extends ChatInputMenu
 
 		if (text != "")
 		{
-			GetGame().ChatPlayer(m_current_channel, text);
+			bool test_global_chat = false; //TODO: flip this to true if you want to test global chat through ChatPlayer
+			if(m_current_channel == 1 && !test_global_chat)
+			{
+				//Global Chat RPC
+				ref Param1<string> value_string = new Param1<string>(text);
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false, null, GetGame().GetPlayer() );
+			}
+			else
+			{
+				//Local chat
+				GetGame().ChatPlayer(m_current_channel, text);
+			}
 		}
 
 		new_m_close_timer.Run(0.1, this, "Close");
@@ -115,6 +68,32 @@ class BrChatMenu extends ChatInputMenu
 	override void Update(float timeslice)
 	{
 		GetGame().GetInput().DisableKey(KeyCode.KC_RETURN);
+		if(GetGame().GetInput().GetAction(UANextAction,false) > 0)
+		{
+			switch(m_current_channel)
+			{
+				case 0:
+					m_current_channel = 1;
+					break;
+				case 1:
+					m_current_channel = 0;
+					break;
+			}	
+			UpdateChannel();
+		}
+		if(GetGame().GetInput().GetAction(UAPrevAction,false) > 0)
+		{
+			switch(m_current_channel)
+			{
+				case 0:
+					m_current_channel = 1;
+					break;
+				case 1:
+					m_current_channel = 0;
+					break;
+			}	
+			UpdateChannel();
+		}
 	}
 	
 	override void UpdateChannel()
@@ -127,7 +106,7 @@ class BrChatMenu extends ChatInputMenu
 		switch(channel)
 		{
 			case 0:
-				return "None";
+				return "Direct"; //This is actually "None" the default value for dayz
 			case 1:
 				return "Global";
 			case 3:

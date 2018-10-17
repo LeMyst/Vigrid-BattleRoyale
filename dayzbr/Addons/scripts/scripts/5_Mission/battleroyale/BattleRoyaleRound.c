@@ -452,6 +452,12 @@ class BattleRoyaleRound
 		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll("LET THE GAMES BEGIN");
 
+		
+		// This is absolutely not acceptable. It needs to be taken out of production immediately
+		// Note for everyone in the future
+		// DO NOT EVER ITERATE AN ENTIRE ARRAY ON A SINGLE FRAME
+		// YOU WILL DESTROY THE DAYZ SERVERS PERFORMANCE FOR UPWARDS OF 30 SECONDS
+		// DO NOT DO THIS
 		for(int i = 0; i < m_RoundPlayers.Count(); i++)
 		{
 			PlayerBase player = m_RoundPlayers.Get( i );

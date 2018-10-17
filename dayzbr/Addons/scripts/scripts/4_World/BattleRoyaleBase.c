@@ -14,12 +14,44 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeOut", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EnterSpectator", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "LeaveSpectator", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", this );
 	}
 
 	bool allowFallDamage(PlayerBase plr)
 	{
 		return true;
 	}	
+	
+	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+		
+		if(type == CallType.Client)
+		{
+			if(! GetGame().GetPlayer() ) return;
+			
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!me) return;
+			
+			me.MessageAction( data.param1 );
+		}
+		if(type == CallType.Server)
+		{
+			if(!target) return;
+			
+			PlayerBase targetBase = PlayerBase.Cast(target);
+			if(!targetBase) return;
+			if(!targetBase.GetIdentity()) return;
+			
+			string message = targetBase.GetIdentity().GetName() + ": " + data.param1;
+			
+			ref Param1<string> value_string = new Param1<string>(message);
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false );
+		}
+	}
 	
 	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
