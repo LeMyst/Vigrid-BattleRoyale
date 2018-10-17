@@ -45,7 +45,7 @@ class BattleRoyaleBase
 			if(!targetBase) return;
 			if(!targetBase.GetIdentity()) return;
 			
-			string message = targetBase.GetIdentity().GetName() + ": " + data.param1;
+			string message = "(Global) " + targetBase.GetIdentity().GetName() + ": " + data.param1;
 			
 			ref Param1<string> value_string = new Param1<string>(message);
 			
