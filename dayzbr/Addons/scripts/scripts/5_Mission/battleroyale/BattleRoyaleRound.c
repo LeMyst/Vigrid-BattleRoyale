@@ -284,7 +284,7 @@ class BattleRoyaleRound
 					{	
 						player.GetInventory().CreateInInventory(m_BattleRoyaleData.Player_Items[counter]);
 					}
-					
+					EmoteManager.m_Prepare_Players(true);
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", NULL, true, player.GetIdentity(), player );
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true, player.GetIdentity(), player );
 				}
@@ -481,6 +481,7 @@ class BattleRoyaleRound
 		
 		if(!RoundStarted)
 		{
+			EmoteManager.m_Prepare_Players(false);
 			//Round is over, clean up match,
 			round_CallQueue.Remove(this.CheckRoundEnd);
 			

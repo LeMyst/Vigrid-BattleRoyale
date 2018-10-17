@@ -150,7 +150,7 @@ class BattleRoyaleBase
 			player.GetInputController().OverrideMeleeEvade( data.param1, false );
 			player.GetInputController().OverrideRaise( data.param1, false );
 			player.GetInputController().OverrideMovementAngle( data.param1, 0 );
-			player.GetInputController().OverrideAimChangeY( data.param1, 0 );
+			//player.GetInputController().OverrideAimChangeY( data.param1, 0 ); //Don't use this as it causes aim bug?
 		}
 	}
 
