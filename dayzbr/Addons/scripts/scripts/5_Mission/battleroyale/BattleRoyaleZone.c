@@ -187,7 +187,7 @@ class BattleRoyaleZone
 
 		float max_playtime = m_BattleRoyaleData.shrink_max_playtime * 60; // default m = 30
 
-		Print("MINUTES UNTIL END " + (m_BattleRoyaleData.shrink_max_playtime - Math.Ceil(seconds / 60));
+		Print("MINUTES UNTIL END " + (m_BattleRoyaleData.shrink_max_playtime - Math.Ceil(seconds / 60)));
 
 		switch(m_BattleRoyaleData.shrink_type)
 		{
