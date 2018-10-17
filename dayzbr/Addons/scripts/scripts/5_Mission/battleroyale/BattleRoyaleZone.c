@@ -180,7 +180,7 @@ class BattleRoyaleZone
 		// since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
 		float seconds = (m_BattleRoyaleData.zone_lock_time + m_BattleRoyaleData.shrink_zone_every) * number_of_shrinks; // x
 
-		if(m_BattleRoyaleDatainclude_start_shrink_zone_in_roundtime > 0)
+		if(m_BattleRoyaleData.include_start_shrink_zone_in_roundtime > 0)
 		{
 			seconds = seconds + m_BattleRoyaleData.start_shrink_zone;
 		}
