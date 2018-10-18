@@ -261,6 +261,7 @@ class BattleRoyaleRound
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
+		EmoteManager.m_Prepare_Players(true);
 	}
 	
 	
@@ -284,7 +285,7 @@ class BattleRoyaleRound
 					{	
 						player.GetInventory().CreateInInventory(m_BattleRoyaleData.Player_Items[counter]);
 					}
-					EmoteManager.m_Prepare_Players(true);
+					
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeIn", NULL, true, player.GetIdentity(), player );
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true, player.GetIdentity(), player );
 				}
