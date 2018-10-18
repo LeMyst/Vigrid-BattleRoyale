@@ -261,6 +261,7 @@ class BattleRoyaleRound
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
+		EmoteManager.m_Prepare_Players(true);
 	}
 	
 	
@@ -481,6 +482,7 @@ class BattleRoyaleRound
 		
 		if(!RoundStarted)
 		{
+			EmoteManager.m_Prepare_Players(false);
 			//Round is over, clean up match,
 			round_CallQueue.Remove(this.CheckRoundEnd);
 			
