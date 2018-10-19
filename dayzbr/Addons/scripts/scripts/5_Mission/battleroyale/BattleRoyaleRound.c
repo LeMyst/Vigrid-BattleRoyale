@@ -36,7 +36,7 @@ class BattleRoyaleRound
 
 		// initialize with an ranzom zone just in case ...
 		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
-		m_BattleRoyaleZone.SetRound(this);//give the zone the round object
+		m_BattleRoyaleZone.SetRoundName(roundname);//give the zone the round object
 		Print("INITIALIZED ROUND WITH ZONE: " + m_BattleRoyaleZone.GetZoneName());
 
 		inProgress = false;
@@ -255,6 +255,7 @@ class BattleRoyaleRound
 
 		// get a zone
 		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
+		m_BattleRoyaleZone.SetRoundName(round_name); //Set round name for this new zone
 
 		// get all players
 		ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
