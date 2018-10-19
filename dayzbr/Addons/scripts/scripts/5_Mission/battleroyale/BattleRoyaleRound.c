@@ -511,11 +511,20 @@ class BattleRoyaleRound
 				PlayerBase winner = m_RoundPlayers.Get(0);
 				RoundStarted = false;
 				BRLOG("ROUND OVER");
-				SendMessage(winner,"YOU WIN DAYZ BR");
-				for(int j = 0; j < m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
+				if(winner)
 				{
-					PlayerBase loser = m_BattleRoyaleDebug.m_DebugPlayers.Get(j);
-					SendMessage(loser,"SOMEONE JUST WON DAYZ BR");
+					if(winner.GetIdentity())
+					{
+						SendMessageAll("ALL: " + winner.GetIdentity().GetName() + " JUST WON DAYZ BATTLE ROYALE");
+					}
+					else
+					{
+						SendMessageAll("ALL: UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
+					}
+				}
+				else
+				{
+					SendMessageAll("ALL: UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
 				}
 			}
 		}
