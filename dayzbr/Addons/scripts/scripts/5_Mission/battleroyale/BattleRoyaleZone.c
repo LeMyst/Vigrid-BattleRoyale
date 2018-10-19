@@ -112,7 +112,7 @@ class BattleRoyaleZone
 		zone_CallQueue = new ScriptCallQueue();
 		map_Buildings = new array<Object>();
 
-		isZoning = true;
+		isZoning = false;
 		number_of_shrinks = 0;
 		new_size = 0;
 		new_center = "0 0 0";
