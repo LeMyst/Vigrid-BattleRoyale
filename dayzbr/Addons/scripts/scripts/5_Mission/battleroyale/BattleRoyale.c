@@ -46,8 +46,8 @@ class BattleRoyale extends BattleRoyaleBase
 			m_BattleRoyaleDebug = new BattleRoyaleDebug(this);
 			m_BattleRoyaleZoneManager = new BattleRoyaleZoneManager(m_BattleRoyaleData);
 
-			m_BattleRoyaleRound = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager);
-			m_BattleRoyaleRound_2 = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager);
+			m_BattleRoyaleRound = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND 1");
+			m_BattleRoyaleRound_2 = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND 2");
 			
 			br_CallQueue = new ScriptCallQueue(); 
 		} else
