@@ -515,16 +515,16 @@ class BattleRoyaleRound
 				{
 					if(winner.GetIdentity())
 					{
-						SendMessageAll("ALL: " + winner.GetIdentity().GetName() + " JUST WON DAYZ BATTLE ROYALE");
+						SendMessageAll("ALL: " + round_name + ": " + winner.GetIdentity().GetName() + " JUST WON DAYZ BATTLE ROYALE");
 					}
 					else
 					{
-						SendMessageAll("ALL: UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
+						SendMessageAll("ALL: " + round_name + ": UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
 					}
 				}
 				else
 				{
-					SendMessageAll("ALL: UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
+					SendMessageAll("ALL: " + round_name + ": UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
 				}
 			}
 		}
