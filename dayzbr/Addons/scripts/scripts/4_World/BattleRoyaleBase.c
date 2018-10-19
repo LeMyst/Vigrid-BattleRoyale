@@ -14,6 +14,7 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeOut", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EnterSpectator", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "LeaveSpectator", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", this)
 	}
 
 	bool allowFallDamage(PlayerBase plr)
@@ -21,6 +22,14 @@ class BattleRoyaleBase
 		return true;
 	}	
 	
+	void SetRoundForPlayer(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+		
+		PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+		me.my_round = data.param1;
+	}
 	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 		Param1< string > data;
@@ -28,7 +37,23 @@ class BattleRoyaleBase
         
 		if( GetGame() )
 		{
-			GetGame().Chat( data.param1, "colorImportant" );
+			string msg = data.param1;
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!msg.Contains("ALL: "))
+			{
+				if(me.my_round)
+				{
+					if(msg.Contains(me.my_round))
+					{
+						GetGame().Chat( data.param1, "colorImportant" );
+					}
+				}
+			}
+			else
+			{
+				GetGame().Chat( data.param1, "colorImportant" );
+			}
 		}
 	}
 

@@ -34,7 +34,7 @@ class BattleRoyaleDebug
 			//if we are waiting for more players
 			if(players_needed > 0)
 			{
-				SendMessageAll("DAYZBR: WAITING FOR " + players_needed.ToString() + " PLAYER(S)...",false);
+				SendMessageAll("ALL: DAYZBR: WAITING FOR " + players_needed.ToString() + " PLAYER(S)...",false);
 			}
 			
 		}

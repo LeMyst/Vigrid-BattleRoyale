@@ -36,7 +36,7 @@ class BattleRoyaleRound
 
 		// initialize with an ranzom zone just in case ...
 		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
-		m_BattleRoyaleZone.SetRoundName(roundname);//give the zone the round object
+		m_BattleRoyaleZone.SetRoundName(round_name);//give the zone the round object
 		Print("INITIALIZED ROUND WITH ZONE: " + m_BattleRoyaleZone.GetZoneName());
 
 		inProgress = false;
@@ -244,7 +244,7 @@ class BattleRoyaleRound
 	{
 		inProgress = true;
 		
-		SendMessageAll(round_name + ": " + "DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
+		SendMessageAll("ALL: " + round_name + ": " + "DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
 		
 		round_CallQueue.CallLater(this.StartRound, m_BattleRoyaleData.start_timer * 1000, false);
 	}
@@ -280,6 +280,8 @@ class BattleRoyaleRound
 				PlayerBase player = m_RoundPlayers.Get(master_index);
 				if(player)
 				{
+					// notify the player which round messages they should get
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", new Param1<string>(round_name), true, player.GetIdentity(),player);
 					HealPlayer(player);
 					
 					player.RemoveAllItems();
