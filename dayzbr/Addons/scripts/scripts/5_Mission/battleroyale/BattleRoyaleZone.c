@@ -75,7 +75,8 @@ class BattleRoyaleZoneManager
 
 	ref BattleRoyaleZone getRandomZoneFromPool()
 	{
-		BattleRoyaleZone zone = ZoneList.Get(Math.RandomInt(0,ZoneList.Count()));
+		//store by reference maybe?
+		ref BattleRoyaleZone zone = ZoneList.Get(Math.RandomInt(0,ZoneList.Count()));
 		if(zone.isZoning)
 			return getRandomZoneFromPool(); //recursively call this method until we find a zone not in use (otherwise something fucked up)
 		else
