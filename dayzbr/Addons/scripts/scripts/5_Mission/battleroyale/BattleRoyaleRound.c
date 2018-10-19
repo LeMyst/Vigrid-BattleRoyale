@@ -27,7 +27,7 @@ class BattleRoyaleRound
 	
 	string round_name;
 	
-	void BattleRoyaleRound(StaticBRData staticdata, BattleRoyaleDebug debugarea, BattleRoyaleZoneManager zonemanager, string roundname)
+	void BattleRoyaleRound(StaticBRData staticdata, BattleRoyaleDebug debugarea, ref BattleRoyaleZoneManager zonemanager, string roundname)
 	{
 		round_name = roundname;
 		m_BattleRoyaleData = staticdata;

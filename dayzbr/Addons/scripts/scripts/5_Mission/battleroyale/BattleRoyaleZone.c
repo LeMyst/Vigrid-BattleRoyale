@@ -72,15 +72,20 @@ class BattleRoyaleZoneManager
 			Print("INITIALIZED ZONE: " + zone.GetZoneName());
 		}
 	}
-
+	
 	ref BattleRoyaleZone getRandomZoneFromPool()
 	{
-		//store by reference maybe?
-		ref BattleRoyaleZone zone = ZoneList.Get(Math.RandomInt(0,ZoneList.Count()));
-		if(zone.isZoning)
-			return getRandomZoneFromPool(); //recursively call this method until we find a zone not in use (otherwise something fucked up)
-		else
-			return zone;
+		int index = Math.RandomInt(0,ZoneList.Count());
+		ref BattleRoyaleZone zone = ZoneList.Get(index);
+		
+		//Find a zone that is not currently active
+		while(zone.isZoning)
+		{
+			index = Math.RandomInt(0,ZoneList.Count());
+			zone = ZoneList.Get(index);
+		}
+		
+		return ZoneList.Get(index);
 	}
 }
 
@@ -232,12 +237,13 @@ class BattleRoyaleZone
 	void StartZoning()
 	{
 		//Reset the zone locations
+		isZoning = true;
 		this.current_size = GetMaxSize();
 		this.current_center = GetCenter();
 		this.number_of_shrinks = 0;
 
 		zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.start_shrink_zone * 1000, false);
-		isZoning = true;
+		
 	}
 	void StopZoning()
 	{
