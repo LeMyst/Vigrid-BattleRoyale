@@ -75,7 +75,11 @@ class BattleRoyaleZoneManager
 
 	ref BattleRoyaleZone getRandomZoneFromPool()
 	{
-		return ZoneList.Get(Math.RandomInt(0,ZoneList.Count()));
+		BattleRoyaleZone zone = ZoneList.Get(Math.RandomInt(0,ZoneList.Count()));
+		if(zone.isZoning)
+			return getRandomZoneFromPool(); //recursively call this method until we find a zone not in use (otherwise something fucked up)
+		
+		return zone;
 	}
 }
 
@@ -84,7 +88,8 @@ class BattleRoyaleZone
 	ref ScriptCallQueue zone_CallQueue;
 	ref StaticBRData m_BattleRoyaleData;
 	ref BattleRoyaleZoneData m_BattleRoyaleZoneData;
-
+	ref BattleRoyaleRound m_BattleRoyaleRound;
+	
 	ref array<Object> map_Buildings;
 
 	vector current_center;
@@ -96,6 +101,12 @@ class BattleRoyaleZone
 
 	bool isZoning;
 
+	
+	void SetRound(BattleRoyaleRound round)
+	{
+		m_BattleRoyaleRound = round;
+	}
+	
 	void BattleRoyaleZone(StaticBRData staticdata, BattleRoyaleZoneData zonedata)
 	{
 		zone_CallQueue = new ScriptCallQueue();
@@ -250,7 +261,7 @@ class BattleRoyaleZone
 			sTime = sTime + " MINUTES.";
 		}
 
-		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
+		SendMessageAll(m_BattleRoyaleRound.round_name + ": THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
 		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
 
 		//Calculate new size on lock
@@ -289,7 +300,7 @@ class BattleRoyaleZone
 	}
 	void Lock_Zone()
 	{
-		SendMessageAll("THE ZONE HAS BEEN LOCKED IN.");
+		SendMessageAll(m_BattleRoyaleRound.round_name + ": THE ZONE HAS BEEN LOCKED IN.");
 
 		current_center = new_center;
 		current_size = new_size;

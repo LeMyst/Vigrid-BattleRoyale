@@ -27,8 +27,8 @@ class BattleRoyaleDebug
 	
 	void OnDebugMessage()
 	{
-		//if we are not waiting for a round to end
-		if(!br_game.m_BattleRoyaleRound.inProgress)
+		//if we are not waiting for either round to end
+		if(!br_game.m_BattleRoyaleRound.inProgress && !br_game.m_BattleRoyaleRound_2.inProgress)
 		{
 			int players_needed = br_game.m_BattleRoyaleData.minimum_players - m_DebugPlayers.Count();
 			//if we are waiting for more players
