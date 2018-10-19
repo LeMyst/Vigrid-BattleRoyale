@@ -46,13 +46,15 @@ class BattleRoyaleBase
 				{
 					if(msg.Contains(me.my_round))
 					{
-						GetGame().Chat( data.param1, "colorImportant" );
+						msg.Replace(me.my_round + ": ","");
+						GetGame().Chat( msg, "colorImportant" );
 					}
 				}
 			}
 			else
 			{
-				GetGame().Chat( data.param1, "colorImportant" );
+				msg.Replace("ALL: ","");
+				GetGame().Chat( msg, "colorImportant" );
 			}
 		}
 	}
