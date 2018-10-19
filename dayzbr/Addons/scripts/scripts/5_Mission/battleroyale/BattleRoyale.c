@@ -92,7 +92,7 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		if ( !GetGame().IsServer() ) return;
 
-		if(!m_BattleRoyaleRound.inProgress)
+		if(!m_BattleRoyaleRound.inProgress && (m_BattleRoyaleRound_2.RoundStarted || !m_BattleRoyaleRound_2.inProgress))
 		{
 			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
 			{
@@ -100,7 +100,7 @@ class BattleRoyale extends BattleRoyaleBase
 				m_BattleRoyaleRound.PlayerCountReached();
 			}
 		}
-		else if(!m_BattleRoyaleRound_2.inProgress)
+		else if(!m_BattleRoyaleRound_2.inProgress && (m_BattleRoyaleRound.RoundStarted || !m_BattleRoyaleRound.inProgress))
 		{
 			//if round 1 is in progress, try using round 2
 			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
