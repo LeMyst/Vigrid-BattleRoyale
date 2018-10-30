@@ -26,6 +26,8 @@ class StaticBRData
     int start_shrink_zone = 120; // Measured in seconds
 	int shrink_zone_every = 120; // Measured in seconds
 
+	int include_start_shrink_zone_in_roundtime = 1; // 0 == off, 1 == on
+
     static ref StaticBRData LoadDataServer()
     {
         ref StaticBRData data = new ref StaticBRData;

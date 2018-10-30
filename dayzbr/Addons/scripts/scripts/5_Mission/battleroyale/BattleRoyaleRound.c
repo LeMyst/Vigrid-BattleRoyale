@@ -265,6 +265,7 @@ class BattleRoyaleRound
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
+		EmoteManager.m_Prepare_Players(true);
 	}
 	
 	
@@ -458,6 +459,12 @@ class BattleRoyaleRound
 		BRLOG("LET THE GAMES BEGIN");
 		SendMessageAll(round_name + ": " + "LET THE GAMES BEGIN");
 
+		
+		// This is absolutely not acceptable. It needs to be taken out of production immediately
+		// Note for everyone in the future
+		// DO NOT EVER ITERATE AN ENTIRE ARRAY ON A SINGLE FRAME
+		// YOU WILL DESTROY THE DAYZ SERVERS PERFORMANCE FOR UPWARDS OF 30 SECONDS
+		// DO NOT DO THIS
 		for(int i = 0; i < m_RoundPlayers.Count(); i++)
 		{
 			PlayerBase player = m_RoundPlayers.Get( i );
@@ -481,6 +488,7 @@ class BattleRoyaleRound
 		
 		if(!RoundStarted)
 		{
+			EmoteManager.m_Prepare_Players(false);
 			//Round is over, clean up match,
 			round_CallQueue.Remove(this.CheckRoundEnd);
 			

@@ -195,8 +195,16 @@ class BattleRoyaleZone
 	float GetNewZoneSize()
 	{
 		// since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
-		float minutes = Math.Ceil(m_BattleRoyaleData.start_shrink_zone / 60) + (Math.Ceil(m_BattleRoyaleData.zone_lock_time / 60) + Math.Ceil(m_BattleRoyaleData.shrink_zone_every / 60)) * number_of_shrinks; // x
-		Print("MINUTES UNTIL END " + (m_BattleRoyaleData.shrink_max_playtime - minutes));
+		float seconds = (m_BattleRoyaleData.zone_lock_time + m_BattleRoyaleData.shrink_zone_every) * number_of_shrinks; // x
+
+		if(m_BattleRoyaleData.include_start_shrink_zone_in_roundtime > 0)
+		{
+			seconds = seconds + m_BattleRoyaleData.start_shrink_zone;
+		}
+
+		float max_playtime = m_BattleRoyaleData.shrink_max_playtime * 60; // default m = 30
+
+		Print("MINUTES UNTIL END " + (m_BattleRoyaleData.shrink_max_playtime - Math.Ceil(seconds / 60)));
 
 		switch(m_BattleRoyaleData.shrink_type)
 		{
@@ -204,21 +212,20 @@ class BattleRoyaleZone
 				// code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
 				float base = m_BattleRoyaleData.shrink_base; // default 2.718281828459 ~ e
 				float exponent = m_BattleRoyaleData.shrink_exponent; // default 3
-				float max_playtime = m_BattleRoyaleData.shrink_max_playtime; // default m = 30
 				float play_area_size = m_BattleRoyaleData.play_area_size; // default r = 500
 
 				float yoffset = -1.0 * Math.Pow(base, exponent);
 				float zonesizefactor = play_area_size / yoffset;
-				float shrinkexponent = (exponent / max_playtime) * minutes;
+				float shrinkexponent = (exponent / max_playtime) * seconds;
 				float shrinkfactor = Math.Pow(base, shrinkexponent) + yoffset;
 
 				return zonesizefactor * shrinkfactor;
 
 			case 2: // linear
 				// code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
-				float gradient = -1.0 * (m_BattleRoyaleData.play_area_size / m_BattleRoyaleData.shrink_max_playtime);
+				float gradient = -1.0 * (m_BattleRoyaleData.play_area_size / max_playtime);
 
-				return gradient * minutes + m_BattleRoyaleData.play_area_size;
+				return gradient * seconds + m_BattleRoyaleData.play_area_size;
 
 			default: // shrink by constant factor each tick
 				return GetCurrentSize() * GetShrinkCoefficient();
@@ -274,6 +281,8 @@ class BattleRoyaleZone
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
 
+		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
+
 		if ( new_size < 18 )
 		{
 			new_size = 18;
@@ -302,8 +311,12 @@ class BattleRoyaleZone
 
 		HandleMarkers();
 
-		//Queue up the lock
-		zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
+		// stop zone shrink once the min value is reached
+		if (new_size > 18)
+		{
+			//Queue up the lock
+			zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
+		}
 	}
 	void Lock_Zone()
 	{

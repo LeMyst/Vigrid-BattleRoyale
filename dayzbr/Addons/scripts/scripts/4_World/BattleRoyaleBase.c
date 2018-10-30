@@ -17,13 +17,13 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", this);
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", this );
 	}
 
 	bool allowFallDamage(PlayerBase plr)
 	{
 		return true;
 	}	
-	
 	
 	void SetRoundForPlayer(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
@@ -34,6 +34,37 @@ class BattleRoyaleBase
 		me.my_round = data.param1;
 	}
 	
+	
+	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+	
+		if(type == CallType.Client)
+		{
+			if(! GetGame().GetPlayer() ) return;
+			
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!me) return;
+			
+			me.MessageAction( data.param1 );
+		}
+		if(type == CallType.Server)
+		{
+			if(!target) return;
+			
+			PlayerBase targetBase = PlayerBase.Cast(target);
+			if(!targetBase) return;
+			if(!targetBase.GetIdentity()) return;
+			
+			string message = "(Global) " + targetBase.GetIdentity().GetName() + ": " + data.param1;
+			
+			ref Param1<string> value_string = new Param1<string>(message);
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false );
+		}
+	}
 	void SetShirtTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1< string > data;
@@ -98,9 +129,7 @@ class BattleRoyaleBase
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", value_string, false , NULL, targetBase);
 		}
 	}
-
-	
-	
+		
 	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 		Param1< string > data;
@@ -216,7 +245,7 @@ class BattleRoyaleBase
 			player.GetInputController().OverrideMeleeEvade( data.param1, false );
 			player.GetInputController().OverrideRaise( data.param1, false );
 			player.GetInputController().OverrideMovementAngle( data.param1, 0 );
-			player.GetInputController().OverrideAimChangeY( data.param1, 0 );
+			//player.GetInputController().OverrideAimChangeY( data.param1, 0 ); //Don't use OverrideAimChangeY as it causes Aiming bug?
 		}
 	}
 
