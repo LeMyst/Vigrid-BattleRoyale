@@ -2309,7 +2309,7 @@ class CfgLoot
 {
 	class Weapons
 	{
-		num_items = 24;
+		num_items = 26;
 		Gear_1[] = {"M4A1_Black","ACOGOptic","Mag_STANAG_30Rnd","Mag_STANAG_30Rnd"};
 		Gear_2[] = {"M4A1","ACOGOptic","Mag_STANAG_30Rnd"};
 		Gear_3[] = {"M4A1","Mag_STANAG_30Rnd"};
@@ -2334,6 +2334,8 @@ class CfgLoot
 		Gear_22[] = {"Mag_STANAGCoupled_30Rnd","Ammo_45ACP","Mag_MP5_30Rnd"};
 		Gear_23[] = {"Mag_STANAG_30Rnd","Ammo_45ACP","Mag_MP5_30Rnd"};
 		Gear_24[] = {"Mag_STANAG_30Rnd","Mag_MP5_30Rnd","Ammo_556x45"};
+		Gear_25[] = {"Mosin9130","DBR_HuntingOptic","Ammo_762x54",};
+		Gear_26[] = {"Mosin9130","DBR_LongrangeOptic","Ammo_762x54"};
 	};
 	
 	class Medical
