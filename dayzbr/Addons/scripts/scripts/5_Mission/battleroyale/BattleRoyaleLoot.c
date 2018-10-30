@@ -78,16 +78,6 @@ class BattleRoyaleLoot
 		ref array<EntityAI> SpawnedItems = SpawnLootAt(Items,world_pos);
 		last_round_items.InsertAll(SpawnedItems); //add to garbage collection
 	}
-	
-	void SpawnM4()
-	{
-
-	}
-
-	void SpawnAKM()
-	{
-
-	}
 
 	array<EntityAI> SpawnLootAt(array<string> itemList,vector world_pos)
 	{
