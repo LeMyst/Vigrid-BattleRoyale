@@ -16,6 +16,7 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "LeaveSpectator", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", this);
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", this);
 	}
 
 	bool allowFallDamage(PlayerBase plr)
