@@ -78,7 +78,7 @@ class BattleRoyaleLoot
 		ref array<EntityAI> SpawnedItems = SpawnLootAt(Items,world_pos);
 		last_round_items.InsertAll(SpawnedItems); //add to garbage collection
 	}
-	
+
 	array<EntityAI> SpawnLootAt(array<string> itemList,vector world_pos)
 	{
 		ref array<EntityAI> outItems = new array<EntityAI>();
@@ -86,9 +86,31 @@ class BattleRoyaleLoot
 		for(int i = 0; i < itemList.Count();i++)
 		{
 			string itemName = itemList.Get(i);
-			Object obj = GetGame().CreateObject(itemName,world_pos);
+
+			Object obj;
+			EntityAI item;
+			if(itemName.Contains("M4A1"))
+			{
+				item = GetGame().CreateObject(itemName,world_pos);
+				//item.GetInventory().CreateAttachment("M4_Suppressor");
+				//item.GetInventory().CreateAttachment("M4_CarryHandleOptic");
+				item.GetInventory().CreateAttachment("M4_MPBttstck_Black");
+				item.GetInventory().CreateAttachment("M4_RISHndgrd_Black");
+			}
+			else if(itemName == ("AKM"))
+			{
+				item = GetGame().CreateObject(itemName,world_pos);
+				//item.GetInventory().CreateAttachment("AK_Suppressor");
+				item.GetInventory().CreateAttachment("AK_PlasticBttstck_Black");
+				item.GetInventory().CreateAttachment("AK_RailHndgrd_Black");
+			}
+			else
+			{
+				obj = GetGame().CreateObject(itemName,world_pos);
+				item = EntityAI.Cast(obj);
+			}
+			
 			//obj.PlaceOnSurface();
-			EntityAI item = EntityAI.Cast(obj);
 			
 			outItems.Insert(item);
 		}
