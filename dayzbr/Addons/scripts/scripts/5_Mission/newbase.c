@@ -99,6 +99,7 @@ modded class MissionBase
 		//ADDED BY DAYZBR
 		case MENU_SKINS:
 			menu = new SkinMenu(this);
+			break;
 		case MENU_GESTURES:
 			menu = new NewGesturesMenu(this);
 			break;	

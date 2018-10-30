@@ -14,13 +14,15 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ScreenFadeOut", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EnterSpectator", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "LeaveSpectator", this );
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", this)
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", this);
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", this);
 	}
 
 	bool allowFallDamage(PlayerBase plr)
 	{
 		return true;
 	}	
+	
 	
 	void SetRoundForPlayer(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
@@ -30,6 +32,74 @@ class BattleRoyaleBase
 		PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
 		me.my_round = data.param1;
 	}
+	
+	void SetShirtTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+		
+		if(!target) return;
+			
+		PlayerBase targetBase = PlayerBase.Cast(target);
+		
+		if(!targetBase) return;
+		
+		//rebroadcast from server to client
+		HumanInventory inv = targetBase.GetHumanInventory();
+		if(inv)
+		{
+			//set weapon in hand texture
+			EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
+			if(shirt) 
+			{
+				shirt.SetObjectTexture(0,data.param1);
+				shirt.SetObjectTexture(1,data.param1);
+				shirt.SetObjectTexture(2,data.param1);
+			}
+		}
+		
+		if(type == CallType.Server)
+		{
+			
+			ref Param1<string> value_string = new Param1<string>(data.param1);
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", value_string, false , NULL, targetBase);
+		}
+	}
+	void SetWeaponTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+		
+		if(!target) return;
+			
+		PlayerBase targetBase = PlayerBase.Cast(target);
+		
+		if(!targetBase) return;
+		
+		//rebroadcast from server to client
+		HumanInventory inv = targetBase.GetHumanInventory();
+		if(inv)
+		{
+			//set weapon in hand texture
+			EntityAI itemInHands = inv.GetEntityInHands();
+			if(itemInHands) 
+			{
+				itemInHands.SetObjectTexture(0,data.param1);
+			}
+		}
+		
+		if(type == CallType.Server)
+		{
+			
+			ref Param1<string> value_string = new Param1<string>(data.param1);
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", value_string, false , NULL, targetBase);
+		}
+	}
+
+	
+	
 	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 		Param1< string > data;

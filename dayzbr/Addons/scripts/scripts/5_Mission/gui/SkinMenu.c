@@ -157,14 +157,14 @@ class SkinMenu extends UIScriptedMenu
 	//============================================
 	override Widget Init()
 	{
-		layoutRoot = GetGame().GetWorkspace().CreateWidgets( "gui/layouts/radial_menu/radial_Skins/day_z_Skins.layout" );
+		layoutRoot = GetGame().GetWorkspace().CreateWidgets( "gui/layouts/radial_menu/radial_gestures/day_z_gestures.layout" );
 		m_SkinItemCardPanel = layoutRoot.FindAnyWidget( RadialMenu.RADIAL_ITEM_CARD_CONTAINER );
 
 		//register Skins menu
 		RadialMenu.GetInstance().RegisterClass( this );
 		
 		//set radial menu properties
-		RadialMenu.GetInstance().SetWidgetProperties( "gui/layouts/radial_menu/radial_Skins/day_z_Skin_delimiter.layout" );
+		RadialMenu.GetInstance().SetWidgetProperties( "gui/layouts/radial_menu/radial_gestures/day_z_gesture_delimiter.layout" );
 		
 		//create content (widgets) for items
 		RefreshSkins();
@@ -203,7 +203,7 @@ class SkinMenu extends UIScriptedMenu
 			SkinMenuItem Skin_item = m_SkinItems.Get( i );
 			
 			//create item card
-			Widget skin_item_card_widget = Widget.Cast( GetGame().GetWorkspace().CreateWidgets( "gui/layouts/radial_menu/radial_Skins/day_z_Skin_item_card.layout", m_SkinItemCardPanel ) );
+			Widget skin_item_card_widget = Widget.Cast( GetGame().GetWorkspace().CreateWidgets( "gui/layouts/radial_menu/radial_gestures/day_z_gesture_item_card.layout", m_SkinItemCardPanel ) );
 			Skin_item.SetRadialItemCard( skin_item_card_widget );
 			
 			//set text
@@ -250,20 +250,13 @@ class SkinMenu extends UIScriptedMenu
 	{
 		Skin_items.Clear();
 		
-		//PC PLATFORM
 		//All categories
 		if ( category == SkinCategories.CATEGORIES )
 		{
 			//Skin Categories (different items you can skin on your person)
-			/*
-			get the current weapon classname and check if it is of this type (this type or a child of this)
-				class Mosin9130
-				class M4A1
-				class AKM
-			*/
-			Skin_items.Insert( new SkinMenuItem( SkinCategories.MOSIN_SKIN, "Mosin",	SkinCategories.CATEGORIES ) );
-			Skin_items.Insert( new SkinMenuItem( SkinCategories.M4_SKIN, "M4", 	SkinCategories.CATEGORIES ) );
-			Skin_items.Insert( new SkinMenuItem( SkinCategories.AKM_SKIN, "AKM", 	SkinCategories.CATEGORIES ) );
+			Skin_items.Insert( new SkinMenuItem( SkinCategories.MOSIN_SKIN, "Mosin",	SkinCategories.CATEGORIES, IsMosin() ) );
+			Skin_items.Insert( new SkinMenuItem( SkinCategories.M4_SKIN, "M4", 	SkinCategories.CATEGORIES, IsM4() ) );
+			Skin_items.Insert( new SkinMenuItem( SkinCategories.AKM_SKIN, "AKM", 	SkinCategories.CATEGORIES, IsAKM() ) );
 			Skin_items.Insert( new SkinMenuItem( SkinCategories.STANDARD_SKIN, "Standard", SkinCategories.CATEGORIES ) );
 			Skin_items.Insert( new SkinMenuItem( SkinCategories.SHIRT_SKIN, "Shirt", 	SkinCategories.CATEGORIES ) );
 		}
@@ -392,13 +385,180 @@ class SkinMenu extends UIScriptedMenu
 		string texture = "#(argb,8,8,3)color(1,1,1,1,ca)";
 		switch(tType)
 		{
-			case TextureTypes.MOSIN_Asiimov:
+			//Standard colors
+			case TextureTypes.STANDARD_Red:
 				texture = "#(argb,8,8,3)color(1,0,0,1,ca)";
+				break;
+			case TextureTypes.STANDARD_Green:
+				texture = "#(argb,8,8,3)color(0,1,0,1,ca)";
+				break;
+			case TextureTypes.STANDARD_Blue:
+				texture = "#(argb,8,8,3)color(0,0,1,1,ca)";
+				break;
+			case TextureTypes.STANDARD_Black:
+				texture = "#(argb,8,8,3)color(0,0,0,1,ca)";
+				break;
+			case TextureTypes.STANDARD_White:
+				texture = "#(argb,8,8,3)color(1,1,1,1,ca)";
+				break;
+				
+			//Shirt Colors
+			case TextureTypes.SHIRT_DBR:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_black_DBR.paa";
+				break;
+			case TextureTypes.SHIRT_DBRv2:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_black_DBRv2.paa";
+				break;
+			case TextureTypes.SHIRT_DSR:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_white_DSR.paa";
+				break;
+			case TextureTypes.SHIRT_Gibs:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_orange_gibs.paa";
+				break;
+			case TextureTypes.SHIRT_KLove:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_black_KLove.paa";
+				break;
+			case TextureTypes.SHIRT_Kegan:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_black_kegan.paa";
+				break;
+				
+			//Mosin Colors
+			case TextureTypes.MOSIN_Asiimov:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_asiimov.paa";
+				break;
+			case TextureTypes.MOSIN_Desert:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_desertcamo.paa";
+				break;
+			case TextureTypes.MOSIN_Digital:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_digicamo.paa";
+				break;
+			case TextureTypes.MOSIN_Dirt:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_dirtcamo.paa";
+				break;
+			case TextureTypes.MOSIN_Hunter:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_camo.paa";
+				break;
+			case TextureTypes.MOSIN_Snow:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_snow.paa";
+				break;
+			case TextureTypes.MOSIN_Wood:
+				texture = "dayzbr\\assets\\textures\\mosin\\mosin_9130_woodcamo.paa";
+				break;
+				
+			//AKM Colors
+			case TextureTypes.AKM_Asiimov:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_asiimov.paa";
+				break;
+			case TextureTypes.AKM_Desert:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_desertcamo.paa";
+				break;
+			case TextureTypes.AKM_Digital:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_digicamo.paa";
+				break;
+			case TextureTypes.AKM_Dirt:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_dirtcamo.paa";
+				break;
+			case TextureTypes.AKM_Hunter:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_camo.paa";
+				break;
+			case TextureTypes.AKM_Snow:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_snowcamo.paa";
+				break;
+			case TextureTypes.AKM_Wood:
+				texture = "dayzbr\\assets\\textures\\akm\\akm_woodcamo.paa";
+				break;
+				
+			//M4 Colors
+			case TextureTypes.M4_Asiimov:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_asiimov.paa";
+				break;
+			case TextureTypes.M4_Desert:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_desertcamo.paa";
+				break;
+			case TextureTypes.M4_Digital:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_digicamo.paa";
+				break;
+			case TextureTypes.M4_Dirt:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_dirtcamo.paa";
+				break;
+			case TextureTypes.M4_Hunter:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_camo.paa";
+				break;
+			case TextureTypes.M4_Snow:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_snowcamo.paa";
+				break;
+			case TextureTypes.M4_Wood:
+				texture = "dayzbr\\assets\\textures\\m4\\m4_body_woodcamo.paa";
 				break;
 		}
 		
 		return texture;
 	}
+	
+	bool IsMosin()
+	{
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+		if(!player)
+			return false;
+		
+		HumanInventory inv = player.GetHumanInventory();
+		if(!inv)
+			return false;
+		
+		EntityAI itemInHands = inv.GetEntityInHands();
+		if(!itemInHands)
+			return false;
+		
+		Mosin9130 result;
+		if(Mosin9130.CastTo(result, itemInHands))
+		{
+			return true;
+		}
+		return false;
+	}
+	bool IsM4()
+	{
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+		if(!player)
+			return false;
+		
+		HumanInventory inv = player.GetHumanInventory();
+		if(!inv)
+			return false;
+		
+		EntityAI itemInHands = inv.GetEntityInHands();
+		if(!itemInHands)
+			return false;
+		
+		M4A1 result;
+		if(M4A1.CastTo(result, itemInHands))
+		{
+			return true;
+		}
+		return false;
+	}
+	bool IsAKM()
+	{
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+		if(!player)
+			return false;
+		
+		HumanInventory inv = player.GetHumanInventory();
+		if(!inv)
+			return false;
+		
+		EntityAI itemInHands = inv.GetEntityInHands();
+		if(!itemInHands)
+			return false;
+		
+		AKM result;
+		if(AKM.CastTo(result, itemInHands))
+		{
+			return true;
+		}
+		return false;
+	}
+	
 	void OnReleaseExecute()
 	{
 		if ( m_SelectedItem )
@@ -414,22 +574,30 @@ class SkinMenu extends UIScriptedMenu
 				
 					if ( Skin_item ) 
 					{
-						if(Skin_item.GetCategory() != SkinCategories.SHIRT_SKIN)
+						HumanInventory inv = player.GetHumanInventory();
+						if(inv)
 						{
-							HumanInventory inv = player.GetHumanInventory();
-							if(inv)
+							if(Skin_item.GetCategory() != SkinCategories.SHIRT_SKIN)
 							{
-								//set weapon in hand texture
-								EntityAI itemInHands = inv.GetEntityInHands();
-								if(itemInHands) 
+								
+									//set weapon in hand texture
+									EntityAI itemInHands = inv.GetEntityInHands();
+									if(itemInHands) 
+									{
+										ref Param1<string> value_string = new Param1<string>(GetTexture(Skin_item.GetID()));
+										GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", value_string, false , NULL, player);
+									}
+							}
+							else
+							{
+								EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
+								if(shirt)
 								{
-									itemInHands.SetObjectTexture(0,GetTexture(Skin_item.GetID()));
+									ref Param1<string> value_string = new Param1<string>(GetTexture(Skin_item.GetID()));
+									GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", value_string, false , NULL, player);
 								}
 							}
-						}
-						else
-						{
-							//Skin current shirt
+						
 						}
 					}
 				}
