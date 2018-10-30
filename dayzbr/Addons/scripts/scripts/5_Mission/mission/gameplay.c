@@ -28,6 +28,14 @@ modded class MissionGameplay
 				NewGesturesMenu.OpenMenu();
 			}
 		}
+		if( key == KeyCode.KC_COMMA )
+		{
+			if ( !GetUIManager().IsMenuOpen( MENU_SKINS ) )
+			{
+				
+				SkinMenu.OpenMenu();
+			}
+		}
 	}
 	override void OnKeyRelease(int key)
 	{
@@ -38,6 +46,13 @@ modded class MissionGameplay
 			if ( GetUIManager().IsMenuOpen( MENU_GESTURES ) )
 			{
 				NewGesturesMenu.CloseMenu();
+			}
+		}
+		if ( key == KeyCode.KC_COMMA )
+		{
+			if ( GetUIManager().IsMenuOpen( MENU_SKINS ) )
+			{
+				SkinMenu.CloseMenu();
 			}
 		}
 	}

@@ -5,6 +5,8 @@ modded class PlayerBase
 	float timeTillNextHealTick = 0;
 	float timeTillNextDmgTick = 0;
 	
+	string my_round;
+	
 	ref BattleRoyaleBase BR_BASE;
 	
 	void OnScheduledTick(float deltaTime)

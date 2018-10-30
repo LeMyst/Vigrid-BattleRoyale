@@ -72,10 +72,20 @@ class BattleRoyaleZoneManager
 			Print("INITIALIZED ZONE: " + zone.GetZoneName());
 		}
 	}
-
+	
 	ref BattleRoyaleZone getRandomZoneFromPool()
 	{
-		return ZoneList.Get(Math.RandomInt(0,ZoneList.Count()));
+		int index = Math.RandomInt(0,ZoneList.Count());
+		ref BattleRoyaleZone zone = ZoneList.Get(index);
+		
+		//Find a zone that is not currently active
+		while(zone.isZoning)
+		{
+			index = Math.RandomInt(0,ZoneList.Count());
+			zone = ZoneList.Get(index);
+		}
+		
+		return ZoneList.Get(index);
 	}
 }
 
@@ -84,7 +94,7 @@ class BattleRoyaleZone
 	ref ScriptCallQueue zone_CallQueue;
 	ref StaticBRData m_BattleRoyaleData;
 	ref BattleRoyaleZoneData m_BattleRoyaleZoneData;
-
+	
 	ref array<Object> map_Buildings;
 
 	vector current_center;
@@ -96,12 +106,19 @@ class BattleRoyaleZone
 
 	bool isZoning;
 
+	string round_name;
+	
+	void SetRoundName(string name)
+	{
+		round_name = name;
+	}
+	
 	void BattleRoyaleZone(StaticBRData staticdata, BattleRoyaleZoneData zonedata)
 	{
 		zone_CallQueue = new ScriptCallQueue();
 		map_Buildings = new array<Object>();
 
-		isZoning = true;
+		isZoning = false;
 		number_of_shrinks = 0;
 		new_size = 0;
 		new_center = "0 0 0";
@@ -227,12 +244,13 @@ class BattleRoyaleZone
 	void StartZoning()
 	{
 		//Reset the zone locations
+		isZoning = true;
 		this.current_size = GetMaxSize();
 		this.current_center = GetCenter();
 		this.number_of_shrinks = 0;
 
 		zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.start_shrink_zone * 1000, false);
-		isZoning = true;
+		
 	}
 	void StopZoning()
 	{
@@ -257,7 +275,8 @@ class BattleRoyaleZone
 			sTime = sTime + " MINUTES.";
 		}
 
-		SendMessageAll("THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
+		SendMessageAll(round_name + ": THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
+		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
 
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
@@ -301,7 +320,7 @@ class BattleRoyaleZone
 	}
 	void Lock_Zone()
 	{
-		SendMessageAll("THE ZONE HAS BEEN LOCKED IN.");
+		SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN.");
 
 		current_center = new_center;
 		current_size = new_size;

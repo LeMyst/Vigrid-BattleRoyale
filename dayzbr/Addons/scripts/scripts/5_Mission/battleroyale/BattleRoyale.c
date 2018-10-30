@@ -26,7 +26,10 @@ class BattleRoyale extends BattleRoyaleBase
 	ref StaticBRData m_BattleRoyaleData;
 
 	ref BattleRoyaleZoneManager m_BattleRoyaleZoneManager;
+	
 	ref BattleRoyaleRound m_BattleRoyaleRound;
+	ref BattleRoyaleRound m_BattleRoyaleRound_2;
+	
 	ref BattleRoyaleDebug m_BattleRoyaleDebug;
 	
 	ref ScriptCallQueue br_CallQueue;
@@ -43,8 +46,9 @@ class BattleRoyale extends BattleRoyaleBase
 			m_BattleRoyaleDebug = new BattleRoyaleDebug(this);
 			m_BattleRoyaleZoneManager = new BattleRoyaleZoneManager(m_BattleRoyaleData);
 
-			m_BattleRoyaleRound = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager);
-
+			m_BattleRoyaleRound = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND 1");
+			m_BattleRoyaleRound_2 = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND 2");
+			
 			br_CallQueue = new ScriptCallQueue(); 
 		} else
 		{
@@ -65,6 +69,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		m_BattleRoyaleDebug.Init();
 		m_BattleRoyaleRound.Init();
+		m_BattleRoyaleRound_2.Init();
 		br_CallQueue.CallLater(this.ProcessRoundStart, 5000, true);
 	}
 	
@@ -79,6 +84,7 @@ class BattleRoyale extends BattleRoyaleBase
 		//process updates in the round and debug
 		m_BattleRoyaleRound.OnUpdate(timespan);
 		m_BattleRoyaleDebug.OnUpdate(timespan);
+		m_BattleRoyaleRound_2.OnUpdate(timespan);
 	}
 	
 	
@@ -86,12 +92,21 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		if ( !GetGame().IsServer() ) return;
 
-		if(!m_BattleRoyaleRound.inProgress)
+		if(!m_BattleRoyaleRound.inProgress && (m_BattleRoyaleRound_2.RoundStarted || !m_BattleRoyaleRound_2.inProgress))
 		{
 			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
 			{
 				BRLOG("DAYZBR: ROUND START CALL");
 				m_BattleRoyaleRound.PlayerCountReached();
+			}
+		}
+		else if(!m_BattleRoyaleRound_2.inProgress && (m_BattleRoyaleRound.RoundStarted || !m_BattleRoyaleRound.inProgress))
+		{
+			//if round 1 is in progress, try using round 2
+			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
+			{
+				BRLOG("DAYZBR: ROUND START CALL");
+				m_BattleRoyaleRound_2.PlayerCountReached();
 			}
 		}
 	}
@@ -116,6 +131,7 @@ class BattleRoyale extends BattleRoyaleBase
 		BRLOG("DAYZBR: PLAYER DISCONNECTED");
 		
 		m_BattleRoyaleRound.RemovePlayer(player);
+		m_BattleRoyaleRound_2.RemovePlayer(player);
 		m_BattleRoyaleDebug.RemovePlayer(player);
 		
 	}
@@ -124,6 +140,9 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		if(m_BattleRoyaleRound.ContainsPlayer(plr))
 			return m_BattleRoyaleRound.RoundStarted; //if round has started, allow it, else, do not.
+		
+		if(m_BattleRoyaleRound_2.ContainsPlayer(plr))
+			return m_BattleRoyaleRound_2.RoundStarted; //if round 2 has started, allow it, else, do not.
 		
 		return true;
 	}
@@ -140,6 +159,10 @@ class BattleRoyale extends BattleRoyaleBase
 		else if(m_BattleRoyaleRound.ContainsPlayer(player))
 		{
 			m_BattleRoyaleRound.OnPlayerTick(player,ticktime);
+		}
+		else if(m_BattleRoyaleRound_2.ContainsPlayer(player))
+		{
+			m_BattleRoyaleRound_2.OnPlayerTick(player, ticktime);
 		}
 		else
 		{
@@ -159,6 +182,10 @@ class BattleRoyale extends BattleRoyaleBase
 		else if(m_BattleRoyaleRound.ContainsPlayer(killed))
 		{
 			m_BattleRoyaleRound.OnPlayerKilled(killed,killer);
+		}
+		else if(m_BattleRoyaleRound_2.ContainsPlayer(killed))
+		{
+			m_BattleRoyaleRound_2.OnPlayerKilled(killed,killer);
 		}
 		else
 		{

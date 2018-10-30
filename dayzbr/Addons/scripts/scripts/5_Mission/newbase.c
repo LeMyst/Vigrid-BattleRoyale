@@ -96,6 +96,10 @@ modded class MissionBase
 		case MENU_HELP_SCREEN:
 			menu = new HelpScreen;
 			break;
+		//ADDED BY DAYZBR
+		case MENU_SKINS:
+			menu = new SkinMenu(this);
+			break;
 		case MENU_GESTURES:
 			menu = new NewGesturesMenu(this);
 			break;	
