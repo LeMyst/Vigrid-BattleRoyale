@@ -420,8 +420,11 @@ class SkinMenu extends UIScriptedMenu
 							if(inv)
 							{
 								//set weapon in hand texture
-								EntityAI itemInHands = GetHumanInventory().GetEntityInHands();
-								itemInHands.SetObjectTexture(0,GetTexture(Skin_item.GetID()));
+								EntityAI itemInHands = inv.GetEntityInHands();
+								if(itemInHands) 
+								{
+									itemInHands.SetObjectTexture(0,GetTexture(Skin_item.GetID()));
+								}
 							}
 						}
 						else
