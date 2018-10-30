@@ -593,8 +593,8 @@ class SkinMenu extends UIScriptedMenu
 								EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
 								if(shirt)
 								{
-									ref Param1<string> value_string = new Param1<string>(GetTexture(Skin_item.GetID()));
-									GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", value_string, false , NULL, player);
+									ref Param1<string> shirt_value = new Param1<string>(GetTexture(Skin_item.GetID()));
+									GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
 								}
 							}
 						
