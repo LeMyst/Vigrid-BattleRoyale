@@ -294,9 +294,9 @@ class CfgVehicles {
 		scope=2;
 		displayName="Stamina Monsta Drink";
 		descriptionShort="Drink this and get x amount of run distance.";
-		varQuantityInit=1;
+		varQuantityInit=100;
 		varQuantityMin=0;
-		varQuantityMax=1;
+		varQuantityMax=100;
 		hiddenSelectionsTextures[]=
 		{
 			"assets\textures\drinks\SodaCan_monsta.paa",
@@ -368,9 +368,11 @@ class CfgVehicles {
 		scope=2;
 		displayName="Healing Monsta Drink";
 		descriptionShort="Drink this and get x amount of regen.";
-		varQuantityInit=1;
+		SingleUseActions[]={}; //no single use actions
+		ContinuousActions[]={10000};
+		varQuantityInit=100;
 		varQuantityMin=0;
-		varQuantityMax=1;
+		varQuantityMax=100;
 		hiddenSelectionsTextures[]=
 		{
 			"assets\textures\drinks\SodaCan_monsta_heal.paa",
