@@ -299,7 +299,7 @@ class CfgVehicles {
 		varQuantityMax=100;
 		hiddenSelectionsTextures[]=
 		{
-			"assets\textures\drinks\SodaCan_monsta.paa",
+			"dayzbr\assets\textures\drinks\SodaCan_monsta.paa",
 		};
 		class AnimEvents
 		{
@@ -375,7 +375,7 @@ class CfgVehicles {
 		varQuantityMax=100;
 		hiddenSelectionsTextures[]=
 		{
-			"assets\textures\drinks\SodaCan_monsta_heal.paa",
+			"dayzbr\assets\textures\drinks\SodaCan_monsta_heal.paa",
 		};
 		class AnimEvents
 		{
