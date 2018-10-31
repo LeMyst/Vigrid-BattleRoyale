@@ -41,7 +41,7 @@ class CAContinuousQuantityMonsta : CAContinuousQuantityEdible
 	{
 		item.AddQuantity(-amount,false,false); //take away amount we have consumed
 		int heal_amount = 50 * amount;
-		player.AddHealth("", "Health", heal_amount);
+		target.AddHealth("", "Health", heal_amount);
 	}
 	
 };
