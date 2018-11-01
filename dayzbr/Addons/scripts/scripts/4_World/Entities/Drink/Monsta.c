@@ -48,7 +48,7 @@ class CAContinuousQuantityMonsta : CAContinuousQuantityEdible
 
 class ActionDrinkMonstaCB : ActionContinuousBaseCB
 {
-	private const float QUANTITY_USED_PER_SEC2 = 50;
+	private const float QUANTITY_USED_PER_SEC2 = 50; //amount used every 2 seconds 
 	
 	override void CreateActionComponent()
 	{
@@ -56,6 +56,7 @@ class ActionDrinkMonstaCB : ActionContinuousBaseCB
 	}
 };
 
+//Healing monster energy
 class ActionDrinkMonsta: ActionDrink
 {
 	void ActionDrinkMonsta()

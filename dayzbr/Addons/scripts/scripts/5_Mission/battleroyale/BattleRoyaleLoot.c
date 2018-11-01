@@ -94,15 +94,15 @@ class BattleRoyaleLoot
 				item = GetGame().CreateObject(itemName,world_pos);
 				//item.GetInventory().CreateAttachment("M4_Suppressor");
 				//item.GetInventory().CreateAttachment("M4_CarryHandleOptic");
-				item.GetInventory().CreateAttachment("M4_MPBttstck_Black");
-				item.GetInventory().CreateAttachment("M4_RISHndgrd_Black");
+				outItems.Insert(item.GetInventory().CreateAttachment("M4_MPBttstck_Black"));
+				outItems.Insert(item.GetInventory().CreateAttachment("M4_RISHndgrd_Black"));
 			}
 			else if(itemName == ("AKM"))
 			{
 				item = GetGame().CreateObject(itemName,world_pos);
 				//item.GetInventory().CreateAttachment("AK_Suppressor");
-				item.GetInventory().CreateAttachment("AK_PlasticBttstck_Black");
-				item.GetInventory().CreateAttachment("AK_RailHndgrd_Black");
+				outItems.Insert(item.GetInventory().CreateAttachment("AK_PlasticBttstck_Black"));
+				outItems.Insert(item.GetInventory().CreateAttachment("AK_RailHndgrd_Black"));
 			}
 			else
 			{
