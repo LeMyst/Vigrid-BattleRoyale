@@ -2340,8 +2340,8 @@ class CfgLoot
 	
 	class Medical
 	{
-		num_items = 9;
-		Gear_1[] = {"BandageDressing","Morphine","Splint"};
+		num_items = 10;
+		Gear_1[] = {"BandageDressing","Morphine","DBR_SodaCan_Monsta_Heal"};
 		Gear_2[] = {"Morphine","Rag"};
 		Gear_3[] = {"Rag","BandageDressing"};
 		Gear_4[] = {"SalineBagIV","Rag"};
@@ -2350,6 +2350,7 @@ class CfgLoot
 		Gear_7[] = {"BandageDressing","Splint"};
 		Gear_8[] = {"Rag","Splint"};
 		Gear_9[] = {"BandageDressing","Morphine"};
+		Gear_10[] = {"DBR_SodaCan_Monsta_Heal"};
 	};
 	
 	class Food
