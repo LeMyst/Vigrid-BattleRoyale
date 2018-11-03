@@ -294,6 +294,8 @@ class CfgVehicles {
 		scope=2;
 		displayName="Stamina Monsta Drink";
 		descriptionShort="Drink this and get x amount of run distance.";
+		SingleUseActions[]={}; //no single use actions
+		ContinuousActions[]={10001};
 		varQuantityInit=100;
 		varQuantityMin=0;
 		varQuantityMax=100;

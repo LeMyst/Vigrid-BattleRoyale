@@ -6,5 +6,6 @@ modded class ActionConstructor
 		super.ConstructActions(actions,suactions,cactions,iactions);
 		//add dayzbr actions
 		actions.Insert(new ActionDrinkMonsta);
+		actions.Insert(new ActionDrinkMonstaStamina);
 	}
 }
