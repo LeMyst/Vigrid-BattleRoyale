@@ -59,7 +59,7 @@ class ActionDrinkMonstaStaminaCB : ActionContinuousBaseCB
 	
 	override void CreateActionComponent()
 	{
-		m_ActionData.m_ActionComponent = new CAContinuousQuantityMonsta(QUANTITY_USED_PER_SEC2,UATimeSpent.DEFAULT);
+		m_ActionData.m_ActionComponent = new CAContinuousQuantityMonstaStamina(QUANTITY_USED_PER_SEC2,UATimeSpent.DEFAULT);
 	}
 };
 
@@ -68,14 +68,14 @@ class ActionDrinkMonstaStamina: ActionDrink
 {
 	void ActionDrinkMonsta()
 	{
-		m_CallbackClass = ActionDrinkMonstaCB;
+		m_CallbackClass = ActionDrinkMonstaStaminaCB;
 		m_CommandUID = DayZPlayerConstants.CMD_ACTIONMOD_DRINKCAN;
 		m_CommandUIDProne = DayZPlayerConstants.CMD_ACTIONFB_DRINKCAN;
 	}
 	
 	override int GetType()
 	{
-		return AT_DRINK_MONSTA;
+		return AT_DRINK_MONSTASTAMINA;
 	}
 	
 	override string GetText()
