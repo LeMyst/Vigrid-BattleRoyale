@@ -7,7 +7,8 @@ class CAContinuousQuantityMonstaStamina : CAContinuousQuantityEdible
 		m_InitItemQuantity = -1;
 	}
 	
-	override void CalcAndSetQuantity( ActionData action_data )
+	override void CalcAndSetQuantity( ActionData act
+	ion_data )
 	{	
 		//Print("Munch!");
 		if ( m_SpentUnits )
@@ -40,9 +41,14 @@ class CAContinuousQuantityMonstaStamina : CAContinuousQuantityEdible
 	void ConsumeBRItem(PlayerBase target, ItemBase item, float amount)
 	{
 		item.AddQuantity(-amount,false,false); //take away amount we have consumed
-		//TODO: replace this with our stamina increase code
-		int heal_amount = 0.5 * amount; //is amount consumed totaling 100?
-		target.AddHealth("", "Health", heal_amount);
+		
+		//increase our stamina (but do not go over limit)
+		float maxStamina = target.GetStatStamina().GetMax();
+		float currentStamina = target.GetStatStamina().Get();
+		
+		float newStamina = Math.Min(currentStamina + amount, maxStamina);
+		
+		target.GetStatStamina().Set(newStamina);
 	}
 	
 };
