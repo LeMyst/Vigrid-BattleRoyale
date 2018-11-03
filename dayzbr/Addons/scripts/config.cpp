@@ -2347,10 +2347,11 @@ class CfgLoot
 		Gear_4[] = {"SalineBagIV","Rag"};
 		Gear_5[] = {"SalineBagIV","Rag","Morphine"};
 		Gear_6[] = {"BandageDressing","Morphine"};
-		Gear_7[] = {"BandageDressing","Splint"};
+		Gear_7[] = {"BandageDressing","DBR_SodaCan_Monsta_Stam"};
 		Gear_8[] = {"Rag","Splint"};
 		Gear_9[] = {"BandageDressing","Morphine"};
 		Gear_10[] = {"DBR_SodaCan_Monsta_Heal"};
+		Gear_11[] = {"DBR_SodaCan_Monsta_Stam"};
 	};
 	
 	class Food
