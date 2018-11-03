@@ -7,8 +7,7 @@ class CAContinuousQuantityMonstaStamina : CAContinuousQuantityEdible
 		m_InitItemQuantity = -1;
 	}
 	
-	override void CalcAndSetQuantity( ActionData act
-	ion_data )
+	override void CalcAndSetQuantity( ActionData action_data )
 	{	
 		//Print("Munch!");
 		if ( m_SpentUnits )
