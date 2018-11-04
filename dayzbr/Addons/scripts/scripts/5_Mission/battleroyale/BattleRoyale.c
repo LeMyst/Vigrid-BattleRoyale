@@ -135,7 +135,7 @@ class BattleRoyale extends BattleRoyaleBase
 			}
 		}
 		
-		if(CanFireNewRound)
+		if(CanFireNewRound && roundToStart)
 		{
 			BRLOG("DAYZBR: ROUND START CALL");
 			roundToStart.PlayerCountReached();
