@@ -132,7 +132,7 @@ class BattleRoyaleLoot
 			}
 			
 			//obj.PlaceOnSurface();
-			if(attachmentArray.Contains("BatteryD"))
+			if(attachmentArray.Find("BatteryD") >= 0)
 			{
 				//add battery to the item
 				item.GetInventory().CreateAttachment("Battery9V");
