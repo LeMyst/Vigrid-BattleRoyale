@@ -217,7 +217,7 @@ class BattleRoyaleLoot
 				GetGame().ConfigGetTextArray(itemSlotPath + " Types", CfgTypes);
 				
 				min = 0;
-				max = CfgTypes.Count()-1;
+				max = CfgTypes.Count() - 1;
 				int index = Math.RandomIntInclusive(min,max);
 				string itemTypeToSpawn = CfgTypes.Get(index);
 				
