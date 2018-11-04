@@ -68,7 +68,7 @@ class ActionDrinkMonstaStaminaCB : ActionContinuousBaseCB
 //Healing monster energy
 class ActionDrinkMonstaStamina: ActionDrink
 {
-	void ActionDrinkMonsta()
+	void ActionDrinkMonstaStamina()
 	{
 		m_CallbackClass = ActionDrinkMonstaStaminaCB;
 		m_CommandUID = DayZPlayerConstants.CMD_ACTIONMOD_DRINKCAN;
