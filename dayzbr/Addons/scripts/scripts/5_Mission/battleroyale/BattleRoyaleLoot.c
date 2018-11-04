@@ -83,6 +83,18 @@ class BattleRoyaleLoot
 	{
 		ref array<EntityAI> outItems = new array<EntityAI>();
 		
+		/*
+		TODO: Automatic item attachment
+		
+		1) if a weapon is spawned, store it in a variable
+		2) if another item is spawned, check if the weapon supports this as an attachment (cfg searches)
+		3) try to spawn the item as an attachment (createAttachment)
+		4) if that fails, spawn it on ground (how to check fail?)
+		
+		
+		
+		*/
+		
 		for(int i = 0; i < itemList.Count();i++)
 		{
 			string itemName = itemList.Get(i);
@@ -94,15 +106,15 @@ class BattleRoyaleLoot
 				item = GetGame().CreateObject(itemName,world_pos);
 				//item.GetInventory().CreateAttachment("M4_Suppressor");
 				//item.GetInventory().CreateAttachment("M4_CarryHandleOptic");
-				outItems.Insert(item.GetInventory().CreateAttachment("M4_MPBttstck_Black"));
-				outItems.Insert(item.GetInventory().CreateAttachment("M4_RISHndgrd_Black"));
+				//outItems.Insert(item.GetInventory().CreateAttachment("M4_MPBttstck_Black"));
+				//outItems.Insert(item.GetInventory().CreateAttachment("M4_RISHndgrd_Black"));
 			}
 			else if(itemName == ("AKM"))
 			{
 				item = GetGame().CreateObject(itemName,world_pos);
 				//item.GetInventory().CreateAttachment("AK_Suppressor");
-				outItems.Insert(item.GetInventory().CreateAttachment("AK_PlasticBttstck_Black"));
-				outItems.Insert(item.GetInventory().CreateAttachment("AK_RailHndgrd_Black"));
+				//outItems.Insert(item.GetInventory().CreateAttachment("AK_PlasticBttstck_Black"));
+				//outItems.Insert(item.GetInventory().CreateAttachment("AK_RailHndgrd_Black"));
 			}
 			else
 			{
