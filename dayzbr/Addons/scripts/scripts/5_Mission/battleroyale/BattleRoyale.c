@@ -126,7 +126,7 @@ class BattleRoyale extends BattleRoyaleBase
 			{
 				if(!round2.inProgress && !round2.RoundStarted)
 				{
-					BRLOG("DAYZBR: ROUND START CALL");
+					BRLOG("STARTING ROUND " + round2.round_name);
 					round2.PlayerCountReached();
 					return;
 				}
