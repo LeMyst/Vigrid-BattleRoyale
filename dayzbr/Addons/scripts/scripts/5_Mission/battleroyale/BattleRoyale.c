@@ -27,7 +27,7 @@ class BattleRoyale extends BattleRoyaleBase
 
 	ref BattleRoyaleZoneManager m_BattleRoyaleZoneManager;
 	
-	ref array<BattleRoyaleRound> m_BattleRoyaleRounds;
+	ref array<ref BattleRoyaleRound> m_BattleRoyaleRounds;
 	
 	ref BattleRoyaleDebug m_BattleRoyaleDebug;
 	
@@ -46,10 +46,11 @@ class BattleRoyale extends BattleRoyaleBase
 			m_BattleRoyaleZoneManager = new BattleRoyaleZoneManager(m_BattleRoyaleData);
 
 			
-			m_BattleRoyaleRounds = new array<BattleRoyaleRound>();
+			m_BattleRoyaleRounds = new array<ref BattleRoyaleRound>();
 			for(int i = 1; i <= m_BattleRoyaleData.num_parallel_matches;i++)
 			{
-				m_BattleRoyaleRounds.Insert(new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND " + i.ToString()));
+				ref BattleRoyaleRound round = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND " + i.ToString());
+				m_BattleRoyaleRounds.Insert(round);
 			}
 			BRLOG("Added " + m_BattleRoyaleData.num_parallel_matches.ToString() + " rounds");
 			
@@ -106,6 +107,7 @@ class BattleRoyale extends BattleRoyaleBase
 		//not enough players
 		if( m_BattleRoyaleDebug.m_DebugPlayers.Count() < m_BattleRoyaleData.minimum_players ) return;
 		
+		
 		//check round can be started
 		bool CanFireNewRound = true;
 		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
@@ -120,12 +122,12 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		if(CanFireNewRound)
 		{
-			foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
+			foreach(ref BattleRoyaleRound round2 : m_BattleRoyaleRounds)
 			{
-				if(!round.inProgress && !round.RoundStarted)
+				if(!round2.inProgress && !round2.RoundStarted)
 				{
 					BRLOG("DAYZBR: ROUND START CALL");
-					round.PlayerCountReached();
+					round2.PlayerCountReached();
 					return;
 				}
 			}
