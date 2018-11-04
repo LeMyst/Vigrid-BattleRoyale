@@ -202,11 +202,256 @@ class CfgVehicles {
 			PPBlurProperties=0.2;
 		};
 	};
+
+	class Edible_Base;
+	class Bottle_Base;
+	class SodaCan_ColorBase: Edible_Base
+	{
+		model="\dz\gear\drinks\SodaCan.p3d";
+		stackedRandom=0;
+		autoQuickbar=1;
+		itemSize[]={1,2};
+		SingleUseActions[]={507,505,544};
+		ContinuousActions[]={108,215};
+		InteractActions[]={};
+		weight=33;
+		stackedUnit="";
+		varQuantityInit=330;
+		varQuantityMin=0;
+		varQuantityMax=330;
+		isMeleeWeapon=1;
+		hiddenSelections[]=
+		{
+			"camoGround"
+		};
+		class DamageSystem
+		{
+			class GlobalHealth
+			{
+				class Health
+				{
+					hitpoints=100;
+					healthLabels[]={1,0.69999999,0.5,0.30000001,0};
+					healthLevels[]=
+					{
+						
+						{
+							1,
+							
+							{
+								"DZ\gear\drinks\data\Drink_WaterPouch_Natural.rvmat"
+							}
+						},
+						
+						{
+							0.5,
+							
+							{
+								"DZ\gear\drinks\data\Drink_WaterPouch_Natural_damage.rvmat"
+							}
+						},
+						
+						{
+							0,
+							
+							{
+								"DZ\gear\drinks\data\Drink_WaterPouch_Natural_destruct.rvmat"
+							}
+						}
+					};
+				};
+			};
+		};
+		class Nutrition
+		{
+			totalVolume=1;
+			energy=43.5;
+			water=89;
+			nutritionalIndex=1;
+			toxicity=0;
+		};
+		class MeleeModes
+		{
+			class Default
+			{
+				ammo="MeleeLightBlunt";
+				range=1;
+			};
+			class Heavy
+			{
+				ammo="MeleeLightBlunt_Heavy";
+				range=1;
+			};
+			class Sprint
+			{
+				ammo="MeleeLightBlunt_Heavy";
+				range=2.8;
+			};
+		};
+	};
+	class DBR_SodaCan_Monsta_Stam: SodaCan_ColorBase
+	{
+		scope=2;
+		displayName="Stamina Monsta Drink";
+		descriptionShort="Drink this and get x amount of run distance.";
+		SingleUseActions[]={}; //no single use actions
+		ContinuousActions[]={10001};
+		varQuantityInit=100;
+		varQuantityMin=0;
+		varQuantityMax=100;
+		hiddenSelectionsTextures[]=
+		{
+			"dayzbr\assets\textures\drinks\SodaCan_monsta.paa",
+		};
+		class AnimEvents
+		{
+			class SoundWeapon
+			{
+				class Drinking_loop
+				{
+					soundSet="Drinking_loop_SoundSet";
+					id=200;
+				};
+				class SodaCan_in_A
+				{
+					soundSet="SodaCan_in_A_SoundSet";
+					id=201;
+				};
+				class SodaCan_in_B
+				{
+					soundSet="SodaCan_in_B_SoundSet";
+					id=202;
+				};
+				class SodaCan_in_C
+				{
+					soundSet="SodaCan_in_C_SoundSet";
+					id=203;
+				};
+				class SodaCan
+				{
+					soundSet="SodaCan_SoundSet";
+					id=204;
+				};
+				class SodaCan_out_A
+				{
+					soundSet="SodaCan_out_A_SoundSet";
+					id=205;
+				};
+				class SodaCan_out_B
+				{
+					soundSet="SodaCan_out_B_SoundSet";
+					id=206;
+				};
+				class SodaCan_out_C
+				{
+					soundSet="SodaCan_out_C_SoundSet";
+					id=207;
+				};
+				class WaterBottle_Whoosh
+				{
+					soundSet="WaterBottle_Whoosh_SoundSet";
+					id=16;
+				};
+				class WaterBottle_WhooshShort
+				{
+					soundSet="WaterBottle_WhooshShort_SoundSet";
+					id=17;
+				};
+				class WaterBottle_WhooshHeavy
+				{
+					soundSet="WaterBottle_WhooshHeavy_SoundSet";
+					id=18;
+				};
+			};
+		};
+	};
+	class DBR_SodaCan_Monsta_Heal: SodaCan_ColorBase
+	{
+		scope=2;
+		displayName="Healing Monsta Drink";
+		descriptionShort="Drink this and get x amount of regen.";
+		SingleUseActions[]={}; //no single use actions
+		ContinuousActions[]={10000};
+		varQuantityInit=100;
+		varQuantityMin=0;
+		varQuantityMax=100;
+		hiddenSelectionsTextures[]=
+		{
+			"dayzbr\assets\textures\drinks\SodaCan_monsta_heal.paa",
+		};
+		class AnimEvents
+		{
+			class SoundWeapon
+			{
+				class Drinking_loop
+				{
+					soundSet="Drinking_loop_SoundSet";
+					id=200;
+				};
+				class SodaCan_in_A
+				{
+					soundSet="SodaCan_in_A_SoundSet";
+					id=201;
+				};
+				class SodaCan_in_B
+				{
+					soundSet="SodaCan_in_B_SoundSet";
+					id=202;
+				};
+				class SodaCan_in_C
+				{
+					soundSet="SodaCan_in_C_SoundSet";
+					id=203;
+				};
+				class SodaCan
+				{
+					soundSet="SodaCan_SoundSet";
+					id=204;
+				};
+				class SodaCan_out_A
+				{
+					soundSet="SodaCan_out_A_SoundSet";
+					id=205;
+				};
+				class SodaCan_out_B
+				{
+					soundSet="SodaCan_out_B_SoundSet";
+					id=206;
+				};
+				class SodaCan_out_C
+				{
+					soundSet="SodaCan_out_C_SoundSet";
+					id=207;
+				};
+				class WaterBottle_Whoosh
+				{
+					soundSet="WaterBottle_Whoosh_SoundSet";
+					id=16;
+				};
+				class WaterBottle_WhooshShort
+				{
+					soundSet="WaterBottle_WhooshShort_SoundSet";
+					id=17;
+				};
+				class WaterBottle_WhooshHeavy
+				{
+					soundSet="WaterBottle_WhooshHeavy_SoundSet";
+					id=18;
+				};
+			};
+		};
+	};
 };
 
 class CfgNonAIVehicles
 {
 	class ProxyAttachment;
+	class ProxyOptic_PUScope: ProxyAttachment
+	{
+		scope=2;
+		inventorySlot="weaponOpticsMosin";
+		model="\DZ\weapons\attachments\optics\optic_puscope.p3d";
+	};
 	class ProxyOptic_LongRange: ProxyAttachment
 	{
 		scope=2;

@@ -264,24 +264,13 @@ class BattleRoyaleZone
 
 	void Shrink_Zone()
 	{
-		int zone_lock_minutes = Math.Ceil(m_BattleRoyaleData.zone_lock_time / 60);
+		string sTime = m_BattleRoyaleData.zone_lock_time.ToString();
 
-		string sTime = zone_lock_minutes.ToString();
-
-		if ( zone_lock_minutes == 1 )
-		{
-			sTime = sTime + " MINUTE.";
-		} else {
-			sTime = sTime + " MINUTES.";
-		}
-
-		SendMessageAll(round_name + ": THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime);
+		SendMessageAll(round_name + ": THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime + " SECONDS.");
 		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
 
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
-
-		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
 
 		if ( new_size < 18 )
 		{
@@ -311,16 +300,13 @@ class BattleRoyaleZone
 
 		HandleMarkers();
 
-		// stop zone shrink once the min value is reached
-		if (new_size > 18)
-		{
-			//Queue up the lock
-			zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
-		}
+		
+		//Queue up the lock
+		zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
 	}
 	void Lock_Zone()
 	{
-		SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN.");
+		
 
 		current_center = new_center;
 		current_size = new_size;
@@ -330,8 +316,17 @@ class BattleRoyaleZone
 		Print(current_size);
 		Print("==================================");
 
-		//Queue up next shrink
-		zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
+		// stop zone shrink once the min value is reached
+		if (new_size > 18)
+		{
+			//Queue up next shrink
+			SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN. NEW ZONE IN " + m_BattleRoyaleData.shrink_zone_every.ToString() + " SECONDS.");
+			zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
+		}
+		else
+		{
+			SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN. THIS IS THE FINAL ZONE.");
+		}
 	}
 
 	/*
