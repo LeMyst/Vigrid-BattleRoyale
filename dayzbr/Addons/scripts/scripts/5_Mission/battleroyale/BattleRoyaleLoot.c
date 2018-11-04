@@ -95,10 +95,19 @@ class BattleRoyaleLoot
 		
 		*/
 		
+		EntityAI parent_weapon; //if we spawn a weapon, then this gets set. If this is set, we need to figure out if each item added afterwards is an attachment for this
+		
+		
 		for(int i = 0; i < itemList.Count();i++)
 		{
 			string itemName = itemList.Get(i);
-
+			
+			//check if item requires battery
+			string configPath = "CfgVehicles " + itemName + " attachments";
+			ref array<string> attachmentArray = new array<string>();
+			GetGame().ConfigGetTextArray(configPath,attachmentArray);
+			
+			
 			Object obj;
 			EntityAI item;
 			if(itemName.Contains("M4A1"))
@@ -123,7 +132,11 @@ class BattleRoyaleLoot
 			}
 			
 			//obj.PlaceOnSurface();
-			
+			if(attachmentArray.Contains("BatteryD"))
+			{
+				//add battery to the item
+				item.GetInventory().CreateAttachment("Battery9V");
+			}
 			outItems.Insert(item);
 		}
 		return outItems;
