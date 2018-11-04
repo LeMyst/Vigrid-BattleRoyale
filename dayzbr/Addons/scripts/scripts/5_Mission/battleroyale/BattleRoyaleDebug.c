@@ -29,7 +29,7 @@ class BattleRoyaleDebug
 	{
 		//if we are not waiting for either round to end
 		bool sendMessage = true;
-		foreach(BattleRoyaleRound round : br_game.m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : br_game.m_BattleRoyaleRounds)
 		{
 			if(round.inProgress)
 			{
