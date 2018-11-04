@@ -320,7 +320,7 @@ class BattleRoyaleZone
 		if (new_size > 18)
 		{
 			//Queue up next shrink
-			SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN. NEW ZONE IN " + m_BattleRoyaleData.shrink_zone_every.ToString() + " SECONDS.");
+			SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN. NEW ZONE IN " + m_BattleRoyaleData.shrink_zone_every.ToString() + " SECONDS."");
 			zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
 		}
 		else
