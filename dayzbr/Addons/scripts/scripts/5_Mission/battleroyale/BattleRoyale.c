@@ -51,6 +51,7 @@ class BattleRoyale extends BattleRoyaleBase
 			{
 				m_BattleRoyaleRounds.Insert(new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND " + i.ToString()));
 			}
+			BRLOG("Added " + m_BattleRoyaleData.num_parallel_matches.ToString() + " rounds");
 			
 			br_CallQueue = new ScriptCallQueue(); 
 		} else
@@ -72,7 +73,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		m_BattleRoyaleDebug.Init();
 		
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			round.Init();
 		}
@@ -89,7 +90,7 @@ class BattleRoyale extends BattleRoyaleBase
 		br_CallQueue.Tick(timespan);
 		
 		//process updates in the round and debug
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			round.OnUpdate(timespan);
 		}
@@ -105,10 +106,9 @@ class BattleRoyale extends BattleRoyaleBase
 		//not enough players
 		if( m_BattleRoyaleDebug.m_DebugPlayers.Count() < m_BattleRoyaleData.minimum_players ) return;
 		
-		//extract the first round not in use & check that we can start it
-		BattleRoyaleRound roundToStart = NULL;
+		//check round can be started
 		bool CanFireNewRound = true;
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			//if any round is in progress but not started, we are waiting to start it & cannot launch a new round at this time
 			if(round.inProgress && !round.RoundStarted)
@@ -116,29 +116,19 @@ class BattleRoyale extends BattleRoyaleBase
 				CanFireNewRound = false;
 				break;
 			}
-			else
-			{
-				//this round is not in progress 
-				if(!round.inProgress)
-				{
-					//this round has not started
-					if(!round.RoundStarted)
-					{
-						//the first round to start is not set
-						if(roundToStart == NULL)
-						{
-							//lock in our round to start if we can
-							roundToStart = round;
-						}
-					}
-				}
-			}
 		}
 		
-		if(CanFireNewRound && roundToStart)
+		if(CanFireNewRound)
 		{
-			BRLOG("DAYZBR: ROUND START CALL");
-			roundToStart.PlayerCountReached();
+			foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
+			{
+				if(!round.inProgress && !round.RoundStarted)
+				{
+					BRLOG("DAYZBR: ROUND START CALL");
+					round.PlayerCountReached();
+					return;
+				}
+			}
 		}
 	}
 	
@@ -161,7 +151,7 @@ class BattleRoyale extends BattleRoyaleBase
 
 		BRLOG("DAYZBR: PLAYER DISCONNECTED");
 		
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			round.RemovePlayer(player);
 		}
@@ -172,7 +162,7 @@ class BattleRoyale extends BattleRoyaleBase
 	override bool allowFallDamage(PlayerBase plr)
 	{
 		
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			if(round.ContainsPlayer(plr))
 				return round.RoundStarted;
@@ -190,7 +180,7 @@ class BattleRoyale extends BattleRoyaleBase
 			m_BattleRoyaleDebug.OnPlayerTick(player,ticktime);
 			return;
 		}
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			if(round.ContainsPlayer(player))
 			{
@@ -212,7 +202,7 @@ class BattleRoyale extends BattleRoyaleBase
 			return;
 		}
 		
-		foreach(BattleRoyaleRound round : m_BattleRoyaleRounds)
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			if(round.ContainsPlayer(killed))
 			{

@@ -244,7 +244,7 @@ class BattleRoyaleRound
 	{
 		inProgress = true;
 		
-		SendMessageAll("ALL: " + round_name + ": " + "DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
+		SendMessageAll("ALL: " + round_name + ": PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
 		
 		round_CallQueue.CallLater(this.StartRound, m_BattleRoyaleData.start_timer * 1000, false);
 	}
