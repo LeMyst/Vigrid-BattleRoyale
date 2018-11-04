@@ -182,9 +182,39 @@ class BattleRoyaleLoot
 			
 		int rand = Math.RandomIntInclusive(1,GetGame().ConfigGetInt(cfgPath + "num_items"));
 		
-		ref array<string> CfgItems = new array<string>();
-		GetGame().ConfigGetTextArray( cfgPath + "Gear_" + rand.ToString(), CfgItems );
+		string classPath = cfgPath + "Gear_" + rand.ToString();
 		
+		ref array<string> CfgItems = new array<string>();
+		
+		
+		int itemSlots = GetGame().ConfigGetChildrenCount(classPath);
+		for(int i = 1; i <= itemSlots; i++)
+		{
+			//roll for a spawn on this slot
+			string itemSlotPath = classPath + " Item_" + i.ToString();
+			float chance = GetGame().ConfigGetFloat(itemSlotPath + " chance");
+			if(Math.RandomFloatInclusive(0, 1) < chance)
+			{
+				//calculate number of this type to spawn
+				int min = GetGame().ConfigGetInt(itemSlotPath + " min_spawn");
+				int max = GetGame().ConfigGetInt(itemSlotPath + " max_spawn");
+				int num_to_spawn = Math.RandomIntInclusive(min,max);
+				
+				//figure out which type to spawn
+				ref array<string> CfgTypes = new array<string>();
+				GetGame().ConfigGetTextArray(itemSlotPath + " Types", CfgTypes);
+				
+				min = 0;
+				max = CfgTypes.Count()-1;
+				int index = Math.RandomIntInclusive(min,max);
+				string itemTypeToSpawn = CfgTypes.Get(index);
+				
+				for(int j = 0; j < num_to_spawn;j++)
+				{
+					CfgItems.Insert(itemTypeToSpawn);
+				}
+			}
+		}
 		return CfgItems;
 	}	
 	array<string> GetMedicalSpawn()
