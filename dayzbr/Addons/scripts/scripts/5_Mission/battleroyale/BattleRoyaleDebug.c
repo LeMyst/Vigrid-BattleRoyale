@@ -28,15 +28,23 @@ class BattleRoyaleDebug
 	void OnDebugMessage()
 	{
 		//if we are not waiting for either round to end
-		if(!br_game.m_BattleRoyaleRound.inProgress && !br_game.m_BattleRoyaleRound_2.inProgress)
+		bool sendMessage = true;
+		foreach(BattleRoyaleRound round : br_game.m_BattleRoyaleRounds)
+		{
+			if(round.inProgress)
+			{
+				sendMessage = false;
+				break;
+			}
+		}
+		if(sendMessage)
 		{
 			int players_needed = br_game.m_BattleRoyaleData.minimum_players - m_DebugPlayers.Count();
-			//if we are waiting for more players
+			
 			if(players_needed > 0)
 			{
 				SendMessageAll("ALL: DAYZBR: WAITING FOR " + players_needed.ToString() + " PLAYER(S)...",false);
 			}
-			
 		}
 	}
 	
