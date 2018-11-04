@@ -281,8 +281,6 @@ class BattleRoyaleZone
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
 
-		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
-
 		if ( new_size < 18 )
 		{
 			new_size = 18;
@@ -311,12 +309,9 @@ class BattleRoyaleZone
 
 		HandleMarkers();
 
-		// stop zone shrink once the min value is reached
-		if (new_size > 18)
-		{
-			//Queue up the lock
-			zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
-		}
+		
+		//Queue up the lock
+		zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
 	}
 	void Lock_Zone()
 	{
@@ -330,8 +325,16 @@ class BattleRoyaleZone
 		Print(current_size);
 		Print("==================================");
 
-		//Queue up next shrink
-		zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
+		// stop zone shrink once the min value is reached
+		if (new_size > 18)
+		{
+			//Queue up next shrink
+			zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
+		}
+		else
+		{
+			SendMessageAll(round_name + ": THIS IS THE LAST ZONE. FIGHT TO WIN.");
+		}
 	}
 
 	/*

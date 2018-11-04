@@ -43,9 +43,12 @@ class CAContinuousQuantityMonstaStamina : CAContinuousQuantityEdible
 		
 		//increase our stamina (but do not go over limit)
 		float maxStamina = target.GetStatStamina().GetMax();
+		
+		float stamina_change = (amount / 100) * maxStamina;
+		
 		float currentStamina = target.GetStatStamina().Get();
 		
-		float newStamina = Math.Min(currentStamina + amount, maxStamina);
+		float newStamina = Math.Min(currentStamina + stamina_change, maxStamina);
 		
 		target.GetStatStamina().Set(newStamina);
 	}
