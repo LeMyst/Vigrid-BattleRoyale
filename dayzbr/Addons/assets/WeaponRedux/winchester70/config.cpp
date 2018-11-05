@@ -109,33 +109,12 @@ class cfgWeapons
 					"Win_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\winchester70\winchester70_0",
-				1,
-				1,
-				1000
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\winchester70\winchester70_1",
-				1,
-				1,
-				1000
-			};
 			soundBegin[]=
 			{
 				"begin1",
 				0.5,
 				"begin2",
 				0.5
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				150
 			};
 			soundBeginExt[]=
 			{

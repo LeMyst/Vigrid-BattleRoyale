@@ -91,20 +91,6 @@ class cfgWeapons
 					"Glock19_silencerInteriorTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\CZ75\CZ75_single_0",
-				1,
-				1,
-				600
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\CZ75\CZ75_single_1",
-				1,
-				1,
-				600
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -115,27 +101,6 @@ class cfgWeapons
 				0.33333001,
 				"begin2",
 				0.33333001
-			};
-			beginSilenced_Pro1[]=
-			{
-				"dz\sounds\weapons\firearms\CZ75\cz75Silenced",
-				1,
-				1,
-				60
-			};
-			beginSilenced_Pro2[]=
-			{
-				"dz\sounds\weapons\firearms\CZ75\cz75Silenced2",
-				1,
-				1,
-				60
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\CZ75\cz75Silenced",
-				1,
-				1,
-				100
 			};
 			soundBeginExt[]=
 			{

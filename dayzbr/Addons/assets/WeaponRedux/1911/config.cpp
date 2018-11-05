@@ -93,20 +93,6 @@ class cfgWeapons
 				}
 				
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\colt1911\Colt1911_0",
-				1,
-				1,
-				700
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\colt1911\Colt1911_1",
-				1,
-				1,
-				700
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -121,20 +107,6 @@ class cfgWeapons
 			recoilProne="recoil_1911_prone";
 			dispersion=0.006;
 			magazineSlot="magazine";
-			beginSilenced_Pro[]=
-			{
-				"dz\sounds\weapons\firearms\colt1911\1911Silenced",
-				1,
-				1,
-				60
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\colt1911\1911Silenced",
-				1,
-				1,
-				100
-			};
 			soundBeginExt[]=
 			{
 				
@@ -219,11 +191,11 @@ class cfgWeapons
 		dexterity=3.6;
 		hiddenSelectionsTextures[]=
 		{
-			"dz\weapons\pistols\1911\data\1911_co.paa"
+			"dz\weapons\pistols\fnx45\data\1911_co.paa"
 		};
 		hiddenSelectionsMaterials[]=
 		{
-			"dz\weapons\pistols\1911\data\1911.rvmat"
+			"dz\weapons\pistols\fnx45\data\1911.rvmat"
 		};
 		class Particles
 		{
@@ -367,7 +339,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\pistols\1911\data\1911_engraved.rvmat"
+								"DZ\weapons\pistols\1911\data\1911_engraved.rvmat",
 							}
 						},
 						
@@ -375,7 +347,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\pistols\1911\data\1911_engraved_damage.rvmat"
+								"DZ\weapons\pistols\1911\data\1911_engraved_damage.rvmat",
 							}
 						},
 						

@@ -1,10 +1,10 @@
 class CfgPatches
 {
-	class DZ_Weapons_Firearms_AKM
+	class DZ_Weapons_Firearms_SVD
 	{
 		units[]=
 		{
-			"AKM"
+			"SVD"
 		};
 		weapons[]={};
 		requiredVersion=0.1;
@@ -21,80 +21,71 @@ class Mode_Burst;
 class Mode_FullAuto;
 class cfgWeapons
 {
-	class AKM;
-	class GP_Saiga12KShotgun_Base: AKM
+	class SVD;
+	class GP_Blaze95_Base: SVD
 	{
 		scope=0;
-		lootTag[]=
-		{
-			"Military_east"
-		};
-		weight=3600;
+		weight=2820;
 		absorbency=0.1;
 		repairableWithKits[]={5,1};
 		repairCosts[]={30,25};
-		discreteDistance[]={100,200,300,400,500,600,700,800,900,1000};
+		discreteDistance[]={50};
 		discreteDistanceInitIndex=0;
 		modelOptics="-";
-		distanceZoomMin=100;
-		distanceZoomMax=100;
+		distanceZoomMin=50;
+		distanceZoomMax=50;
 		PPDOFProperties[]={1,0.60000002,200000,0.30000001,3,0.1};
 		optics=1;
 		opticsFlare=0;
-		ironsightsExcludingOptics[]=
-		{
-			"KashtanOptic",
-			"KobraOptic"
-		};
+		ironsightsExcludingOptics[]={};
+		forceOptics=1;
 		value=0;
 		chamberSize=1;
 		chamberedRound="";
 		chamberableFrom[]=
 		{
-			"Ammo_12gaPellets",
-			"Ammo_12gaSlug"
+			"Ammo_308Win",
 		};
 		magazines[]=
 		{
-			"Mag_Saiga_5Rnd",
-			"Mag_Saiga_8Rnd",
-			"Mag_Saiga_Drum20Rnd"
+			"Mag_308WinSnapLoader_2Rnd"
+		};
+		magazineSwitchTime=0.4;
+		barrelArmor=300;
+		ejectType=1;
+		recoilModifier[]={1, 5, 2};
+		drySound[]=
+		{
+			"dz\sounds\weapons\shotguns\Izh43\izh43_dry",
+			0.5,
+			1,
+			20
+		};
+		reloadAction="ReloadAKM";
+		reloadMagazineSound[]=
+		{
+			"dz\sounds\weapons\firearms\B95\b95_reload2",
+			0.80000001,
+			1,
+			20
 		};
 		hiddenSelections[]=
 		{
 			"camo",
 			"zasleh"
 		};
-		magazineSwitchTime=0.2;
-		barrelArmor=3000;
-		ejectType=1;
-		recoilModifier[]={1, 4, 1.9};
-		reloadAction="ReloadAKM";
-		reloadMagazineSound[]=
-		{
-			"dz\sounds\weapons\firearms\akm\Akm_reload",
-			0.80000001,
-			1,
-			20
-		};
-		drySound[]=
-		{
-			"dz\sounds\weapons\firearms\SKS\SKS_dry",
-			0.5,
-			1,
-			20
-		};
 		modes[]=
 		{
-			"Single"
+			"Single",
+			"Double"
 		};
 		class Single: Mode_SemiAuto
 		{
 			soundSetShot[]=
 			{
-				"Mp133_Shot_SoundSet",
-				"Mp133_Tail_SoundSet",
-				"Mp133_InteriorTail_SoundSet"
+				"B95_Shot_SoundSet",
+				"B95_Tail_SoundSet",
+				"B95_InteriorTail_SoundSet"
 			};
 			soundBegin[]=
 			{
@@ -102,28 +93,37 @@ class cfgWeapons
 				0.33333001,
 				"begin2",
 				0.33333001,
-				"begin3",
+				"begin2",
 				0.33333001
 			};
 			reloadTime=0.1;
-			recoil="recoil_Saiga12";
-			recoilProne="recoil_Saiga12_prone";
-			dispersion=0.0099999998;
-			firespreadangle=1.5;
+			recoil="recoil_b95";
+			recoilProne="recoil_b95_prone";
+			dispersion=0.001;
 			magazineSlot="magazine";
-			soundBeginExt[]=
+		};
+		class Double: Mode_FullAuto
+		{
+			soundSetShot[]=
 			{
-				
-				{
-					"beginSilenced_Pro",
-					1
-				},
-				
-				{
-					"beginSilenced_HomeMade",
-					1
-				}
+				"B95_Shot_SoundSet",
+				"B95_Tail_SoundSet",
+				"B95_InteriorTail_SoundSet"
 			};
+			soundBegin[]=
+			{
+				"begin1",
+				0.33333001,
+				"begin2",
+				0.33333001,
+				"begin2",
+				0.33333001
+			};
+			reloadTime=0.0099999998;
+			recoil="recoil_b95_double";
+			recoilProne="recoil_b95";
+			dispersion=0.001;
+			magazineSlot="magazine";
 		};
 		class AnimEvents
 		{
@@ -157,36 +157,24 @@ class cfgWeapons
 			};
 		};
 	};
-	class GP_Saiga12KShotgun: GP_Saiga12KShotgun_Base
+	class GP_Blaze95: GP_Blaze95_Base
 	{
 		scope=2;
-		displayName="Saiga-12K";
-		descriptionShort="A combat shotgun which the internal mechanism and appearance was based on Kalashnikov 's AK rifles. It is gas operated with a rotating bolt. The Saiga-12 is semi-automatic fire only shotgun with foldable metal frame-skeleton buttstock. It can accept 5-8rounds detachable magazines, and 20 rounds detachable drum-type magazine.";
-		model="\dz\weapons\shotguns\saiga\saiga.p3d";
+		displayName="B95";
+		descriptionShort="Double barrelled hunting rifle. It is equipped with a single lock action. The rifle is uncocked after every shot. The notches that hold the mounting base are positioned directly above the chambers. The barrels float freely while the point of impact remains constant.";
+		model="\dz\weapons\firearms\B95\b95.p3d";
+		hiddenSelections[] = {"camo","zasleh"};
 		attachments[]=
 		{
-			"weaponButtstockSaiga",
-			"weaponOpticsAK",
-			"weaponWrap"
+			"weaponWrap",
+			"weaponOpticsHunting"
 		};
-		baseAttachments[]=
-		{
-			"Saiga_Bttstck"
-		};
+		baseAttachments[]={};
 		randomAttachments[]=
 		{
 			
 			{
-				"KashtanOptic",
-				"PSO11Optic",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
+				"HuntingOptic",
 				"",
 				"",
 				"",
@@ -196,39 +184,22 @@ class cfgWeapons
 			},
 			
 			{
-				"Mag_Saiga_5Rnd",
-				"Mag_Saiga_8Rnd",
-				"Mag_Saiga_Drum20Rnd",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
-				"",
+				"Mag_GPBlaze95_2Rnd",
 				"",
 				"",
 				""
 			}
 		};
-		dexterity=2.7;
+		itemSize[]={7,3};
+		dexterity=2.65;
+		hiddenSelectionsTextures[]=
+		{
+			"dz\weapons\firearms\B95\data\b95_co.paa"
+		};
+		hiddenSelectionsMaterials[]=
+		{
+			"dz\weapons\firearms\B95\data\b95.rvmat"
+		};
 		class Particles
 		{
 			class OnFire
@@ -297,7 +268,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\shotguns\saiga\Data\saiga.rvmat"
+								"DZ\weapons\firearms\Ruger1022\Data\ruger1022.rvmat"
 							}
 						},
 						
@@ -305,7 +276,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\shotguns\saiga\Data\saiga_damage.rvmat"
+								"DZ\weapons\firearms\Ruger1022\Data\ruger1022_damage.rvmat"
 							}
 						},
 						
@@ -313,7 +284,7 @@ class cfgWeapons
 							0,
 							
 							{
-								"DZ\weapons\shotguns\saiga\Data\saiga_destruct.rvmat"
+								"DZ\weapons\firearms\Ruger1022\Data\ruger1022_destruct.rvmat"
 							}
 						}
 					};
@@ -321,56 +292,34 @@ class cfgWeapons
 			};
 		};
 	};
-};
-class cfgRecoils
-{
-	recoil_ShotgunSaiga12[]=
+	class GP_Blaze95_Black: GP_Blaze95
 	{
-		0,
-		0,
-		0,
-		0.039999999,
-		"0.036943*(1)",
-		"0.0134348*(3)",
-		0.079999998,
-		"0.019755*(1)",
-		"0.003056*(3)",
-		0.090000004,
-		0,
-		0,
-		0.14,
-		"-0.003138*(1)",
-		"-0.0005*(3)",
-		0.079999998,
-		"-0.001177*(1)",
-		"-0.000188*(3)",
-		0.12,
-		0,
-		0
+		scope=2;
+		descriptionShort="$STR_cfgWeapons_B95_Black0";
+		color="Black";
+		lootCategory="Crafted";
+		hiddenSelectionsTextures[]=
+		{
+			"#(argb,8,8,3)color(0.15,0.15,0.15,1.0,CO)"
+		};
+		hiddenSelectionsMaterials[]=
+		{
+			"dz\weapons\firearms\B95\data\b95_painted.rvmat"
+		};
 	};
-	recoil_ShotgunSaiga12_prone[]=
+	class GP_Blaze95_Green: GP_Blaze95
 	{
-		0,
-		0,
-		0,
-		0.0040000002,
-		"0.036943*(0.5)",
-		"0.0134348*(2)",
-		0.0080000004,
-		"0.019755*(0.5)",
-		"0.003056*(2)",
-		0.0089999996,
-		0,
-		0,
-		0.014,
-		"-0.003138*(0.5)",
-		"-0.0005*(2)",
-		0.0080000004,
-		"-0.001177*(0.5)",
-		"-0.000188*(2)",
-		0.012,
-		0,
-		0
+		scope=2;
+		descriptionShort="$STR_cfgWeapons_B95_Green0";
+		color="Green";
+		lootCategory="Crafted";
+		hiddenSelectionsTextures[]=
+		{
+			"#(argb,8,8,3)color(0.35,0.36,0.28,1.0,CO)"
+		};
+		hiddenSelectionsMaterials[]=
+		{
+			"dz\weapons\firearms\B95\data\b95_painted.rvmat"
+		};
 	};
 };
-

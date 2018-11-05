@@ -22,36 +22,38 @@ class Mode_FullAuto;
 class cfgWeapons
 {
 	class FNX45;
-	class GP_DE_Base: FNX45
+	class GP_P1_Base: FNX45
 	{
 		scope=0;
-		weight=1500;
+		weight=960;
 		absorbency=0.1;
 		repairableWithKits[]={5,1};
 		repairCosts[]={30,25};
-		discreteDistance[]={25};
-		discreteDistanceInitIndex=0;
 		modelOptics="-";
 		distanceZoomMin=100;
 		distanceZoomMax=100;
-		PPDOFProperties[]={1,0.60000002,200000,0.30000001,3,0.1};
 		optics=1;
 		value=0;
 		chamberSize=1;
 		chamberedRound="";
+		hiddenSelections[]=
+		{
+			"camo",
+			"zasleh"
+		};
 		magazines[]=
 		{
-			"Mag_DE_9rnd"
+			"Mag_P1_8Rnd"
 		};
 		chamberableFrom[]=
 		{
-			"Ammo_357"
+			"Ammo_9x19"
 		};
 		ejectType=1;
-		recoilModifier[]={1, 2.2, 1};
+		recoilModifier[]={1, 1.9, 1};
 		drySound[]=
 		{
-			"dz\sounds\weapons\firearms\FNX45\FNX_dry",
+			"DZ\sounds\weapons\firearms\waltherP1\WaltherP1_closure",
 			0.5,
 			1,
 			20
@@ -64,11 +66,6 @@ class cfgWeapons
 			20
 		};
 		reloadAction="ReloadRugerP1";
-		hiddenSelections[]=
-		{
-			"camo",
-			"zasleh"
-		};
 		modes[]=
 		{
 			"Single"
@@ -77,15 +74,25 @@ class cfgWeapons
 		{
 			soundSetShot[]=
 			{
-				"DEG_Shot_SoundSet",
-				"DEG_Tail_SoundSet",
-				"DEG_InteriorTail_SoundSet"
+				"WaltherP1_Shot_SoundSet",
+				"WaltherP1_Tail_SoundSet",
+				"WaltherP1_InteriorTail_SoundSet"
 			};
-			reloadTime=0.18000001;
-			recoil="recoil_DE";
-			recoilProne="recoil_DE_prone";
-			dispersion=0.0060000001;
-			magazineSlot="magazine";
+			soundSetShotExt[]=
+			{
+				
+				{
+					"WaltherP1_silencerPro_SoundSet",
+					"WaltherP1_silencerTail_SoundSet",
+					"WaltherP1_silencerInteriorTail_SoundSet"
+				},
+				
+				{
+					"WaltherP1_silencerHomeMade_SoundSet",
+					"WaltherP1_silencerHomeMadeTail_SoundSet",
+					"WaltherP1_silencerInteriorHomeMadeTail_SoundSet"
+				}
+			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -97,14 +104,31 @@ class cfgWeapons
 				"begin2",
 				0.33333001
 			};
+			reloadTime=0.13;
+			recoil="recoil_p1";
+			recoilProne="recoil_p1_prone";
+			dispersion=0.0060000001;
+			magazineSlot="magazine";
+			beginSilenced_Pro[]=
+			{
+				"dz\sounds\weapons\firearms\waltherP1\P1Silenced",
+				1,
+				1,
+				60
+			};
+			beginSilenced_HomeMade[]=
+			{
+				"dz\sounds\weapons\firearms\waltherP1\P1Silenced",
+				1,
+				1,
+				100
+			};
 			soundBeginExt[]=
 			{
 				
 				{
-					"beginSilenced_Pro1",
-					0.5,
-					"beginSilenced_Pro2",
-					0.5
+					"beginSilenced_Pro",
+					1
 				},
 				
 				{
@@ -140,20 +164,22 @@ class cfgWeapons
 			};
 		};
 	};
-	class GP_DE: GP_DE_Base
+	class GP_P1: GP_P1_Base
 	{
 		scope=2;
-		displayName="Golden Eagle";
-		descriptionShort="Ludicrously large pistol coated in real gold. Bored for .357 Magnum.";
-		model="\dz\weapons\pistols\DE\DE.p3d";
-		baseAttachments[]={};
-		attachments[]={};
+		displayName="P1 Pistol";
+		descriptionShort="P1 was the first locked-breech pistol to use a double-action/single-action. The shooter can chamber a round, use the de-cocking lever to safely lower the hammer without firing the round and carry the weapon loaded.";
+		model="\dz\weapons\pistols\p1\p1.p3d";
+		attachments[]=
+		{
+			"pistolMuzzle",
+			"suppressorImpro"
+		};
 		randomAttachments[]=
 		{
 			
 			{
-				"Mag_DE_9rnd",
-				"",
+				"Att_Suppressor_Pistol",
 				"",
 				"",
 				"",
@@ -162,18 +188,23 @@ class cfgWeapons
 				"",
 				"",
 				""
+			},
+			
+			{
+				"M_P1_8Rnd",
+				"M_P1_8Rnd",
+				"M_P1_8Rnd",
+				"M_P1_8Rnd",
+				"",
+				"",
+				"",
+				"",
+				"",
+				""
 			}
 		};
-		itemSize[]={4,3};
-		dexterity=2.8;
-		hiddenSelectionsTextures[]=
-		{
-			"dz\weapons\pistols\DE\data\gold_DE_co.paa"
-		};
-		hiddenSelectionsMaterials[]=
-		{
-			"dz\weapons\pistols\DE\data\gold_de.rvmat"
-		};
+		dexterity=3;
+		itemSize[]={3,3};
 		class Particles
 		{
 			class OnFire
@@ -223,7 +254,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\pistols\DE\data\gold_de.rvmat"
+								"DZ\weapons\pistols\p1\data\p38.rvmat",
 							}
 						},
 						
@@ -231,7 +262,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\pistols\DE\data\gold_de_damage.rvmat"
+								"DZ\weapons\pistols\p1\data\p38_damage.rvmat",
 							}
 						},
 						
@@ -239,7 +270,7 @@ class cfgWeapons
 							0,
 							
 							{
-								"DZ\weapons\pistols\DE\data\gold_de_destruct.rvmat"
+								"DZ\weapons\pistols\p1\data\p38_destruct.rvmat"
 							}
 						}
 					};
@@ -250,31 +281,31 @@ class cfgWeapons
 };
 class cfgRecoils
 {
-	recoil_DE[]=
+	recoil_p1[]=
 	{
 		0,
 		0,
 		0,
 		0.039999999,
-		"0.036943*(1)",
-		"0.0134348*(3)",
+		"0.036943*(0.8)",
+		"0.0134348*(2.3)",
 		0.079999998,
-		"0.019755*(1)",
-		"0.003056*(3)",
+		"0.019755*(0.8)",
+		"0.003056*(2.3)",
 		0.090000004,
 		0,
 		0,
 		0.14,
-		"-0.003138*(1)",
-		"-0.0005*(3)",
+		"-0.003138*(0.8)",
+		"-0.0005*(2.3)",
 		0.079999998,
-		"-0.001177*(1)",
-		"-0.000188*(3)",
+		"-0.001177*(0.8)",
+		"-0.000188*(2.3)",
 		0.12,
 		0,
 		0
 	};
-	recoil_DE_prone[]=
+	recoil_p1_prone[]=
 	{
 		0,
 		0,
@@ -302,10 +333,10 @@ class cfgRecoils
 class CfgNonAIVehicles
 {
 	class ProxyAttachment;
-	class ProxyDE: ProxyAttachment
+	class ProxyGlock: ProxyAttachment
 	{
 		scope=2;
 		inventorySlot="pistol";
-		model="\dz\weapons\pistols\DE\DE.p3d";
+		model="\dz\weapons\pistols\glock\Glock19.p3d";
 	};
 };

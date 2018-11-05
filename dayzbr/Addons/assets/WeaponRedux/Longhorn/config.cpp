@@ -86,27 +86,6 @@ class cfgWeapons
 					"LongHorn_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\LongHorn\LongHorn_close_0",
-				1,
-				1,
-				900
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\LongHorn\LongHorn_close_1",
-				1,
-				1,
-				900
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\LongHorn\LongHorn_close_2",
-				1,
-				1,
-				900
-			};
 			soundBegin[]=
 			{
 				"begin1",

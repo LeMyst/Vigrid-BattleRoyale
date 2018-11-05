@@ -4,7 +4,7 @@ class CfgPatches
 	{
 		units[]=
 		{
-			"ShotgunMp133"
+			"ShotgunMp133",
 		};
 		weapons[]={};
 		requiredVersion=0.1;
@@ -82,7 +82,7 @@ class cfgWeapons
 		};
 		modes[]=
 		{
-			"Single"
+			"Single",
 		};
 		class Single: Mode_SemiAuto
 		{
@@ -100,34 +100,6 @@ class cfgWeapons
 					"Ruger1022_silencerHomeMadeTail_SoundSet",
 					"Ruger1022_silencerInteriorHomeMadeTail_SoundSet"
 				}
-			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\Ruger1022\Ruger1022_close_0auth",
-				0.80000001,
-				1,
-				175
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\Ruger1022\Ruger1022_close_1auth",
-				0.80000001,
-				1,
-				175
-			};
-			soundBegin[]=
-			{
-				"begin1",
-				0.5,
-				"begin2",
-				0.5
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				0.050000001,
-				1,
-				100
 			};
 			soundBeginExt[]=
 			{

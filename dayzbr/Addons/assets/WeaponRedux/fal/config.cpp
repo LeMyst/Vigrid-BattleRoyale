@@ -54,7 +54,7 @@ class cfgWeapons
 		};
 		magazines[]=
 		{
-			"Mag_FAL_20Rnd"
+			"Mag_FAL_20Rnd",
 
 		};
 		magazineSwitchTime=0.2;
@@ -107,27 +107,6 @@ class cfgWeapons
 					"FNFAL_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\svd\svd_single_0",
-				1,
-				1,
-				900
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\svd\svd_single_1",
-				1,
-				1,
-				900
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\svd\svd_single_2",
-				1,
-				1,
-				900
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -142,20 +121,6 @@ class cfgWeapons
 			recoilProne="recoil_FAL_prone";
 			dispersion=0.0007;
 			magazineSlot="magazine";
-			beginSilenced_Pro[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				1,
-				1,
-				200
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				1,
-				1,
-				300
-			};
 			soundBeginExt[]=
 			{
 				

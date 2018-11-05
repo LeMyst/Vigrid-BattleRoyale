@@ -105,27 +105,6 @@ class cfgWeapons
 					"AK_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\AkSilenced",
-				1,
-				1,
-				100
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\AkSilenced",
-				1,
-				1,
-				100
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\AkSilenced",
-				1,
-				1,
-				100
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -140,20 +119,6 @@ class cfgWeapons
 			recoilProne="recoil_VSS_prone";
 			dispersion=0.0020000001;
 			magazineSlot="magazine";
-			beginSilenced_Pro[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				0.30000001,
-				1,
-				75
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				0.30000001,
-				1,
-				100
-			};
 			soundBeginExt[]=
 			{
 				

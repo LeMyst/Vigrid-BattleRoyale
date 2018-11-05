@@ -77,7 +77,7 @@ class cfgWeapons
 		};
 		modes[]=
 		{
-			"Single"
+			"Single",
 		};
 		class Single: Mode_SemiAuto
 		{
@@ -96,27 +96,6 @@ class cfgWeapons
 					"Ruger1022_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\Ruger1022\Ruger1022_close_0auth",
-				1,
-				1,
-				300
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\Ruger1022\Ruger1022_close_1auth",
-				1,
-				1,
-				300
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\Ruger1022\Ruger1022_close_2",
-				1,
-				1,
-				300
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -131,13 +110,6 @@ class cfgWeapons
 			recoilProne="recoil_single_primary_1outof10";
 			dispersion=0.0025;
 			magazineSlot="magazine";
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\Ruger1022\Ruger1022_close_0auth",
-				1,
-				1,
-				300
-			};
 			soundBeginExt[]=
 			{
 				

@@ -8,7 +8,8 @@ class CfgPatches
 		requiredAddons[]=
 		{
 			"DZ_Data",
-			"DZ_Sounds_Weapons"
+			"DZ_Sounds_Weapons",
+			"WeaponPack_Scripts"
 		};
 	};
 };

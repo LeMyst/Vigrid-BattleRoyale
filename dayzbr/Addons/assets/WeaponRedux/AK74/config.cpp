@@ -107,27 +107,6 @@ class cfgWeapons
 					"AK_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\akm\Akm_single_0",
-				1,
-				1,
-				800
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\akm\Akm_single_1",
-				1,
-				1,
-				800
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\akm\Akm_single_2",
-				1,
-				1,
-				800
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -192,27 +171,6 @@ class cfgWeapons
 					"AK_silencerHomeMadeTail_SoundSet",
 					"AK_silencerInteriorHomeMadeTail_SoundSet"
 				}
-			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\akm\Akm_single_0",
-				1,
-				1,
-				800
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\akm\Akm_single_1",
-				1,
-				1,
-				800
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\akm\Akm_single_2",
-				1,
-				1,
-				800
 			};
 			soundBegin[]=
 			{

@@ -129,27 +129,6 @@ class cfgWeapons
 					"M4_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_1",
-				1,
-				1,
-				1000
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_2",
-				1,
-				1,
-				1000
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_3",
-				1,
-				1,
-				1000
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -164,27 +143,6 @@ class cfgWeapons
 			recoilProne="recoil_m4_prone";
 			dispersion=0.0015;
 			magazineSlot="magazine";
-			beginSilenced_Pro1[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				75
-			};
-			beginSilenced_Pro2[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced2",
-				1,
-				1,
-				75
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				150
-			};
 			soundBeginExt[]=
 			{
 				
@@ -224,27 +182,6 @@ class cfgWeapons
 					"M4_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_1",
-				1.7782794,
-				1,
-				1000
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_2",
-				1.7782794,
-				1,
-				1000
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_3",
-				1.7782794,
-				1,
-				1000
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -259,27 +196,6 @@ class cfgWeapons
 			recoilProne="recoil_m4_prone";
 			dispersion=0.0015;
 			magazineSlot="magazine";
-			beginSilenced_Pro1[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				75
-			};
-			beginSilenced_Pro2[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced2",
-				1,
-				1,
-				75
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"ddz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				150
-			};
 			soundBeginExt[]=
 			{
 				

@@ -35,7 +35,7 @@ class cfgWeapons
 		absorbency=0.1;
 		repairableWithKits[]={5,1};
 		repairCosts[]={30,25};
-		//discreteDistance[]={25};
+		discreteDistance[]={100};
 		//discreteDistanceInitIndex=0;
 		modelOptics="-";
 		distanceZoomMin=100;
@@ -101,27 +101,6 @@ class cfgWeapons
 					"M4_silencerInteriorHomeMadeTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_1",
-				1.7782794,
-				1,
-				1000
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_2",
-				1.7782794,
-				1,
-				1000
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4_single_3",
-				1.7782794,
-				1,
-				1000
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -136,27 +115,6 @@ class cfgWeapons
 			recoilProne="recoil_m249_prone";
 			dispersion=0.002;
 			magazineSlot="magazine";
-			beginSilenced_Pro1[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				75
-			};
-			beginSilenced_Pro2[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced2",
-				1,
-				1,
-				75
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"ddz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				150
-			};
 			soundBeginExt[]=
 			{
 				

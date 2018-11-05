@@ -89,7 +89,7 @@ class cfgWeapons
 		};
 		modes[]=
 		{
-			"Single"
+			"Single",
 		};
 		class Single: Mode_SemiAuto
 		{
@@ -108,27 +108,6 @@ class cfgWeapons
 					"CR527_silencerInteriorTail_SoundSet"
 				}
 			};
-			begin1[]=
-			{
-				"dz\sounds\weapons\firearms\cz527\cz527_single_0",,
-				1,
-				1,
-				1000
-			};
-			begin2[]=
-			{
-				"dz\sounds\weapons\firearms\cz527\cz527_single_1",
-				1,
-				1,
-				1000
-			};
-			begin3[]=
-			{
-				"dz\sounds\weapons\firearms\cz527\cz527_single_2",
-				1,
-				1,
-				1000
-			};
 			soundBegin[]=
 			{
 				"begin1",
@@ -137,13 +116,6 @@ class cfgWeapons
 				0.33333001,
 				"begin2",
 				0.33333001
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				150
 			};
 			soundBeginExt[]=
 			{
