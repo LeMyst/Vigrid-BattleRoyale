@@ -121,20 +121,6 @@ class cfgWeapons
 			recoilProne="recoil_AK74_prone";
 			dispersion=0.0015;
 			magazineSlot="magazine";
-			beginSilenced_Pro[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				1,
-				1,
-				200
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				1,
-				1,
-				300
-			};
 			soundBeginExt[]=
 			{
 				
@@ -186,20 +172,6 @@ class cfgWeapons
 			recoilProne="recoil_AK74_prone";
 			dispersion=0.0015;
 			magazineSlot="magazine";
-			beginSilenced_Pro[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				1,
-				1,
-				200
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\AK101\akSilenced",
-				1,
-				1,
-				300
-			};
 			soundBeginExt[]=
 			{
 				

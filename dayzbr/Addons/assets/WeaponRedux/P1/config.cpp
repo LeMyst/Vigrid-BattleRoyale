@@ -109,20 +109,6 @@ class cfgWeapons
 			recoilProne="recoil_p1_prone";
 			dispersion=0.0060000001;
 			magazineSlot="magazine";
-			beginSilenced_Pro[]=
-			{
-				"dz\sounds\weapons\firearms\waltherP1\P1Silenced",
-				1,
-				1,
-				60
-			};
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\waltherP1\P1Silenced",
-				1,
-				1,
-				100
-			};
 			soundBeginExt[]=
 			{
 				

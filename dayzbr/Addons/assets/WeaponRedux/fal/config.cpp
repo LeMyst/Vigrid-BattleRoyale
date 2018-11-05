@@ -71,10 +71,10 @@ class cfgWeapons
 		reloadAction="ReloadAKM";
 		reloadMagazineSound[]=
 		{
-			"dz\sounds\weapons\firearms\ump45\ump45_reload",
+			"dz\sounds\weapons\firearms\AK74\ak74_reload",
 			0.80000001,
 			1,
-			30
+			20
 		};
 		hiddenSelections[]=
 		{
@@ -268,7 +268,7 @@ class cfgWeapons
 		};
 		hiddenSelectionsMaterials[]=
 		{
-			"dz\weapons\firearms\AKM\data\fal.rvmat"
+			"dz\weapons\firearms\fal\data\fal.rvmat"
 		};
 		class Particles
 		{

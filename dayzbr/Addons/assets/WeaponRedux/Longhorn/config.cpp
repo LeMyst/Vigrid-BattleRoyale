@@ -97,13 +97,6 @@ class cfgWeapons
 			};
 			recoil="recoil_longhorn";
 			recoilProne="recoil_longhorn_prone";
-			beginSilenced_HomeMade[]=
-			{
-				"dz\sounds\weapons\firearms\m4a1\m4Silenced",
-				1,
-				1,
-				150
-			};
 			soundBeginExt[]=
 			{
 				

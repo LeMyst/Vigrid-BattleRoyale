@@ -70,14 +70,14 @@ class cfgWeapons
 		reloadAction="ReloadAKM";
 		reloadMagazineSound[]=
 		{
-			"dz\sounds\weapons\firearms\cz527\cz527_reload_0",
+			"dz\sounds\weapons\firearms\CR527\cz527_reload_0",
 			0.80000001,
 			1,
 			30
 		};
 		reloadSound[]=
 		{
-			"dz\sounds\weapons\firearms\cz527\cz527_cycling_0",
+			"dz\sounds\weapons\firearms\CR527\cz527_cycling_0",
 			0.80000001,
 			1,
 			30

@@ -191,11 +191,11 @@ class cfgWeapons
 		dexterity=3.6;
 		hiddenSelectionsTextures[]=
 		{
-			"dz\weapons\pistols\fnx45\data\1911_co.paa"
+			"dz\weapons\pistols\1911\data\1911_co.paa"
 		};
 		hiddenSelectionsMaterials[]=
 		{
-			"dz\weapons\pistols\fnx45\data\1911.rvmat"
+			"dz\weapons\pistols\1911\data\1911.rvmat"
 		};
 		class Particles
 		{

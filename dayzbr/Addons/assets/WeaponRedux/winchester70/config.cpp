@@ -76,7 +76,7 @@ class cfgWeapons
 		};
 		reloadSound[]=
 		{
-			"DZ\sounds\weapons\firearms\mosin9130\mosin_cycling",
+			"dz\sounds\weapons\firearms\mosin9130\mosin_reloading",
 			0.80000001,
 			1,
 			20

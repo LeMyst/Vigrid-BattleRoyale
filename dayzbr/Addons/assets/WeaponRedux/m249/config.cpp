@@ -219,8 +219,8 @@ class cfgWeapons
 			mat[]=
 			{
 				"DZ\weapons\firearms\m249\data\m249.rvmat",
-				"DZ\weapons\firearms\m249\data\m249_damage.rvmat",
-				"DZ\weapons\firearms\m249\data\m249_destruct.rvmat"
+				"DZ\weapons\firearms\m249\data\m249.rvmat",
+				"DZ\weapons\firearms\m249\data\m249.rvmat",
 			};
 		};
 	};
