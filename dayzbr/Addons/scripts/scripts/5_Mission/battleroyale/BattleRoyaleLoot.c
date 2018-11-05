@@ -78,7 +78,7 @@ class BattleRoyaleLoot
 		ref array<EntityAI> SpawnedItems = SpawnLootAt(Items,world_pos);
 		last_round_items.InsertAll(SpawnedItems); //add to garbage collection
 	}
-
+	
 	array<EntityAI> SpawnLootAt(array<string> itemList,vector world_pos)
 	{
 		ref array<EntityAI> outItems = new array<EntityAI>();
@@ -106,29 +106,40 @@ class BattleRoyaleLoot
 			string configPath = "CfgVehicles " + itemName + " attachments";
 			ref array<string> attachmentArray = new array<string>();
 			GetGame().ConfigGetTextArray(configPath,attachmentArray);
+			if(attachmentArray.Count() == 0)
+			{
+				configPath = "CfgWeapons " + itemName + " attachments";
+				GetGame().ConfigGetTextArray(configPath,attachmentArray);
+			}
 			
 			
 			Object obj;
 			EntityAI item;
 			
-			if(GetGame().isKindOf(itemName, "Rifle_Base"))
+			if(GetGame().IsKindOf(itemName, "Rifle_Base"))
 			{
 				//this is a weapon, spawn it on ground
-				item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos))
+				item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
 				parent_weapon = item;
 
-				
-				//This is our weapon, nab its attachment slots from config
-				parent_attachment_slots.InsertAll(attachmentArray);
+				//This is our weapon, nab its attachment slots from config (lower case all of them (thanks dayz))
+				for(int j = 0; j < attachmentArray.Count(); j++)
+				{
+					string slot = attachmentArray.Get(j);
+					slot.ToLower();
+					parent_attachment_slots.Insert(slot);
+				}
 			}
 			else
 			{
 				if(parent_weapon)
 				{
+					//get attachment inventory slot destination
 					configPath = "CfgVehicles " + itemName + " inventorySlot";
 					string slotName;
 					if(GetGame().ConfigGetText(configPath, slotName))
 					{
+						slotName.ToLower();
 						if(parent_attachment_slots.Find(slotName) >= 0)
 						{
 							//attachable item, attempt to spawn in primary weapon
@@ -139,16 +150,25 @@ class BattleRoyaleLoot
 							}
 							else
 							{
-								//failed to attach, create on ground
-								item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos))
+								item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
 							}
+						}
+						else
+						{
+							//cannot attach to this weapon
+							item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
 						}
 					}
 					else
 					{
 						//Not an attachable item (spawn it on ground)
-						item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos))
+						item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
 					}
+				}
+				else
+				{
+					//No parent item
+					item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
 				}
 			}
 			
