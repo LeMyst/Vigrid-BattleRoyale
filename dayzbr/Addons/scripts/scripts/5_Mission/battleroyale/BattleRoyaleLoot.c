@@ -96,7 +96,7 @@ class BattleRoyaleLoot
 		*/
 		
 		EntityAI parent_weapon; //if we spawn a weapon, then this gets set. If this is set, we need to figure out if each item added afterwards is an attachment for this
-		
+		ref array<string> parent_attachment_slots = new array<string>();
 		
 		for(int i = 0; i < itemList.Count();i++)
 		{
@@ -110,32 +110,57 @@ class BattleRoyaleLoot
 			
 			Object obj;
 			EntityAI item;
-			if(itemName.Contains("M4A1"))
+			
+			if(GetGame().isKindOf(itemName, "Rifle_Base"))
 			{
-				item = GetGame().CreateObject(itemName,world_pos);
-				//item.GetInventory().CreateAttachment("M4_Suppressor");
-				//item.GetInventory().CreateAttachment("M4_CarryHandleOptic");
-				//outItems.Insert(item.GetInventory().CreateAttachment("M4_MPBttstck_Black"));
-				//outItems.Insert(item.GetInventory().CreateAttachment("M4_RISHndgrd_Black"));
-			}
-			else if(itemName == ("AKM"))
-			{
-				item = GetGame().CreateObject(itemName,world_pos);
-				//item.GetInventory().CreateAttachment("AK_Suppressor");
-				//outItems.Insert(item.GetInventory().CreateAttachment("AK_PlasticBttstck_Black"));
-				//outItems.Insert(item.GetInventory().CreateAttachment("AK_RailHndgrd_Black"));
+				//this is a weapon, spawn it on ground
+				item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos))
+				parent_weapon = item;
+
+				
+				//This is our weapon, nab its attachment slots from config
+				parent_attachment_slots.InsertAll(attachmentArray);
 			}
 			else
 			{
-				obj = GetGame().CreateObject(itemName,world_pos);
-				item = EntityAI.Cast(obj);
+				if(parent_weapon)
+				{
+					configPath = "CfgVehicles " + itemName + " inventorySlot";
+					string slotName;
+					if(GetGame().ConfigGetText(configPath, slotName))
+					{
+						if(parent_attachment_slots.Find(slotName) >= 0)
+						{
+							//attachable item, attempt to spawn in primary weapon
+							EntityAI attachment = parent_weapon.GetInventory().CreateAttachment(itemName);
+							if(attachment)
+							{
+								
+							}
+							else
+							{
+								//failed to attach, create on ground
+								item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos))
+							}
+						}
+					}
+					else
+					{
+						//Not an attachable item (spawn it on ground)
+						item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos))
+					}
+				}
 			}
 			
 			//obj.PlaceOnSurface();
 			if(attachmentArray.Find("BatteryD") >= 0)
 			{
 				//add battery to the item
-				item.GetInventory().CreateAttachment("Battery9V");
+				EntityAI battery = item.GetInventory().CreateAttachment("Battery9V");
+				if(battery)
+				{
+					outItems.Insert(battery); //add battery to garbage collector
+				}
 			}
 			outItems.Insert(item);
 		}
