@@ -39,7 +39,8 @@ enum TextureTypes
 	SHIRT_Blink,
 	SHIRT_Chazie,
 	SHIRT_PSI,
-	SHIRT_Septic
+	SHIRT_Septic,
+	SHIRT_CC
 }
 
 enum SkinCategories
@@ -319,6 +320,7 @@ class SkinMenu extends UIScriptedMenu
 			Skin_items.Insert( new SkinMenuItem( TextureTypes.SHIRT_PSI, 	"PsiSyn", 		SkinCategories.SHIRT_SKIN ) );
 			Skin_items.Insert( new SkinMenuItem( TextureTypes.SHIRT_Septic, 	"SepticFalcon", 		SkinCategories.SHIRT_SKIN ) );
 			Skin_items.Insert( new SkinMenuItem( TextureTypes.SHIRT_Chazie, 	"Chazie95", 		SkinCategories.SHIRT_SKIN ) );
+			Skin_items.Insert( new SkinMenuItem( TextureTypes.SHIRT_CC, 	"CaptainCuddles", 		SkinCategories.SHIRT_SKIN ) );
 		}
 	}
 		
@@ -439,6 +441,9 @@ class SkinMenu extends UIScriptedMenu
 				break;
 			case TextureTypes.SHIRT_Septic:
 				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_white_septic.paa";
+				break;
+			case TextureTypes.SHIRT_CC:
+				texture = "dayzbr\\assets\\textures\\shirt\\tshirt_grey_cc.paa";
 				break;
 				
 			//Mosin Colors
