@@ -89,7 +89,7 @@ class cfgWeapons
 		};
 		modes[]=
 		{
-			"Single",
+			"Single"
 		};
 		class Single: Mode_SemiAuto
 		{
@@ -307,7 +307,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\firearms\scout\data\scout.rvmat",
+								"DZ\weapons\firearms\scout\data\scout.rvmat"
 							}
 						},
 						
@@ -315,7 +315,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\firearms\scout\data\scout_damage.rvmat",
+								"DZ\weapons\firearms\scout\data\scout_damage.rvmat"
 							}
 						},
 						

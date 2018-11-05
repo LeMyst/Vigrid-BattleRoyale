@@ -219,11 +219,11 @@ class cfgWeapons
 		dexterity=3.6;
 		hiddenSelectionsTextures[]=
 		{
-			"dz\weapons\pistols\fnx45\data\1911_co.paa"
+			"dz\weapons\pistols\1911\data\1911_co.paa"
 		};
 		hiddenSelectionsMaterials[]=
 		{
-			"dz\weapons\pistols\fnx45\data\1911.rvmat"
+			"dz\weapons\pistols\1911\data\1911.rvmat"
 		};
 		class Particles
 		{
@@ -274,7 +274,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\pistols\1911\data\1911.rvmat",
+								"DZ\weapons\pistols\1911\data\1911.rvmat"
 							}
 						},
 						
@@ -282,7 +282,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\pistols\1911\data\1911_damage.rvmat",
+								"DZ\weapons\pistols\1911\data\1911_damage.rvmat"
 							}
 						},
 						
@@ -367,7 +367,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\pistols\1911\data\1911_engraved.rvmat",
+								"DZ\weapons\pistols\1911\data\1911_engraved.rvmat"
 							}
 						},
 						
@@ -375,7 +375,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\pistols\1911\data\1911_engraved_damage.rvmat",
+								"DZ\weapons\pistols\1911\data\1911_engraved_damage.rvmat"
 							}
 						},
 						

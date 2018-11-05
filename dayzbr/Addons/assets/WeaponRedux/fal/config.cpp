@@ -54,7 +54,7 @@ class cfgWeapons
 		};
 		magazines[]=
 		{
-			"Mag_FAL_20Rnd",
+			"Mag_FAL_20Rnd"
 
 		};
 		magazineSwitchTime=0.2;

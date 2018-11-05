@@ -286,7 +286,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\pistols\glock\data\glock19.rvmat",
+								"DZ\weapons\pistols\glock\data\glock19.rvmat"
 							}
 						},
 						
@@ -294,7 +294,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\pistols\glock\data\glock19_damage.rvmat",
+								"DZ\weapons\pistols\glock\data\glock19_damage.rvmat"
 							}
 						},
 						

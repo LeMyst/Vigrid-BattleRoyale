@@ -4,7 +4,7 @@ class CfgPatches
 	{
 		units[]=
 		{
-			"ShotgunMp133",
+			"ShotgunMp133"
 		};
 		weapons[]={};
 		requiredVersion=0.1;
@@ -82,7 +82,7 @@ class cfgWeapons
 		};
 		modes[]=
 		{
-			"Single",
+			"Single"
 		};
 		class Single: Mode_SemiAuto
 		{
@@ -275,7 +275,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\firearms\Trumpet\data\trumpet.rvmat",
+								"DZ\weapons\firearms\Trumpet\data\trumpet.rvmat"
 							}
 						},
 						
@@ -283,7 +283,7 @@ class cfgWeapons
 							0.5,
 							
 							{
-								"DZ\weapons\firearms\Trumpet\data\trumpet_damage.rvmat",
+								"DZ\weapons\firearms\Trumpet\data\trumpet_damage.rvmat"
 							}
 						},
 						

@@ -77,7 +77,7 @@ class cfgWeapons
 		};
 		modes[]=
 		{
-			"Single",
+			"Single"
 		};
 		class Single: Mode_SemiAuto
 		{

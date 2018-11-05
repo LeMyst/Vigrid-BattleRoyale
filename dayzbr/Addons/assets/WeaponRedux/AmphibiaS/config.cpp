@@ -257,7 +257,7 @@ class cfgWeapons
 							1,
 							
 							{
-								"DZ\weapons\pistols\mkii\data\ruger_metal_1.rvmat",
+								"DZ\weapons\pistols\mkii\data\ruger_metal_1.rvmat"
 							}
 						},
 						
