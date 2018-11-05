@@ -2309,33 +2309,629 @@ class CfgLoot
 {
 	class Weapons
 	{
-		num_items = 26;
-		Gear_1[] = {"M4A1_Black","ACOGOptic","Mag_STANAG_30Rnd","Mag_STANAG_30Rnd"};
-		Gear_2[] = {"M4A1","ACOGOptic","Mag_STANAG_30Rnd"};
-		Gear_3[] = {"M4A1","Mag_STANAG_30Rnd"};
-		Gear_4[] = {"M4A1","M68Optic","Mag_STANAG_30Rnd","Battery9V"};
-		Gear_5[] = {"M4A1","M68Optic","Mag_STANAG_30Rnd","Battery9V"};
-		Gear_6[] = {"AKM","PSO1Optic","Mag_AKM_30Rnd"}; 
-		Gear_7[] = {"AKM","Mag_AKM_Drum75Rnd"};
-		Gear_8[] = {"AKM","Mag_AKM_30Rnd"};
-		Gear_9[] = {"AKM","KobraOptic","Mag_AKM_30Rnd"};
-		Gear_10[] = {"Mosin9130","Ammo_762x54"};
-		Gear_11[] = {"Mosin9130","PUScopeOptic","Ammo_762x54"};
-		Gear_12[] = {"FirefighterAxe","UMP45","Mag_UMP_25Rnd"};
-		Gear_13[] = {"MP5K","Mag_MP5_15Rnd","Mag_MP5_30Rnd"};
-		Gear_14[] = {"SVD","PSO11Optic","Mag_SVD_10Rnd"};
-		Gear_15[] = {"FNX45","Mag_FNX45_15Rnd","Mag_FNX45_15Rnd"};
-		Gear_16[] = {"M4A1","M4_Suppressor","Mag_STANAGCoupled_30Rnd"};
-		Gear_17[] = {"AKM","AK_Suppressor","Mag_AKM_30Rnd"};
-		Gear_18[] = {"Mag_AKM_Drum75Rnd","AmmoBox_762x39_20Rnd","Ammo_556x45"};
-		Gear_19[] = {"AmmoBox_762x54_20Rnd","Mag_AKM_30Rnd","Mag_SVD_10Rnd"};
-		Gear_20[] = {"AmmoBox_762x39_20Rnd","Mag_AKM_30Rnd","Ammo_9x19"};
-		Gear_21[] = {"Mag_UMP_25Rnd","Ammo_45ACP","Ammo_45ACP"};
-		Gear_22[] = {"Mag_STANAGCoupled_30Rnd","Ammo_45ACP","Mag_MP5_30Rnd"};
-		Gear_23[] = {"Mag_STANAG_30Rnd","Ammo_45ACP","Mag_MP5_30Rnd"};
-		Gear_24[] = {"Mag_STANAG_30Rnd","Mag_MP5_30Rnd","Ammo_556x45"};
-		Gear_25[] = {"Mosin9130","DBR_HuntingOptic","Ammo_762x54",};
-		Gear_26[] = {"Mosin9130","DBR_LongrangeOptic","Ammo_762x54"};
+		num_items = 23;
+		class Gear_1
+		{
+			class Item_1
+			{
+				Types[] = {"M4A1"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"ACOGOptic","M68Optic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_STANAG_30Rnd", "Mag_STANAGCoupled_30Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_4
+			{
+				Types[] = {"M4_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_5
+			{
+				Types[] = {"M4_RISHndgrd_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_6
+			{
+				Types[] = {"M4_MPBttstck_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_2
+		{
+			class Item_1
+			{
+				Types[] = {"AKM"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PSO1Optic","KobraOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_AKM_30Rnd", "Mag_AKM_Drum75Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_4
+			{
+				Types[] = {"AK_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_5
+			{
+				Types[] = {"AK_PlasticBttstck_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_6
+			{
+				Types[] = {"AK_RailHndgrd_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_3
+		{
+			class Item_1
+			{
+				Types[] = {"Mosin9130"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PUScopeOptic","DBR_HuntingOptic","DBR_LongrangeOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Ammo_762x54"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_4
+		{
+			class Item_1
+			{
+				Types[] = {"MP5K"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"ACOGOptic","M68Optic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_MP5_15Rnd","Mag_MP5_30Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_4
+			{
+				Types[] = {"PistolSuppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_5
+			{
+				Types[] = {"MP5k_StockBttstck"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_5
+		{
+			class Item_1
+			{
+				Types[] = {"SVD"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PSO11Optic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_SVD_10Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_6
+		{
+			class Item_1
+			{
+				Types[] = {"FNX45"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_FNX45_15Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 3;
+			};
+		};
+		class Gear_7
+		{
+			class Item_1
+			{
+				Types[] = {"GP_Colt1911"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_1911_7Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 3;
+			};
+		};
+		class Gear_8
+		{
+			class Item_1
+			{
+				Types[] = {"GP_AK74"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PSO1Optic","KobraOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_AK74_30Rnd_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_4
+			{
+				Types[] = {"AK_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_5
+			{
+				Types[] = {"AK_PlasticBttstck_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_6
+			{
+				Types[] = {"AK_RailHndgrd_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_9
+		{
+			class Item_1
+			{
+				Types[] = {"GP_AK101"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PSO1Optic","KobraOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_AK101_30Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_4
+			{
+				Types[] = {"AK_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_5
+			{
+				Types[] = {"AK_PlasticBttstck_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_6
+			{
+				Types[] = {"AK_RailHndgrd_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_10
+		{
+			class Item_1
+			{
+				Types[] = {"GP_AKS74U"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_AK74_30Rnd_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_3
+			{
+				Types[] = {"AK_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_4
+			{
+				Types[] = {"AK_PlasticBttstck_Black"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_11
+		{
+			class Item_1
+			{
+				Types[] = {"GP_AugSteyr"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_STANAG_30Rnd", "Mag_STANAGCoupled_30Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_3
+			{
+				Types[] = {"M4_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_12
+		{
+			class Item_1
+			{
+				Types[] = {"GP_M249"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_M249_Box200Rnd","Mag_Stanag_30Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_3
+			{
+				Types[] = {"M4_Suppressor"};
+				chance = 0.25;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_13
+		{
+			class Item_1
+			{
+				Types[] = {"GP_SawedoffMosin9130"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PUScopeOptic","DBR_HuntingOptic","DBR_LongrangeOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Ammo_762x54"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_14
+		{
+			class Item_1
+			{
+				Types[] = {"GP_Scout_Green"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"ACOGOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Ammo_308Win"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_15
+		{
+			class Item_1
+			{
+				Types[] = {"GP_Winchester70"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"HuntingOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Ammo_308Win"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_16
+		{
+			class Item_1
+			{
+				Types[] = {"GP_FAL"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"ACOGOptic","BUISOptic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_FAL_20Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+			class Item_4
+			{
+				Types[] = {"Fal_OeBttstck"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+		};
+		class Gear_17
+		{
+			class Item_1
+			{
+				Types[] = {"GP_VSS"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"PSO1Optic"}; //NOTE: When spawning any item, check if it has a BatteryD inventory slot if so, spawn Battery9V with it
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_VSS_10Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_18
+		{
+			class Item_1
+			{
+				Types[] = {"GP_DE"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_DE_9rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 3;
+			};
+		};
+		class Gear_19
+		{
+			class Item_1
+			{
+				Types[] = {"GP_Glock19"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_Glock_15Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 3;
+			};
+		};
+		class Gear_20
+		{
+			class Item_1
+			{
+				Types[] = {"GP_Ruger1022"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"HuntingOptic"};
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Mag_Ruger1022_10Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_21
+		{
+			class Item_1
+			{
+				Types[] = {"GP_Trumpet"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"HuntingOptic"};
+				chance = 0.5;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_3
+			{
+				Types[] = {"Ammo_22"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_22
+		{
+			class Item_1
+			{
+				Types[] = {"GP_LongHorn"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Ammo_308Win"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 2;
+			};
+		};
+		class Gear_23
+		{
+			class Item_1
+			{
+				Types[] = {"GP_MKII"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 1;
+			};
+			class Item_2
+			{
+				Types[] = {"Mag_MKII_10Rnd"};
+				chance = 1;
+				min_spawn = 1;
+				max_spawn = 3;
+			};
+		};
 	};
 	
 	class Medical

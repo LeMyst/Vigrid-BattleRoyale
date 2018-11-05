@@ -8,7 +8,7 @@ class CfgMods
 		hideName = 1;
 		hidePicture = 1;
 		name = "DayZ BattleRoyale";
-		credits = "Kegan, Vulkan, BigBen";
+		credits = "Kegan, Vulkan, BigBen, Clarkycal, Legodev";
 		author = "Kegan";
 		authorID = "0"; 
 		version = "1.0"; 
