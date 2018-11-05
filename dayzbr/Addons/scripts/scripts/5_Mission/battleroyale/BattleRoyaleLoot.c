@@ -135,7 +135,7 @@ class BattleRoyaleLoot
 							EntityAI attachment = parent_weapon.GetInventory().CreateAttachment(itemName);
 							if(attachment)
 							{
-								
+								item = attachment;
 							}
 							else
 							{
