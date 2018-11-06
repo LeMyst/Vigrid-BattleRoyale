@@ -5,6 +5,8 @@ modded class MissionGameplay
 	void MissionGameplay()
 	{
 		//DestroyAllMenus();
+		DestroyInventory(); // ????
+		
 		m_Initialized				= false;
 		m_HudRootWidget				= null;
 		m_Chat						= new Chat;
@@ -125,6 +127,7 @@ modded class MissionGameplay
 		
 			if( input.GetActionDown(UAGear, false ) )
 			{
+				/*
 				if( !inventory )
 				{
 					ShowInventory();
@@ -133,6 +136,7 @@ modded class MissionGameplay
 				{
 					HideInventory();
 				}
+				*/
 			}
 
 			if (input.GetActionDown(UAChat, false))
