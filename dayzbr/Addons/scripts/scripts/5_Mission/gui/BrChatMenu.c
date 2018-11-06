@@ -5,9 +5,11 @@ class BrChatMenu extends ChatInputMenu
 	protected ref Timer new_m_close_timer;
 	static int m_current_channel = 0;
 	
+	protected ref MissionBase new_m_mission;
 	
-	void BrChatMenu()
+	void BrChatMenu(ref MissionBase mission)
 	{
+		new_m_mission = mission;
 		new_m_close_timer = new Timer();
 	}
 
@@ -17,7 +19,6 @@ class BrChatMenu extends ChatInputMenu
 		new_m_edit_box = EditBoxWidget.Cast( layoutRoot.FindAnyWidget("InputEditBoxWidget") );
 		new_m_channel_text = TextWidget.Cast( layoutRoot.FindAnyWidget("ChannelText") );
 		
-		new_m_channel_text.Show(true);
 		
 		
 		UpdateChannel();
@@ -43,8 +44,7 @@ class BrChatMenu extends ChatInputMenu
 		BRLOG("Chat message: " + text);
 		if (text != "")
 		{
-			bool test_global_chat = false; //TODO: flip this to true if you want to test global chat through ChatPlayer
-			if(m_current_channel == 1 && !test_global_chat)
+			if(BrChatMenu.m_current_channel == 1)
 			{
 				//Global Chat RPC
 				BRLOG("GLOBAL CHAT");
@@ -55,11 +55,14 @@ class BrChatMenu extends ChatInputMenu
 			{
 				//Local chat
 				BRLOG("LOCAL CHAT");
-				GetGame().ChatPlayer(m_current_channel, text);
+				GetGame().ChatPlayer(0, text);
 			}
 		}
 
 		new_m_close_timer.Run(0.1, this, "Close");
+		
+		GetGame().GetMission().HideChat();
+		
 		return true;
 	}
 
@@ -75,26 +78,26 @@ class BrChatMenu extends ChatInputMenu
 		
 		if(GetGame().GetInput().GetActionUp(UAZeroingUp,false))
 		{
-			switch(m_current_channel)
+			switch(BrChatMenu.m_current_channel)
 			{
 				case 0:
-					m_current_channel = 1;
+					BrChatMenu.m_current_channel = 1;
 					break;
 				case 1:
-					m_current_channel = 0;
+					BrChatMenu.m_current_channel = 0;
 					break;
 			}	
 			UpdateChannel();
 		}
 		if(GetGame().GetInput().GetActionUp(UAZeroingDown,false))
 		{
-			switch(m_current_channel)
+			switch(BrChatMenu.m_current_channel)
 			{
 				case 0:
-					m_current_channel = 1;
+					BrChatMenu.m_current_channel = 1;
 					break;
 				case 1:
-					m_current_channel = 0;
+					BrChatMenu.m_current_channel = 0;
 					break;
 			}	
 			UpdateChannel();
@@ -103,13 +106,15 @@ class BrChatMenu extends ChatInputMenu
 	
 	override void UpdateChannel()
 	{
-		if(new_m_channel_text)
+		if(new_m_mission)
 		{
-			new_m_channel_text.SetText(GetChannelName(m_current_channel));	
+			new_m_mission.m_ChatChannelText.SetText(GetChannelName(BrChatMenu.m_current_channel));
+			new_m_mission.m_ChatChannelFadeTimer.FadeIn(new_m_mission.m_ChatChannelArea, 0.5, true);
+			new_m_mission.m_ChatChannelHideTimer.Run(2, new_m_mission.m_ChatChannelFadeTimer, "FadeOut", new Param3<Widget, float, bool>(new_m_mission.m_ChatChannelArea, 0.5, true));
 		}
 	}
 	
-	override static string GetChannelName(ChatChannel channel)
+	override static string GetChannelName(int channel)
 	{
 		switch(channel)
 		{

@@ -63,9 +63,9 @@ modded class MissionBase
 			case MENU_SCRIPTCONSOLE_DIALOG_PRESET_RENAME:
 				menu = new ScriptConsoleRenamePresetDialog;
 				break;
-			case MENU_CHAT_INPUT:
+			/*case MENU_CHAT_INPUT:
 				menu = new ChatInputMenu;
-				break;
+				break;*/
 			case MENU_CONTROLS_PRESET:
 				menu = new PresetsMenu;
 				break;
@@ -84,9 +84,9 @@ modded class MissionBase
 			case MENU_HELP_SCREEN:
 				menu = new HelpScreen;
 				break;
-			case MENU_GESTURES:
+			/*case MENU_GESTURES:
 				menu = new GesturesMenu;
-				break;	
+				break;	*/
 			case MENU_LOGOUT:
 				menu = new LogoutMenu;
 				break;
