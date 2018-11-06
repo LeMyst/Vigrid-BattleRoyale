@@ -108,13 +108,33 @@ class BrChatMenu extends ChatInputMenu
 	{
 		if(new_m_mission)
 		{
-			new_m_mission.m_ChatChannelText.SetText(GetChannelName(BrChatMenu.m_current_channel));
+			new_m_mission.m_ChatChannelText.SetText(GetChannelNameInt(BrChatMenu.m_current_channel));
 			new_m_mission.m_ChatChannelFadeTimer.FadeIn(new_m_mission.m_ChatChannelArea, 0.5, true);
 			new_m_mission.m_ChatChannelHideTimer.Run(2, new_m_mission.m_ChatChannelFadeTimer, "FadeOut", new Param3<Widget, float, bool>(new_m_mission.m_ChatChannelArea, 0.5, true));
 		}
 	}
 	
-	override static string GetChannelName(int channel)
+	static string GetChannelNameInt(int channel)
+	{
+		switch(channel)
+		{
+			case 0:
+				return "Direct"; //This is actually "None" the default value for dayz
+			case 1:
+				return "Global";
+			case 3:
+				return "Radio"; 
+			case 6:
+				return "Direct";      
+			case 18:
+				return "Status";   
+			case 19:
+				return "System";   
+		}	
+		
+		return "";
+	}
+	override static string GetChannelName(ChatChannel channel)
 	{
 		switch(channel)
 		{
