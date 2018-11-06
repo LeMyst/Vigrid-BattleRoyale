@@ -96,12 +96,12 @@ class BrChatMenu extends UIScriptedMenu
 		}
 	}
 	
-	override void UpdateChannel()
+	void UpdateChannel()
 	{
 		new_m_channel_text.SetText(GetChannelName(m_current_channel));	
 	}
 	
-	override static string GetChannelName(ChatChannel channel)
+	static string GetChannelName(ChatChannel channel)
 	{
 		switch(channel)
 		{
