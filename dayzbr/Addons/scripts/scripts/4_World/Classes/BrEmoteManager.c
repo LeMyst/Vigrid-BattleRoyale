@@ -97,6 +97,7 @@ modded class EmoteManager
 				{
 					m_IsSurrendered = !m_IsSurrendered; //invalid position, surrender state cannot proceed
 				}*/
+				
 			}
 		}
 		
