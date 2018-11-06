@@ -1,4 +1,4 @@
-class BrChatMenu extends ChatInputMenu
+class BrChatMenu extends UIScriptedMenu
 {
 	EditBoxWidget new_m_edit_box;
 	TextWidget new_m_channel_text;
@@ -13,7 +13,7 @@ class BrChatMenu extends ChatInputMenu
 
 	override Widget Init()
 	{
-		layoutRoot = super.Init();
+		layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/day_z_chat_input.layout");
 		new_m_edit_box = EditBoxWidget.Cast( layoutRoot.FindAnyWidget("InputEditBoxWidget") );
 		new_m_channel_text = TextWidget.Cast( layoutRoot.FindAnyWidget("ChannelText") );
 		
@@ -31,10 +31,7 @@ class BrChatMenu extends ChatInputMenu
 	
 	override bool OnChange(Widget w, int x, int y, bool finished)
 	{
-		if(!finished)
-		{
-			super.OnChange(w, x, y, finished);
-		}
+		super.OnChange(w, x, y, finished);
 		
 		if (!finished) return false;
 		
@@ -57,6 +54,8 @@ class BrChatMenu extends ChatInputMenu
 		}
 
 		new_m_close_timer.Run(0.1, this, "Close");
+		
+		GetGame().GetMission().HideChat();
 		return true;
 	}
 
@@ -68,6 +67,7 @@ class BrChatMenu extends ChatInputMenu
 	override void Update(float timeslice)
 	{
 		GetGame().GetInput().DisableKey(KeyCode.KC_RETURN);
+		//actions for changing chat channel
 		if(GetGame().GetInput().GetAction(UANextAction,false) > 0)
 		{
 			switch(m_current_channel)

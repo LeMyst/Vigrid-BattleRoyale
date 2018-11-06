@@ -87,121 +87,6 @@ modded class MissionGameplay
 			m_Note.InitWrite(playerPB.m_paper,playerPB.m_writingImplement,playerPB.m_Handwriting);
 		}
 
-#ifdef PLATFORM_CONSOLE
-		//Quick Reload Weapon
-		if ( !menu && input.GetActionDown( UAQuickReload, false ) )
-		{
-			if ( !GetGame().IsInventoryOpen() && playerPB && !playerPB.GetActionManager().FindActionTarget().GetObject() )
-			{
-				EntityAI entity_hands = playerPB.GetHumanInventory().GetEntityInHands();
-				
-				if ( entity_hands && entity_hands.IsWeapon() )
-				{
-					playerPB.QuickReloadWeapon( entity_hands );
-				}
-			}
-		}
-
-		//Switch beween weapons in quickslots 
-		if( !menu && input.GetActionDown( UAUIRadialMenuPick, false ) )
-		{
-			if ( !GetGame().IsInventoryOpen() )
-			{
-				EntityAI entity_in_hands = playerPB.GetHumanInventory().GetEntityInHands();
-				EntityAI quickbar_entity;
-				int quickbar_index = 0;
-				
-				if ( entity_in_hands )
-				{			
-					int quickbar_entity_hands_index = playerPB.FindQuickBarEntityIndex( entity_in_hands );
-					
-					if ( quickbar_entity_hands_index > -1 && quickbar_entity_hands_index < MAX_QUICKBAR_SLOTS_COUNT - 1 )	//(0->8)
-					{
-						quickbar_index = quickbar_entity_hands_index + 1;
-					}
-				}
-
-				//find next weapon
-				for ( int iter = 0; iter < MAX_QUICKBAR_SLOTS_COUNT; ++iter )
-				{
-					quickbar_entity = playerPB.GetQuickBarEntity( quickbar_index );
-					
-					if ( quickbar_entity && ( quickbar_entity.IsWeapon() || ( quickbar_entity.IsMeleeWeapon() && !quickbar_entity.IsMagazine() ) ) )
-					{
-						break;
-					}
-					
-					quickbar_index += 1;
-					if ( quickbar_index > MAX_QUICKBAR_SLOTS_COUNT - 1 )
-					{
-						quickbar_index = 0;	//reset
-					}
-				}
-				
-				//swap
-				int slot_id;
-				if ( quickbar_index > -1 )
-				{
-					slot_id = quickbar_index + 1;
-					if ( slot_id == MAX_QUICKBAR_SLOTS_COUNT )
-					{
-						slot_id = 0;
-					}
-					
-					playerPB.RadialQuickBarSingleUse( slot_id );
-				}
-			}
-		}
-
-		//Gestures
-		if(input.GetActionDown(UAUIGesturesOpen, false))
-		{
-			//open gestures menu
-			if ( !GetUIManager().IsMenuOpen( MENU_GESTURES ) )
-			{
-				GesturesMenu.OpenMenu();
-			}
-		}
-		
-		if(input.GetActionUp(UAUIGesturesOpen, false))
-		{
-			//close gestures menu
-			if ( GetUIManager().IsMenuOpen( MENU_GESTURES ) )
-			{
-				GesturesMenu.CloseMenu();
-			}
-		}
-
-		//Radial quickbar
-		if(input.GetActionDown(UAUIQuickbarRadialOpen, false))
-		{
-			//open gestures menu
-			if ( !GetUIManager().IsMenuOpen( MENU_RADIAL_QUICKBAR ) )
-			{
-				RadialQuickbarMenu.OpenMenu();
-			}
-		}
-		
-		if(input.GetActionUp(UAUIQuickbarRadialOpen, false))
-		{
-			//close gestures menu
-			if ( GetUIManager().IsMenuOpen( MENU_RADIAL_QUICKBAR ) )
-			{
-				RadialQuickbarMenu.CloseMenu();
-			}
-		}
-		
-		//Radial Quickbar from inventory
-		if( GetGame().GetInput().GetActionUp( UAUIQuickbarRadialInventoryOpen, false ) )
-		{
-			//close radial quickbar menu
-			if ( GetGame().GetUIManager().IsMenuOpen( MENU_RADIAL_QUICKBAR ) )
-			{
-				RadialQuickbarMenu.CloseMenu();
-				RadialQuickbarMenu.SetItemToAssign( NULL );
-			}
-		}		
-#endif
 
 		if (player && m_LifeState == EPlayerStates.ALIVE && !player.IsUnconscious() )
 		{
@@ -211,7 +96,6 @@ modded class MissionGameplay
 				m_HudRootWidget.Show(true);
 			}
 			
-		#ifndef NO_GUI
 			// fade out black screen
 			
 			PlayerBaseClient playerPBC = PlayerBaseClient.Cast(player);
@@ -221,8 +105,6 @@ modded class MissionGameplay
 				 GetUIManager().ScreenFadeOut(0.5);
 			}
 			
-			
-		#endif
 		
 			if( input.GetActionDown(UAGear, false ) )
 			{
