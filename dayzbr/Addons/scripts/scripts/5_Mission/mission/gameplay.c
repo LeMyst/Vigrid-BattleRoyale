@@ -4,6 +4,23 @@ modded class MissionGameplay
 	
 	void MissionGameplay()
 	{
+		DestroyAllMenus();
+		m_Initialized				= false;
+		m_HudRootWidget				= null;
+		m_Chat						= new Chat;
+		m_ActionMenu				= new ActionMenu;
+		m_LifeState					= -1;
+		m_Hud						= new IngameHud;
+		m_ChatChannelFadeTimer		= new WidgetFadeTimer;
+		m_ChatChannelHideTimer		= new Timer(CALL_CATEGORY_GUI);
+		
+		m_ToggleHudTimer			= new Timer(CALL_CATEGORY_GUI);
+		
+		g_Game.m_loadingScreenOn	= true;
+		
+		SyncEvents.RegisterEvents();
+		g_Game.SetGameState( DayZGameState.IN_GAME );
+		PlayerBase.Event_OnPlayerDeath.Insert( Pause );
 	}
 	
 	override void OnInit()
@@ -17,6 +34,7 @@ modded class MissionGameplay
 	override void OnKeyPress(int key)
 	{
 		super.OnKeyPress(key);
+		
 		
 		if ( key == KeyCode.KC_PERIOD )
 		{
@@ -56,12 +74,9 @@ modded class MissionGameplay
 	}
 	
 	
-	//Fix for UI fade (DISABLED FOR TESTING)
+	//Fix for UI fade
 	override void OnUpdate(float timeslice)
 	{
-		super.OnUpdate(timeslice);
-		return;
-		
 		Man player = GetGame().GetPlayer();
 		PlayerBase playerPB = PlayerBase.Cast(player);
 		TickScheduler(timeslice);
