@@ -1,4 +1,4 @@
-class BrChatMenu extends UIScriptedMenu
+class BrChatMenu extends ChatInputMenu
 {
 	EditBoxWidget new_m_edit_box;
 	TextWidget new_m_channel_text;
@@ -13,7 +13,7 @@ class BrChatMenu extends UIScriptedMenu
 
 	override Widget Init()
 	{
-		layoutRoot = GetGame().GetWorkspace().CreateWidgets("gui/layouts/day_z_chat_input.layout");
+		layoutRoot = super.Init();
 		new_m_edit_box = EditBoxWidget.Cast( layoutRoot.FindAnyWidget("InputEditBoxWidget") );
 		new_m_channel_text = TextWidget.Cast( layoutRoot.FindAnyWidget("ChannelText") );
 		
@@ -31,31 +31,35 @@ class BrChatMenu extends UIScriptedMenu
 	
 	override bool OnChange(Widget w, int x, int y, bool finished)
 	{
-		super.OnChange(w, x, y, finished);
+		if(!finished)
+		{
+			super.OnChange(w, x, y, finished);
+		}
 		
 		if (!finished) return false;
 		
 		string text = new_m_edit_box.GetText();
 
+		BRLOG("Chat message: " + text);
 		if (text != "")
 		{
 			bool test_global_chat = false; //TODO: flip this to true if you want to test global chat through ChatPlayer
 			if(m_current_channel == 1 && !test_global_chat)
 			{
 				//Global Chat RPC
+				BRLOG("GLOBAL CHAT");
 				ref Param1<string> value_string = new Param1<string>(text);
 				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false, null, GetGame().GetPlayer() );
 			}
 			else
 			{
 				//Local chat
+				BRLOG("LOCAL CHAT");
 				GetGame().ChatPlayer(m_current_channel, text);
 			}
 		}
 
 		new_m_close_timer.Run(0.1, this, "Close");
-		
-		GetGame().GetMission().HideChat();
 		return true;
 	}
 
@@ -66,9 +70,10 @@ class BrChatMenu extends UIScriptedMenu
 	
 	override void Update(float timeslice)
 	{
+		
 		GetGame().GetInput().DisableKey(KeyCode.KC_RETURN);
-		//actions for changing chat channel
-		if(GetGame().GetInput().GetAction(UANextAction,false) > 0)
+		
+		if(GetGame().GetInput().GetActionUp(UAZeroingUp,false))
 		{
 			switch(m_current_channel)
 			{
@@ -81,7 +86,7 @@ class BrChatMenu extends UIScriptedMenu
 			}	
 			UpdateChannel();
 		}
-		if(GetGame().GetInput().GetAction(UAPrevAction,false) > 0)
+		if(GetGame().GetInput().GetActionUp(UAZeroingDown,false))
 		{
 			switch(m_current_channel)
 			{
@@ -96,13 +101,12 @@ class BrChatMenu extends UIScriptedMenu
 		}
 	}
 	
-	void UpdateChannel()
+	override void UpdateChannel()
 	{
-		//Note: There is a HUD chat channel item
 		new_m_channel_text.SetText(GetChannelName(m_current_channel));	
 	}
 	
-	static string GetChannelName(ChatChannel channel)
+	override static string GetChannelName(ChatChannel channel)
 	{
 		switch(channel)
 		{
