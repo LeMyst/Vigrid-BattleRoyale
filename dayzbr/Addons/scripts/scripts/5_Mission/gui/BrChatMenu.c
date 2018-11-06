@@ -98,6 +98,7 @@ class BrChatMenu extends UIScriptedMenu
 	
 	void UpdateChannel()
 	{
+		//Note: There is a HUD chat channel item
 		new_m_channel_text.SetText(GetChannelName(m_current_channel));	
 	}
 	
