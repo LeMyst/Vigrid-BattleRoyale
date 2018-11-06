@@ -193,8 +193,8 @@ class BattleRoyaleRound
 		player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood"));
 		player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock"));
 		
-		// GetStatStomachSolid + GetStatStomachWater > 1000 == STUFFED!
-		player.GetStatStomachSolid().Set(250);
+		// GetStatStomachVolume + GetStatStomachWater > 1000 == STUFFED!
+		player.GetStatStomachVolume().Set(250);
 		player.GetStatStomachWater().Set(250);
 		
 		// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
