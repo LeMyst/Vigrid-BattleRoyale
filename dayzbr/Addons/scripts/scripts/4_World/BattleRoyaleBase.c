@@ -211,7 +211,7 @@ class BattleRoyaleBase
 
 			player.GetStatWater().Add( data.param1 );
 			player.GetStatEnergy().Add( data.param1 );
-			player.GetStatStomachSolid().Add( data.param1 );
+			player.GetStatStomachVolume().Add( data.param1 );
 		}
 	}
 
