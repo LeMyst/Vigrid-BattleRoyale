@@ -1,8 +1,8 @@
 class BrChatMenu extends ChatInputMenu
 {
-	EditBoxWidget new_m_edit_box;
-	TextWidget new_m_channel_text;
-	ref Timer new_m_close_timer;
+	protected EditBoxWidget new_m_edit_box;
+	protected TextWidget new_m_channel_text;
+	protected ref Timer new_m_close_timer;
 	static int m_current_channel = 0;
 	
 	
@@ -103,7 +103,10 @@ class BrChatMenu extends ChatInputMenu
 	
 	override void UpdateChannel()
 	{
-		new_m_channel_text.SetText(GetChannelName(m_current_channel));	
+		if(new_m_channel_text)
+		{
+			new_m_channel_text.SetText(GetChannelName(m_current_channel));	
+		}
 	}
 	
 	override static string GetChannelName(ChatChannel channel)

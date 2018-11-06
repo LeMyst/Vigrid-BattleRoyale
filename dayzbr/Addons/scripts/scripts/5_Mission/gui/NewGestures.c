@@ -35,10 +35,7 @@ class NewGesturesMenu extends UIScriptedMenu
 		m_Base = base;
 		m_GestureItems = new ref array<ref GestureMenuItem>;
 		
-		if ( !instance )
-		{
-			instance = this;
-		}
+		instance = this;
 	}
 	
 	void ~NewGesturesMenu()
