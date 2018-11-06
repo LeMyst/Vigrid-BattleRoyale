@@ -4,7 +4,7 @@ modded class MissionGameplay
 	
 	void MissionGameplay()
 	{
-		DestroyAllMenus();
+		//DestroyAllMenus();
 		m_Initialized				= false;
 		m_HudRootWidget				= null;
 		m_Chat						= new Chat;
