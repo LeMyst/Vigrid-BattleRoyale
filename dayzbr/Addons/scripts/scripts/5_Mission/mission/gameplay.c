@@ -18,7 +18,6 @@ modded class MissionGameplay
 	{
 		super.OnKeyPress(key);
 		
-		
 		if ( key == KeyCode.KC_PERIOD )
 		{
 			if ( !GetUIManager().IsMenuOpen( MENU_GESTURES ) )
@@ -57,9 +56,12 @@ modded class MissionGameplay
 	}
 	
 	
-	//Fix for UI fade
-		override void OnUpdate(float timeslice)
+	//Fix for UI fade (DISABLED FOR TESTING)
+	override void OnUpdate(float timeslice)
 	{
+		super.OnUpdate(timeslice);
+		return;
+		
 		Man player = GetGame().GetPlayer();
 		PlayerBase playerPB = PlayerBase.Cast(player);
 		TickScheduler(timeslice);
