@@ -206,7 +206,7 @@ class BattleRoyaleRound
 		
 		
 		// default body temperature is  37.4 -> HYPOTHERMIC_TEMPERATURE_TRESHOLD = 35.8
-		player.GetStatTemperature().Set(37.4);
+		//player.GetStatTemperature().Set(37.4);
 		
 		// BURNING_TRESHOLD = 199 -> 100 should be fine
 		player.GetStatHeatComfort().Set(100);
