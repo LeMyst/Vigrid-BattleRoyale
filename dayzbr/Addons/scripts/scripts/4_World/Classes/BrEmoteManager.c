@@ -1,3 +1,4 @@
+/*
 modded class EmoteManager
 {
 	//ref BattleRoyaleRound m_BattleRoyaleRound;
@@ -43,16 +44,14 @@ modded class EmoteManager
 		}
 		else
 		{
-			//m_HandInventoryLocation.SetHands(m_Player,m_Player.GetItemInHands());
 			if (!m_Player.GetInventory().HasInventoryReservation(null, m_HandInventoryLocation))
 			{
-				//Print("Adding hand reservation... ");
 				m_Player.GetInventory().AddInventoryReservation( null, m_HandInventoryLocation, 10000);
 			}
 				
 			if ( m_Player.GetActionManager() )
 				m_Player.GetActionManager().DisableActions();
-			//m_Player.GetInventory().LockInventory(LOCK_FROM_SCRIPT);
+			
 			m_Player.SetInventorySoftLock(true);
 			
 			//Movement lock in fullbody anims
@@ -91,13 +90,7 @@ modded class EmoteManager
 			}
 			else
 			{
-				//TODO, HACK: fix this hack once inventory lock conditions have been sorted out
 				SetEmoteLockState(true);
-				/*if ( m_Player.GetCommand_Move() && m_Player.GetCommand_Move().IsOnBack() )
-				{
-					m_IsSurrendered = !m_IsSurrendered; //invalid position, surrender state cannot proceed
-				}*/
-				
 			}
 		}
 		
@@ -115,7 +108,7 @@ modded class EmoteManager
 		
 		if ( m_BelayedEmote )
 		{
-			if ( /*m_PreviousGestureID != m_BelayedEmoteSlot &&*/ !m_IsSurrendered)
+			if (!m_IsSurrendered)
 			{
 				PickEmote(m_BelayedEmoteSlot);
 				//PlayEmote(m_BelayedEmoteSlot);
@@ -123,10 +116,6 @@ modded class EmoteManager
 			m_BelayedEmoteSlot = -1;
 			m_BelayedEmote = false;
 		}
-		/*else
-		{
-			SetEmoteLockState(false);
-		}*/
 
 		//! back to the default - shoot from camera - if not set already
 		if (!m_Player.IsShootingFromCamera()) m_Player.OverrideShootFromCamera(true);
@@ -134,3 +123,4 @@ modded class EmoteManager
 
 
 };
+*/
