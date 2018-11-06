@@ -8,13 +8,8 @@ modded class MissionBase
 	
 	override UIScriptedMenu CreateScriptedMenu(int id)
 	{
-		UIScriptedMenu menu = super.CreateScriptedMenu(id);
-		if(menu)
-		{
-			return menu;
-		}
-		//no menu was found (br menu?)
-		
+		UIScriptedMenu menu = NULL;
+		//check br menus
 		switch (id)
 		{
 			case MENU_CHAT_INPUT:
@@ -31,8 +26,11 @@ modded class MissionBase
 		if (menu)
 		{
 			menu.SetID(id);
+			return menu;
 		}
 
-		return menu;
+		
+		//not a br menu, check base game menus
+		return super.CreateScriptedMenu(id);
 	}
 }
