@@ -7,9 +7,9 @@ class BrChatMenu extends ChatInputMenu
 	
 	protected ref MissionBase new_m_mission;
 	
-	void BrChatMenu(ref MissionBase mission)
+	void BrChatMenu(ref MissionBase m_mission)
 	{
-		new_m_mission = mission;
+		new_m_mission = m_mission;
 		new_m_close_timer = new Timer();
 	}
 

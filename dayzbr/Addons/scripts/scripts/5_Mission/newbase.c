@@ -14,7 +14,7 @@ modded class MissionBase
 		{
 			//BR MENUS
 			case MENU_CHAT_INPUT:
-				menu = new BrChatMenu;
+				menu = new BrChatMenu(this);
 				break;
 			case MENU_SKINS:
 				menu = new SkinMenu(this);
