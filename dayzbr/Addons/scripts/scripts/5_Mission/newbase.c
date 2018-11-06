@@ -5,7 +5,7 @@ modded class MissionBase
 	bool autowalk = false;
 	
 	
-	
+	/*
 	override UIScriptedMenu CreateScriptedMenu(int id)
 	{
 		UIScriptedMenu menu = NULL;
@@ -33,4 +33,5 @@ modded class MissionBase
 		//not a br menu, check base game menus
 		return super.CreateScriptedMenu(id);
 	}
+	*/
 }

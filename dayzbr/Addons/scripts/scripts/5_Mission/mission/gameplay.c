@@ -127,7 +127,6 @@ modded class MissionGameplay
 		
 			if( input.GetActionDown(UAGear, false ) )
 			{
-				/*
 				if( !inventory )
 				{
 					ShowInventory();
@@ -136,7 +135,6 @@ modded class MissionGameplay
 				{
 					HideInventory();
 				}
-				*/
 			}
 
 			if (input.GetActionDown(UAChat, false))
