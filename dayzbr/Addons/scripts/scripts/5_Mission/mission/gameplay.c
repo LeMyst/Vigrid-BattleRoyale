@@ -120,7 +120,7 @@ modded class MissionGameplay
 
 			if (input.GetActionDown(UAChat, false))
 			{
-				ChatInputMenu chat = ChatInputMenu.Cast( m_UIManager.FindMenu(MENU_CHAT) );		
+				BrChatMenu chat = BrChatMenu.Cast( m_UIManager.FindMenu(MENU_CHAT) );		
 				if( menu == NULL )
 				{
 					ShowChat();
