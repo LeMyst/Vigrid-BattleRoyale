@@ -124,8 +124,8 @@ modded class MissionGameplay
 	{
 		if(eventTypeId == ChatMessageEventTypeID)
 		{
-			BRLOG("CHAT EVENT FIRED");
-			ChatMessageEventParams chat_params = ChatMessageEventParams.Cast( params );			
+			ChatMessageEventParams chat_params = ChatMessageEventParams.Cast( params );		
+			BRLOG("New chat: " + chat_params.param1.ToString() + " | " + chat_params.param2	 + " | " + chat_params.param3 + " | " + chat_params.param4);
 			m_Chat.Add(chat_params);
 		}
 		else
