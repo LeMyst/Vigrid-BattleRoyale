@@ -71,13 +71,12 @@ class BrChatMenu extends ChatInputMenu
 	{	
 	}
 	
+	
 	override void Update(float timeslice)
 	{
-		
-		
-		
-		if(GetGame().GetInput().GetAction(UAZeroingUp,false) > 0)
+		if(KeyState(KeyCode.KC_NEXT) > 0)
 		{
+			ClearKey(KeyCode.KC_NEXT);
 			switch(BrChatMenu.m_current_channel)
 			{
 				case 0:
@@ -89,8 +88,10 @@ class BrChatMenu extends ChatInputMenu
 			}	
 			UpdateChannel();
 		}
-		if(GetGame().GetInput().GetAction(UAZeroingDown,false) > 0)
+		if(KeyState(KeyCode.KC_PRIOR) > 0)
 		{
+			ClearKey(KeyCode.KC_PRIOR);
+			
 			switch(BrChatMenu.m_current_channel)
 			{
 				case 0:
