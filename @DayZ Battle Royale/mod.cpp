@@ -1,0 +1,41 @@
+class CfgMods
+{
+	class dayzbr
+	{
+		dir = "@DayZ Battle Royale";
+		picture = "";
+		action = "";
+		hideName = 1;
+		hidePicture = 1;
+		name = "DayZ BattleRoyale";
+		credits = "Kegan, Vulkan, BigBen, Clarkycal, Legodev";
+		author = "DayZBR Dev Team";
+		authorID = "0"; 
+		version = "1.0"; 
+		extra = 0;
+		type = "mod";
+		
+		dependencies[] = {"Game", "World", "Mission"};
+		
+		class defs
+		{
+			class gameScriptModule
+			{
+				value = "";
+				files[] = {"dayzbr/scripts/scripts/3_Game"};
+			};
+
+			class worldScriptModule
+			{
+				value = "";
+				files[] = {"dayzbr/scripts/scripts/4_World"};
+			};
+
+			class missionScriptModule
+			{
+				value = "";
+				files[] = {"dayzbr/scripts/scripts/5_Mission"};
+			};
+		}
+	};
+};
