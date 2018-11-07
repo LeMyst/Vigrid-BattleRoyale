@@ -2,7 +2,7 @@ class CfgMods
 {
 	class dayzbr
 	{
-		dir = "@DayZ Battle Royale";
+		dir = "dayzbr";
 		picture = "";
 		action = "";
 		hideName = 1;
