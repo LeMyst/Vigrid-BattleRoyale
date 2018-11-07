@@ -21,7 +21,7 @@ modded class MissionServer
 	override void OnInit()
 	{
 		log("ON INIT");
-		BR_GAME = new BattleRoyale(this);
+		BR_GAME = new BattleRoyale( NULL );
 		BR_GAME.OnInit();
 	}
 	

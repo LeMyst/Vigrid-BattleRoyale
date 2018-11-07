@@ -33,11 +33,15 @@ class BattleRoyale extends BattleRoyaleBase
 	
 	ref ScriptCallQueue br_CallQueue;
 	
+	MissionGameplay gameplay_class;
+	
 	bool hasInit;
 	
 	//NOTE missionserver is passed in the event that we need it in the future (it is unused at this momemnt)
-	void BattleRoyale(MissionServer server_class)
+	void BattleRoyale(MissionGameplay server_class)
 	{
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", this );
+		
 		if ( GetGame().IsServer() )
 		{
 			hasInit = false;
@@ -58,8 +62,47 @@ class BattleRoyale extends BattleRoyaleBase
 		} else
 		{
 			hasInit = true;
+			gameplay_class = server_class;
+			
 		}
 	}
+	
+	//Global Chat handling (need to directly add chat messages to chat)
+	//TODO: if this works, use more in depth chat add functionality?
+	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+	
+		if(type == CallType.Client)
+		{
+			if(! GetGame().GetPlayer() ) return;
+			
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!me) return;
+			
+			if(!gameplay_class.m_Chat) return;
+			
+			gameplay_class.m_Chat.Add(data.param1);
+		}
+		if(type == CallType.Server)
+		{
+			if(!target) return;
+			
+			PlayerBase targetBase = PlayerBase.Cast(target);
+			if(!targetBase) return;
+			if(!targetBase.GetIdentity()) return;
+			
+			string message = "(Global) " + targetBase.GetIdentity().GetName() + ": " + data.param1;
+			
+			ref Param1<string> value_string = new Param1<string>(message);
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false );
+		}
+	}
+		
+	
 	
 	void OnInit()
 	{
