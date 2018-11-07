@@ -122,7 +122,7 @@ modded class MissionGameplay
 	
 	override void OnEvent(EventType eventTypeId, Param params)
 	{
-		if(eventTypeId == EventType.ChatMessageEventTypeID)
+		if(eventTypeId == ChatMessageEventTypeID)
 		{
 			BRLOG("CHAT EVENT FIRED");
 			ChatMessageEventParams chat_params = ChatMessageEventParams.Cast( params );			
