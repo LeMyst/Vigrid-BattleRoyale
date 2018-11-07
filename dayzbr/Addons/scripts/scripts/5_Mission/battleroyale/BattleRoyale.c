@@ -73,7 +73,6 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		Param2< string , string> data;
 		if( !ctx.Read( data ) ) return;
-		if( !ctx.Read( data ) ) return;
 	
 		if(type == CallType.Client)
 		{

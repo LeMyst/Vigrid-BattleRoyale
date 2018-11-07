@@ -46,15 +46,11 @@ class BrChatMenu extends ChatInputMenu
 		{
 			if(BrChatMenu.m_current_channel == 1)
 			{
-				//Global Chat RPC
-				BRLOG("GLOBAL CHAT");
-				ref Param2<string,string> value_strings = new Param2<string,string>(text,"");
+				ref Param2<string,string> value_strings = new Param2<string,string>(text,"not_used");
 				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_strings, false, null, GetGame().GetPlayer() );
 			}
 			else
 			{
-				//Local chat
-				BRLOG("LOCAL CHAT");
 				GetGame().ChatPlayer(0, text);
 			}
 		}
