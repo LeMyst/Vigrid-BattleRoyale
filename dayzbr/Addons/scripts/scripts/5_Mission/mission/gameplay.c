@@ -119,22 +119,6 @@ modded class MissionGameplay
 		}
 	}
 
-	
-	override void OnEvent(EventType eventTypeId, Param params)
-	{
-		if(eventTypeId == ChatMessageEventTypeID)
-		{
-			ChatMessageEventParams chat_params = ChatMessageEventParams.Cast( params );		
-			BRLOG("New chat: " + chat_params.param1.ToString() + " | " + chat_params.param2	 + " | " + chat_params.param3 + " | " + chat_params.param4);
-			m_Chat.Add(chat_params);
-		}
-		else
-		{
-			super.OnEvent(eventTypeId,params);
-		}
-	}
-	
-
 	//Unlock gesture menu
 	override void OnKeyPress(int key)
 	{

@@ -74,9 +74,9 @@ class BrChatMenu extends ChatInputMenu
 	override void Update(float timeslice)
 	{
 		
-		GetGame().GetInput().DisableKey(KeyCode.KC_RETURN);
 		
-		if(GetGame().GetInput().GetActionUp(UAZeroingUp,false))
+		
+		if(GetGame().GetInput().GetAction(UAZeroingUp,false) > 0)
 		{
 			switch(BrChatMenu.m_current_channel)
 			{
@@ -89,7 +89,7 @@ class BrChatMenu extends ChatInputMenu
 			}	
 			UpdateChannel();
 		}
-		if(GetGame().GetInput().GetActionUp(UAZeroingDown,false))
+		if(GetGame().GetInput().GetAction(UAZeroingDown,false) > 0)
 		{
 			switch(BrChatMenu.m_current_channel)
 			{
@@ -102,13 +102,15 @@ class BrChatMenu extends ChatInputMenu
 			}	
 			UpdateChannel();
 		}
+		
+		GetGame().GetInput().DisableKey(KeyCode.KC_RETURN);
 	}
 	
 	override void UpdateChannel()
 	{
 		if(new_m_mission)
 		{
-			new_m_mission.m_ChatChannelText.SetText(GetChannelNameInt(BrChatMenu.m_current_channel));
+			new_m_mission.m_ChatChannelText.SetText(BrChatMenu.GetChannelNameInt(BrChatMenu.m_current_channel));
 			new_m_mission.m_ChatChannelFadeTimer.FadeIn(new_m_mission.m_ChatChannelArea, 0.5, true);
 			new_m_mission.m_ChatChannelHideTimer.Run(2, new_m_mission.m_ChatChannelFadeTimer, "FadeOut", new Param3<Widget, float, bool>(new_m_mission.m_ChatChannelArea, 0.5, true));
 		}
