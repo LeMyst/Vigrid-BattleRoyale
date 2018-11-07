@@ -36,6 +36,9 @@ modded class MissionGameplay
 		BR_GAME = new BattleRoyale( NULL );
 	}
 	
+	
+	
+	
 	//Global Chat handling (need to directly add chat messages to chat)
 	//TODO: if this works, use more in depth chat add functionality?
 	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
@@ -88,14 +91,14 @@ modded class MissionGameplay
 					if(msg.Contains(me.my_round))
 					{
 						msg.Replace(me.my_round + ": ","");
-						m_Chat.Add(msg);
+						m_Chat.Add("Server",msg);
 					}
 				}
 			}
 			else
 			{
 				msg.Replace("ALL: ","");
-				m_Chat.Add(msg);
+				m_Chat.Add("Server",msg);
 				
 			}
 		}
@@ -112,10 +115,25 @@ modded class MissionGameplay
 
 			if ( !player ) return;
 
-			m_Chat.Add(msg);
+			m_Chat.Add("Server",data.param1);
 		}
 	}
 
+	
+	override void OnEvent(EventType eventTypeId, Param params)
+	{
+		if(eventTypeId == EventType.ChatMessageEventTypeID)
+		{
+			BRLOG("CHAT EVENT FIRED");
+			ChatMessageEventParams chat_params = ChatMessageEventParams.Cast( params );			
+			m_Chat.Add(chat_params);
+		}
+		else
+		{
+			super.OnEvent(eventTypeId,params);
+		}
+	}
+	
 
 	//Unlock gesture menu
 	override void OnKeyPress(int key)
