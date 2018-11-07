@@ -48,8 +48,8 @@ class BrChatMenu extends ChatInputMenu
 			{
 				//Global Chat RPC
 				BRLOG("GLOBAL CHAT");
-				ref Param1<string> value_string = new Param1<string>(text);
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false, null, GetGame().GetPlayer() );
+				ref Param2<string,string> value_strings = new Param2<string,string>(text,"");
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_strings, false, null, GetGame().GetPlayer() );
 			}
 			else
 			{

@@ -71,7 +71,8 @@ class BattleRoyale extends BattleRoyaleBase
 	//TODO: if this works, use more in depth chat add functionality?
 	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		Param1< string > data;
+		Param2< string , string> data;
+		if( !ctx.Read( data ) ) return;
 		if( !ctx.Read( data ) ) return;
 	
 		if(type == CallType.Client)
@@ -84,7 +85,7 @@ class BattleRoyale extends BattleRoyaleBase
 			
 			if(!gameplay_class.m_Chat) return;
 			
-			gameplay_class.m_Chat.Add(data.param1);
+			gameplay_class.m_Chat.Add("(Global) " + data.param1,data.param2);
 		}
 		if(type == CallType.Server)
 		{
@@ -94,11 +95,10 @@ class BattleRoyale extends BattleRoyaleBase
 			if(!targetBase) return;
 			if(!targetBase.GetIdentity()) return;
 			
-			string message = "(Global) " + targetBase.GetIdentity().GetName() + ": " + data.param1;
 			
-			ref Param1<string> value_string = new Param1<string>(message);
+			ref Param2<string,string> value_strings = new Param2<string, string>( targetBase.GetIdentity().GetName(), data.param1 );
 			
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false );
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_strings, false );
 		}
 	}
 		
