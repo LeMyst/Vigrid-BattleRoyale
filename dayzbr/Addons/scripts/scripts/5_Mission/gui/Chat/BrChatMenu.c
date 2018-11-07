@@ -5,11 +5,11 @@ class BrChatMenu extends ChatInputMenu
 	protected ref Timer new_m_close_timer;
 	static int m_current_channel = 0;
 	
-	protected ref MissionBase new_m_mission;
+	protected MissionGameplay new_m_mission;
 	
-	void BrChatMenu(ref MissionBase m_mission)
+	void BrChatMenu(MissionBase m_mission)
 	{
-		new_m_mission = m_mission;
+		new_m_mission = MissionGameplay.Cast(m_mission);
 		new_m_close_timer = new Timer();
 	}
 

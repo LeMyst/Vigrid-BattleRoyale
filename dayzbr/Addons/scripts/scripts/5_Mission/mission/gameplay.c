@@ -29,8 +29,93 @@ modded class MissionGameplay
 	{
 		super.OnInit();
 		
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendClientMessage", this );
+		
 		BR_GAME = new BattleRoyale( NULL );
 	}
+	
+	//Global Chat handling (need to directly add chat messages to chat)
+	//TODO: if this works, use more in depth chat add functionality?
+	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+	
+		if(type == CallType.Client)
+		{
+			if(! GetGame().GetPlayer() ) return;
+			
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!me) return;
+			
+			if(!m_Chat) return;
+			
+			m_Chat.Add(data.param1);
+		}
+		if(type == CallType.Server)
+		{
+			if(!target) return;
+			
+			PlayerBase targetBase = PlayerBase.Cast(target);
+			if(!targetBase) return;
+			if(!targetBase.GetIdentity()) return;
+			
+			string message = "(Global) " + targetBase.GetIdentity().GetName() + ": " + data.param1;
+			
+			ref Param1<string> value_string = new Param1<string>(message);
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false );
+		}
+	}
+		
+	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+        
+		if( GetGame() )
+		{
+			string msg = data.param1;
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!msg.Contains("ALL: "))
+			{
+				if(me.my_round)
+				{
+					if(msg.Contains(me.my_round))
+					{
+						msg.Replace(me.my_round + ": ","");
+						m_Chat.Add(msg);
+					}
+				}
+			}
+			else
+			{
+				msg.Replace("ALL: ","");
+				m_Chat.Add(msg);
+				
+			}
+		}
+	}
+
+	void SendClientMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+        
+		if ( type == CallType.Client )
+		{
+			PlayerBase player = PlayerBase.Cast( target );
+
+			if ( !player ) return;
+
+			m_Chat.Add(msg);
+		}
+	}
+
 
 	//Unlock gesture menu
 	override void OnKeyPress(int key)
