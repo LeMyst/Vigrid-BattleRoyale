@@ -2,6 +2,7 @@ modded class MissionGameplay
 {
 	ref BattleRoyale BR_GAME;
 	
+	/*
 	void MissionGameplay()
 	{
 		//DestroyAllMenus();
@@ -23,7 +24,7 @@ modded class MissionGameplay
 		SyncEvents.RegisterEvents();
 		g_Game.SetGameState( DayZGameState.IN_GAME );
 		PlayerBase.Event_OnPlayerDeath.Insert( Pause );
-	}
+	}*/
 	
 	override void OnInit()
 	{

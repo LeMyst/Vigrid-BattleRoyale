@@ -19,6 +19,11 @@ class CfgMods
 		
 		class defs
 		{
+			class imageSets
+			{
+				files[]={"fmdbr/gui/imagesets/dayzbr_gui.imageset"};
+			};
+			
 			class gameScriptModule
 			{
 				value = "";
