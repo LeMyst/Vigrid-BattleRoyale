@@ -26,16 +26,22 @@ class BattleRoyale extends BattleRoyaleBase
 	ref StaticBRData m_BattleRoyaleData;
 
 	ref BattleRoyaleZoneManager m_BattleRoyaleZoneManager;
-	ref BattleRoyaleRound m_BattleRoyaleRound;
+	
+	ref array<ref BattleRoyaleRound> m_BattleRoyaleRounds;
+	
 	ref BattleRoyaleDebug m_BattleRoyaleDebug;
 	
 	ref ScriptCallQueue br_CallQueue;
 	
+	MissionGameplay gameplay_class;
+	
 	bool hasInit;
 	
 	//NOTE missionserver is passed in the event that we need it in the future (it is unused at this momemnt)
-	void BattleRoyale(MissionServer server_class)
+	void BattleRoyale(MissionGameplay server_class)
 	{
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", this );
+		
 		if ( GetGame().IsServer() )
 		{
 			hasInit = false;
@@ -43,14 +49,59 @@ class BattleRoyale extends BattleRoyaleBase
 			m_BattleRoyaleDebug = new BattleRoyaleDebug(this);
 			m_BattleRoyaleZoneManager = new BattleRoyaleZoneManager(m_BattleRoyaleData);
 
-			m_BattleRoyaleRound = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager);
-
+			
+			m_BattleRoyaleRounds = new array<ref BattleRoyaleRound>();
+			for(int i = 1; i <= m_BattleRoyaleData.num_parallel_matches;i++)
+			{
+				ref BattleRoyaleRound round = new BattleRoyaleRound(m_BattleRoyaleData, m_BattleRoyaleDebug, m_BattleRoyaleZoneManager,"ROUND " + i.ToString());
+				m_BattleRoyaleRounds.Insert(round);
+			}
+			BRLOG("Added " + m_BattleRoyaleData.num_parallel_matches.ToString() + " rounds");
+			
 			br_CallQueue = new ScriptCallQueue(); 
 		} else
 		{
 			hasInit = true;
+			gameplay_class = server_class;
+			
 		}
 	}
+	
+	//Global Chat handling (need to directly add chat messages to chat)
+	//TODO: if this works, use more in depth chat add functionality?
+	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param2< string , string> data;
+		if( !ctx.Read( data ) ) return;
+	
+		if(type == CallType.Client)
+		{
+			if(! GetGame().GetPlayer() ) return;
+			
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!me) return;
+			
+			if(!gameplay_class.m_Chat) return;
+			
+			gameplay_class.m_Chat.Add("(Global) " + data.param1,data.param2);
+		}
+		if(type == CallType.Server)
+		{
+			if(!target) return;
+			
+			PlayerBase targetBase = PlayerBase.Cast(target);
+			if(!targetBase) return;
+			if(!targetBase.GetIdentity()) return;
+			
+			
+			ref Param2<string,string> value_strings = new Param2<string, string>( targetBase.GetIdentity().GetName(), data.param1 );
+			
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_strings, false );
+		}
+	}
+		
+	
 	
 	void OnInit()
 	{
@@ -64,7 +115,12 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		
 		m_BattleRoyaleDebug.Init();
-		m_BattleRoyaleRound.Init();
+		
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
+		{
+			round.Init();
+		}
+		
 		br_CallQueue.CallLater(this.ProcessRoundStart, 5000, true);
 	}
 	
@@ -77,21 +133,45 @@ class BattleRoyale extends BattleRoyaleBase
 		br_CallQueue.Tick(timespan);
 		
 		//process updates in the round and debug
-		m_BattleRoyaleRound.OnUpdate(timespan);
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
+		{
+			round.OnUpdate(timespan);
+		}
 		m_BattleRoyaleDebug.OnUpdate(timespan);
 	}
 	
 	
 	void ProcessRoundStart()
 	{
+		//sum ting wong
 		if ( !GetGame().IsServer() ) return;
-
-		if(!m_BattleRoyaleRound.inProgress)
+		
+		//not enough players
+		if( m_BattleRoyaleDebug.m_DebugPlayers.Count() < m_BattleRoyaleData.minimum_players ) return;
+		
+		
+		//check round can be started
+		bool CanFireNewRound = true;
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
-			if(m_BattleRoyaleDebug.m_DebugPlayers.Count() >= m_BattleRoyaleData.minimum_players)
+			//if any round is in progress but not started, we are waiting to start it & cannot launch a new round at this time
+			if(round.inProgress && !round.RoundStarted)
 			{
-				BRLOG("DAYZBR: ROUND START CALL");
-				m_BattleRoyaleRound.PlayerCountReached();
+				CanFireNewRound = false;
+				break;
+			}
+		}
+		
+		if(CanFireNewRound)
+		{
+			foreach(ref BattleRoyaleRound round2 : m_BattleRoyaleRounds)
+			{
+				if(!round2.inProgress && !round2.RoundStarted)
+				{
+					BRLOG("STARTING ROUND " + round2.round_name);
+					round2.PlayerCountReached();
+					return;
+				}
 			}
 		}
 	}
@@ -115,15 +195,22 @@ class BattleRoyale extends BattleRoyaleBase
 
 		BRLOG("DAYZBR: PLAYER DISCONNECTED");
 		
-		m_BattleRoyaleRound.RemovePlayer(player);
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
+		{
+			round.RemovePlayer(player);
+		}
 		m_BattleRoyaleDebug.RemovePlayer(player);
 		
 	}
 	
 	override bool allowFallDamage(PlayerBase plr)
 	{
-		if(m_BattleRoyaleRound.ContainsPlayer(plr))
-			return m_BattleRoyaleRound.RoundStarted; //if round has started, allow it, else, do not.
+		
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
+		{
+			if(round.ContainsPlayer(plr))
+				return round.RoundStarted;
+		}
 		
 		return true;
 	}
@@ -132,19 +219,20 @@ class BattleRoyale extends BattleRoyaleBase
 	{
 		if ( !GetGame().IsServer() ) return;
 
-		//on player tick
 		if(m_BattleRoyaleDebug.ContainsPlayer(player))
 		{
 			m_BattleRoyaleDebug.OnPlayerTick(player,ticktime);
+			return;
 		}
-		else if(m_BattleRoyaleRound.ContainsPlayer(player))
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
-			m_BattleRoyaleRound.OnPlayerTick(player,ticktime);
+			if(round.ContainsPlayer(player))
+			{
+				round.OnPlayerTick(player,ticktime);
+				return;
+			}
 		}
-		else
-		{
-			//TODO: process clients that are bugged (they could also be between states)
-		}
+		//TODO: process clients that are bugged (they could also be between states)
 	}
 
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
@@ -155,15 +243,18 @@ class BattleRoyale extends BattleRoyaleBase
 		if(m_BattleRoyaleDebug.ContainsPlayer(killed))
 		{
 			m_BattleRoyaleDebug.OnPlayerKilled(killed,killer);
+			return;
 		}
-		else if(m_BattleRoyaleRound.ContainsPlayer(killed))
+		
+		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
-			m_BattleRoyaleRound.OnPlayerKilled(killed,killer);
+			if(round.ContainsPlayer(killed))
+			{
+				round.OnPlayerKilled(killed,killer);
+				return;
+			}
 		}
-		else
-		{
-			//TODO: client died but was bugged?
-		}
+		//TODO: client died but was bugged?
 	}
 }
 

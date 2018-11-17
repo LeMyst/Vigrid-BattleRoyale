@@ -25,15 +25,18 @@ class BattleRoyaleRound
 	bool RoundStarted;
 	int master_index;
 	
+	string round_name;
 	
-	void BattleRoyaleRound(StaticBRData staticdata, BattleRoyaleDebug debugarea, BattleRoyaleZoneManager zonemanager)
+	void BattleRoyaleRound(StaticBRData staticdata, BattleRoyaleDebug debugarea, ref BattleRoyaleZoneManager zonemanager, string roundname)
 	{
+		round_name = roundname;
 		m_BattleRoyaleData = staticdata;
 		m_BattleRoyaleDebug = debugarea;
 		m_BattleRoyaleZoneManager = zonemanager;
 
 		// initialize with an ranzom zone just in case ...
 		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
+		m_BattleRoyaleZone.SetRoundName(round_name);//give the zone the round object
 		Print("INITIALIZED ROUND WITH ZONE: " + m_BattleRoyaleZone.GetZoneName());
 
 		inProgress = false;
@@ -121,21 +124,21 @@ class BattleRoyaleRound
 					{
 						float distance = vector.Distance(e_killer.GetPosition(), killed.GetPosition());
 
-						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + " FROM " + distance.ToString() + " METER " + newPlayerCount.ToString() + " PLAYERS REMAIN");														
+						SendMessageAll(round_name + ": " + e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + " FROM " + distance.ToString() + " METER " + newPlayerCount.ToString() + " PLAYERS REMAIN");														
 					}
 					else
 					{
-						SendMessageAll(e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
+						SendMessageAll(round_name + ": " + e_killer.GetIdentity().GetName() + " KILLED " + killed.GetIdentity().GetName() + "! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
 					}
 				}
 				else
 				{
-					SendMessageAll(killed.GetIdentity().GetName() + " DIED! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
+					SendMessageAll(round_name + ": " + killed.GetIdentity().GetName() + " DIED! " + newPlayerCount.ToString() + " PLAYERS REMAIN");
 				}
 			}
 			else
 			{
-				SendMessageAll(newPlayerCount.ToString() + " PLAYERS REMAIN");
+				SendMessageAll(round_name + ": " + newPlayerCount.ToString() + " PLAYERS REMAIN");
 			}
 		}
 	}
@@ -190,8 +193,8 @@ class BattleRoyaleRound
 		player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood"));
 		player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock"));
 		
-		// GetStatStomachSolid + GetStatStomachWater > 1000 == STUFFED!
-		player.GetStatStomachSolid().Set(250);
+		// GetStatStomachVolume + GetStatStomachWater > 1000 == STUFFED!
+		player.GetStatStomachVolume().Set(250);
 		player.GetStatStomachWater().Set(250);
 		
 		// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
@@ -203,7 +206,7 @@ class BattleRoyaleRound
 		
 		
 		// default body temperature is  37.4 -> HYPOTHERMIC_TEMPERATURE_TRESHOLD = 35.8
-		player.GetStatTemperature().Set(37.4);
+		//player.GetStatTemperature().Set(37.4);
 		
 		// BURNING_TRESHOLD = 199 -> 100 should be fine
 		player.GetStatHeatComfort().Set(100);
@@ -241,7 +244,7 @@ class BattleRoyaleRound
 	{
 		inProgress = true;
 		
-		SendMessageAll("DAYZBR: PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
+		SendMessageAll("ALL: " + round_name + ": PLAYER COUNT REACHED. STARTING GAME IN " + m_BattleRoyaleData.start_timer.ToString() + " SECONDS.");
 		
 		round_CallQueue.CallLater(this.StartRound, m_BattleRoyaleData.start_timer * 1000, false);
 	}
@@ -252,6 +255,7 @@ class BattleRoyaleRound
 
 		// get a zone
 		m_BattleRoyaleZone = m_BattleRoyaleZoneManager.getRandomZoneFromPool();
+		m_BattleRoyaleZone.SetRoundName(round_name); //Set round name for this new zone
 
 		// get all players
 		ref array<PlayerBase> round_players = m_BattleRoyaleDebug.RemoveAllPlayers();
@@ -261,6 +265,7 @@ class BattleRoyaleRound
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
+		//EmoteManager.m_Prepare_Players(true);
 	}
 	
 	
@@ -276,6 +281,8 @@ class BattleRoyaleRound
 				PlayerBase player = m_RoundPlayers.Get(master_index);
 				if(player)
 				{
+					// notify the player which round messages they should get
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", new Param1<string>(round_name), true, player.GetIdentity(),player);
 					HealPlayer(player);
 					
 					player.RemoveAllItems();
@@ -428,7 +435,7 @@ class BattleRoyaleRound
 	
 	void NotifyTimeTillStart(int seconds_remaining)
 	{
-		SendMessageAll("THE ROUND WILL START IN " + seconds_remaining.ToString());
+		SendMessageAll(round_name + ": " + "THE ROUND WILL START IN " + seconds_remaining.ToString());
 		seconds_remaining = seconds_remaining - 1;
 		
 		if(seconds_remaining == 0)
@@ -450,8 +457,14 @@ class BattleRoyaleRound
 		round_CallQueue.CallLater(this.CheckRoundEnd, m_BattleRoyaleData.check_round_end*1000, true);
 		
 		BRLOG("LET THE GAMES BEGIN");
-		SendMessageAll("LET THE GAMES BEGIN");
+		SendMessageAll(round_name + ": " + "LET THE GAMES BEGIN");
 
+		
+		// This is absolutely not acceptable. It needs to be taken out of production immediately
+		// Note for everyone in the future
+		// DO NOT EVER ITERATE AN ENTIRE ARRAY ON A SINGLE FRAME
+		// YOU WILL DESTROY THE DAYZ SERVERS PERFORMANCE FOR UPWARDS OF 30 SECONDS
+		// DO NOT DO THIS
 		for(int i = 0; i < m_RoundPlayers.Count(); i++)
 		{
 			PlayerBase player = m_RoundPlayers.Get( i );
@@ -475,6 +488,7 @@ class BattleRoyaleRound
 		
 		if(!RoundStarted)
 		{
+			//EmoteManager.m_Prepare_Players(false);
 			//Round is over, clean up match,
 			round_CallQueue.Remove(this.CheckRoundEnd);
 			
@@ -505,11 +519,20 @@ class BattleRoyaleRound
 				PlayerBase winner = m_RoundPlayers.Get(0);
 				RoundStarted = false;
 				BRLOG("ROUND OVER");
-				SendMessage(winner,"YOU WIN DAYZ BR");
-				for(int j = 0; j < m_BattleRoyaleDebug.m_DebugPlayers.Count();j++)
+				if(winner)
 				{
-					PlayerBase loser = m_BattleRoyaleDebug.m_DebugPlayers.Get(j);
-					SendMessage(loser,"SOMEONE JUST WON DAYZ BR");
+					if(winner.GetIdentity())
+					{
+						SendMessageAll("ALL: " + round_name + ": " + winner.GetIdentity().GetName() + " JUST WON DAYZ BATTLE ROYALE");
+					}
+					else
+					{
+						SendMessageAll("ALL: " + round_name + ": UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
+					}
+				}
+				else
+				{
+					SendMessageAll("ALL: " + round_name + ": UNKNOWN PLAYER JUST WON DAYZ BATTLE ROYALE");
 				}
 			}
 		}

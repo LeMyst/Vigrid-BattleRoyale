@@ -8,6 +8,7 @@ class StaticBRData
     vector debug_position = "14829.2 72.3148 14572.3";
 	vector cherno_center = "6497.66 6.01245 2519.26";
 	
+	int num_parallel_matches = 1; // Must be > 0 | The number of matches to run simultaneously 
 	int minimum_players = 2;
 	int death_show_names = 1; // 0 == off, 1 == on, 2 == including distance
 	float play_area_size = 500.0;
@@ -25,6 +26,8 @@ class StaticBRData
     int check_round_end = 5; // Measured in seconds
     int start_shrink_zone = 120; // Measured in seconds
 	int shrink_zone_every = 120; // Measured in seconds
+
+	int include_start_shrink_zone_in_roundtime = 1; // 0 == off, 1 == on
 
     static ref StaticBRData LoadDataServer()
     {

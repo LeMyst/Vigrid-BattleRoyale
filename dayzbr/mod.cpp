@@ -8,8 +8,8 @@ class CfgMods
 		hideName = 1;
 		hidePicture = 1;
 		name = "DayZ BattleRoyale";
-		credits = "Kegan, Vulkan, BigBen";
-		author = "Kegan";
+		credits = "Kegan, Vulkan, BigBen, Clarkycal, Legodev";
+		author = "DayZBR Dev Team";
 		authorID = "0"; 
 		version = "1.0"; 
 		extra = 0;
@@ -19,6 +19,11 @@ class CfgMods
 		
 		class defs
 		{
+			class imageSets
+			{
+				files[]={"fmdbr/gui/imagesets/dayzbr_gui.imageset"};
+			};
+			
 			class gameScriptModule
 			{
 				value = "";

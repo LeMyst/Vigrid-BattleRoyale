@@ -2,22 +2,90 @@ modded class MissionGameplay
 {
 	ref BattleRoyale BR_GAME;
 	
+	/*
 	void MissionGameplay()
 	{
-	}
+		//DestroyAllMenus();
+		DestroyInventory(); // ????
+		
+		m_Initialized				= false;
+		m_HudRootWidget				= null;
+		m_Chat						= new Chat;
+		m_ActionMenu				= new ActionMenu;
+		m_LifeState					= -1;
+		m_Hud						= new IngameHud;
+		m_ChatChannelFadeTimer		= new WidgetFadeTimer;
+		m_ChatChannelHideTimer		= new Timer(CALL_CATEGORY_GUI);
+		
+		m_ToggleHudTimer			= new Timer(CALL_CATEGORY_GUI);
+		
+		g_Game.m_loadingScreenOn	= true;
+		
+		SyncEvents.RegisterEvents();
+		g_Game.SetGameState( DayZGameState.IN_GAME );
+		PlayerBase.Event_OnPlayerDeath.Insert( Pause );
+	}*/
 	
 	override void OnInit()
 	{
 		super.OnInit();
 		
-		BR_GAME = new BattleRoyale( NULL );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendClientMessage", this );
+		
+		BR_GAME = new BattleRoyale( this );
+	}
+	
+	//BR Game Messaging remote calls
+	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+        
+		if( GetGame() )
+		{
+			string msg = data.param1;
+			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
+			
+			if(!msg.Contains("ALL: "))
+			{
+				if(me.my_round)
+				{
+					if(msg.Contains(me.my_round))
+					{
+						msg.Replace(me.my_round + ": ","");
+						m_Chat.Add("Server",msg);
+					}
+				}
+			}
+			else
+			{
+				msg.Replace("ALL: ","");
+				m_Chat.Add("Server",msg);
+				
+			}
+		}
+	}
+
+	void SendClientMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+		Param1< string > data;
+		if( !ctx.Read( data ) ) return;
+        
+		if ( type == CallType.Client )
+		{
+			PlayerBase player = PlayerBase.Cast( target );
+
+			if ( !player ) return;
+
+			m_Chat.Add("Server",data.param1);
+		}
 	}
 
 	//Unlock gesture menu
 	override void OnKeyPress(int key)
 	{
 		super.OnKeyPress(key);
-		m_hud.KeyPress(key);
 		
 		
 		if ( key == KeyCode.KC_PERIOD )
@@ -26,6 +94,14 @@ modded class MissionGameplay
 			{
 				
 				NewGesturesMenu.OpenMenu();
+			}
+		}
+		if( key == KeyCode.KC_COMMA )
+		{
+			if ( !GetUIManager().IsMenuOpen( MENU_SKINS ) )
+			{
+				
+				SkinMenu.OpenMenu();
 			}
 		}
 	}
@@ -40,6 +116,13 @@ modded class MissionGameplay
 				NewGesturesMenu.CloseMenu();
 			}
 		}
+		if ( key == KeyCode.KC_COMMA )
+		{
+			if ( GetUIManager().IsMenuOpen( MENU_SKINS ) )
+			{
+				SkinMenu.CloseMenu();
+			}
+		}
 	}
 	
 	
@@ -51,8 +134,9 @@ modded class MissionGameplay
 		TickScheduler(timeslice);
 		UpdateDummyScheduler();//for external entities
 		UIScriptedMenu menu = m_UIManager.GetMenu();
-		InventoryMenuNew inventory = InventoryMenuNew.Cast( m_UIManager.FindMenu(MENU_INVENTORY) );
-		//m_inventory_menu_new = inventory;
+		InventoryMenu inventory = InventoryMenu.Cast( m_UIManager.FindMenu(MENU_INVENTORY) );
+		MapMenu mapmenu = MapMenu.Cast( m_UIManager.FindMenu(MENU_MAP) );
+		//m_InventoryMenu = inventory;
 		InspectMenuNew inspect = InspectMenuNew.Cast( m_UIManager.FindMenu(MENU_INSPECT) );
 		Input input = GetGame().GetInput();
 		
@@ -61,142 +145,26 @@ modded class MissionGameplay
 		{
 			playerPB.enterNoteMenuRead = false;
 			Paper paper = Paper.Cast(playerPB.GetItemInHands());
-			m_note = NoteMenu.Cast( GetUIManager().EnterScriptedMenu(MENU_NOTE, menu) ); //NULL means no parent
-			m_note.InitRead(paper.m_AdvancedText);
+			m_Note = NoteMenu.Cast( GetUIManager().EnterScriptedMenu(MENU_NOTE, menu) ); //NULL means no parent
+			m_Note.InitRead(paper.m_AdvancedText);
 		}
 		
 		if (playerPB && playerPB.enterNoteMenuWrite)
 		{
 			playerPB.enterNoteMenuWrite = false;
-			m_note = NoteMenu.Cast( GetUIManager().EnterScriptedMenu(MENU_NOTE, menu) ); //NULL means no parent
-			m_note.InitWrite(playerPB.m_paper,playerPB.m_writingImplement,playerPB.m_Handwriting);
+			m_Note = NoteMenu.Cast( GetUIManager().EnterScriptedMenu(MENU_NOTE, menu) ); //NULL means no parent
+			m_Note.InitWrite(playerPB.m_paper,playerPB.m_writingImplement,playerPB.m_Handwriting);
 		}
 
-#ifdef PLATFORM_CONSOLE
-		//Quick Reload Weapon
-		if ( !menu && input.GetActionDown( UAQuickReload, false ) )
-		{
-			if ( !GetGame().IsInventoryOpen() && playerPB && !playerPB.GetActionManager().FindActionTarget().GetObject() )
-			{
-				EntityAI entity_hands = playerPB.GetHumanInventory().GetEntityInHands();
-				
-				if ( entity_hands && entity_hands.IsWeapon() )
-				{
-					playerPB.QuickReloadWeapon( entity_hands );
-				}
-			}
-		}
 
-		//Switch beween weapons in quickslots 
-		if( !menu && input.GetActionDown( UAUIRadialMenuPick, false ) )
-		{
-			if ( !GetGame().IsInventoryOpen() )
-			{
-				EntityAI entity_in_hands = playerPB.GetHumanInventory().GetEntityInHands();
-				EntityAI quickbar_entity;
-				int quickbar_index = 0;
-				
-				if ( entity_in_hands )
-				{			
-					int quickbar_entity_hands_index = playerPB.FindQuickBarEntityIndex( entity_in_hands );
-					
-					if ( quickbar_entity_hands_index > -1 && quickbar_entity_hands_index < MAX_QUICKBAR_SLOTS_COUNT - 1 )	//(0->8)
-					{
-						quickbar_index = quickbar_entity_hands_index + 1;
-					}
-				}
-
-				//find next weapon
-				for ( int iter = 0; iter < MAX_QUICKBAR_SLOTS_COUNT; ++iter )
-				{
-					quickbar_entity = playerPB.GetQuickBarEntity( quickbar_index );
-					
-					if ( quickbar_entity && ( quickbar_entity.IsWeapon() || ( quickbar_entity.IsMeleeWeapon() && !quickbar_entity.IsMagazine() ) ) )
-					{
-						break;
-					}
-					
-					quickbar_index += 1;
-					if ( quickbar_index > MAX_QUICKBAR_SLOTS_COUNT - 1 )
-					{
-						quickbar_index = 0;	//reset
-					}
-				}
-				
-				//swap
-				int slot_id;
-				if ( quickbar_index > -1 )
-				{
-					slot_id = quickbar_index + 1;
-					if ( slot_id == MAX_QUICKBAR_SLOTS_COUNT )
-					{
-						slot_id = 0;
-					}
-					
-					playerPB.RadialQuickBarSingleUse( slot_id );
-				}
-			}
-		}
-
-		//Gestures
-		if(input.GetActionDown(UAUIGesturesOpen, false))
-		{
-			//open gestures menu
-			if ( !GetUIManager().IsMenuOpen( MENU_GESTURES ) )
-			{
-				GesturesMenu.OpenMenu();
-			}
-		}
-		
-		if(input.GetActionUp(UAUIGesturesOpen, false))
-		{
-			//close gestures menu
-			if ( GetUIManager().IsMenuOpen( MENU_GESTURES ) )
-			{
-				GesturesMenu.CloseMenu();
-			}
-		}
-
-		//Radial quickbar
-		if(input.GetActionDown(UAUIQuickbarRadialOpen, false))
-		{
-			//open gestures menu
-			if ( !GetUIManager().IsMenuOpen( MENU_RADIAL_QUICKBAR ) )
-			{
-				RadialQuickbarMenu.OpenMenu();
-			}
-		}
-		
-		if(input.GetActionUp(UAUIQuickbarRadialOpen, false))
-		{
-			//close gestures menu
-			if ( GetUIManager().IsMenuOpen( MENU_RADIAL_QUICKBAR ) )
-			{
-				RadialQuickbarMenu.CloseMenu();
-			}
-		}
-		
-		//Radial Quickbar from inventory
-		if( GetGame().GetInput().GetActionUp( UAUIQuickbarRadialInventoryOpen, false ) )
-		{
-			//close radial quickbar menu
-			if ( GetGame().GetUIManager().IsMenuOpen( MENU_RADIAL_QUICKBAR ) )
-			{
-				RadialQuickbarMenu.CloseMenu();
-				RadialQuickbarMenu.SetItemToAssign( NULL );
-			}
-		}		
-#endif
-
-		if (player && m_life_state == EPlayerStates.ALIVE && !player.IsUnconscious() )
+		if (player && m_LifeState == EPlayerStates.ALIVE && !player.IsUnconscious() )
 		{
 			// enables HUD on spawn
-			if (m_hud_root_widget)
+			if (m_HudRootWidget)
 			{
-				m_hud_root_widget.Show(true);
+				m_HudRootWidget.Show(true);
 			}
 			
-		#ifndef NO_GUI
 			// fade out black screen
 			
 			PlayerBaseClient playerPBC = PlayerBaseClient.Cast(player);
@@ -206,20 +174,12 @@ modded class MissionGameplay
 				 GetUIManager().ScreenFadeOut(0.5);
 			}
 			
-		#endif
 		
 			if( input.GetActionDown(UAGear, false ) )
 			{
 				if( !inventory )
 				{
-					if( GetGame().IsOldInventory() )
-					{
-						ShowInventory();
-					}
-					else
-					{
-						ShowInventory2();
-					}
+					ShowInventory();
 				}
 				else if( menu == inventory )
 				{
@@ -229,20 +189,18 @@ modded class MissionGameplay
 
 			if (input.GetActionDown(UAChat, false))
 			{
-				if (menu == NULL)
+				BrChatMenu chat = BrChatMenu.Cast( m_UIManager.FindMenu(MENU_CHAT) );		
+				if( menu == NULL )
 				{
-					m_chat_channel_hide_timer.Stop();
-					m_chat_channel_fade_timer.Stop();
-					m_chat_channel_area.Show(false);
-					m_UIManager.EnterScriptedMenu(MENU_CHAT_INPUT, NULL);
+					ShowChat();
 				}
 			}
 			
 			if ( input.GetActionDown( UAUIQuickbarToggle, false) )
 			{
 				SetActionDownTime( GetGame().GetTime() );
-				bool hud_state = m_hud.GetHudState();
-				m_ToggleHudTimer.Run( 0.3, m_hud, "ToggleHud", new Param1<bool>( !hud_state ) );
+				bool hud_state = m_Hud.GetHudState();
+				m_ToggleHudTimer.Run( 0.3, m_Hud, "ToggleHud", new Param1<bool>( !hud_state ) );
 			}
 			
 			if ( input.GetActionUp( UAUIQuickbarToggle, false) )
@@ -253,13 +211,13 @@ modded class MissionGameplay
 				{
 					if ( menu == NULL )
 					{
-						if ( m_hud.GetQuickBarState() )
+						if ( m_Hud.GetQuickBarState() )
 						{
-							m_hud.HideQuickbar( false, true );
+							m_Hud.HideQuickbar( false, true );
 						}
 						else
 						{
-							m_hud.ShowQuickbar();
+							m_Hud.ShowQuickbar();
 						}
 					}
 				}
@@ -269,26 +227,27 @@ modded class MissionGameplay
 			
 			if ( g_Game.GetInput().GetActionDown( UAZeroingUp, false) || g_Game.GetInput().GetActionDown( UAZeroingDown, false) || g_Game.GetInput().GetActionDown( UAToggleWeapons, false) )
 			{
-				m_hud.ZeroingKeyPress();
+
+				m_Hud.ZeroingKeyPress();
 			}
 			
 			if ( menu == NULL )
 			{
-				m_actionMenu.Refresh();
+				m_ActionMenu.Refresh();
 				
 				if (input.GetActionDown(UANextAction, false))
 				{
-					m_actionMenu.NextAction();
+					m_ActionMenu.NextAction();
 				}
 				
 				if (input.GetActionDown(UAPrevAction, false))
 				{
-					m_actionMenu.PrevAction();
+					m_ActionMenu.PrevAction();
 				}
 			}
 			else
 			{
-				m_actionMenu.Hide();
+				m_ActionMenu.Hide();
 			}
 			
 			//hologram rotation
@@ -312,11 +271,11 @@ modded class MissionGameplay
 			int life_state = player.GetPlayerState();
 			
 			// life state changed
-			if (m_life_state != life_state)
+			if (m_LifeState != life_state)
 			{
-				m_life_state = life_state;
+				m_LifeState = life_state;
 				
-				if (m_life_state != EPlayerStates.ALIVE)
+				if (m_LifeState != EPlayerStates.ALIVE)
 				{
 					CloseAllMenus();
 				}
@@ -343,9 +302,14 @@ modded class MissionGameplay
 		{
 			if ( menu )
 			{
+
 				if ( IsPaused() )
 				{
-					if(input.GetActionDown(UAUIBack, false) || input.GetActionDown(UAUIMenu, false))
+					if( input.GetActionDown(UAUIBack, false) )
+					{
+						Continue();						
+					}
+					else if( input.GetActionDown(UAUIMenu, false) )
 					{
 						Continue();
 					}
@@ -360,17 +324,44 @@ modded class MissionGameplay
 						}
 					}
 				}
+				else if( menu == inspect )
+				{
+					if(input.GetActionDown(UAGear, false))
+					{
+						if( ItemManager.GetInstance().GetSelectedItem() == NULL )
+						{
+							HideInventory();
+						}
+					}
+					else if(input.GetActionDown(UAUIBack, false))
+					{
+						if( ItemManager.GetInstance().GetSelectedItem() == NULL )
+						{
+							HideInventory();
+						}
+					}
+				}
 				else if(input.GetActionDown(UAUIBack, false))
 				{
 					m_UIManager.Back();
+					PlayerControlEnable();
 				}
+				else if(menu == mapmenu && !m_ControlDisabled)
+				{
+					PlayerControlDisable();
+				}
+				
 			}
 			else if (input.GetActionDown(UAUIMenu, false))
 			{
 				Pause();
+				PlayerControlDisable();
 			}
 		}
 		
 		UpdateDebugMonitor();
+		
+		SEffectManager.Event_OnFrameUpdate(timeslice);
 	}
+	
 }

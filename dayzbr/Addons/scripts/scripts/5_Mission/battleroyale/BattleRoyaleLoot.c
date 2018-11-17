@@ -83,13 +83,105 @@ class BattleRoyaleLoot
 	{
 		ref array<EntityAI> outItems = new array<EntityAI>();
 		
+		/*
+		TODO: Automatic item attachment
+		
+		1) if a weapon is spawned, store it in a variable
+		2) if another item is spawned, check if the weapon supports this as an attachment (cfg searches)
+		3) try to spawn the item as an attachment (createAttachment)
+		4) if that fails, spawn it on ground (how to check fail?)
+		
+		
+		
+		*/
+		
+		EntityAI parent_weapon; //if we spawn a weapon, then this gets set. If this is set, we need to figure out if each item added afterwards is an attachment for this
+		ref array<string> parent_attachment_slots = new array<string>();
+		
 		for(int i = 0; i < itemList.Count();i++)
 		{
 			string itemName = itemList.Get(i);
-			Object obj = GetGame().CreateObject(itemName,world_pos);
-			//obj.PlaceOnSurface();
-			EntityAI item = EntityAI.Cast(obj);
 			
+			//check if item requires battery
+			string configPath = "CfgVehicles " + itemName + " attachments";
+			ref array<string> attachmentArray = new array<string>();
+			GetGame().ConfigGetTextArray(configPath,attachmentArray);
+			if(attachmentArray.Count() == 0)
+			{
+				configPath = "CfgWeapons " + itemName + " attachments";
+				GetGame().ConfigGetTextArray(configPath,attachmentArray);
+			}
+			
+			
+			Object obj;
+			EntityAI item;
+			
+			if(GetGame().IsKindOf(itemName, "Rifle_Base"))
+			{
+				//this is a weapon, spawn it on ground
+				item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
+				parent_weapon = item;
+
+				//This is our weapon, nab its attachment slots from config (lower case all of them (thanks dayz))
+				for(int j = 0; j < attachmentArray.Count(); j++)
+				{
+					string slot = attachmentArray.Get(j);
+					slot.ToLower();
+					parent_attachment_slots.Insert(slot);
+				}
+			}
+			else
+			{
+				if(parent_weapon)
+				{
+					//get attachment inventory slot destination
+					configPath = "CfgVehicles " + itemName + " inventorySlot";
+					string slotName;
+					if(GetGame().ConfigGetText(configPath, slotName))
+					{
+						slotName.ToLower();
+						if(parent_attachment_slots.Find(slotName) >= 0)
+						{
+							//attachable item, attempt to spawn in primary weapon
+							EntityAI attachment = parent_weapon.GetInventory().CreateAttachment(itemName);
+							if(attachment)
+							{
+								item = attachment;
+							}
+							else
+							{
+								item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
+							}
+						}
+						else
+						{
+							//cannot attach to this weapon
+							item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
+						}
+					}
+					else
+					{
+						//Not an attachable item (spawn it on ground)
+						item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
+					}
+				}
+				else
+				{
+					//No parent item
+					item = EntityAI.Cast(GetGame().CreateObject(itemName,world_pos));
+				}
+			}
+			
+			//obj.PlaceOnSurface();
+			if(attachmentArray.Find("BatteryD") >= 0)
+			{
+				//add battery to the item
+				EntityAI battery = item.GetInventory().CreateAttachment("Battery9V");
+				if(battery)
+				{
+					outItems.Insert(battery); //add battery to garbage collector
+				}
+			}
 			outItems.Insert(item);
 		}
 		return outItems;
@@ -160,9 +252,39 @@ class BattleRoyaleLoot
 			
 		int rand = Math.RandomIntInclusive(1,GetGame().ConfigGetInt(cfgPath + "num_items"));
 		
-		ref array<string> CfgItems = new array<string>();
-		GetGame().ConfigGetTextArray( cfgPath + "Gear_" + rand.ToString(), CfgItems );
+		string classPath = cfgPath + "Gear_" + rand.ToString();
 		
+		ref array<string> CfgItems = new array<string>();
+		
+		
+		int itemSlots = GetGame().ConfigGetChildrenCount(classPath);
+		for(int i = 1; i <= itemSlots; i++)
+		{
+			//roll for a spawn on this slot
+			string itemSlotPath = classPath + " Item_" + i.ToString();
+			float chance = GetGame().ConfigGetFloat(itemSlotPath + " chance");
+			if(Math.RandomFloatInclusive(0, 1) < chance)
+			{
+				//calculate number of this type to spawn
+				int min = GetGame().ConfigGetInt(itemSlotPath + " min_spawn");
+				int max = GetGame().ConfigGetInt(itemSlotPath + " max_spawn");
+				int num_to_spawn = Math.RandomIntInclusive(min,max);
+				
+				//figure out which type to spawn
+				ref array<string> CfgTypes = new array<string>();
+				GetGame().ConfigGetTextArray(itemSlotPath + " Types", CfgTypes);
+				
+				min = 0;
+				max = CfgTypes.Count() - 1;
+				int index = Math.RandomIntInclusive(min,max);
+				string itemTypeToSpawn = CfgTypes.Get(index);
+				
+				for(int j = 0; j < num_to_spawn;j++)
+				{
+					CfgItems.Insert(itemTypeToSpawn);
+				}
+			}
+		}
 		return CfgItems;
 	}	
 	array<string> GetMedicalSpawn()

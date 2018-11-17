@@ -1,0 +1,2 @@
+const int AT_DRINK_MONSTA = 10000;
+const int AT_DRINK_MONSTASTAMINA = 10001;
