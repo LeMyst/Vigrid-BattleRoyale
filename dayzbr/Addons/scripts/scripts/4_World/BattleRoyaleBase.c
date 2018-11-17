@@ -4,8 +4,6 @@ class BattleRoyaleBase
 {
 	void BattleRoyaleBase()
 	{
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", this );
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendClientMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "RequestAutowalk", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "IncreaseStats", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "RequestSuicide", this );
@@ -17,7 +15,6 @@ class BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetRoundForPlayer", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetShirtTexture", this);
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", this );
 	}
 
 	bool allowFallDamage(PlayerBase plr)
@@ -35,36 +32,7 @@ class BattleRoyaleBase
 	}
 	
 	
-	void GlobalChat(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-	{
-		Param1< string > data;
-		if( !ctx.Read( data ) ) return;
 	
-		if(type == CallType.Client)
-		{
-			if(! GetGame().GetPlayer() ) return;
-			
-			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
-			
-			if(!me) return;
-			
-			me.MessageAction( data.param1 );
-		}
-		if(type == CallType.Server)
-		{
-			if(!target) return;
-			
-			PlayerBase targetBase = PlayerBase.Cast(target);
-			if(!targetBase) return;
-			if(!targetBase.GetIdentity()) return;
-			
-			string message = "(Global) " + targetBase.GetIdentity().GetName() + ": " + data.param1;
-			
-			ref Param1<string> value_string = new Param1<string>(message);
-			
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "GlobalChat", value_string, false );
-		}
-	}
 	void SetShirtTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1< string > data;
@@ -129,51 +97,6 @@ class BattleRoyaleBase
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetWeaponTexture", value_string, false , NULL, targetBase);
 		}
 	}
-		
-	void SendGlobalMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
-	{
-		Param1< string > data;
-		if( !ctx.Read( data ) ) return;
-        
-		if( GetGame() )
-		{
-			string msg = data.param1;
-			PlayerBase me = PlayerBase.Cast(GetGame().GetPlayer());
-			
-			if(!msg.Contains("ALL: "))
-			{
-				if(me.my_round)
-				{
-					if(msg.Contains(me.my_round))
-					{
-						msg.Replace(me.my_round + ": ","");
-						GetGame().Chat( msg, "colorImportant" );
-					}
-				}
-			}
-			else
-			{
-				msg.Replace("ALL: ","");
-				GetGame().Chat( msg, "colorImportant" );
-			}
-		}
-	}
-
-	void SendClientMessage( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
-	{
-		Param1< string > data;
-		if( !ctx.Read( data ) ) return;
-        
-		if ( type == CallType.Client )
-		{
-			PlayerBase player = PlayerBase.Cast( target );
-
-			if ( !player ) return;
-
-			player.MessageImportant( data.param1 );
-		}
-	}
-
 	void RequestAutowalk( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
 		Param1< bool > data;
@@ -211,7 +134,7 @@ class BattleRoyaleBase
 
 			player.GetStatWater().Add( data.param1 );
 			player.GetStatEnergy().Add( data.param1 );
-			player.GetStatStomachSolid().Add( data.param1 );
+			player.GetStatStomachVolume().Add( data.param1 );
 		}
 	}
 

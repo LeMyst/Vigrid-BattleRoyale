@@ -71,8 +71,8 @@ class ActionDrinkMonstaStamina: ActionDrink
 	void ActionDrinkMonstaStamina()
 	{
 		m_CallbackClass = ActionDrinkMonstaStaminaCB;
-		m_CommandUID = DayZPlayerConstants.CMD_ACTIONMOD_DRINKCAN;
-		m_CommandUIDProne = DayZPlayerConstants.CMD_ACTIONFB_DRINKCAN;
+		m_CommandUID = DayZPlayerConstants.CMD_ACTIONMOD_DRINK;
+		m_CommandUIDProne = DayZPlayerConstants.CMD_ACTIONFB_DRINK;
 	}
 	
 	override int GetType()

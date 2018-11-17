@@ -193,8 +193,8 @@ class BattleRoyaleRound
 		player.SetHealth("", "Blood", player.GetMaxHealth("", "Blood"));
 		player.SetHealth("", "Shock", player.GetMaxHealth("", "Shock"));
 		
-		// GetStatStomachSolid + GetStatStomachWater > 1000 == STUFFED!
-		player.GetStatStomachSolid().Set(250);
+		// GetStatStomachVolume + GetStatStomachWater > 1000 == STUFFED!
+		player.GetStatStomachVolume().Set(250);
 		player.GetStatStomachWater().Set(250);
 		
 		// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
@@ -206,7 +206,7 @@ class BattleRoyaleRound
 		
 		
 		// default body temperature is  37.4 -> HYPOTHERMIC_TEMPERATURE_TRESHOLD = 35.8
-		player.GetStatTemperature().Set(37.4);
+		//player.GetStatTemperature().Set(37.4);
 		
 		// BURNING_TRESHOLD = 199 -> 100 should be fine
 		player.GetStatHeatComfort().Set(100);
@@ -265,7 +265,7 @@ class BattleRoyaleRound
 		m_DeadBodies.Clear();
 		master_index = m_RoundPlayers.Count();
 		Prepare_Players = true;
-		EmoteManager.m_Prepare_Players(true);
+		//EmoteManager.m_Prepare_Players(true);
 	}
 	
 	
@@ -488,7 +488,7 @@ class BattleRoyaleRound
 		
 		if(!RoundStarted)
 		{
-			EmoteManager.m_Prepare_Players(false);
+			//EmoteManager.m_Prepare_Players(false);
 			//Round is over, clean up match,
 			round_CallQueue.Remove(this.CheckRoundEnd);
 			

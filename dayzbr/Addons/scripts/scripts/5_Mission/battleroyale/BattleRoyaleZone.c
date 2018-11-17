@@ -1,3 +1,4 @@
+
 static string BattleRoyaleZoneFolderSaveLocation = "$profile:/BRZones";
 
 class BattleRoyaleZoneData
