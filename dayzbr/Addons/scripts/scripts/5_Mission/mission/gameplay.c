@@ -28,6 +28,30 @@ modded class MissionGameplay
 	
 	override void OnInit()
 	{
+		
+		//initialize our own custom HUD layout
+		if ( !m_HudRootWidget )
+		{
+			m_HudRootWidget			= GetGame().GetWorkspace().CreateWidgets("dayzbr/gui/layouts/br_hud.layout");
+			
+			m_HudRootWidget.Show(false);
+			
+			m_Chat.Init(m_HudRootWidget.FindAnyWidget("ChatFrameWidget"));
+			
+			m_ActionMenu.Init( m_HudRootWidget.FindAnyWidget("ActionsPanel"), TextWidget.Cast( m_HudRootWidget.FindAnyWidget("DefaultActionWidget") ) );
+			
+			m_Hud.Init( m_HudRootWidget.FindAnyWidget("HudPanel") );
+			
+			m_MicrophoneIcon		= ImageWidget.Cast( m_HudRootWidget.FindAnyWidget("mic") );
+
+			// notification window
+			m_NotificationWidget	= new NotificationMessage( m_HudRootWidget );
+			
+			// chat channel
+			m_ChatChannelArea		= m_HudRootWidget.FindAnyWidget("ChatChannelPanel");
+			m_ChatChannelText		= TextWidget.Cast( m_HudRootWidget.FindAnyWidget("ChatChannelText") );
+		}
+		//call base init (this will not create a second layout do to the if check)
 		super.OnInit();
 		
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SendGlobalMessage", this );
@@ -54,14 +78,16 @@ modded class MissionGameplay
 					if(msg.Contains(me.my_round))
 					{
 						msg.Replace(me.my_round + ": ","");
-						m_Chat.Add("Server",msg);
+						m_Hud.DisplayNotification(msg);
+						//m_Chat.Add("Server",msg);
 					}
 				}
 			}
 			else
 			{
 				msg.Replace("ALL: ","");
-				m_Chat.Add("Server",msg);
+				m_Hud.DisplayNotification(msg);
+				//m_Chat.Add("Server",msg);
 				
 			}
 		}
@@ -77,8 +103,9 @@ modded class MissionGameplay
 			PlayerBase player = PlayerBase.Cast( target );
 
 			if ( !player ) return;
-
-			m_Chat.Add("Server",data.param1);
+			
+			m_Hud.DisplayNotification(data.param1);
+			//m_Chat.Add("Server",data.param1);
 		}
 	}
 
