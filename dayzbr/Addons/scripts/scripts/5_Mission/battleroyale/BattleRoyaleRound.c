@@ -451,9 +451,7 @@ class BattleRoyaleRound
 	{
 		allowZoneDamage = true;
 
-		int player_count = m_RoundPlayers.Count();
-		
-		m_BattleRoyaleZone.StartZoning(player_count);
+		m_BattleRoyaleZone.StartZoning(m_RoundPlayers.Count());
 		
 		RoundStarted = true;
 		round_CallQueue.CallLater(this.CheckRoundEnd, m_BattleRoyaleData.check_round_end*1000, true);
@@ -467,7 +465,7 @@ class BattleRoyaleRound
 		// DO NOT EVER ITERATE AN ENTIRE ARRAY ON A SINGLE FRAME
 		// YOU WILL DESTROY THE DAYZ SERVERS PERFORMANCE FOR UPWARDS OF 30 SECONDS
 		// DO NOT DO THIS
-		for(int i = 0; i < player_count; i++)
+		for(int i = 0; i < m_RoundPlayers.Count(); i++)
 		{
 			PlayerBase player = m_RoundPlayers.Get( i );
 
