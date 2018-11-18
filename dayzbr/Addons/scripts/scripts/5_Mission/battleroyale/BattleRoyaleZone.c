@@ -244,13 +244,11 @@ class BattleRoyaleZone
 
 	float GetMaxAreaSize()
 	{
-		//Get play area size from config
 		return start_area_size;
 	}
 
 	float GetMaxPlayTime()
 	{
-		//Get play area size from config
 		return max_playtime;
 	}
 
@@ -259,7 +257,7 @@ class BattleRoyaleZone
 		return m_BattleRoyaleData.shrink_coefficient;
 	}
 
-	//Get current values (used for  gameplay)
+	//Get current values (used for gameplay)
 	vector GetCurrentCenter()
 	{
 		if(current_size == 0)
