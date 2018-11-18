@@ -36,8 +36,7 @@ class StaticBRData
 
 	int include_start_shrink_zone_in_roundtime = 1; // 0 == off, 1 == on
 
-	static ref StaticBRData
-	LoadDataServer()
+	static ref StaticBRData	LoadDataServer()
 	{
 		ref StaticBRData data = new ref StaticBRData;
 
