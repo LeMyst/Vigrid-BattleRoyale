@@ -152,6 +152,7 @@ class BattleRoyale extends BattleRoyaleBase
 		
 		//check round can be started
 		bool CanFireNewRound = true;
+		bool CanSetEnvironment = true;
 		foreach(ref BattleRoyaleRound round : m_BattleRoyaleRounds)
 		{
 			//if any round is in progress but not started, we are waiting to start it & cannot launch a new round at this time
@@ -159,6 +160,11 @@ class BattleRoyale extends BattleRoyaleBase
 			{
 				CanFireNewRound = false;
 				break;
+			}
+			//if any round is in progress, we can not set the round time / weather when we fire up the parallel match
+			if(round.inProgress)
+			{
+				CanSetEnvironment = false;
 			}
 		}
 		
@@ -169,12 +175,47 @@ class BattleRoyale extends BattleRoyaleBase
 				if(!round2.inProgress && !round2.RoundStarted)
 				{
 					BRLOG("STARTING ROUND " + round2.round_name);
+					if(CanSetEnvironment)
+					{
+						RandomizeServerEnvironment();
+					}
 					round2.PlayerCountReached();
 					return;
 				}
 			}
 		}
 	}
+	
+	void RandomizeServerEnvironment()
+	{
+		//Set Random Time
+		int year = 2018;
+		int month = 12;
+		int day = 24;
+		int hour = Math.RandomIntInclusive(7,17); //7am to 5pm
+		int minute = 0;
+		GetGame().GetWorld().SetDate(year, month, day, hour, minute);
+		
+		//Set Random Weather
+		Weather weather = GetGame().GetWeather();
+
+		weather.GetOvercast().SetLimits( 0.0 , 1.0 );
+		weather.GetRain().SetLimits( 0.0 , 1.0 );
+		weather.GetFog().SetLimits( 0.0 , 0.25 );
+
+		weather.GetOvercast().SetForecastChangeLimits( 0.5, 0.8 );
+		weather.GetRain().SetForecastChangeLimits( 0.1, 0.3 );
+		weather.GetFog().SetForecastChangeLimits( 0.05, 0.10 );
+
+		weather.GetOvercast().SetForecastTimeLimits( 3600 , 3600 );
+		weather.GetRain().SetForecastTimeLimits( 300 , 300 );
+		weather.GetFog().SetForecastTimeLimits( 3600 , 3600 );
+
+		weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
+		weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
+		weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
+	}
+	
 	
 	//player connected. add them to the debug zone and prep them for BR
 	void OnPlayerConnected(PlayerBase player)
