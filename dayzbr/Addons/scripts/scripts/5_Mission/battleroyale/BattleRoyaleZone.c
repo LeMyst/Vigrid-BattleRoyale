@@ -86,7 +86,7 @@ class BattleRoyaleZoneManager
 	ref BattleRoyaleZone getRandomZoneFromPool()
 	{
 		int index = Math.RandomInt(0, ZoneList.Count());
-		ref	BattleRoyaleZone zone = ZoneList.Get(index);
+		ref BattleRoyaleZone zone = ZoneList.Get(index);
 
 		//Find a zone that is not currently active
 		while(zone.isZoning)
