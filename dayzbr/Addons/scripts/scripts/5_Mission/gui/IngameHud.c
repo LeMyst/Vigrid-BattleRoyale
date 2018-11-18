@@ -6,6 +6,7 @@ modded class IngameHud
 	{
 		super.Init(hud_panel_widget);
 		m_BrNotificationWidget = m_HudPanelWidget.FindAnyWidget("BrNotificationWidget");
+		m_BrNotificationWidget.SetText("");
 	}
 	
 	void DisplayNotification(string notification)
