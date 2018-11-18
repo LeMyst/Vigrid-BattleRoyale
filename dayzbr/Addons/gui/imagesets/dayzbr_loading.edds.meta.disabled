@@ -1,0 +1,18 @@
+MetaFileClass {
+ Name "{8E10FD7133956DCE}dayzbr/gui/imagesets/dayzbr_loading.edds"
+ Author "desktop-p85spo9"
+ ChangeDate 1057645936
+ Configurations {
+  TGAResourceClass PC {
+   SourceFile "br_loading.tga"
+   FormatCompress Medium
+   TiledTexture 0
+  }
+  TGAResourceClass XBOX_ONE : PC {
+  }
+  TGAResourceClass PS4 : PC {
+  }
+  TGAResourceClass LINUX : PC {
+  }
+ }
+}
