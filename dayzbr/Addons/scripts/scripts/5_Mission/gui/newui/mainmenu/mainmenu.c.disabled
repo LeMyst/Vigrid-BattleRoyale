@@ -34,21 +34,19 @@ modded class MainMenu
 		m_Stats						= new MainMenuStats( layoutRoot.FindAnyWidget( "character_stats_root" ) );
 		
 		m_Mission					= MissionMainMenu.Cast( GetGame().GetMission() );
-		
 		m_ScenePC					= m_Mission.GetIntroScenePC();
+		
 		if( m_ScenePC )
 			m_ScenePC.ResetIntroCamera();
-
 		
 		m_PlayerName				= TextWidget.Cast( layoutRoot.FindAnyWidget("character_name_text") );
 		
-	
-		
-		Refresh();
 		
 		string version;
 		GetGame().GetVersion( version );
+		
 		version = "#main_menu_version" + " " + version;
+		
 		m_Version.SetText( version );
 		
 		GetGame().GetUIManager().ScreenFadeOut(0);
@@ -56,6 +54,9 @@ modded class MainMenu
 		SetFocus( layoutRoot );
 		
 		
+		Refresh();
+		
+		UpdateNewsFeed();
 		
 		return layoutRoot;
 	}
