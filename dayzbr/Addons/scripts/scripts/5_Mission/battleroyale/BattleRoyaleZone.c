@@ -142,7 +142,6 @@ class BattleRoyaleZone
 
 		start_area_size = 0;
 		max_playtime = 0;
-		start_player_count = 0;
 
 		MarkerSetup();
 	}
@@ -221,8 +220,7 @@ class BattleRoyaleZone
 		return 0.0;
 	}
 
-	float CalculateMaxPlaytime(int start_player_count;
-	)
+	float CalculateMaxPlaytime(int start_player_count)
 	{
 		float min_playtime = m_BattleRoyaleData.shrink_min_playtime;
 		float max_playtime = m_BattleRoyaleData.shrink_max_playtime;
