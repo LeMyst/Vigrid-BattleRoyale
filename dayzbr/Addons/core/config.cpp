@@ -35,7 +35,7 @@ class CfgMods
 			/*
 			class imageSets
 			{
-				files[]={"fmdbr/gui/imagesets/dayzbr_gui.imageset"};
+				files[]={"dayzbr/gui/imagesets/dayzbr_gui.imageset"};
 			};
 			*/
 			
