@@ -450,8 +450,8 @@ class BattleRoyaleRound
 	void StartRoundForPlayers()
 	{
 		allowZoneDamage = true;
-		
-		m_BattleRoyaleZone.StartZoning();
+
+		m_BattleRoyaleZone.StartZoning(m_RoundPlayers.Count());
 		
 		RoundStarted = true;
 		round_CallQueue.CallLater(this.CheckRoundEnd, m_BattleRoyaleData.check_round_end*1000, true);

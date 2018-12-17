@@ -6,6 +6,10 @@ class BattleRoyaleZoneData
 	// default data
 	string zone_name = "cherno";
 	vector center = Vector(6497.66, 6.01245, 2519.26);
+	// 0 means use config default
+	float min_play_area_size = 0.0; // default max area size for 8 people
+	float max_play_area_size = 0.0; // default max area size for 50 people
+	int start_shrink_zone = 0; // time until the zoning starts Measured in seconds
 }
 
 class BattleRoyaleZoneManager
@@ -23,12 +27,15 @@ class BattleRoyaleZoneManager
 
 		string fileName;
 		FileAttr fileAttr;
-		FindFileHandle zones = FindFile(BattleRoyaleZoneFolderSaveLocation + "/*.json", fileName, fileAttr, 0);
+
+		// find a zone definitions
+		FindFileHandle zoneFileHandle = FindFile(BattleRoyaleZoneFolderSaveLocation + "/*.json", fileName, fileAttr, 0);
 
 		ref BattleRoyaleZoneData first_zone_data;
 		first_zone_data = new BattleRoyaleZoneData();
 
-		if(!zones)
+		// if no zone definition was found create the default one and check if we could load it
+		if(!zoneFileHandle)
 		{
 			Print("BR default zone doesn't exist, creating file!");
 			string defaultfilepath = BattleRoyaleZoneFolderSaveLocation + "/default.json";
@@ -39,14 +46,15 @@ class BattleRoyaleZoneManager
 				JsonFileLoader<BattleRoyaleZoneData>.JsonSaveFile(defaultfilepath, first_zone_data);
 			}
 
-			zones = FindFile(BattleRoyaleZoneFolderSaveLocation + "/*.json", fileName, fileAttr, 0);
-			if(!zones)
+			zoneFileHandle = FindFile(BattleRoyaleZoneFolderSaveLocation + "/*.json", fileName, fileAttr, 0);
+			if(!zoneFileHandle)
 			{
 				Print("ERROR: FAILED TO GET AT LEAST THE DEFAULT BR ZONE EVEN IF WE JUST SHOULD HAVE CREATED IT...");
 				return;
 			}
 		}
 
+		// create the first found/default zone
 		Print(BattleRoyaleZoneFolderSaveLocation + "/" + fileName);
 		JsonFileLoader<BattleRoyaleZoneData>.JsonLoadFile(BattleRoyaleZoneFolderSaveLocation + "/" + fileName, first_zone_data);
 		Print(first_zone_data.zone_name);
@@ -54,7 +62,8 @@ class BattleRoyaleZoneManager
 
 		ZoneList.Insert(new BattleRoyaleZone(staticdata, first_zone_data));
 
-		while(FindNextFile(zones, fileName, fileAttr))
+		// find all other zone definitions and create the zones
+		while(FindNextFile(zoneFileHandle, fileName, fileAttr))
 		{
 			ref BattleRoyaleZoneData new_zone_data = new BattleRoyaleZoneData();
 			Print("FOUND ANOTHER FILE: " + BattleRoyaleZoneFolderSaveLocation + "/" + fileName);
@@ -76,13 +85,13 @@ class BattleRoyaleZoneManager
 	
 	ref BattleRoyaleZone getRandomZoneFromPool()
 	{
-		int index = Math.RandomInt(0,ZoneList.Count());
+		int index = Math.RandomInt(0, ZoneList.Count());
 		ref BattleRoyaleZone zone = ZoneList.Get(index);
-		
+
 		//Find a zone that is not currently active
 		while(zone.isZoning)
 		{
-			index = Math.RandomInt(0,ZoneList.Count());
+			index = Math.RandomInt(0, ZoneList.Count());
 			zone = ZoneList.Get(index);
 		}
 		
@@ -102,6 +111,9 @@ class BattleRoyaleZone
 	vector new_center;
 	float current_size;
 	float new_size;
+
+	float start_area_size;
+	float max_playtime;
 
 	int number_of_shrinks;
 
@@ -128,6 +140,10 @@ class BattleRoyaleZone
 		m_BattleRoyaleData = staticdata;
 		m_BattleRoyaleZoneData = zonedata;
 
+		start_area_size = 0;
+		max_playtime = 0;
+		start_player_count = 0;
+
 		MarkerSetup();
 	}
 
@@ -135,7 +151,7 @@ class BattleRoyaleZone
 	{
 		ref array<Object> allObjects = new array<Object>();
 		ref array<CargoBase> proxies = new array<CargoBase>();
-		GetGame().GetObjectsAtPosition(GetCenter(), GetMaxSize(), allObjects, proxies);
+		GetGame().GetObjectsAtPosition(GetCenter(), GetMaxAreaSize(), allObjects, proxies);
 		for(int i = 0; i < allObjects.Count(); i++)
 		{
 			Object obj = allObjects.Get(i);
@@ -153,18 +169,95 @@ class BattleRoyaleZone
 		//Get play area center from config
 		return m_BattleRoyaleZoneData.center;
 	}
-	float GetMaxSize()
+
+	float GetMinPlayAreaSize()
 	{
-		//Get play area size from config
-		return m_BattleRoyaleData.play_area_size;
+		if(m_BattleRoyaleZoneData.min_play_area_size > 1)
+		{
+			return m_BattleRoyaleZoneData.min_play_area_size;
+		}
+
+		return m_BattleRoyaleData.min_play_area_size;
 	}
+
+	float GetMaxPlayAreaSize()
+	{
+		if(m_BattleRoyaleZoneData.min_play_area_size > 1)
+		{
+			return m_BattleRoyaleZoneData.max_play_area_size;
+		}
+
+		return m_BattleRoyaleData.max_play_area_size;
+	}
+
+	float GetStartShrinkZone()
+	{
+
+		if(m_BattleRoyaleZoneData.start_shrink_zone > 1)
+		{
+			return m_BattleRoyaleZoneData.start_shrink_zone
+		}
+
+		return m_BattleRoyaleData.start_shrink_zone;
+	}
+
+	float CalculateMaxSize(int start_player_count)
+	{
+		float min_size = GetMinPlayAreaSize();
+		float max_size = GetMaxPlayAreaSize();
+		int min_player = m_BattleRoyaleData.reference_min_players;
+		int max_player = m_BattleRoyaleData.reference_max_players;
+
+		// 0 for reference min players, 1 for reference max players, > 1 if more then reference max players
+		float player_coefficient = ((start_player_count - min_player) / (max_player - min_player));
+
+		switch(m_BattleRoyaleData.adjustment_type)
+		{
+			default: // linear adjustment
+				return min_size + (max_size - min_size) * player_coefficient;
+		}
+
+		// we are forced to return something, even if we never get here
+		return 0.0;
+	}
+
+	float CalculateMaxPlaytime(int start_player_count;
+	)
+	{
+		float min_playtime = m_BattleRoyaleData.shrink_min_playtime;
+		float max_playtime = m_BattleRoyaleData.shrink_max_playtime;
+		int min_player = m_BattleRoyaleData.reference_min_players;
+		int max_player = m_BattleRoyaleData.reference_max_players;
+
+		// 0 for reference min players, 1 for reference max players, > 1 if more then reference max players
+		float player_coefficient = ((start_player_count - min_player) / (max_player - min_player));
+
+		switch(m_BattleRoyaleData.adjustment_type)
+		{
+			default: // linear adjustment
+				return min_playtime + (max_playtime - min_playtime) * player_coefficient;
+		}
+
+		// we are forced to return something, even if we never get here
+		return 0.0;
+	}
+
+	float GetMaxAreaSize()
+	{
+		return start_area_size;
+	}
+
+	float GetMaxPlayTime()
+	{
+		return max_playtime;
+	}
+
 	float GetShrinkCoefficient()
 	{
 		return m_BattleRoyaleData.shrink_coefficient;
 	}
 
-
-	//Get current values (used for  gameplay)
+	//Get current values (used for gameplay)
 	vector GetCurrentCenter()
 	{
 		if(current_size == 0)
@@ -176,16 +269,42 @@ class BattleRoyaleZone
 			return current_center;
 		}
 	}
+
 	float GetCurrentSize()
 	{
 		if(current_size == 0)
 		{
-			return GetMaxSize();
+			return GetMaxAreaSize();
 		}
 		else
 		{
 			return current_size;
 		}
+	}
+
+	float GetZoneLockTime()
+	{
+		return m_BattleRoyaleData.zone_lock_time;
+	}
+
+	float GetZoneShrinkZoneEvery()
+	{
+		return m_BattleRoyaleData.shrink_zone_every;
+	}
+
+	float GetZoneShrinkBase()
+	{
+		return m_BattleRoyaleData.shrink_base;
+	}
+
+	float GetZoneShrinkExponent()
+	{
+		return m_BattleRoyaleData.shrink_exponent;
+	}
+
+	int GetZoneShrinkType()
+	{
+		return m_BattleRoyaleData.shrink_type;
 	}
 
 	string GetZoneName()
@@ -196,27 +315,23 @@ class BattleRoyaleZone
 	float GetNewZoneSize()
 	{
 		// since dayz does not want the same variable to be defined twice, we declare it now since it will be used anyway
-		float seconds = (m_BattleRoyaleData.zone_lock_time + m_BattleRoyaleData.shrink_zone_every) * number_of_shrinks; // x
+		float seconds = (GetZoneLockTime() + GetZoneShrinkZoneEvery()) * number_of_shrinks; // x
 
 		if(m_BattleRoyaleData.include_start_shrink_zone_in_roundtime > 0)
 		{
-			seconds = seconds + m_BattleRoyaleData.start_shrink_zone;
+			seconds = seconds + GetStartShrinkZone();
 		}
 
-		float max_playtime = m_BattleRoyaleData.shrink_max_playtime * 60; // default m = 30
+		Print("MINUTES UNTIL END " + (max_playtime - Math.Ceil(seconds / 60)));
 
-		Print("MINUTES UNTIL END " + (m_BattleRoyaleData.shrink_max_playtime - Math.Ceil(seconds / 60)));
-
-		switch(m_BattleRoyaleData.shrink_type)
+		switch(GetZoneShrinkType())
 		{
 			case 1: // exponential
 				// code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
-				float base = m_BattleRoyaleData.shrink_base; // default 2.718281828459 ~ e
-				float exponent = m_BattleRoyaleData.shrink_exponent; // default 3
-				float play_area_size = m_BattleRoyaleData.play_area_size; // default r = 500
-
+				float base = GetZoneShrinkBase(); // default 2.718281828459 ~ e
+				float exponent = GetZoneShrinkExponent(); // default 3
 				float yoffset = -1.0 * Math.Pow(base, exponent);
-				float zonesizefactor = play_area_size / yoffset;
+				float zonesizefactor = start_area_size / yoffset;
 				float shrinkexponent = (exponent / max_playtime) * seconds;
 				float shrinkfactor = Math.Pow(base, shrinkexponent) + yoffset;
 
@@ -224,9 +339,9 @@ class BattleRoyaleZone
 
 			case 2: // linear
 				// code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
-				float gradient = -1.0 * (m_BattleRoyaleData.play_area_size / max_playtime);
+				float gradient = -1.0 * (start_area_size / max_playtime);
 
-				return gradient * seconds + m_BattleRoyaleData.play_area_size;
+				return gradient * seconds + start_area_size;
 
 			default: // shrink by constant factor each tick
 				return GetCurrentSize() * GetShrinkCoefficient();
@@ -242,17 +357,20 @@ class BattleRoyaleZone
 		MarkerUpdate();
 	}
 
-	void StartZoning()
+	void StartZoning(int player_count)
 	{
 		//Reset the zone locations
 		isZoning = true;
-		this.current_size = GetMaxSize();
+		this.current_size = GetMaxAreaSize();
 		this.current_center = GetCenter();
 		this.number_of_shrinks = 0;
 
-		zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.start_shrink_zone * 1000, false);
-		
+		this.start_area_size = CalculateMaxSize(player_count); // default r = 500
+		this.max_playtime = CalculateMaxPlaytime(player_count); // default m = 30
+
+		zone_CallQueue.CallLater(this.Shrink_Zone, GetStartShrinkZone() * 1000, false);
 	}
+
 	void StopZoning()
 	{
 		zone_CallQueue.Remove(this.Lock_Zone);
@@ -265,7 +383,7 @@ class BattleRoyaleZone
 
 	void Shrink_Zone()
 	{
-		string sTime = m_BattleRoyaleData.zone_lock_time.ToString();
+		string sTime = GetZoneLockTime().ToString();
 
 		SendMessageAll(round_name + ": THE NEW ZONE HAS APPEARED. IT WILL LOCK IN LESS THAN " + sTime + " SECONDS.");
 		number_of_shrinks++; //this will be 1 on the first shrink call (helpful for max shrinks and dynamic shrinks in the future)
@@ -273,24 +391,24 @@ class BattleRoyaleZone
 		//Calculate new size on lock
 		new_size = GetNewZoneSize();
 
-		if ( new_size < 18 )
+		if(new_size < 18)
 		{
 			new_size = 18;
 		}
 
 		//Calculate new center on lock
-		float distance = Math.RandomFloatInclusive(0,GetCurrentSize() - new_size);
+		float distance = Math.RandomFloatInclusive(0, GetCurrentSize() - new_size);
 		float oldX = GetCurrentCenter()[0];
 		float oldZ = GetCurrentCenter()[2];
 
-		float moveDir = Math.RandomFloat(0,360) * Math.DEG2RAD;
+		float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
 		float dX = distance * Math.Sin(moveDir);
 		float dZ = distance * Math.Cos(moveDir);
 		float newX = oldX + dX;
 		float newZ = oldZ + dZ;
-		float newY = GetGame().SurfaceY(newX,newZ);
+		float newY = GetGame().SurfaceY(newX, newZ);
 
-		new_center = Vector(newX,newY,newZ);
+		new_center = Vector(newX, newY, newZ);
 
 		Print("==== ZONE LOGIC - SHRINK DONE ====");
 		Print(GetCurrentCenter());
@@ -303,11 +421,10 @@ class BattleRoyaleZone
 
 		
 		//Queue up the lock
-		zone_CallQueue.CallLater(this.Lock_Zone, m_BattleRoyaleData.zone_lock_time * 1000, false);
+		zone_CallQueue.CallLater(this.Lock_Zone, GetZoneLockTime() * 1000, false);
 	}
 	void Lock_Zone()
 	{
-		
 
 		current_center = new_center;
 		current_size = new_size;
@@ -318,11 +435,11 @@ class BattleRoyaleZone
 		Print("==================================");
 
 		// stop zone shrink once the min value is reached
-		if (new_size > 18)
+		if(new_size > 18)
 		{
 			//Queue up next shrink
-			SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN. NEW ZONE IN " + m_BattleRoyaleData.shrink_zone_every.ToString() + " SECONDS.");
-			zone_CallQueue.CallLater(this.Shrink_Zone, m_BattleRoyaleData.shrink_zone_every * 1000, false); //in 2 minutes, call next shrink
+			SendMessageAll(round_name + ": THE ZONE HAS BEEN LOCKED IN. NEW ZONE IN " + GetZoneShrinkZoneEvery().ToString() + " SECONDS.");
+			zone_CallQueue.CallLater(this.Shrink_Zone, GetZoneShrinkZoneEvery() * 1000, false); //in 2 minutes, call next shrink
 		}
 		else
 		{
@@ -356,7 +473,6 @@ class BattleRoyaleZone
 		isUpdating = false;
 	}
 
-
 	void spawnTick()
 	{
 		for(int i = 0; i < 5; i++)
@@ -377,12 +493,12 @@ class BattleRoyaleZone
 
 			float x = centerX + dX;
 			float z = centerZ + dZ;
-			float y = GetGame().SurfaceY(x,z);
+			float y = GetGame().SurfaceY(x, z);
 
-			vector objPos = Vector(x,y,z);
-			vector objDir = vector.Direction(new_center,objPos).Normalized();
+			vector objPos = Vector(x, y, z);
+			vector objDir = vector.Direction(new_center, objPos).Normalized();
 
-			Object marker = GetGame().CreateObject("Land_Br_Wall",objPos);
+			Object marker = GetGame().CreateObject("Land_Br_Wall", objPos);
 			marker.SetDirection(objDir);
 
 			Zone_Markers.Insert(marker);
@@ -397,7 +513,7 @@ class BattleRoyaleZone
 	}
 	void updateTick()
 	{
-		for(int j = 0; j < 5;j++)
+		for(int j = 0; j < 5; j++)
 		{
 			master_index--;
 
@@ -416,10 +532,10 @@ class BattleRoyaleZone
 			float dZ = Math.Cos(rads) * distance;
 			float x = centerX + dX;
 			float z = centerZ + dZ;
-			float y = GetGame().SurfaceY(x,z) + 1.5; //y correction
+			float y = GetGame().SurfaceY(x, z) + 1.5; //y correction
 
-			vector objPos = Vector(x,y,z);
-			vector objDir = vector.Direction(new_center,objPos).Normalized();
+			vector objPos = Vector(x, y, z);
+			vector objDir = vector.Direction(new_center, objPos).Normalized();
 
 			marker.SetPosition(objPos);
 			marker.SetDirection(objDir);
@@ -463,10 +579,9 @@ class BattleRoyaleZone
 		isUpdating = true;
 	}
 
-
 	void DeleteMarkers()
 	{
-		for(int i = 0; i < Zone_Markers.Count();i++)
+		for(int i = 0; i < Zone_Markers.Count(); i++)
 		{
 			Object marker = Zone_Markers.Get(i);
 			GetGame().ObjectDelete(marker);
