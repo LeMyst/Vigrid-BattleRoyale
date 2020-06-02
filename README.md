@@ -5,7 +5,7 @@
 -----
 Today we are bringing you a new game mode for DayZ. DayZ Battle Royale. When most of you think of the Battle Royale experience, we hope that you think back to the ArmA 3 mod and the experience of a simulated last man standing game. This will be an unforgiving last man standing death match. Making one mistake could easily lead to a game over. 
 
-Just to make it clear from the start, the game is still in its early alpha stage. For our Alpha 1.0 launch, we wanted to keep the play area small. This keeps the core of the code smaller, reduces the performance impact from our lack of experience with the new Modding systems, and allows us to tailor the experience to fit more easily. For these reasons, the play area will be within a 500m radius around different cities on the map. 
+Just to make it clear from the start,  the game is still in its early alpha stage. For our Alpha 1.0 launch, we wanted to keep the play area small. This keeps the core of the code smaller, reduces the performance impact from our lack of experience with the new Modding systems, and allows us to tailor the experience to fit more easily. For these reasons, the play area will be within a 500m radius around different cities on the map. 
 
 DayZ Battle Royale will be just as harsh as DayZ is. Players will still need to eat and drink at the same rate, stamina will not be reduced, the Zone will do 10 damage every 2 seconds, and bullet damage will not be modified. Custom loot spawns have been implemented throughout the city. These can spawn piles of food, water, ammo, weapons, and gear. Deciding what to loot, when to loot, who and when to fight will all be key aspects of the game. At any point, a wrong decision could lead to your untimely death. 
 
