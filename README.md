@@ -7,7 +7,7 @@ Today we are bringing you a new game mode for DayZ. DayZ Battle Royale. When mos
 
 Just to make it clear from the start, the game is still in its early alpha stage. For our Alpha 1.0 launch, we wanted to keep the play area small. This keeps the core of the code smaller, reduces the performance impact from our lack of experience with the new Modding systems, and allows us to tailor the experience to fit more easily. For these reasons, the play area will be within a 500m radius around different cities on the map. 
 
-DayZ Battle Royale will be just as harsh as DayZ is. Players will still need to eat and drink at the same rate, stamina will not be reduced, the Zone will do 10 damage every 2 seconds, and bullet damage will not be modified. Custom loot spawns have been implemented throughout the city. These can spawn piles of food, water, ammo, weapons, and gear. Deciding what to loot, when to loot, who and when to fight will all be key aspects of the game. At any point, a wrong decision could lead to your untimely death. 
+DayZ Battle Royale will be just as harsh as DayZ is.  Players will still need to eat and drink at the same rate, stamina will not be reduced, the Zone will do 10 damage every 2 seconds, and bullet damage will not be modified. Custom loot spawns have been implemented throughout the city. These can spawn piles of food, water, ammo, weapons, and gear. Deciding what to loot, when to loot, who and when to fight will all be key aspects of the game. At any point, a wrong decision could lead to your untimely death. 
 
 To simplify the player spawning, players will spawn in a circle at the center of the play area. A timer will count down and the round will begin. Game play does not stop until only one player remains. 
 
