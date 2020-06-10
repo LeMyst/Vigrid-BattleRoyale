@@ -7,11 +7,11 @@ modded class ExpansionMapMenuMarker {
     void ExpansionMapMenuMarker(Widget parent, MapWidget mapwidget, vector position, string name, int color, string icon, ref ExpansionMapMarker marker = NULL)
 	{
 		//set the marker type
-		if(icon == "ShapeCircle")
+		if(icon == "BattleRoyale\\GUI\\icons\\marker\\marker_circle.paa") //if our icon path is our circle icon
 		{
 			m_MarkerType = RoyaleMapMarkerType.Circle;
 		}
-		else if(icon == "ShapeRectangle")
+		else if(icon == "BattleRoyale\\GUI\\icons\\marker\\marker_rectangle.paa") //if our icon path is our rectangle icon
 		{
 			m_MarkerType = RoyaleMapMarkerType.Rectangle;
 		}
@@ -70,7 +70,10 @@ modded class ExpansionMapMenuMarker {
 		else if(m_Canvas)
 		{
 			CanvasClear();//-- TODO: find out if this is necessary
-			CanvasDrawOval(0,0,m_ValueA, m_ValueB, 1, m_MarkerColor); //TODO: find out if canvas rendering is 0 based on canvas position
+			if(m_MarkerType == RoyaleMapMarkerType.Circle)
+				CanvasDrawOval(0,0,m_ValueA, m_ValueB, 1, m_MarkerColor); //TODO: find out if canvas rendering is 0 based on canvas position
+			else if(m_MarkerType == RoyaleMapMarkerType.Rectangle)
+				CanvasDrawRectangle(0,0,m_ValueA, m_ValueB,0,1,m_MarkerColor); 
 		}		
 		if (m_MarkerColor)
 			m_Name.SetColor(m_MarkerColor);
