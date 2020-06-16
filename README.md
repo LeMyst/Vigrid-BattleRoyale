@@ -12,15 +12,15 @@ This branch contains all of the in-development files for the initial release of 
 > **Note:** The **Master Branch** still contains the original DayZ BR Pre-Alpha files.
 
 ##  Download
-DayZ BR is not available for download in a packed state at this time. Beta Testing will be done through our [Discord](https://discord.gg/apfw8J).  
+DayZ BR is not available for download in a packed state at this time. Beta Testing will be done through our [Discord](https://discord.gg/JXXqDgK).  
 
 ## Server Setup
 
-Private servers are recommended at the moment. When information is available for private server hosting, it will be found on our [Discord](https://discord.gg/apfw8J).
+Private servers are recommended at the moment. When information is available for private server hosting, it will be found on our [Discord](https://discord.gg/JXXqDgK).
 
 ## Client Setup
 
-When DayZ BR is available, Beta testers will be given all of the information to install and run DayZ BR. If you are a Beta tester, you can find this information on our [Discord](https://discord.gg/apfw8J).
+When DayZ BR is available, Beta testers will be given all of the information to install and run DayZ BR. If you are a Beta tester, you can find this information on our [Discord](https://discord.gg/JXXqDgK).
 
 
 
