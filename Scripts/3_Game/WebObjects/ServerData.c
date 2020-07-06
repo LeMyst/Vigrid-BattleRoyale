@@ -1,0 +1,25 @@
+
+
+
+class ServerData 
+{
+	//here is an example of the json data we expect to parse into this class
+	/*
+	{
+		"_id":"5efcf6ec4ffec2570de122ab",
+		"name":"Official DayZ Expansion Server",
+		"connection":"78.46.109.81:2302",
+		"query_port":"27016",
+		"last_started":1593639481,
+		"matches":[],
+		"region":"eu"
+	}
+	*/
+	string name;
+	string connection;
+	string query_port;
+	int last_started;
+	array<string> matches;
+	string region;
+	string _id;
+}
