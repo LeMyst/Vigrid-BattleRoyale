@@ -4,7 +4,7 @@ class CfgPatches
 	{
 		requiredAddons[]=
 		{
-			DZ_Data,
+			"DZ_Data",
 			"DayZExpansion_Scripts" 
 		};
 	};
@@ -36,7 +36,7 @@ class CfgMods
 			{
 				files[]=
 				{
-					//"BattleRoyale/GUI/imagesets/some_image_set.imageset"
+					"BattleRoyale/GUI/imagesets/dayzbr_gui.imageset"
 				};
 			};
 			class engineScriptModule
