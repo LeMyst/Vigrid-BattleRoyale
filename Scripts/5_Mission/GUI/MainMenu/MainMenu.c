@@ -8,8 +8,9 @@ modded class MainMenu
 	
 	override Widget Init()
 	{
-		super.Init(); //--- TODO: does this call the DayZ expansion init function?
+		super.Init(); // this calls dayz expansion init
 		
+		m_Logo 						= ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		//this will fail if we are not initializing a DayZExpansion main menu (as m_Logo only exists there)
 		if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
 			Error("Failed to load imageset image");
@@ -121,6 +122,7 @@ modded class MainMenu
 			OpenMenuServerBrowser();
 			return;
 		}
+		Print(result);
 		JsonSerializer m_Serializer = new JsonSerializer;
 		ServerData p_ServerData;
 		string error;
@@ -133,8 +135,11 @@ modded class MainMenu
 		}
 		
 		string connect_data = p_ServerData.connection;	
+		Print(p_ServerData);
+		
 		TStringArray parts;
 		connect_data.Split(":",parts);
+		
 		string ip_addr = parts.Get(0);
 		int port = parts.Get(1).ToInt();
 		if(!GetGame().Connect(this, ip_addr, port, "DayZBR_Beta"))

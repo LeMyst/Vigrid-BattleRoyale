@@ -54,6 +54,21 @@ FrameWidgetClass ExpansionMapMarker {
      style blank
      {
       CanvasWidgetClass marker_canvas {
+       visible 0
+       clipchildren 1
+       ignorepointer 1
+       keepsafezone 0
+       color 1 1 1 0
+       position 0 0
+       size 34 34
+       halign center_ref
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+      }
+      ImageWidgetClass marker_icon {
        clipchildren 1
        ignorepointer 1
        keepsafezone 0
@@ -65,6 +80,16 @@ FrameWidgetClass ExpansionMapMarker {
        vexactpos 0
        hexactsize 1
        vexactsize 1
+       image0 "set:expansion_notification_iconset image:icon_marker"
+       mode blend
+       "src alpha" 1
+       "no wrap" 1
+       stretch 1
+       filter 1
+       nocache 0
+       pivot 0 0
+       "Transition width" 0
+       Progress 0
       }
       ButtonWidgetClass marker_button {
        size 1 1
