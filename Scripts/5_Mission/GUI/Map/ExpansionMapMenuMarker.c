@@ -100,10 +100,10 @@ modded class ExpansionMapMenuMarker {
 			{
 				//calculate distance, in pixels, from center to edge using A and B values as distance in meters
 				vector m_edgePos_A = m_MarkerPos;
-				m_edgePos_A[0] += m_ValueA;
+				m_edgePos_A[0] = m_edgePos_A[0] + m_ValueA;
 				
 				vector m_edgePos_B = m_MarkerPos;
-				m_edgePos_B[1] += m_ValueB;
+				m_edgePos_B[2] = m_edgePos_B[2] + m_ValueB;
 				
 				vector mapPos_edge_A = m_MapWidget.MapToScreen(m_edgePos_A);				
 				vector mapPos_edge_B = m_MapWidget.MapToScreen(m_edgePos_B);
@@ -117,9 +117,10 @@ modded class ExpansionMapMenuMarker {
 				float canvas_width;
 				float canvas_height;
 				m_Canvas.GetSize(canvas_width,canvas_height);
-				float center_x = canvas_width/2f;
-				float center_y = canvas_height/2f;
+				float center_x = canvas_width / 2.0;
+				float center_y = canvas_height / 2.0;
 				
+				/*
 				Print("Marker Map Position:");
 				Print(m_MarkerPos);
 				Print(m_edgePos_A);
@@ -133,6 +134,7 @@ modded class ExpansionMapMenuMarker {
 				Print(distance_B);
 				Print(center_x);
 				Print(center_y);
+				*/
 				
 				//draw from center
 				CanvasDrawOval(center_x,center_y,distance_A, distance_B, m_Thickness, m_MarkerColor); //TODO: find out if canvas rendering is 0 based on canvas position

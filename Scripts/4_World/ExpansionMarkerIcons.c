@@ -23,7 +23,7 @@ modded class ExpansionMarkerIcons
 	static string GetCirclePath()
 	{
 		SetupBRMarkers();
-		return GetMarkerName(circle_marker_index);
+		return GetMarkerPath(circle_marker_index);
 	}
 	static string GetCircleIndex()
 	{

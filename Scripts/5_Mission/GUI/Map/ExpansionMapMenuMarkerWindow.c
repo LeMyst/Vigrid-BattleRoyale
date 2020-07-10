@@ -8,8 +8,7 @@ modded class ExpansionMapMenuMarkerWindow {
 		super.Init(); //call base (and init base markers)
 		
 		//add BR map markers
-
-        ExpansionMarkerIcon circle = new ExpansionMarkerIcon();
+		ExpansionMarkerIcon circle = new ExpansionMarkerIcon();
         
 		//because we had to mod expansion marker icons to include circles, we just added a few functions so *this* setup uses the strings based in that file
 		circle.Name = ExpansionMarkerIcons.GetCircleName();
@@ -37,6 +36,7 @@ modded class ExpansionMapMenuMarkerWindow {
 		Print(data.GetMarkerIcon());
 		Print(data.GetMarkerIconIndex());
 	}
+	
 	override void CreateMarker()
 	{
 		Print("Create Marker");
