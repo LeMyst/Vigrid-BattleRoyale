@@ -138,7 +138,7 @@ modded class MainMenu
 		Print(p_ServerData);
 		Print(connect_data);
 		
-		TStringArray parts;
+		TStringArray parts = new TStringArray;
 		connect_data.Split(":",parts);
 		
 		string ip_addr = parts.Get(0);

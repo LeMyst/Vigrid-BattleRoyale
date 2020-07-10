@@ -42,9 +42,9 @@ modded class ExpansionMapMenuMarker {
 		m_MarkerColor		= color;
 		m_MarkerData		= marker;
 		
-		m_ValueA = 10;
-        m_ValueB = 10;
-		m_Thickness = 1;
+		m_ValueA = 150;
+        m_ValueB = 150;
+		m_Thickness = 2;
 		
 		m_Root.SetHandler( this );
 
@@ -120,6 +120,25 @@ modded class ExpansionMapMenuMarker {
 				float center_x = canvas_width / 2.0;
 				float center_y = canvas_height / 2.0;
 				
+				if(((center_x + distance_A) > canvas_width) || ((center_y + distance_B) > canvas_height))
+				{
+					
+					//resize widget to fit
+					float new_x = (center_x + distance_A) + 2;
+					float new_y = (center_y + distance_B) + 2;
+					float new_size = Math.Max(Math.Max(new_x,new_y), 34.0); //don't let the icon size shrink smaller than the default size of 34 px
+					
+					m_Canvas.SetSize(new_size,new_size);
+					
+					Print("Resize Marker");
+					Print(canvas_width);
+					Print(canvas_height);
+					Print(center_x);
+					Print(distance_A);
+					Print(new_x);
+					Print(new_y);
+					Print(new_size);
+				}
 				/*
 				Print("Marker Map Position:");
 				Print(m_MarkerPos);
