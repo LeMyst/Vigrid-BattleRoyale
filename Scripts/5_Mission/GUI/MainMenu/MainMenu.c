@@ -136,6 +136,7 @@ modded class MainMenu
 		
 		string connect_data = p_ServerData.connection;	
 		Print(p_ServerData);
+		Print(connect_data);
 		
 		TStringArray parts;
 		connect_data.Split(":",parts);
