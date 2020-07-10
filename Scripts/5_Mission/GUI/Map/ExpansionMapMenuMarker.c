@@ -4,6 +4,7 @@ modded class ExpansionMapMenuMarker {
 	protected float m_ValueA; //A axis value
     protected float m_ValueB; //B axis value
 	protected float m_Thickness;
+	protected Widget m_MainPanel;
 
     void ExpansionMapMenuMarker(Widget parent, MapWidget mapwidget, vector position, string name, int color, string icon, ref ExpansionMapMarker marker = NULL)
 	{
@@ -13,6 +14,7 @@ modded class ExpansionMapMenuMarker {
 		m_Root 				= Widget.Cast( GetGame().GetWorkspace().CreateWidgets( "BattleRoyale/GUI/layouts/map/royale_map_marker.layout", parent ) );
 		m_Canvas            = CanvasWidget.Cast( m_Root.FindAnyWidget("marker_canvas") );
 		m_Icon				= ImageWidget.Cast( m_Root.FindAnyWidget("marker_icon") );
+		m_MainPanel 		= m_Root.FindAnyWidget("marker_panel");
 		m_MarkerIcon		= icon;
 		
 		//set the marker type
@@ -120,6 +122,8 @@ modded class ExpansionMapMenuMarker {
 				float center_x = canvas_width / 2.0;
 				float center_y = canvas_height / 2.0;
 				
+				//TODO: scale marker widget if it doesn't fit on screen when rendering circle
+				
 				if(((center_x + distance_A) > canvas_width) || ((center_y + distance_B) > canvas_height))
 				{
 					
@@ -130,6 +134,7 @@ modded class ExpansionMapMenuMarker {
 					
 					m_Canvas.SetSize(new_size,new_size);
 					
+					
 					Print("Resize Marker");
 					Print(canvas_width);
 					Print(canvas_height);
@@ -139,21 +144,7 @@ modded class ExpansionMapMenuMarker {
 					Print(new_y);
 					Print(new_size);
 				}
-				/*
-				Print("Marker Map Position:");
-				Print(m_MarkerPos);
-				Print(m_edgePos_A);
-				Print(m_edgePos_B);
 				
-				Print(mapPos_center);
-				Print(mapPos_edge_A);
-				Print(mapPos_edge_B);
-				
-				Print(distance_A);
-				Print(distance_B);
-				Print(center_x);
-				Print(center_y);
-				*/
 				
 				//draw from center
 				CanvasDrawOval(center_x,center_y,distance_A, distance_B, m_Thickness, m_MarkerColor); //TODO: find out if canvas rendering is 0 based on canvas position
@@ -177,6 +168,7 @@ modded class ExpansionMapMenuMarker {
 			}
 		}	
 	}
+	
 	
 	
 	void SetMarkerThickness(float thickness)

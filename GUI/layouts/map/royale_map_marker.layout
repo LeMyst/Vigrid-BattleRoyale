@@ -8,7 +8,7 @@ FrameWidgetClass ExpansionMapMarker {
  vexactsize 1
  {
   PanelWidgetClass marker_panel {
-   clipchildren 1
+   clipchildren 0
    ignorepointer 1
    position -23 0
    size 500 50
@@ -41,6 +41,7 @@ FrameWidgetClass ExpansionMapMarker {
      "text valign" center
     }
     PanelWidgetClass marker_icon_panel {
+     clipchildren 0
      ignorepointer 0
      keepsafezone 0
      color 1 1 1 0
