@@ -7,7 +7,7 @@ class BattleRoyaleConfig
     ref map<string, ref BattleRoyaleDataBase> m_Configs;
     ref array<string> m_ConfigNames;
 
-    public BattleRoyaleConfig()
+    void BattleRoyaleConfig()
     {
         m_Configs = new map<string, ref BattleRoyaleDataBase>();
     }
@@ -30,10 +30,10 @@ class BattleRoyaleConfig
             //iterate over internal data in the dictionary
             foreach(BattleRoyaleDataBase config : m_Configs.GetValueArray())
             {
-                string path = config.GetFileName();
+                string path = config.GetPath();
                 if(path != "")
                 {
-                    if(FileExist( path )) {
+                    if(FileExist( path ))
                         config.Load();
                     else
                         config.Save();

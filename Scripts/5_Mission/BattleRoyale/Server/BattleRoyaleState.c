@@ -2,7 +2,7 @@ class BattleRoyaleState {
 	
 	protected ref array<PlayerBase> m_Players;
 	protected bool b_IsActive;
-	protected ScriptCallQueue m_CallQueue;
+	protected ref ScriptCallQueue m_CallQueue;
 	
 	void BattleRoyaleState()
 	{
@@ -101,9 +101,9 @@ class BattleRoyaleState {
 	//CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
 	void MessagePlayers(string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
 	{
-		StringLocaliser title = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
+		StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
 		StringLocaliser text = new StringLocaliser( message );
-		GetNotificationSystem().CreateNotification(title,text,icon,color,time);
+		GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time);
 	}
 	void MessagePlayer(PlayerBase player, string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
 	{
@@ -112,9 +112,9 @@ class BattleRoyaleState {
 			PlayerIdentity identity = player.GetIdentity();
 			if(identity)
 			{
-				StringLocaliser title = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
+				StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
 				StringLocaliser text = new StringLocaliser( message );
-				GetNotificationSystem().CreateNotification(title,text,icon,color,time, identity);
+				GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
 			}
 		}
 		ExpansionNotificationSystem m_notif_sys = GetNotificationSystem();

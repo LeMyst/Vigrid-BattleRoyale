@@ -22,7 +22,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		m_PreviousSate = previous_state;
 
 		BattleRoyaleConfig m_Config = GetBRConfig();
-		BattleRoyaleZoneData m_GameSettings = m_Config.GetGameData();
+		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
 		i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
 		
 		lock_notif_min =  m_GameSettings.zone_notification_minutes;
@@ -38,7 +38,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		b_TimeUp = false;
 		b_ZoneLocked = false;
 
-		m_zone = new BattleRoyaleZone(GetPreviousZone());
+		m_Zone = new BattleRoyaleZone(GetPreviousZone());
 	}
 	override void Activate()
 	{
@@ -46,18 +46,22 @@ class BattleRoyaleRound extends BattleRoyaleState
 		int time_till_end = i_RoundTimeInSeconds * 1000;
 		int time_till_lock = time_till_end / 2;
 
+		int i;
+		int min;
+		int sec;
+		int val;
 		//--- notification message timers
-		for(int i = 0; i < lock_notif_min.Count();i++)
+		for(i = 0; i < lock_notif_min.Count();i++)
 		{
-			int min = lock_notif_min[i];
-			int val = time_till_lock - (min*60*1000);
+			min = lock_notif_min[i];
+			val = time_till_lock - (min*60*1000);
 			if(val > 0)
 				m_CallQueue.CallLater(this.NotifyTimeTillLockMinutes, val, false, min);
 		}
-		for(int i = 0; i < lock_notif_sec.Count();i++)
+		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
-			int sec = lock_notif_sec[i];
-			int val = time_till_lock - (sec*1000);
+			sec = lock_notif_sec[i];
+			val = time_till_lock - (sec*1000);
 			if(val > 0)
 				m_CallQueue.CallLater(this.NotifyTimeTillLockSeconds, val, false, sec); //30 seconds until zone locks
 		}
@@ -67,17 +71,17 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 
 		//--- notification message timers
-		for(int i = 0; i < lock_notif_min.Count();i++)
+		for(i = 0; i < lock_notif_min.Count();i++)
 		{
-			int min = lock_notif_min[i];
-			int val = time_till_end - (min*60*1000);
+			min = lock_notif_min[i];
+			val = time_till_end - (min*60*1000);
 			if(val > 0)
 				m_CallQueue.CallLater(this.NotifyTimeTillNewZoneMinutes, val, false, min);
 		}
-		for(int i = 0; i < lock_notif_sec.Count();i++)
+		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
-			int sec = lock_notif_sec[i];
-			int val = time_till_end - (sec*1000);
+			sec = lock_notif_sec[i];
+			val = time_till_end - (sec*1000);
 			if(val > 0)
 				m_CallQueue.CallLater(this.NotifyTimeTillNewZoneSeconds, val, false, sec); //30 seconds until zone locks
 		}
@@ -123,7 +127,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 			vector center = current_zone.GetCenter();
 
 			vector playerPos = player.GetPosition();
-			float distance = vector.Distance(playerPos, center);
+			//TODO: distance needs to be done in 2D, not 3D
+			float distance = vector.Distance(playerPos, center); 
 			if(distance >= radius)
 			{
 				//TODO: player outside zone, damage them

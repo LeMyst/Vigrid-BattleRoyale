@@ -73,13 +73,13 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			int next_index = GetNextStateIndex();
 			if(next_index > 0)
 			{
-				BattleRoyaleState state = GetState(next_index);
+				BattleRoyaleState next_state = GetState(next_index);
 
 				GetCurrentState().Deactivate(); //deactivate old state
 				array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 				foreach(PlayerBase player : players)
 				{
-					state.AddPlayer(player); //add players to new state
+					next_state.AddPlayer(player); //add players to new state
 				}
 				i_CurrentStateIndex = next_index;//move us to the next state
 				GetCurrentState().Activate(); //activate new state
