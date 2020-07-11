@@ -14,3 +14,8 @@ BattleRoyaleBase GetBR()
 	MissionBaseWorld world = MissionBaseWorld.Cast( GetGame().GetMission() );
 	return world.GetBattleRoyale();
 }
+BattleRoyaleConfig GetBRConfig()
+{
+	BattleRoyaleBase m_BR = GetBR();
+	return m_BR.GetConfig();
+}

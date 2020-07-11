@@ -51,19 +51,30 @@ modded class MissionServer
 		//if body in debug zone, then delete it, else call super handlebody
 		if(player)
 		{
-			vector playerPos = player.GetPosition();
-			float distance = vector.Distance(playerPos,BattleRoyaleServer.Cast( m_BattleRoyale ).GetDebug().GetCenter());
-			if(distance <= BattleRoyaleServer.Cast( m_BattleRoyale ).GetDebug().GetRadius())
+			BattleRoyaleDebug m_Debug;
+			BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( m_BattleRoyale ).GetCurrentState();
+			if(Class.CastTo(m_Debug, m_CurrentState))
 			{
-				player.Delete();
-				return;
+				//we are currently in the debug state
+				vector playerPos = player.GetPosition();
+				float distance = vector.Distance(playerPos,m_Debug.GetCenter());
+				if(distance <= m_Debug.GetRadius())
+				{
+					player.Delete();
+					return;
+				}
 			}
+
+			
 		}
 		super.HandleBody( player );
 	}
 	override PlayerBase OnClientNewEvent(PlayerIdentity identity, vector pos, ParamsReadContext ctx)
 	{
-		vector debug_pos = BattleRoyaleServer.Cast( m_BattleRoyale ).GetDebug().GetCenter(); //TODO: we need debug zone position
+		//NOTE: debug state should ALWAYS be index 0
+		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( BattleRoyaleServer.Cast( m_BattleRoyale ).GetState(0) );
+
+		vector debug_pos = m_Debug.GetCenter(); //TODO: we need debug zone position
 		return super.OnClientNewEvent(identity, debug_pos, ctx);
 	}
 	override void StartingEquipSetup(PlayerBase player, bool clothesChosen)
@@ -78,11 +89,17 @@ modded class MissionServer
 		if(player)
 		{
 			//if player is inside the debug zone, delete the body (to prevent debug body spam)
-			vector playerPos = player.GetPosition();
-			float distance = vector.Distance(playerPos,BattleRoyaleServer.Cast( m_BattleRoyale ).GetDebug().GetCenter());
-			if(distance <= BattleRoyaleServer.Cast( m_BattleRoyale ).GetDebug().GetRadius())
+			BattleRoyaleDebug m_Debug;
+			BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( m_BattleRoyale ).GetCurrentState();
+			if(Class.CastTo(m_Debug, m_CurrentState))
 			{
-				player.Delete();
+				//we are currently in the debug state
+				vector playerPos = player.GetPosition();
+				float distance = vector.Distance(playerPos,m_Debug.GetCenter());
+				if(distance <= m_Debug.GetRadius())
+				{
+					player.Delete();
+				}
 			}
 		}
 		

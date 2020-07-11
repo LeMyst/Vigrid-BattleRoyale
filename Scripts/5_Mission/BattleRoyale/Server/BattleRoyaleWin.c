@@ -4,6 +4,12 @@ class BattleRoyaleWin extends BattleRoyaleState
 	override void Activate()
 	{
 		super.Activate();
+		if(GetPlayers().Count() > 0)
+		{
+			MessagePlayer(GetPlayers()[0],"Congratulations! You won Battle Rooooyale!");
+		}
+
+		//TODO: start server shutdown process
 	}
 	override void Deactivate()
 	{
@@ -11,7 +17,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 		super.Deactivate();
 	}
 	
-	override void IsComplete()
+	override bool IsComplete()
 	{
 		return false; //win state is never complete (it is an end state)
 	}

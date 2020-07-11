@@ -3,6 +3,8 @@ class BattleRoyaleDebug extends BattleRoyaleState {
 	
 	protected vector v_Center;
 	protected float f_Radius;
+	protected int i_MinPlayers;
+	protected int i_TimeBetweenMessages;
 	
 	void BattleRoyaleDebug()
 	{
@@ -10,20 +12,36 @@ class BattleRoyaleDebug extends BattleRoyaleState {
 		BRPrint("BattleRoyaleDebug::Constructor()");
 		#endif
 		
-		v_Center = "14829.2 72.3148 14572.3";
-		f_Radius = 50;
+		BattleRoyaleConfig m_Config = GetBRConfig();
+		BattleRoyaleDebugData m_DebugSettings = m_Config.GetDebugData();
+		
+		v_Center = m_DebugSettings.spawn_point; //"14829.2 72.3148 14572.3";
+		f_Radius = m_DebugSettings.radius; //50;
+		i_MinPlayers = m_DebugSettings.minimum_players; //10;
+		i_TimeBetweenMessages = 120;
 	}
 	
 	//returns true when this state is complete
-	override void IsComplete()
+	override bool IsComplete()
 	{
 		if(!IsActive())
 			return true;
 		
-		if(GetPlayers().Count() > 9)
+		if(GetPlayers().Count() >= i_MinPlayers)
 			return true;
 		
 		return false;
+	}
+	
+	override void Activate()
+	{
+		m_CallQueue.CallLater(this.MessageWaiting, i_TimeBetweenMessages*1000, true);
+		super.Activate();
+	}
+	override void Deactivate()
+	{
+		m_CallQueue.Remove(this.MessageWaiting);
+		super.Deactivate();
 	}
 	
 	vector GetCenter()
@@ -90,5 +108,21 @@ class BattleRoyaleDebug extends BattleRoyaleState {
 			player.SetPosition(v_Center);
 		}
 
+	}
+
+
+	void MessageWaiting()
+	{
+		int waiting_on_count = i_MinPlayers - GetPlayers().Count();
+
+		string message = "Waiting for " + waiting_on_count.ToString() + " more ";
+		if(waiting_on_count > 1)
+			message += "players";
+		else
+			message += "player";
+		
+		message += " to connect";
+
+		MessagePlayers(message);
 	}
 }

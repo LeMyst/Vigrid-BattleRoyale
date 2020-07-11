@@ -1,15 +1,10 @@
 
 class BattleRoyaleServer extends BattleRoyaleBase
 {
-	//TODO: restructure these states into a single array of states (so we can easily insert more states for debug->gameplay transition
-	ref BattleRoyaleDebug m_Debug;
-	ref BattleRoyaleWin m_WinState;
-	ref array<ref BattleRoyaleRound> m_Rounds;
+	ref array<ref BattleRoyaleState> m_States;
+	int i_CurrentStateIndex;
 	
-	ref BattleRoyaleState m_CurrentState;
-	
-	
-	int num_rounds = 7;
+	int i_NumRounds;
 	
 	
 	#ifdef BR_BETA_LOGGING
@@ -22,7 +17,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#ifdef BR_BETA_LOGGING
 		BRPrint("BattleRoyaleServer::Constructor()");
 		#endif
-		
+
 		Init();
 	}
 	void Init()
@@ -30,21 +25,29 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#ifdef BR_BETA_LOGGING
 		BRPrint("BattleRoyaleServer::Init()");
 		#endif
-		//--- initialize all states
-		m_Debug = new BattleRoyaleDebug;
-		m_WinState = new BattleRoyaleWin;
-		m_Rounds = new array<ref BattleRoyaleRound>(); 
-		for(int i = 0; i < num_rounds;i++)
+
+		//load config (this may error because GetBattleRoyale would return false)
+		BattleRoyaleConfig config_data = GetConfig(); //must use GetConfig as GetBR() is unavailable at this scope
+		BattleRoyaleGameData m_GameData = config_data.GetGameData();
+		i_NumRounds = m_GameData.num_zones;
+
+		//--- initialize all states (in order from start to finish)
+		m_States.Insert(new BattleRoyaleDebug); //insert debug state
+
+		//TODO: transition states from debug zone to gameplay
+			
+		int num_states = m_States.Count();
+		for(int i = 0; i < i_NumRounds;i++)
 		{
-			BattleRoyaleState previous_state = m_Debug;
-			if(i > 0)
-				previous_state = m_Rounds[i-1];
+			BattleRoyaleState previous_state = m_States[i+num_states];
 			BattleRoyaleRound round = new BattleRoyaleRound(previous_state);
-			m_Rounds.Insert(round);
+			m_States.Insert(round);
 		}
+		m_States.Insert(new BattleRoyaleWin);
 		
-		m_Debug.Activate();
-		m_CurrentState = m_Debug;
+		i_CurrentStateIndex = 0;
+		GetCurrentState().Activate();
+
 		RandomizeServerEnvironment();
 	}
 	void Update(float timeslice)
@@ -57,29 +60,29 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 		#endif
 		
-		m_Debug.Update(timeslice);
-		foreach(BattleRoyaleRound round : m_Rounds)
+		foreach(BattleRoyaleState state : m_States)
 		{
-			round.Update(timeslice);
+			state.Update(timeslice);
 		}
-		m_WinState.Update(timeslice);
 		
 		
 		
 		//--- transition states
-		if(m_CurrentState.IsComplete()) //current state is complete
+		if(GetCurrentState().IsComplete()) //current state is complete
 		{
-			BattleRoyaleState state = GetNextState(); //get next state
-			if(state)
+			int next_index = GetNextStateIndex();
+			if(next_index > 0)
 			{
-				m_CurrentState.Deactivate(); //deactivate old state
-				array<PlayerBase> players = m_CurrentState.RemoveAllPlayers(); //remove players from old state
+				BattleRoyaleState state = GetState(next_index);
+
+				GetCurrentState().Deactivate(); //deactivate old state
+				array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 				foreach(PlayerBase player : players)
 				{
 					state.AddPlayer(player); //add players to new state
 				}
-				m_CurrentState = state; //change current state
-				m_CurrentState.Activate(); //activate new state
+				i_CurrentStateIndex = next_index;//move us to the next state
+				GetCurrentState().Activate(); //activate new state
 			}
 			else
 			{
@@ -92,11 +95,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#ifdef BR_BETA_LOGGING
 		BRPrint("BattleRoyaleServer::OnPlayerConnected()");
 		#endif
-		if(m_CurrentState != m_Debug)
-		{
-			BRPrint("ERROR! PLAYER CONNECTED DURING NON-DEBUG STATE");
-		}
-		m_CurrentState.AddPlayer(player);
+		//TODO: warning if player joins after game start
+		GetCurrentState().AddPlayer(player);
 	}
 	void OnPlayerDisconnected(PlayerBase player)
 	{
@@ -104,8 +104,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BRPrint("BattleRoyaleServer::OnPlayerDisconnected()");
 		#endif
 		
-		if(m_CurrentState.ContainsPlayer(player))
-			m_CurrentState.RemovePlayer(player);
+		if(GetCurrentState().ContainsPlayer(player))
+			GetCurrentState().RemovePlayer(player);
 	}
 	
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
@@ -114,15 +114,17 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BRPrint("BattleRoyaleServer::OnPlayerKilled()");
 		#endif
 		
-		if(m_CurrentState.ContainsPlayer(killed))
+		if(GetCurrentState().ContainsPlayer(killed))
 		{
 			//if we are in a round, then we need to call the onkilled event 
-			if(m_CurrentState != m_Debug && m_CurrentState != m_WinState)
+			BattleRoyaleRound p_Round;
+			if(Class.CastTo(p_Round, GetCurrentState()))
 			{
-				BattleRoyaleRound.Cast( m_CurrentState ).OnPlayerKilled(killed,killer);
+				p_Round.OnPlayerKilled(killed, killer); //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
 			}
+
 			//remove player from the state (this would take place in on-disconnect, but some players would choose not to disconnect)
-			m_CurrentState.RemovePlayer(killed);
+			GetCurrentState().RemovePlayer(killed);
 		}
 	}
 	override void OnPlayerTick(PlayerBase player, float timeslice)
@@ -135,61 +137,46 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 		#endif
 		
-		if(m_CurrentState.ContainsPlayer(player))
-			m_CurrentState.OnPlayerTick(player,timeslice);
+		if(GetCurrentState().ContainsPlayer(player))
+			GetCurrentState().OnPlayerTick(player,timeslice);
 		else
 		{
 			//current state does not contain player, wtf is going on
-			BRPrint("ERROR! m_CurrentState DOES NOT CONTAIN PLAYER TICKING!");
+			BRPrint("ERROR! GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
 		}
 		
 	}
 	
 	
 	
-	BattleRoyaleState GetNextState()
+	BattleRoyaleState GetState(int index)
 	{
-		if(m_CurrentState == m_Debug)
-		{
-			return m_Rounds[0];
-		}
-		else if(m_CurrentState == m_WinState)
-		{
-			return NULL; //winstate has no subsequent state
-		}
-		else
-		{
-			int index = m_Rounds.Find(m_CurrentState);
-			if(index == -1)
-			{
-				BRPrint("ERROR! m_Rounds DOES NOT CONTAIN CURRENT STATE & IS NOT DEBUG!");
-				return m_Debug;
-			}
-			else
-			{
-				if(m_Rounds.Count() == (index+1))
-				{
-					return m_WinState;
-				}
-				else
-				{
-					//TODO: if player count is 1 or 0, we need to flip into the win state, not the next round
-					return m_Rounds[index+1];
-					
-				}
-			}
-		}
+		if(index < 0 || index >= m_States.Count())
+			return NULL;
+
+		return m_States[index];
 	}
-	BattleRoyaleDebug GetDebug()
+	BattleRoyaleState GetCurrentState()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleServer::GetDebug()");
-		#endif
+		return GetState(i_CurrentStateIndex);
+	}
+	int GetNextStateIndex()
+	{
 		
-		return m_Debug;
+		if(m_States.Count() <= (i_CurrentStateIndex + 1))
+			return -1;
+
+		for(int i = i_CurrentStateIndex + 1; i < m_States.Count();i++)
+		{
+			BattleRoyaleState state = m_States[i];
+			if(!state.SkipState(GetState(i_CurrentStateIndex)))
+			{
+				return i;
+			}
+		}
+
+		return -1;
 	}
-	
-	
 	
 	//--- TODO: this is all legacy code, find a new way to implement
 	

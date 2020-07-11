@@ -39,6 +39,10 @@ class BattleRoyaleState {
 	{
 		return false;
 	}
+	bool SkipState(BattleRoyaleState m_PreviousState)  //if true, we will skip activating/deactivating this state entirely
+	{
+		return false;
+	}
 	
 	array<PlayerBase> GetPlayers()
 	{
@@ -92,4 +96,27 @@ class BattleRoyaleState {
 	}
 	void OnPlayerTick(PlayerBase player, float timeslice)
 	{}
+
+
+	//CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
+	void MessagePlayers(string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
+	{
+		StringLocaliser title = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
+		StringLocaliser text = new StringLocaliser( message );
+		GetNotificationSystem().CreateNotification(title,text,icon,color,time);
+	}
+	void MessagePlayer(PlayerBase player, string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
+	{
+		if(player)
+		{
+			PlayerIdentity identity = player.GetIdentity();
+			if(identity)
+			{
+				StringLocaliser title = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
+				StringLocaliser text = new StringLocaliser( message );
+				GetNotificationSystem().CreateNotification(title,text,icon,color,time, identity);
+			}
+		}
+		ExpansionNotificationSystem m_notif_sys = GetNotificationSystem();
+	}
 }
