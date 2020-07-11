@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 
 class BattleRoyaleServer extends BattleRoyaleBase
 {
@@ -26,22 +28,35 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BRPrint("BattleRoyaleServer::Init()");
 		#endif
 
+
 		//load config (this may error because GetBattleRoyale would return false)
 		BattleRoyaleConfig config_data = GetConfig(); //must use GetConfig as GetBR() is unavailable at this scope
 		BattleRoyaleGameData m_GameData = config_data.GetGameData();
 		i_NumRounds = m_GameData.num_zones;
 
 		//--- initialize all states (in order from start to finish)
-		m_States.Insert(new BattleRoyaleDebug); //insert debug state
+		m_States = new array<ref BattleRoyaleState>;
+
+		BattleRoyaleDebug debug_state = new BattleRoyaleDebug;
+		if(debug_state)
+			m_States.Insert(debug_state); //insert debug state
+		else
+			Error("DEBUG STATE CONSTRUCTOR RETURNED NULL");
+		
 
 		//TODO: transition states from debug zone to gameplay
 			
 		int num_states = m_States.Count();
 		for(int i = 0; i < i_NumRounds;i++)
 		{
-			BattleRoyaleState previous_state = m_States[i+num_states];
+			int prev_state_ind = i + num_states - 1;
+			BattleRoyaleState previous_state = m_States[prev_state_ind];
 			BattleRoyaleRound round = new BattleRoyaleRound(previous_state);
-			m_States.Insert(round);
+			if(round)
+				m_States.Insert(round);
+			else
+				Error("round is NULL! Constructor must have failed!");
+			
 		}
 		m_States.Insert(new BattleRoyaleWin);
 		
@@ -62,7 +77,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		
 		foreach(BattleRoyaleState state : m_States)
 		{
-			state.Update(timeslice);
+			if(state)
+				state.Update(timeslice);
+			else
+				Error("BAD STATE IN m_States!");
 		}
 		
 		

@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 class BattleRoyaleClient extends BattleRoyaleBase
 {
 	#ifdef BR_BETA_LOGGING

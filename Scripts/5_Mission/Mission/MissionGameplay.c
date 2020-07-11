@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 modded class MissionGameplay
 {
 	override void OnInit()

@@ -5,8 +5,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     
     int round_duration_minutes = 5; //5 minute rounds
 
-    ref array<int> zone_notification_minutes = { 1, 2 }
-    ref array<int> zone_notification_seconds = { 30, 10 }
+    ref array<int> zone_notification_minutes = { 1, 2 };
+    ref array<int> zone_notification_seconds = { 30, 10 };
 
     //--- do not modify    
     override string GetPath()

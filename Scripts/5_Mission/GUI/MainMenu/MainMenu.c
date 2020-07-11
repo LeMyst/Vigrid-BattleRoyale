@@ -32,17 +32,22 @@ modded class MainMenu
 		
 		//note OnStart() is currently blocking
 		//TODO: only run OnStart if the player data does not already exist (it runs every time main menu wigit is initialized xd)
-		if(OnStart())
+		if(GetDayZGame())
 		{
-			m_Stats.InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
-			
-			Print("You are running a developer build of DayZBR");
+			if(!GetDayZGame().GetWebPlayer())
+			{
+				if(OnStart())
+				{
+					m_Stats.InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
+					
+					Print("You are running a developer build of DayZBR");
+				}
+				else
+				{
+					Error("Something Went Wrong! BR Failed To Start?!");
+				}
+			}
 		}
-		else
-		{
-			Error("Something Went Wrong! BR Failed To Start?!");
-		}
-		
 		
 		
 		m_SelectServerLabel = TextWidget.Cast( layoutRoot.FindAnyWidget( "choose_server_label" ) );

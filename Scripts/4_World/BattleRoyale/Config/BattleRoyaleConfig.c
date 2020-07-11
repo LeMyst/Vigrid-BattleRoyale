@@ -4,43 +4,100 @@ static const string BATTLEROYALE_FOLDER = "$profile:BattleRoyale\\";
 //BattleRoyaleConfig m_config = GetBRConfig();
 class BattleRoyaleConfig
 {
+    static ref BattleRoyaleConfig m_Instance;
+    static BattleRoyaleConfig GetConfig()
+    {
+        if(!m_Instance)
+        {
+            m_Instance = new BattleRoyaleConfig;
+            m_Instance.Load();
+        }
+        return m_Instance;
+    }
+
     ref map<string, ref BattleRoyaleDataBase> m_Configs;
     ref array<string> m_ConfigNames;
 
+    bool b_HasLoaded;
+
     void BattleRoyaleConfig()
     {
+        b_HasLoaded = false;
         m_Configs = new map<string, ref BattleRoyaleDataBase>();
+        Init(); //omg i didn't call init
     }
+
     //if you want to add more battle royale configs, do so here.
     void Init()
     {
-        m_Configs.Insert("GameData", new BattleRoyaleGameData);
-        m_Configs.Insert("DebugData", new BattleRoyaleDebugData);
-        m_Configs.Insert("ZoneData", new BattleRoyaleZoneData);
+        Print("Initializing Settings...");
+        
+        BattleRoyaleGameData p_GameData = new BattleRoyaleGameData;
+        if(p_GameData)
+            m_Configs.Insert("GameData",p_GameData);
+        else
+            Error("BattleRoyaleGameData Setting Constructor Returned NULL");
+        
+        BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
+        if(p_DebugData)
+            m_Configs.Insert("DebugData", p_DebugData);
+        else
+            Error("BattleRoyaleDebugData Setting Constructor Returned NULL");
+
+        BattleRoyaleZoneData p_ZoneData = new BattleRoyaleZoneData;
+        if(p_ZoneData)
+            m_Configs.Insert("ZoneData", p_ZoneData);
+        else
+            Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
     }
 
     void Load()
     {
-        if ( GetGame().IsServer() )
+        if ( GetGame().IsServer() && !b_HasLoaded )
         {
+            b_HasLoaded = true;
             //load JSON data (or create it)
             if( !FileExist(BATTLEROYALE_FOLDER))
-                MakeDirectory(BATTLEROYALE_FOLDER);
-
-            //iterate over internal data in the dictionary
-            foreach(BattleRoyaleDataBase config : m_Configs.GetValueArray())
             {
-                string path = config.GetPath();
-                if(path != "")
+                Print("Creating BattleRoyale Settings Folder");
+                MakeDirectory(BATTLEROYALE_FOLDER);
+            }
+
+            if(!m_Configs)
+            {
+                Error("FAILED TO LOAD CONFIG DATA");
+                return;
+            }
+            //iterate over internal data in the dictionary
+            for(int i = 0; i < m_Configs.Count(); i++)
+            {
+                string key = m_Configs.GetKey(i);
+                BattleRoyaleDataBase config = m_Configs.GetElement(i);
+                if(config)
                 {
-                    if(FileExist( path ))
-                        config.Load();
+                    string path = config.GetPath();
+                    if(path != "")
+                    {
+                        if(FileExist( path ))
+                        {
+                            Print("Loading Config: " + path);
+                            config.Load();
+                            config.Save(); //re-save (if there are new config values that need added to the json file)
+                        }
+                        else
+                        {
+                            Print("Saving Config: " + path);
+                            config.Save();
+                        }
+                    }
                     else
-                        config.Save();
+                    {
+                        Error("Config with invalid path in BattleRoyale Configs");
+                    }
                 }
                 else
                 {
-                    Error("Config with invalid path in BattleRoyale Configs")
+                    Error("NULL CONFIG `" + key + "` IN CONFIG MAP");
                 }
             }
         }
@@ -49,20 +106,28 @@ class BattleRoyaleConfig
     //if a 3rd party needs to get config by string, it can do so here
     BattleRoyaleDataBase GetConfig(string key)
     {
+        if(!b_HasLoaded)
+        {
+            Error("Requesting Config Data from Unloaded Config?");
+            Load();
+        }   
         return m_Configs.Get(key);
     }
 
 
     BattleRoyaleGameData GetGameData()
     {
-        return GetConfig("GameData");
+        Print("Accessing Game Data Config...");
+        return BattleRoyaleGameData.Cast( GetConfig("GameData") );
     }
     BattleRoyaleDebugData GetDebugData()
     {
-        return GetConfig("DebugData");
+        Print("Accessing Debug Data Config...");
+        return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
     }
     BattleRoyaleZoneData GetZoneData()
     {
-        return GetConfig("ZoneData");
+        Print("Accessing Zone Data Config...");
+        return BattleRoyaleZoneData.Cast( GetConfig("ZoneData") );
     }
 }

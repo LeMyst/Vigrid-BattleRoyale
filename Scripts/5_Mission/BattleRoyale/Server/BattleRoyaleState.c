@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 class BattleRoyaleState {
 	
 	protected ref array<PlayerBase> m_Players;
@@ -14,7 +16,7 @@ class BattleRoyaleState {
 		m_CallQueue = new ScriptCallQueue;
 		b_IsActive = false;
 	}
-	
+
 	void Update(float timeslice)
 	{
 		m_CallQueue.Tick(timeslice);
@@ -45,11 +47,7 @@ class BattleRoyaleState {
 	}
 	
 	array<PlayerBase> GetPlayers()
-	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleState::GetPlayers()");
-		#endif
-		
+	{	
 		return m_Players;
 	}
 	void AddPlayer(PlayerBase player)
@@ -81,10 +79,6 @@ class BattleRoyaleState {
 	}
 	bool ContainsPlayer(PlayerBase player)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleState::ContainsPlayer()");
-		#endif
-		
 		if(m_Players.Find(player) >= 0)
 		{
 			return true;

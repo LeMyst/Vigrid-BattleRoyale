@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 modded class MissionServer
 {
 	
@@ -9,6 +11,7 @@ modded class MissionServer
 	{
 		super.OnInit();
 		//TODO: br things
+		Print("INITIALIZING BATTLE ROYALE SERVER");
 		m_BattleRoyale = new BattleRoyaleServer;
 		
 	}

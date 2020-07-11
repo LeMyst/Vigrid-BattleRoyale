@@ -1,3 +1,4 @@
+#define BR_BETA_LOGGING
 
 class BattleRoyaleZone 
 {

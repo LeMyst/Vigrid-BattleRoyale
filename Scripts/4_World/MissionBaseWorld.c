@@ -1,6 +1,6 @@
 modded class MissionBaseWorld 
 {
-	protected ref BattleRoyaleBase m_BattleRoyale;
+	ref BattleRoyaleBase m_BattleRoyale;
 	
 	BattleRoyaleBase GetBattleRoyale()
 	{
@@ -12,10 +12,14 @@ modded class MissionBaseWorld
 BattleRoyaleBase GetBR()
 {
 	MissionBaseWorld world = MissionBaseWorld.Cast( GetGame().GetMission() );
+	if(!world)
+	{
+		Error("GetBR() => FAILED TO GET MISSION");
+	}
 	return world.GetBattleRoyale();
 }
+
 BattleRoyaleConfig GetBRConfig()
 {
-	BattleRoyaleBase m_BR = GetBR();
-	return m_BR.GetConfig();
+	return BattleRoyaleConfig.GetConfig();
 }

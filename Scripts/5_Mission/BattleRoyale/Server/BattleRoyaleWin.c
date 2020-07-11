@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 class BattleRoyaleWin extends BattleRoyaleState
 {
 	//TODO: state functionality for winners!

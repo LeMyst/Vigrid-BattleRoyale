@@ -5,7 +5,7 @@ class BattleRoyaleZoneData extends BattleRoyaleDataBase
 
     override string GetPath()
     {
-        return BATTLEROYALE_FOLDER + "debug_settings.json";
+        return BATTLEROYALE_FOLDER + "zone_settings.json";
     }
     override void Save()
     {

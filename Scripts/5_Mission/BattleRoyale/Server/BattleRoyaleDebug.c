@@ -1,3 +1,5 @@
+#define BR_BETA_LOGGING
+
 
 class BattleRoyaleDebug extends BattleRoyaleState {
 	
@@ -12,14 +14,25 @@ class BattleRoyaleDebug extends BattleRoyaleState {
 		BRPrint("BattleRoyaleDebug::Constructor()");
 		#endif
 		
-		BattleRoyaleConfig m_Config = GetBRConfig();
-		BattleRoyaleDebugData m_DebugSettings = m_Config.GetDebugData();
+		BattleRoyaleDebugData m_DebugSettings = GetBRConfig().GetDebugData();
 		
-		v_Center = m_DebugSettings.spawn_point; //"14829.2 72.3148 14572.3";
-		f_Radius = m_DebugSettings.radius; //50;
-		i_MinPlayers = m_DebugSettings.minimum_players; //10;
-		i_TimeBetweenMessages = 120;
+		if(m_DebugSettings)
+		{
+			v_Center = m_DebugSettings.spawn_point; 
+			f_Radius = m_DebugSettings.radius; 
+			i_MinPlayers = m_DebugSettings.minimum_players; 
+			i_TimeBetweenMessages = 120;
+		}
+		else
+		{
+			Error("DEBUG SETTINGS IS NULL!");
+			v_Center = "14829.2 72.3148 14572.3";
+			f_Radius = 50;
+			i_MinPlayers = 10;
+			i_TimeBetweenMessages = 120;
+		}
 	}
+
 	
 	//returns true when this state is complete
 	override bool IsComplete()
