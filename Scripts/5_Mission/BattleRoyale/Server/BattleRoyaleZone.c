@@ -13,7 +13,7 @@ class BattleRoyaleZone
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
     {
         m_ParentZone = parent;
-        BattleRoyaleConfig m_Config = GetBRConfig();
+        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
 
         f_ConstantShrink = m_ZoneSettings.constant_scale;

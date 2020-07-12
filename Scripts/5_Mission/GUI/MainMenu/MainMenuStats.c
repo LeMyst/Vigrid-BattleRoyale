@@ -42,7 +42,8 @@ modded class MainMenuStats {
 		m_GlobalRankLabel.SetText("Global rank");
 		
 		//simple data from player web request
-		PlayerData p_SimpleData = GetDayZGame().GetWebPlayer();
+		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		PlayerData p_SimpleData = api.GetCurrentPlayer();
 			
 		if(p_SimpleData)
 		{

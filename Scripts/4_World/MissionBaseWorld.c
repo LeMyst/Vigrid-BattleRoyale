@@ -18,8 +18,3 @@ BattleRoyaleBase GetBR()
 	}
 	return world.GetBattleRoyale();
 }
-
-BattleRoyaleConfig GetBRConfig()
-{
-	return BattleRoyaleConfig.GetConfig();
-}

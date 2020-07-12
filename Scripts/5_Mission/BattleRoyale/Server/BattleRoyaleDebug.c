@@ -14,7 +14,7 @@ class BattleRoyaleDebug extends BattleRoyaleState {
 		BRPrint("BattleRoyaleDebug::Constructor()");
 		#endif
 		
-		BattleRoyaleDebugData m_DebugSettings = GetBRConfig().GetDebugData();
+		BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
 		
 		if(m_DebugSettings)
 		{

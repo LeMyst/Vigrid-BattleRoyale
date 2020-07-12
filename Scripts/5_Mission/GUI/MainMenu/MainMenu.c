@@ -30,23 +30,15 @@ modded class MainMenu
 		}
 		
 		
-		//note OnStart() is currently blocking
-		//TODO: only run OnStart if the player data does not already exist (it runs every time main menu wigit is initialized xd)
-		if(GetDayZGame())
+		if(OnStart())
 		{
-			if(!GetDayZGame().GetWebPlayer())
-			{
-				if(OnStart())
-				{
-					m_Stats.InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
-					
-					Print("You are running a developer build of DayZBR");
-				}
-				else
-				{
-					Error("Something Went Wrong! BR Failed To Start?!");
-				}
-			}
+			m_Stats.InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
+			
+			Print("You are running a developer build of DayZBR");
+		}
+		else
+		{
+			Error("Something Went Wrong! BR Failed To Start?!");
 		}
 		
 		
@@ -65,13 +57,14 @@ modded class MainMenu
 	
 	bool OnStart()
 	{
+		
+		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		if(api.GetCurrentPlayer())
+			return true;
+
+
 		Print("DAYZ BATTLE ROYALE INIT");
 		
-		if(!GetDayZGame())
-		{
-			Error("DBR ERROR: GetDayZGame() = NULL");
-			return false;
-		}
 		
 		BiosUserManager p_UserManager = GetGame().GetUserManager();
 		if(!p_UserManager)
@@ -86,72 +79,49 @@ modded class MainMenu
 			return false;
 		}
 		
-		string web_result = GetDayZGame().RequestStart(p_User.GetUid(), p_User.GetName());
-		if(web_result == "")
+		PlayerData p_PlayerWebData = api.RequestStart(p_User.GetUid(), p_User.GetName());
+		if(!p_PlayerWebData)
 		{
-			Error("DBR ERROR: web_result = NULL");
-			return false;
+			Error("FAILED TO GET WEB DATA!");
 		}
 		
-		JsonSerializer m_Serializer = new JsonSerializer;
-		PlayerData p_PlayerWebData;
-		string error;
-		
-		if(!m_Serializer.ReadFromString( p_PlayerWebData, web_result, error ))
-		{
-			Print("DBR ERROR: JSON Failed To Parse!");
-			Error(error);
-			return false;
-		}
-		
-		GetDayZGame().SetWebPlayer(p_PlayerWebData); //store our player data
 		
 		Print("DAYZ BATTLE ROYALE END");
-		
 		return true;
 	}
 	
 	override void Play()
 	{
-		if(!GetDayZGame())
+		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		PlayerData p_PlayerWebData = api.GetCurrentPlayer();
+		if(!p_PlayerWebData)
 		{
-			Error("GetDayZGame() == null in Play()");
+			Error("BattleRoyale: PlayerWebData is NULL, cannot matchmake");
 			OpenMenuServerBrowser();
 			return;
 		}
-		
-		string result = GetDayZGame().RequestMatchmake(m_Regions.Get(i_CurrentRegion));
-		if(result == "")
+		ServerData p_ServerData = api.RequestMatchmake(p_PlayerWebData, m_Regions.Get(i_CurrentRegion));
+		if(!p_ServerData)
 		{
-			Error("Matchmaking Failed!");
+			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
 			OpenMenuServerBrowser();
 			return;
 		}
-		Print(result);
-		JsonSerializer m_Serializer = new JsonSerializer;
-		ServerData p_ServerData;
-		string error;
-		if(!m_Serializer.ReadFromString( p_ServerData, result, error ))
+
+		if(!p_ServerData.CanConnect())
 		{
-			Print("DBR ERROR: JSON Failed To Parse!");
-			Error(error);
+			Error("Result is locked (or wait result)... cannot find viable matchmake");
 			OpenMenuServerBrowser();
 			return;
 		}
+
+		string ip_addr = p_ServerData.GetIP();
+		int port = p_ServerData.GetPort();
 		
-		string connect_data = p_ServerData.connection;	
-		Print(p_ServerData);
-		Print(connect_data);
-		
-		TStringArray parts = new TStringArray;
-		connect_data.Split(":",parts);
-		
-		string ip_addr = parts.Get(0);
-		int port = parts.Get(1).ToInt();
 		if(!GetGame().Connect(this, ip_addr, port, "DayZBR_Beta"))
 		{
-			Print(connect_data);
-			Error("Failed to connect to server");
+			Print(p_ServerData.connection);
+			Error("BattleRoyale: Failed to connect to server");
 			OpenMenuServerBrowser();
 		}
 	}

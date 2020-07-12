@@ -11,7 +11,7 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     //--- do not modify    
     override string GetPath()
     {
-        return BATTLEROYALE_FOLDER + "general_settings.json";
+        return BATTLEROYALE_SETTINGS_FOLDER + "general_settings.json";
     }
     override void Save()
     {

@@ -30,7 +30,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 
 		//load config (this may error because GetBattleRoyale would return false)
-		BattleRoyaleConfig config_data = GetConfig(); //must use GetConfig as GetBR() is unavailable at this scope
+		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleGameData m_GameData = config_data.GetGameData();
 		i_NumRounds = m_GameData.num_zones;
 

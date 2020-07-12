@@ -22,4 +22,26 @@ class ServerData
 	array<string> matches;
 	string region;
 	string _id;
+	bool locked;
+
+	
+	//methods used for easy connecting
+	string GetIP()
+	{
+		TStringArray parts = new TStringArray;
+		connection.Split(":",parts);
+		
+		return parts.Get(0);
+	}
+	int GetPort()
+	{
+		TStringArray parts = new TStringArray;
+		connection.Split(":",parts);
+
+		return parts.Get(1).ToInt();
+	}
+	bool CanConnect()
+	{
+		return (!locked);
+	}
 }

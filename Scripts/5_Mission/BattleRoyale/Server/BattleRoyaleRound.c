@@ -22,7 +22,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	{
 		m_PreviousSate = previous_state;
 
-		BattleRoyaleConfig m_Config = GetBRConfig();
+		BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
 		i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
 		

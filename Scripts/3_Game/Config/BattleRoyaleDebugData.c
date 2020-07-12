@@ -8,7 +8,7 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
 
     override string GetPath()
     {
-        return BATTLEROYALE_FOLDER + "debug_settings.json";
+        return BATTLEROYALE_SETTINGS_FOLDER + "debug_settings.json";
     }
     override void Save()
     {

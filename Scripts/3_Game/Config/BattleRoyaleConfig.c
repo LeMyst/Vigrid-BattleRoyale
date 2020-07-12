@@ -1,7 +1,5 @@
-static const string BATTLEROYALE_FOLDER = "$profile:BattleRoyale\\";
 
 
-//BattleRoyaleConfig m_config = GetBRConfig();
 class BattleRoyaleConfig
 {
     static ref BattleRoyaleConfig m_Instance;
@@ -49,6 +47,12 @@ class BattleRoyaleConfig
             m_Configs.Insert("ZoneData", p_ZoneData);
         else
             Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
+
+        BattleRoyaleAPIData p_ApiData = new BattleRoyaleAPIData;
+        if(p_ZoneData)
+            m_Configs.Insert("ApiData", p_ApiData);
+        else
+            Error("BattleRoyaleAPIData Setting Constructor Returned NULL");
     }
 
     void Load()
@@ -57,10 +61,10 @@ class BattleRoyaleConfig
         {
             b_HasLoaded = true;
             //load JSON data (or create it)
-            if( !FileExist(BATTLEROYALE_FOLDER))
+            if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER))
             {
                 Print("Creating BattleRoyale Settings Folder");
-                MakeDirectory(BATTLEROYALE_FOLDER);
+                MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
             }
 
             if(!m_Configs)
@@ -115,6 +119,11 @@ class BattleRoyaleConfig
     }
 
 
+    BattleRoyaleApiData GetApiData()
+    {
+        Print("Accessing Api Data Config...");
+        return BattleRoyaleApiData.Cast( GetConfig("ApiData") );
+    }
     BattleRoyaleGameData GetGameData()
     {
         Print("Accessing Game Data Config...");
