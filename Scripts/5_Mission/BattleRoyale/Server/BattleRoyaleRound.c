@@ -128,12 +128,28 @@ class BattleRoyaleRound extends BattleRoyaleState
 			vector center = current_zone.GetCenter();
 
 			vector playerPos = player.GetPosition();
-			//TODO: distance needs to be done in 2D, not 3D
+			
+			//distance needs to be done in 2D, not 3D, set Z coord to 0 so this can be done
+			playerPos[1] = 0;
+			center[1] = 0; 
 			float distance = vector.Distance(playerPos, center); 
 			if(distance >= radius)
 			{
-				//TODO: player outside zone, damage them
+				if(player.time_until_damage <= 0)
+				{
+					//DAMAGE
+					player.DecreaseHealthCoef(0.1); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
+					player.time_until_damage = BATTLEROYALE_DAMAGE_TICK_TIME; //reset timer
+				}
+				player.time_until_damage -= timeslice;
 			}
+			else
+			{
+				//if the player leaves the zone damage area, their damage ticktime will slowly incremement until it reaches the max value (5)
+				//this way you can't just keep jumping in and out of the zone to edgeplay
+				player.time_until_damage = Math.Min(BATTLEROYALE_DAMAGE_TICK_TIME, player.time_until_damage + timeslice);
+			}
+			
 		}
 
 		super.OnPlayerTick(player, timeslice);

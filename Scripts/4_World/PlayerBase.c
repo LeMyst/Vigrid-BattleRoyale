@@ -1,6 +1,7 @@
 modded class PlayerBase
 {
 	float time_until_heal = 0;
+	float time_until_damage = 0;
 
 
 	override void OnScheduledTick(float deltaTime)
@@ -23,7 +24,6 @@ modded class PlayerBase
 			m_BR.OnPlayerKilled(this, killer);
 		}
 	}
-
 
 	void Heal()
 	{
