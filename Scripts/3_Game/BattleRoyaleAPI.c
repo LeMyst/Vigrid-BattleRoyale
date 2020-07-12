@@ -100,7 +100,6 @@ class BattleRoyaleAPI {
 
         string result = SendRequest_Sync(BattleRoyaleAPIContextType.Server, request);
         Print("BattleRoyaleAPI::ServerFinish() => WEB RESULT: " + result);
-        
     }
 
     //get server info by ID
