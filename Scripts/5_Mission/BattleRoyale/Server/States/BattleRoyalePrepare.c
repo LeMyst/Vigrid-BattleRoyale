@@ -21,8 +21,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 		super.Activate();
 
         //TODO: spawn & setup drop plane
-        //TODO: RPC all clients & have them fade out their screen
-        //TODO: RPC all clients & disable their input
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
         //we process on a static list so when players possibly disconnect during this phase we don't error out or skip any clients
         foreach(PlayerBase player : m_Players)
@@ -35,7 +35,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		super.Deactivate();
 
-        //TODO: RPC all clients & have them fade their screen in
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(false), true); //fade out screen
 	}
     
 	override bool IsComplete()
@@ -46,7 +46,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     override void Update(float timeslice)
     {
         super.Update(timeslice);
-        
+
         if(ready_to_process)
         {
             if(process_index < m_PlayerList.Count())

@@ -45,7 +45,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     }
     void UnlockPlayers()
     {
-        //TODO: RPC to unlock players
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true); //enable user input
         MessagePlayers("The match has started!");
         b_HasStarted = true;
     }
