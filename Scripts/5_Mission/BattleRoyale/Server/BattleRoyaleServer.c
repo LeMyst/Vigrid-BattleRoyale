@@ -64,6 +64,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		GetCurrentState().Activate();
 
 		RandomizeServerEnvironment();
+
+
+		BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
 	}
 	void Update(float timeslice)
 	{

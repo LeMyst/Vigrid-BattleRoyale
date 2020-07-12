@@ -18,6 +18,7 @@ class BattleRoyaleAPI {
     protected ref RestContext m_ServerContext;
     
     protected ref PlayerData m_PlayerData; //player object (should only ever be set once per instance)
+    protected ref ServerData m_ServerData;
 
     void BattleRoyaleAPI()
     {
@@ -32,9 +33,101 @@ class BattleRoyaleAPI {
     {
         return m_PlayerData;
     }
+    ServerData GetCurrentServer()
+    {
+        return m_ServerData;
+    }
 
+    //server startup request
+    ServerData RequestServerStart()
+    {
+        BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
+        if(!p_ServerSettings)
+        {
+            Error("BattleRoyaleAPI::RequestServerStart() => ERROR: p_ServerSettings = NULL");
+            return NULL;
+        }
+        string query_port = p_ServerSettings.query_port.ToString();
+        string ip_address = p_ServerSettings.ip_address;
+        string request = "onstart/" + query_port;
+        if(ip_address != "127.0.0.1")
+        {
+            request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API
+        }
+        string result = SendRequest_Sync(BattleRoyaleAPIContextType.Server, request);
+        Print("BattleRoyaleAPI::RequestServerStart() => WEB RESULT: " + result);
+        if(result == "invalid")
+        {
+            Error("BattleRoyaleAPI::RequestServerStart() => ERROR: INVALID REQUEST RESPONSE");
+            return NULL;
+        }
+        if(result == "")
+		{
+			Error("BattleRoyaleAPI::RequestServerStart() => ERROR: web_result = NULL");
+			return NULL;
+		}
 
-    //request player simple data
+        JsonSerializer m_Serializer = new JsonSerializer;
+		string error;
+		if(!m_Serializer.ReadFromString( m_ServerData, result, error ))
+		{
+            m_ServerData = NULL; //bad request make sure our stored value is null
+			Print("BattleRoyaleAPI::RequestServerStart() => JSON Failed To Parse!");
+			Error(error);
+			return NULL;
+		}
+
+        return m_ServerData;
+    }
+
+    void ServerFinish(string winner_name)
+    {
+        BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
+        if(!p_ServerSettings)
+        {
+            Error("BattleRoyaleAPI::ServerFinish() => ERROR: p_ServerSettings = NULL");
+            return NULL;
+        }
+        string query_port = p_ServerSettings.query_port.ToString();
+        string ip_address = p_ServerSettings.ip_address;
+
+        //TODO: encode the winner name
+        string request = "onfinish/" + winner_name + "/" + query_port;
+        if(ip_address != "127.0.0.1")
+        {
+            request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API
+        }
+
+        string result = SendRequest_Sync(BattleRoyaleAPIContextType.Server, request);
+        Print("BattleRoyaleAPI::ServerFinish() => WEB RESULT: " + result);
+        
+    }
+
+    //get server info by ID
+    ServerData GetServer(string server_id)
+    {
+        //https://dayzbr.dev/client/server/5efbdb35b9d68fe5ee8d5689
+        string result = SendRequest_Sync(BattleRoyaleAPIContextType.Client, "server/" + server_id);
+        Print("BattleRoyaleAPI::GetServer() => WEB RESULT: " + result);
+        if(result == "")
+		{
+			Error("BattleRoyaleAPI::GetServer() => ERROR: web_result = NULL");
+			return NULL;
+		}
+        JsonSerializer m_Serializer = new JsonSerializer;
+		ServerData p_ServerWebData;
+		string error;
+		if(!m_Serializer.ReadFromString( p_ServerWebData, result, error ))
+		{
+			Print("BattleRoyaleAPI::GetServer() => JSON Failed To Parse!");
+			Error(error);
+			return NULL;
+		}
+
+        return p_ServerWebData;
+    }
+
+    //request player simple data (likely will not be used)
     PlayerData GetPlayer(string SteamID)
     {
         string result = SendRequest_Sync(BattleRoyaleAPIContextType.Client, "player/" + SteamID);
@@ -109,16 +202,16 @@ class BattleRoyaleAPI {
         }
 
 		JsonSerializer m_Serializer = new JsonSerializer;
-		ServerData p_ServerData;
+		ServerData p_ServerWebData;
 		string error;
-		if(!m_Serializer.ReadFromString( p_ServerData, result, error ))
+		if(!m_Serializer.ReadFromString( p_ServerWebData, result, error ))
 		{
 			Print("BattleRoyaleAPI::RequestMatchmake() => JSON Failed To Parse!");
 			Error(error);
 			return NULL;
 		}
 
-        return p_ServerData;
+        return p_ServerWebData;
 	}
 
     RestContext GetContext(BattleRoyaleAPIContextType context_type = BattleRoyaleAPIContextType.Client)

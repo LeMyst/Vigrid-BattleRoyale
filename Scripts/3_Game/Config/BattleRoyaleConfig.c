@@ -49,10 +49,17 @@ class BattleRoyaleConfig
             Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
 
         BattleRoyaleAPIData p_ApiData = new BattleRoyaleAPIData;
-        if(p_ZoneData)
+        if(p_ApiData)
             m_Configs.Insert("ApiData", p_ApiData);
         else
             Error("BattleRoyaleAPIData Setting Constructor Returned NULL");
+
+
+        BattleRoyaleServerData p_ServerData = new BattleRoyaleServerData;
+        if(p_ServerData)
+            m_Configs.Insert("ServerData", p_ServerData);
+        else
+            Error("BattleRoyaleServerData Setting Constructor Returned NULL");
     }
 
     void Load()
@@ -119,6 +126,11 @@ class BattleRoyaleConfig
     }
 
 
+    BattleRoyaleServerData GetServerData()
+    {
+        Print("Accessing Server Data Config...");
+        return BattleRoyaleApiData.Cast( GetConfig("ServerData") );
+    }
     BattleRoyaleApiData GetApiData()
     {
         Print("Accessing Api Data Config...");

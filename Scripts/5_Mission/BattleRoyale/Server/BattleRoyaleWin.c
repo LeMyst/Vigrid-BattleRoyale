@@ -6,12 +6,28 @@ class BattleRoyaleWin extends BattleRoyaleState
 	override void Activate()
 	{
 		super.Activate();
+		PlayerBase winner;
+		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{
-			MessagePlayer(GetPlayers()[0],"Congratulations! You won Battle Rooooyale!");
+			winner = GetPlayers()[0];
+			PlayerIdentity identity = winner.GetIdentity();
+			if(identity)
+			{
+				winner_name = identity.GetName();
+				Print(identity.GetName());
+				Print(identity.GetFullName());
+				Print(identity.GetId());
+				Print(identity.GetPlainId());
+			}
+			MessagePlayer(winner, "Congratulations! You won Battle Rooooyale!");
 		}
+		BattleRoyaleAPI.GetAPI().ServerFinish(winner_name); //report winner to api
+		
+		//TODO: report match data to leaderboards
 
 		//TODO: start server shutdown process
+
 	}
 	override void Deactivate()
 	{
