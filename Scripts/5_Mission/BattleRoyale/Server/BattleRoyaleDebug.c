@@ -121,6 +121,15 @@ class BattleRoyaleDebug extends BattleRoyaleState {
 			player.SetPosition(v_Center);
 		}
 
+
+		if(player.time_until_heal <= 0)
+		{
+			player.time_until_heal = BATTLEROYALE_DEBUG_HEAL_TICK_TIME;
+			player.Heal();
+		}
+		player.time_until_heal -= timeslice;
+
+
 	}
 
 
