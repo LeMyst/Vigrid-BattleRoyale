@@ -43,8 +43,21 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		else
 			Error("DEBUG STATE CONSTRUCTOR RETURNED NULL");
 		
+		BattleRoyaleCountReached count_reached = new BattleRoyaleCountReached;
+		if(count_reached)
+			m_States.Insert(count_reached); //insert debug state
+		else
+			Error("COUNT REACHED CONSTRUCTOR RETURNED NULL");
+
+
+		BattleRoyalePrepare prepare_clients = new BattleRoyalePrepare;
+		if(prepare_clients)
+			m_States.Insert(prepare_clients); //insert debug state
+		else
+			Error("PREPARE CONSTRUCTOR RETURNED NULL");
 
 		//TODO: transition states from debug zone to gameplay
+		//https://gitlab.desolationredux.com/DayZ/BattleRoyale/-/blob/master/dayzbr/Addons/scripts/scripts/5_Mission/battleroyale/BattleRoyaleRound.c
 			
 		int num_states = m_States.Count();
 		for(int i = 0; i < i_NumRounds;i++)

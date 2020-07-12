@@ -39,7 +39,7 @@ class BattleRoyaleState {
 	}
 	bool IsComplete()
 	{
-		return false;
+		return !IsActive();
 	}
 	bool SkipState(BattleRoyaleState m_PreviousState)  //if true, we will skip activating/deactivating this state entirely
 	{
@@ -112,5 +112,121 @@ class BattleRoyaleState {
 			}
 		}
 		ExpansionNotificationSystem m_notif_sys = GetNotificationSystem();
+	}
+}
+
+
+//base state for the Debug Zone.
+//This handles healing / godmode / and teleporting
+class BattleRoyaleDebugState extends BattleRoyaleState {
+	protected vector v_Center;
+	protected float f_Radius;
+
+	void BattleRoyaleDebugState()
+	{
+		#ifdef BR_BETA_LOGGING
+		BRPrint("BattleRoyaleDebugState::Constructor()");
+		#endif
+
+        BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+        if(m_DebugSettings)
+		{
+			v_Center = m_DebugSettings.spawn_point; 
+			f_Radius = m_DebugSettings.radius; 
+		}
+		else
+		{
+			Error("DEBUG SETTINGS IS NULL!");
+			v_Center = "14829.2 72.3148 14572.3";
+			f_Radius = 50;
+		}
+	}
+	override void AddPlayer(PlayerBase player)
+	{
+		#ifdef BR_BETA_LOGGING
+		BRPrint("BattleRoyaleDebugState::AddPlayer()");
+		#endif
+		
+		if(player)
+		{
+			player.SetAllowDamage(false); //all players in this state are god mode
+			player.Heal();
+		}
+		super.AddPlayer(player);
+	}
+    override array<PlayerBase> RemoveAllPlayers()
+	{
+		#ifdef BR_BETA_LOGGING
+		BRPrint("BattleRoyaleDebugState::RemoveAllPlayers()");
+		#endif
+		
+		array<PlayerBase> players = super.RemoveAllPlayers();
+		foreach(PlayerBase player : players)
+		{
+			player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.Heal();
+		}
+		return players;
+	}
+	override void RemovePlayer(PlayerBase player)
+	{
+		#ifdef BR_BETA_LOGGING
+		BRPrint("BattleRoyaleDebugState::RemovePlayer()");
+		#endif
+		
+		if(player)
+        {
+			player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.Heal();
+        }
+		super.RemovePlayer(player);
+	}
+
+	//--- debug states must lock players into the debug zone & heal them
+    override void OnPlayerTick(PlayerBase player, float timeslice)
+	{
+		super.OnPlayerTick(player, timeslice);
+
+		vector playerPos = player.GetPosition();
+		float distance = vector.Distance(playerPos, v_Center);
+		if(distance > f_Radius)
+		{
+			#ifdef BR_BETA_LOGGING
+			BRPrint("BattleRoyaleDebugState::OnPlayerTick() => Snapping player back to debug zone");
+			#endif
+			player.SetPosition(v_Center);
+		}
+
+
+		if(player.time_until_heal <= 0)
+		{
+			player.time_until_heal = BATTLEROYALE_DEBUG_HEAL_TICK_TIME;
+			player.Heal();
+		}
+		player.time_until_heal -= timeslice;
+
+
+	}
+
+
+	//DEPRECATED: should pull value from config
+	//GOAL: make this protected
+	vector GetCenter()
+	{
+		#ifdef BR_BETA_LOGGING
+		BRPrint("BattleRoyaleDebug::GetCenter()");
+		#endif
+		
+		return v_Center;
+	}
+	//DEPRECATED: should pull value from config
+	//GOAL: make this protected
+	float GetRadius()
+	{
+		#ifdef BR_BETA_LOGGING
+		BRPrint("BattleRoyaleDebug::GetRadius()");
+		#endif
+		
+		return f_Radius;
 	}
 }

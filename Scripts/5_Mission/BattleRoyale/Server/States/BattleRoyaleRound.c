@@ -104,7 +104,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
-		return b_TimeUp;
+		return b_TimeUp || super.IsActive();
 	}
 	override bool SkipState(BattleRoyaleState m_PreviousState) 
 	{
