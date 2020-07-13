@@ -28,8 +28,8 @@ class BattleRoyaleZone
         if(m_ParentZone)
         {
             //this zone has a parent
-            p_Rad = m_ParentZone.GetRadius();
-            p_Cen = m_ParentZone.GetCenter();
+            p_Rad = m_ParentZone.GetArea().GetRadius();
+            p_Cen = m_ParentZone.GetArea().GetCenter();
         }
         else
         {

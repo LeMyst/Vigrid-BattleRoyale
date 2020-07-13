@@ -1,15 +1,15 @@
 #define BR_BETA_LOGGING
 
-class BattleRoyalePrepare extends BattleRoyaleState
+class BattleRoyaleStartMatch extends BattleRoyaleState
 {
     protected int i_TimeToUnlock;
     protected bool b_HasStarted;
     protected int i_FirstRoundDelay;
 
-    void BattleRoyalePrepare()
+    void BattleRoyaleStartMatch()
     {
         #ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyalePrepare::Constructor()");
+		BRPrint("BattleRoyaleStartMatch::Constructor()");
 		#endif
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
@@ -26,7 +26,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		super.Activate();
 
-        for(int i = (i_TimeToUnlock-1); i > 0;i--)
+        int max_time = i_TimeToUnlock - 1;
+        for(int i = max_time;i > 0;i--)
         {
             m_CallQueue.CallLater(this.MessageUnlock, i*1000, false, i_TimeToUnlock - i); //30 seconds until zone locks
         }

@@ -133,7 +133,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 	
 	void OnPlayerKilled(PlayerBase player, Object killer)
 	{
-		
+		if(player.GetIdentity())
+			GetGame().DisconnectPlayer(player.GetIdentity());
+		else
+			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
 	}
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{

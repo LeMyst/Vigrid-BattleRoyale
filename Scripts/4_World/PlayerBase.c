@@ -35,8 +35,12 @@ modded class PlayerBase
 		SetHealth("", "Shock", GetMaxHealth("", "Shock"));
 		
 		// GetStatStomachVolume + GetStatStomachWater > 1000 == STUFFED!
-		GetStatStomachVolume().Set(250);
-		GetStatStomachWater().Set(250);
+
+		
+		
+		//--- legacy function (need to access m_PlayerStomach [PlayerStomach] and try from there)
+		//GetStatStomachVolume().Set(250);
+		//GetStatStomachWater().Set(250);
 		
 		// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
 		GetStatWater().Set(5000);

@@ -37,22 +37,31 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//--- initialize all states (in order from start to finish)
 		m_States = new array<ref BattleRoyaleState>;
 
+		//DEBUG ZONE
 		BattleRoyaleDebug debug_state = new BattleRoyaleDebug;
 		if(debug_state)
 			m_States.Insert(debug_state); //insert debug state
 		else
 			Error("DEBUG STATE CONSTRUCTOR RETURNED NULL");
 		
+		//PLAYER COUNT REACHED COUNTDOWN
 		BattleRoyaleCountReached count_reached = new BattleRoyaleCountReached;
 		if(count_reached)
 			m_States.Insert(count_reached); //insert debug state
 		else
 			Error("COUNT REACHED CONSTRUCTOR RETURNED NULL");
 
-
+		//PREPARE CLIENTS & TELEPORT
 		BattleRoyalePrepare prepare_clients = new BattleRoyalePrepare;
 		if(prepare_clients)
 			m_States.Insert(prepare_clients); //insert debug state
+		else
+			Error("PREPARE CONSTRUCTOR RETURNED NULL");
+
+		//UNLOCK CLIENTS AND START MATCH WOO
+		BattleRoyaleStartMatch start_match = new BattleRoyaleStartMatch;
+		if(start_match)
+			m_States.Insert(start_match); //insert debug state
 		else
 			Error("PREPARE CONSTRUCTOR RETURNED NULL");
 
@@ -71,7 +80,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 
 		//TODO: add a custom "round" state that represents 'no zone', constantly damages all players, and waits for only one player to remain alive
-		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count()-1]);
+		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
 		if(last_round)
 			m_States.Insert(last_round);
 		else

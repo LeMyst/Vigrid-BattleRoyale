@@ -78,7 +78,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                     process_player.RemoveAllItems();
                     foreach(string item : a_StartingItems)
                     {
-                        player.GetInventory().CreateInInventory(item);
+                        process_player.GetInventory().CreateInInventory(item);
                     }
                     
                     //TODO: teleport players randomly across the map? (move them into the plane to drop)

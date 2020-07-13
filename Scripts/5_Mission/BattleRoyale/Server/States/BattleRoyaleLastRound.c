@@ -90,7 +90,10 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     void OnPlayerKilled(PlayerBase player, Object killer)
 	{
-		
+		if(player.GetIdentity())
+			GetGame().DisconnectPlayer(player.GetIdentity());
+		else
+			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
 	}
     
     override void OnPlayerTick(PlayerBase player, float timeslice)
@@ -149,7 +152,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		if(Class.CastTo(prev_round, m_PreviousSate))
 		{
 			return prev_round.GetZone();
-		}}
+		}
 		
 		return NULL;
 	}

@@ -15,7 +15,7 @@ class BattleRoyalePlayArea
     {
         v_Center = center;
     }
-    float GetCenter()
+    vector GetCenter()
     {
         return v_Center;
     }
