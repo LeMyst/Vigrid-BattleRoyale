@@ -19,7 +19,7 @@ class ServerData
 	string connection;
 	string query_port;
 	int last_started;
-	array<string> matches;
+	ref array<string> matches;
 	string region;
 	string _id;
 	bool locked;

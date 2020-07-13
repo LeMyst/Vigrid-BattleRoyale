@@ -10,10 +10,10 @@ class BattleRoyaleAPIData extends BattleRoyaleDataBase
     }
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleDebugData>.JsonSaveFile(GetPath(), this);
+        JsonFileLoader<BattleRoyaleAPIData>.JsonSaveFile(GetPath(), this);
     }
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleDebugData>.JsonLoadFile(GetPath(), this);
+        JsonFileLoader<BattleRoyaleAPIData>.JsonLoadFile(GetPath(), this);
     }
 }

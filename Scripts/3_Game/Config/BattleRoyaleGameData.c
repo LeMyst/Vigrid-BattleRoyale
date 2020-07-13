@@ -8,10 +8,10 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     ref array<int> zone_notification_minutes = { 1, 2 };
     ref array<int> zone_notification_seconds = { 30, 10 };
 
-    debug_heal_tick_seconds = 5;
-    zone_damage_tick_seconds = 5;
+    int debug_heal_tick_seconds = 5;
+    int zone_damage_tick_seconds = 5;
 
-    enable_zone_damage = true;
+    bool enable_zone_damage = true;
 
 
     ref array<string> player_starting_items = {

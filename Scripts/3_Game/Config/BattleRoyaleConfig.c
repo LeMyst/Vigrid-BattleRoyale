@@ -129,12 +129,12 @@ class BattleRoyaleConfig
     BattleRoyaleServerData GetServerData()
     {
         Print("Accessing Server Data Config...");
-        return BattleRoyaleApiData.Cast( GetConfig("ServerData") );
+        return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
     }
-    BattleRoyaleApiData GetApiData()
+    BattleRoyaleAPIData GetApiData()
     {
         Print("Accessing Api Data Config...");
-        return BattleRoyaleApiData.Cast( GetConfig("ApiData") );
+        return BattleRoyaleAPIData.Cast( GetConfig("ApiData") );
     }
     BattleRoyaleGameData GetGameData()
     {

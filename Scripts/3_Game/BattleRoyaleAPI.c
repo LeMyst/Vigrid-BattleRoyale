@@ -86,7 +86,7 @@ class BattleRoyaleAPI {
         if(!p_ServerSettings)
         {
             Error("BattleRoyaleAPI::ServerFinish() => ERROR: p_ServerSettings = NULL");
-            return NULL;
+            return;
         }
         string query_port = p_ServerSettings.query_port.ToString();
         string ip_address = p_ServerSettings.ip_address;
@@ -132,14 +132,14 @@ class BattleRoyaleAPI {
         Print("BattleRoyaleAPI::GetPlayer() => WEB RESULT: " + result);
         if(result == "")
 		{
-			Error("BattleRoyaleAPI::GetPlayer() => ERROR: web_result = NULL");
+			Error("BattleRoyaleAPI::GetPlayer() => ERROR: result = NULL");
 			return NULL;
 		}
         JsonSerializer m_Serializer = new JsonSerializer;
         PlayerData m_PlayerWebData;
 		string error;
 		
-		if(!m_Serializer.ReadFromString( m_PlayerWebData, web_result, error ))
+		if(!m_Serializer.ReadFromString( m_PlayerWebData, result, error ))
 		{
 			Print("BattleRoyaleAPI::RequestStart() => JSON Failed To Parse!");
 			Error(error);
@@ -163,7 +163,7 @@ class BattleRoyaleAPI {
 		JsonSerializer m_Serializer = new JsonSerializer;
 		string error;
 		
-		if(!m_Serializer.ReadFromString( m_PlayerData, web_result, error ))
+		if(!m_Serializer.ReadFromString( m_PlayerData, result, error ))
 		{
             m_PlayerData = NULL; //failed to parse, make sure our object is null
 			Print("BattleRoyaleAPI::RequestStart() => JSON Failed To Parse!");
@@ -225,10 +225,10 @@ class BattleRoyaleAPI {
     {
         string encoded = "";
 
-        for(int i = 0; i < message.Length(), i++)
+        for(int i = 0; i < message.Length(); i++)
         {
             string char = message.Get(i);
-            int ascii = char.ToAscii();
+            int ascii = char.ToAscii(char); //? what the fuck? devs? Hello? DEVS?!
             encoded += "%" + ToHex(ascii);
         }
 
