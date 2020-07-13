@@ -5,15 +5,32 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected ref array<ref PlayerBase> m_PlayerList;
     protected bool ready_to_process;
     protected int process_index;
+    protected ref array<string> a_StartingItems;
 
     void BattleRoyalePrepare()
     {
         #ifdef BR_BETA_LOGGING
 		BRPrint("BattleRoyalePrepare::Constructor()");
 		#endif
+        
+        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        if(m_GameSettings)
+        {
+            a_StartingItems = m_GameSettings.player_starting_items;
+        }
+        else
+        {
+            a_StartingItems = {"TrackSuitJacket_Red","TrackSuitPants_Red","JoggingShoes_Red"}; //TODO: add GPS and MAP to these items
+        }
+        
+        
         m_PlayerList = new array<ref PlayerBase>;
         ready_to_process = false;
         process_index = 0;
+
+
+
+
     }
 
 	override void Activate()
@@ -59,11 +76,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 if(process_player)
                 {
                     process_player.RemoveAllItems();
-                    //TODO: make this a config setting
-                    player.GetInventory().CreateInInventory("TrackSuitJacket_Red");
-                    player.GetInventory().CreateInInventory("TrackSuitPants_Red");
-                    player.GetInventory().CreateInInventory("JoggingShoes_Red");
-                
+                    foreach(string item : a_StartingItems)
+                    {
+                        player.GetInventory().CreateInInventory(item);
+                    }
+                    
                     //TODO: teleport players randomly across the map? (move them into the plane to drop)
                 }
                 process_index++;

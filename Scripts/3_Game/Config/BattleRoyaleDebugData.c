@@ -5,6 +5,7 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
     float radius = 50;
     int minimum_players = 10;
 
+    int time_to_start_match_seconds = 30;
 
     override string GetPath()
     {

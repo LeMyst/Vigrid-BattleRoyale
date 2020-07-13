@@ -7,7 +7,5 @@
 
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:BattleRoyale\\";
-static const int BATTLEROYALE_DEBUG_HEAL_TICK_TIME = 5; //TODO: config this
-static const int BATTLEROYALE_DAMAGE_TICK_TIME = 5; //TODO: config this
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR";
 static const string BATTLERYALE_FADE_MESSAGE = "DayZ Battle Royale";

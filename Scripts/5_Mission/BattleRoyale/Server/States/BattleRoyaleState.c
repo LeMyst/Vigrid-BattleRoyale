@@ -121,6 +121,7 @@ class BattleRoyaleState {
 class BattleRoyaleDebugState extends BattleRoyaleState {
 	protected vector v_Center;
 	protected float f_Radius;
+	protected int i_HealTickTime;
 
 	void BattleRoyaleDebugState()
 	{
@@ -140,6 +141,17 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 			v_Center = "14829.2 72.3148 14572.3";
 			f_Radius = 50;
 		}
+		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData(); 
+		if(m_GameSettings)
+		{
+			i_HealTickTime = m_GameSettings.debug_heal_tick_seconds
+		}
+		else
+		{
+			Error("GAME SETTINGS IS NULL");
+			i_HealTickTime = 5;
+		}
+		
 	}
 	override void AddPlayer(PlayerBase player)
 	{
@@ -200,7 +212,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 
 		if(player.time_until_heal <= 0)
 		{
-			player.time_until_heal = BATTLEROYALE_DEBUG_HEAL_TICK_TIME;
+			player.time_until_heal = i_HealTickTime;
 			player.Heal();
 		}
 		player.time_until_heal -= timeslice;

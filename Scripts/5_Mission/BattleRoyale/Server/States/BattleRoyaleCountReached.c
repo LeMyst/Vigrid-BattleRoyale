@@ -11,7 +11,18 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
 		BRPrint("BattleRoyaleCountReached::Constructor()");
 		#endif
 
-        i_TimeToStart = 30; //TODO: pull from config
+        BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+        if(m_DebugSettings)
+        {
+            i_TimeToStart = m_DebugSettings.time_to_start_match_seconds;
+        }
+        else
+        {
+            Error("FAILED TO READ DEBUG SETTINGS");
+            i_TimeToStart = 30;
+        }
+        
+        
         
         b_ReadyToStart = false;
     }

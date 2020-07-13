@@ -8,6 +8,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	bool b_TimeUp;
 	bool b_IsFirstRound;
 	bool b_ZoneLocked;
+	int i_DamageTickTime;
 
 	array<int> lock_notif_min;
 	array<int> lock_notif_sec;
@@ -28,6 +29,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		
 		lock_notif_min =  m_GameSettings.zone_notification_minutes;
 		lock_notif_sec =  m_GameSettings.zone_notification_seconds;
+
+		i_DamageTickTime = BattleRoyaleConfig.GetConfig().GetGameData().zone_damage_tick_seconds
 
 		Init();
 	}
@@ -91,8 +94,12 @@ class BattleRoyaleRound extends BattleRoyaleState
 		m_CallQueue.CallLater(this.OnRoundTimeUp, time_till_end); //set timer to end round after X seconds
 
 
-		//TODO: send clients the current & previous zone data so they can render (both render here)
-
+		//send play area to clients
+		ref BattleRoyalePlayArea m_PreviousArea = GetPreviousZone().GetArea();
+		ref BattleRoyalePlayArea m_ThisArea = GetZone().GetArea();
+		
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
 
 		super.Activate();
 	}
@@ -124,8 +131,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		BattleRoyaleZone current_zone = GetActiveZone();
 		if(current_zone)
 		{
-			float radius = current_zone.GetRadius();
-			vector center = current_zone.GetCenter();
+			float radius = current_zone.GetArea().GetRadius();
+			vector center = current_zone.GetArea().GetCenter();
 
 			vector playerPos = player.GetPosition();
 			
@@ -139,7 +146,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				{
 					//DAMAGE
 					player.DecreaseHealthCoef(0.1); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
-					player.time_until_damage = BATTLEROYALE_DAMAGE_TICK_TIME; //reset timer
+					player.time_until_damage = i_DamageTickTime; //reset timer
 				}
 				player.time_until_damage -= timeslice;
 			}
@@ -147,7 +154,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			{
 				//if the player leaves the zone damage area, their damage ticktime will slowly incremement until it reaches the max value (5)
 				//this way you can't just keep jumping in and out of the zone to edgeplay
-				player.time_until_damage = Math.Min(BATTLEROYALE_DAMAGE_TICK_TIME, player.time_until_damage + timeslice);
+				player.time_until_damage = Math.Min(i_DamageTickTime, player.time_until_damage + timeslice);
 			}
 			
 		}

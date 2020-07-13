@@ -91,8 +91,7 @@ class BattleRoyaleAPI {
         string query_port = p_ServerSettings.query_port.ToString();
         string ip_address = p_ServerSettings.ip_address;
 
-        //TODO: encode the winner name
-        string request = "onfinish/" + winner_name + "/" + query_port;
+        string request = "onfinish/" + Encode(winner_name) + "/" + query_port;
         if(ip_address != "127.0.0.1")
         {
             request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API
@@ -222,6 +221,35 @@ class BattleRoyaleAPI {
             return GetServerContext();
     }
 
+    string Encode(string message)
+    {
+        string encoded = "";
+
+        for(int i = 0; i < message.Length(), i++)
+        {
+            string char = message.Get(i);
+            int ascii = char.ToAscii();
+            encoded += "%" + ToHex(ascii);
+        }
+
+        encoded = message;
+
+        return encoded;
+    }
+
+    //ascii decimal to hex string 00 01 02 ... FD FE FF
+    protected string ToHex(int ascii)
+    {
+        if(ascii > 255)
+            return "FF"; //ascii doesn't support characters > 255
+        
+        array<string> characters = {"0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"}
+        //determine first character 
+        int first = ascii % 16; //0-15
+        int last = Math.Floor(ascii / 16); //just incase it casts it to a float, we'll convert it back to an int after flooring
+
+        return (characters.Get(first) + characters.Get(last));
+    }
 
     //--- private functions
     protected string SendRequest_Sync(BattleRoyaleAPIContextType context_type, string request)

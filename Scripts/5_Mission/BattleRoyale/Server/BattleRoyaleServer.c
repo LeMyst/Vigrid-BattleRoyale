@@ -56,9 +56,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		else
 			Error("PREPARE CONSTRUCTOR RETURNED NULL");
 
-		//TODO: transition states from debug zone to gameplay
-		//https://gitlab.desolationredux.com/DayZ/BattleRoyale/-/blob/master/dayzbr/Addons/scripts/scripts/5_Mission/battleroyale/BattleRoyaleRound.c
-			
+		
 		int num_states = m_States.Count();
 		for(int i = 0; i < i_NumRounds;i++)
 		{
@@ -129,7 +127,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#ifdef BR_BETA_LOGGING
 		BRPrint("BattleRoyaleServer::OnPlayerConnected()");
 		#endif
-		//TODO: warning if player joins after game start
+
+		if(GetCurrentState().IsInherited(BattleRoyaleDebugState))
+			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
+
 		GetCurrentState().AddPlayer(player);
 	}
 	void OnPlayerDisconnected(PlayerBase player)
@@ -212,10 +213,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		return -1;
 	}
 	
-	//--- TODO: this is all legacy code, find a new way to implement
+	
 	
 	void RandomizeServerEnvironment()
 	{
+		//NOTE: this is all legacy, we should find a better way to do this
 		int year = 2018;
 		int month = 12;
 		int day = 24;

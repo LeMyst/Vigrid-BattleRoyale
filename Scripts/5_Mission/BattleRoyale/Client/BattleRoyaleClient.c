@@ -2,6 +2,9 @@
 
 class BattleRoyaleClient extends BattleRoyaleBase
 {
+	ref BattleRoyalePlayArea m_CurrentPlayArea;
+	ref BattleRoyalePlayArea m_FuturePlayArea;
+
 	#ifdef BR_BETA_LOGGING
 	bool print_once_tick = true;
 	#endif
@@ -18,7 +21,22 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 	}
+
+
+	BattleRoyalePlayArea GetPlayArea()
+	{
+		return m_CurrentPlayArea
+	}
+	BattleRoyalePlayArea GetNextArea()
+	{
+		return m_FuturePlayArea
+	}
+	
+
+
 
 	void FadeIn()
 	{
@@ -106,7 +124,33 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 
 
+	void UpdateCurrentPlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<ref BattleRoyalePlayArea> data;
+		if( !ctx.Read( data ) ) 
+		{
+			Error("FAILED TO READ SETFADE RPC");
+			return;
+		}
 
+		if ( type == CallType.Client )
+		{
+			m_CurrentPlayArea = data.param1;
+		}
+	}
+	void UpdateFuturePlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<ref BattleRoyalePlayArea> data;
+		if( !ctx.Read( data ) ) 
+		{
+			Error("FAILED TO READ SETFADE RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			m_FuturePlayArea = data.param1;
+		}
+	}
 
 
 
