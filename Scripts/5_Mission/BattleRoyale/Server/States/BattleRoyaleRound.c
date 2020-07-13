@@ -8,6 +8,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	bool b_TimeUp;
 	bool b_IsFirstRound;
 	bool b_ZoneLocked;
+	bool b_DoZoneDamage;
 	int i_DamageTickTime;
 
 	array<int> lock_notif_min;
@@ -30,7 +31,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		lock_notif_min =  m_GameSettings.zone_notification_minutes;
 		lock_notif_sec =  m_GameSettings.zone_notification_seconds;
 
-		i_DamageTickTime = BattleRoyaleConfig.GetConfig().GetGameData().zone_damage_tick_seconds
+		i_DamageTickTime = m_GameSettings.zone_damage_tick_seconds;
+		b_DoZoneDamage = m_GameSettings.enable_zone_damage;
 
 		Init();
 	}
@@ -136,7 +138,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
 		BattleRoyaleZone current_zone = GetActiveZone();
-		if(current_zone)
+		if(current_zone && b_DoZoneDamage)
 		{
 			float radius = current_zone.GetArea().GetRadius();
 			vector center = current_zone.GetArea().GetCenter();

@@ -11,6 +11,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     debug_heal_tick_seconds = 5;
     zone_damage_tick_seconds = 5;
 
+    enable_zone_damage = true;
+
 
     ref array<string> player_starting_items = {
         "TrackSuitJacket_Red",
