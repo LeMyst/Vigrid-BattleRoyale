@@ -26,6 +26,11 @@ modded class PlayerBase
 		}
 	}
 
+	//Temp fix for disabling character saving
+	override bool Save()
+	{
+		return false;
+	}
 	void Heal()
 	{
 		//NOTE: this heal function was done by legodev, not sure it's performance, we'll have to see

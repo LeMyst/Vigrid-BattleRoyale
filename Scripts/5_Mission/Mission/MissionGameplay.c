@@ -19,7 +19,7 @@ modded class MissionGameplay
 		PlayerBase playerPB = PlayerBase.Cast(player);
 
 		//only run our custom update if it is absolutely necessary
-		if(playerPB.allow_fade && player && m_LifeState == EPlayerStates.ALIVE && !player.IsUnconscious() && GetUIManager().ScreenFadeVisible())
+		if(player && playerPB && playerPB.allow_fade && m_LifeState == EPlayerStates.ALIVE && !player.IsUnconscious() && GetUIManager().ScreenFadeVisible())
 		{
 			DayZOnUpdate( timeslice );
 			ExpansionOnUpdate( timeslice );

@@ -270,7 +270,7 @@ class BattleRoyaleAPI {
     protected void InitClientContext()
     {
         Print("BattleRoyale: Initializing Client Context");
-        if(!m_Rest)
+        //if(!m_Rest)
             InitRestApi();
         
         m_ClientContext = m_Rest.GetRestContext( rest_api_endpoint + "/client/" );
@@ -278,15 +278,15 @@ class BattleRoyaleAPI {
     protected void InitServerContext()
     {
         Print("BattleRoyale: Initializing Server Context");
-        if(!m_Rest)
+        //if(!m_Rest)
             InitRestApi();
         
         m_ServerContext = m_Rest.GetRestContext( rest_api_endpoint + "/server/" + server_private_key + "/" );
     }
     protected RestContext GetClientContext()
     {
-        Print("BattleRoyale: Grabbing Client Context");
-        if(!m_ClientContext)
+        Print("BattleRoyale: Grabbing Client Context");  //TODO: (client crash is caused immediately after this)
+        //if(!m_ClientContext)
             InitClientContext();
 
         return m_ClientContext;
@@ -294,7 +294,7 @@ class BattleRoyaleAPI {
     protected RestContext GetServerContext()
     {
         Print("BattleRoyale: Grabbing Server Context");
-        if(!m_ServerContext)
+       // if(!m_ServerContext)
             InitServerContext();
 
         return m_ServerContext;

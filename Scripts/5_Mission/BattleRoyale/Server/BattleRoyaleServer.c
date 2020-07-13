@@ -145,6 +145,12 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BRPrint("BattleRoyaleServer::OnPlayerConnected()");
 		#endif
 
+		//Teleport player into debug zone
+		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
+		vector debug_pos = m_Debug.GetCenter(); //TODO: we need debug zone position
+		player.SetPosition(debug_pos);		
+
+		//TODO: this is not working at all
 		if(GetCurrentState().IsInherited(BattleRoyaleDebugState))
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 
@@ -199,6 +205,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		else
 		{
 			//current state does not contain player, wtf is going on
+			//TODO: i ran into a bug where this was the case, no idea how this happened!
 			BRPrint("ERROR! GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
 		}
 		

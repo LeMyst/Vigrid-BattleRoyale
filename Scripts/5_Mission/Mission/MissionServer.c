@@ -18,30 +18,39 @@ modded class MissionServer
 	override void OnUpdate(float timeslice)
 	{
 		super.OnUpdate(timeslice);
-		//TODO: br things
+		
 		BattleRoyaleServer.Cast( m_BattleRoyale ).Update(timeslice);
 	}
 	override void InvokeOnConnect( PlayerBase player, PlayerIdentity identity )
 	{
+		BRPrint("InvokeOnConnect()")
 		super.InvokeOnConnect(player, identity);
-		//TODO: player connected to server, handle
+		
 		if(player)
 		{
-			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerConnected(player);
+			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerConnected(player); //this never ran?
 		}
+		else
+		{
+			Error("PLAYER PASSED TO IOC IS NULL");
+		}
+		
 		
 	}
 	override void InvokeOnDisconnect( PlayerBase player )
 	{
 		super.InvokeOnDisconnect(player);
-		//TODO: player disconnected, handle
+		
+		BRPrint("InvokeOnDisconnect()");
+
 		if(player)
 		{
-			player.SetHealth("", "", 0.0); //don't let this character get saved in the hive
 			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerDisconnected(player);
 		}
-		
-		
+		else
+		{
+			Error("PLAYER PASSED TO IOD IS NULL");
+		}
 	}
 	
 	
@@ -72,14 +81,7 @@ modded class MissionServer
 		}
 		super.HandleBody( player );
 	}
-	override PlayerBase OnClientNewEvent(PlayerIdentity identity, vector pos, ParamsReadContext ctx)
-	{
-		//NOTE: debug state should ALWAYS be index 0
-		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( BattleRoyaleServer.Cast( m_BattleRoyale ).GetState(0) );
-
-		vector debug_pos = m_Debug.GetCenter(); //TODO: we need debug zone position
-		return super.OnClientNewEvent(identity, debug_pos, ctx);
-	}
+	
 	override void StartingEquipSetup(PlayerBase player, bool clothesChosen)
 	{
 		//TODO: figure out how to set inventory loadout (we'll hard code BR specific starting items here
@@ -89,6 +91,7 @@ modded class MissionServer
 	{
 		super.OnClientRespawnEvent(identity, player);
 		
+		//this should never happen, but maybe it could if in the debug zone so lets handle that case
 		if(player)
 		{
 			//if player is inside the debug zone, delete the body (to prevent debug body spam)
