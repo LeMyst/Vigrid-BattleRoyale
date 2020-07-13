@@ -2,6 +2,7 @@
 
 class BattleRoyaleClient extends BattleRoyaleBase
 {
+
 	ref BattleRoyalePlayArea m_CurrentPlayArea;
 	ref BattleRoyalePlayArea m_FuturePlayArea;
 
@@ -25,7 +26,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 	}
 
-
+	//--- note: these return NULL of there is no area referenced for next or current area
 	BattleRoyalePlayArea GetPlayArea()
 	{
 		return m_CurrentPlayArea

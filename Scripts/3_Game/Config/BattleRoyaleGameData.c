@@ -3,6 +3,7 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     int num_zones = 7;
     
     int round_duration_minutes = 5; //5 minute rounds
+    int time_until_teleport_unlock = 10; //seconds before unlock after teleporting & preparing
 
     ref array<int> zone_notification_minutes = { 1, 2 };
     ref array<int> zone_notification_seconds = { 30, 10 };

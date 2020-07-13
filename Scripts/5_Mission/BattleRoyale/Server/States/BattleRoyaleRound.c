@@ -95,11 +95,18 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 
 		//send play area to clients
-		ref BattleRoyalePlayArea m_PreviousArea = GetPreviousZone().GetArea();
-		ref BattleRoyalePlayArea m_ThisArea = GetZone().GetArea();
+		ref BattleRoyalePlayArea m_PreviousArea = NULL;
+		if(GetPreviousZone())
+			m_PreviousArea = GetPreviousZone().GetArea();
+
+		ref BattleRoyalePlayArea m_ThisArea = NULL;
+		if(GetZone())
+			m_ThisArea = GetZone().GetArea();
 		
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+		//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+		//tell the client the next play area
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 
 		super.Activate();
 	}
@@ -195,8 +202,19 @@ class BattleRoyaleRound extends BattleRoyaleState
 	{
 		b_ZoneLocked = true;
 
-		//TODO: tell clients to hide previous zone data (if necessary)
+		//send play area to clients
+		ref BattleRoyalePlayArea m_PreviousArea = NULL;
+		if(GetPreviousZone())
+			m_PreviousArea = GetPreviousZone().GetArea();
 
+		ref BattleRoyalePlayArea m_ThisArea = NULL;
+		if(GetZone())
+			m_ThisArea = GetZone().GetArea();
+			
+		//tell the client the current area is now this area
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+		//tell the client we don't know the next play area
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
 
 	}
 	void OnRoundTimeUp()

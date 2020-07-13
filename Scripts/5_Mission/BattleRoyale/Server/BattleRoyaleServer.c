@@ -69,6 +69,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				Error("round is NULL! Constructor must have failed!");
 			
 		}
+
+		//TODO: add a custom "round" state that represents 'no zone', constantly damages all players, and waits for only one player to remain alive
+
 		m_States.Insert(new BattleRoyaleWin);
 		
 		i_CurrentStateIndex = 0;
