@@ -71,7 +71,12 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 
 		//TODO: add a custom "round" state that represents 'no zone', constantly damages all players, and waits for only one player to remain alive
-
+		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count()-1]);
+		if(last_round)
+			m_States.Insert(last_round);
+		else
+			Error("last round is null! COnstructor must have failed!");
+			
 		m_States.Insert(new BattleRoyaleWin);
 		
 		i_CurrentStateIndex = 0;
@@ -159,6 +164,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			if(Class.CastTo(p_Round, GetCurrentState()))
 			{
 				p_Round.OnPlayerKilled(killed, killer); //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
+			}
+			BattleRoyaleLastRound p_LastRound;
+			if(Class.CastTo(p_LastRound, GetCurrentState()))
+			{
+				p_LastRound.OnPlayerKilled(killed, killer); //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
 			}
 
 			//remove player from the state (this would take place in on-disconnect, but some players would choose not to disconnect)
