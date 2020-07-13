@@ -22,7 +22,7 @@ class ServerData
 	ref array<string> matches;
 	string region;
 	string _id;
-	bool locked;
+	int locked; //booleans are stored as int's with 0 == false and  1 == true
 
 	
 	//methods used for easy connecting
@@ -42,6 +42,6 @@ class ServerData
 	}
 	bool CanConnect()
 	{
-		return (!locked);
+		return (locked == 0);
 	}
 }
