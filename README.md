@@ -1,5 +1,7 @@
-# DayZ Battle Royale
+# DayZ Battle Royale  -- Pre-Alpha Version
 -------
+
+Looking for the in-development version? Check the DZEBR branch!
 
 ### Hello Survivors,
 -----
