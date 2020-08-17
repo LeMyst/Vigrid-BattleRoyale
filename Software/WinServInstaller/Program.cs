@@ -64,7 +64,7 @@ namespace WinServInstaller
                 .Replace("##GITINSTALLPATH##", gitlab_path)
                 .Replace("##STEAMUSER##", steam_user)
                 .Replace("##STEAMPASS##", steam_pass);
-            File.WriteAllText(install_path + "\\UPDATE_SERVER.bat", run_dayzbr_bat);
+            File.WriteAllText(install_path + "\\UPDATE_SERVER.bat", update_server);
 
             Console.WriteLine("");
 
