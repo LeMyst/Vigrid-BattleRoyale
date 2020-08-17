@@ -3,7 +3,7 @@
 set "SteamCMDPath=##STEAMCMD##"
 set "ServerPath=##SERVERPATH##"
 set "WorkshopSubpath=steamapps\workshop\content\221100"
-set "GitMissionPath=##GITINSTALLPATH##\Missions\BattleRoyale.ChernarusPlusGloom"
+set "GitMissionPath=##GITLABPATH##\Missions\BattleRoyale.ChernarusPlusGloom"
 
 REM workshop ids for mods
 set "CF_workshop_id=1559212036"

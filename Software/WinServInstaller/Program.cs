@@ -61,7 +61,7 @@ namespace WinServInstaller
                 .Replace("##GITINSTALLPATH##", git_install_path)
                 .Replace("##STEAMCMD##", steamcmd_path)
                 .Replace("##SERVERPATH##", install_path)
-                .Replace("##GITINSTALLPATH##", gitlab_path)
+                .Replace("##GITLABPATH##", gitlab_path)
                 .Replace("##STEAMUSER##", steam_user)
                 .Replace("##STEAMPASS##", steam_pass);
             File.WriteAllText(install_path + "\\UPDATE_SERVER.bat", update_server);
