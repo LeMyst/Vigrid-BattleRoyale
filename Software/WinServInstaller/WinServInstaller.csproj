@@ -66,5 +66,11 @@
   <ItemGroup>
     <None Include="Resources\UPDATE_SERVER.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\API_Settings.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Server_Settings.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

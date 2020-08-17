@@ -32,6 +32,11 @@ namespace WinServInstaller
             {
                 server_port = GetInput("Enter the port of the server");
             } while (!int.TryParse(server_port, out port));
+            int query_port = -1;
+            do
+            {
+                server_port = GetInput("Enter the query port of the server");
+            } while (!int.TryParse(server_port, out query_port));
 
             string git_install_path;
             do
@@ -46,7 +51,18 @@ namespace WinServInstaller
                     git_install_path = @"C:\Program Files\Git\bin";
                 }
             } while (!Directory.Exists(git_install_path));
+            string server_ip;
+            string path = GetInput("Enter your server IP (leave blank for default)");
+            if (path.Trim() != "")
+            {
+                server_ip = path;
+            }
+            else
+            {
+                server_ip = "127.0.0.1";
+            }
 
+            string APIKey = GetInput("Enter your DayZBR API Key");
 
             string steam_user = GetInput("Enter steam username");
             string steam_pass = GetInput("Enter steam password");
@@ -66,18 +82,37 @@ namespace WinServInstaller
                 .Replace("##STEAMPASS##", steam_pass);
             File.WriteAllText(install_path + "\\UPDATE_SERVER.bat", update_server);
 
+            if (!Directory.Exists($"{install_path}\\profiles"))
+                Directory.CreateDirectory($"{install_path}\\profiles");
+
             Console.WriteLine("");
 
+            //--- TODO: handle JSON configs in the profile folder (done in the UPDATE_SERVER.bat file as it needs to run every restart)
             var process = new Process();
             var startinfo = new ProcessStartInfo("cmd.exe", "/C \"" + install_path + "\\UPDATE_SERVER.bat\"");
             startinfo.RedirectStandardOutput = true;
+            startinfo.RedirectStandardError = true;
             startinfo.UseShellExecute = false;
             process.StartInfo = startinfo;
+            process.ErrorDataReceived += (sender, outp) => Console.WriteLine(outp.Data);
             process.OutputDataReceived += (sender, outp) => Console.WriteLine(outp.Data); // do whatever processing you need to do in this handler
             process.Start();
             process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
             process.WaitForExit();
 
+            Console.WriteLine("");
+            Console.WriteLine("");
+            Console.WriteLine("Install Complete --- Configuring...");
+            Console.WriteLine("");
+            Console.WriteLine("");
+
+            string serverDZ = File.ReadAllText($"{install_path}\\serverDZ.cfg");
+
+            if (!Directory.Exists($"{install_path}\\profiles"))
+                Directory.CreateDirectory($"{install_path}\\profiles");
+
+            //TODO: pull configs via git
 
             //--- TODO: update serverDZ.cfg
             /*
@@ -108,6 +143,14 @@ namespace WinServInstaller
                 };
              
              */
+
+
+            //handle unique server BR configs
+            if (!Directory.Exists($"{install_path}\\profiles\\BattleRoyale"))
+                Directory.CreateDirectory($"{install_path}\\profiles\\BattleRoyale");
+            
+            File.WriteAllText($"{install_path}\\profiles\\BattleRoyale\\api_settings.json", Properties.Resources.API_Settings.Replace("##APIKEY##", APIKey));
+            File.WriteAllText($"{install_path}\\profiles\\BattleRoyale\\server_settings.json", Properties.Resources.Server_Settings.Replace("##IPADDR##", server_ip).Replace("##QUERYPORT##", query_port.ToString());
 
 
 

@@ -61,6 +61,18 @@ namespace WinServInstaller.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to {
+        ///    &quot;endpoint&quot;: &quot;https://dayzbr.dev&quot;,
+        ///    &quot;api_key&quot;: &quot;##APIKEY##&quot;
+        ///}.
+        /// </summary>
+        internal static string API_Settings {
+            get {
+                return ResourceManager.GetString("API_Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to @echo off
         ///set &quot;ServerName=##SERVERNAME##&quot;
         ///set &quot;ServerPath=##SERVERPATH##&quot;
@@ -83,7 +95,35 @@ namespace WinServInstaller.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to .
+        ///   Looks up a localized string similar to {
+        ///    &quot;query_port&quot;: ##QUERYPORT##,
+        ///    &quot;ip_address&quot;: &quot;##IPADDR##&quot;
+        ///}.
+        /// </summary>
+        internal static string Server_Settings {
+            get {
+                return ResourceManager.GetString("Server_Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to @echo off
+        ///
+        ///set &quot;SteamCMDPath=##STEAMCMD##&quot;
+        ///set &quot;ServerPath=##SERVERPATH##&quot;
+        ///set &quot;WorkshopSubpath=steamapps\workshop\content\221100&quot;
+        ///set &quot;GitMissionPath=##GITLABPATH##\Missions\BattleRoyale.ChernarusPlusGloom&quot;
+        ///
+        ///REM workshop ids for mods
+        ///set &quot;CF_workshop_id=1559212036&quot;
+        ///set &quot;COT_workshop_id=1564026768&quot;
+        ///set &quot;Expansion_workshop_id=2116151222&quot;
+        ///set &quot;Expansion_licensed_workshop_id=2116157322&quot;
+        ///set &quot;BR_workshop_id=2160516972&quot;
+        ///
+        ///%SteamCMDPath%\steamcmd ^
+        /// +login ##STEAMUSER## ##STEAMPASS## ^
+        /// +force_inst [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string UPDATE_SERVER {
             get {
