@@ -78,6 +78,39 @@ namespace WinServInstaller
             process.BeginOutputReadLine();
             process.WaitForExit();
 
+
+            //--- TODO: update serverDZ.cfg
+            /*
+             * ======== new data ====
+             
+                steamQueryPort = 2403;
+                networkRangeClose = 20;			// network bubble distance for spawn of close objects with items in them (f.i. backpacks), set in meters, default value if not set is 20
+                networkRangeNear = 150;			// network bubble distance for spawn (despawn +10%) of near inventory items objects, set in meters, default value if not set is 150
+                networkRangeFar = 1000;			// network bubble distance for spawn (despawn +10%) of far objects (other than inventory items), set in meters, default value if not set is 1000
+                networkRangeDistantEffect = 4000; // network bubble distance for spawn of effects (currently only sound effects), set in meters, default value if not set is 4000
+
+                defaultVisibility=1375;			// highest terrain render distance on server (if higher than "viewDistance=" in DayZ client profile, clientside parameter applies)
+                defaultObjectViewDistance=1375;	// highest object render distance on server (if higher than "preferredObjectViewDistance=" in DayZ client profile, clientside parameter applies)
+
+
+            ==== replace data 
+                hostname = "[Beta] DayZ Battle Royale - Chicago #2";  // Server name
+                password = "PASSWORD HERE";              // Password to connect to the server
+                passwordAdmin = "PASSWORD HERE";         // Password to become a server admin
+
+                instanceId = 2;             // DayZ server instance id, to identify the number of instances per box and their storage folders with persistence files
+                class Missions
+                {
+                    class DayZ
+                    {
+                        template="BattleRoyale.ChernarusPlusGloom";
+                    };
+                };
+             
+             */
+
+
+
             Console.WriteLine("");
             Console.WriteLine("Install Complete! Press Any Key to Quit");
             Console.ReadKey();
