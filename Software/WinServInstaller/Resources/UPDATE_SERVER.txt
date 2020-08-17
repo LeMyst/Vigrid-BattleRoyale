@@ -1,0 +1,54 @@
+@echo off
+
+set "SteamCMDPath=##STEAMCMD##"
+set "ServerPath=##SERVERPATH##"
+set "WorkshopSubpath=steamapps\workshop\content\221100"
+set "GitMissionPath=##GITINSTALLPATH##\Missions\BattleRoyale.ChernarusPlusGloom"
+
+REM workshop ids for mods
+set "CF_workshop_id=1559212036"
+set "COT_workshop_id=1564026768"
+set "Expansion_workshop_id=2116151222"
+set "Expansion_licensed_workshop_id=2116157322"
+set "BR_workshop_id=2160516972"
+
+%SteamCMDPath%\steamcmd ^
+ +login ##STEAMUSER## ##STEAMPASS## ^
+ +force_install_dir "%ServerPath%" ^
+ +app_update 223350 validate ^
+ +workshop_download_item 221100 %CF_workshop_id% ^
+ +workshop_download_item 221100 %COT_workshop_id% ^
+ +workshop_download_item 221100 %Expansion_workshop_id% ^
+ +workshop_download_item 221100 %Expansion_licensed_workshop_id% ^
+ +workshop_download_item 221100 %BR_workshop_id% ^
+ +quit
+
+echo  
+echo  
+echo   
+echo Copying Workshop Mods...
+REM copy workshop downloads (i guess this could be done with symlink but for portability we'll do this)
+robocopy "%ServerPath%\%WorkshopSubpath%\%BR_workshop_id%" "%ServerPath%\@BattleRoyale" /MIR /NJS /NJH /NDL
+robocopy "%ServerPath%\%WorkshopSubpath%\%CF_workshop_id%" "%ServerPath%\@CF" /MIR /NJS /NJH /NDL
+robocopy "%ServerPath%\%WorkshopSubpath%\%COT_workshop_id%" "%ServerPath%\@Community-Online-Tools" /MIR /NJS /NJH /NDL
+robocopy "%ServerPath%\%WorkshopSubpath%\%Expansion_workshop_id%" "%ServerPath%\@DayZ-Expansion" /MIR /NJS /NJH /NDL
+robocopy "%ServerPath%\%WorkshopSubpath%\%Expansion_licensed_workshop_id%" "%ServerPath%\@DayZ-Expansion-Licensed" /MIR /NJS /NJH /NDL
+
+REM delete all keys accept for dayz.bikey
+echo Setting up server keys...
+attrib +r +s "%ServerPath%\keys\dayz.bikey"
+del "%ServerPath%\keys\*.*" /Q
+attrib -r -s "%ServerPath%\keys\dayz.bikey"
+xcopy /s "%ServerPath%\@BattleRoyale\Keys\*.*" "%ServerPath%\keys\" /K /D /H /Y
+xcopy /s "%ServerPath%\@CF\Keys\*.*" "%ServerPath%\keys\" /K /D /H /Y
+xcopy /s "%ServerPath%\@Community-Online-Tools\Keys\*.*" "%ServerPath%\keys\" /K /D /H /Y
+xcopy /s "%ServerPath%\@DayZ-Expansion\Keys\*.*" "%ServerPath%\keys\" /K /D /H /Y
+xcopy /s "%ServerPath%\@DayZ-Expansion-Licensed\Keys\*.*" "%ServerPath%\keys\" /K /D /H /Y
+
+REM copy our mission file from git to the server (use git pull to make sure we have the latest)
+echo  
+echo  
+echo   
+echo Updating mission file...
+"##GITINSTALLPATH##\git.exe" -C "%GitMissionPath%" pull 
+robocopy "%GitMissionPath%" "%ServerPath%\mpmissions\BattleRoyale.ChernarusPlusGloom" /MIR /NJS /NJH /NDL

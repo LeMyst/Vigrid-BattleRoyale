@@ -1,0 +1,21 @@
+@echo off
+set "ServerName=##SERVERNAME##"
+set "ServerPath=##SERVERPATH##"
+
+title %ServerName%
+
+:restart
+cls
+echo "+ Updating DayZ Server"
+call UPDATE_SERVER.bat
+
+echo "+ Starting DayZ Server"
+title %ServerName% - Online
+start /WAIT DayZServer_x64.exe "-config=%ServerPath%\serverDZ.cfg" -port=##PORT## "-profiles=%ServerPath%\profiles" -doLogs "-mod=%ServerPath%\@CF;%ServerPath%\@Community-Online-Tools;%ServerPath%\@DayZ-Expansion-Licensed;%ServerPath%\@DayZ-Expansion;%ServerPath%\@BattleRoyale"
+
+title %ServerName% - Restarting
+echo "+ Server Terminated... Restarting"
+
+TIMEOUT 10
+
+goto restart
