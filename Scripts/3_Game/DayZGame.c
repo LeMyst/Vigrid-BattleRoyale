@@ -104,6 +104,8 @@ modded class DayZGame {
 	  g_Game.MainMenuLaunch();
 	}
 
+	//--- above this is a patch for GetRestApi
+
 	string GetBattleRoyaleClientVersion() 
 	{
 		return "0.1.b";
