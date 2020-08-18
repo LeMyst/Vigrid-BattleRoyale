@@ -25,6 +25,9 @@ modded class ExpansionMarkerClientData
         m_ClientData.Insert( MARKERDATA_TYPE_PERSONAL, new PersonnalMarkerClientData );
         m_ClientData.Insert( MARKERDATA_TYPE_SERVER, new ServerMarkerClientData );
         m_ClientData.Insert( MARKERDATA_TYPE_PARTY, new PartyMarkerClientData );
+   
+        //--- TODO ---- NOTE --- below this line is the *ONLY* data that would be modded in DayZBR
+        m_ClientData.Insert( MARKERDATA_TYPE_BATTLEROYALE, new BattleRoyaleMarkerClientData );  
     }
     ref MarkerClientData GetMarkerData(string type)
     {
