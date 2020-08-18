@@ -29,6 +29,10 @@ class BattleRoyaleWin extends BattleRoyaleState
 		//TODO: start server shutdown process
 
 	}
+	override string GetName()
+	{
+		return "Win State";
+	}
 	override void Deactivate()
 	{
 		BRPrint("ERROR! WIN STATE WAS DEACTIVATED!");

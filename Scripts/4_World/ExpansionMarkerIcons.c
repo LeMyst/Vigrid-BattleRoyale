@@ -25,10 +25,10 @@ modded class ExpansionMarkerIcons
 		SetupBRMarkers();
 		return GetMarkerPath(circle_marker_index);
 	}
-	static string GetCircleIndex()
+	static int GetCircleIndex()
 	{
 		SetupBRMarkers();
-		return GetMarkerName(circle_marker_index);
+		return circle_marker_index;
 	}
 	
 	static void SetupBRMarkers()

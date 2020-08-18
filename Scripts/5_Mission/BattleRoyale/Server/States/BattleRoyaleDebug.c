@@ -26,7 +26,11 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		}
 	}
 
-	
+	override string GetName()
+	{
+		return "Debug Zone State";
+	}
+
 	//returns true when this state is complete
 	override bool IsComplete()
 	{

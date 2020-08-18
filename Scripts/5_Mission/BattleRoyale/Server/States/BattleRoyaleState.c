@@ -6,6 +6,11 @@ class BattleRoyaleState {
 	protected bool b_IsActive;
 	protected ref ScriptCallQueue m_CallQueue;
 	
+	string GetName()
+	{
+		return "Unknown State";
+	}
+
 	void BattleRoyaleState()
 	{
 		#ifdef BR_BETA_LOGGING
@@ -152,6 +157,10 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 			i_HealTickTime = 5;
 		}
 		
+	}
+	override string GetName()
+	{
+		return "Unknown Debug State";
 	}
 	override void AddPlayer(PlayerBase player)
 	{

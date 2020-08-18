@@ -82,10 +82,13 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		
 		return false;
 	}
-
+	override string GetName()
+	{
+		return "Last Gameplay State";
+	}
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
-		return (GetPlayers().Count() <= 1) || super.IsActive();
+		return (GetPlayers().Count() <= 1) || super.IsComplete();
 	}
 
     void OnPlayerKilled(PlayerBase player, Object killer)

@@ -124,6 +124,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			{
 				BattleRoyaleState next_state = GetState(next_index);
 
+
+				BRPrint("Leaving State `" + GetCurrentState().GetName() + "`");
 				GetCurrentState().Deactivate(); //deactivate old state
 				array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 				foreach(PlayerBase player : players)
@@ -131,6 +133,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 					next_state.AddPlayer(player); //add players to new state
 				}
 				i_CurrentStateIndex = next_index;//move us to the next state
+				BRPrint("Entering State `" + GetCurrentState().GetName() + "`");
 				GetCurrentState().Activate(); //activate new state
 			}
 			else
@@ -151,7 +154,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		player.SetPosition(debug_pos);		
 
 		//TODO: this is not working at all
-		if(GetCurrentState().IsInherited(BattleRoyaleDebugState))
+		BattleRoyaleDebugState m_DebugStateObj;
+		if(!Class.CastTo(m_DebugStateObj, GetCurrentState())
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 
 		GetCurrentState().AddPlayer(player);
@@ -206,7 +210,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		{
 			//current state does not contain player, wtf is going on
 			//TODO: i ran into a bug where this was the case, no idea how this happened!
-			BRPrint("ERROR! GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+			int life_state = player.GetPlayerState();
+			if(life_state == EPlayerStates.ALIVE)
+			{
+				BRPrint("ERROR! GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+			}
 		}
 		
 	}

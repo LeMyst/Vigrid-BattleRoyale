@@ -5,6 +5,7 @@ modded class ExpansionMapMenuMarker {
     protected float m_ValueB; //B axis value
 	protected float m_Thickness;
 	protected Widget m_MainPanel;
+	protected bool m_IsBRMarker;
 
     void ExpansionMapMenuMarker(Widget parent, MapWidget mapwidget, vector position, string name, int color, string icon, ref ExpansionMapMarker marker = NULL)
 	{
@@ -18,7 +19,7 @@ modded class ExpansionMapMenuMarker {
 		m_MarkerIcon		= icon;
 		
 		//set the marker type
-		if(icon == "BattleRoyale\\GUI\\icons\\marker\\marker_circle.paa") //if our icon path is our circle icon
+		if(icon == ExpansionMarkerIcons.GetCirclePath()) //if our icon path is our circle icon
 		{
 			m_MarkerType = RoyaleMapMarkerType.Circle;
 			ShowCanvas();
@@ -47,7 +48,8 @@ modded class ExpansionMapMenuMarker {
 		m_ValueA = 150;
         m_ValueB = 150;
 		m_Thickness = 2;
-		
+		m_IsBRMarker = false;
+
 		m_Root.SetHandler( this );
 
 		Init();
@@ -63,7 +65,11 @@ modded class ExpansionMapMenuMarker {
 		m_Icon.Show(true);
 		m_Canvas.Show(false);
 	}
-	
+	void LockMarker(bool do_lock)
+	{
+		m_IsBRMarker = do_lock;
+	}
+
 	override void ChangeIcon(string icon)
 	{
 		Print("New Icon:");
@@ -169,7 +175,48 @@ modded class ExpansionMapMenuMarker {
 		}	
 	}
 	
-	
+	override bool OnClick( Widget w, int x, int y, int button )
+	{
+		if(m_IsBRMarker)
+			return false;
+			
+		return super.OnClick(w, x, y, button);
+	}
+	override bool OnMouseEnter( Widget w, int x, int y )
+	{
+		if(m_IsBRMarker)
+			return false;
+
+		return super.OnMouseEnter(w, x, y);
+	}
+	override bool OnMouseLeave( Widget w, Widget enterW, int x, int y )
+	{
+		if(m_IsBRMarker)
+			return false;
+
+		return super.OnMouseLeave(w, enterW, x, y);
+	}
+	override bool OnDrag( Widget w, int x, int y )
+	{	
+		if(m_IsBRMarker)
+			return false;
+
+		return super.OnDrag(w, x, y);
+	}
+	override bool OnDragging( Widget w, int x, int y, Widget reciever )
+	{
+		if(m_IsBRMarker)
+			return false;
+
+		return super.OnDragging(w, x, y, reciever);
+	}
+	override bool OnDrop( Widget w, int x, int y, Widget reciever )
+	{
+		if(m_IsBRMarker)
+			return false;
+
+		return super.OnDrop(w, x, y, reciever);
+	}
 	
 	void SetMarkerThickness(float thickness)
 	{

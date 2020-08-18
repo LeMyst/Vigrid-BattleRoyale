@@ -34,8 +34,11 @@ class BattleRoyaleZone
         else
         {
             //This zone is a "full map" zone (ie, the first zone)
-            float world_width = GetGame().GetWorld().GetLongitude();
-            float world_height = GetGame().GetWorld().GetLatitude();
+            string path = "CfgWorlds " + GetGame().GetWorldName();
+            vector temp = GetGame().ConfigGetVector(path + " centerPosition");
+
+            float world_width = temp[0] * 2;
+            float world_height = temp[1] * 2;
             Print("World Size Calculation");
             Print(world_width);
             Print(world_height);
@@ -48,17 +51,25 @@ class BattleRoyaleZone
             p_Cen[0] = world_center_x;
             p_Cen[1] = Y;
             p_Cen[2] = world_center_z;
+            Print("Initial Play Area");
+            Print(p_Cen);
+            Print(p_Rad);
         }
 
+        Print("Zone Data");
         m_PlayArea.SetRadius(p_Rad * f_ConstantShrink); //new radius 
-
+        
+    //TODO: ensure zone center is not in water
         float distance = Math.RandomFloatInclusive(0, p_Rad - m_PlayArea.GetRadius()); //distance change from previous center
         float oldX = p_Cen[0];
-        float oldZ = p_Cen[1];
-
+        float oldZ = p_Cen[2];
+        Print(distance);
         float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+        Print(moveDir);
         float dX = distance * Math.Sin(moveDir);
         float dZ = distance * Math.Cos(moveDir);
+        Print(dX);
+        Print(dZ);
         float newX = oldX + dX;
         float newZ = oldZ + dZ;
         float newY = GetGame().SurfaceY(newX, newZ);
@@ -68,6 +79,9 @@ class BattleRoyaleZone
         new_center[1] = newY;
         new_center[2] = newZ;
         m_PlayArea.SetCenter(new_center);
+
+        Print(m_PlayArea.GetCenter());
+        Print(m_PlayArea.GetRadius());
     }
 
     ref BattleRoyalePlayArea GetArea()

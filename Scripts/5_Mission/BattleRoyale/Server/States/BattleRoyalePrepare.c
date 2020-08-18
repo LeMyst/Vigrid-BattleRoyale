@@ -7,6 +7,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected int process_index;
     protected ref array<string> a_StartingItems;
 
+    protected vector world_center;
     void BattleRoyalePrepare()
     {
         #ifdef BR_BETA_LOGGING
@@ -28,7 +29,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
         ready_to_process = false;
         process_index = 0;
 
-
+        string path = "CfgWorlds " + GetGame().GetWorldName();
+        world_center = GetGame().ConfigGetVector(path + " centerPosition");
 
 
     }
@@ -59,7 +61,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		return (ready_to_process && (process_index >= m_PlayerList.Count())) || super.IsComplete();
 	}
-    
+    override string GetName()
+	{
+		return "Prepare State";
+	}
     override void Update(float timeslice)
     {
         super.Update(timeslice);
@@ -75,13 +80,24 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 
                 if(process_player)
                 {
-                    process_player.RemoveAllItems();
+                    process_player.RemoveAllItems_Safe();
                     foreach(string item : a_StartingItems)
                     {
                         process_player.GetInventory().CreateInInventory(item);
                     }
                     
                     //TODO: teleport players randomly across the map? (move them into the plane to drop)
+                   
+                    vector random_pos = "0 0 0";
+                    float edge_pad = 0.1;
+                    float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
+                    float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+                    float y = GetGame().SurfaceY(x, z);
+                    //TODO: ensure not in water
+                    random_pos[0] = x;
+                    random_pos[1] = y;
+                    random_pos[2] = z;
+                    process_player.SetPosition(random_pos);
                 }
                 process_index++;
             }

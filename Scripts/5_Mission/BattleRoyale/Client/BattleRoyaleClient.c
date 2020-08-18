@@ -3,8 +3,9 @@
 class BattleRoyaleClient extends BattleRoyaleBase
 {
 
-	ref BattleRoyalePlayArea m_CurrentPlayArea;
-	ref BattleRoyalePlayArea m_FuturePlayArea;
+	protected ref BattleRoyalePlayArea m_CurrentPlayArea;
+	protected ref BattleRoyalePlayArea m_FuturePlayArea;
+	
 
 	#ifdef BR_BETA_LOGGING
 	bool print_once_tick = true;
@@ -18,7 +19,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		#ifdef BR_BETA_LOGGING
 		BRPrint("BattleRoyaleClient::Init()");
 		#endif
-
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
@@ -38,17 +38,18 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	
 
 
-
 	void FadeIn()
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		player.allow_fade = true;
+		Print("BattleRoyale: FADE IN!");
 		GetGame().GetUIManager().ScreenFadeIn( 0, BATTLERYALE_FADE_MESSAGE, FadeColors.BLACK, FadeColors.WHITE ); //FadeColors.DARK_RED
 	}
 	void FadeOut()
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		player.allow_fade = false;
+		Print("BattleRoyale: FADE OUT!");
 		//GetGame().GetUIManager().ScreenFadeOut( 0.5 ); //unnecessary as it is automatically done by missiongameplay::update
 	}
 	void DisableUserInput()
@@ -61,7 +62,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			return;
 		}
 
-		player.GetInputController().SetDisabled( false );
+		player.GetInputController().SetDisabled( true );
 		player.GetInputController().OverrideMovementSpeed( true, 0 );
 		player.GetInputController().OverrideMeleeEvade( true, false );
 		player.GetInputController().OverrideRaise( true, false );
@@ -136,6 +137,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		if ( type == CallType.Client )
 		{
+			Print("BattleRoyale: Network Update Current Play Area");
+
+			//TODO: if map is open, update current map markers
+
+			Print(data.param1);
 			m_CurrentPlayArea = data.param1;
 		}
 	}
@@ -149,6 +155,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		if ( type == CallType.Client )
 		{
+			Print("BattleRoyale: Network Update Future Play Area");
+
+			//TODO: if map is open, update current map markers
+
+			Print(data.param1);
 			m_FuturePlayArea = data.param1;
 		}
 	}

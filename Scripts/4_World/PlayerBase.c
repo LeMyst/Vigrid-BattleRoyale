@@ -25,6 +25,27 @@ modded class PlayerBase
 			m_BR.OnPlayerKilled(this, killer);
 		}
 	}
+	
+	void RemoveAllItems_Safe()
+	{
+		array<EntityAI> itemsArray = new array<EntityAI>;
+		ItemBase item;
+		GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, itemsArray);
+		
+		for (int i = 0; i < itemsArray.Count(); i++)
+		{
+			Class.CastTo(item, itemsArray.Get(i));
+			if (item && !item.IsInherited(SurvivorBase))	
+			{
+				//this extra check prevents RPT spam 
+				InventoryLocation src = new InventoryLocation;
+				if(item.GetInventory().GetCurrentInventoryLocation(src))
+				{
+					GetInventory().LocalDestroyEntity(item);
+				}
+			}
+		}
+	}
 
 	//Temp fix for disabling character saving
 	override bool Save()

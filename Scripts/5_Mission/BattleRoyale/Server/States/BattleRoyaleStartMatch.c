@@ -4,6 +4,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 {
     protected int i_TimeToUnlock;
     protected bool b_HasStarted;
+    protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
 
     void BattleRoyaleStartMatch()
@@ -19,9 +20,13 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         //seconds until unlock
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
 
+        b_IsGameplay = false;
         b_HasStarted = false;
     }
-
+    override string GetName()
+	{
+		return "Start Match State";
+	}
 	override void Activate()
 	{
 		super.Activate();
@@ -42,6 +47,14 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     
 	override bool IsComplete()
 	{
+        if(GetPlayers().Count() <= 1)
+		{
+			//clean call queue?
+            m_CallQueue.Remove(this.StartZoning);
+            m_CallQueue.Remove(this.UnlockPlayers);
+            m_CallQueue.Remove(this.MessageUnlock);
+			return true;
+		}
 		return b_HasStarted || super.IsComplete();
 	}
 
@@ -57,9 +70,21 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     {
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true); //enable user input
         MessagePlayers("The match has started!");
+        b_IsGameplay = true;
     }
     void StartZoning()
     {
         b_HasStarted = true;
     }
+
+    void OnPlayerKilled(PlayerBase player, Object killer)
+	{
+        if(!b_IsGameplay)
+            return;
+
+		if(player.GetIdentity())
+			GetGame().DisconnectPlayer(player.GetIdentity()); //TODO: delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
+		else
+			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
+	}
 }

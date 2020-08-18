@@ -26,6 +26,10 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
         
         b_ReadyToStart = false;
     }
+    override string GetName()
+	{
+		return "Player Count Reached State";
+	}
 
 	override void Activate()
 	{

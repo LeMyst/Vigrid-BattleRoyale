@@ -46,6 +46,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 		m_Zone = new BattleRoyaleZone(GetPreviousZone());
 	}
+	override string GetName()
+	{
+		return "Gameplay State";
+	}
 	override void Activate()
 	{
 		//we just activated this round (players not yet transfered from previous state)
@@ -120,7 +124,21 @@ class BattleRoyaleRound extends BattleRoyaleState
 	
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
-		return b_TimeUp || super.IsActive();
+
+		//when Player count <= 1 -> automatically clean up anything in the CallQueue (removing it) and complete this state
+		if(GetPlayers().Count() <= 1)
+		{
+			//clean call queue?
+			m_CallQueue.Remove(this.OnRoundTimeUp);
+			m_CallQueue.Remove(this.NotifyTimeTillNewZoneSeconds);
+			m_CallQueue.Remove(this.NotifyTimeTillNewZoneMinutes);
+			m_CallQueue.Remove(this.LockNewZone);
+			m_CallQueue.Remove(this.NotifyTimeTillLockSeconds);
+			m_CallQueue.Remove(this.NotifyTimeTillLockMinutes);
+			return true;
+		}
+		return b_TimeUp || super.IsComplete();
+		
 	}
 	override bool SkipState(BattleRoyaleState m_PreviousState) 
 	{
@@ -134,7 +152,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	void OnPlayerKilled(PlayerBase player, Object killer)
 	{
 		if(player.GetIdentity())
-			GetGame().DisconnectPlayer(player.GetIdentity());
+			GetGame().DisconnectPlayer(player.GetIdentity()); //TODO: delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
 		else
 			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
 	}
