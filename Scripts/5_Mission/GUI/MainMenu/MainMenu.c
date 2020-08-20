@@ -5,11 +5,26 @@ modded class MainMenu
 	protected TextWidget m_SelectServerLabel;
 	protected TextWidget m_OpenWebsiteLabel;
 	
+	protected Widget m_PopupMessage;
+	protected TextWidget m_PopupText;
+	protected ButtonWidget m_PopupButton;
+	protected ref PopupButtonCallback popup_onClick;
 	
 	override Widget Init()
 	{
 		super.Init(); // this calls dayz expansion init
 		
+		//ensure popup message is initialized
+		if(!m_PopupMessage)
+		{
+
+			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "BattleRoyale/GUI/layouts/widgets/popup_message.layout", layoutRoot );
+			m_PopupText = TextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
+			m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
+			ClosePopup();
+		}
+
+
 		m_Logo 						= ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		//this will fail if we are not initializing a DayZExpansion main menu (as m_Logo only exists there)
 		if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
@@ -79,6 +94,14 @@ modded class MainMenu
 			return false;
 		}
 		
+
+		//--- connecting to BattleRoyale network UI
+		CreatePopup("Connecting to the BattleRoyale Network...");
+
+		ref ConnectingToNetworkCallback callback = new ConnectingToNetworkCallback( this );
+		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), callback);
+
+		/*
 		PlayerData p_PlayerWebData = api.RequestStart(p_User.GetUid(), p_User.GetName());
 		if(!p_PlayerWebData)
 		{
@@ -87,6 +110,7 @@ modded class MainMenu
 		
 		
 		Print("DAYZ BATTLE ROYALE END");
+		*/
 		return true;
 	}
 	
@@ -100,6 +124,15 @@ modded class MainMenu
 			OpenMenuServerBrowser();
 			return;
 		}
+
+		ref MatchmakeCallback callback = new MatchmakeCallback( this );
+		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, callback );
+		CreatePopup("Matchmaking...", "Cancel", );
+
+		
+		api.RequestMatchmakeAsync(p_PlayerWebData, callback, m_Regions.Get(i_CurrentRegion));
+		
+		/*
 		ServerData p_ServerData = api.RequestMatchmake(p_PlayerWebData, m_Regions.Get(i_CurrentRegion));
 		if(!p_ServerData)
 		{
@@ -124,6 +157,7 @@ modded class MainMenu
 			Error("BattleRoyale: Failed to connect to server");
 			OpenMenuServerBrowser();
 		}
+		*/
 	}
 	
 	override void NextCharacter()
@@ -157,10 +191,165 @@ modded class MainMenu
 		m_PlayerName.SetText("Region: " + region_text);
 	}
 	
-	
+	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL)
+	{
+		m_PopupText.SetText(message);
+		popup_onClick = onClickCallback;
+		if(button_text != "")
+		{
+			//Show button
+			m_PopupButton.SetText(button_text);
+			m_PopupButton.Show(true);
+		}
+		else
+		{
+			//hide button
+			m_PopupButton.Show(false);
+		}
+		
+
+
+		m_PopupMessage.Show(true);
+	}
+	void ClosePopup()
+	{
+		m_PopupMessage.Show(false);
+	}
+	void PopupActionClicked()
+	{
+		if(!popup_onClick)
+		{
+			return;
+		}
+		popup_onClick.OnButtonClick();
+	}
+	override bool OnClick( Widget w, int x, int y, int button )
+	{
+		if( button == MouseState.LEFT )
+		{
+			if(w == m_PopupButton)
+			{
+				PopupActionClicked();
+				return true;
+			}
+		}
+		super.OnClick(w, x, y, button);
+	}
+
 	override void OpenMenuCustomizeCharacter()
 	{
 		GetGame().OpenURL("http://dayzbr.dev/");
 	}
 }
 
+class PopupButtonCallback {
+	void OnButtonClick()
+	{}
+}
+
+class CancelMatchmakingCallback extends PopupButtonCallback
+{
+	protected ref MainMenu m_MainMenu;
+	protected ref MatchmakeCallback m_Matchmaking;
+	void CancelMatchmakingCallback(ref MainMenu menu, ref MatchmakeCallback callback)
+	{
+		m_MainMenu = menu;
+		m_Matchmaking = callback;
+	} 
+	override void OnButtonClick()
+	{
+		m_Matchmaking.Cancel();
+		m_MainMenu.ClosePopup();
+	}
+}
+class ClosePopupButtonCallback extends PopupButtonCallback
+{
+	protected ref MainMenu m_MainMenu;
+	void ClosePopupButtonCallback(ref MainMenu menu)
+	{
+		m_MainMenu = menu;
+	} 
+	override void OnButtonClick()
+	{
+		m_MainMenu.ClosePopup();
+	}
+}
+
+class ConnectingToNetworkCallback extends BattleRoyaleOnStartCallback
+{
+	protected ref MainMenu m_MainMenu;
+	void ConnectingToNetworkCallback(ref MainMenu menu)
+	{
+		m_MainMenu = menu;
+	}
+	override void OnError( int errorCode )
+	{
+		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString());
+	}
+	override void OnTimeout()
+	{
+		m_MainMenu.CreatePopup("Failed to connect! Timed out!");
+	}
+	override void OnSuccess( PlayerData data )
+	{
+		m_MainMenu.ClosePopup();
+	}
+}
+class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
+{
+	protected bool is_canceled;
+
+	protected ref MainMenu m_MainMenu;
+	void Cancel()
+	{
+		is_canceled = true;
+	}
+	void MatchmakeCallback(ref MainMenu menu)
+	{
+		is_canceled = falsed;
+		m_MainMenu = menu;
+	}
+	override void OnError( int errorCode )
+	{
+		if(is_canceled) return;
+		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
+		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Close", onclick);
+	}
+	override void OnTimeout()
+	{
+		if(is_canceled) return;
+		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
+		m_MainMenu.CreatePopup("Failed to connect! Timed out!", "Close", onclick);
+	}
+	override void OnSuccess( ServerData p_ServerData )
+	{
+		if(is_canceled) return;
+		if(!p_ServerData)
+		{
+			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
+			m_MainMenu.ClosePopup();
+			m_MainMenu.OpenMenuServerBrowser();
+			return;
+		}
+
+		if(!p_ServerData.CanConnect())
+		{
+			Error("Result is locked (or wait result)... cannot find viable matchmake");
+			m_MainMenu.ClosePopup();
+			m_MainMenu.OpenMenuServerBrowser();
+			return;
+		}
+
+		string ip_addr = p_ServerData.GetIP();
+		int port = p_ServerData.GetPort();
+		
+		if(!GetGame().Connect(this, ip_addr, port, "DayZBR_Beta"))
+		{
+			Print(p_ServerData.connection);
+			Error("BattleRoyale: Failed to connect to server");
+			m_MainMenu.OpenMenuServerBrowser();
+		}
+
+		m_MainMenu.ClosePopup();
+	}
+}

@@ -28,7 +28,10 @@ class BattleRoyaleAPI {
     }
     //--- public functions
 
-
+    void SetCurrentPlayer( ref PlayerData data)
+    {
+        m_PlayerData = data;
+    }
     PlayerData GetCurrentPlayer()
     {
         return m_PlayerData;
@@ -174,6 +177,14 @@ class BattleRoyaleAPI {
 		return m_PlayerData;
 	}
 
+
+
+    void RequestStartAsync(string SteamID, string Name, ref BattleRoyaleOnStartCallback callback)
+    {
+        ref OnStartCallback_REST rest_callback = new OnStartCallback_REST( callback );
+        SendRequest_Async(BattleRoyaleAPIContextType.Client, "start/" + SteamID + "/" + Name, rest_callback);
+    }
+
     //request matchmake
     ServerData RequestMatchmake(PlayerData m_webplayer, string region = "any")
 	{
@@ -211,6 +222,17 @@ class BattleRoyaleAPI {
 
         return p_ServerWebData;
 	}
+    void RequestMatchmakeAsync(PlayerData m_webplayer, ref BattleRoyaleMatchmakeCallback callback, string region = "any")
+    {
+        if(!m_webplayer)
+        {
+            Error("BattleRoyaleAPI::RequestMatchmake() => m_webplayer is NULL");
+            callback.OnError( DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT );
+            return;
+        }
+        ref MatchmakeCallback_REST rest_callback = new MatchmakeCallback_REST( callback );
+		SendRequest_Async(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region, rest_callback);
+    }
 
     RestContext GetContext(BattleRoyaleAPIContextType context_type = BattleRoyaleAPIContextType.Client)
     {
@@ -262,6 +284,18 @@ class BattleRoyaleAPI {
         }
         return context.GET_now(request);
     }
+    protected void SendRequest_Async(BattleRoyaleAPIContextType context_type, string request, RestCallback callback)
+    {
+        RestContext context = GetContext(context_type);
+        if(!context)
+        {
+            Error("BattleRoyaleAPI::SendRequest_Sync() => GetContext() RETURNED NULL!");
+            callback.OnError( DAYZBR_NETWORK_ERRORCODE_CONTEXT_NULL_RESULT );
+            return;
+        }
+        context.GET(callback, request);
+    }
+
     protected void InitRestApi()
     {
         Print("BattleRoyale: Initializing Rest API");
@@ -300,4 +334,117 @@ class BattleRoyaleAPI {
         return m_ServerContext;
     }
     
+}
+
+
+static int DAYZBR_NETWORK_ERRORCODE_NULL_RESULT = 1500;
+static int DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT = 1600;
+static int DAYZBR_NETWORK_ERRORCODE_CONTEXT_NULL_RESULT = 1700;
+static int DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT = 1800;
+
+class OnStartCallback_REST extends RestCallback {
+    ref BattleRoyaleOnStartCallback br_callback;
+
+    void OnStartCallback_REST(ref BattleRoyaleOnStartCallback callback)
+    {
+        br_callback = callback;
+    }
+    override void OnError(int errorCode)
+    {
+        br_callback.OnError(errorCode);
+    }
+    override void OnTimeout()
+    {
+        br_callback.OnTimeout();
+    }
+    override void OnSuccess( string data, int dataSize )
+	{
+        string result = data;
+        Print("BattleRoyaleAPI::RequestStartAsync() => WEB RESULT: " + result);
+        if(result == "")
+		{
+			Error("BattleRoyaleAPI::RequestStartAsync() => ERROR: web_result = NULL");
+			br_callback.OnError( DAYZBR_NETWORK_ERRORCODE_NULL_RESULT );
+            return;
+		}
+
+        JsonSerializer m_Serializer = new JsonSerializer;
+		string error;
+
+		ref PlayerData m_PlayerData
+		if(!m_Serializer.ReadFromString( m_PlayerData, result, error ))
+		{
+            m_PlayerData = NULL; //failed to parse, make sure our object is null
+			Print("BattleRoyaleAPI::RequestStartAsync() => JSON Failed To Parse!");
+			Error(error);
+            br_callback.OnError( DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT );
+			return;
+		}
+
+        BattleRoyaleAPI.GetAPI().SetCurrentPlayer( m_PlayerData ); //update player in the BR api
+
+		br_callback.OnSuccess( m_PlayerData );
+    }
+}
+
+class MatchmakeCallback_REST extends RestCallback {
+    ref BattleRoyaleMatchmakeCallback br_callback;
+
+    void MatchmakeCallback_REST(ref BattleRoyaleMatchmakeCallback callback)
+    {
+        br_callback = callback;
+    }
+    override void OnError(int errorCode)
+    {
+        br_callback.OnError(errorCode);
+    }
+    override void OnTimeout()
+    {
+        br_callback.OnTimeout();
+    }
+    override void OnSuccess( string data, int dataSize )
+	{
+        string result = data;
+        Print("BattleRoyaleAPI::RequestMatchmakeAsync() => WEB RESULT: " + result);
+
+        if(result == "")
+		{
+			Error("BattleRoyaleAPI::RequestMatchmakeAsync() => ERROR: web_result = NULL");
+            br_callback.OnError( DAYZBR_NETWORK_ERRORCODE_NULL_RESULT );
+			return;
+		}
+
+        if(result.IndexOf("WAIT") == 0)
+        {
+            //-- wait request
+            Print("BattleRoyaleAPI::RequestMatchmakeAsync() => RETURND `WAIT` VALUE");
+            ref MatchmakingWaitResult return_value = new MatchmakingWaitResult;
+            br_callback.OnSuccess( return_value );
+			return;
+        }
+
+		JsonSerializer m_Serializer = new JsonSerializer;
+		ref ServerData p_ServerWebData;
+		string error;
+		if(!m_Serializer.ReadFromString( p_ServerWebData, result, error ))
+		{
+			Print("BattleRoyaleAPI::RequestMatchmakeAsync() => JSON Failed To Parse!");
+			br_callback.OnError( DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT );
+			return;
+		}
+
+        br_callback.OnSuccess( p_ServerWebData );
+    }
+}
+
+class BattleRoyaleOnStartCallback {
+    void OnError(int errorCode) {}
+    void OnTimeout() {}
+    void OnSuccess(PlayerData data) {}
+}
+
+class BattleRoyaleMatchmakeCallback {
+    void OnError(int errorCode) {}
+    void OnTimeout() {}
+    void OnSuccess(ServerData data) {}
 }
