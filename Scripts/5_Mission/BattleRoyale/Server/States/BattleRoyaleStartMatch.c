@@ -71,6 +71,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true); //enable user input
         MessagePlayers("The match has started!");
         b_IsGameplay = true;
+
+        BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
     }
     void StartZoning()
     {

@@ -52,6 +52,11 @@ class LootReader
         return m_WithLootmax.Get(lootmax);
     }
 
+    bool ContainsObject(string name)
+    {
+        return m_WithName.Contains(name);
+    }
+
     array<vector> GetAllLootPositions(string group_name)
     {
         array<vector> positions = new array<vector>();
@@ -283,7 +288,7 @@ class LootDefaults
 }
 class LootDefault
 {
-    protected ref XmlTag tag_parser;
+    protected ref XmlTagBr tag_parser;
 
     string GetName()
     {
@@ -315,13 +320,13 @@ class LootDefault
 
     bool ParseXML(string default_entry)
     {
-        tag_parser = new XmlTag();
+        tag_parser = new XmlTagBr();
         return tag_parser.ParseTag(default_entry);
     }
 }
 class LootGroup
 {
-    protected ref XmlTag tag_parser;
+    protected ref XmlTagBr tag_parser;
     protected ref array<string> a_Usage;
     protected ref array<ref LootContainer> a_Containers;
 
@@ -372,7 +377,7 @@ class LootGroup
         bool result = true;
 
         string header = xml_lines.Substring(0, xml_lines.IndexOf("\n"));
-        tag_parser = new XmlTag();
+        tag_parser = new XmlTagBr();
         if(!tag_parser.ParseTag(header))
         {
             Error("[LootGroup] Failed to parse tag header!");
@@ -390,7 +395,7 @@ class LootGroup
                 break;
             }
             string usage_content = xml_lines.Substring(start, (end - start) + 2).Trim();
-            XmlTag temp_parser = new XmlTag();
+            XmlTagBr temp_parser = new XmlTagBr();
             if(!temp_parser.ParseTag(usage_content))
             {
                 Error("[LootGroup] Failed to parse usage tag `" + usage_content + "`");
@@ -458,7 +463,7 @@ class LootGroup
 }
 class LootContainer
 {
-    protected ref XmlTag tag_parser;
+    protected ref XmlTagBr tag_parser;
     protected ref array<string> a_Categories;
     protected ref array<string> a_Tags;
     protected ref array<ref LootPoint> a_LootPoints;
@@ -515,7 +520,7 @@ class LootContainer
         bool result = true;
 
         string header = xml_lines.Substring(0, xml_lines.IndexOf("\n"));
-        tag_parser = new XmlTag();
+        tag_parser = new XmlTagBr();
         if(!tag_parser.ParseTag(header))
         {
             Error("[LootContainer] Failed to parse tag header!");
@@ -525,7 +530,7 @@ class LootContainer
         int start = xml_lines.IndexOf("\n");
         int end;
         string name;
-        XmlTag temp_parser;
+        XmlTagBr temp_parser;
 
         //parse categories
         while(true) {
@@ -536,7 +541,7 @@ class LootContainer
                 break;
             }
             string category_content = xml_lines.Substring(start, (end - start) + 2).Trim();
-            temp_parser = new XmlTag();
+            temp_parser = new XmlTagBr();
             if(!temp_parser.ParseTag(category_content))
             {
                 Error("[LootContainer] Failed to parse categroy tag `" + category_content + "`");
@@ -564,7 +569,7 @@ class LootContainer
                 break;
             }
             string tag_content = xml_lines.Substring(start, (end - start) + 2).Trim();
-            temp_parser = new XmlTag();
+            temp_parser = new XmlTagBr();
             if(!temp_parser.ParseTag(tag_content))
             {
                 Error("[LootContainer] Failed to parse tag tag `" + tag_content + "`");
@@ -630,7 +635,7 @@ class LootContainer
 }
 class LootPoint
 {
-    protected ref XmlTag tag_parser;
+    protected ref XmlTagBr tag_parser;
 
     vector GetPos()
     {
@@ -673,7 +678,7 @@ class LootPoint
             <point pos="0.919720 -1.320877 -1.997921" range="0.739502" height="1.841980" />
         */
         xml_line.ToLower();
-        tag_parser = new XmlTag();
+        tag_parser = new XmlTagBr();
         tag_parser.ParseTag(xml_line);
 
         if(tag_parser.GetName() != "point")
@@ -702,7 +707,7 @@ class LootPoint
 }
 
 
-class XmlTag
+class XmlTagBr
 {
     protected string s_TagName;
     protected string s_TagContent;
@@ -730,7 +735,7 @@ class XmlTag
         return a_Flags.Find(flag_name) != -1;
     }
 
-    void XmlTag()
+    void XmlTagBr()
     {
         m_Tags = new map<string, string>();
         a_Flags = new array<string>();

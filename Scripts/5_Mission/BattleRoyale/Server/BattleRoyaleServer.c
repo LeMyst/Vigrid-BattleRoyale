@@ -3,6 +3,7 @@
 
 class BattleRoyaleServer extends BattleRoyaleBase
 {
+	protected ref BattleRoyaleLoot m_LootSystem;
 	ref array<ref BattleRoyaleState> m_States;
 	int i_CurrentStateIndex;
 	
@@ -28,6 +29,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BRPrint("BattleRoyaleServer::Init()");
 		#endif
 
+		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 
 		//load config (this may error because GetBattleRoyale would return false)
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -106,6 +108,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 		#endif
 		
+		m_LootSystem.Update(timeslice);
+
 		foreach(BattleRoyaleState state : m_States)
 		{
 			if(state)
@@ -205,7 +209,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#endif
 		
 		if(GetCurrentState().ContainsPlayer(player))
+		{
+			m_LootSystem.UpdatePlayer(player, timeslice);
 			GetCurrentState().OnPlayerTick(player,timeslice);
+		}
 		else
 		{
 			//current state does not contain player, wtf is going on
@@ -251,6 +258,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	}
 	
 	
+	ref BattleRoyaleLoot GetLootSystem()
+	{
+		return m_LootSystem;
+	}
 	
 	void RandomizeServerEnvironment()
 	{
