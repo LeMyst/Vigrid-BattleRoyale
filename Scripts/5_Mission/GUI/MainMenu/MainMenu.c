@@ -233,7 +233,7 @@ modded class MainMenu
 				return true;
 			}
 		}
-		super.OnClick(w, x, y, button);
+		return super.OnClick(w, x, y, button);
 	}
 
 	override void OpenMenuCustomizeCharacter()
@@ -306,7 +306,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 	}
 	void MatchmakeCallback(ref MainMenu menu)
 	{
-		is_canceled = falsed;
+		is_canceled = false;
 		m_MainMenu = menu;
 	}
 	override void OnError( int errorCode )
