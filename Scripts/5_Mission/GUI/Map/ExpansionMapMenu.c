@@ -1,5 +1,10 @@
 modded class ExpansionMapMenu {
     protected ref BattleRoyaleClient m_BattleRoyaleClient;
+    protected ref BattleRoyaleMapMarkerZone m_CurrentZone;
+    protected ref BattleRoyaleMapMarkerZone m_NextZone;
+
+    
+
     override Widget Init()
     {
         BattleRoyaleBase DayZBR = GetBR();
@@ -8,9 +13,58 @@ modded class ExpansionMapMenu {
             Error("Failed to cast DayZBR to BattleRoyaleClient!");
         } 
 
-        return super.Init();
+        super.Init();
 
-        //TODO: add custom marker on open?
+        UpdateZones();
+
+        return layoutRoot;
     }
-    
+
+    void UpdateZones()
+    {
+        float radius;
+        vector center;
+
+        BattleRoyalePlayArea current_playarea = m_BattleRoyaleClient.GetPlayArea();
+        if(current_playarea)
+        {
+            if(!m_CurrentZone)
+            {
+                m_CurrentZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
+                m_Markers.Insert( m_CurrentZone );
+            }
+            m_CurrentZone.SetColor(ARGB(255, 255, 255, 255));
+            center = current_playarea.GetCenter();
+            radius = current_playarea.GetRadius();
+            m_CurrentZone.SetPosition(center);
+            m_CurrentZone.SetSize_A(radius);
+            m_CurrentZone.SetSize_B(radius);
+            m_CurrentZone.SetThickness(2);
+        }
+
+        BattleRoyalePlayArea next_playarea = m_BattleRoyaleClient.GetPlayArea();
+        if(next_playarea)
+        {
+            if(!m_NextZone)
+            {
+                m_NextZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
+                m_Markers.Insert( m_NextZone );
+            }
+            m_NextZone.SetColor(ARGB(255, 0, 0, 255));
+            center = next_playarea.GetCenter();
+            radius = next_playarea.GetRadius();
+            m_NextZone.SetPosition(center);
+            m_NextZone.SetSize_A(radius);
+            m_NextZone.SetSize_B(radius);
+            m_NextZone.SetThickness(2);
+        }
+    }
+
+    //ensure BR markers are rendering correct
+    override void Update( float timeslice )
+	{
+        UpdateZones(); //TODO: this shouldn't exist, instead we should call UpdateZones from BattleRoyaleClient (when we recieve our payload data with new zone info)
+
+        super.Update( timeslice );
+    }
 }
