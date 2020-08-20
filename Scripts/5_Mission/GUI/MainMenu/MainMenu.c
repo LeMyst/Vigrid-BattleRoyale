@@ -127,7 +127,7 @@ modded class MainMenu
 
 		ref MatchmakeCallback callback = new MatchmakeCallback( this );
 		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, callback );
-		CreatePopup("Matchmaking...", "Cancel", );
+		CreatePopup("Matchmaking...", "Cancel", onclick);
 
 		
 		api.RequestMatchmakeAsync(p_PlayerWebData, callback, m_Regions.Get(i_CurrentRegion));
@@ -219,6 +219,7 @@ modded class MainMenu
 	{
 		if(!popup_onClick)
 		{
+			Error("POPUP BUTTON CALLBACK NULL!");
 			return;
 		}
 		popup_onClick.OnButtonClick();
@@ -229,6 +230,7 @@ modded class MainMenu
 		{
 			if(w == m_PopupButton)
 			{
+				Print("POPUP BUTTON CLICKED");
 				PopupActionClicked();
 				return true;
 			}
@@ -258,6 +260,7 @@ class CancelMatchmakingCallback extends PopupButtonCallback
 	} 
 	override void OnButtonClick()
 	{
+		Print("CANCELING MATCHMAKING!");
 		m_Matchmaking.Cancel();
 		m_MainMenu.ClosePopup();
 	}
@@ -311,20 +314,31 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 	}
 	override void OnError( int errorCode )
 	{
-		if(is_canceled) return;
+		if(is_canceled)
+		{
+			return;
+		}
 		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
 		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Close", onclick);
 	}
 	override void OnTimeout()
 	{
-		if(is_canceled) return;
+		if(is_canceled)
+		{
+			return;
+		}
 		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
 		m_MainMenu.CreatePopup("Failed to connect! Timed out!", "Close", onclick);
 	}
-	override void OnSuccess( ServerData p_ServerData )
+	override void OnSuccess( ref ServerData data )
 	{
-		if(is_canceled) return;
-		if(!p_ServerData)
+		ref ServerData p_ServerData = data;
+
+		if(is_canceled) 
+		{
+			return;
+		}
+		if(p_ServerData == NULL)
 		{
 			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
 			m_MainMenu.ClosePopup();
@@ -343,7 +357,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		string ip_addr = p_ServerData.GetIP();
 		int port = p_ServerData.GetPort();
 		
-		if(!GetGame().Connect(this, ip_addr, port, "DayZBR_Beta"))
+		if(!GetGame().Connect(m_MainMenu, ip_addr, port, "DayZBR_Beta"))
 		{
 			Print(p_ServerData.connection);
 			Error("BattleRoyale: Failed to connect to server");

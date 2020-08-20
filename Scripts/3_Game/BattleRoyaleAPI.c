@@ -446,5 +446,5 @@ class BattleRoyaleOnStartCallback {
 class BattleRoyaleMatchmakeCallback {
     void OnError(int errorCode) {}
     void OnTimeout() {}
-    void OnSuccess(ServerData data) {}
+    void OnSuccess(ref ServerData data) {}
 }
