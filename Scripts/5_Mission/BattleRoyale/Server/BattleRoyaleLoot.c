@@ -18,7 +18,7 @@ class BattleRoyaleLoot
         m_CallQueue = new ScriptCallQueue;
         m_LootReader = new LootReader();
         //TODO: calculate mission path dynamically (or use json files for config) (currently bugged in dayz)
-		m_LootReader.ParseLoot("$CurrentDir:\\mpmissions\\BattleRoyale.ChernarusPlusGloom\mapgroupproto.xml"); 
+		m_LootReader.ReadAsync("$CurrentDir:mpmissions\\BattleRoyale.ChernarusPlusGloom\\mapgroupproto.xml"); 
     }
     void Update(float delta)
     {
