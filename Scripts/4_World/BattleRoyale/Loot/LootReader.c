@@ -7,7 +7,8 @@ lr.ParseLoot("$CurrentDir:\\mpmissions\\BattleRoyale.ChernarusPlusGloom\mapgroup
 
 string object_class_name = ...;
 object_class_name.ToLower();
-ref LootGroup group = lr.GetGroupsWithName(object_class_name).Get(0);
+
+array<vector> local_coord_positions = lr.GetAllLootPositions(object_class_name);
 
 
 
