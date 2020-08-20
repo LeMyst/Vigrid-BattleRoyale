@@ -283,8 +283,21 @@ modded class MissionGameplay
 
 	void ExpansionOnUpdate( float timeslice )
 	{
-		if ( !m_bLoaded ) return;
+		if ( !m_bLoaded )
+		{
+			#ifdef EXPANSIONEXPRINT
+			EXPrint("MissionGameplay::OnUpdate - End");
+			#endif
+
+			return;
+		}
+
+		// GetDayZExpansion().OnUpdate( timeslice );
+
+		//! Checking for keyboard focus
 		bool inputIsFocused = false;
+		
+		//! Reference to focused windget
 		Widget focusedWidget = GetFocus();
 
 		if ( focusedWidget )
@@ -298,24 +311,38 @@ modded class MissionGameplay
 				inputIsFocused = true;
 			}
 		}
+
+		//! Refernce to man
 		Man man = GetGame().GetPlayer();
+
+		//! Reference to input
 		Input input = GetGame().GetInput();
+
+		//! Expansion reference to menu
 		UIScriptedMenu topMenu = m_UIManager.GetMenu();
+
+		//! Expansion reference to player
 		PlayerBase playerPB = PlayerBase.Cast( man );
-
-
+		
 		if ( playerPB && playerPB.GetHumanInventory() ) 
 		{
+			//! Expansion reference to item in hands
 			ItemBase itemInHands = ItemBase.Cast(playerPB.GetHumanInventory().GetEntityInHands());
 
+			//! Expansion reference to hologram
 			ref Hologram hologram;	
 
 			if ( playerPB.GetPlayerState() == EPlayerStates.ALIVE && !playerPB.IsUnconscious() )
 			{
+				//TODO: Make ExpansionInputs class and handle stuff there to keep this clean
+
+				//! Chat
 				if ( input.LocalPress( "UAChat", false ) && !inputIsFocused && !topMenu )
 				{
 					ShowChat();
 				}
+				
+				//! Switch Chat Channel
 				if ( input.LocalPress( "UAExpansionChatSwitchChannel", false ) && !inputIsFocused )
 				{
 					SwitchChannel();
@@ -329,6 +356,7 @@ modded class MissionGameplay
 
 				if ( !topMenu && !inputIsFocused )
 				{
+					//! Autorun
 					if ( input.LocalPress( "UAExpansionAutoRunToggle", false ) )
 					{
 						if ( !man.GetParent() && GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnableAutoRun )
@@ -336,6 +364,8 @@ modded class MissionGameplay
 							m_AutoRunModule.AutoRun();
 						}
 					}
+					
+					//! Book Menu
 					if ( input.LocalPress( "UAExpansionBookToggle", false ) )
 					{
 						if ( !GetGame().GetUIManager().GetMenu() && GetExpansionSettings() && GetExpansionSettings().GetBook().EnableBook )
@@ -343,21 +373,29 @@ modded class MissionGameplay
 							GetGame().GetUIManager().EnterScriptedMenu( MENU_EXPANSION_BOOK_MENU, NULL );
 						}
 					}
+					
+					//! Map Menu
 					if ( input.LocalPress( "UAExpansionMapToggle", false ) )
 					{
-						if ( !GetGame().GetUIManager().GetMenu() && GetExpansionSettings() && GetExpansionSettings().GetMap().CanOpenMapWithKeyBinding )
+						ExpansionMapMenu map_menu;
+						if ( Class.CastTo( map_menu, GetGame().GetUIManager().FindMenu( MENU_EXPANSION_MAP ) ) )
+						{
+							map_menu.Hide();
+							map_menu.Close();
+						} else if ( !GetGame().GetUIManager().GetMenu() && GetExpansionSettings().GetMap() && GetExpansionSettings().GetMap().CanOpenMapWithKeyBinding )
 						{
 							if ( GetExpansionSettings().GetGeneral().NeedMapItemForKeyBinding )
 							{
 								if ( PlayerBase.Cast( GetGame().GetPlayer() ).HasItemMap() || PlayerBase.Cast( GetGame().GetPlayer() ).HasItemGPS() )
 									GetGame().GetUIManager().EnterScriptedMenu( MENU_EXPANSION_MAP, NULL );
-							}
-							else
+							} else
 							{
 								GetGame().GetUIManager().EnterScriptedMenu( MENU_EXPANSION_MAP, NULL );
 							}
 						}
 					}
+					
+					//! GPS	
 					if ( input.LocalPress( "UAExpansionGPSToggle", false ) )
 					{
 						#ifdef EXPANSIONEXLOGPRINT
@@ -373,14 +411,15 @@ modded class MissionGameplay
 								#endif
 								
 								if ( PlayerBase.Cast( GetGame().GetPlayer() ).HasItemGPS() )
-									ToogleHUDGPSMode();
+									ToggleHUDGPSMode();
 							}
 							else
 							{
-								ToogleHUDGPSMode();
+								ToggleHUDGPSMode();
 							}
 						}
 					}
+					
 					if ( input.LocalPress( "UAExpansionGPSMapScaleDown", false ) )
 					{
 						if ( GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnableHUDGPS && m_ExpansionHud.IsInitialized() && m_ExpansionHud.GetGPSMapState() )
@@ -388,6 +427,7 @@ modded class MissionGameplay
 							DecreaseGPSMapScale();
 						}
 					}
+					
 					if ( input.LocalPress( "UAExpansionGPSMapScaleUp", false ) )
 					{
 						if ( GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnableHUDGPS && m_ExpansionHud.IsInitialized() && m_ExpansionHud.GetGPSMapState() )
@@ -395,6 +435,8 @@ modded class MissionGameplay
 							IncreaseGPSMapScale();
 						}
 					}
+					
+					//! Player List Menu
 					if ( input.LocalPress( "UAExpansionPlayerListToggle", false ) )
 					{
 						if ( !GetGame().GetUIManager().GetMenu() && GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnablePlayerList )
@@ -402,6 +444,8 @@ modded class MissionGameplay
 							GetGame().GetUIManager().EnterScriptedMenu( MENU_EXPANSION_PLAYER_LIST_MENU, NULL );
 						}
 					}
+					
+					//! Expansion Hud
 					if ( input.LocalHold( "UAUIQuickbarToggle", false ) )
 					{
 						if ( !m_Hud.GetHudState() )
@@ -413,8 +457,11 @@ modded class MissionGameplay
 							m_ExpansionHud.ShowHud( true );
 						}
 					}
+					
+					//! Gestures
 					if ( input.LocalPress( "UAUIGesturesOpen",false ) )
 					{
+						//! Open gestures menu
 						if ( !playerPB.IsRaised() && !playerPB.GetCommand_Vehicle() )
 						{
 							if ( !GetUIManager().IsMenuOpen( MENU_GESTURES ) )
@@ -423,31 +470,36 @@ modded class MissionGameplay
 							}
 						}
 					}
+					
+					//! Toggle Earplugs
 					if ( input.LocalPress( "UAExpansionEarplugsToggle", false ) )
 					{
 						m_ExpansionHud.ToggleEarplugs();
 					}
-					if ( input.LocalPress( "UAExpansionChatToggle", false ) )
+
+					if ( m_MarkerModule )
 					{
-						ToggleChat();
-					}
-					if ( input.LocalPress( "UAExpansion3DMarkerToggle", false ) )
-					{
-						Expansion3DMarkerModule module3DMarker;
-						if ( Class.CastTo( module3DMarker, GetModuleManager().GetModule( Expansion3DMarkerModule ) ) )
+						//! Toggle 3d marker visiblity
+						if ( input.LocalPress( "UAExpansion3DMarkerToggle", false ) )
 						{
-							module3DMarker.ToggleShowMarkers();
+							//if ( m_MarkerModule.IsWorldVisible() )
+							//{
+							//	m_MarkerModule.RemoveVisibility( EXPANSION_MARKER_VIS_WORLD );
+							//} else
+							//{
+							//	m_MarkerModule.SetVisibility( EXPANSION_MARKER_VIS_WORLD );
+							//}
 						}
-					}
-					if ( input.LocalPress( "UAExpansionOnlyPartyMembersMarkersToggle", false ) )
-					{
-						Expansion3DMarkerModule module3DMarker2;
-						if ( Class.CastTo( module3DMarker2, GetModuleManager().GetModule( Expansion3DMarkerModule ) ) )
+						
+						//! Toggle 3d party members markers visiblity
+						if ( input.LocalPress( "UAExpansionOnlyPartyMembersMarkersToggle", false ) )
 						{
-							module3DMarker2.ToggleOnlyPartyMembersMarkers();
+							//m_MarkerModule.ToggleOnlyPartyMembersMarkers();
 						}
 					}
 				}
+
+				//! Basebuilding Snaping
 				if ( playerPB && playerPB.IsPlacingLocal() && !inputIsFocused )
 				{
 					hologram = playerPB.GetHologramLocal();
@@ -470,18 +522,27 @@ modded class MissionGameplay
 						}
 					}
 				}
-				if ( GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnableAutoRun )
+
+				if ( m_AutoRunModule )
 				{
-					m_AutoRunModule.UpdateAutoWalk();
-				}
-				if ( !m_AutoRunModule.IsDisabled() )
-				{
-					if ( INPUT_FORWARD() || INPUT_BACK() || INPUT_LEFT() || INPUT_RIGHT() || INPUT_GETOVER() || INPUT_STANCE() )
+					//! Autowalk
+					if ( GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnableAutoRun )
 					{
-						m_AutoRunModule.AutoRun();
+						m_AutoRunModule.UpdateAutoWalk();
+					}
+					
+					//! Stop autorun when different inputs are pressed
+					if ( !m_AutoRunModule.IsDisabled() )
+					{
+						if ( INPUT_FORWARD() || INPUT_BACK() || INPUT_LEFT() || INPUT_RIGHT() || INPUT_GETOVER() || INPUT_STANCE() )
+						{
+							m_AutoRunModule.AutoRun();
+						}
 					}
 				}
-				if (!m_DataSent) 
+						
+				//! Data
+				if ( !m_DataSent ) 
 				{
 					ExpansionPlayerData();
 					m_DataSent = true;
@@ -491,56 +552,18 @@ modded class MissionGameplay
 		
 		if ( GetExpansionSettings() && GetExpansionSettings().GetGeneral().EnableHUDNightvisionOverlay )
 		{
-			if ( playerPB && playerPB.GetCurrentCamera() )
-			{
-				private DayZPlayerCameraBase camera = DayZPlayerCameraBase.Cast( GetGame().GetPlayer().GetCurrentCamera() );
-				if ( camera )
-				{
-					if ( camera && camera.IsCameraNV() ) 
-					{
-						if ( !m_ExpansionHud.GetNVState() )
-					 		m_ExpansionHud.ShowNV( true );
-					}
-					else
-					{
-						if ( m_ExpansionHud.GetNVState() )
-					 		m_ExpansionHud.ShowNV( false );
-					}
-				}
-			}
-			
-			if ( playerPB && playerPB.GetInventory() )
-			{
-				NVGoggles nvgoogles = NVGoggles.Cast( playerPB.GetHumanInventory().GetEntityInHands() );
-				if ( nvgoogles )
-				{
-					if ( nvgoogles.IsWorking() && nvgoogles.IsInOptics() )
-					{
-						if ( !m_ExpansionHud.GetNVState() )
-							m_ExpansionHud.ShowNV( true );
-					}
-					else
-					{
-						if ( m_ExpansionHud.GetNVState() )
-							m_ExpansionHud.ShowNV( true );
-					}
-				}
-			}
-		}
-
-		if ( GetGame().IsClient() || !GetGame().IsMultiplayer() )
-		{
-			CheckClientSettings();
+			PlayerCheckNV( playerPB );
 		}
 		
-
-
-
+		//! Toggle HUD elements in different menus
 		if ( m_Hud && m_ExpansionHud.IsInitialized() && m_Chat && GetCommunityOnlineTools() )
 			RefreshHUDElements();
-
-		m_ExpansionHud.Update( timeslice );
 		
+		//! Expansion hud update
+		if ( m_Hud &&  m_ExpansionHud.IsInitialized() )
+			m_ExpansionHud.Update( timeslice );
+		
+		//! Chat update
 		m_Chat.Update( timeslice );
 	}
 

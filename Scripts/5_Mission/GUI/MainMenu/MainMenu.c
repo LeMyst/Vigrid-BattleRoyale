@@ -10,6 +10,8 @@ modded class MainMenu
 	protected ButtonWidget m_PopupButton;
 	protected ref PopupButtonCallback popup_onClick;
 	
+	protected ImageWidget m_Logo;
+
 	override Widget Init()
 	{
 		super.Init(); // this calls dayz expansion init
@@ -25,8 +27,8 @@ modded class MainMenu
 		}
 
 
+	
 		m_Logo 						= ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
-		//this will fail if we are not initializing a DayZExpansion main menu (as m_Logo only exists there)
 		if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
 			Error("Failed to load imageset image");
 		
