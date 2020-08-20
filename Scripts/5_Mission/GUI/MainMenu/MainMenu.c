@@ -32,6 +32,8 @@ modded class MainMenu
 		if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
 			Error("Failed to load imageset image");
 		
+		m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
+		
 		string version;
 		GetGame().GetVersion( version );
 		
@@ -48,9 +50,7 @@ modded class MainMenu
 		
 		
 		if(OnStart())
-		{
-			m_Stats.InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
-			
+		{		
 			Print("You are running a developer build of DayZBR");
 		}
 		else
@@ -72,6 +72,11 @@ modded class MainMenu
 		return layoutRoot;
 	}
 	
+	MainMenuStats GetStats()
+	{
+		return m_Stats;
+	}
+
 	bool OnStart()
 	{
 		
@@ -298,6 +303,7 @@ class ConnectingToNetworkCallback extends BattleRoyaleOnStartCallback
 	override void OnSuccess( PlayerData data )
 	{
 		m_MainMenu.ClosePopup();
+		m_MainMenu.GetStats().InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
 	}
 }
 class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
