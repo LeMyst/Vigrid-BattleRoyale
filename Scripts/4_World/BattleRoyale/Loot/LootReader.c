@@ -212,6 +212,10 @@ class LootReaderXMLCallback extends XMLCallback
 
         
         b_IsComplete = true;
+        
+        // some debug logging
+        Print("==== Loot XML Reading Complete! ====");
+        Print("Found " + m_Entries.Count().ToString() + " entries!");
     }
 }
 class BattleRoyaleLootPosition
