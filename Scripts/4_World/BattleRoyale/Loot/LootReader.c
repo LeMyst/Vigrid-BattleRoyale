@@ -269,7 +269,7 @@ class LootDefaults
                 if(success)
                 {
                     a_Defaults.Insert(default_obj);
-                    m_ByName.Insert(default_entry.GetName(), default_obj); //used for quick name lookup
+                    m_ByName.Insert(default_obj.GetName(), default_obj); //used for quick name lookup
                 }
                 else
                 {
@@ -400,7 +400,7 @@ class LootGroup
             {
                 string name = temp_parser.GetProperty("name");
                 name.ToLower();
-                if(!a_Usage.Contains(name))
+                if(a_Usage.Find(name) == -1)
                 {
                     a_Usage.Insert(name);
                 }
@@ -546,7 +546,7 @@ class LootContainer
             {
                 name = temp_parser.GetProperty("name");
                 name.ToLower();
-                if(!a_Categories.Contains(name))
+                if(a_Categories.Find(name) == -1)
                 {
                     a_Categories.Insert(name);
                 }
@@ -574,7 +574,7 @@ class LootContainer
             {
                 name = temp_parser.GetProperty("name");
                 name.ToLower();
-                if(!a_Tags.Contains(name))
+                if(a_Tags.Find(name) == -1)
                 {
                     a_Tags.Insert(name);
                 }
@@ -592,7 +592,7 @@ class LootContainer
             }
             string point_content = xml_lines.Substring(start, (end - start) + 12).Trim();
             ref LootPoint p_LootPoint = new LootPoint();
-            bool success = p_LootPoint.ParseXML(container_content);
+            bool success = p_LootPoint.ParseXML(point_content);
             if(!success)
             {
                 Error("[LootContainer] Failed to parse point tag.");
@@ -678,7 +678,7 @@ class LootPoint
 
         if(tag_parser.GetName() != "point")
         {
-            Error("[LootPoint] Tag Name Invalid | Expected `point` | Got `" + tag_parser.s_TagName + "`");
+            Error("[LootPoint] Tag Name Invalid | Expected `point` | Got `" + tag_parser.GetName() + "`");
             return false;
         }
         if(!tag_parser.HasProperty("pos"))
@@ -727,7 +727,7 @@ class XmlTag
     }
     bool HasFlag(string flag_name)
     {
-        return a_Flags.Contains(flag_name);
+        return a_Flags.Find(flag_name) != -1;
     }
 
     void XmlTag()
