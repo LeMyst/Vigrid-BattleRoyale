@@ -5,17 +5,16 @@ class BattleRoyaleLoot
     protected bool b_Enabled;
 
 
-    protected ref map<ref Object, ref BattleRoyaleLootableBuilding> m_LootBuildings;
+    protected ref map<Entity, ref BattleRoyaleLootableBuilding> m_LootBuildings;
 
-    protected ref map<ref PlayerBase player, ref ScriptCallQueue> m_PlayerCallQueues;
+    protected ref map<ref PlayerBase, ref ScriptCallQueue> m_PlayerCallQueues;
 
 
     void BattleRoyaleLoot()
     {
         b_Enabled = false;
-        m_LootBuildings = new map<Object, ref BattleRoyaleLootableBuilding>();
-        m_BuildingNeedsSpawn = new map<Object, bool>();
-        m_PlayerCallQueues = new map<ref PlayerBase player, ref ScriptCallQueue>();
+        m_LootBuildings = new map<Entity, ref BattleRoyaleLootableBuilding>();
+        m_PlayerCallQueues = new map<ref PlayerBase, ref ScriptCallQueue>();
         m_CallQueue = new ScriptCallQueue;
         m_LootReader = new LootReader();
         //TODO: calculate mission path dynamically (or use json files for config) (currently bugged in dayz)
@@ -28,14 +27,17 @@ class BattleRoyaleLoot
 
     void UpdatePlayer(PlayerBase player, float delta)
     {
+        ref ScriptCallQueue call_queue;
         if(!m_PlayerCallQueues.Contains(player))
         {
-            m_PlayerCallQueues.Insert(player, new ScriptCallQueue);
+            call_queue = new ScriptCallQueue;
+            m_PlayerCallQueues.Insert(player, call_queue);
             call_queue.CallLater(this.HandleLoot, 500, true, player);
         }
+        call_queue = m_PlayerCallQueues.Get(player);
         if(b_Enabled)
         {
-            ref ScriptCallQueue call_queue = ScriptCallQueue.Get(player);
+            
             call_queue.Tick(delta);
             
            // HandleLoot(player);//maybe slap this on a script call queue to save performance
@@ -52,39 +54,30 @@ class BattleRoyaleLoot
     }
 
     
-    protected ref array<Object> GetNearBuildings(PlayerBase player)
+
+    protected void HandleLoot(PlayerBase player)
     {
-        //these need configged up
         float spawn_radius = 50;
         
-        int height_index = 1; //this is so fucking annoying not knowing exactly what index is the position ATL
         ref array<Object> buildings = new array<Object>();
 		ref array<CargoBase> proxies = new array<CargoBase>();
 
         float despawn_radius = spawn_radius + 20;//20m is enough for any tick rate I bet
         vector player_pos = player.GetPosition();
         
-        player_pos[height_index] = 0;
+        player_pos[1] = 0;
 
         GetGame().GetObjectsAtPosition(player_pos, despawn_radius, buildings, proxies);
 
-        return buildings;
-    }
-
-
-    protected void HandleLoot(PlayerBase player)
-    {
-        ref array<Object> buildings = GetNearBuildings( player );
-
         for(int i = 0; i < buildings.Count(); i++)
         {
-            Object building_object = buildings.Get(i);
+            Entity building_object = Entity.Cast(buildings.Get(i));
             vector obj_pos = building_object.GetPosition();
-            obj_pos[height_index] = 0;
+            obj_pos[1] = 0;
             string type_name = building_object.GetType();
             if(m_LootReader.ContainsObject(type_name))
             {
-                if(!m_LootBuildings.Contains(building_object))
+                if(!m_LootBuildings.Contains( building_object ))
                 {
                     m_LootBuildings.Insert( building_object, new BattleRoyaleLootableBuilding( building_object, m_LootReader ) );
                 }
@@ -112,18 +105,18 @@ class BattleRoyaleLootableBuilding
 {
     protected ref LootReader p_LootReader;
 
-    protected ref Object p_Building;
+    protected Entity p_Building;
     protected bool is_spawned;
     protected ref array<ref BattleRoyaleLootItemData> a_LootData;
-    protected ref array<ref LootItem> a_SpawnedLoot; //--- 1 to 1 match with a_LootData (as in, the indicies align)
+    protected ref array<ItemBase> a_SpawnedLoot; //--- 1 to 1 match with a_LootData (as in, the indicies align)
     protected ref array<ref PlayerBase> a_NearPlayers;
 
-    void BattleRoyaleLootableBuilding( ref Object building, ref LootReader lr )
+    void BattleRoyaleLootableBuilding( Entity building, ref LootReader lr )
     {
         p_Building = building;
         p_LootReader = lr;
         a_LootData = new array<ref BattleRoyaleLootItemData>();
-        a_SpawnedLoot = new array<ref LootItem>();
+        a_SpawnedLoot = new array<ItemBase>();
         a_NearPlayers = new array<ref PlayerBase>();
         is_spawned = false;
 
@@ -162,6 +155,8 @@ class BattleRoyaleLootableBuilding
         array<vector> loot_positions = p_LootReader.GetAllLootPositions(type_name);
 
         //TODO: use xml for more complex loot spawning techniques
+
+
         for(int i = 0; i < loot_positions.Count(); i++)
         {
             vector model_pos = loot_positions.Get(i);
@@ -182,7 +177,7 @@ class BattleRoyaleLootableBuilding
         a_SpawnedLoot.Clear();
         for(int i = 0; i < a_LootData.Count(); i++)
         {
-            ref LootItem item = a_LootData.Get(i).SpawnItem();
+            ItemBase item = a_LootData.Get(i).SpawnItem();
             a_SpawnedLoot.Insert(item);
         }
     }
@@ -196,12 +191,12 @@ class BattleRoyaleLootableBuilding
         array< ref BattleRoyaleLootItemData > remove_these = new array< ref BattleRoyaleLootItemData >();
         for(i = 0; i < a_LootData.Count(); i++)
         {
-            ref LootItem item = a_SpawnedLoot.Get(i);
+            ref ItemBase item = a_SpawnedLoot.Get(i);
             ref BattleRoyaleLootItemData lootable_item = a_LootData.Get(i);
 
             if(item)
             {
-                vector should_be_at = lootable_item.GetPosition();
+                vector should_be_at = lootable_item.GetSpawnPosition();
                 vector is_at = item.GetPosition();
                 float distance = vector.Distance(should_be_at, is_at);
                 if(distance > 1)
@@ -216,14 +211,14 @@ class BattleRoyaleLootableBuilding
             }
             else
             {
-                remove_these.Insert(item); //Null item needs cleaned from list
+                remove_these.Insert(lootable_item); //Null item needs cleaned from list
             }
             
         }
         //clean our loot data
         for(i = 0; i < remove_these.Count(); i++)
         {
-            a_LootData.Remove(remove_these.Get(i));
+            a_LootData.RemoveItem(remove_these.Get(i));
         }
 
         a_SpawnedLoot.Clear();
@@ -257,14 +252,16 @@ class BattleRoyaleLootItemData
 
         //TODO: handle attachemented items like magazine & optic?
     }
-    ref LootItem SpawnItem()
+    ItemBase SpawnItem()
     {
-        ref LootItem = LootItem.Cast(GetGame().CreateObject(class_name, world_pos));
+        ItemBase item = ItemBase.Cast(GetGame().CreateObject(class_name, world_pos));
 
         //todo: spawn attachments
         for(int i = 0; i < attachments.Count(); i++)
         {
             string attachment_classname = attachments.Get(i);
         }
+
+        return item;
     }
-}}
+}
