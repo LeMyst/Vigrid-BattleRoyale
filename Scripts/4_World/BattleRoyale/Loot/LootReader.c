@@ -55,7 +55,7 @@ class LootReader
     array<vector> GetAllLootPositions(string group_name)
     {
         array<vector> positions = new array<vector>();
-        ref array<ref LootGroup> matching_groups = GetGroupsWithName(name);
+        ref array<ref LootGroup> matching_groups = GetGroupsWithName(group_name);
 
         for(int i = 0; i < matching_groups.Count(); i++)
         {
@@ -100,7 +100,7 @@ class LootReader
 
         TStringArray contents = new TStringArray();
 
-        file = OpenFile(path, FileMode.READ);
+        file = OpenFile(mission_path, FileMode.READ);
         while (FGets(file, line) > 0)
         {
             line.Trim();
@@ -127,13 +127,17 @@ class LootReader
     }
     bool ParseXML(string all_lines)
     {
+        bool result = true;
+
         //Example input:  all lines read from Mission/mapgroupproto.xml
         int index;
         int end_index;
 
         //1. preprocess out comments & extra tags
-        string new_lines = all_lines.Replace("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>","").Trim();
-        do {
+        all_lines.Replace("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>","");
+        string new_lines = all_lines.Trim();
+        while(true) 
+        {
             index = new_lines.IndexOf("<!--");
             if(index == -1)
                 break;
@@ -150,7 +154,7 @@ class LootReader
             {
                 new_lines = new_lines.Substring(end_index + 3, new_lines.Length() - (end_index + 3));
             }
-        } while(true);
+        }
         new_lines.TrimInPlace();
         
 
@@ -163,20 +167,20 @@ class LootReader
         if(!p_Defaults.ParseXML(defaults_content))
         {
             Error("[LootReader] Failed to parse defaults. Some entries may be missing!");
+            result = false;
         }
 
         //3. pass group data into LootGroup::ParseXML
-        bool result = true;
         index = defaults_end;
-        do {
+        while(true)  {
             index = new_lines.IndexOfFrom(index, "<group");
-            index_end = new_lines.IndexOfFrom(index, "</group>");
-            if(index == -1 || index_end == -1)
+            end_index = new_lines.IndexOfFrom(index, "</group>");
+            if(index == -1 || end_index == -1)
             {
                 break;
             }
 
-            string group_content = new_lines.Substring(index, (index_end - index) + 8).Trim();
+            string group_content = new_lines.Substring(index, (end_index - index) + 8).Trim();
             ref LootGroup p_Group = new LootGroup();
             bool success = p_Group.ParseXML(group_content);
             result = result && success;
@@ -187,14 +191,17 @@ class LootReader
             else
             {
                 Error("[LootReader] Failed to parse group!");
+                result = false;
             }
             
 
-        } while(true);
+        }
 
         //TODO: sort groups into efficient values
+
+        return result;
     }
-    void AddGroup(ref p_Group)
+    void AddGroup(ref LootGroup p_Group)
     {
         a_Groups.Insert(p_Group);
 
@@ -250,19 +257,19 @@ class LootDefaults
         bool result = true;
 
         TStringArray defaults = new TStringArray;
-        defaults_content.Split("\n", defaults);
+        defaults_lines.Split("\n", defaults);
         for(int i = 0; i < defaults.Count(); i++)
         {
-            string default_entry = defaults.Trim();
+            string default_entry = defaults.Get(i).Trim();
             if(default_entry != "")
             {
-                ref LootDefault default = new LootDefault();
-                bool success = default.ParseXML(default_entry);
+                ref LootDefault default_obj = new LootDefault();
+                bool success = default_obj.ParseXML(default_entry);
                 result = result && success;
                 if(success)
                 {
-                    a_Defaults.Insert(default);
-                    m_ByName.Insert(default.GetName(), default); //used for quick name lookup
+                    a_Defaults.Insert(default_obj);
+                    m_ByName.Insert(default_entry.GetName(), default_obj); //used for quick name lookup
                 }
                 else
                 {
@@ -375,7 +382,7 @@ class LootGroup
         //extract usage
         int start = xml_lines.IndexOf("\n");
         int end;
-        do {
+        while(true) {
             start = xml_lines.IndexOfFrom(start, "<usage");
             end = xml_lines.IndexOfFrom(start, "/>");
             if(start == -1 || end == -1)
@@ -398,10 +405,10 @@ class LootGroup
                     a_Usage.Insert(name);
                 }
             }
-        } while(true);
+        }
 
         start = xml_lines.IndexOf("\n");
-        do {
+        while(true)  {
             start = xml_lines.IndexOfFrom(start, "<container");
             end = xml_lines.IndexOfFrom(start, "</container>");
             if(start == -1 || end == -1)
@@ -421,7 +428,7 @@ class LootGroup
                 a_Containers.Insert(p_Container);
             }
             
-        } while(true);
+        }
 
 
         return result;
@@ -521,7 +528,7 @@ class LootContainer
         XmlTag temp_parser;
 
         //parse categories
-        {
+        while(true) {
             start = xml_lines.IndexOfFrom(start, "<category");
             end = xml_lines.IndexOfFrom(start, "/>");
             if(start == -1 || end == -1)
@@ -544,12 +551,12 @@ class LootContainer
                     a_Categories.Insert(name);
                 }
             }
-        } while(true);
+        }
 
         start = xml_lines.IndexOf("\n");
 
         //parse tags
-        {
+        while(true) {
             start = xml_lines.IndexOfFrom(start, "<tag");
             end = xml_lines.IndexOfFrom(start, "/>");
             if(start == -1 || end == -1)
@@ -572,11 +579,11 @@ class LootContainer
                     a_Tags.Insert(name);
                 }
             }
-        } while(true);
+        }
 
         //parse points
         start = xml_lines.IndexOf("\n");
-        do {
+        while(true) {
             start = xml_lines.IndexOfFrom(start, "<container");
             end = xml_lines.IndexOfFrom(start, "</container>");
             if(start == -1 || end == -1)
@@ -596,7 +603,7 @@ class LootContainer
                 a_LootPoints.Insert(p_LootPoint);
             }
             
-        } while(true);
+        } 
 
         return result;
         /*
