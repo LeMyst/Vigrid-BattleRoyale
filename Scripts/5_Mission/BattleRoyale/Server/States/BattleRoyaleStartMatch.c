@@ -73,7 +73,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         b_IsGameplay = true;
 
         BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
-        //BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //TODO: uncomment this when we remove it from BRServer INIT()
+        BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
     }
     void StartZoning()
     {
