@@ -566,7 +566,7 @@ class BattleRoyaleLootItemData
                     
                     if(sub_attachs.Find("BatteryD") != -1)
                     {
-                        spawn_with.Insert(Battery9V);
+                        spawn_with.Insert("Battery9V");
                     }
                     
                 }
