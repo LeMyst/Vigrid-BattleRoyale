@@ -4,6 +4,7 @@ modded class ExpansionMapMenu {
     protected ref BattleRoyaleMapMarkerZone m_NextZone;
 
     
+    protected ref BattleRoyaleMapMarkerZone m_DebugZone;
 
     override Widget Init()
     {
@@ -15,6 +16,7 @@ modded class ExpansionMapMenu {
 
         super.Init();
 
+        Print("Map Init! Updating Zones...");
         UpdateZones();
 
         return layoutRoot;
@@ -25,21 +27,31 @@ modded class ExpansionMapMenu {
         float radius;
         vector center;
 
+        if(!m_DebugZone)
+        {
+            //should default to 1000 0 1000 w/ a radius of 150, and a thickness of 2
+            m_DebugZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
+            m_DebugZone.SetColor(ARGB(255, 255, 255, 0));
+            Print("Creating Debug Zone Marker!");
+            m_Markers.Insert( m_DebugZone );
+        }
+
         BattleRoyalePlayArea current_playarea = m_BattleRoyaleClient.GetPlayArea();
         if(current_playarea)
         {
             if(!m_CurrentZone)
             {
                 m_CurrentZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
+                m_CurrentZone.SetThickness(2);
+                m_CurrentZone.SetColor(ARGB(255, 255, 255, 255));
+                Print("Creating Current Zone Map Marker!");
                 m_Markers.Insert( m_CurrentZone );
             }
-            m_CurrentZone.SetColor(ARGB(255, 255, 255, 255));
             center = current_playarea.GetCenter();
             radius = current_playarea.GetRadius();
             m_CurrentZone.SetPosition(center);
             m_CurrentZone.SetSize_A(radius);
             m_CurrentZone.SetSize_B(radius);
-            m_CurrentZone.SetThickness(2);
         }
 
         BattleRoyalePlayArea next_playarea = m_BattleRoyaleClient.GetPlayArea();
@@ -48,15 +60,16 @@ modded class ExpansionMapMenu {
             if(!m_NextZone)
             {
                 m_NextZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
+                m_NextZone.SetColor(ARGB(255, 0, 0, 255));
+                m_NextZone.SetThickness(2);
+                Print("Creating Next Zone Map Marker!");
                 m_Markers.Insert( m_NextZone );
             }
-            m_NextZone.SetColor(ARGB(255, 0, 0, 255));
             center = next_playarea.GetCenter();
             radius = next_playarea.GetRadius();
             m_NextZone.SetPosition(center);
             m_NextZone.SetSize_A(radius);
             m_NextZone.SetSize_B(radius);
-            m_NextZone.SetThickness(2);
         }
     }
 

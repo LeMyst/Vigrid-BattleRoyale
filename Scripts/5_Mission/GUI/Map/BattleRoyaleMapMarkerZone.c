@@ -11,11 +11,11 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
 	{
-        
+        Print("BattleRoyaleMapMarkerZone::Constructor()");
     }
     void ~BattleRoyaleMapMarkerZone()
     {
-
+        Print("BattleRoyaleMapMarkerZone::Deconstructor()");
     }
 
     protected override void OnInit( Widget layoutRoot )
@@ -23,6 +23,18 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         Class.CastTo( m_Frame, layoutRoot.FindAnyWidget( "marker_frame" ) );
         Class.CastTo( m_Canvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
 
+        if(!m_Frame)
+        {
+            Error("[BattleRoyaleMapMarkerZone] marker_frame not found!");
+            return;
+        }
+        if(!m_Canvas)
+        {
+            Error("[BattleRoyaleMapMarkerZone] marker_canvas not found!");
+            return;
+        }
+
+        m_Canvas.Show( true ); //ensure canvas is visible
 
         m_Frame.SetColor( ARGB( 0, 0, 0, 0 ) );
         SetColor(ARGB(255,255,255,255));
@@ -36,7 +48,10 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 	{
         super.Update(pDt);
 
+        Show();
+
         m_Canvas.Clear();
+        
         vector m_edgePos_A = GetPosition();
         m_edgePos_A[0] = m_edgePos_A[0] + f_SizeA;
 
@@ -58,6 +73,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
         if(((center_x + distance_A) > canvas_width) || ((center_y + distance_B) > canvas_height))
         {
+            Print("Resizing Zone Marker!");
             //Resize to fit
             float new_x = (center_x + distance_A) + 2;
             float new_y = (center_y + distance_B) + 2;

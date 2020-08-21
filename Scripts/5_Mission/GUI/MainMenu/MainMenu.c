@@ -245,6 +245,16 @@ modded class MainMenu
 		return super.OnClick(w, x, y, button);
 	}
 
+	override bool OnMouseEnter( Widget w, int x, int y )
+	{
+		if( IsFocusable( w ) )
+		{
+			ColorHighlight( w );
+			return true;
+		}
+		return false;
+	}
+
 	override void OpenMenuCustomizeCharacter()
 	{
 		GetGame().OpenURL("http://dayzbr.dev/");

@@ -41,16 +41,16 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void FadeIn()
 	{
 		PlayerBase player = GetGame().GetPlayer();
-		player.allow_fade = true;
+		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE IN!");
-		GetGame().GetUIManager().ScreenFadeIn( 0, BATTLERYALE_FADE_MESSAGE, FadeColors.BLACK, FadeColors.WHITE ); //FadeColors.DARK_RED
+		//TODO: create Fade UI
 	}
 	void FadeOut()
 	{
 		PlayerBase player = GetGame().GetPlayer();
-		player.allow_fade = false;
+		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE OUT!");
-		//GetGame().GetUIManager().ScreenFadeOut( 0.5 ); //unnecessary as it is automatically done by missiongameplay::update
+		//TODO: destroy Fade UI
 	}
 	void DisableUserInput()
 	{
@@ -62,6 +62,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			return;
 		}
 
+		//TODO: find a more efficient way to prevent the player from walking / running
 		player.GetInputController().SetDisabled( true );
 		player.GetInputController().OverrideMovementSpeed( true, 0 );
 		player.GetInputController().OverrideMeleeEvade( true, false );
