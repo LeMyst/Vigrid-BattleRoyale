@@ -3,6 +3,7 @@
 
 class BattleRoyaleServer extends BattleRoyaleBase
 {
+	protected ref BattleRoyaleVehicles m_VehicleSystem; 
 	protected ref BattleRoyaleLoot m_LootSystem;
 	ref array<ref BattleRoyaleState> m_States;
 	int i_CurrentStateIndex;
@@ -30,6 +31,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#endif
 
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
+		m_VehicleSystem = new BattleRoyaleVehicles;
+
+		m_VehicleSystem.Start();  //TODO: change this to Preinit()
 
 		//load config (this may error because GetBattleRoyale would return false)
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -109,6 +113,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		#endif
 		
 		m_LootSystem.Update(timeslice);
+		m_VehicleSystem.Update(timeslice);
 
 		foreach(BattleRoyaleState state : m_States)
 		{
@@ -257,7 +262,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		return -1;
 	}
 	
-	
+	ref BattleRoyaleVehicles GetVehicleSystem()
+	{
+		return m_VehicleSystem;
+	}
 	ref BattleRoyaleLoot GetLootSystem()
 	{
 		return m_LootSystem;

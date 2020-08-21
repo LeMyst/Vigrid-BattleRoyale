@@ -7,5 +7,6 @@
 
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:BattleRoyale\\";
+static const string BATTLEROYALE_VEHICLES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Vehicles\\";
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR";
 static const string BATTLERYALE_FADE_MESSAGE = "DayZ Battle Royale";

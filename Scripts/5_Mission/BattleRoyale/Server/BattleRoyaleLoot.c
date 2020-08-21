@@ -30,7 +30,7 @@ class BattleRoyaleLoot
         m_CallQueue.Tick(delta);
     }
 
-    void UpdatePlayer(PlayerBase player, float delta)
+    void UpdatePlayer(ref PlayerBase player, float delta)
     {
         ref ScriptCallQueue call_queue;
         if(!m_PlayerCallQueues.Contains(player))
