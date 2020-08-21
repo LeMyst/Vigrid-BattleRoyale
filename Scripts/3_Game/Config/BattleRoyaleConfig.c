@@ -54,10 +54,17 @@ class BattleRoyaleConfig
         else
             Error("BattleRoyaleAPIData Setting Constructor Returned NULL");
 
-
+        //--- adding a new config? copy below 
         BattleRoyaleServerData p_ServerData = new BattleRoyaleServerData;
         if(p_ServerData)
             m_Configs.Insert("ServerData", p_ServerData);
+        else
+            Error("BattleRoyaleServerData Setting Constructor Returned NULL");
+
+        //--- paste it here
+        BattleRoyaleLootData p_LootData = new BattleRoyaleLootData;
+        if(p_LootData)
+            m_Configs.Insert("LootData", p_LootData);
         else
             Error("BattleRoyaleServerData Setting Constructor Returned NULL");
     }
