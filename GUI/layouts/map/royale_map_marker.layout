@@ -1,26 +1,88 @@
-FrameWidgetClass marker_frame {
+FrameWidgetClass ExpansionMapMarker {
  clipchildren 0
- ignorepointer 1
+ ignorepointer 0
  size 1 1
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
  {
-  CanvasWidgetClass marker_canvas {
-   visible 1
-   clipchildren 1
+  GridSpacerWidgetClass marker_frame {
+   clipchildren 0
    ignorepointer 1
-   keepsafezone 0
-   color 1 1 1 0
-   position 0 0
-   size 34 34
-   halign center_ref
-   valign center_ref
-   hexactpos 0
-   vexactpos 0
+   color 0.1961 0.1961 0.1961 0.7843
+   position -25 -25
+   size 500 1
+   hexactpos 1
+   vexactpos 1
    hexactsize 1
-   vexactsize 1
+   vexactsize 0
+   priority 100
+   style DayZDefaultPanelLeft
+   Padding 0
+   Margin 0
+   "Size To Content H" 1
+   "Size To Content V" 1
+   Columns 1
+   Rows 2
+   {
+    PanelWidgetClass marker_panel {
+     clipchildren 0
+     ignorepointer 1
+     position 1 1
+     size 1 50
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 1
+     {
+      PanelWidgetClass marker_icon_panel {
+       clipchildren 0
+       ignorepointer 0
+       keepsafezone 0
+       color 1 1 1 0
+       position 0 0
+       size 50 50
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+       draggable 0
+       style blank
+       {
+        CanvasWidgetClass marker_canvas {
+         ignorepointer 1
+         position 0 0
+         size 32 32
+         halign center_ref
+         valign center_ref
+         hexactpos 0
+         vexactpos 0
+         hexactsize 1
+         vexactsize 1
+        }
+       }
+      }
+      TextWidgetClass marker_name {
+       ignorepointer 1
+       size 440 25
+       halign right_ref
+       valign center_ref
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       text "Royale Map Marker"
+       font "gui/fonts/etelkatextpro22"
+       "exact text" 1
+       "size to text h" 0
+       "size to text v" 0
+       "text valign" center
+      }
+     }
+    }
+   }
   }
  }
 }

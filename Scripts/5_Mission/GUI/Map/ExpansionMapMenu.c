@@ -31,7 +31,8 @@ modded class ExpansionMapMenu {
         {
             //should default to 1000 0 1000 w/ a radius of 150, and a thickness of 2
             m_DebugZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
-            m_DebugZone.SetColor(ARGB(255, 255, 255, 0));
+            m_DebugZone.SetColor( ARGB(255, 255, 0, 0) );
+            m_DebugZone.SetZoneType(ZoneType.Lined); //CrossHatch | Lined
             Print("Creating Debug Zone Marker!");
             m_Markers.Insert( m_DebugZone );
         }
