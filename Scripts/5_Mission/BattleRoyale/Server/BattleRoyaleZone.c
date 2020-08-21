@@ -83,10 +83,10 @@ class BattleRoyaleZone
             new_center[2] = newZ;
 
             //check if new_center is valid (not in water)
-            if(SurfaceIsSea(newX, newZ))
+            if(GetGame().SurfaceIsSea(newX, newZ))
                 continue;
             
-            if(SurfaceIsPond(newX, newZ))
+            if(GetGame().SurfaceIsPond(newX, newZ))
                 continue;
 
             break;

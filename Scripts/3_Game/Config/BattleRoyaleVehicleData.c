@@ -2,7 +2,7 @@ class BattleRoyaleVehicleData extends BattleRoyaleDataBase
 {   
     ref array<ref BattleRoyaleVehicleDataSerialized> m_VehicleData;
 
-    void BattleRoyaleVehicle()
+    void BattleRoyaleVehicleData()
     {
         m_VehicleData = new array<ref BattleRoyaleVehicleDataSerialized>();
     }
@@ -36,11 +36,10 @@ class BattleRoyaleVehicleData extends BattleRoyaleDataBase
         for ( int i = 0; i < files.Count(); i++ )
 		{
             string fileName;
-			string fileType;
 			int pos = files[i].IndexOf(".");
             if ( pos > -1 )
 			{
-				fileName = files[i].Substring( 0, pos );
+				fileName = files[i];
                 ref BattleRoyaleVehicleDataSerialized vehicle_data = new BattleRoyaleVehicleDataSerialized();
                 vehicle_data.Load(fileName);
                 m_VehicleData.Insert(vehicle_data);
@@ -85,7 +84,7 @@ class BattleRoyaleVehicleDataSerialized : Managed
 
     void Save()
     {
-        JsonFileLoader<BattleRoyaleAPIData>.JsonSaveFile(BATTLEROYALE_VEHICLES_FOLDER + m_FileName, this);
+        JsonFileLoader<BattleRoyaleVehicleDataSerialized>.JsonSaveFile(BATTLEROYALE_VEHICLES_FOLDER + m_FileName, this);
     }
     void Load(string filename)
     {

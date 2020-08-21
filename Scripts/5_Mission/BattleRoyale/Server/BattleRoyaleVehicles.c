@@ -20,6 +20,11 @@ class BattleRoyaleVehicles
 
     void BattleRoyaleVehicles()
     {
+        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        i_TickTime = m_GameSettings.vehicle_ticktime_ms;
+        i_NumVehicles = m_GameSettings.num_vehicles;
+        f_DespawnRadius = m_GameSettings.vehicle_spawn_radius;
+
         m_Vehicles = new array<ref BattleRoyaleCachedVehicle>();
         m_CallQueue = new ScriptCallQueue;
 
@@ -46,6 +51,7 @@ class BattleRoyaleVehicles
 
     void Start()
     {
+        Print("Starting vehicle subsystem...");
         b_Enabled = true;
         Preinit();
     }
@@ -58,11 +64,19 @@ class BattleRoyaleVehicles
     {
         if(!b_IsReady && !b_IsInitializing)
         {
+            Print("Initializing Vehicle Subsystem...");
             GetGame().GameScript.Call(this, "Init", NULL);
         }
+        else
+        {
+            Print("Preinit called on vehicle subsystem when not necessary!");
+        }
+        
     }
     void Init()
     {
+        Print("Vehicle Subsystem:");
+        Print(i_NumVehicles);
         b_IsInitializing = true;
         for(int i = 0; i < i_NumVehicles; i++)
         {
@@ -121,6 +135,7 @@ class BattleRoyaleVehicles
                 ref BattleRoyaleVehicleDataSerialized vehicle_data = m_SettingsData.m_VehicleData[index];
                 vehicle_class = vehicle_data.VehicleName;
                 vehicle_parts = vehicle_data.Parts;
+                Print("Adding " + vehicle_class + " to vehicle subsystem!");
             }
             else
             {
@@ -163,18 +178,20 @@ class BattleRoyaleVehicles
                 float m_HitFraction;
 
                 bool b_IsPlayerNear = DayZPhysics.SphereCastBullet( position, end, f_DespawnRadius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
-                Print("Raycast Vehicle Player Detection");
-                Print(m_Hit);
-                Print(m_Vehicle);
-                Print(m_HitObject);
 
                 if(m_Vehicle.IsSpawned() && !b_IsPlayerNear)
                 {
-                    m_Vehicle.Despawn();
+                    if(!m_Vehicle.Despawn())
+                    {
+                        Error("Failed to despawn vehicle!");
+                    }
                 }
                 else if(!m_Vehicle.IsSpawned() && b_IsPlayerNear)
                 {
-                    m_Vehicle.Spawn();
+                    if(!m_Vehicle.Spawn())
+                    {
+                        Error("Failed to spawn vehicle!");
+                    }
                 }
             }
         }
@@ -188,6 +205,7 @@ class BattleRoyaleCachedVehicle
     protected Object game_object;
     protected string vehicle_name;
     protected vector position;
+    protected vector direction;
     protected ref array<string> vehicle_parts;
 
     void BattleRoyaleCachedVehicle(string classname, ref array<string> parts, vector pos)
@@ -196,6 +214,11 @@ class BattleRoyaleCachedVehicle
         vehicle_parts = parts;
         position = pos;
     }
+    private void FillCar( Car car, CarFluid fluid )
+	{
+		float cap = car.GetFluidCapacity( fluid );
+		car.Fill( fluid, cap );
+	}
 
     vector GetPosition()
     {
@@ -252,8 +275,16 @@ class BattleRoyaleCachedVehicle
         
 
         ent.SetPosition( position );
-		ent.SetDirection( direction );
-
+        
+        if(direction)
+        {
+		    ent.SetDirection( direction );
+        }
+        else
+        {
+            //TODO: random direction!
+        }
+        
         vector tmItem[4];
 		ent.GetTransform( tmItem );
 
@@ -271,9 +302,12 @@ class BattleRoyaleCachedVehicle
         {
             Print("Despawning: " + vehicle_name)
             position = GetPosition();
+            direction = game_object.GetDirection();
             //TODO: cache vehicle inventory contents
             GetGame().ObjectDelete( game_object ); 
             game_object = NULL;
+            return true;
         }
+        return false;
     }
 }

@@ -91,10 +91,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
             random_pos[2] = z;
 
             //check if random_pos is bad
-            if(SurfaceIsSea(x, z))
+            if(GetGame().SurfaceIsSea(x, z))
                 continue;
             
-            if(SurfaceIsPond(x, z))
+            if(GetGame().SurfaceIsPond(x, z))
                 continue;
 
             if(GetGame().SurfaceRoadY(x, z) != y)
@@ -109,7 +109,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             vector m_HitPosition;
             vector m_HitNormal;
             float m_HitFraction;
-            m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+            bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
             Print("Raycast Safe Teleport Position");
             Print(m_Hit);
             Print(m_HitObject);
@@ -125,13 +125,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
     }
     void ProcessPlayers()
     {
-        //clone player list (just incase someone DCs)
-        ref array<ref PlayerBase> players_to_tp = new array<ref PlayerBase>();
-        players_to_tp.InsertAll(m_PlayerList);
-
-        for(int i = 0; i < players_to_tp.Count(); i++)
+        //m_Players is a static list so it won't change during this stage
+        for(int i = 0; i < m_Players.Count(); i++)
         {
-            PlayerBase process_player = players_to_tp[i];
+            PlayerBase process_player = m_Players[i];
 
             if(process_player)
             {

@@ -20,6 +20,11 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "JoggingShoes_Red"
     };
 
+
+    int num_vehicles = 1000;
+    int vehicle_ticktime_ms = 1000;
+    float vehicle_spawn_radius = 10.0;
+
     //--- do not modify    
     override string GetPath()
     {
