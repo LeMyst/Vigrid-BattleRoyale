@@ -142,7 +142,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
         }
     }
-    void RenderLined(float cx, float cy, float a, float b)
+    void RenderCrosshatched(float cx, float cy, float a, float b)
     {
         int ep1 = 45;
         int ep2 = 45;
@@ -198,7 +198,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             ep4--;
         }
     }
-    void RenderCrosshatched(float cx, float cy, float a, float b)
+    void RenderLined(float cx, float cy, float a, float b)
     {
         int ep1 = 45;
         int ep2 = 45;

@@ -5,6 +5,7 @@ modded class ExpansionMapMenu {
 
     
     protected ref BattleRoyaleMapMarkerZone m_DebugZone;
+    protected ref BattleRoyaleMapMarkerZone m_DebugZone2;
 
     override Widget Init()
     {
@@ -27,6 +28,8 @@ modded class ExpansionMapMenu {
         float radius;
         vector center;
 
+        /*
+        //--- debug markers (on screen always)
         if(!m_DebugZone)
         {
             //should default to 1000 0 1000 w/ a radius of 150, and a thickness of 2
@@ -36,6 +39,19 @@ modded class ExpansionMapMenu {
             Print("Creating Debug Zone Marker!");
             m_Markers.Insert( m_DebugZone );
         }
+
+        if(!m_DebugZone2)
+        {
+            //should default to 1000 0 1000 w/ a radius of 150, and a thickness of 2
+            m_DebugZone2 = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
+            vector pos = "2000 10 2000";
+            m_DebugZone2.SetPosition(pos);
+            m_DebugZone2.SetColor( ARGB(255, 255, 255, 0) );
+            m_DebugZone2.SetZoneType(ZoneType.CrossHatch); //CrossHatch | Lined
+            Print("Creating Debug Zone Marker #2!");
+            m_Markers.Insert( m_DebugZone2 );
+        }
+        */
 
         BattleRoyalePlayArea current_playarea = m_BattleRoyaleClient.GetPlayArea();
         if(current_playarea)
