@@ -58,26 +58,41 @@ class BattleRoyaleZone
 
         Print("Zone Data");
         m_PlayArea.SetRadius(p_Rad * f_ConstantShrink); //new radius 
-        
-    //TODO: ensure zone center is not in water
-        float distance = Math.RandomFloatInclusive(0, p_Rad - m_PlayArea.GetRadius()); //distance change from previous center
-        float oldX = p_Cen[0];
-        float oldZ = p_Cen[2];
-        Print(distance);
-        float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
-        Print(moveDir);
-        float dX = distance * Math.Sin(moveDir);
-        float dZ = distance * Math.Cos(moveDir);
-        Print(dX);
-        Print(dZ);
-        float newX = oldX + dX;
-        float newZ = oldZ + dZ;
-        float newY = GetGame().SurfaceY(newX, newZ);
-
         vector new_center = "0 0 0";
-        new_center[0] = newX;
-        new_center[1] = newY;
-        new_center[2] = newZ;
+
+        while(true) 
+        {
+            
+            float distance = Math.RandomFloatInclusive(0, p_Rad - m_PlayArea.GetRadius()); //distance change from previous center
+            float oldX = p_Cen[0];
+            float oldZ = p_Cen[2];
+            Print(distance);
+            float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+            Print(moveDir);
+            float dX = distance * Math.Sin(moveDir);
+            float dZ = distance * Math.Cos(moveDir);
+            Print(dX);
+            Print(dZ);
+            float newX = oldX + dX;
+            float newZ = oldZ + dZ;
+            float newY = GetGame().SurfaceY(newX, newZ);
+
+            
+            new_center[0] = newX;
+            new_center[1] = newY;
+            new_center[2] = newZ;
+
+            //check if new_center is valid (not in water)
+            if(SurfaceIsSea(newX, newZ))
+                continue;
+            
+            if(SurfaceIsPond(newX, newZ))
+                continue;
+
+            break;
+        }
+
+
         m_PlayArea.SetCenter(new_center);
 
         Print(m_PlayArea.GetCenter());

@@ -68,72 +68,78 @@ class BattleRoyalePrepare extends BattleRoyaleState
 		return "Prepare State";
 	}
 
+    protected void GiveStartingItems(PlayerBase process_player)
+    {
+        process_player.RemoveAllItems_Safe();
+        foreach(string item : a_StartingItems)
+        {
+            process_player.GetInventory().CreateInInventory(item);
+        }     
+    }
+    protected void Teleport(PlayerBase process_player)
+    {
+        vector random_pos = "0 0 0";
+        while(true) 
+        {
+            float edge_pad = 0.1;
+            float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
+            float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+            float y = GetGame().SurfaceY(x, z);
+            
+            random_pos[0] = x;
+            random_pos[1] = y;
+            random_pos[2] = z;
 
+            //check if random_pos is bad
+            if(SurfaceIsSea(x, z))
+                continue;
+            
+            if(SurfaceIsPond(x, z))
+                continue;
+
+            if(GetGame().SurfaceRoadY(x, z) != y)
+                continue;
+
+            vector start = random_pos + Vector( 0, 5, 0 );
+            vector end = random_pos;
+            float radius = 2.0; 
+
+            PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
+            Object m_HitObject;
+            vector m_HitPosition;
+            vector m_HitNormal;
+            float m_HitFraction;
+            m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+            Print("Raycast Safe Teleport Position");
+            Print(m_Hit);
+            Print(m_HitObject);
+            Print(m_HitFraction);
+
+            if(m_Hit)
+                continue;
+
+            break;
+        }
+
+        process_player.SetPosition(random_pos);
+    }
     void ProcessPlayers()
     {
+        //clone player list (just incase someone DCs)
         ref array<ref PlayerBase> players_to_tp = new array<ref PlayerBase>();
         players_to_tp.InsertAll(m_PlayerList);
+
         for(int i = 0; i < players_to_tp.Count(); i++)
         {
             PlayerBase process_player = players_to_tp[i];
 
             if(process_player)
             {
-                process_player.RemoveAllItems_Safe();
-                foreach(string item : a_StartingItems)
-                {
-                    process_player.GetInventory().CreateInInventory(item);
-                }
+                GiveStartingItems(process_player);
                 
-                //TODO: teleport players randomly across the map? (move them into the plane to drop)
+                Teleport(process_player); //TODO: replace this with moving into C130 (for paradrops)
                 
-                vector random_pos = "0 0 0";
-                while(true) 
-                {
-                    float edge_pad = 0.1;
-                    float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-                    float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
-                    float y = GetGame().SurfaceY(x, z);
-                    
-                    random_pos[0] = x;
-                    random_pos[1] = y;
-                    random_pos[2] = z;
-
-                    //check if random_pos is bad
-                    if(SurfaceIsSea(x, z))
-                        continue;
-                    
-                    if(SurfaceIsPond(x, z))
-                        continue;
-
-                    if(GetGame().SurfaceRoadY(x, z) != y)
-                        continue;
-
-                    vector start = random_pos + Vector( 0, 5, 0 );
-                    vector end = random_pos;
-                    float radius = 2.0; 
-
-                    PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
-                    Object m_HitObject;
-                    vector m_HitPosition;
-                    vector m_HitNormal;
-                    float m_HitFraction;
-                    m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
-                    Print("Raycast Safe Teleport Position");
-                    Print(m_Hit);
-                    Print(m_HitObject);
-                    Print(m_HitFraction);
-
-                    if(m_Hit)
-                        continue;
-
-                    break;
-                }
-
-                process_player.SetPosition(random_pos);
             }
-        
-        
         }
     
         processing_complete = true;//mark as operation completed
