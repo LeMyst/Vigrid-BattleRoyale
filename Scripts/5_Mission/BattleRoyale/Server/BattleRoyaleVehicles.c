@@ -83,48 +83,48 @@ class BattleRoyaleVehicles
             
             vector position = "14829.2 72.3148 14572.3";
             
-            //TODO: remove this IF statement when no longer debugging vheicles
-            if(i > 0)
+            //remove this IF statement when no longer debugging vheicles
+            //if(i > 0)
+           // {
+            Print("Finding valid location...");
+            string path = "CfgWorlds " + GetGame().GetWorldName();
+            vector temp = GetGame().ConfigGetVector(path + " centerPosition");
+
+            float world_width = temp[0] * 2;
+            float world_height = temp[1] * 2;
+            while(true)
             {
-                Print("Finding valid location...");
-                string path = "CfgWorlds " + GetGame().GetWorldName();
-                vector temp = GetGame().ConfigGetVector(path + " centerPosition");
+                float x = Math.RandomFloat(0, world_width);
+                float z = Math.RandomFloat(0, world_height);
+                if(GetGame().SurfaceIsSea(x, z))
+                    continue;
+                if(GetGame().SurfaceIsPond(x, z))
+                    continue;
+                float y_surf = GetGame().SurfaceY(x, z);
+                float y = GetGame().SurfaceRoadY(x, z);
+                if(y_surf == y)
+                    continue; //can't be on road if equal
+                
+                //use Raycast to check for roadway collisions
+                vector start = Vector(x, y, z);
+                vector end = Vector(x, y_surf, z);
+                PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.ROADWAY;
+                Object m_HitObject;
+                vector m_HitPosition;
+                vector m_HitNormal;
+                float m_HitFraction;
 
-                float world_width = temp[0] * 2;
-                float world_height = temp[1] * 2;
-                while(true)
+                bool is_road = DayZPhysics.SphereCastBullet( start, end, 2.0, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+                if(is_road)
                 {
-                    float x = Math.RandomFloat(0, world_width);
-                    float z = Math.RandomFloat(0, world_height);
-                    if(GetGame().SurfaceIsSea(x, z))
-                        continue;
-                    if(GetGame().SurfaceIsPond(x, z))
-                        continue;
-                    float y_surf = GetGame().SurfaceY(x, z);
-                    float y = GetGame().SurfaceRoadY(x, z);
-                    if(y_surf == y)
-                        continue; //can't be on road if equal
-                    
-                    //use Raycast to check for roadway collisions
-                    vector start = Vector(x, y, z);
-                    vector end = Vector(x, y_surf, z);
-                    PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.ROADWAY;
-                    Object m_HitObject;
-                    vector m_HitPosition;
-                    vector m_HitNormal;
-                    float m_HitFraction;
-
-                    bool is_road = DayZPhysics.SphereCastBullet( start, end, 2.0, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
-                    if(is_road)
-                    {
-                        Print("Found safe vehicle spawn position");
-                        Print(start);
-                        position = start;
-                        break;
-                    }
+                    Print("Found safe vehicle spawn position");
+                    Print(start);
+                    position = start;
+                    break;
                 }
-
             }
+
+          //  }
             //--- defaults in case no config data is found
             string vehicle_class = "Sedan_02";
             ref array<string> vehicle_parts = {"CarBattery", "CarRadiator", "SparkPlug", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel"};
