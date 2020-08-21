@@ -3,9 +3,10 @@
 class BattleRoyalePrepare extends BattleRoyaleState
 {
     protected ref array<ref PlayerBase> m_PlayerList;
-    protected bool ready_to_process;
-    protected int process_index;
+    protected bool processing_complete;
     protected ref array<string> a_StartingItems;
+
+
 
     protected vector world_center;
     void BattleRoyalePrepare()
@@ -21,13 +22,12 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
         else
         {
-            a_StartingItems = {"TrackSuitJacket_Red","TrackSuitPants_Red","JoggingShoes_Red"}; //TODO: add GPS and MAP to these items
+            a_StartingItems = {"TrackSuitJacket_Red","TrackSuitPants_Red","JoggingShoes_Red"}; 
         }
         
         
         m_PlayerList = new array<ref PlayerBase>;
-        ready_to_process = false;
-        process_index = 0;
+        processing_complete = false;
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
         world_center = GetGame().ConfigGetVector(path + " centerPosition");
@@ -48,7 +48,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
         {
             m_PlayerList.Insert(player);
         }
-        ready_to_process = true;
+        
+
+        GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
 	}
 	override void Deactivate()
 	{
@@ -59,48 +61,81 @@ class BattleRoyalePrepare extends BattleRoyaleState
     
 	override bool IsComplete()
 	{
-		return (ready_to_process && (process_index >= m_PlayerList.Count())) || super.IsComplete();
+		return processing_complete || super.IsComplete();
 	}
     override string GetName()
 	{
 		return "Prepare State";
 	}
-    override void Update(float timeslice)
-    {
-        super.Update(timeslice);
 
-        if(ready_to_process)
+
+    void ProcessPlayers()
+    {
+        ref array<ref PlayerBase> players_to_tp = new array<ref PlayerBase>();
+        players_to_tp.InsertAll(m_PlayerList);
+        for(int i = 0; i < players_to_tp.Count(); i++)
         {
-            if(process_index < m_PlayerList.Count())
+            PlayerBase process_player = players_to_tp[i];
+
+            if(process_player)
             {
-                PlayerBase process_player = m_PlayerList.Get(process_index);
-                #ifdef BR_BETA_LOGGING
-                BRPrint("BattleRoyalePrepare::Update() => Processing player # " + process_index.ToString());
-                #endif
-                
-                if(process_player)
+                process_player.RemoveAllItems_Safe();
+                foreach(string item : a_StartingItems)
                 {
-                    process_player.RemoveAllItems_Safe();
-                    foreach(string item : a_StartingItems)
-                    {
-                        process_player.GetInventory().CreateInInventory(item);
-                    }
-                    
-                    //TODO: teleport players randomly across the map? (move them into the plane to drop)
-                   
-                    vector random_pos = "0 0 0";
+                    process_player.GetInventory().CreateInInventory(item);
+                }
+                
+                //TODO: teleport players randomly across the map? (move them into the plane to drop)
+                
+                vector random_pos = "0 0 0";
+                while(true) 
+                {
                     float edge_pad = 0.1;
                     float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
                     float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
                     float y = GetGame().SurfaceY(x, z);
-                    //TODO: ensure not in water
+                    
                     random_pos[0] = x;
                     random_pos[1] = y;
                     random_pos[2] = z;
-                    process_player.SetPosition(random_pos);
+
+                    //check if random_pos is bad
+                    if(SurfaceIsSea(x, z))
+                        continue;
+                    
+                    if(SurfaceIsPond(x, z))
+                        continue;
+
+                    if(GetGame().SurfaceRoadY(x, z) != y)
+                        continue;
+
+                    vector start = random_pos + Vector( 0, 5, 0 );
+                    vector end = random_pos;
+                    float radius = 2.0; 
+
+                    PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
+                    Object m_HitObject;
+                    vector m_HitPosition;
+                    vector m_HitNormal;
+                    float m_HitFraction;
+                    m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+                    Print("Raycast Safe Teleport Position");
+                    Print(m_Hit);
+                    Print(m_HitObject);
+                    Print(m_HitFraction);
+
+                    if(m_Hit)
+                        continue;
+
+                    break;
                 }
-                process_index++;
+
+                process_player.SetPosition(random_pos);
             }
+        
+        
         }
+    
+        processing_complete = true;//mark as operation completed
     }
 }
