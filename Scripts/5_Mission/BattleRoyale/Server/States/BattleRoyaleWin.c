@@ -25,8 +25,9 @@ class BattleRoyaleWin extends BattleRoyaleState
 		BattleRoyaleAPI.GetAPI().ServerFinish(winner_name); //report winner to api
 		
 		//TODO: report match data to leaderboards
-
+		
 		//TODO: start server shutdown process
+		GetGame().RequestExit(0);
 
 	}
 	override string GetName()

@@ -4,8 +4,8 @@ class BattleRoyaleVehicles
 {
     //TODO: connect these with a settings file
     protected int i_TickTime = 1000;
-    protected int i_NumVehicles = 1;
-    protected float f_DespawnRadius = 10;
+    protected int i_NumVehicles = 1000;
+    protected float f_DespawnRadius = 500;
 
     protected ref array<ref BattleRoyaleCachedVehicle> m_Vehicles;
     protected ref ScriptCallQueue m_CallQueue;
@@ -24,6 +24,11 @@ class BattleRoyaleVehicles
         i_TickTime = m_GameSettings.vehicle_ticktime_ms;
         i_NumVehicles = m_GameSettings.num_vehicles;
         f_DespawnRadius = m_GameSettings.vehicle_spawn_radius;
+
+        Print("BattleRoyaleVehicles::Constructor()");
+        Print(i_TickTime);
+        Print(i_NumVehicles);
+        Print(f_DespawnRadius);
 
         m_Vehicles = new array<ref BattleRoyaleCachedVehicle>();
         m_CallQueue = new ScriptCallQueue;
@@ -84,47 +89,50 @@ class BattleRoyaleVehicles
             vector position = "14829.2 72.3148 14572.3";
             
             //remove this IF statement when no longer debugging vheicles
-            //if(i > 0)
-           // {
-            Print("Finding valid location...");
-            string path = "CfgWorlds " + GetGame().GetWorldName();
-            vector temp = GetGame().ConfigGetVector(path + " centerPosition");
-
-            float world_width = temp[0] * 2;
-            float world_height = temp[1] * 2;
-            while(true)
+            if(i > 0)
             {
-                float x = Math.RandomFloat(0, world_width);
-                float z = Math.RandomFloat(0, world_height);
-                if(GetGame().SurfaceIsSea(x, z))
-                    continue;
-                if(GetGame().SurfaceIsPond(x, z))
-                    continue;
-                float y_surf = GetGame().SurfaceY(x, z);
-                float y = GetGame().SurfaceRoadY(x, z);
-                if(y_surf == y)
-                    continue; //can't be on road if equal
-                
-                //use Raycast to check for roadway collisions
-                vector start = Vector(x, y, z);
-                vector end = Vector(x, y_surf, z);
-                PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.ROADWAY;
-                Object m_HitObject;
-                vector m_HitPosition;
-                vector m_HitNormal;
-                float m_HitFraction;
+                Print("Finding valid location...");
+                string path = "CfgWorlds " + GetGame().GetWorldName();
+                vector temp = GetGame().ConfigGetVector(path + " centerPosition");
 
-                bool is_road = DayZPhysics.SphereCastBullet( start, end, 2.0, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
-                if(is_road)
+                float world_width = temp[0] * 2;
+                float world_height = temp[1] * 2;
+                int iterations = 0;
+                while(true)
                 {
-                    Print("Found safe vehicle spawn position");
-                    Print(start);
-                    position = start;
+                    iterations++;
+                    float x = Math.RandomFloat(0, world_width);
+                    float z = Math.RandomFloat(0, world_height);
+                    if(GetGame().SurfaceIsSea(x, z))
+                        continue;
+                    if(GetGame().SurfaceIsPond(x, z))
+                        continue;
+
+                    float y = GetGame().SurfaceY(x, z);
+
+                    vector m_HitPosition;
+                    float check_radius = 100.0;
+                    vector start = Vector(x, y, z);
+
+                    PGFilter filter = new PGFilter();
+                    AIWorld ai_world = GetGame().GetWorld().GetAIWorld();
+
+
+                    filter.SetFlags( PGPolyFlags.WALK, PGPolyFlags.SWIM|PGPolyFlags.SWIM_SEA, PGPolyFlags.NONE );
+                    filter.SetCost( PGAreaType.ROADWAY, 10 );
+
+                    if(!ai_world.SampleNavmeshPosition(start, check_radius, filter, m_HitPosition))
+                        continue;
+
+                    position = m_HitPosition;
+                    Print("Found safe vehicle spawn position using SampleNavmeshPosition");
+                    Print(position);
+
+
                     break;
                 }
-            }
 
-          //  }
+            }
             //--- defaults in case no config data is found
             string vehicle_class = "Sedan_02";
             ref array<string> vehicle_parts = {"CarBattery", "CarRadiator", "SparkPlug", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel"};
@@ -142,10 +150,11 @@ class BattleRoyaleVehicles
                 Error("Failed to access Vehicle Data Settings!");
             }
             
-            
+            //create server marker for this vehicle
+            //ExpansionMarkerModule.Cast( GetModuleManager().GetModule( ExpansionMarkerModule ) ).CreateServerMarker( vehicle_class, "Car", position, ARGB(255, 0, 255, 0), false );
 
-            ref BattleRoyaleCachedVehicle Test_Vehicle = new BattleRoyaleCachedVehicle( vehicle_class, vehicle_parts, position );
-            m_Vehicles.Insert(Test_Vehicle);
+            ref BattleRoyaleCachedVehicle cached_vehicle = new BattleRoyaleCachedVehicle( vehicle_class, vehicle_parts, position );
+            m_Vehicles.Insert( cached_vehicle );
         }
         Print("Vehicle Subsystem Ready!");
         b_IsReady = true;
@@ -156,13 +165,19 @@ class BattleRoyaleVehicles
         if(!b_IsBusy)
         {
             b_IsBusy = true;
-
+            Print("Process vehicles tick!");
             GetGame().GameScript.Call(this, "ProcessVehicles", NULL); //spin up thread
         }
     }
 
     void ProcessVehicles()
     {
+        BattleRoyaleServer server_module = BattleRoyaleServer.Cast(GetBR());
+        BattleRoyaleState current_state = server_module.GetCurrentState();
+        ref array<PlayerBase> spawnable_players = new array<PlayerBase>();
+        //duplicate all players into a new array
+        spawnable_players.InsertAll(current_state.GetPlayers());
+
         for(int i = 0; i < m_Vehicles.Count(); i++)
         {
             ref BattleRoyaleCachedVehicle m_Vehicle = m_Vehicles[i];
@@ -170,17 +185,24 @@ class BattleRoyaleVehicles
             if(m_Vehicle)
             {
                 vector position = m_Vehicle.GetPosition();
-                vector end = position + Vector(0, 1, 0); //more efficient to have a short cast
-                PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.CHARACTER|PhxInteractionLayers.CHARACTER_NO_GRAVITY;
-                Object m_HitObject;
-                vector m_HitPosition;
-                vector m_HitNormal;
-                float m_HitFraction;
+               
+                bool b_IsPlayerNear = false;
 
-                bool b_IsPlayerNear = DayZPhysics.SphereCastBullet( position, end, f_DespawnRadius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+                for(int j = 0; j < spawnable_players.Count(); j++)
+                {
+                    PlayerBase player = spawnable_players[j];
+                    if(vector.Distance(player.GetPosition(), position) < f_DespawnRadius)
+                    {
+                        b_IsPlayerNear = true;
+                        break;
+                    }
+                }            
+
+
 
                 if(m_Vehicle.IsSpawned() && !b_IsPlayerNear)
                 {
+
                     if(!m_Vehicle.Despawn())
                     {
                         Error("Failed to despawn vehicle!");
@@ -195,6 +217,7 @@ class BattleRoyaleVehicles
                 }
             }
         }
+
         b_IsBusy = false; //complete!
     }
 
@@ -238,7 +261,7 @@ class BattleRoyaleCachedVehicle
     }
     bool Spawn()
     {
-        Print("Spawning " + vehicle_name);
+        Print("Spawning Vehicle " + vehicle_name);
 
         Object obj = GetGame().CreateObject( vehicle_name, position, false, false, true );
 
@@ -300,7 +323,7 @@ class BattleRoyaleCachedVehicle
     {
         if(game_object)
         {
-            Print("Despawning: " + vehicle_name)
+            Print("Despawning Vehicle " + vehicle_name)
             position = GetPosition();
             direction = game_object.GetDirection();
             //TODO: cache vehicle inventory contents

@@ -60,7 +60,7 @@ modded class ExpansionMapMenu {
             {
                 m_CurrentZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
                 m_CurrentZone.SetThickness(2);
-                m_CurrentZone.SetColor(ARGB(255, 255, 255, 255));
+                m_CurrentZone.SetColor(ARGB(255, 0, 0, 255));
                 Print("Creating Current Zone Map Marker!");
                 m_Markers.Insert( m_CurrentZone );
             }
@@ -71,13 +71,13 @@ modded class ExpansionMapMenu {
             m_CurrentZone.SetSize_B(radius);
         }
 
-        BattleRoyalePlayArea next_playarea = m_BattleRoyaleClient.GetPlayArea();
+        BattleRoyalePlayArea next_playarea = m_BattleRoyaleClient.GetNextArea();
         if(next_playarea)
         {
             if(!m_NextZone)
             {
                 m_NextZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
-                m_NextZone.SetColor(ARGB(255, 0, 0, 255));
+                m_NextZone.SetColor(ARGB(255, 255, 255, 255));
                 m_NextZone.SetThickness(2);
                 Print("Creating Next Zone Map Marker!");
                 m_Markers.Insert( m_NextZone );

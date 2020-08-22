@@ -70,6 +70,16 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
     protected void GiveStartingItems(PlayerBase process_player)
     {
+        //drop the item out of the player's hands before we delete it
+        if(process_player.GetItemInHands())
+        {
+            ItemBase item_inhands = process_player.GetItemInHands();
+            process_player.ServerDropEntity( item_inhands );
+            //GetGame().GameScript.Call(GetGame(), "ObjectDelete", item_inhands);
+            GetGame().ObjectDelete( item_inhands );
+        }
+
+        //remove all other items
         process_player.RemoveAllItems_Safe();
         foreach(string item : a_StartingItems)
         {

@@ -33,7 +33,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
 
-		m_VehicleSystem.Preinit();  //TODO: change this to Preinit()
+		m_VehicleSystem.Start();  //TODO: change this to Preinit()
 
 		//load config (this may error because GetBattleRoyale would return false)
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
