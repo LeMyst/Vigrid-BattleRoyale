@@ -2,6 +2,13 @@
 
 class BattleRoyaleWin extends BattleRoyaleState
 {
+	int i_SecondsTillKick;
+
+	void BattleRoyaleWin()
+	{
+		i_SecondsTillKick = 15; //TODO: config this
+	}
+
 	//TODO: state functionality for winners!
 	override void Activate()
 	{
@@ -20,15 +27,13 @@ class BattleRoyaleWin extends BattleRoyaleState
 				Print(identity.GetId());
 				Print(identity.GetPlainId());
 			}
-			MessagePlayer(winner, "Congratulations! You won Battle Rooooyale!");
+			HandleWinner(winner);
 		}
 		BattleRoyaleAPI.GetAPI().ServerFinish(winner_name); //report winner to api
 		
 		//TODO: report match data to leaderboards
-		
-		//TODO: start server shutdown process
-		GetGame().RequestExit(0);
 
+		m_CallQueue.CallLater(this.KickWinner, i_SecondsTillKick * 1000, false);
 	}
 	override string GetName()
 	{
@@ -42,6 +47,18 @@ class BattleRoyaleWin extends BattleRoyaleState
 	
 	override bool IsComplete()
 	{
-		return false; //win state is never complete (it is an end state)
+		return GetPlayers().Count() == 0; //go to restart state when player disconnects
+	}
+
+	void HandleWinner(PlayerBase winner)
+	{
+		MessagePlayer(winner, "Congratulations! You won Battle Royale!");
+	}
+	void KickWinner()
+	{
+		if(winner)
+		{
+			GetGame().DisconnectPlayer( winner.GetIdentity() );
+		}
 	}
 }

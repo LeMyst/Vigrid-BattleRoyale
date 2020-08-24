@@ -45,31 +45,19 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		//DEBUG ZONE
 		BattleRoyaleDebug debug_state = new BattleRoyaleDebug;
-		if(debug_state)
-			m_States.Insert(debug_state); //insert debug state
-		else
-			Error("DEBUG STATE CONSTRUCTOR RETURNED NULL");
+		m_States.Insert(debug_state); //insert debug state
 		
 		//PLAYER COUNT REACHED COUNTDOWN
 		BattleRoyaleCountReached count_reached = new BattleRoyaleCountReached;
-		if(count_reached)
-			m_States.Insert(count_reached); //insert debug state
-		else
-			Error("COUNT REACHED CONSTRUCTOR RETURNED NULL");
+		m_States.Insert(count_reached);
 
 		//PREPARE CLIENTS & TELEPORT
 		BattleRoyalePrepare prepare_clients = new BattleRoyalePrepare;
-		if(prepare_clients)
-			m_States.Insert(prepare_clients); //insert debug state
-		else
-			Error("PREPARE CONSTRUCTOR RETURNED NULL");
+		m_States.Insert(prepare_clients);
 
 		//UNLOCK CLIENTS AND START MATCH WOO
 		BattleRoyaleStartMatch start_match = new BattleRoyaleStartMatch;
-		if(start_match)
-			m_States.Insert(start_match); //insert debug state
-		else
-			Error("PREPARE CONSTRUCTOR RETURNED NULL");
+		m_States.Insert(start_match);
 
 		
 		int num_states = m_States.Count();
@@ -78,21 +66,16 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			int prev_state_ind = i + num_states - 1;
 			BattleRoyaleState previous_state = m_States[prev_state_ind];
 			BattleRoyaleRound round = new BattleRoyaleRound(previous_state);
-			if(round)
-				m_States.Insert(round);
-			else
-				Error("round is NULL! Constructor must have failed!");
+			m_States.Insert(round);
 			
 		}
 
 		//TODO: add a custom "round" state that represents 'no zone', constantly damages all players, and waits for only one player to remain alive
 		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
-		if(last_round)
-			m_States.Insert(last_round);
-		else
-			Error("last round is null! COnstructor must have failed!");
+		m_States.Insert(last_round);
 			
 		m_States.Insert(new BattleRoyaleWin);
+		m_States.Insert(new BattleRoyaleRestart);
 		
 		i_CurrentStateIndex = 0;
 		GetCurrentState().Activate();

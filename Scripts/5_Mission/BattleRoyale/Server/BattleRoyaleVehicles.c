@@ -160,7 +160,7 @@ class BattleRoyaleVehicles
             }
             
             //create server marker for this vehicle
-            //ExpansionMarkerModule.Cast( GetModuleManager().GetModule( ExpansionMarkerModule ) ).CreateServerMarker( vehicle_class, "Car", position, ARGB(255, 0, 255, 0), false );
+            ExpansionMarkerModule.Cast( GetModuleManager().GetModule( ExpansionMarkerModule ) ).CreateServerMarker( vehicle_class, "Car", position, ARGB(255, 0, 255, 0), false );
 
             ref BattleRoyaleCachedVehicle cached_vehicle = new BattleRoyaleCachedVehicle( vehicle_class, vehicle_parts, position );
             m_Vehicles.Insert( cached_vehicle );
@@ -214,7 +214,7 @@ class BattleRoyaleVehicles
         vector m_HitPosition;
         vector m_HitNormal;
         float m_HitFraction;
-        
+
         //TODO: check if safe from object collisions using same raycast as players
         bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
         if(m_Hit)
