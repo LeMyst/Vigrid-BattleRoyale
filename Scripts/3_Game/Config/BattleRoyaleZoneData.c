@@ -1,6 +1,16 @@
 class BattleRoyaleZoneData extends BattleRoyaleDataBase
 {
-    float constant_scale = 0.75;
+    int shrink_type = 1; // constant shrinkage 
+    
+    //constant
+    float constant_scale = 0.65;
+
+    //TODO: linear
+
+    //exponential 
+    float shrink_base = 2.718281828459; // ~ e
+    float shrink_exponent = 3.0;
+    
 
 
     override string GetPath()
