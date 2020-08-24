@@ -168,9 +168,20 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 
 
+	protected string last_surface_type = "";
 
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
+		string surface_type;
+		vector pos = player.GetPosition();
+		GetGame().SurfaceGetType(pos[0], pos[2], surface_type);
+
+		if(surface_type != last_surface_type)
+		{
+			Print(surface_type);
+		}
+		last_surface_type = surface_type;
+		
 		#ifdef BR_BETA_LOGGING
 		if(print_once_tick)
 		{
