@@ -146,7 +146,7 @@ class BattleRoyaleZone
 
     protected float CreatePlayRadius(float p_Rad) //p_Rad is the previous play areas radius
     {
-
+        // code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
         switch(i_ShrinkType)
         {
             case 1: //exponential
@@ -163,8 +163,13 @@ class BattleRoyaleZone
 
                 return sizefactor * shrinkfactor; //(-(r/(e^3)))*(e^((3/m)*x) + (-(e^3)))
             case 2: //linear
+                // code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
+                float m = i_NumRounds + 1;
+                float r = GetWorldRadius();
+                float x = GetZoneNumber();
 
-                return 0;
+                float gradient = -1.0 * (r / m);
+                return gradient * x + r;
             default:
                 return p_Rad * f_ConstantShrink;
         }
