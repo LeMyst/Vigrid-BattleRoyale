@@ -96,7 +96,7 @@ class BattleRoyaleZone
     }
 
     
-    protected void CreatePlayArea(float p_Rad, vector p_Cent)
+    protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
          Print("Zone Data");
 
@@ -146,13 +146,16 @@ class BattleRoyaleZone
 
     protected float CreatePlayRadius(float p_Rad) //p_Rad is the previous play areas radius
     {
-        // code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
+        float m = i_NumRounds + 1; //7 total, rounds, 8 is needed for our calculation because X=8 would result in Y=0 and we want to avoid that
+        float x = GetZoneNumber(); //this needs to start at 1 (because x=0 for r=initial play area  == initial play area)
+        float r = GetWorldRadius();
+
+
+        
         switch(i_ShrinkType)
         {
             case 1: //exponential
-                float m = i_NumRounds + 1; //7 total, rounds, 8 is needed for our calculation because X=8 would result in Y=0 and we want to avoid that
-                float x = GetZoneNumber(); //this needs to start at 1 (because x=0 for r=initial play area  == initial play area)
-                float r = GetWorldRadius();
+                // code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
                 float e = f_Eulers;
                 float exp = f_Exponent;
 
@@ -164,15 +167,13 @@ class BattleRoyaleZone
                 return sizefactor * shrinkfactor; //(-(r/(e^3)))*(e^((3/m)*x) + (-(e^3)))
             case 2: //linear
                 // code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
-                float m = i_NumRounds + 1;
-                float r = GetWorldRadius();
-                float x = GetZoneNumber();
-
                 float gradient = -1.0 * (r / m);
                 return gradient * x + r;
             default:
                 return p_Rad * f_ConstantShrink;
         }
+
+        return -1;
     }
 
 

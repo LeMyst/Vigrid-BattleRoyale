@@ -89,8 +89,8 @@ class BattleRoyaleVehicles
             vector position = "14829.2 72.3148 14572.3";
             
             //remove this IF statement when no longer debugging vheicles
-            if(i > 0)
-            {
+           // if(i > 0)
+           // {
                 Print("Finding valid location...");
                 string path = "CfgWorlds " + GetGame().GetWorldName();
                 vector temp = GetGame().ConfigGetVector(path + " centerPosition");
@@ -132,7 +132,7 @@ class BattleRoyaleVehicles
                     break;
                 }
 
-            }
+          //  }
             //--- defaults in case no config data is found
             string vehicle_class = "Sedan_02";
             ref array<string> vehicle_parts = {"CarBattery", "CarRadiator", "SparkPlug", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel"};
