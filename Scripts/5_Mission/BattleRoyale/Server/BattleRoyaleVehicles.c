@@ -103,12 +103,18 @@ class BattleRoyaleVehicles
                     iterations++;
                     float x = Math.RandomFloat(0, world_width);
                     float z = Math.RandomFloat(0, world_height);
+                    float y = GetGame().SurfaceY(x, z);
+                    position = Vector( x, y, z );
+
+                    if(!IsSafeSpawnPos(position))
+                        continue;
+
+                    /*
                     if(GetGame().SurfaceIsSea(x, z))
                         continue;
                     if(GetGame().SurfaceIsPond(x, z))
                         continue;
 
-                    float y = GetGame().SurfaceY(x, z);
 
                     vector m_HitPosition;
                     float check_radius = 100.0;
@@ -125,7 +131,10 @@ class BattleRoyaleVehicles
                         continue;
 
                     position = m_HitPosition;
+
                     Print("Found safe vehicle spawn position using SampleNavmeshPosition");
+                    */
+                    
                     Print(position);
 
 
@@ -167,6 +176,53 @@ class BattleRoyaleVehicles
             b_IsBusy = true;
             GetGame().GameScript.Call(this, "ProcessVehicles", NULL); //spin up thread
         }
+    }
+
+
+    protected bool IsSafeSpawnPos(vector pos)
+    {
+        float x = pos[0];
+        float z = pos[2];
+
+        if(GetGame().SurfaceIsSea(x, z))
+            return false;
+        if(GetGame().SurfaceIsPond(x, z))
+            return false;
+
+        string surface_type;
+        GetGame().SurfaceGetType(x, z, surface_type);
+
+        string cfgSurfacePath = "CfgSurfaces " + surface_type;
+        int is_interior = GetGame().ConfigGetInt(cfgSurfacePath + " interior");
+
+         //Invalid if GetInt(CfgSurfaces >> surface_type >> interior) == 1
+        if(is_interior == 1)
+            return false;
+
+        float friction = GetGame().ConfigGetFloat(cfgSurfacePath + " friction");
+
+        //Invalid if GetFloat(... friction) < 0.94     
+        if(friction < 0.94)
+            return false;
+
+
+        vector start = pos;
+        vector end = pos + Vector( 0, 1, 0 );
+        float radius = 2.0; //TODO: adjust as needed (maybe base it on our selected vehicles bounding box?)
+        PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
+        Object m_HitObject;
+        vector m_HitPosition;
+        vector m_HitNormal;
+        float m_HitFraction;
+        
+        //TODO: check if safe from object collisions using same raycast as players
+        bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+        if(m_Hit)
+            return false;
+
+       
+        Print("Found safe vehicle spawn position using IsSafeSpawnPos");
+        return true;
     }
 
     void ProcessVehicles()
