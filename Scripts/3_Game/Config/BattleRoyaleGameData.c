@@ -12,13 +12,17 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     int debug_heal_tick_seconds = 5;
     int zone_damage_tick_seconds = 5;
 
+    float zone_damage_delta = 0.1;
+
+
     bool enable_zone_damage = true;
 
 
     ref array<string> player_starting_items = {
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",
-        "JoggingShoes_Red"
+        "JoggingShoes_Red",
+        "MedicalBandage" //zombies at start can be brutal. this will help
     };
 
 

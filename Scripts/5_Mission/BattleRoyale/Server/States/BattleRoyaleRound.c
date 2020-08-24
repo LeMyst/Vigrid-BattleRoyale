@@ -10,6 +10,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	bool b_ZoneLocked;
 	bool b_DoZoneDamage;
 	int i_DamageTickTime;
+	float f_Damage;
 
 	array<int> lock_notif_min;
 	array<int> lock_notif_sec;
@@ -32,6 +33,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		lock_notif_sec =  m_GameSettings.zone_notification_seconds;
 
 		i_DamageTickTime = m_GameSettings.zone_damage_tick_seconds;
+		f_Damage = m_GameSettings.zone_damage_delta;
+
 		b_DoZoneDamage = m_GameSettings.enable_zone_damage;
 
 		Init();
@@ -175,7 +178,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 				if(player.time_until_damage <= 0)
 				{
 					//DAMAGE
-					player.DecreaseHealthCoef(0.1); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
+					MessagePlayer(player, "You are taking zone damage!");
+					player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
 					player.time_until_damage = i_DamageTickTime; //reset timer
 				}
 				player.time_until_damage -= timeslice;
