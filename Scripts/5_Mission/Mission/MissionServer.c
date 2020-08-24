@@ -107,6 +107,17 @@ modded class MissionServer
 					player.Delete();
 				}
 			}
+			else
+			{
+				//can't cast current state to debug? Kick
+				GetGame().DisconnectPlayer( identity );
+			}
+			
+		}
+		else
+		{
+			//Really no idea what this could be... maybe dead? Kick
+			GetGame().DisconnectPlayer( identity );
 		}
 		
 		

@@ -93,10 +93,17 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     void OnPlayerKilled(PlayerBase player, Object killer)
 	{
+		if(ContainsPlayer(player))
+		{
+			RemovePlayer(player);
+		}
+		/*
+		//Kicking should be handled by MissionServer's ClientRespawn event now
 		if(player.GetIdentity())
 			GetGame().DisconnectPlayer(player.GetIdentity());
 		else
 			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
+		*/
 	}
     
     override void OnPlayerTick(PlayerBase player, float timeslice)

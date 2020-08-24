@@ -210,6 +210,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			{
 				BRPrint("ERROR! GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
 			}
+			//any other case here, the player is dead & therefore shouldn't count towards any state
 		}
 		
 	}
