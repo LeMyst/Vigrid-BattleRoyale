@@ -165,7 +165,6 @@ class BattleRoyaleVehicles
         if(!b_IsBusy)
         {
             b_IsBusy = true;
-            Print("Process vehicles tick!");
             GetGame().GameScript.Call(this, "ProcessVehicles", NULL); //spin up thread
         }
     }
