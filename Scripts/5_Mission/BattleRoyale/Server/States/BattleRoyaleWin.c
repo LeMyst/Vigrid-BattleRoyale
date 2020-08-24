@@ -3,6 +3,7 @@
 class BattleRoyaleWin extends BattleRoyaleState
 {
 	int i_SecondsTillKick;
+	PlayerBase winner;
 
 	void BattleRoyaleWin()
 	{
@@ -13,7 +14,6 @@ class BattleRoyaleWin extends BattleRoyaleState
 	override void Activate()
 	{
 		super.Activate();
-		PlayerBase winner;
 		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{
