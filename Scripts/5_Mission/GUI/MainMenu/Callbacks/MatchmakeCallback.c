@@ -6,6 +6,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 	protected ref MainMenu m_MainMenu;
 	void Cancel()
 	{
+        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
         GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove( api.RequestMatchmakeAsync ); //in case we cancel during the request downtime
 		is_canceled = true;
 	}
@@ -35,6 +36,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 	override void OnSuccess( ref ServerData data )
 	{
 		ref ServerData p_ServerData = data;
+        ref ClosePopupButtonCallback onclick;
 
 		if(is_canceled) 
 		{
@@ -43,7 +45,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		if(p_ServerData == NULL)
 		{
 			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
-			ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
+			onclick = new ClosePopupButtonCallback( m_MainMenu );
 		    m_MainMenu.CreatePopup("Error! NULL Response!", "Close", onclick);
 			return;
 		}
@@ -65,15 +67,18 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		string ip_addr = p_ServerData.GetIP();
 		int port = p_ServerData.GetPort();
 		
+
 		if(!GetGame().Connect(m_MainMenu, ip_addr, port, "DayZBR_Beta"))
 		{
 			Print(p_ServerData.connection);
-			Error("BattleRoyale: Failed to connect to server");
-			ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
+			Error("BattleRoyale: Failed to connect to server");	
+            onclick = new ClosePopupButtonCallback( m_MainMenu );
 		    m_MainMenu.CreatePopup("Error! Failed to connect to the provided server!", "Close", onclick);
             return;
 		}
 
-		m_MainMenu.ClosePopup();
+        //Note: the close button is only for beta testing (dayz's sweet "Connect" feature sometimes takes a while for the server handshake to complete)
+        onclick = new ClosePopupButtonCallback( m_MainMenu );
+		m_MainMenu.CreatePopup("Connecting to match. Please be patient, this could take a while...","Close [DEV ONLY]", onclick);
 	}
 }
