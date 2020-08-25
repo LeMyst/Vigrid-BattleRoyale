@@ -72,7 +72,7 @@ class BattleRoyaleLoot
         
         player_pos[1] = 0;
 
-        GetGame().GetObjectsAtPosition(player_pos, despawn_radius, buildings, proxies);
+        GetGame().GetObjectsAtPosition(player_pos, despawn_radius + 10, buildings, proxies);
 
         for(int i = 0; i < buildings.Count(); i++)
         {
@@ -102,7 +102,7 @@ class BattleRoyaleLoot
                         //--- spawns loot piles if necessary
                         lootable.AddNearPlayer( player );
                     }
-                    else
+                    else if(distance <= despawn_radius)
                     {
                         //--- despawn loot piles if necessary
                         lootable.RemoveNearPlayer( player );
@@ -173,7 +173,7 @@ class BattleRoyaleLootableBuilding
 
         if(a_NearPlayers.Find(player) == -1)
         {
-            Print("First Time player near " + p_Building.GetType());
+            Print("Player near " + p_Building.GetType());
             a_NearPlayers.Insert(player);
         }
         if(!is_spawned)
@@ -274,6 +274,7 @@ class BattleRoyaleLootableBuilding
         Print("DESPAWNING LOOT FOR " + p_Building.GetType());
 
         array< ref BattleRoyaleLootItemData > remove_these = new array< ref BattleRoyaleLootItemData >();
+        Print("Deleting =>");
         for(i = 0; i < a_LootData.Count(); i++)
         {
             ref ItemBase item = a_SpawnedLoot.Get(i);
@@ -291,6 +292,7 @@ class BattleRoyaleLootableBuilding
                 }
                 else
                 {
+                    Print(item);   
                     GetGame().ObjectDelete( item ); //despawn our item
                 }
             }
@@ -301,9 +303,12 @@ class BattleRoyaleLootableBuilding
             
         }
         //clean our loot data
+        Print("Cleaning =>");
         for(i = 0; i < remove_these.Count(); i++)
         {
-            a_LootData.RemoveItem(remove_these.Get(i));
+            ref BattleRoyaleLootItemData item_data = remove_these.Get(i);
+            Print(item_data);
+            a_LootData.RemoveItem(item_data);
         }
 
         a_SpawnedLoot.Clear();

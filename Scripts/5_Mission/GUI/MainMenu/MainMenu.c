@@ -304,6 +304,10 @@ class ConnectingToNetworkCallback extends BattleRoyaleOnStartCallback
 	}
 	override void OnError( int errorCode )
 	{
+		if(errorCode == 5)
+		{
+			//some generic error code
+		}
 		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString());
 	}
 	override void OnTimeout()

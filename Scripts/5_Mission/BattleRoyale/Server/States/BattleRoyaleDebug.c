@@ -44,6 +44,8 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	{
 		m_CallQueue.CallLater(this.MessageWaiting, i_TimeBetweenMessages*1000, true);
 		super.Activate();
+
+		BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
 	}
 	override void Deactivate()
 	{

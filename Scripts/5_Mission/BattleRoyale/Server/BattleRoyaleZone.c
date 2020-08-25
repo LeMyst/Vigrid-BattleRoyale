@@ -178,7 +178,7 @@ class BattleRoyaleZone
                     Error("Not enough static sizes for static zone sizes!");
                     return 100;
                 }   
-                return a_StaticSizes[x-1];
+                return a_StaticSizes[x - 1];
             default:
                 return p_Rad * f_ConstantShrink;
         }

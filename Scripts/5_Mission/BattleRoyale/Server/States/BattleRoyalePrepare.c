@@ -39,6 +39,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		super.Activate();
 
+        BattleRoyaleAPI.GetAPI().ServerSetLock(true); //Lock the server
+
+
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen

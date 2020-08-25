@@ -104,6 +104,33 @@ class BattleRoyaleAPI {
         Print("BattleRoyaleAPI::ServerFinish() => WEB RESULT: " + result);
     }
 
+
+    void ServerSetLock(bool value)
+    {
+        int req_data = 0;
+        if(value)
+            req_data = 1;
+
+        BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
+        if(!p_ServerSettings)
+        {
+            Error("BattleRoyaleAPI::ServerSetLock() => ERROR: p_ServerSettings = NULL");
+            return;
+        }
+
+        string query_port = p_ServerSettings.query_port.ToString();
+        string ip_address = p_ServerSettings.ip_address;
+
+        string request = "setlock/" + req_data.ToString() + "/" + query_port;
+        if(ip_address != "127.0.0.1")
+        {
+            request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API
+        }
+
+        string result = SendRequest_Sync(BattleRoyaleAPIContextType.Server, request);
+        Print("BattleRoyaleAPI::ServerSetLock() => WEB RESULT: " + result);
+    }
+
     //get server info by ID
     ServerData GetServer(string server_id)
     {
@@ -155,7 +182,7 @@ class BattleRoyaleAPI {
     //client onstart api
     PlayerData RequestStart(string SteamID, string Name)
 	{
-        string result = SendRequest_Sync(BattleRoyaleAPIContextType.Client, "start/" + SteamID + "/" + Name);
+        string result = SendRequest_Sync(BattleRoyaleAPIContextType.Client, "start/" + SteamID + "/" + Encode(Name));
         Print("BattleRoyaleAPI::RequestStart() => WEB RESULT: " + result);
         if(result == "")
 		{
@@ -181,8 +208,12 @@ class BattleRoyaleAPI {
 
     void RequestStartAsync(string SteamID, string Name, ref BattleRoyaleOnStartCallback callback)
     {
+        Print("RequestStartAsync()");
+        Print(SteamID);
+        Print(Name);
+
         ref OnStartCallback_REST rest_callback = new OnStartCallback_REST( callback );
-        SendRequest_Async(BattleRoyaleAPIContextType.Client, "start/" + SteamID + "/" + Name, rest_callback);
+        SendRequest_Async(BattleRoyaleAPIContextType.Client, "start/" + SteamID + "/" + Encode(Name), rest_callback);
     }
 
     //request matchmake
@@ -224,12 +255,16 @@ class BattleRoyaleAPI {
 	}
     void RequestMatchmakeAsync(PlayerData m_webplayer, ref BattleRoyaleMatchmakeCallback callback, string region = "any")
     {
+        Print("RequestMatchmakeAsync()");
+        Print(region);
+
         if(!m_webplayer)
         {
             Error("BattleRoyaleAPI::RequestMatchmake() => m_webplayer is NULL");
             callback.OnError( DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT );
             return;
         }
+        Print(m_webplayer._id);
         ref MatchmakeCallback_REST rest_callback = new MatchmakeCallback_REST( callback );
 		SendRequest_Async(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region, rest_callback);
     }
@@ -286,6 +321,10 @@ class BattleRoyaleAPI {
     }
     protected void SendRequest_Async(BattleRoyaleAPIContextType context_type, string request, RestCallback callback)
     {
+        Print("SendRequest_Async()");
+        Print(context_type);
+        Print(request);
+
         RestContext context = GetContext(context_type);
         if(!context)
         {
