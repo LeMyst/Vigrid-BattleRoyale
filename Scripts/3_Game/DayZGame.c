@@ -108,7 +108,7 @@ modded class DayZGame {
 
 	string GetBattleRoyaleClientVersion() 
 	{
-		return "0.1.b";
+		return "0.1.c";
 	}
 }
 
