@@ -4,10 +4,12 @@ class BattleRoyaleWin extends BattleRoyaleState
 {
 	int i_SecondsTillKick;
 	PlayerBase winner;
+	bool complete;
 
 	void BattleRoyaleWin()
 	{
 		i_SecondsTillKick = 15; //TODO: config this
+		complete = false;
 	}
 
 	//TODO: state functionality for winners!
@@ -47,7 +49,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 	
 	override bool IsComplete()
 	{
-		return GetPlayers().Count() == 0; //go to restart state when player disconnects
+		return complete || (GetPlayers().Count() == 0); //go to restart state when player disconnects
 	}
 
 	void HandleWinner(PlayerBase winner)
@@ -56,9 +58,12 @@ class BattleRoyaleWin extends BattleRoyaleState
 	}
 	void KickWinner()
 	{
-		if(winner)
+		if(winner && winner.GetIdentity() )
 		{
+			RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
 			GetGame().DisconnectPlayer( winner.GetIdentity() );
 		}
+
+		complete = true;
 	}
 }

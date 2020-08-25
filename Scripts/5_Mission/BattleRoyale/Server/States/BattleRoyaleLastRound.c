@@ -98,7 +98,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 			RemovePlayer(player);
 		}
 		/*
-		//Kicking should be handled by MissionServer's ClientRespawn event now
+		//Kicking should be handled by MissionServer's ClientRespawn now
 		if(player.GetIdentity())
 			GetGame().DisconnectPlayer(player.GetIdentity());
 		else

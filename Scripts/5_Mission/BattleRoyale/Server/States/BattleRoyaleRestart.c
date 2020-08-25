@@ -6,7 +6,8 @@ class BattleRoyaleRestart extends BattleRoyaleState
 	{
 		super.Activate();
         BRPrint("Restarting!");
-		GetGame().RequestExit(0);
+		
+		m_CallQueue.CallLater(this.Shutdown, 10000, false);
 	}
 	override string GetName()
 	{
@@ -21,5 +22,10 @@ class BattleRoyaleRestart extends BattleRoyaleState
 	override bool IsComplete()
 	{
 		return false; //win state is never complete (it is an end state)
+	}
+
+	void Shutdown()
+	{
+		GetGame().RequestExit(0);
 	}
 }

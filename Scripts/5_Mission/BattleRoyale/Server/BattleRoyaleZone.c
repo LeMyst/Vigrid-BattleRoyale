@@ -13,6 +13,7 @@ class BattleRoyaleZone
 
     protected float f_Eulers;
     protected float f_Exponent;
+    protected ref array<float> a_StaticSizes;
 
 
     
@@ -31,6 +32,7 @@ class BattleRoyaleZone
         i_ShrinkType = m_ZoneSettings.shrink_type;
         f_Eulers = m_ZoneSettings.shrink_base;
         f_Exponent = m_ZoneSettings.shrink_exponent;
+        a_StaticSizes = m_ZoneSettings.static_sizes;
 
 
         m_PlayArea = new BattleRoyalePlayArea;
@@ -87,7 +89,7 @@ class BattleRoyaleZone
        
         
 
-       
+        CreatePlayArea(p_Rad, p_Cen);
 
 
         
@@ -98,7 +100,7 @@ class BattleRoyaleZone
     
     protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
-         Print("Zone Data");
+        Print("Zone Data");
 
         float new_radius = CreatePlayRadius(p_Rad);
         m_PlayArea.SetRadius(new_radius);
@@ -169,6 +171,14 @@ class BattleRoyaleZone
                 // code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
                 float gradient = -1.0 * (r / m);
                 return gradient * x + r;
+
+            case 3: //static sizes (lift from array in config)
+                if((x-1) >= a_StaticSizes.Count())
+                {
+                    Error("Not enough static sizes for static zone sizes!");
+                    return 100;
+                }   
+                return a_StaticSizes[x-1];
             default:
                 return p_Rad * f_ConstantShrink;
         }
