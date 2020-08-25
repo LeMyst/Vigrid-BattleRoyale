@@ -84,6 +84,6 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 
         //Note: the close button is only for beta testing (dayz's sweet "Connect" feature sometimes takes a while for the server handshake to complete)
         onclick = new ClosePopupButtonCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Connecting to match. Please be patient, this could take a while...","Close [DEV ONLY]", onclick);
+		m_MainMenu.CreatePopup("Connecting to match. Please be patient, this could take a while...","Close", onclick);
 	}
 }

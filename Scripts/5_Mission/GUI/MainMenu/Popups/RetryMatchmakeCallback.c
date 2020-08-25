@@ -1,7 +1,7 @@
 class RetryMatchmakeCallback extends PopupButtonCallback
 {
     protected ref MainMenu m_MainMenu;
-	void RetryNetworkConnectCallback(ref MainMenu menu)
+	void RetryMatchmakeCallback(ref MainMenu menu)
 	{
 		m_MainMenu = menu;
 	} 

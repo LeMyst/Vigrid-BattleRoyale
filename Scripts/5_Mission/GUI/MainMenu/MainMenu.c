@@ -1,6 +1,6 @@
 modded class MainMenu
 {
-	protected ref array<string> m_Regions = {"any","na","eu","au"}; //TODO: return these values in the "OnStart" web request
+	protected ref array<string> m_Regions; //TODO: return these values in the "OnStart" web request
 	protected int i_CurrentRegion = 0;
 	protected TextWidget m_SelectServerLabel;
 	protected TextWidget m_OpenWebsiteLabel;
@@ -13,6 +13,28 @@ modded class MainMenu
 	protected ref PopupButtonCallback popup_onClick2;
 	
 	protected ImageWidget m_Logo;
+
+
+	void UpdateRegions()
+	{
+		ref RegionData region_data = BattleRoyaleAPI.GetAPI().GetRegionData();
+		if(region_data)
+		{
+			m_Regions = region_data.regions;
+			//TODO: reload i_CurrentRegion from it's config file
+		}
+		else
+		{
+			//default regions
+			m_Regions = {"any","na","eu","au"};
+		}
+		if(i_CurrentRegion >= m_Regions.Count())
+		{
+			i_CurrentRegion = 0;
+		}
+		//update display text based on i_CurrentRegion and m_Regions
+		RegionChanged();
+	}
 
 	override Widget Init()
 	{
@@ -29,7 +51,7 @@ modded class MainMenu
 		}
 		ClosePopup(); //if init is called twice, close any popup that exists
 
-
+		UpdateRegions();
 	
 		m_Logo 						= ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
@@ -135,7 +157,7 @@ modded class MainMenu
 		PlayerData p_PlayerWebData = api.GetCurrentPlayer();
 		if(!p_PlayerWebData)
 		{
-			ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( m_MainMenu );
+			ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
 			CreatePopup("Network Error - Code " + DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA.ToString(), "Close", closecallback);
 			return;
 		}

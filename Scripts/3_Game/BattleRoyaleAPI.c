@@ -19,6 +19,7 @@ class BattleRoyaleAPI {
     
     protected ref PlayerData m_PlayerData; //player object (should only ever be set once per instance)
     protected ref ServerData m_ServerData;
+    protected ref RegionData m_RegionData;
 
     void BattleRoyaleAPI()
     {
@@ -35,6 +36,14 @@ class BattleRoyaleAPI {
     PlayerData GetCurrentPlayer()
     {
         return m_PlayerData;
+    }
+    void SetRegionData( ref RegionData data)
+    {
+        m_RegionData = data;
+    }
+    RegionData GetRegionData()
+    {
+        return m_RegionData;
     }
     ServerData GetCurrentServer()
     {
@@ -203,7 +212,6 @@ class BattleRoyaleAPI {
 
 		return m_PlayerData;
 	}
-
 
 
     void RequestStartAsync(string SteamID, string Name, ref BattleRoyaleOnStartCallback callback)

@@ -21,6 +21,7 @@ class ConnectingToNetworkCallback extends BattleRoyaleOnStartCallback
 	}
 	override void OnSuccess( PlayerData data )
 	{
+		m_MainMenu.UpdateRegions();
 		m_MainMenu.ClosePopup();
 		m_MainMenu.GetStats().InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
 	}
