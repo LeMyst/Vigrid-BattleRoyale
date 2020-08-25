@@ -15,8 +15,11 @@ static const string BATTLERYALE_FADE_MESSAGE = "DayZ Battle Royale";
 
 
 //--- web API response error codes
-static const int DAYZBR_NETWORK_ERRORCODE_NULL_RESULT = 1500;
-static const int DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT = 1600;
-static const int DAYZBR_NETWORK_ERRORCODE_CONTEXT_NULL_RESULT = 1700;
-static const int DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT = 1800;
+static const int DAYZBR_NETWORK_ERRORCODE_NULL_RESULT = 1500; //web returned 200, but response body was blank
+static const int DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT = 1600; //json response from the webserver cannot be parsed, remember dayz can't parse Booleans
+static const int DAYZBR_NETWORK_ERRORCODE_CONTEXT_NULL_RESULT = 1700; //somehow the REST context is returning NULL
+static const int DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT = 1800; //same as 1900 but internal to the API class structure
 
+
+//--- error codes
+static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json object in API is NULL

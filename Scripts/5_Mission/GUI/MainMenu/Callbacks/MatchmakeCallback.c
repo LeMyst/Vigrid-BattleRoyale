@@ -22,7 +22,8 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 			return;
 		}
 		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Close", onclick);
+        ref RetryMatchmakeCallback onretry = new RetryMatchmakeCallback( m_MainMenu );
+		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Close", onclick, "Retry", onretry);
 	}
 	override void OnTimeout()
 	{
@@ -31,12 +32,14 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 			return;
 		}
 		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Failed to connect! Timed out!", "Close", onclick);
+        ref RetryMatchmakeCallback onretry = new RetryMatchmakeCallback( m_MainMenu );
+		m_MainMenu.CreatePopup("Failed to connect! Timed out!", "Close", onclick, "Retry", onretry);
 	}
 	override void OnSuccess( ref ServerData data )
 	{
 		ref ServerData p_ServerData = data;
         ref ClosePopupButtonCallback onclick;
+        ref RetryMatchmakeCallback onretry;
 
 		if(is_canceled) 
 		{
@@ -46,7 +49,8 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		{
 			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
 			onclick = new ClosePopupButtonCallback( m_MainMenu );
-		    m_MainMenu.CreatePopup("Error! NULL Response!", "Close", onclick);
+            onretry = new RetryMatchmakeCallback( m_MainMenu );
+		    m_MainMenu.CreatePopup("Error! NULL Response!", "Close", onclick, "Retry", onretry);
 			return;
 		}
 
@@ -73,7 +77,8 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 			Print(p_ServerData.connection);
 			Error("BattleRoyale: Failed to connect to server");	
             onclick = new ClosePopupButtonCallback( m_MainMenu );
-		    m_MainMenu.CreatePopup("Error! Failed to connect to the provided server!", "Close", onclick);
+            onretry = new RetryMatchmakeCallback( m_MainMenu );
+		    m_MainMenu.CreatePopup("Error! Failed to connect to the provided server!", "Close", onclick, "Retry", onretry);
             return;
 		}
 

@@ -8,7 +8,9 @@ modded class MainMenu
 	protected Widget m_PopupMessage;
 	protected TextWidget m_PopupText;
 	protected ButtonWidget m_PopupButton;
+	protected ButtonWidget m_PopupButton_2;
 	protected ref PopupButtonCallback popup_onClick;
+	protected ref PopupButtonCallback popup_onClick2;
 	
 	protected ImageWidget m_Logo;
 
@@ -23,8 +25,9 @@ modded class MainMenu
 			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "BattleRoyale/GUI/layouts/widgets/popup_message.layout", layoutRoot );
 			m_PopupText = TextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
 			m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
-			ClosePopup();
+			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
 		}
+		ClosePopup(); //if init is called twice, close any popup that exists
 
 
 	
@@ -132,8 +135,8 @@ modded class MainMenu
 		PlayerData p_PlayerWebData = api.GetCurrentPlayer();
 		if(!p_PlayerWebData)
 		{
-			Error("BattleRoyale: PlayerWebData is NULL, cannot matchmake");
-			OpenMenuServerBrowser();
+			ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( m_MainMenu );
+			CreatePopup("Network Error - Code " + DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA.ToString(), "Close", closecallback);
 			return;
 		}
 
@@ -203,10 +206,11 @@ modded class MainMenu
 		m_PlayerName.SetText("Region: " + region_text);
 	}
 	
-	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL)
+	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL, string button_text_2 = "",  ref PopupButtonCallback onClickCallback_2 = NULL )
 	{
 		m_PopupText.SetText(message);
 		popup_onClick = onClickCallback;
+		popup_onClick2 = onClickCallback_2;
 		if(button_text != "")
 		{
 			//Show button
@@ -218,6 +222,17 @@ modded class MainMenu
 			//hide button
 			m_PopupButton.Show(false);
 		}
+		if(button_text_2 != "")
+		{
+			//Show button #2
+			m_PopupButton_2.SetText(button_text);
+			m_PopupButton_2.Show(true);
+		}
+		else
+		{
+			//hide button
+			m_PopupButton_2.Show(false);
+		}
 		
 
 
@@ -227,14 +242,27 @@ modded class MainMenu
 	{
 		m_PopupMessage.Show(false);
 	}
-	void PopupActionClicked()
+	void PopupActionClicked(int button_num)
 	{
-		if(!popup_onClick)
+		if(button_num == 1)
 		{
-			Error("POPUP BUTTON CALLBACK NULL!");
-			return;
+			if(!popup_onClick)
+			{
+				Error("POPUP BUTTON CALLBACK NULL!");
+				return;
+			}
+			popup_onClick.OnButtonClick();
 		}
-		popup_onClick.OnButtonClick();
+		else
+		{
+			if(!popup_onClick2)
+			{
+				Error("POPUP BUTTON 2 CALLBACK NULL!");
+				return;
+			}
+			popup_onClick2.OnButtonClick();
+		}
+		
 	}
 	override bool OnClick( Widget w, int x, int y, int button )
 	{
@@ -243,7 +271,13 @@ modded class MainMenu
 			if(w == m_PopupButton)
 			{
 				Print("POPUP BUTTON CLICKED");
-				PopupActionClicked();
+				PopupActionClicked(1);
+				return true;
+			}
+			if(w == m_PopupButton_2)
+			{
+				Print("POPUP BUTTON 2 CLICKED");
+				PopupActionClicked(2);
 				return true;
 			}
 		}

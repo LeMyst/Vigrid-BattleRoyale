@@ -56,5 +56,19 @@ WindowWidgetClass PopupDialogRoot {
    text_proportion 0.6
    font "gui/fonts/metron"
   }
+  ButtonWidgetClass PopupButton_2 {
+   position 148 100
+   size 100 48
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style MenuDefault
+   text "Close"
+   text_proportion 0.6
+   font "gui/fonts/metron"
+  }
  }
 }
