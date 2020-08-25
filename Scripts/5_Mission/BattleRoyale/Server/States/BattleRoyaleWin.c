@@ -32,7 +32,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 			HandleWinner(winner);
 		}
 		BattleRoyaleAPI.GetAPI().ServerFinish(winner_name); //report winner to api
-		
+		ServerSetLock
 		//TODO: report match data to leaderboards
 
 		m_CallQueue.CallLater(this.KickWinner, i_SecondsTillKick * 1000, false);
