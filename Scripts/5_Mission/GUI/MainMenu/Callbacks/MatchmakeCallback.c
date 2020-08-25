@@ -6,6 +6,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 	protected ref MainMenu m_MainMenu;
 	void Cancel()
 	{
+        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove( api.RequestMatchmakeAsync ); //in case we cancel during the request downtime
 		is_canceled = true;
 	}
 	void MatchmakeCallback(ref MainMenu menu)
@@ -42,8 +43,8 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		if(p_ServerData == NULL)
 		{
 			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
-			m_MainMenu.ClosePopup();
-			m_MainMenu.OpenMenuServerBrowser();
+			ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
+		    m_MainMenu.CreatePopup("Error! NULL Response!", "Close", onclick);
 			return;
 		}
 
@@ -68,7 +69,9 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		{
 			Print(p_ServerData.connection);
 			Error("BattleRoyale: Failed to connect to server");
-			m_MainMenu.OpenMenuServerBrowser();
+			ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
+		    m_MainMenu.CreatePopup("Error! Failed to connect to the provided server!", "Close", onclick);
+            return;
 		}
 
 		m_MainMenu.ClosePopup();
