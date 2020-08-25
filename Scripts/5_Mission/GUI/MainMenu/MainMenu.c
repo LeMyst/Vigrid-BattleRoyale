@@ -1,6 +1,6 @@
 modded class MainMenu
 {
-	protected ref array<string> m_Regions = {"any","na","eu","au"};
+	protected ref array<string> m_Regions = {"any","na","eu","au"}; //TODO: return these values in the "OnStart" web request
 	protected int i_CurrentRegion = 0;
 	protected TextWidget m_SelectServerLabel;
 	protected TextWidget m_OpenWebsiteLabel;
@@ -121,6 +121,10 @@ modded class MainMenu
 		return true;
 	}
 	
+	string GetSelectedRegion()
+	{
+		return m_Regions.Get(i_CurrentRegion);
+	}
 
 	override void Play()
 	{
@@ -138,7 +142,7 @@ modded class MainMenu
 		CreatePopup("Matchmaking...", "Cancel", onclick);
 
 		
-		api.RequestMatchmakeAsync(p_PlayerWebData, callback, m_Regions.Get(i_CurrentRegion));
+		api.RequestMatchmakeAsync(p_PlayerWebData, callback, GetSelectedRegion());
 		
 		/*
 		ServerData p_ServerData = api.RequestMatchmake(p_PlayerWebData, m_Regions.Get(i_CurrentRegion));
@@ -266,5 +270,5 @@ modded class MainMenu
 
 
 
-
+`
 

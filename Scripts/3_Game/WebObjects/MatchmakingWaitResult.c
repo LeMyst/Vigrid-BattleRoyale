@@ -11,7 +11,7 @@ class MatchmakingWaitResult extends ServerData
 		matches = new array<string>;
 		region = "any";
 		_id = "0000000000000000000000000";
-		locked = true;
+		locked = 1;
 	}
 	override bool CanConnect()
 	{

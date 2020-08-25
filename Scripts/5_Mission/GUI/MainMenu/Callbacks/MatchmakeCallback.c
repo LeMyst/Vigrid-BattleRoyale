@@ -49,9 +49,15 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 
 		if(!p_ServerData.CanConnect())
 		{
-			Error("Result is locked (or wait result)... cannot find viable matchmake");
-			m_MainMenu.ClosePopup();
-			m_MainMenu.OpenMenuServerBrowser();
+			Print("No viable match found... keep searching");
+
+            //--- get our player data 
+            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		    PlayerData p_PlayerWebData = api.GetCurrentPlayer();
+
+            //submit another request in 10 sec
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( api.RequestMatchmakeAsync, 10*1000, false, p_PlayerWebData, this,  m_MainMenu.GetSelectedRegion());
+            //api.RequestMatchmakeAsync(p_PlayerWebData, this, m_MainMenu.GetSelectedRegion());
 			return;
 		}
 
