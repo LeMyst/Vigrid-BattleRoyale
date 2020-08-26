@@ -37,8 +37,13 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		super.Activate();
 
-        BattleRoyaleAPI.GetAPI().ServerSetLock(true); //Lock the server
-
+        ServerData m_ServerData = BattleRoyaleAPI.GetAPI().GetCurrentServer();
+        while(!m_ServerData || m_ServerData.locked == 0)
+        {
+            Print("Attempting to lock the server!");
+            BattleRoyaleAPI.GetAPI().ServerSetLock(true); //Lock the server
+            m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+        }
 
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input

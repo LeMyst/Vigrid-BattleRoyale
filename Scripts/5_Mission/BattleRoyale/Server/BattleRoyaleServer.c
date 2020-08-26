@@ -82,8 +82,15 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		RandomizeServerEnvironment();
 
-
-		BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
+		//--- this will halt the server until we successfully register is as unlocked in the DB
+		Print("Requesting Server Startup...")
+		ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
+		while(m_ServerData.locked != 0)
+		{
+			Print("Server state is locked! Unlocking...");
+			BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
+			m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+		}
 	}
 	void Update(float timeslice)
 	{

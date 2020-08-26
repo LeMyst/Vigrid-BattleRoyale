@@ -48,11 +48,11 @@ class BattleRoyaleState {
 	{
 		return b_IsPaused;
 	}
-	bool Pause()
+	void Pause()
 	{
 		b_IsPaused = true;
 	}
-	bool Resume()
+	void Resume()
 	{
 		b_IsPaused = false;
 	}
