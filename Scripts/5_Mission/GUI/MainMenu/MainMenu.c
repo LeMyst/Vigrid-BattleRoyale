@@ -247,7 +247,7 @@ modded class MainMenu
 		if(button_text_2 != "")
 		{
 			//Show button #2
-			m_PopupButton_2.SetText(button_text);
+			m_PopupButton_2.SetText(button_text_2);
 			m_PopupButton_2.Show(true);
 		}
 		else
