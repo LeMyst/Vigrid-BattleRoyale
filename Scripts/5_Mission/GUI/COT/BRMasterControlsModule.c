@@ -131,7 +131,8 @@ class BRMasterControlsModule: JMRenderableModuleBase
         BattleRoyaleServer m_BrServer; 
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            //TODO: implement state pause/resume (preventing IsComplete() from returning unless resumed once paused)
+            Print("[DayZBR COT] State Machine Resuming!");
+            m_BrServer.GetCurrentState().Resume();// allow super.IsComplete() to return TRUE again
         }
         else
         {
@@ -144,7 +145,8 @@ class BRMasterControlsModule: JMRenderableModuleBase
         BattleRoyaleServer m_BrServer; 
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            //TODO: implement state pause/resume (preventing IsComplete() from returning unless resumed once paused)
+            Print("[DayZBR COT] State Machine Pausing!");
+            m_BrServer.GetCurrentState().Pause(); // super.IsComplete() will return FALSE until Resume is called
         }
         else
         {
@@ -156,7 +158,8 @@ class BRMasterControlsModule: JMRenderableModuleBase
         BattleRoyaleServer m_BrServer; 
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            //TODO: implement automatic state completion (preferably via state itself)
+            Print("[DayZBR COT] State Machine Skipping!");
+            m_BrServer.GetCurrentState().Deactivate();// super.IsComplete() will return TRUE when this is run
         }
         else
         {

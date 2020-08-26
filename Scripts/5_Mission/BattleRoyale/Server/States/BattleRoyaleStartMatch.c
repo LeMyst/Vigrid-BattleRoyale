@@ -3,7 +3,6 @@
 class BattleRoyaleStartMatch extends BattleRoyaleState
 {
     protected int i_TimeToUnlock;
-    protected bool b_HasStarted;
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
 
@@ -21,7 +20,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
 
         b_IsGameplay = false;
-        b_HasStarted = false;
     }
     override string GetName()
 	{
@@ -47,15 +45,15 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     
 	override bool IsComplete()
 	{
-        if(GetPlayers().Count() <= 1)
+        if(GetPlayers().Count() <= 1 && IsActive())
 		{
 			//clean call queue?
             m_CallQueue.Remove(this.StartZoning);
             m_CallQueue.Remove(this.UnlockPlayers);
             m_CallQueue.Remove(this.MessageUnlock);
-			return true;
+			Deactivate();
 		}
-		return b_HasStarted || super.IsComplete();
+		return super.IsComplete();
 	}
 
     void MessageUnlock(int seconds_till)
@@ -77,7 +75,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     }
     void StartZoning()
     {
-        b_HasStarted = true;
+        Deactivate();
     }
 
     void OnPlayerKilled(PlayerBase player, Object killer)

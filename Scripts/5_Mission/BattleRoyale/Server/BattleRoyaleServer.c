@@ -118,7 +118,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 
 				BRPrint("Leaving State `" + GetCurrentState().GetName() + "`");
-				GetCurrentState().Deactivate(); //deactivate old state
+				if(GetCurrentState().IsActive())
+				{
+					GetCurrentState().Deactivate(); //deactivate old state
+				}
 				array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 				foreach(PlayerBase player : players)
 				{

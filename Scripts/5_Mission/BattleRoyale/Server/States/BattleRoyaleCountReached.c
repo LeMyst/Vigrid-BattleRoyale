@@ -3,7 +3,6 @@
 class BattleRoyaleCountReached extends BattleRoyaleDebugState
 {
     protected int i_TimeToStart;
-    protected bool b_ReadyToStart;
     
     void BattleRoyaleCountReached()
     {
@@ -21,10 +20,6 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
             Error("FAILED TO READ DEBUG SETTINGS");
             i_TimeToStart = 30;
         }
-        
-        
-        
-        b_ReadyToStart = false;
     }
     override string GetName()
 	{
@@ -49,10 +44,10 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
     
 	override bool IsComplete()
 	{
-		return b_ReadyToStart || super.IsComplete();
+		return super.IsComplete();
 	}
     void DoStart()
     {
-        b_ReadyToStart = true;
+        Deactivate();
     }
 }

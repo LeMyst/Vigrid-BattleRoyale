@@ -38,6 +38,10 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
         button = UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
 
+        //Todo: create another wrapper for more actions
+        //call CreateText
+        //call CreateButton
+
     }
     override void OnHide() 
 	{
@@ -46,14 +50,14 @@ class BRMasterControlsForm extends JMFormBase
 
     void StateMachine_Next(UIEvent eid, ref UIActionBase action)
     {
-        //m_Module.StateMachine_Next();
+        m_Module.StateMachine_Next();
     }
     void StateMachine_Pause(UIEvent eid, ref UIActionBase action)
     {
-        //m_Module.StateMachine_Pause();
+        m_Module.StateMachine_Pause();
     }
     void StateMachine_Resume(UIEvent eid, ref UIActionBase action)
     {
-        //m_Module.StateMachine_Resume();
+        m_Module.StateMachine_Resume();
     }
 }

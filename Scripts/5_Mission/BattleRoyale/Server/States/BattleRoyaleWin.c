@@ -49,7 +49,11 @@ class BattleRoyaleWin extends BattleRoyaleState
 	
 	override bool IsComplete()
 	{
-		return complete || (GetPlayers().Count() == 0); //go to restart state when player disconnects
+		if(GetPlayers().Count() == 0 && IsActive())
+		{
+			Deactivate();
+		}
+		return super.IsComplete(); //go to restart state when player disconnects
 	}
 
 	void HandleWinner(PlayerBase winner)
@@ -64,6 +68,6 @@ class BattleRoyaleWin extends BattleRoyaleState
 			GetGame().DisconnectPlayer( winner.GetIdentity() );
 		}
 
-		complete = true;
+		Deactivate();
 	}
 }

@@ -3,7 +3,6 @@
 class BattleRoyalePrepare extends BattleRoyaleState
 {
     protected ref array<ref PlayerBase> m_PlayerList;
-    protected bool processing_complete;
     protected ref array<string> a_StartingItems;
 
 
@@ -27,7 +26,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
         
         
         m_PlayerList = new array<ref PlayerBase>;
-        processing_complete = false;
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
         world_center = GetGame().ConfigGetVector(path + " centerPosition");
@@ -64,7 +62,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     
 	override bool IsComplete()
 	{
-		return processing_complete || super.IsComplete();
+		return super.IsComplete();
 	}
     override string GetName()
 	{
@@ -152,6 +150,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
             }
         }
     
-        processing_complete = true;//mark as operation completed
+        Deactivate();
     }
 }

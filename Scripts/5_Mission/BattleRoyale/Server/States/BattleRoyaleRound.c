@@ -5,7 +5,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 	ref BattleRoyaleState m_PreviousSate; 
 	ref BattleRoyaleZone m_Zone;
 	int i_RoundTimeInSeconds; 
-	bool b_TimeUp;
 	bool b_IsFirstRound;
 	bool b_ZoneLocked;
 	bool b_DoZoneDamage;
@@ -44,7 +43,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 	void Init()
 	{
 		b_IsFirstRound = false;
-		b_TimeUp = false;
 		b_ZoneLocked = false;
 
 		m_Zone = new BattleRoyaleZone(GetPreviousZone());
@@ -129,7 +127,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	{
 
 		//when Player count <= 1 -> automatically clean up anything in the CallQueue (removing it) and complete this state
-		if(GetPlayers().Count() <= 1)
+		if(GetPlayers().Count() <= 1 && IsActive())
 		{
 			//clean call queue?
 			m_CallQueue.Remove(this.OnRoundTimeUp);
@@ -138,9 +136,9 @@ class BattleRoyaleRound extends BattleRoyaleState
 			m_CallQueue.Remove(this.LockNewZone);
 			m_CallQueue.Remove(this.NotifyTimeTillLockSeconds);
 			m_CallQueue.Remove(this.NotifyTimeTillLockMinutes);
-			return true;
+			Deactivate();
 		}
-		return b_TimeUp || super.IsComplete();
+		return super.IsComplete();
 		
 	}
 	override bool SkipState(BattleRoyaleState m_PreviousState) 
@@ -252,7 +250,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	}
 	void OnRoundTimeUp()
 	{
-		b_TimeUp = true;
+		Deactivate();
 	}
 
 

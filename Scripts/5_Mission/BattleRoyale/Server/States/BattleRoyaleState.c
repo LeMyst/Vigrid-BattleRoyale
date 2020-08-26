@@ -5,7 +5,8 @@ class BattleRoyaleState {
 	protected ref array<PlayerBase> m_Players;
 	protected bool b_IsActive;
 	protected ref ScriptCallQueue m_CallQueue;
-	
+	protected bool b_IsPaused;
+
 	string GetName()
 	{
 		return "Unknown State";
@@ -20,6 +21,7 @@ class BattleRoyaleState {
 		m_Players = new array<PlayerBase>();
 		m_CallQueue = new ScriptCallQueue;
 		b_IsActive = false;
+		b_IsPaused = false;
 	}
 
 	void Update(float timeslice)
@@ -42,8 +44,24 @@ class BattleRoyaleState {
 	{
 		return b_IsActive;
 	}
+	bool IsPaused()
+	{
+		return b_IsPaused;
+	}
+	bool Pause()
+	{
+		b_IsPaused = true;
+	}
+	bool Resume()
+	{
+		b_IsPaused = false;
+	}
 	bool IsComplete()
 	{
+		//state cannot complete if paused
+		if(b_IsPaused)
+			return false;
+
 		return !IsActive();
 	}
 	bool SkipState(BattleRoyaleState m_PreviousState)  //if true, we will skip activating/deactivating this state entirely

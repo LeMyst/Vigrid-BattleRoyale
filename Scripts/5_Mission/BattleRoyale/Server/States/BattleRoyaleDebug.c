@@ -34,9 +34,10 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	//returns true when this state is complete
 	override bool IsComplete()
 	{
-		if(GetPlayers().Count() >= i_MinPlayers)
-			return true;
-		
+		if(GetPlayers().Count() >= i_MinPlayers && IsActive())
+		{
+			Deactivate();
+		}
 		return super.IsComplete();
 	}
 	
