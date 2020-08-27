@@ -158,8 +158,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             if(process_player)
             {
+                
                 DisableInput(process_player);
+                
                 GiveStartingItems(process_player);
+
                 Teleport(process_player); //TODO: replace this with moving into C130 (for paradrops)
                 
             }
