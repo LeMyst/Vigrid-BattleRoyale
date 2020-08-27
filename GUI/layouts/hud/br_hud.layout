@@ -91,9 +91,10 @@ FrameWidgetClass BattleRoyaleHudFrame {
          hexactsize 1
          vexactsize 1
          fixaspect fixwidth
-         image0 "set:dayz_gui image:circle"
+         image0 "set:dayz_gui image:icon_circle"
          mode blend
          "src alpha" 1
+         stretch 0
         }
         TextWidgetClass DistanceText {
          ignorepointer 1
