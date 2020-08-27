@@ -1,4 +1,4 @@
-class BattleRoyaleLootCategory {
+class BattleRoyaleLootCategory : Managed {
     [NonSerialized()]
     string m_FileName;
 
@@ -7,7 +7,7 @@ class BattleRoyaleLootCategory {
     void Load(string filename)
     {
         JsonFileLoader<BattleRoyaleLootCategory>.JsonLoadFile(BATTLEROYALE_LOOT_CATEGORIES_FOLDER + filename , this);
-        this.m_Filename = filename;
+        this.m_FileName = filename;
     }
 
     string GetName()

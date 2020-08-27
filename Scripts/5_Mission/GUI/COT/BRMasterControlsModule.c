@@ -166,4 +166,30 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Error("Failed to cast GetBR() to BattleRoyaleServer");
         }
     }
+    private void Server_StartLoot()
+    {
+        BattleRoyaleServer m_BrServer; 
+        if(Class.CastTo( m_BrServer, GetBR()))
+        {
+            Print("[DayZBR COT] Starting Loot System!");
+            m_BrServer.GetLootSystem().Start();
+        }
+        else
+        {
+            Error("Failed to cast GetBR() to BattleRoyaleServer");
+        }
+    }
+    private void Server_StopLoot()
+    {
+        BattleRoyaleServer m_BrServer; 
+        if(Class.CastTo( m_BrServer, GetBR()))
+        {
+            Print("[DayZBR COT] State Machine Skipping!");
+            m_BrServer.GetLootSystem().Stop();
+        }
+        else
+        {
+            Error("Failed to cast GetBR() to BattleRoyaleServer");
+        }
+    }
 }

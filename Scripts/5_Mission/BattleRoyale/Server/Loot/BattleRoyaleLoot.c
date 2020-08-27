@@ -47,7 +47,7 @@ class BattleRoyaleLoot
     }
     void RemovePlayer(ref PlayerBase player)
     {
-        m_Players.Remove(player);
+        m_Players.RemoveItem(player);
     }
 
 
@@ -81,12 +81,18 @@ class BattleRoyaleLoot
     void ProcessLoot()
     {
         //clone players into a new list so we can process them without interrupts from RemovePlayer()
-        array<ref PlayerBase> m_PlayerClone = new array<ref PlayerBase>();
-        m_PlayerClone.InsertAll(m_Players); 
-
-        for(int i = 0; i < m_PlayerClone.Count(); i++)
+        ref array<ref PlayerBase> m_PlayerClone = new array<ref PlayerBase>();
+        int i;
+        ref PlayerBase player;
+        for(i = 0; i < m_Players.Count(); i++)
         {
-            ref PlayerBase player = m_PlayerClone[i];
+            player = m_Players[i];
+            m_PlayerClone.Insert(player);
+        }
+
+        for(i = 0; i < m_PlayerClone.Count(); i++)
+        {
+            player = m_PlayerClone[i];
             if(player)
             {
                 ProcessPlayerLoot(player); //can't put this on it's own thread bcz players near eachother will have issues with code stepping on eachother
@@ -260,7 +266,7 @@ class BattleRoyaleLootPile
     protected ref array<ItemBase> spawned_items;
 
 
-    public BattleRoyaleLootPile(vector model_pos, ref BattleRoyaleLootableBuilding parent )
+    void BattleRoyaleLootPile(vector model_pos, ref BattleRoyaleLootableBuilding parent )
     {
         spawn_with = new array<string>();
         spawned_items = new array<ItemBase>();
