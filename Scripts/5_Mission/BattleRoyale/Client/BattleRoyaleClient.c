@@ -20,6 +20,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		BRPrint("BattleRoyaleClient::Init()");
 		#endif
 
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
@@ -36,23 +37,51 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		return m_FuturePlayArea
 	}
 	
+	void Update(float delta)
+	{
+		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+
+		if(GetNextArea())
+		{
+			float distance = GetZoneDistance();
+			gameplay.UpdateZoneDistance( distance ); //update HUD element
+		}
+	}
 
 
-	void FadeIn()
+	protected float GetZoneDistance()
+	{
+		BattleRoyalePlayArea play_area = GetNextArea();
+		vector center = play_area.GetCenter();
+		PlayerBase player = GetGame().GetPlayer();
+		vector playerpos = player.GetPosition();
+
+		//2d distance check
+		center[1] = 0;
+		playerpos[1] = 0; 
+		return vector.Distance(center, playerpos);
+	}
+
+	protected void PlayerCountChanged(int new_count)
+	{
+		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+		gameplay.UpdatePlayerCount( new_count );
+	}
+	protected void FadeIn()
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE IN!");
 		//TODO: create Fade UI
 	}
-	void FadeOut()
+	protected void FadeOut()
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE OUT!");
 		//TODO: destroy Fade UI
 	}
-	void DisableUserInput()
+	protected void DisableUserInput()
 	{
 		PlayerBase player = GetGame().GetPlayer();
 
@@ -69,7 +98,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		player.GetInputController().OverrideRaise( true, false );
 		player.GetInputController().OverrideMovementAngle( true, 0 );
 	}
-	void EnableUserInput()
+	protected void EnableUserInput()
 	{
 		PlayerBase player = GetGame().GetPlayer();
 
@@ -90,6 +119,19 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	
 	//Client RPC calls
+	void SetPlayerCount(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<int> data;
+		if( !ctx.Read( data ) ) 
+		{
+			Error("FAILED TO READ SETPLAYERCOUNT RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			PlayerCountChanged( data.param1 );
+		}
+	}
 	void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<bool> data;

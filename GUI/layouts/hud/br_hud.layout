@@ -1,0 +1,109 @@
+FrameWidgetClass BattleRoyaleHudFrame {
+ ignorepointer 1
+ position 0 0
+ size 1 1
+ hexactpos 1
+ vexactpos 1
+ hexactsize 0
+ vexactsize 0
+ {
+  PanelWidgetClass HudPanel {
+   ignorepointer 1
+   position 0 0
+   size 0.9 0.9
+   halign center_ref
+   valign center_ref
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   {
+    PanelWidgetClass PlayerCountPanel {
+     ignorepointer 1
+     position 0 0
+     size 128 32
+     halign right_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 1
+     vexactsize 1
+     {
+      TextWidgetClass CountText {
+       ignorepointer 1
+       position 32 0
+       size 96 32
+       halign right_ref
+       hexactpos 1
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "99"
+       font "gui/fonts/etelkatextpro16"
+       "exact text" 0
+       "size to text h" 0
+       "size to text v" 0
+       "text halign" right
+       "text valign" center
+      }
+      ImageWidgetClass PlayerIcon {
+       ignorepointer 1
+       position 0 0
+       size 32 32
+       halign right_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+       fixaspect fixwidth
+       image0 "set:dayz_gui image:notification_friend"
+       mode blend
+       "src alpha" 1
+      }
+     }
+    }
+    PanelWidgetClass ZoneDistancePanel {
+     ignorepointer 1
+     position 0 32
+     size 128 32
+     halign right_ref
+     hexactpos 0
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     {
+      ImageWidgetClass ZoneIcon {
+       ignorepointer 1
+       position 0 0
+       size 32 32
+       halign right_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+       fixaspect fixwidth
+       image0 "set:dayz_gui image:circle"
+       mode blend
+       "src alpha" 1
+      }
+      TextWidgetClass DistanceText {
+       ignorepointer 1
+       position 32 0
+       size 96 32
+       halign right_ref
+       hexactpos 1
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "safe"
+       font "gui/fonts/etelkatextpro12"
+       "text halign" right
+       "text valign" center
+      }
+     }
+    }
+   }
+  }
+ }
+}

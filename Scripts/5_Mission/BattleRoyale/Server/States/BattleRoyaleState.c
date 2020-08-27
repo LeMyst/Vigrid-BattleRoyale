@@ -80,6 +80,7 @@ class BattleRoyaleState {
 		#endif
 		
 		m_Players.Insert(player);
+		OnPlayerCountChanged();
 	}
 	void RemovePlayer(PlayerBase player)
 	{
@@ -88,6 +89,7 @@ class BattleRoyaleState {
 		#endif
 		
 		m_Players.RemoveItem(player);
+		OnPlayerCountChanged();
 	}
 	array<PlayerBase> RemoveAllPlayers()
 	{
@@ -98,6 +100,7 @@ class BattleRoyaleState {
 		ref array<PlayerBase> result_array = new array<PlayerBase>();
 		result_array.InsertAll(m_Players);
 		m_Players.Clear();
+		OnPlayerCountChanged();
 		return result_array;
 	}
 	bool ContainsPlayer(PlayerBase player)
@@ -114,6 +117,14 @@ class BattleRoyaleState {
 	void OnPlayerTick(PlayerBase player, float timeslice)
 	{}
 
+	//player count changed event handler
+	protected void OnPlayerCountChanged()
+	{
+		if(IsActive())
+		{
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param1<int>( GetPlayers().Count() ), true);
+		}
+	}
 
 	//CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
 	void MessagePlayers(string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
