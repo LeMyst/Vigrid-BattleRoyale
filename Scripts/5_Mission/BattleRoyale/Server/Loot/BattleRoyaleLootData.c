@@ -144,7 +144,7 @@ class BattleRoyaleLootData
                     fileName = files[i];
                     //--- construct entry from file
                     ref BattleRoyaleLootEntry entry = new BattleRoyaleLootEntry();
-                    Print("[Loot] Loading Entry" + fileName);
+                    Print("[Loot] Loading Entry " + fileName);
                     entry.Load(fileName);
                     
                     AddEntry( entry );
