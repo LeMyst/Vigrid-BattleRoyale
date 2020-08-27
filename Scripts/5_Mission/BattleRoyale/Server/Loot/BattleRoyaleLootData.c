@@ -67,6 +67,24 @@ class BattleRoyaleLootData
         }
     }
 
+    private int LastIndexOf(string str, string substr)
+    {
+        int index = str.IndexOf(str);
+        if(index == -1)
+            return -1;
+        
+        int val = index;
+        while(val != -1)
+        {
+            val = str.IndexOfFrom(val+1, substr);
+            if(val != -1)
+            {
+                index = val;
+            }
+        }
+        return index;
+    }
+
     void Load()
     {
         Print("[Loot] Loading Loot Data...");
@@ -80,13 +98,17 @@ class BattleRoyaleLootData
         int length;
         for ( i = 0; i < files.Count(); i++ )
 		{
-			pos = files[i].LastIndexOf(".");
+			pos = LastIndexOf( files[i], "." );
             if ( pos > -1 )
 			{
                 start_index = pos + 1;
-                length = fileName.Length() - start_index;
+                length = files[i].Length() - start_index;
 
-                ext = fileName.Substring(start_index, length);
+                Print(files[i]);
+                Print(start_index);
+                Print(length);
+                ext = files[i].Substring(start_index, length);
+                Print(ext);
                 if(ext == "json")
                 {
                     fileName = files[i];
@@ -110,13 +132,13 @@ class BattleRoyaleLootData
         for ( i = 0; i < files.Count(); i++ )
 		{
             
-			pos = files[i].LastIndexOf(".");
+			pos = LastIndexOf( files[i], "." );
             if ( pos > -1 )
 			{
                 start_index = pos + 1;
-                length = fileName.Length() - start_index;
+                length = files[i].Length() - start_index;
 
-                ext = fileName.Substring(start_index, length);
+                ext = files[i].Substring(start_index, length);
                 if(ext == "json")
                 {
                     fileName = files[i];

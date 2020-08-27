@@ -21,7 +21,7 @@ class BattleRoyaleLoot
 
         LootReader.GetReader().ReadAsync("$CurrentDir:mpmissions\\BattleRoyale.ChernarusPlusGloom\\mapgroupproto.xml");
 
-        BattleRoyaleLootData.GetData().Load();
+        BattleRoyaleLootData.GetData(); //--- this will call LootData.Load() so this is enough
     }
     void ~BattleRoyaleLoot()
     {
