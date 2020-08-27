@@ -91,12 +91,17 @@ class BattleRoyaleLootPile
         }
         if(m_Entry.SpawnWithAttachments())
         {
+            //NOTE: we should do "all_attachments( class_name, slot_name )" that way we only return all available attachments for that weapon's specific slot
+            //to do this, we'll iterate over the slots available from CfgWeapons >> class >> slots or whatever
+            //each slot we'll pass to our function, which stores a cache of slot_name -> attachment array
+            //so we get that array for each slot, roll a die on if we spawn this attachment, then we select an attachment at random
+
             ref array<string> all_attachments = BattleRoyaleLootData.GetData().GetAllAttachments( class_name );
 
             if(all_attachments.Count() > 0)
             {
                 float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_attachment;
-
+                
                 for(i = 0; i < all_attachments.Count(); i++)
                 {
                     float roll = Math.RandomFloat(0, 1);
