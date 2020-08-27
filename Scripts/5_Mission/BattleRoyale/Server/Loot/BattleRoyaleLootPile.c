@@ -91,23 +91,41 @@ class BattleRoyaleLootPile
         }
         if(m_Entry.SpawnWithAttachments())
         {
-            //NOTE: we should do "all_attachments( class_name, slot_name )" that way we only return all available attachments for that weapon's specific slot
-            //to do this, we'll iterate over the slots available from CfgWeapons >> class >> slots or whatever
-            //each slot we'll pass to our function, which stores a cache of slot_name -> attachment array
-            //so we get that array for each slot, roll a die on if we spawn this attachment, then we select an attachment at random
+           
+            //this returns a map of slot name to attachment classnames that fit in the slot
+            ref map<string, ref array<string>> all_slot_data = BattleRoyaleLootData.GetData().GetAllAttachments( class_name );
 
-            ref array<string> all_attachments = BattleRoyaleLootData.GetData().GetAllAttachments( class_name );
-
-            if(all_attachments.Count() > 0)
+            if(all_slot_data.Count() > 0)
             {
                 float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_attachment;
                 
-                for(i = 0; i < all_attachments.Count(); i++)
+                for(i = 0; i < all_slot_data.Count(); i++)
                 {
-                    float roll = Math.RandomFloat(0, 1);
+                    float roll = Math.RandomFloat(0, 1); //roll to see if this slot should get an attachment spawned for it
                     if(roll < odds)
                     {
-                        class_names.Insert( all_attachments[i] );
+                        ref array<string> attachment_classes = all_slot_data.GetElement(i); 
+                        int count = attachment_classes.Count();
+                        if(count > 0)
+                        {
+                            int index = Math.RandomInt(0, count); //roll a random attachment classname to spawn
+                            string attachment_classname = attachment_classes[index];
+                            class_names.Insert( attachment_classname );
+
+                            //figure out if this needs batteryd
+                            configPath = "CfgVehicles " + attachment_classname + " attachments";
+                            ref array<string> attach_subattach_list = new array<string>(); 
+                            GetGame().ConfigGetTextArray(configPath,attach_subattach_list);
+                            if(attach_subattach_list.Find("BatteryD") != -1)
+                            {
+                                class_names.Insert( "Battery9V" ); //spawn with battery
+                            }
+                        }
+                        else
+                        {
+                            Error("Slot Attachments Contains no Entries!");
+                        }
+                        
                     }
                 }
             }
@@ -176,6 +194,9 @@ class BattleRoyaleLootPile
 
         int i;
         
+        //TODO: instead of disabling activity when moved,
+        // Remove the GetType() name from `class_names` if the item was moved. 
+        // This way unmoved items in the pile can still despawn & save perf
         bool was_moved = false;
         for(i = 0; i < spawned_items.Count(); i++)
         {

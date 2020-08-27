@@ -191,14 +191,14 @@ class BattleRoyaleLootData
         return false;
     }
 
-    private bool DoesCollide(notnull array<string> search, notnull array<string> find)
+    private string GetCollide(notnull array<string> search, notnull array<string> find)
     {
         for(int i = 0; i < find.Count(); i++)
         {
             if(ContainsCaseInsensitive(find[i], search))
-                return true;
+                return find[i];
         }
-        return false;
+        return "";
     }
 
     ref array<string> GetAllMagazines(string item_class)
@@ -307,7 +307,7 @@ class BattleRoyaleLootData
 
         return result;
     }
-    ref array<string> GetAllAttachments(string item_class)
+    ref map<string, ref array<string>> GetAllAttachments(string item_class) //return slot: [class, class], slot: [class, class]...
     {
         //lowercase item name
         string normalized_name = item_class;
@@ -319,7 +319,7 @@ class BattleRoyaleLootData
         }
 
 
-        ref array<string> result = new array<string>();
+        ref array<string> result = new map<string, ref array<string>>();
         if(!m_DataFields.Contains("attachments"))
         {
             Error("No attachments category!");
@@ -344,9 +344,15 @@ class BattleRoyaleLootData
                 ref array<string> attachment_slots = new array<string>(); 
                 GetGame().ConfigGetTextArray(configPath,attachment_slots);
 
-                if(DoesCollide(weapon_slots, attachment_slots))
+                string matching_slot = GetCollide(weapon_slots, attachment_slots);
+                matching_slot.ToLower();
+                if(matching_slot != "")
                 {
-                    result.Insert(attachment_name);
+                    if(!result.Contains(matching_slot))
+                    {
+                        result.Insert(matching_slot, new array<string>()); //insert this field
+                    }
+                    result.Get(matching_slot).Insert(attachment_name);//insert our attachment into the slot field
                 }
             }
         }
