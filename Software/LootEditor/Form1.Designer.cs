@@ -30,12 +30,14 @@
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.button3 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
+            this.trackBar1 = new System.Windows.Forms.TrackBar();
             this.tabControl1.SuspendLayout();
             this.tabPage1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             this.SuspendLayout();
             // 
             // tabControl1
@@ -50,6 +52,7 @@
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.trackBar1);
             this.tabPage1.Controls.Add(this.button3);
             this.tabPage1.Controls.Add(this.button2);
             this.tabPage1.Controls.Add(this.textBox1);
@@ -61,6 +64,26 @@
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Main Settings";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(48, 32);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(210, 58);
+            this.button3.TabIndex = 3;
+            this.button3.Text = "Reload From Disk";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(279, 32);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(210, 58);
+            this.button2.TabIndex = 2;
+            this.button2.Text = "Write Changes to Disk";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // textBox1
             // 
@@ -83,25 +106,16 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
-            // button2
+            // trackBar1
             // 
-            this.button2.Location = new System.Drawing.Point(279, 32);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(210, 58);
-            this.button2.TabIndex = 2;
-            this.button2.Text = "Write Changes to Disk";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
-            // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(48, 32);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(210, 58);
-            this.button3.TabIndex = 3;
-            this.button3.Text = "Reload From Disk";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
+            this.trackBar1.AutoSize = false;
+            this.trackBar1.Location = new System.Drawing.Point(296, 200);
+            this.trackBar1.Maximum = 100;
+            this.trackBar1.Name = "trackBar1";
+            this.trackBar1.Size = new System.Drawing.Size(200, 25);
+            this.trackBar1.TabIndex = 6;
+            this.trackBar1.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.trackBar1.Value = 50;
             // 
             // Form1
             // 
@@ -114,6 +128,7 @@
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -126,6 +141,7 @@
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.TrackBar trackBar1;
     }
 }
 
