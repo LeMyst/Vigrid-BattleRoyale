@@ -5,6 +5,8 @@ enum BattleRoyaleCOTStateMachineRPC
 	Next,
 	Pause,
 	Resume,
+    Start_Loot,
+    Stop_Loot,
 
     //TODO: insert more actions here
 

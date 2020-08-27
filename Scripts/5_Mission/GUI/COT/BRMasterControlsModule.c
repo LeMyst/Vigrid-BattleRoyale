@@ -54,6 +54,12 @@ class BRMasterControlsModule: JMRenderableModuleBase
 		case BattleRoyaleCOTStateMachineRPC.Resume:
 			RPC_Resume( ctx, sender, target );
 			break;
+        case BattleRoyaleCOTStateMachineRPC.Start_Loot:
+			RPC_StartLoot( ctx, sender, target );
+			break;
+        case BattleRoyaleCOTStateMachineRPC.Stop_Loot:
+			RPC_StopLoot( ctx, sender, target );
+			break;
 		}
     }
 
@@ -78,6 +84,21 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_Resume(); //Server recieved next command
         }
     }
+    private void RPC_StartLoot( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    {
+        if ( IsMissionHost() )
+		{
+            Server_StartLoot();
+        }
+    }
+    private void RPC_StopLoot( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    {
+        if ( IsMissionHost() )
+		{
+            Server_StopLoot();
+        }
+    }
+
 
 
     //client side functionality (these get called)
@@ -122,6 +143,34 @@ class BRMasterControlsModule: JMRenderableModuleBase
         else
         {
             Error("Server called StateMachine_Resume()");
+        }
+    }
+    void Loot_Start()
+    {
+        if ( IsMissionClient() )
+		{
+            //send RPC to server
+            ScriptRPC rpc = new ScriptRPC();
+			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Start_Loot, true, NULL );
+        }
+        else
+        {
+            Error("Server called Loot_Start()");
+        }
+    }
+    void Loot_Stop()
+    {
+        if ( IsMissionClient() )
+		{
+            //send RPC to server
+            ScriptRPC rpc = new ScriptRPC();
+			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Stop_Loot, true, NULL );
+        }
+        else
+        {
+            Error("Server called Loot_Stop()");
         }
     }
 

@@ -6,7 +6,7 @@ class BattleRoyaleLootSettings extends BattleRoyaleDataBase
     int num_mags_to_spawn_with = 3;
     int num_ammoboxs_to_spawn_with = 2;
     
-    int chance_to_spawn_attachment = 0.5;
+    float chance_to_spawn_attachment = 0.5;
 
 
     override string GetPath()
