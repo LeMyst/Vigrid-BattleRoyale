@@ -19,7 +19,7 @@ class BattleRoyaleLootData
     //--- cached item maps
     protected ref map<string, ref array<string>> m_Magazines;
     protected ref map<string, ref array<string>> m_Ammo;
-    protected ref map<string, ref array<string>> m_Attachments;
+    protected ref map<string, ref map<string, ref array<string>>>> m_Attachments; //weapon -> [ slot -> classes, slot -> classes, ... ]
     
 
     void BattleRoyaleLootData()
@@ -27,7 +27,7 @@ class BattleRoyaleLootData
         m_DataFields = new map<string, ref BattleRoyaleLootDataField>();
         m_Magazines = new map<string, ref array<string>>();
         m_Ammo = new map<string, ref array<string>>();
-        m_Attachments = new map<string, ref array<string>>();
+        m_Attachments = new map<string, ref map<string, ref array<string>>>>();
     }
 
     protected void AddCategory( ref BattleRoyaleLootCategory category )
@@ -319,7 +319,7 @@ class BattleRoyaleLootData
         }
 
 
-        ref array<string> result = new map<string, ref array<string>>();
+        ref map<string, ref array<string>> result = new map<string, ref array<string>>();
         if(!m_DataFields.Contains("attachments"))
         {
             Error("No attachments category!");
@@ -356,6 +356,8 @@ class BattleRoyaleLootData
                 }
             }
         }
+
+        m_Attachments.Insert(normalized_name, result);
 
         return result;
     }

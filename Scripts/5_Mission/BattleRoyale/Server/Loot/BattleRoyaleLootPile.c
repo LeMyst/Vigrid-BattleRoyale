@@ -108,12 +108,12 @@ class BattleRoyaleLootPile
                         int count = attachment_classes.Count();
                         if(count > 0)
                         {
-                            int index = Math.RandomInt(0, count); //roll a random attachment classname to spawn
+                            index = Math.RandomInt(0, count); //roll a random attachment classname to spawn
                             string attachment_classname = attachment_classes[index];
                             class_names.Insert( attachment_classname );
 
                             //figure out if this needs batteryd
-                            configPath = "CfgVehicles " + attachment_classname + " attachments";
+                            string configPath = "CfgVehicles " + attachment_classname + " attachments";
                             ref array<string> attach_subattach_list = new array<string>(); 
                             GetGame().ConfigGetTextArray(configPath,attach_subattach_list);
                             if(attach_subattach_list.Find("BatteryD") != -1)

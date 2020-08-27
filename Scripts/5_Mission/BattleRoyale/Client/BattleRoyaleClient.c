@@ -37,7 +37,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		return m_FuturePlayArea
 	}
 	
-	void Update(float delta)
+	override void Update(float delta)
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 

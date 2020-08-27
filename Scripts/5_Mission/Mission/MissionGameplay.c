@@ -3,7 +3,7 @@
 modded class MissionGameplay
 {
 	protected Widget m_BattleRoyaleHudRootWidget;
-	protected ref m_BattleRoyaleHud;
+	protected ref BattleRoyaleHud m_BattleRoyaleHud;
 
 	void MissionGameplay()
 	{
@@ -82,8 +82,7 @@ modded class MissionGameplay
 			} 
 			else if ( focusedWidget.ClassName().Contains( "MultilineEditBoxWidget" ) )
 			{
-				input
-				IsFocused = true;
+				inputIsFocused = true;
 			}
 		}
 

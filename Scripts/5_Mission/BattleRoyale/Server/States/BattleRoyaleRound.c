@@ -116,7 +116,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 
 		//message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
-		for(int i = 0; i < GetPlayers().Count(); i++)
+		for(i = 0; i < GetPlayers().Count(); i++)
 		{
 			ref PlayerBase player = GetPlayers()[i];
 			if(player)

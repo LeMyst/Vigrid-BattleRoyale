@@ -92,8 +92,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
 		}
 	}
-	void Update(float timeslice)
+	override void Update(float delta)
 	{
+		float timeslice = delta; //Legacy
+		
 		#ifdef BR_BETA_LOGGING
 		if(update_once)
 		{
