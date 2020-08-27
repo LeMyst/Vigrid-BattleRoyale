@@ -75,14 +75,13 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
             m_PlayerList.Insert(player);
         }
 
-        GetGame().GameScript.Call(this, "UnlockPlayers", NULL);
-        b_IsGameplay = true;
-
+        GetGame().GameScript.Call(this, "HandleUnlock", NULL); //spin up unlocking thread
+        
         BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
         BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
     }
 
-    void UnlockPlayers()
+    void HandleUnlock()
     {
         for(int i = 0; i < m_PlayerList.Count(); i++)
         {
@@ -92,6 +91,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         }
         
         MessagePlayers("The match has started!");
+        b_IsGameplay = true;
     }
 
     void StartZoning()
