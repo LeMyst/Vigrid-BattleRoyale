@@ -76,12 +76,17 @@ class BattleRoyaleLootData
         string fileName;
         int pos;
         string ext;
+        int start_index;
+        int length;
         for ( i = 0; i < files.Count(); i++ )
 		{
-			pos = files[i].IndexOf(".");
+			pos = files[i].LastIndexOf(".");
             if ( pos > -1 )
 			{
-                ext = fileName.Substring(pos+1, fileName.Length() - (pos + 1));
+                start_index = pos + 1;
+                length = fileName.Length() - start_index;
+
+                ext = fileName.Substring(start_index, length);
                 if(ext == "json")
                 {
                     fileName = files[i];
@@ -93,6 +98,10 @@ class BattleRoyaleLootData
                     AddCategory(category); //insert this category to our fields
                     
                 }
+                else
+                {
+                    Print("[Loot] Found category file with invalid extension `" + ext + "`");
+                }
             }
         }
         //load entries & populate loot data fields
@@ -101,10 +110,13 @@ class BattleRoyaleLootData
         for ( i = 0; i < files.Count(); i++ )
 		{
             
-			pos = files[i].IndexOf(".");
+			pos = files[i].LastIndexOf(".");
             if ( pos > -1 )
 			{
-                ext = fileName.Substring(pos+1, fileName.Length() - (pos + 1));
+                start_index = pos + 1;
+                length = fileName.Length() - start_index;
+
+                ext = fileName.Substring(start_index, length);
                 if(ext == "json")
                 {
                     fileName = files[i];
@@ -115,6 +127,11 @@ class BattleRoyaleLootData
                     
                     AddEntry( entry );
                 }
+                else
+                {
+                    Print("[Loot] Found entry file with invalid extension `" + ext + "`");
+                }
+                
             }
         }
     }
