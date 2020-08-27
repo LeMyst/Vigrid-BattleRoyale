@@ -46,7 +46,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
 
         //TODO: spawn & setup drop plane
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
         //we process on a static list so when players possibly disconnect during this phase we don't error out or skip any clients
@@ -91,6 +90,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
         {
             process_player.GetInventory().CreateInInventory(item);
         }     
+    }
+    protected void DisableInput(PlayerBase process_player)
+    {
+        process_player.DisableInput(true);
     }
     protected void Teleport(PlayerBase process_player)
     {
@@ -137,7 +140,14 @@ class BattleRoyalePrepare extends BattleRoyaleState
             break;
         }
 
+
+        //set pos
         process_player.SetPosition(random_pos);
+        
+        //random direction
+        float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
+        vector playerDir = vector.YawToVector(dir);
+        player.SetDirection(playerDir);
     }
     void ProcessPlayers()
     {
@@ -148,8 +158,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             if(process_player)
             {
+                DisableInput(process_player);
                 GiveStartingItems(process_player);
-                
                 Teleport(process_player); //TODO: replace this with moving into C130 (for paradrops)
                 
             }

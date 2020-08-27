@@ -5,6 +5,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     protected int i_TimeToUnlock;
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
+    
+    protected ref array<ref PlayerBase> m_PlayerList;
 
     void BattleRoyaleStartMatch()
     {
@@ -20,6 +22,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
 
         b_IsGameplay = false;
+        
+        m_PlayerList = new array<ref PlayerBase>;
     }
     override string GetName()
 	{
@@ -66,13 +70,30 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     }
     void UnlockPlayers()
     {
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true); //enable user input
-        MessagePlayers("The match has started!");
+        foreach(PlayerBase player : m_Players)
+        {
+            m_PlayerList.Insert(player);
+        }
+
+        GetGame().GameScript.Call(this, "UnlockPlayers", NULL);
         b_IsGameplay = true;
 
         BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
         BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
     }
+
+    void UnlockPlayers()
+    {
+        for(int i = 0; i < m_PlayerList.Count(); i++)
+        {
+            ref PlayerBase player = m_PlayerList[i];
+
+            player.DisableInput(false); //This will send an RPC to the client and automatically sync
+        }
+        
+        MessagePlayers("The match has started!");
+    }
+
     void StartZoning()
     {
         Deactivate();

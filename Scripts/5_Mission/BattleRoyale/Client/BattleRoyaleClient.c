@@ -22,7 +22,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 	}
@@ -81,40 +80,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		Print("BattleRoyale: FADE OUT!");
 		//TODO: destroy Fade UI
 	}
-	protected void DisableUserInput()
-	{
-		PlayerBase player = GetGame().GetPlayer();
-
-		if ( !player ) 
-		{
-			Error("CANNOT DISABLE INPUT! INVALID USER");
-			return;
-		}
-
-		//TODO: find a more efficient way to prevent the player from walking / running
-		player.GetInputController().SetDisabled( true );
-		player.GetInputController().OverrideMovementSpeed( true, 0 );
-		player.GetInputController().OverrideMeleeEvade( true, false );
-		player.GetInputController().OverrideRaise( true, false );
-		player.GetInputController().OverrideMovementAngle( true, 0 );
-	}
-	protected void EnableUserInput()
-	{
-		PlayerBase player = GetGame().GetPlayer();
-
-		if ( !player ) 
-		{
-			Error("CANNOT ENABLE INPUT! INVALID USER");
-			return;
-		}
-
-		player.GetInputController().SetDisabled( false );
-		player.GetInputController().OverrideMovementSpeed( false, 0 );
-		player.GetInputController().OverrideMeleeEvade( false, false );
-		player.GetInputController().OverrideRaise( false, false );
-		player.GetInputController().OverrideMovementAngle( false, 0 );
-	}
-	
 
 
 	
@@ -130,22 +95,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( type == CallType.Client )
 		{
 			PlayerCountChanged( data.param1 );
-		}
-	}
-	void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-	{
-		Param1<bool> data;
-		if( !ctx.Read( data ) ) 
-		{
-			Error("FAILED TO READ SETINPUT RPC");
-			return;
-		}
-		if ( type == CallType.Client )
-		{
-			if( data.param1 )
-				DisableUserInput();
-			else
-				EnableUserInput();
 		}
 	}
 	void SetFade(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)

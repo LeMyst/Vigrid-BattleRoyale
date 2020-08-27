@@ -360,7 +360,9 @@ class BattleRoyaleCachedVehicle
         }
         else
         {
-            //TODO: random direction!
+            float random_dir = Math.RandomFloat(0, 360);
+            vector dir = vector.YawToVector(random_dir);
+            ent.SetDirection( dir );
         }
         
         vector tmItem[4];

@@ -5,6 +5,42 @@ modded class PlayerBase
 
 	bool allow_fade = false;
 
+	void PlayerBase()
+	{	
+		//only register RPCs on client (this is a server->client function not reverse)
+		if(!IsMissionHost())
+		{
+			GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "RPC_DisableInput", this );
+		}
+	}
+
+	void DisableInput(bool disabled)
+	{
+		HumanInputController controller = GetInputController();
+		controller.OverrideMovementSpeed( disabled, 0 );
+		controller.OverrideMeleeEvade( disabled, false );
+		controller.OverrideRaise( disabled, false );
+		controller.OverrideMovementAngle( disabled, 0 );
+
+		if(IsMissionHost())
+		{
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "RPC_DisableInput", new Param1<bool>( disabled ), true, GetIdentity(), this); //disable user input
+		}
+	}
+	void RPC_DisableInput(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) ) 
+		{
+			Error("FAILED TO READ RPC_DisableInput RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			DisableInput( data.param1 );
+		}
+	}
+
 	override void OnScheduledTick(float deltaTime)
 	{
 		super.OnScheduledTick(deltaTime);
