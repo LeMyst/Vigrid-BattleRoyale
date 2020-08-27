@@ -17,6 +17,16 @@ array<vector> local_coord_positions = lr.GetAllLootPositions(object_class_name);
 
 class LootReader
 {
+    static ref LootReader GetReader()
+    {
+        if(!m_Singleton)
+        {
+            m_Singleton = new LootReader;
+        }
+        return m_Singleton;
+    }
+    static ref LootReader m_Singleton;
+
     ref LootReaderXMLCallback _callback;
 
     void ReadAsync(string path)

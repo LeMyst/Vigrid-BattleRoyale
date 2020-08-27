@@ -8,6 +8,8 @@
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:BattleRoyale\\";
 static const string BATTLEROYALE_VEHICLES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Vehicles\\";
+static const string BATTLEROYALE_LOOT_ENTRIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Entries\\";
+static const string BATTLEROYALE_LOOT_CATEGORIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Categories\\";
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR";
 
 //TODO: this will get removed
