@@ -115,6 +115,28 @@ class BattleRoyaleRound extends BattleRoyaleState
 		//tell the client the next play area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 
+		//message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
+		for(int i = 0; i < GetPlayers().Count(); i++)
+		{
+			ref PlayerBase player = GetPlayers()[i];
+			if(player)
+			{
+				vector playerPos = player.GetPosition();
+				playerPos[1] = 0;
+				vector next_pos = m_ThisArea.GetCenter();
+				next_pos[1] = 0;
+				float dist = vector.Distance(playerPos, next_pos);
+				if(dist > m_ThisArea.GetRadius())
+				{
+					MessagePlayer(player, "A new zone has appeared! YOU ARE OUTSIDE THE PLAY AREA!");
+				}
+				else
+				{
+					MessagePlayer(player, "A new zone has appeared! You are in the play are!");
+				}
+			}
+		}
+
 		super.Activate();
 	}
 	override void Deactivate()
@@ -255,7 +277,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 
 
-	//TODO: Round messaging
+	// Round messaging
 	void NotifyTimeTillLockSeconds(int seconds)
 	{
 		string message = "The new zone will lock in " + seconds.ToString() + " ";
