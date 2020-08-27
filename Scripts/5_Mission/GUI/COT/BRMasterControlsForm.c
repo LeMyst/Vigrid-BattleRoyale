@@ -38,9 +38,10 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
         button = UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
 
-        //Todo: create another wrapper for more actions
-        //call CreateText
-        //call CreateButton
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
+        UIActionManager.CreateText( wrapper, "Loot System" );
+        button = UIActionManager.CreateButton( wrapper, "Start", this, "LootSystem_Start" );
+        button = UIActionManager.CreateButton( wrapper, "Stop", this, "LootSystem_Stop" );
 
     }
     override void OnHide() 
@@ -59,5 +60,14 @@ class BRMasterControlsForm extends JMFormBase
     void StateMachine_Resume(UIEvent eid, ref UIActionBase action)
     {
         m_Module.StateMachine_Resume();
+    }
+
+    void LootSystem_Start(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.Loot_Start();
+    }
+    void LootSystem_Stop(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.Loot_Stop();
     }
 }
