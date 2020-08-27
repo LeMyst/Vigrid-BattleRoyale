@@ -161,6 +161,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 
 		GetCurrentState().AddPlayer(player);
+		m_LootSystem.AddPlayer( player );
 	}
 	void OnPlayerDisconnected(PlayerBase player)
 	{
@@ -170,6 +171,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		
 		if(GetCurrentState().ContainsPlayer(player))
 			GetCurrentState().RemovePlayer(player);
+
+		m_LootSystem.RemovePlayer( player );
 	}
 	
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
@@ -208,7 +211,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		
 		if(GetCurrentState().ContainsPlayer(player))
 		{
-			m_LootSystem.UpdatePlayer(player, timeslice);
 			GetCurrentState().OnPlayerTick(player,timeslice);
 		}
 		else

@@ -15,10 +15,10 @@ class BattleRoyaleLootSettings extends BattleRoyaleDataBase
     }
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleLootData>.JsonSaveFile(GetPath(), this);
+        JsonFileLoader<BattleRoyaleLootSettings>.JsonSaveFile(GetPath(), this);
     }
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleLootData>.JsonLoadFile(GetPath(), this);
+        JsonFileLoader<BattleRoyaleLootSettings>.JsonLoadFile(GetPath(), this);
     }
 }
