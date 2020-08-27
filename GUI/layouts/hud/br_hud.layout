@@ -134,7 +134,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          hexactsize 1
          vexactsize 1
          fixaspect fixwidth
-         image0 "set:dayz_gui image:get_in_gunner"
+         image0 "set:ccgui_enforce image:Icon40Attack"
          mode blend
          "src alpha" 1
         }
