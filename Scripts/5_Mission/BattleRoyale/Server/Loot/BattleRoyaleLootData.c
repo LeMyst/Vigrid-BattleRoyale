@@ -72,13 +72,16 @@ class BattleRoyaleLootData
         Print("[Loot] Loading Loot Data...");
         //load categories & instantiate loot data fields
         array< string > files = FindFilesInLocation( BATTLEROYALE_LOOT_CATEGORIES_FOLDER );
-        for ( int i = 0; i < files.Count(); i++ )
+        int i;
+        string fileName;
+        int pos;
+        string ext;
+        for ( i = 0; i < files.Count(); i++ )
 		{
-            string fileName;
-			int pos = files[i].IndexOf(".");
+			pos = files[i].IndexOf(".");
             if ( pos > -1 )
 			{
-                string ext = fileName.Substring(pos+1, fileName.Length() - (pos + 1));
+                ext = fileName.Substring(pos+1, fileName.Length() - (pos + 1));
                 if(ext == "json")
                 {
                     fileName = files[i];
@@ -95,13 +98,13 @@ class BattleRoyaleLootData
         //load entries & populate loot data fields
 
         files = FindFilesInLocation( BATTLEROYALE_LOOT_ENTRIES_FOLDER );
-        for ( int i = 0; i < files.Count(); i++ )
+        for ( i = 0; i < files.Count(); i++ )
 		{
-            string fileName;
-			int pos = files[i].IndexOf(".");
+            
+			pos = files[i].IndexOf(".");
             if ( pos > -1 )
 			{
-                string ext = fileName.Substring(pos+1, fileName.Length() - (pos + 1));
+                ext = fileName.Substring(pos+1, fileName.Length() - (pos + 1));
                 if(ext == "json")
                 {
                     fileName = files[i];
@@ -246,10 +249,10 @@ class BattleRoyaleLootData
                     if(GetGame().ConfigIsExisting(resources_path))
                     {
                         int resource_count = GetGame().ConfigGetChildrenCount(resources_path);
-                        for(int i = 0; i < resource_count; i++)
+                        for(int k = 0; k < resource_count; k++)
                         {
                             string out_name;
-                            if(GetGame().ConfigGetChildName(resources_path, i, out_name))
+                            if(GetGame().ConfigGetChildName(resources_path, k, out_name))
                             {
                                 if(ContainsCaseInsensitive(out_name, ammo))
                                 {
@@ -298,7 +301,7 @@ class BattleRoyaleLootData
             {
                 string attachment_name = entries[i].styles[j];
 
-                string configPath = "CfgVehicles " + attachment_name + " inventorySlot";
+                configPath = "CfgVehicles " + attachment_name + " inventorySlot";
                 ref array<string> attachment_slots = new array<string>(); 
                 GetGame().ConfigGetTextArray(configPath,attachment_slots);
 

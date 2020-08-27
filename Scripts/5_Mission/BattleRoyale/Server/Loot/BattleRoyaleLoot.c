@@ -127,9 +127,9 @@ class BattleRoyaleLoot
                     {
                         Print("First time player near building");
                         Print(building_object);
-                        m_LootableBuildings.Insert(building_object, new BattleRoyaleLootableBuilding);
+                        m_LootableBuildings.Insert(building_object, new BattleRoyaleLootableBuilding( building_object ));
                     }
-                    
+                    //TODO: we may need to serialized the building object in case dayz hands us unique instances every time GetObjectsAtPosition returns
                     ref BattleRoyaleLootableBuilding lootable_building = m_LootableBuildings.Get(building_object);
                     
 
@@ -152,7 +152,6 @@ class BattleRoyaleLoot
             }
             
         }
-        player.processing_loot = false;
     }
 }
 
@@ -215,7 +214,7 @@ class BattleRoyaleLootableBuilding
     {
         if(a_NearPlayers.Find(player) != -1)
         {
-            a_NearPlayers.Remove(player);
+            a_NearPlayers.RemoveItem(player);
             if(a_NearPlayers.Count() == 0)
             {
                 DespawnLoot();
@@ -268,8 +267,8 @@ class BattleRoyaleLootPile
 
     void BattleRoyaleLootPile(vector model_pos, ref BattleRoyaleLootableBuilding parent )
     {
-        spawn_with = new array<string>();
         spawned_items = new array<ItemBase>();
+        class_names = new array<string>();
         v_ModelPosition = model_pos;
         m_Parent = parent;
         b_IsSpawned = false;
@@ -418,9 +417,10 @@ class BattleRoyaleLootPile
             Error("Trying to despawn loot that is not spawned!");
             return;
         }
-
+        int i;
+        
         bool was_moved = false;
-        for(int i = 0; i < spawned_items.Count(); i++)
+        for(i = 0; i < spawned_items.Count(); i++)
         {
             if(!(spawned_items[i]))
             {
@@ -440,7 +440,7 @@ class BattleRoyaleLootPile
             b_Active = false;
             return;
         }
-        for(int i = 0; i < spawned_items.Count(); i++)
+        for(i = 0; i < spawned_items.Count(); i++)
         {
             GetGame().ObjectDelete( spawned_items[i] );
         }
