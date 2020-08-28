@@ -14,7 +14,7 @@ class BattleRoyaleLootData
 
     protected ref map<string, ref BattleRoyaleLootDataField> m_DataFields;
 
-    int total_weight = 0; //used for efficiency
+    float total_weight = 0; //used for efficiency
 
     //--- cached item maps
     protected ref map<string, ref array<string>> m_Magazines;
@@ -114,7 +114,7 @@ class BattleRoyaleLootData
                     fileName = files[i];
                     //--- construct category object from file
                     ref BattleRoyaleLootCategory category = new BattleRoyaleLootCategory();
-                    Print("[Loot] Loading Category" + fileName);
+                    Print("[Loot] Loading Category " + fileName);
                     category.Load(fileName);
                     
                     AddCategory(category); //insert this category to our fields
