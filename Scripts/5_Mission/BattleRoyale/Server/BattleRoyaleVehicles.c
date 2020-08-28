@@ -2,7 +2,6 @@
 //--- vehicle spawning subsystem
 class BattleRoyaleVehicles
 {
-    //TODO: connect these with a settings file
     protected int i_TickTime = 1000;
     protected int i_NumVehicles = 1000;
     protected float f_DespawnRadius = 500;
@@ -208,14 +207,14 @@ class BattleRoyaleVehicles
 
         vector start = pos;
         vector end = pos + Vector( 0, 1, 0 );
-        float radius = 2.0; //TODO: adjust as needed (maybe base it on our selected vehicles bounding box?)
+        float radius = 2.0; 
         PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
         Object m_HitObject;
         vector m_HitPosition;
         vector m_HitNormal;
         float m_HitFraction;
 
-        //TODO: check if safe from object collisions using same raycast as players
+        //check if safe from object collisions using same raycast as players tp
         bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
         if(m_Hit)
             return false;

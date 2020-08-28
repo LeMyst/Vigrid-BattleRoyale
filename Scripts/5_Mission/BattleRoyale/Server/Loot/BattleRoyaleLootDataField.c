@@ -15,7 +15,6 @@ class BattleRoyaleLootDataField
     }
     void ~BattleRoyaleLootDataField()
     {
-        Error("LootDataField Deconstructor Called!");
         delete a_Entries;
     }
     

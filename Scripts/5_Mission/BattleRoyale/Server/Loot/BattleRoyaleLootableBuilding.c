@@ -20,7 +20,6 @@ class BattleRoyaleLootableBuilding
     } 
     void ~BattleRoyaleLootableBuilding()
     {
-        Print("BattleRoyaleLootableBuilding deconstructor called");
         delete a_NearPlayers;
         delete a_LootPiles;
     }

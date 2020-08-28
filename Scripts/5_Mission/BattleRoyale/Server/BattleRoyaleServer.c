@@ -33,7 +33,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
 
-		m_VehicleSystem.Start();  //TODO: change this to Preinit()
+		m_VehicleSystem.Preinit();
 
 		//load config (this may error because GetBattleRoyale would return false)
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -70,7 +70,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			
 		}
 
-		//TODO: add a custom "round" state that represents 'no zone', constantly damages all players, and waits for only one player to remain alive
 		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
 		m_States.Insert(last_round);
 			
@@ -154,10 +153,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		//Teleport player into debug zone
 		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
-		vector debug_pos = m_Debug.GetCenter(); //TODO: we need debug zone position
+		vector debug_pos = m_Debug.GetCenter();
 		player.SetPosition(debug_pos);		
 
-		//TODO: this is not working at all
 		BattleRoyaleDebugState m_DebugStateObj;
 		if(!Class.CastTo(m_DebugStateObj, GetCurrentState())
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
@@ -218,7 +216,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		else
 		{
 			//current state does not contain player, wtf is going on
-			//TODO: i ran into a bug where this was the case, no idea how this happened!
 			int life_state = player.GetPlayerState();
 			if(life_state == EPlayerStates.ALIVE)
 			{

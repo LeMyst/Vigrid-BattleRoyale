@@ -25,8 +25,6 @@ class BattleRoyaleLoot
     }
     void ~BattleRoyaleLoot()
     {
-        Print("BattleRoyaleLoot Deconstructor Called!");
-
         delete m_LootableBuildings;
         delete m_CallQueue;
         delete m_Players;
@@ -131,7 +129,7 @@ class BattleRoyaleLoot
                         Print(building_object);
                         m_LootableBuildings.Insert(building_object, new BattleRoyaleLootableBuilding( building_object ));
                     }
-                    //TODO: we may need to serialized the building object in case dayz hands us unique instances every time GetObjectsAtPosition returns
+                    //we may need to serialized the building object in case dayz hands us unique instances every time GetObjectsAtPosition returns
                     ref BattleRoyaleLootableBuilding lootable_building = m_LootableBuildings.Get(building_object);
                     
 

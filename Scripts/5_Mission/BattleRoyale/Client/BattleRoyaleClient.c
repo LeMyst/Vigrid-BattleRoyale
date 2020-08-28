@@ -131,8 +131,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		{
 			Print("BattleRoyale: Network Update Current Play Area");
 
-			//TODO: if map is open, update current map markers
-
 			Print(data.param1);
 			m_CurrentPlayArea = data.param1;
 		}
@@ -148,8 +146,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( type == CallType.Client )
 		{
 			Print("BattleRoyale: Network Update Future Play Area");
-
-			//TODO: if map is open, update current map markers
 
 			Print(data.param1);
 			m_FuturePlayArea = data.param1;
