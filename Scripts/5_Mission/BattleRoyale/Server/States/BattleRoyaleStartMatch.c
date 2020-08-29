@@ -75,6 +75,9 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
             m_PlayerList.Insert(player);
         }
 
+        //enable player input on clients (we'll do this on server in another thread)
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
+
         GetGame().GameScript.Call(this, "HandleUnlock", NULL); //spin up unlocking thread
         
         BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
@@ -87,7 +90,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         {
             ref PlayerBase player = m_PlayerList[i];
 
-            player.DisableInput(false); //This will send an RPC to the client and automatically sync
+            player.DisableInput(false); //This will re-enable input
         }
         
         MessagePlayers("The match has started!");

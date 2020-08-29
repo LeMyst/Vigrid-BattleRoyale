@@ -54,6 +54,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             m_PlayerList.Insert(player);
         }
         
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
 	}
@@ -94,6 +95,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected void DisableInput(PlayerBase process_player)
     {
         process_player.DisableInput(true);
+
     }
     protected void Teleport(PlayerBase process_player)
     {

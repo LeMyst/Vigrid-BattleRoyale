@@ -22,6 +22,8 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
+
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 	}
@@ -95,6 +97,19 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( type == CallType.Client )
 		{
 			PlayerCountChanged( data.param1 );
+		}
+	}
+	void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) ) 
+		{
+			Error("FAILED TO READ SETINPUT RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			GetGame().GetPlayer().DisableInput(ctx.param1);
 		}
 	}
 	void SetFade(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
