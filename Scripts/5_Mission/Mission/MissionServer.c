@@ -6,11 +6,19 @@ modded class MissionServer
 	//--- TODO: look at dayzexpansion missionserver
 	//TODO: look at dayz missionserver
 	//TODO: look at old BR missionserver
-	
+	override void EquipCharacter()
+	{
+		//TODO: get this from a setting file
+		m_player.GetInventory().CreateInInventory( "TShirt_White" );
+		m_player.GetInventory().CreateInInventory( "Jeans_Black" );
+		m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
+		
+		StartingEquipSetup(m_player, false);
+	}
 	override void OnInit()
 	{
 		super.OnInit();
-		//TODO: br things
+		// br things
 		Print("INITIALIZING BATTLE ROYALE SERVER");
 		m_BattleRoyale = new BattleRoyaleServer;
 		

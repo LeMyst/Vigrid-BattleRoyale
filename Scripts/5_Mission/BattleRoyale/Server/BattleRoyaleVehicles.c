@@ -361,7 +361,7 @@ class BattleRoyaleCachedVehicle
         {
             float random_dir = Math.RandomFloat(0, 360);
             vector dir = vector.YawToVector(random_dir);
-            ent.SetDirection( dir );
+            ent.SetDirection( Vector( dir[0], 0, dir[1]) );
         }
         
         vector tmItem[4];

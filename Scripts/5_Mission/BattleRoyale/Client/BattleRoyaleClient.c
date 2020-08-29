@@ -42,17 +42,16 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 
-		if(GetNextArea())
+		if(m_FuturePlayArea)
 		{
-			float distance = GetZoneDistance();
+			float distance = GetZoneDistance( m_FuturePlayArea );
 			gameplay.UpdateZoneDistance( distance ); //update HUD element
 		}
 	}
 
 
-	protected float GetZoneDistance()
+	protected float GetZoneDistance(BattleRoyalePlayArea play_area)
 	{
-		BattleRoyalePlayArea play_area = GetNextArea();
 		vector center = play_area.GetCenter();
 		PlayerBase player = GetGame().GetPlayer();
 		vector playerpos = player.GetPosition();
@@ -60,7 +59,9 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		//2d distance check
 		center[1] = 0;
 		playerpos[1] = 0; 
-		return vector.Distance(center, playerpos);
+		float distance_from_center = vector.Distance(center, playerpos);
+		float distance_from_outside = distance_from_center - play_area.GetRadius();
+		return distance_from_outside;
 	}
 
 	protected void PlayerCountChanged(int new_count)
@@ -81,6 +82,19 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE OUT!");
 		//TODO: destroy Fade UI
+	}
+
+	void SetShirt(string texture)
+	{
+		PlayerBase player = GetGame().GetPlayer();
+		HumanInventory inv = player.GetHumanInventory();
+
+		EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
+		if(shirt)
+		{
+			ref Param1<string> shirt_value = new Param1<string>( texture );
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
+		}
 	}
 
 
@@ -109,7 +123,8 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		if ( type == CallType.Client )
 		{
-			GetGame().GetPlayer().DisableInput(ctx.param1);
+			PlayerBase player = GetGame().GetPlayer();
+			player.DisableInput( data.param1 );
 		}
 	}
 	void SetFade(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)

@@ -25,7 +25,7 @@ class BattleRoyaleHud
         m_ZoneDistancePanel = Widget.Cast( m_Root.FindAnyWidget( "ZoneDistancePanel" ) );
 
         m_CountTextWidget = TextWidget.Cast( m_PlayerCountPanel.FindAnyWidget( "CountText" ) );
-        m_DistanceTextWidget = TextWidget.Cast( m_PlayerCountPanel.FindAnyWidget( "DistanceText" ) );
+        m_DistanceTextWidget = TextWidget.Cast( m_ZoneDistancePanel.FindAnyWidget( "DistanceText" ) );
 
         m_PlayerCountPanel.Show( false );
         m_ZoneDistancePanel.Show( false );

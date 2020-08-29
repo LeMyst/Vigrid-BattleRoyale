@@ -149,7 +149,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         //random direction
         float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
         vector playerDir = vector.YawToVector(dir);
-        process_player.SetDirection(playerDir);
+        process_player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         
     }
     void ProcessPlayers()

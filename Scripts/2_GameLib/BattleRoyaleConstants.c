@@ -11,6 +11,7 @@ static const string BATTLEROYALE_VEHICLES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER 
 static const string BATTLEROYALE_LOOT_ENTRIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Entries\\";
 static const string BATTLEROYALE_LOOT_CATEGORIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Categories\\";
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR";
+static const string RPC_DAYZBRBASE_NAMESPACE = "RPC-DayZBR-Base";
 
 //TODO: this will get removed
 static const string BATTLERYALE_FADE_MESSAGE = "DayZ Battle Royale";
@@ -25,3 +26,10 @@ static const int DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT = 1800; //same a
 
 //--- error codes
 static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json object in API is NULL
+
+//--- GUI
+static const int DAYZBR_SKIN_SELECTION_MENU = 5000;
+
+
+// Textures
+static const string BATTLEROYALE_TSHIRT_SKINS_PATH = "BattleRoyale\\GUI\\textures\\tshirt\\";

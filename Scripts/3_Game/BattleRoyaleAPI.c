@@ -49,6 +49,14 @@ class BattleRoyaleAPI {
     {
         return m_ServerData;
     }
+    bool IsPatron()
+    {
+        if(m_PlayerData)
+        {
+            return (m_PlayerData.patron == 1);
+        }
+        return false;
+    }
 
     //server startup request
     ServerData RequestServerStart()

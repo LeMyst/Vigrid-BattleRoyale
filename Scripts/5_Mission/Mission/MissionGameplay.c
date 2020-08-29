@@ -26,6 +26,7 @@ modded class MissionGameplay
 
 	void InitBRhud()
 	{
+		Print("Initializing BattleRoyale HUD");
 		if(!m_BattleRoyaleHudRootWidget)
 		{
 			m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("BattleRoyale/GUI/layouts/hud/br_hud.layout");
@@ -52,6 +53,19 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.SetDistance( distance );
 	}
 
+	//TODO: move this into modded keybinds systems
+	override void OnKeyPress(int key)
+	{
+		super.OnKeyPress(key);
+		
+		if ( key == KeyCode.KC_SLASH )
+		{
+			if(!GetGame().GetUIManager().GetMenu())
+			{
+				SkinSelectionMenu.OpenMenu();
+			}
+		}
+	}
 
 
 	override void OnUpdate( float timeslice )
