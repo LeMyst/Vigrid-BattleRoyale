@@ -15,6 +15,7 @@ class CfgMods
 	{
 		dir = "BattleRoyale";		
 		credits = "Kegan";
+		creditsJson = "BattleRoyale/Scripts/credits.json";
 		type = "mod";
 		name = "DayZ BattleRoyale";
 		

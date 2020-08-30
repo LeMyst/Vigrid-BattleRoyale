@@ -1,0 +1,64 @@
+modded class LoadingScreen
+{
+    void LoadingScreen(DayZGame game)
+	{
+        //DayZExpansion should be called first
+
+        if(!m_ImageLogoMid.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
+			Error("Failed to load imageset image");
+
+        if(!m_ImageLogoCorner.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
+			Error("Failed to load imageset image");
+
+        m_ModdedWarning.SetText( "Remember! This is not normal DayZ." );
+
+
+        float x;
+        float y;
+        m_ModdedWarning.GetPos(x, y);
+        m_ModdedWarning.SetPos( x, y + 5 ); //add a buffer of 5 pixels
+
+        int i;
+        ref ExpansionLoadingScreenBackground background;
+
+        //TODO: config these up maybe?
+        
+        array<string> m_BadPaths = {
+            "DayZExpansion/GUI/textures/loading_screens/loading_screen_11_co.edds",
+            "DayZExpansion/GUI/textures/loading_screens/loading_screen_7_co.edds"
+        };
+        array<string> m_NewPaths = {
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_1.edds"
+        };
+        
+        //delete files defined in m_BadPaths
+        array<ref ExpansionLoadingScreenBackground> m_DeleteThese = new array<ref ExpansionLoadingScreenBackground>();
+        for(i = 0; i < m_Backgrounds.Count(); i++)
+        {
+            background = m_Backgrounds[i];
+
+            if(m_BadPaths.Find( background.Path ) != -1)
+            {
+                m_DeleteThese.Insert(background);
+            }
+        }
+        for(i = 0; i < m_DeleteThese.Count(); i++)
+        {
+            m_Backgrounds.RemoveItem(m_DeleteThese[i]);
+        }
+        
+        //add new paths
+        for(i = 0; i < m_NewPaths.Count(); i++)
+        {
+            background = new ExpansionLoadingScreenBackground( m_NewPaths[i] );
+
+            m_Backgrounds.Insert( background );
+        }
+        
+        //JsonFileLoader< ref array< ref ExpansionLoadingScreenBackground > >.JsonLoadFile( "DayZExpansion/Scripts/Data/LoadingImages.json", m_Backgrounds );
+    }
+
+
+
+    
+}

@@ -1,0 +1,66 @@
+{
+	"Departments": [
+		{
+			"DepartmentName": "DayZ Battle Royale",
+			"Sections": [
+				{
+					"SectionName": "Project Lead",
+					"SectionLines": [
+						"Kegan Hollern (Lystic)"
+					]
+                },
+                {
+                    "SectionName": "Administrators",
+					"SectionLines": [
+						"SniperGhost",
+						"Vulkan"
+					]
+                },
+                {
+                    "SectionName": "Contributers",
+					"SectionLines": [
+						"B.A.D.",
+						"BigBen",
+						"Clarky",
+						"MysticalCortex",
+						"Jacob_Mango",
+						"Legodev",
+						"Not A Banana",
+						"Razer",
+                        "S0l1d",
+                        "DaOne",
+						"Azeh"
+					]
+                },
+                {
+                    "SectionName": "Thanks to",
+                    "SectionLines": [
+                        "GravityWolf",
+                        "Wardog",
+                        "Zedmag",
+                        "Thurston"
+                    ]
+                },
+				{
+					"SectionName": "Alpha Testers",
+					"SectionLines": [
+						"Bender_Rodriguez",
+						"FreakingHoudini",
+						"Graf Godelsberg",
+						"IG3TB4NN3D",
+						"Locqstonk",
+						"onlyabot",
+                        "undead3030",
+                        "Zoku"
+					]
+                },
+                {
+                    "SectionName": "Supporters",
+                    "SectionLines": [
+                        "Foxypote"
+                    ]
+                }
+			]
+		}
+	]
+}

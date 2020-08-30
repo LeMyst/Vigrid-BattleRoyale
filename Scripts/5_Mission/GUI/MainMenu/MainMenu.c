@@ -83,7 +83,6 @@ modded class MainMenu
 			Error("Something Went Wrong! BR Failed To Start?!");
 		}
 		
-		
 		m_SelectServerLabel = TextWidget.Cast( layoutRoot.FindAnyWidget( "choose_server_label" ) );
 		m_SelectServerLabel.SetText("Select Server");
 		//TODO: find a use for this button besides "open website" See: OpenMenuCustomizeCharacter()
@@ -97,6 +96,11 @@ modded class MainMenu
 		return layoutRoot;
 	}
 	
+	override void ShowNewsfeed(bool state)
+	{
+		super.ShowNewsfeed( false ); //completely disable news feeds
+	}
+
 	MainMenuStats GetStats()
 	{
 		return m_Stats;
