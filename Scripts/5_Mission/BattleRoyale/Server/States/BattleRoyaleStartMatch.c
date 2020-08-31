@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleStartMatch extends BattleRoyaleState
 {
     protected int i_TimeToUnlock;
@@ -10,10 +8,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
     void BattleRoyaleStartMatch()
     {
-        #ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleStartMatch::Constructor()");
-		#endif
-
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
 		i_FirstRoundDelay = (60 * m_GameSettings.round_duration_minutes) / 2;
@@ -27,7 +21,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     }
     override string GetName()
 	{
-		return "Start Match State";
+		return DAYZBR_SM_START_MATCH_NAME;
 	}
 	override void Activate()
 	{
@@ -60,6 +54,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 		return super.IsComplete();
 	}
 
+    //TODO: add this to battleroyaleconstants and use string replace to insert seconds_till
     void MessageUnlock(int seconds_till)
     {
         string second = "second";
@@ -93,7 +88,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
             player.DisableInput(false); //This will re-enable input
         }
         
-        MessagePlayers("The match has started!");
+        MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
         b_IsGameplay = true;
     }
 

@@ -49,7 +49,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	}
 	override string GetName()
 	{
-		return "Gameplay State";
+		return DAYZBR_SM_GAMEPLAY_NAME;
 	}
 	override void Activate()
 	{
@@ -128,11 +128,11 @@ class BattleRoyaleRound extends BattleRoyaleState
 				float dist = vector.Distance(playerPos, next_pos);
 				if(dist > m_ThisArea.GetRadius())
 				{
-					MessagePlayer(player, "A new zone has appeared! YOU ARE OUTSIDE THE PLAY AREA!");
+					MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_OUTSIDE);
 				}
 				else
 				{
-					MessagePlayer(player, "A new zone has appeared! You are in the play are!");
+					MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_INSIDE);
 				}
 			}
 		}
@@ -204,7 +204,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				if(player.time_until_damage <= 0)
 				{
 					//DAMAGE
-					MessagePlayer(player, "You are taking zone damage!");
+					MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
 					player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
 					player.time_until_damage = i_DamageTickTime; //reset timer
 				}
@@ -278,6 +278,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 
 	// Round messaging
+	//TODO: add these to dayzbrconstants and use String Replace to insert the seconds or minutes values
 	void NotifyTimeTillLockSeconds(int seconds)
 	{
 		string message = "The new zone will lock in " + seconds.ToString() + " ";

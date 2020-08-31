@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleZone 
 {
     static float f_WorldRadius = -1;
@@ -69,9 +67,6 @@ class BattleRoyaleZone
 
             float world_width = temp[0] * 2;
             float world_height = temp[1] * 2;
-            Print("World Size Calculation");
-            Print(world_width);
-            Print(world_height);
 
             p_Rad = Math.Min(world_height, world_width) / 2;
             float world_center_x = world_width/2;
@@ -81,9 +76,6 @@ class BattleRoyaleZone
             p_Cen[0] = world_center_x;
             p_Cen[1] = Y;
             p_Cen[2] = world_center_z;
-            Print("Initial Play Area");
-            Print(p_Cen);
-            Print(p_Rad);
         }
 
        
@@ -100,8 +92,6 @@ class BattleRoyaleZone
     
     protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
-        Print("Zone Data");
-
         float new_radius = CreatePlayRadius(p_Rad);
         m_PlayArea.SetRadius(new_radius);
         
@@ -113,8 +103,8 @@ class BattleRoyaleZone
         while(true) 
         {
             
-            float distance = Math.RandomFloatInclusive(0, max_distance); //distance change from previous center
-            float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD; //direction from previous center
+            float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
+            float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
             
 
             float dX = distance * Math.Sin(moveDir);
@@ -134,14 +124,13 @@ class BattleRoyaleZone
             //check if new_center is valid (not in water)
             if(IsSafeZoneCenter(newX, newZ))
             {
-                Print(distance);
-                Print(moveDir);
                 break;
             }
         }
 
         m_PlayArea.SetCenter(new_center);
 
+        Print("Zone Data");
         Print(m_PlayArea.GetCenter());
         Print(m_PlayArea.GetRadius());
     }
@@ -208,9 +197,6 @@ class BattleRoyaleZone
 
             float world_width = temp[0] * 2;
             float world_height = temp[1] * 2;
-            Print("World Size Calculation");
-            Print(world_width);
-            Print(world_height);
 
             BattleRoyaleZone.f_WorldRadius = Math.Min(world_height, world_width) / 2;
         }

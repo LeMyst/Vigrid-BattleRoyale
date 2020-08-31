@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyalePrepare extends BattleRoyaleState
 {
     protected ref array<ref PlayerBase> m_PlayerList;
@@ -10,10 +8,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected vector world_center;
     void BattleRoyalePrepare()
     {
-        #ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyalePrepare::Constructor()");
-		#endif
-        
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
         {
@@ -21,6 +15,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
         else
         {
+            Error("GameSettings is NULL!");
             a_StartingItems = {"TrackSuitJacket_Red","TrackSuitPants_Red","JoggingShoes_Red"}; 
         }
         
@@ -71,7 +66,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	}
     override string GetName()
 	{
-		return "Prepare State";
+		return DAYZBR_SM_PREPARE_NAME;
 	}
 
     protected void GiveStartingItems(PlayerBase process_player)
@@ -131,10 +126,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
             vector m_HitNormal;
             float m_HitFraction;
             bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
-            Print("Raycast Safe Teleport Position");
-            Print(m_Hit);
-            Print(m_HitObject);
-            Print(m_HitFraction);
 
             if(m_Hit)
                 continue;

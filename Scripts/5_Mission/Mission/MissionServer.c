@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 modded class MissionServer
 {
 	
@@ -19,7 +17,6 @@ modded class MissionServer
 	{
 		super.OnInit();
 		// br things
-		Print("INITIALIZING BATTLE ROYALE SERVER");
 		m_BattleRoyale = new BattleRoyaleServer;
 		
 	}
@@ -31,7 +28,6 @@ modded class MissionServer
 	}
 	override void InvokeOnConnect( PlayerBase player, PlayerIdentity identity )
 	{
-		BRPrint("InvokeOnConnect()")
 		super.InvokeOnConnect(player, identity);
 		
 		if(player)
@@ -48,8 +44,6 @@ modded class MissionServer
 	override void InvokeOnDisconnect( PlayerBase player )
 	{
 		super.InvokeOnDisconnect(player);
-		
-		BRPrint("InvokeOnDisconnect()");
 
 		if(player)
 		{

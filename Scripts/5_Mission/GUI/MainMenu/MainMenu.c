@@ -54,7 +54,7 @@ modded class MainMenu
 		UpdateRegions();
 	
 		m_Logo 						= ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
-		if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
+		if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 		
 		m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
@@ -87,7 +87,7 @@ modded class MainMenu
 		m_SelectServerLabel.SetText("Select Server");
 		//TODO: find a use for this button besides "open website" See: OpenMenuCustomizeCharacter()
 		m_OpenWebsiteLabel = TextWidget.Cast( layoutRoot.FindAnyWidget( "customize_character_label" ) );
-		m_OpenWebsiteLabel.SetText("Visit DayZBR.Dev");
+		m_OpenWebsiteLabel.SetText( BATTLEROYALE_VISIT_WEBSITE_MESSAGE );
 		
 		
 		RegionChanged();
@@ -132,7 +132,7 @@ modded class MainMenu
 		
 
 		//--- connecting to BattleRoyale network UI
-		CreatePopup("Connecting to the BattleRoyale Network...");
+		CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
 
 		ref ConnectingToNetworkCallback callback = new ConnectingToNetworkCallback( this );
 		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), callback);
@@ -168,7 +168,7 @@ modded class MainMenu
 
 		ref MatchmakeCallback callback = new MatchmakeCallback( this );
 		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, callback );
-		CreatePopup("Matchmaking...", "Cancel", onclick);
+		CreatePopup( DAYZBR_MATCHMAKING_MSG, "Cancel", onclick);
 
 		
 		api.RequestMatchmakeAsync(p_PlayerWebData, callback, GetSelectedRegion());
@@ -221,7 +221,7 @@ modded class MainMenu
 	{
 		
 		super.OnChangeCharacter(); //temporary because I don't want to break any functionality this triggers
-		m_OpenWebsiteLabel.SetText("Visit DayZBR.Dev");// OnChangeCharacter replaces this text, this changes it back to the correct value!
+		m_OpenWebsiteLabel.SetText( BATTLEROYALE_VISIT_WEBSITE_MESSAGE );// OnChangeCharacter replaces this text, this changes it back to the correct value!
 		
 		
 		RegionChanged();
@@ -322,7 +322,7 @@ modded class MainMenu
 
 	override void OpenMenuCustomizeCharacter()
 	{
-		GetGame().OpenURL("http://dayzbr.dev/");
+		GetGame().OpenURL( BATTLEROYALE_WEBSITE );
 	}
 }
 

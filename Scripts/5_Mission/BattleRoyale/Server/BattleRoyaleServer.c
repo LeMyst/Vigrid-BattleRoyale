@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 
 class BattleRoyaleServer extends BattleRoyaleBase
 {
@@ -11,25 +9,13 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	int i_NumRounds;
 	
 	
-	#ifdef BR_BETA_LOGGING
-	bool update_once = true;
-	bool tick_once = true;
-	#endif
 	
 	void BattleRoyaleServer() 
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleServer::Constructor()");
-		#endif
-
 		Init();
 	}
 	void Init()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleServer::Init()");
-		#endif
-
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
 
@@ -95,13 +81,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		float timeslice = delta; //Legacy
 		
-		#ifdef BR_BETA_LOGGING
-		if(update_once)
-		{
-			update_once = false;
-			BRPrint("BattleRoyaleServer::Update() => Running!");
-		}
-		#endif
 		
 		m_LootSystem.Update(timeslice);
 		m_VehicleSystem.Update(timeslice);
@@ -125,7 +104,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				BattleRoyaleState next_state = GetState(next_index);
 
 
-				BRPrint("Leaving State `" + GetCurrentState().GetName() + "`");
+				Print("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
 				if(GetCurrentState().IsActive())
 				{
 					GetCurrentState().Deactivate(); //deactivate old state
@@ -136,21 +115,17 @@ class BattleRoyaleServer extends BattleRoyaleBase
 					next_state.AddPlayer(player); //add players to new state
 				}
 				i_CurrentStateIndex = next_index;//move us to the next state
-				BRPrint("Entering State `" + GetCurrentState().GetName() + "`");
+				Print("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
 				GetCurrentState().Activate(); //activate new state
 			}
 			else
 			{
-				BRPrint("ERROR! NEXT STATE IS NULL!");
+				Error("NEXT STATE IS NULL!");
 			}
 		}
 	}
 	void OnPlayerConnected(PlayerBase player)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleServer::OnPlayerConnected()");
-		#endif
-
 		//Teleport player into debug zone
 		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
 		vector debug_pos = m_Debug.GetCenter();
@@ -164,11 +139,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		m_LootSystem.AddPlayer( player );
 	}
 	void OnPlayerDisconnected(PlayerBase player)
-	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleServer::OnPlayerDisconnected()");
-		#endif
-		
+	{		
 		if(GetCurrentState().ContainsPlayer(player))
 			GetCurrentState().RemovePlayer(player);
 
@@ -177,10 +148,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleServer::OnPlayerKilled()");
-		#endif
-		
 		if(GetCurrentState().ContainsPlayer(killed))
 		{
 			//if we are in a round, then we need to call the onkilled event 
@@ -201,13 +168,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	}
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
-		#ifdef BR_BETA_LOGGING
-		if(tick_once)
-		{
-			tick_once = false;
-			BRPrint("BattleRoyaleServer::OnPlayerTick() => Running!");
-		}
-		#endif
 		
 		if(GetCurrentState().ContainsPlayer(player))
 		{
@@ -219,7 +179,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			int life_state = player.GetPlayerState();
 			if(life_state == EPlayerStates.ALIVE)
 			{
-				BRPrint("ERROR! GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+				Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
 			}
 			//any other case here, the player is dead & therefore shouldn't count towards any state
 		}
@@ -265,7 +225,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		return m_LootSystem;
 	}
-	
+
+	//TODO: This will need a rework!
 	void RandomizeServerEnvironment()
 	{
 		//NOTE: this is all legacy, we should find a better way to do this

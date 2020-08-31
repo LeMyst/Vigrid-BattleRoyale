@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 modded class MissionGameplay
 {
 	protected Widget m_BattleRoyaleHudRootWidget;
@@ -13,11 +11,7 @@ modded class MissionGameplay
 	override void OnInit()
 	{
 		super.OnInit();
-		
-		#ifdef BR_BETA_LOGGING
-		BRPrint("MissionGameplay::OnInit()");
-		#endif
-		
+	
 		m_BattleRoyale = new BattleRoyaleClient;
 
 		InitBRhud();

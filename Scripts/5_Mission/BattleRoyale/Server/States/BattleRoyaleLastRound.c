@@ -86,7 +86,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 	}
 	override string GetName()
 	{
-		return "Last Gameplay State";
+		return DAYZBR_SM_LAST_ROUND_NAME;
 	}
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
@@ -173,6 +173,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		return NULL;
 	}
 
+	//TODO: both of these need added to battleroyaleconstants & use string replace to append minutes.ToString()
     void NotifyTimeToEndMinutes(int minutes)
 	{
 		string message = "The zone will disappear in " + minutes.ToString() + " ";

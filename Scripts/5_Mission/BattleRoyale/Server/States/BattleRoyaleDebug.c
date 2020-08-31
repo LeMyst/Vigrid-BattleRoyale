@@ -1,16 +1,9 @@
-#define BR_BETA_LOGGING
-
-
 class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	protected int i_MinPlayers;
 	protected int i_TimeBetweenMessages;
 	
 	void BattleRoyaleDebug()
-	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebug::Constructor()");
-		#endif
-		
+	{	
 		BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
 		
 		if(m_DebugSettings)
@@ -28,7 +21,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 
 	override string GetName()
 	{
-		return "Debug Zone State";
+		return DAYZBR_SM_DEBUG_ZONE_NAME;
 	}
 
 	//returns true when this state is complete
@@ -65,6 +58,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	{
 		int waiting_on_count = i_MinPlayers - GetPlayers().Count();
 
+		//TODO: add this to battleroyaleconstants & use string replace for count & plural
 		string message = "Waiting for " + waiting_on_count.ToString() + " more ";
 		if(waiting_on_count > 1)
 			message += "players";

@@ -4,13 +4,13 @@ modded class LoadingScreen
 	{
         //DayZExpansion should be called first
 
-        if(!m_ImageLogoMid.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
+        if(!m_ImageLogoMid.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 
-        if(!m_ImageLogoCorner.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
+        if(!m_ImageLogoCorner.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 
-        m_ModdedWarning.SetText( "Remember! This is not normal DayZ." );
+        m_ModdedWarning.SetText( BATTLEROYALE_LOADING_MODDED_MESSAGE );
 
 
         float x;
@@ -28,7 +28,7 @@ modded class LoadingScreen
             "DayZExpansion/GUI/textures/loading_screens/loading_screen_7_co.edds"
         };
         array<string> m_NewPaths = {
-            "BattleRoyale/GUI/textures/loading_screens/br_loading_1.edds"
+            BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_1.edds"
         };
         
         //delete files defined in m_BadPaths

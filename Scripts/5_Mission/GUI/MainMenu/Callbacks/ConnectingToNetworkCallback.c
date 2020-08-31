@@ -17,7 +17,7 @@ class ConnectingToNetworkCallback extends BattleRoyaleOnStartCallback
 	override void OnTimeout()
 	{
 		ref RetryNetworkConnectCallback callback = new RetryNetworkConnectCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Failed to connect! Timed out!", "Retry", callback);
+		m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback);
 	}
 	override void OnSuccess( PlayerData data )
 	{

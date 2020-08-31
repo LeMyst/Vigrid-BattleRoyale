@@ -214,7 +214,7 @@ class BattleRoyaleLootData
 
 
         ref array<string> result = new array<string>();
-        if(!m_DataFields.Contains("magazines"))
+        if(!m_DataFields.Contains( BATTLEROYALE_LOOT_MAGAZINES_CATEGORY ))
         {
             Error("No magazines category!");
             return result;
@@ -226,7 +226,7 @@ class BattleRoyaleLootData
         ref array<string> magazines = new array<string>(); 
         GetGame().ConfigGetTextArray(configPath,magazines);
 
-        ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get("magazines").GetEntries();
+        ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_MAGAZINES_CATEGORY ).GetEntries();
 
         for(int i = 0; i < entries.Count();i++)
         {
@@ -257,7 +257,7 @@ class BattleRoyaleLootData
         }
 
         ref array<string> result = new array<string>();
-        if(!m_DataFields.Contains("ammo"))
+        if(!m_DataFields.Contains( BATTLEROYALE_LOOT_AMMO_CATEGORY ))
         {
             Error("No ammo category!");
             return result;
@@ -269,7 +269,7 @@ class BattleRoyaleLootData
         ref array<string> ammo = new array<string>(); 
         GetGame().ConfigGetTextArray(configPath,ammo);
 
-        ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get("ammo").GetEntries();
+        ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_AMMO_CATEGORY ).GetEntries();
 
         for(int i = 0; i < entries.Count();i++)
         {
@@ -320,7 +320,7 @@ class BattleRoyaleLootData
 
 
         ref map<string, ref array<string>> result = new map<string, ref array<string>>();
-        if(!m_DataFields.Contains("attachments"))
+        if(!m_DataFields.Contains( BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY ))
         {
             Error("No attachments category!");
             return result;
@@ -332,7 +332,7 @@ class BattleRoyaleLootData
         string configPath = "CfgWeapons " + normalized_name + " attachments";
         GetGame().ConfigGetTextArray(configPath,weapon_slots);
 
-        ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get("attachments").GetEntries();
+        ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY ).GetEntries();
 
         for(int i = 0; i < entries.Count(); i++)
         {

@@ -4,7 +4,7 @@ modded class CreditsMenu
 	{
         layoutRoot = super.Init();
 
-        if(!m_Logo.LoadImageFile( 0, "set:battleroyale_gui image:DayZBRLogo_White" ))
+        if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 
         

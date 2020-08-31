@@ -24,7 +24,7 @@ class BattleRoyaleLootEntry : Managed {
         if(count == 1)
             return styles[0];
         if(count == 0)
-            return "Zucchini"; //anything broken will be Zucchini
+            return BATTLEROYALE_LOOT_BROKEN_STYLE_ITEM_CLASSNAME; //anything broken will be Zucchini
         
         int ind = Math.RandomInt(0, count);
         return styles[ind];

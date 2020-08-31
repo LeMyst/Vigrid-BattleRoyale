@@ -1,21 +1,19 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleRestart extends BattleRoyaleState
 {
 	override void Activate()
 	{
 		super.Activate();
-        BRPrint("Restarting!");
+        Print("[Restart State] Restarting!");
 		
 		m_CallQueue.CallLater(this.Shutdown, 10000, false);
 	}
 	override string GetName()
 	{
-		return "Restart State";
+		return DAYZBR_SM_RESTART_NAME;
 	}
 	override void Deactivate()
 	{
-		BRPrint("ERROR! RESTART STATE WAS DEACTIVATED!");
+		Error("RESTART STATE WAS DEACTIVATED!");
 		super.Deactivate();
 	}
 	

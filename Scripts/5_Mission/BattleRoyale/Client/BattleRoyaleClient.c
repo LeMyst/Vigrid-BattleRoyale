@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleClient extends BattleRoyaleBase
 {
 
@@ -7,19 +5,12 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected ref BattleRoyalePlayArea m_FuturePlayArea;
 	
 
-	#ifdef BR_BETA_LOGGING
-	bool print_once_tick = true;
-	#endif
 	void BattleRoyaleClient()
 	{
 		Init();
 	}
 	void Init()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleClient::Init()");
-		#endif
-
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
@@ -159,9 +150,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		if ( type == CallType.Client )
 		{
-			Print("BattleRoyale: Network Update Current Play Area");
-
-			Print(data.param1);
 			m_CurrentPlayArea = data.param1;
 		}
 	}
@@ -175,44 +163,18 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		if ( type == CallType.Client )
 		{
-			Print("BattleRoyale: Network Update Future Play Area");
-
-			Print(data.param1);
 			m_FuturePlayArea = data.param1;
 		}
 	}
 
 
 
-
-	protected string last_surface_type = "";
-
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
-		string surface_type;
-		vector pos = player.GetPosition();
-		GetGame().SurfaceGetType(pos[0], pos[2], surface_type);
-
-		if(surface_type != last_surface_type)
-		{
-			Print(surface_type);
-		}
-		last_surface_type = surface_type;
-		
-		#ifdef BR_BETA_LOGGING
-		if(print_once_tick)
-		{
-			print_once_tick = false;
-			BRPrint("BattleRoyaleClient::OnPlayerTick() => Running!");
-		}
-		#endif
-		
+		//unused
 	}
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleClient::OnPlayerKilled()");
-		#endif
-		
+		//unused	
 	}
 }

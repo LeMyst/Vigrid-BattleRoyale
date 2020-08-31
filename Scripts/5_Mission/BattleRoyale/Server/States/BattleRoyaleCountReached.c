@@ -1,14 +1,9 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleCountReached extends BattleRoyaleDebugState
 {
     protected int i_TimeToStart;
     
     void BattleRoyaleCountReached()
     {
-        #ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleCountReached::Constructor()");
-		#endif
 
         BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
         if(m_DebugSettings)
@@ -23,7 +18,7 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
     }
     override string GetName()
 	{
-		return "Player Count Reached State";
+		return DAYZBR_SM_COUNT_REACHED_NAME;
 	}
 
 	override void Activate()
@@ -33,6 +28,8 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
         string second = "second";
         if(i_TimeToStart != 1)
             second = "seconds";
+
+        //TODO: use string replace and make this string a constant in BattleRoyaleConstants (perhaps a setting eventually)
 
         MessagePlayers("Player count reached! Match is starting in " + i_TimeToStart.ToString() + " " + second + "!");
         m_CallQueue.CallLater(this.DoStart, i_TimeToStart*1000, false);

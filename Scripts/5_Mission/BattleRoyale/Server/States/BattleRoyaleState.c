@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleState {
 	
 	protected ref array<PlayerBase> m_Players;
@@ -9,15 +7,11 @@ class BattleRoyaleState {
 
 	string GetName()
 	{
-		return "Unknown State";
+		return DAYZBR_SM_UNKNOWN_NAME;
 	}
 
 	void BattleRoyaleState()
-	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleState::Constructor()");
-		#endif
-		
+	{		
 		m_Players = new array<PlayerBase>();
 		m_CallQueue = new ScriptCallQueue;
 		b_IsActive = false;
@@ -75,28 +69,16 @@ class BattleRoyaleState {
 	}
 	void AddPlayer(PlayerBase player)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleState::AddPlayer()");
-		#endif
-		
 		m_Players.Insert(player);
 		OnPlayerCountChanged();
 	}
 	void RemovePlayer(PlayerBase player)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleState::RemovePlayer()");
-		#endif
-		
 		m_Players.RemoveItem(player);
 		OnPlayerCountChanged();
 	}
 	array<PlayerBase> RemoveAllPlayers()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleState::RemoveAllPlayers()");
-		#endif
-		
 		ref array<PlayerBase> result_array = new array<PlayerBase>();
 		result_array.InsertAll(m_Players);
 		m_Players.Clear();
@@ -127,13 +109,13 @@ class BattleRoyaleState {
 	}
 
 	//CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
-	void MessagePlayers(string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
+	void MessagePlayers(string message, string title = DAYZBR_MSG_TITLE, string icon = DAYZBR_MSG_IMAGE, int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = DAYZBR_MSG_TIME)
 	{
 		StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
 		StringLocaliser text = new StringLocaliser( message );
 		GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time);
 	}
-	void MessagePlayer(PlayerBase player, string message, string title = "DayZ Battle Royale", string icon = "set:expansion_iconset image:icon_info", int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = 7)
+	void MessagePlayer(PlayerBase player, string message, string title = DAYZBR_MSG_TITLE, string icon = DAYZBR_MSG_IMAGE, int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = DAYZBR_MSG_TIME)
 	{
 		if(player)
 		{
@@ -159,10 +141,6 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 
 	void BattleRoyaleDebugState()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebugState::Constructor()");
-		#endif
-
         BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
         if(m_DebugSettings)
 		{
@@ -172,8 +150,8 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		else
 		{
 			Error("DEBUG SETTINGS IS NULL!");
-			v_Center = "14829.2 72.3148 14572.3";
-			f_Radius = 50;
+			v_Center = DAYZBR_DEBUG_CENTER;
+			f_Radius = DAYZBR_DEBUG_RADIUS;
 		}
 		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData(); 
 		if(m_GameSettings)
@@ -183,20 +161,16 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		else
 		{
 			Error("GAME SETTINGS IS NULL");
-			i_HealTickTime = 5;
+			i_HealTickTime = DAYZBR_DEBUG_HEAL_TICK;
 		}
 		
 	}
 	override string GetName()
 	{
-		return "Unknown Debug State";
+		return DAYZBR_SM_UNKNOWN_DEBUG_NAME;
 	}
 	override void AddPlayer(PlayerBase player)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebugState::AddPlayer()");
-		#endif
-		
 		if(player)
 		{
 			player.SetAllowDamage(false); //all players in this state are god mode
@@ -206,10 +180,6 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 	}
     override array<PlayerBase> RemoveAllPlayers()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebugState::RemoveAllPlayers()");
-		#endif
-		
 		array<PlayerBase> players = super.RemoveAllPlayers();
 		foreach(PlayerBase player : players)
 		{
@@ -220,10 +190,6 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 	}
 	override void RemovePlayer(PlayerBase player)
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebugState::RemovePlayer()");
-		#endif
-		
 		if(player)
         {
 			player.SetAllowDamage(true); //leaving debug state = disable god mode
@@ -241,9 +207,6 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		float distance = vector.Distance(playerPos, v_Center);
 		if(distance > f_Radius)
 		{
-			#ifdef BR_BETA_LOGGING
-			BRPrint("BattleRoyaleDebugState::OnPlayerTick() => Snapping player back to debug zone");
-			#endif
 			player.SetPosition(v_Center);
 		}
 
@@ -258,25 +221,17 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 
 	}
 
-
+	//TODO:
 	//DEPRECATED: should pull value from config
 	//GOAL: make this protected
 	vector GetCenter()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebug::GetCenter()");
-		#endif
-		
 		return v_Center;
 	}
 	//DEPRECATED: should pull value from config
 	//GOAL: make this protected
 	float GetRadius()
 	{
-		#ifdef BR_BETA_LOGGING
-		BRPrint("BattleRoyaleDebug::GetRadius()");
-		#endif
-		
 		return f_Radius;
 	}
 }

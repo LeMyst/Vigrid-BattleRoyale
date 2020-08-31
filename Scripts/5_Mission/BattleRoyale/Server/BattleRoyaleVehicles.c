@@ -85,7 +85,7 @@ class BattleRoyaleVehicles
         for(int i = 0; i < i_NumVehicles; i++)
         {
             
-            vector position = "14829.2 72.3148 14572.3";
+            vector position = DAYZBR_DEBUG_CENTER; //this is only a temp value so we'll just stuck the broken debug zone center position
             
             //remove this IF statement when no longer debugging vheicles
            // if(i > 0)
@@ -201,7 +201,7 @@ class BattleRoyaleVehicles
         float friction = GetGame().ConfigGetFloat(cfgSurfacePath + " friction");
 
         //Invalid if GetFloat(... friction) < 0.94     
-        if(friction < 0.94)
+        if(friction < DAYZBR_VS_MIN_SURFACE_FRICTION)
             return false;
 
 

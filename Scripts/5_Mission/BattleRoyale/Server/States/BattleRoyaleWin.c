@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleWin extends BattleRoyaleState
 {
 	int i_SecondsTillKick;
@@ -24,6 +22,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 			if(identity)
 			{
 				winner_name = identity.GetName();
+				Print("[Win State] Winner!");
 				Print(identity.GetName());
 				Print(identity.GetFullName());
 				Print(identity.GetId());
@@ -39,12 +38,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 	}
 	override string GetName()
 	{
-		return "Win State";
-	}
-	override void Deactivate()
-	{
-		BRPrint("ERROR! WIN STATE WAS DEACTIVATED!");
-		super.Deactivate();
+		return DAYZBR_SM_WIN_NAME;
 	}
 	
 	override bool IsComplete()

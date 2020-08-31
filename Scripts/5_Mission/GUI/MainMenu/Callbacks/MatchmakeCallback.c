@@ -33,7 +33,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		}
 		ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
         ref RetryMatchmakeCallback onretry = new RetryMatchmakeCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Failed to connect! Timed out!", "Close", onclick, "Retry", onretry);
+		m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Close", onclick, "Retry", onretry);
 	}
 	override void OnSuccess( ref ServerData data )
 	{
@@ -50,7 +50,7 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
 			onclick = new ClosePopupButtonCallback( m_MainMenu );
             onretry = new RetryMatchmakeCallback( m_MainMenu );
-		    m_MainMenu.CreatePopup("Error! NULL Response!", "Close", onclick, "Retry", onretry);
+		    m_MainMenu.CreatePopup( DAYZBR_NULL_RESPONSE_MSG, "Close", onclick, "Retry", onretry);
 			return;
 		}
 
@@ -72,18 +72,18 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		int port = p_ServerData.GetPort();
 		
 
-		if(!GetGame().Connect(m_MainMenu, ip_addr, port, "DayZBR_Beta"))
+		if(!GetGame().Connect(m_MainMenu, ip_addr, port, BATTLEROYALE_SERVER_PASSWORD))
 		{
 			Print(p_ServerData.connection);
 			Error("BattleRoyale: Failed to connect to server");	
             onclick = new ClosePopupButtonCallback( m_MainMenu );
             onretry = new RetryMatchmakeCallback( m_MainMenu );
-		    m_MainMenu.CreatePopup("Error! Failed to connect to the provided server!", "Close", onclick, "Retry", onretry);
+		    m_MainMenu.CreatePopup(DAYZBR_FAILED_TO_CONNECT_MSG, "Close", onclick, "Retry", onretry);
             return;
 		}
 
         //Note: the close button is only for beta testing (dayz's sweet "Connect" feature sometimes takes a while for the server handshake to complete)
         onclick = new ClosePopupButtonCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Connecting to match. Please be patient, this could take a while...","Close", onclick);
+		m_MainMenu.CreatePopup(DAYZBR_CONNECTING_TO_SERVER_MSG,"Close", onclick);
 	}
 }

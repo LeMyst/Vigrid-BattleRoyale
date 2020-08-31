@@ -19,7 +19,7 @@ class BattleRoyaleLoot
 
         m_CallQueue.CallLater(this.HandleTick, 500, true);
 
-        LootReader.GetReader().ReadAsync("$CurrentDir:mpmissions\\BattleRoyale.ChernarusPlusGloom\\mapgroupproto.xml");
+        LootReader.GetReader().ReadAsync( BATTLEROYALE_LOOT_XML_PATH );
 
         BattleRoyaleLootData.GetData(); //--- this will call LootData.Load() so this is enough
     }
