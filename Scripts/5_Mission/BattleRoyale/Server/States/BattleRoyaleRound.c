@@ -1,5 +1,3 @@
-#define BR_BETA_LOGGING
-
 class BattleRoyaleRound extends BattleRoyaleState 
 {
 	ref BattleRoyaleState m_PreviousSate; 
@@ -180,7 +178,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		}
 		/*
 		if(player.GetIdentity())
-			GetGame().DisconnectPlayer(player.GetIdentity()); //TODO: delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
+			GetGame().DisconnectPlayer(player.GetIdentity()); //delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
 		else
 			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
 		*/

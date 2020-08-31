@@ -49,11 +49,11 @@ class BattleRoyaleAPI {
     {
         return m_ServerData;
     }
-    bool IsPatron()
+    bool HasPurchase(string shop_flag)
     {
         if(m_PlayerData)
         {
-            return (m_PlayerData.patron == 1);
+            return (m_PlayerData.shop_purchases.Find( shop_flag ) != -1);
         }
         return false;
     }

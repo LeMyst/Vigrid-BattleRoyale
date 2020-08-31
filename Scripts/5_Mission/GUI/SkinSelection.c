@@ -17,7 +17,6 @@ class SkinSelectionMenu extends UIScriptedMenu
     protected PlayerBase m_PreviewPlayer;
 
     protected ref array<ref SkinMap> m_Skins;
-    protected bool b_IsAllowed;
 
 
     private UIActionScroller m_sclr_MainActions;
@@ -25,21 +24,21 @@ class SkinSelectionMenu extends UIScriptedMenu
 
     void SkinSelectionMenu()
     {
-        b_IsAllowed = BattleRoyaleAPI.GetAPI().IsPatron();
 
         m_Skins = new array<ref SkinMap>();
 
         //TODO: somehow config these so it's easier to add in the future
-        m_Skins.Insert(new SkinMap("DBR v1", "tshirt_black_DBR.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("DBR v2", "tshirt_black_DBRv2.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("keganW", "tshirt_black_kegan.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("I <3 Kegan", "tshirt_black_KLove.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("DSR", "tshirt_white_DSR.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("Chazie", "tshirt_black_Chazie.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("Psi", "tshirt_black_psi.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("Cuddles", "tshirt_grey_cc.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("Gibs", "tshirt_orange_gibs.paa", "TShirt_White")); 
-        m_Skins.Insert(new SkinMap("Septic", "tshirt_white_septic.paa", "TShirt_White")); 
+        //TODO: only show skins that can actively be applied (check current shirt to see if it's a Tshirt)
+        m_Skins.Insert(new SkinMap("DBR v1", "tshirt_black_DBR.paa", "TShirt_White", "tshirt_dayzbr")); 
+        m_Skins.Insert(new SkinMap("DBR v2", "tshirt_black_DBRv2.paa", "TShirt_White", "tshirt_dayzbr_2")); 
+        m_Skins.Insert(new SkinMap("keganW", "tshirt_black_kegan.paa", "TShirt_White", "tshirt_keganhw")); 
+        m_Skins.Insert(new SkinMap("I <3 Kegan", "tshirt_black_KLove.paa", "TShirt_White", "tshirt_keganlove")); 
+        m_Skins.Insert(new SkinMap("DSR", "tshirt_white_DSR.paa", "TShirt_White", "tshirt_dsr")); 
+        m_Skins.Insert(new SkinMap("Chazie", "tshirt_black_Chazie.paa", "TShirt_White", "tshirt_chazie")); 
+        m_Skins.Insert(new SkinMap("Psi", "tshirt_black_psi.paa", "TShirt_White", "tshirt_psi")); 
+        m_Skins.Insert(new SkinMap("Cuddles", "tshirt_grey_cc.paa", "TShirt_White", "tshirt_captcuddles")); 
+        m_Skins.Insert(new SkinMap("Gibs", "tshirt_orange_gibs.paa", "TShirt_White", "tshirt_gibs")); 
+        m_Skins.Insert(new SkinMap("Septic", "tshirt_white_septic.paa", "TShirt_White", "tshirt_sceptic")); 
     }
 
     void ~SkinSelectionMenu()
@@ -79,11 +78,6 @@ class SkinSelectionMenu extends UIScriptedMenu
         
         m_sclr_MainActions.UpdateScroller();
 
-        if(!b_IsAllowed)
-        {
-            m_Title.SetText( "TShirt Skin Selector [Patron Only]" );
-        }
-        
         InitSkins();
 
         return layoutRoot;
@@ -91,6 +85,8 @@ class SkinSelectionMenu extends UIScriptedMenu
 
     void InitSkins()
     {
+        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+
         for(int i = 0; i < m_Skins.Count(); i++)
         {
             ref SkinMap skin = m_Skins[i];
@@ -99,13 +95,17 @@ class SkinSelectionMenu extends UIScriptedMenu
             UIActionManager.CreateText( wrapper, skin.GetName() );
             UIActionButton button = UIActionManager.CreateButton( wrapper, "Preview", this, "SkinPreview" );
             button.SetUserData( skin );
-            string method = "SkinApplyNotPatron";
-            string text = "Visit Patreon";
-            if(b_IsAllowed)
+            string method = "SkinApplyNotOwned";
+            string text = "Visit Shop";
+
+            
+            if(api.HasPurchase(skin.GetFlag()))
             {
                 method = "SkinApply";
                 text = "Apply";
             }
+
+
             button = UIActionManager.CreateButton( wrapper, text, this, method );
             button.SetUserData( skin );
         }
@@ -118,9 +118,11 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         PreviewShirt(SkinMap.Cast( skin ));
     }   
-    void SkinApplyNotPatron(UIEvent eid, ref UIActionBase action)
+    void SkinApplyNotOwned(UIEvent eid, ref UIActionBase action)
     {
-        GetGame().OpenURL("https://www.patreon.com/KeganHollern");
+        PlayerData web_data = BattleRoyaleAPI.GetAPI().GetCurrentPlayer();
+        string player_id = web_data._id; //TODO: get player id from web api
+        GetGame().OpenURL("https://dayzbr.dev/shop/" + player_id);
     }
     void SkinApply(UIEvent eid, ref UIActionBase action)
     {
@@ -129,7 +131,8 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         PreviewShirt(SkinMap.Cast( skin ));
 
-        if(b_IsAllowed)
+        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+        if(api.HasPurchase(skin.GetFlag()))
         {
             ApplyShirt(SkinMap.Cast( skin ));
         }
@@ -245,11 +248,19 @@ class SkinMap
     protected string s_DisplayName;
     protected string s_TexturePath;
     protected string s_ItemClass;
-    void SkinMap(string name, string texture, string item)
+    protected string s_ShopFlag;
+
+    void SkinMap(string name, string texture, string item, string flag)
     {
         s_DisplayName = name;
         s_TexturePath = texture;
         s_ItemClass = item;
+        s_ShopFlag = flag;
+    }
+
+    string GetFlag()
+    {
+        return s_ShopFlag;
     }
 
     string GetName()

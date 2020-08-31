@@ -8,5 +8,5 @@ class PlayerData
 	int rating;
 	ref array<string> ips;
 	string _id;
-	int patron;
+	ref array<string> shop_purchases;
 }
