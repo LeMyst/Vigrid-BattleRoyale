@@ -1,5 +1,16 @@
 modded class LoadingScreen
 {
+    //TODO: move this to a constant perhaps?
+    static ref array<string> GetLoadingScreens()
+    {
+        ref array<string> result = new array<string>();
+
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_1.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_2.edds" );
+
+        return result;
+    }
+
     void LoadingScreen(DayZGame game)
 	{
         //DayZExpansion should be called first
@@ -66,8 +77,11 @@ modded class LoadingScreen
     override void Show()
     {
         m_Backgrounds.Clear(); 
-        m_Backgrounds.Insert(new ExpansionLoadingScreenBackground(BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_1.edds"));
-        m_Backgrounds.Insert(new ExpansionLoadingScreenBackground(BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_2.edds"));
+        ref array<string> loading_screens = LoadingScreen.GetLoadingScreens();
+        for(int i = 0; i < loading_screens.Count(); i++)
+        {
+            m_Backgrounds.Insert(new ExpansionLoadingScreenBackground( loading_screens[i] ));
+        }
         super.Show();
     }
 
