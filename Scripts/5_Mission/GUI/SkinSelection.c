@@ -132,7 +132,7 @@ class SkinSelectionMenu extends UIScriptedMenu
         PreviewShirt(SkinMap.Cast( skin ));
 
         BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-        if(api.HasPurchase(skin.GetFlag()))
+        if(api.HasPurchase(SkinMap.Cast( skin ).GetFlag()))
         {
             ApplyShirt(SkinMap.Cast( skin ));
         }
