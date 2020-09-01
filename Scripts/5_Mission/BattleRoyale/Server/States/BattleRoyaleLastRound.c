@@ -54,6 +54,10 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 				m_CallQueue.CallLater(this.NotifyTimeToEndSeconds, val, false, sec); //30 seconds until zone locks
 		}
 
+
+		//timer before 
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
+
 		//lock zone event
 		m_CallQueue.CallLater(this.LockFinalZone, time_till_lock); //set timer to lock new zone after X seconds
 
@@ -103,13 +107,37 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		{
 			RemovePlayer(player);
 		}
-		/*
-		//Kicking should be handled by MissionServer's ClientRespawn now
-		if(player.GetIdentity())
-			GetGame().DisconnectPlayer(player.GetIdentity());
-		else
-			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
-		*/
+		
+		if(killer)
+		{
+			EntityAI killer_entity;
+			if(Class.CastTo(killer_entity, killer))
+			{
+				PlayerBase pbKiller;
+				if(!Class.CastTo(pbKiller, killer_entity))
+				{
+					Man root_player = killer_entity.GetHierarchyRootPlayer();
+					if(root_player)
+					{
+						pbKiller = PlayerBase.Cast( root_player );
+					}
+				}
+
+				if(pbKiller && pbKiller.GetIdentity())
+				{
+					if(ContainsPlayer(pbKiller))
+					{
+						//RPC client to add kill count
+						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
+					}
+					else
+					{
+						Error("Killer does not exist in the current game state!");
+					}
+					
+				}
+			}
+		}
 	}
     
     override void OnPlayerTick(PlayerBase player, float timeslice)
@@ -158,6 +186,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     void LockFinalZone()
     {
+		//TODO: this doesn't fucking work | if zone is null, no damage occurs
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
         b_IsZoneLocked = true;
     }

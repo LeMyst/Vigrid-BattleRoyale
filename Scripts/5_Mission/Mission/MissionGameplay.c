@@ -29,7 +29,22 @@ modded class MissionGameplay
 			m_BattleRoyaleHud.ShowHud( true );
 		}
 	}
+	
 
+	void UpdateKillCount(int count)
+	{
+		m_BattleRoyaleHud.ShowKillCount( true );
+		m_BattleRoyaleHud.SetKillCount( count );
+	}
+	void HideCountdownTimer()
+	{
+		m_BattleRoyaleHud.ShowCountdown( false );
+	}
+	void UpdateCountdownTimer(int seconds)
+	{
+		m_BattleRoyaleHud.ShowCountdown( true );
+		m_BattleRoyaleHud.SetCountdown( seconds );
+	}
 	void UpdatePlayerCount(int count)
 	{
 		if(count == 0)

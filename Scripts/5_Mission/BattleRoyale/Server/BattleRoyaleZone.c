@@ -177,7 +177,7 @@ class BattleRoyaleZone
 
 
     //returns which # zone this is ( 1 for the first zone )
-    protected int GetZoneNumber()
+    int GetZoneNumber()
     {
         int number = 1;
         ref BattleRoyaleZone parent = m_ParentZone;

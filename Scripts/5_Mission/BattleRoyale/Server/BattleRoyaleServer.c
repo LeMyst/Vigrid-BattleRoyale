@@ -133,7 +133,14 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		BattleRoyaleDebugState m_DebugStateObj;
 		if(!Class.CastTo(m_DebugStateObj, GetCurrentState())
+		{
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
+			GetGame().DisconnectPlayer(player.GetIdentity());
+			return;
+		}
+
+
+		//crash occured right here ?
 
 		GetCurrentState().AddPlayer(player);
 		m_LootSystem.AddPlayer( player );
@@ -166,12 +173,34 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			GetCurrentState().RemovePlayer(killed);
 		}
 	}
+
+	ref array<ref PlayerBase> temp_disconnecting;
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
-		
+		if(!temp_disconnecting)
+		{
+			temp_disconnecting = new array<ref PlayerBase>();
+		}
+
 		if(GetCurrentState().ContainsPlayer(player))
 		{
 			GetCurrentState().OnPlayerTick(player,timeslice);
+
+
+			//--- check if they have entered an invalid position
+			vector pos = player.GetPosition();
+			float bigNum = 1000000;
+			//when invalid, height gets fucked, lets check that (others are NaN & may cause errors)
+			if(pos[1] > bigNum || pos[1] < bigNum)
+			{
+				if(temp_disconnecting.Find(player) == -1)
+				{
+					temp_disconnecting.Insert(player);
+					GetGame().DisconnectPlayer( player.GetIdentity() );
+					Print(pos);
+					Error("PLAYER FOUND IN INVALID POSITION!");
+				}
+			}
 		}
 		else
 		{
@@ -179,7 +208,17 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			int life_state = player.GetPlayerState();
 			if(life_state == EPlayerStates.ALIVE)
 			{
-				Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+				//TODO: do something with this entity
+				if(player && player.GetIdentity())
+				{
+					//this ensures we only call disconnect on this player once
+					if(temp_disconnecting.Find(player) == -1)
+					{
+						temp_disconnecting.Insert(player);
+						GetGame().DisconnectPlayer( player.GetIdentity() );
+						Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+					}
+				}
 			}
 			//any other case here, the player is dead & therefore shouldn't count towards any state
 		}

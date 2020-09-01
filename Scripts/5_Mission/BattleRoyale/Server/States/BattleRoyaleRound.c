@@ -8,7 +8,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	bool b_DoZoneDamage;
 	int i_DamageTickTime;
 	float f_Damage;
-
+	int i_NumZones;
 	array<int> lock_notif_min;
 	array<int> lock_notif_sec;
 
@@ -31,6 +31,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 		i_DamageTickTime = m_GameSettings.zone_damage_tick_seconds;
 		f_Damage = m_GameSettings.zone_damage_delta;
+		i_NumZones = m_GameSettings.num_zones;
 
 		b_DoZoneDamage = m_GameSettings.enable_zone_damage;
 
@@ -44,6 +45,13 @@ class BattleRoyaleRound extends BattleRoyaleState
 		b_ZoneLocked = false;
 
 		m_Zone = new BattleRoyaleZone(GetPreviousZone());
+
+		//dear god i hope i really don't have to keep this, but it should work
+		float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
+		float num_zones = i_NumZones * 1.0;
+
+		//scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone # 
+		f_Damage = f_Damage * ( zone_num / num_zones );
 	}
 	override string GetName()
 	{
@@ -74,6 +82,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 			if(val > 0)
 				m_CallQueue.CallLater(this.NotifyTimeTillLockSeconds, val, false, sec); //30 seconds until zone locks
 		}
+
+
+		//timer before zone locks
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
 		//lock zone event
 		m_CallQueue.CallLater(this.LockNewZone, time_till_lock); //set timer to lock new zone after X seconds
@@ -176,6 +188,43 @@ class BattleRoyaleRound extends BattleRoyaleState
 		{
 			RemovePlayer(player);
 		}
+
+		if(killer)
+		{
+			EntityAI killer_entity;
+			if(Class.CastTo(killer_entity, killer))
+			{
+				PlayerBase pbKiller;
+				if(!Class.CastTo(pbKiller, killer_entity))
+				{
+					Man root_player = killer_entity.GetHierarchyRootPlayer();
+					if(root_player)
+					{
+						pbKiller = PlayerBase.Cast( root_player );
+					}
+				}
+
+				if(pbKiller && pbKiller.GetIdentity())
+				{
+					if(ContainsPlayer(pbKiller))
+					{
+						//RPC client to add kill count
+						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
+					}
+					else
+					{
+						Error("Killer does not exist in the current game state!");
+					}
+					
+				}
+			}
+		}
+
+
+		//deterime if killer is a player
+
+		//increment killer's kill count by sending them `AddPlayerKill` RPC
+
 		/*
 		if(player.GetIdentity())
 			GetGame().DisconnectPlayer(player.GetIdentity()); //delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
@@ -266,6 +315,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 		//tell the client we don't know the next play area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
+		//tell the client how much time until the next zone appears
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
 	}
 	void OnRoundTimeUp()

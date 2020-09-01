@@ -18,17 +18,21 @@ modded class LoadingScreen
         m_ModdedWarning.GetPos(x, y);
         m_ModdedWarning.SetPos( x, y + 5 ); //add a buffer of 5 pixels
 
+
+        /*
         int i;
         ref ExpansionLoadingScreenBackground background;
 
         //TODO: config these up maybe?
         
+        //these loading screens are *very* bad :)
         array<string> m_BadPaths = {
             "DayZExpansion/GUI/textures/loading_screens/loading_screen_11_co.edds",
             "DayZExpansion/GUI/textures/loading_screens/loading_screen_7_co.edds"
         };
         array<string> m_NewPaths = {
-            BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_1.edds"
+            BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_1.edds",
+            BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_2.edds"
         };
         
         //delete files defined in m_BadPaths
@@ -56,9 +60,16 @@ modded class LoadingScreen
         }
         
         //JsonFileLoader< ref array< ref ExpansionLoadingScreenBackground > >.JsonLoadFile( "DayZExpansion/Scripts/Data/LoadingImages.json", m_Backgrounds );
+        */
     }
 
-
+    override void Show()
+    {
+        m_Backgrounds.Clear(); 
+        m_Backgrounds.Insert(new ExpansionLoadingScreenBackground(BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_1.edds"));
+        m_Backgrounds.Insert(new ExpansionLoadingScreenBackground(BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_2.edds"));
+        super.Show();
+    }
 
     
 }

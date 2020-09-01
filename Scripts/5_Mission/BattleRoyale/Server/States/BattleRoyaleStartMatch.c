@@ -27,6 +27,9 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 	{
 		super.Activate();
 
+        //send start match RPC (this will enable UI such as kill count)
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", new Param1<bool>(true), true); //don't need a param, but id rather keep it just so i know nothing wierd occurs (eventually find out if we can remove it)
+
         int max_time = i_TimeToUnlock - 1;
         for(int i = max_time;i > 0;i--)
         {
@@ -35,6 +38,9 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         m_CallQueue.CallLater(this.UnlockPlayers, i_TimeToUnlock*1000, false); //delay before we unlock player input
         
         m_CallQueue.CallLater(this.StartZoning, i_FirstRoundDelay*1000, false); //delay before first zone appears
+        
+        //timer before first zone appears
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true); 
 	}
 	override void Deactivate()
 	{
