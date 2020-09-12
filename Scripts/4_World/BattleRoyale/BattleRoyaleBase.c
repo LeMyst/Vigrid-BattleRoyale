@@ -15,8 +15,8 @@ class BattleRoyaleBase
 
 	void SetShirtTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		Param1< string > data;
-		if( !ctx.Read( data ) ) return;
+		Param2< string, string > data;
+		if( !ctx.Read( data ) ) return; //i have absolutely no idea if i have to read this twice?
 		
 		if(!target) return;
 			
@@ -33,15 +33,14 @@ class BattleRoyaleBase
 			{
 				Print(shirt.GetType());
 				shirt.SetObjectTexture(0,data.param1);
-				shirt.SetObjectTexture(1,data.param1);
-				shirt.SetObjectTexture(2,data.param1);
+				shirt.SetObjectTexture(1,data.param2);
+				shirt.SetObjectTexture(2,data.param2); 
 			}
 		}
 
 		if(type == CallType.Server)
 		{
-			
-			ref Param1<string> value_string = new Param1<string>(data.param1);
+			ref Param2<string, string> value_string = new Param2<string, string>(data.param1, data.param2);
 			
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", value_string, false , NULL, targetBase);
 		}

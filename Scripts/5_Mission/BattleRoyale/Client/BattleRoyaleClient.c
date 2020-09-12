@@ -119,7 +119,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		b_MatchStarted = true;
 	}
 
-	void SetShirt(string texture)
+	void SetShirt(string ground_texture, string shirt_texture)
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		HumanInventory inv = player.GetHumanInventory();
@@ -127,7 +127,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
 		if(shirt)
 		{
-			ref Param1<string> shirt_value = new Param1<string>( texture );
+			ref Param2<string, string> shirt_value = new Param2<string, string>( ground_texture, shirt_texture );
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
 		}
 	}

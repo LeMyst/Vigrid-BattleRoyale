@@ -1,0 +1,16 @@
+MetaFileClass {
+ Name "{8FE080E1BA7FB7FF}BattleRoyale/GUI/textures/loading_screens/br_loading_3.edds"
+ Author "desktop-h9td9sb"
+ ChangeDate -1920243412
+ Configurations {
+  PNGResourceClass PC {
+   SourceFile "br_loading_3.png"
+  }
+  PNGResourceClass XBOX_ONE : PC {
+  }
+  PNGResourceClass PS4 : PC {
+  }
+  PNGResourceClass LINUX : PC {
+  }
+ }
+}

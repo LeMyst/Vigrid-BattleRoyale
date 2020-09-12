@@ -9,7 +9,9 @@ modded class InGameMenu
         if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 
-        m_NewsfeedPanel.Show( false ); //disable this 
+        //sometimes m_NewsfeedPanel is null? Fucking expansion
+        if(m_NewsfeedPanel)
+            m_NewsfeedPanel.Show( false ); //disable this 
 
         SetServerInfoVisibility( false ); //Don't ever show what server you're on for DayZBR
 
