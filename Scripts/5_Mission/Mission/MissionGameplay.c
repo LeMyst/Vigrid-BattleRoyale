@@ -74,6 +74,14 @@ modded class MissionGameplay
 				SkinSelectionMenu.OpenMenu();
 			}
 		}
+
+		if( key == KeyCode.KC_F1 )
+		{
+		
+			BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
+			
+		}
+
 	}
 
 

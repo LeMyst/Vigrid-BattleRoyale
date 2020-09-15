@@ -20,6 +20,7 @@ static const string BATTLEROYALE_LOOT_CATEGORIES_FOLDER = BATTLEROYALE_SETTINGS_
 //--- RPC namespaces
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR"; //BattleRoyaleClient.c RPC calls
 static const string RPC_DAYZBRBASE_NAMESPACE = "RPC-DayZBR-Base"; //BattleRoyaleBase.c RPC calls
+static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRoyaleServer.c RPC calls
 
 //--- constant strings
 static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";

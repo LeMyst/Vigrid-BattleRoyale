@@ -5,6 +5,10 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
     float radius = 50;
     int minimum_players = 10;
 
+    int use_ready_up = 1;
+    float ready_up_percent = 0.8;
+
+
     int time_to_start_match_seconds = 30;
 
     override string GetPath()
@@ -18,5 +22,6 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
     override void Load()
     {
         JsonFileLoader<BattleRoyaleDebugData>.JsonLoadFile(GetPath(), this);
+        
     }
 }

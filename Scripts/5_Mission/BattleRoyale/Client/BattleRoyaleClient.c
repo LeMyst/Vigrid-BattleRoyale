@@ -9,8 +9,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected bool b_MatchStarted;
 	protected int i_SecondsRemaining;
 
+	protected bool b_IsReady;
+
 	void BattleRoyaleClient()
 	{
+		b_IsReady = false;
 		b_MatchStarted = false;
 		i_Kills = 0;
 		i_SecondsRemaining = 0;
@@ -131,7 +134,16 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
 		}
 	}
+	void ReadyUp()
+	{
+		if(b_IsReady)
+			return; //already ready!
 
+		b_IsReady = true; //this only runs once
+		ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
+		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false , NULL, player);
+
+	}
 
 	
 	//Client RPC calls

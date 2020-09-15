@@ -12,8 +12,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	
 	void BattleRoyaleServer() 
 	{
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
 		Init();
 	}
+
 	void Init()
 	{
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
@@ -263,6 +265,42 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	ref BattleRoyaleLoot GetLootSystem()
 	{
 		return m_LootSystem;
+	}
+
+	
+	void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1< bool > data;
+		if( !ctx.Read( data ) ) return;
+		
+		if(!target) return;
+
+		PlayerBase targetBase = PlayerBase.Cast(target);
+
+		if(!targetBase) return;
+
+		if(type == CallType.Server)
+		{
+			BattleRoyaleDebug m_DebugStateObj;
+			if(!Class.CastTo(m_DebugStateObj, GetCurrentState()) //this ensures we can only ready up during the debug state
+				return;
+
+			if(!m_DebugStateObj.ContainsPlayer(targetBase))
+			{
+				Error("Debug state does not contain player requesting ready up!");
+				return;
+			}
+
+			if(data.param1)
+			{
+				m_DebugStateObj.ReadyUp(targetBase);
+			}
+			else
+			{
+				//perhaps allow readyup to be toggled?
+			}
+			
+		}
 	}
 
 	//TODO: This will need a rework!
