@@ -249,6 +249,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 					//--- this ensures the leaderboard logs this player's death as zone damage
 					if(!match_data.ContainsDeath(player_steamid))
 					{
+						ref array<string> killed_with = new array<string>();
 						killed_with.Insert( "Zone Damage" );
 						match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
 					}

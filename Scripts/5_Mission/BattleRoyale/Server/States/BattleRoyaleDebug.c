@@ -39,7 +39,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	//returns true when this state is complete
 	override bool IsComplete()
 	{
-		if( (GetPlayers().Count() >= i_MinPlayers && IsActive()) || IsVoteReady() )
+		if(GetPlayers().Count() >= i_MinPlayers && IsActive())
 		{
 			Deactivate();
 		}
@@ -49,6 +49,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	override void Activate()
 	{
 		m_CallQueue.CallLater(this.MessageWaiting, i_TimeBetweenMessages*1000, true);
+		m_CallQueue.CallLater(this.CheckReadyState, 2000, true);
 		super.Activate();
 
 
@@ -58,10 +59,17 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	override void Deactivate()
 	{
 		m_CallQueue.Remove(this.MessageWaiting);
+		m_CallQueue.Remove(this.CheckReadyState);
 		super.Deactivate();
 	}
 	
-
+	void CheckReadyState()
+	{
+		if(IsVoteReady())
+		{
+			Deactivate();
+		}
+	}
 	void MessageWaiting()
 	{
 		MessagePlayers(GetWaitingMessage());
@@ -100,7 +108,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		int ready_count = m_ReadyList.Count();
 		int player_count = GetPlayers().Count();
 
-		if(player_count == 1) //need more than 1 player to start
+		if(player_count <= 1 ) //need more than 1 player to start
 			return false;
 
 		float percent = (ready_count / player_count);
@@ -121,9 +129,10 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		super.RemovePlayer( player );
 		m_ReadyList.RemoveItem( player );
 	}
-	override array<PlayerBase> RemoveAllPlayers()
+	override ref array<PlayerBase> RemoveAllPlayers()
 	{
 		m_ReadyList.Clear();
-		return super.RemoveAllPlayers();
+		ref array<PlayerBase> players = super.RemoveAllPlayers();
+		return players;
 	}
 }

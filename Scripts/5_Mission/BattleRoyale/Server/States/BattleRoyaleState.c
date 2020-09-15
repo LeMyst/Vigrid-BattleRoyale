@@ -77,7 +77,7 @@ class BattleRoyaleState {
 		m_Players.RemoveItem(player);
 		OnPlayerCountChanged();
 	}
-	array<PlayerBase> RemoveAllPlayers()
+	ref array<PlayerBase> RemoveAllPlayers()
 	{
 		ref array<PlayerBase> result_array = new array<PlayerBase>();
 		result_array.InsertAll(m_Players);
@@ -178,9 +178,9 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		}
 		super.AddPlayer(player);
 	}
-    override array<PlayerBase> RemoveAllPlayers()
+    override ref array<PlayerBase> RemoveAllPlayers()
 	{
-		array<PlayerBase> players = super.RemoveAllPlayers();
+		ref array<PlayerBase> players = super.RemoveAllPlayers();
 		foreach(PlayerBase player : players)
 		{
 			player.SetAllowDamage(true); //leaving debug state = disable god mode

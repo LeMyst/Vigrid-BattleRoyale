@@ -39,11 +39,11 @@ class MatchData
         start_time = time;
     }
 
-    void CreateWorld(string map, string game_type)
+    void CreateWorld(string map_name, string game_type)
     {
         world = new MatchWorld;
-        world.map = map;
-        world.type = game_type;
+        world.map_name = map_name;
+        world.game_type = game_type;
     }
     void SetWorldStartTime(int hour, int minute)
     {
@@ -58,9 +58,9 @@ class MatchData
     
     void CreateWinner(string steamid)
     {
-        winner - new MatchPlayer;
+        winner = new MatchPlayer;
         winner.steam_id = steamid;
-        winner.MatchDeath = null;
+        winner.death_data = null;
     }
     
     bool ContainsDeath(string steamid)
@@ -128,8 +128,8 @@ class MatchPlayer
 }
 class MatchWorld
 {
-    string map;
-    string type;
+    string map_name;
+    string game_type;
     int hour; //on start
     int minute; //on start
     float rain; //on end

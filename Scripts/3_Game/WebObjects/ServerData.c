@@ -12,7 +12,8 @@ class ServerData
 		"query_port":"27016",
 		"last_started":1593639481,
 		"matches":[],
-		"region":"eu"
+		"region":"eu",
+		"locked":1
 	}
 	*/
 	string name;

@@ -116,10 +116,18 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				{
 					GetCurrentState().Deactivate(); //deactivate old state
 				}
-				array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
-				foreach(PlayerBase player : players)
+				ref array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
+				for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 				{
-					next_state.AddPlayer(player); //add players to new state
+					if(players[i])
+					{					
+						next_state.AddPlayer(players[i]); //add players to new state
+					}
+					else
+					{
+						Error("null player in RemoveAllPlayers result!");
+					}
+					
 				}
 				i_CurrentStateIndex = next_index;//move us to the next state
 				Print("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
@@ -157,15 +165,29 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		if(GetCurrentState().ContainsPlayer(player))
 		{
 			GetCurrentState().RemovePlayer(player);
-
-			string player_steamid = player.GetIdentity().GetPlainId();
-			//--- this ensures the leaderboard logs this player's death as zone damage
-			if(!GetMatchData().ContainsDeath(player_steamid))
+			
+			if(player)
 			{
-				vector player_position = player.GetPosition();
-				int time = GetGame().GetTime();
-				killed_with.Insert( "Disconnected" );
-				GetMatchData().CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+				/*
+				//--- We'll need a better hook for this
+				if(player.GetIdentity())
+				{
+					string player_steamid = player.GetIdentity().GetPlainId();
+					//--- this ensures the leaderboard logs this player's death as zone damage
+					if(!GetMatchData().ContainsDeath(player_steamid))
+					{
+						vector player_position = player.GetPosition();
+						int time = GetGame().GetTime();
+						ref array<string> killed_with = new array<string>();
+						killed_with.Insert( "Disconnected" );
+						GetMatchData().CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+					}
+				}
+				else
+				{
+					Error("Player disconnected but identity is null!");
+				}
+				*/
 			}
 		}
 
