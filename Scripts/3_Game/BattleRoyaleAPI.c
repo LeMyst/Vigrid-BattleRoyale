@@ -130,7 +130,11 @@ class BattleRoyaleAPI {
             Error("BattleRoyaleAPI::SendRequest_Sync() => GetContext() RETURNED NULL!");
             return "";
         }
-        string result = context.POST_now(request, data_object.GetJSON());
+
+        string request_body = data_object.GetJSON();
+        Print(request_body);
+
+        string result = context.POST_now(request, request_body);
         
         Print("BattleRoyaleAPI::SubmitMatchData() => WEB RESULT: " + result);
         return result;

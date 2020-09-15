@@ -56,6 +56,15 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			float distance = GetZoneDistance( m_FuturePlayArea );
 			gameplay.UpdateZoneDistance( distance ); //update HUD element
 		}
+		else
+		{
+			if(m_CurrentPlayArea)
+			{
+				float distance = GetZoneDistance( m_CurrentPlayArea );
+				gameplay.UpdateZoneDistance( distance );
+			}
+		}
+		
 
 		m_CallQueue.Tick( delta );
 	}
