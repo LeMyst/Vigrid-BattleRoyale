@@ -14,6 +14,11 @@ class BattleRoyaleWin extends BattleRoyaleState
 	override void Activate()
 	{
 		super.Activate();
+
+		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetEnd(GetGame().GetTime()); //match end time logging
+
+		ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
+		
 		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{
@@ -27,12 +32,21 @@ class BattleRoyaleWin extends BattleRoyaleState
 				Print(identity.GetFullName());
 				Print(identity.GetId());
 				Print(identity.GetPlainId());
+				match_data.CreateWinner(identity.GetPlainId());
 			}
 			HandleWinner(winner);
 		}
+
+		//log match end weather
+		float rain_intensity = GetGame().GetWeather().GetRain().GetActual();
+		float fog_intensity = GetGame().GetWeather().GetFog().GetActual();
+		match_data.SetWorldWeather( rain_intensity, fog_intensity );
+
 		BattleRoyaleAPI.GetAPI().ServerFinish(winner_name); //report winner to api
 		
 		//TODO: report match data to leaderboards
+
+		BattleRoyaleAPI.GetAPI().SubmitMatchData( match_data );
 
 		m_CallQueue.CallLater(this.KickWinner, i_SecondsTillKick * 1000, false);
 	}

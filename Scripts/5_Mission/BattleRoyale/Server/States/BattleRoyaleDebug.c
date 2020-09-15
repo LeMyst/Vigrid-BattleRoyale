@@ -100,6 +100,9 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		int ready_count = m_ReadyList.Count();
 		int player_count = GetPlayers().Count();
 
+		if(player_count == 1) //need more than 1 player to start
+			return false;
+
 		float percent = (ready_count / player_count);
 		return (percent >= f_VoteThreshold);
 	}

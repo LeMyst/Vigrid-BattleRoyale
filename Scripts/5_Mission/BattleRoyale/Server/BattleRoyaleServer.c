@@ -8,7 +8,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	
 	int i_NumRounds;
 	
-	
+	protected ref MatchData match_data;
+
 	
 	void BattleRoyaleServer() 
 	{
@@ -18,6 +19,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 	void Init()
 	{
+		match_data = new MatchData;
+
+		match_data.CreateWorld("Chernarus", "Solos"); //todo figure out world dynamically & get game mode from config
+
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
 
@@ -150,7 +155,19 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	void OnPlayerDisconnected(PlayerBase player)
 	{		
 		if(GetCurrentState().ContainsPlayer(player))
+		{
 			GetCurrentState().RemovePlayer(player);
+
+			string player_steamid = player.GetIdentity().GetPlainId();
+			//--- this ensures the leaderboard logs this player's death as zone damage
+			if(!GetMatchData().ContainsDeath(player_steamid))
+			{
+				vector player_position = player.GetPosition();
+				int time = GetGame().GetTime();
+				killed_with.Insert( "Disconnected" );
+				GetMatchData().CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+			}
+		}
 
 		m_LootSystem.RemovePlayer( player );
 	}
@@ -267,6 +284,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		return m_LootSystem;
 	}
 
+
+	ref MatchData GetMatchData()
+	{
+		return match_data;
+	}
 	
 	void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
@@ -314,6 +336,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		int minute = 0;
 		GetGame().GetWorld().SetDate(year, month, day, hour, minute);
 		
+		GetMatchData().SetWorldStartTime( hour, minute );
+
 		//Set Random Weather
 		Weather weather = GetGame().GetWeather();
 
@@ -329,6 +353,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		weather.GetRain().SetForecastTimeLimits( 300 , 300 );
 		weather.GetFog().SetForecastTimeLimits( 3600 , 3600 );
 
+
+		
 		weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
 		weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
 		weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);

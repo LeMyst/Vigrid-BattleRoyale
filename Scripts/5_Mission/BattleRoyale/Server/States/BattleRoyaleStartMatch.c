@@ -95,6 +95,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         }
         
         MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
+
+        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetStart(GetGame().GetTime()); //match start time logging
         b_IsGameplay = true;
     }
 

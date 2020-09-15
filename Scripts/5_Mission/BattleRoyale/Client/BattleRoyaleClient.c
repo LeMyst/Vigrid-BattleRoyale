@@ -138,8 +138,10 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	{
 		if(b_IsReady)
 			return; //already ready!
-
+		
 		b_IsReady = true; //this only runs once
+
+		PlayerBase player = GetGame().GetPlayer();
 		ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
 		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false , NULL, player);
 

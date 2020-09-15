@@ -120,7 +120,20 @@ class BattleRoyaleAPI {
         string result = SendRequest_Sync(BattleRoyaleAPIContextType.Server, request);
         Print("BattleRoyaleAPI::ServerFinish() => WEB RESULT: " + result);
     }
-
+    void SubmitMatchData(ref MatchData data_object)
+    {
+        string request = "matchsubmit/" + m_ServerData._id;
+        //post our JSON data
+        RestContext context = GetContext(BattleRoyaleAPIContextType.Server);
+        if(!context)
+        {
+            Error("BattleRoyaleAPI::SendRequest_Sync() => GetContext() RETURNED NULL!");
+            return "";
+        }
+        context.POST_now(request, data_object.GetJSON());
+        
+        Print("BattleRoyaleAPI::SubmitMatchData() => WEB RESULT: " + result);
+    }
 
     void ServerSetLock(bool value)
     {

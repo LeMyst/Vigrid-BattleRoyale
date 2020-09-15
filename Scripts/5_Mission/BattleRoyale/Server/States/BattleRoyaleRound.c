@@ -184,53 +184,110 @@ class BattleRoyaleRound extends BattleRoyaleState
 	
 	void OnPlayerKilled(PlayerBase player, Object killer)
 	{
+		ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
+
 		if(ContainsPlayer(player))
 		{
 			RemovePlayer(player);
 		}
-
-		if(killer)
+		else
 		{
-			EntityAI killer_entity;
-			if(Class.CastTo(killer_entity, killer))
-			{
-				PlayerBase pbKiller;
-				if(!Class.CastTo(pbKiller, killer_entity))
-				{
-					Man root_player = killer_entity.GetHierarchyRootPlayer();
-					if(root_player)
-					{
-						pbKiller = PlayerBase.Cast( root_player );
-					}
-				}
+			Error("Unknown player killed! Not in current state?");
+		}
+		
+		if(player.GetIdentity())
+		{
+			string player_steamid = player.GetIdentity().GetPlainId();
+			vector player_position = player.GetPosition();
+			int time = GetGame().GetTime(); //MS since mission start (we'll calculate UNIX timestamp on the webserver)
 
-				if(pbKiller && pbKiller.GetIdentity())
+			if(killer)
+			{
+				EntityAI killer_entity;
+				if(Class.CastTo(killer_entity, killer))
 				{
-					if(ContainsPlayer(pbKiller))
+					ref array<string> killed_with = new array<string>();
+					vector killer_position = killer_entity.GetPosition();
+
+					bool is_vehicle = false;
+
+					PlayerBase pbKiller;
+					if(!Class.CastTo(pbKiller, killer_entity))
 					{
-						//RPC client to add kill count
-						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
+						Man root_player = killer_entity.GetHierarchyRootPlayer();
+						if(root_player)
+						{
+							pbKiller = PlayerBase.Cast( root_player );
+							is_vehicle = true;
+						}
+					}
+
+					if(pbKiller && pbKiller.GetIdentity())
+					{
+						if(ContainsPlayer(pbKiller))
+						{
+							//RPC client to add kill count
+							GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
+						
+							if(!match_data.ContainsDeath(player_steamid))
+							{
+								if(!is_vehicle)
+								{
+									EntityAI itemInHands = pbKiller.GetHumanInventory().GetEntityInHands();
+									killed_with.Insert( itemInHands.GetType() );
+									//TODO: insert all attachments associated with the item in hands
+								}
+								else
+								{
+									killed_with.Insert( killer_entity.GetType() ); //vehicle kill
+								}
+								
+								match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
+							}
+						}
+						else
+						{
+							Error("Killer does not exist in the current game state!");
+							if(!match_data.ContainsDeath(player_steamid))
+							{
+								killed_with.Insert( "Bugged Killer" );
+								match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+							}
+						}
+						
 					}
 					else
 					{
-						Error("Killer does not exist in the current game state!");
+						//killer is an entity, but not a player
+						if(!match_data.ContainsDeath(player_steamid))
+						{
+							killed_with.Insert( killer_entity.GetType() );
+							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
+						}
 					}
 					
+				}
+				else
+				{
+					//Unhandled killer case (not an entity?)
+					if(!match_data.ContainsDeath(player_steamid))
+					{
+						match_data.CreateDeath( player_steamid, player_position, time, "", new array<string>(), killer_position );
+					}
+				}
+				
+			}
+			else
+			{
+				//null killer
+				if(!match_data.ContainsDeath(player_steamid))
+				{
+					match_data.CreateDeath( player_steamid, player_position, time, "", new array<string>(), Vector(0,0,0) );
 				}
 			}
 		}
 
 
-		//deterime if killer is a player
-
-		//increment killer's kill count by sending them `AddPlayerKill` RPC
-
-		/*
-		if(player.GetIdentity())
-			GetGame().DisconnectPlayer(player.GetIdentity()); //delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
-		else
-			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
-		*/
 	}
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
@@ -252,6 +309,21 @@ class BattleRoyaleRound extends BattleRoyaleState
 				{
 					//DAMAGE
 					MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
+					//TODO: determine if this last health tick will kill the player
+					bool b_WillKillThisTick = false;
+					if(b_WillKillThisTick)
+					{
+						string player_steamid = player.GetIdentity().GetPlainId();
+						vector player_position = player.GetPosition();
+						int time = GetGame().GetTime();
+						ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
+						//--- this ensures the leaderboard logs this player's death as zone damage
+						if(!match_data.ContainsDeath(player_steamid))
+						{
+							killed_with.Insert( "Zone Damage" );
+							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+						}
+					}
 					player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
 					player.time_until_damage = i_DamageTickTime; //reset timer
 				}
@@ -310,6 +382,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		ref BattleRoyalePlayArea m_ThisArea = NULL;
 		if(GetZone())
 			m_ThisArea = GetZone().GetArea();
+			
+		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().CreateZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
 			
 		//tell the client the current area is now this area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
