@@ -251,6 +251,7 @@ namespace LootEditor
                     float weight = val.Value.weight;
                     float percent = (100 * weight) / total_weight;
 
+                    //TODO: sometimes val.Key doesn't exist in entry controls (often happens after items are renamed?)
                     foreach(Control ctrl in entry_controls[val.Key])
                     {
                         if(ctrl is Label lbl)
