@@ -51,16 +51,17 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 
+		float distance;
 		if(m_FuturePlayArea)
 		{
-			float distance = GetZoneDistance( m_FuturePlayArea );
+			distance = GetZoneDistance( m_FuturePlayArea );
 			gameplay.UpdateZoneDistance( distance ); //update HUD element
 		}
 		else
 		{
 			if(m_CurrentPlayArea)
 			{
-				float distance = GetZoneDistance( m_CurrentPlayArea );
+				distance = GetZoneDistance( m_CurrentPlayArea );
 				gameplay.UpdateZoneDistance( distance );
 			}
 		}
