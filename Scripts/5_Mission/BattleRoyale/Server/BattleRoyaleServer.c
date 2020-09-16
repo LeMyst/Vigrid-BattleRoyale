@@ -9,6 +9,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	int i_NumRounds;
 	
 	protected ref MatchData match_data;
+	protected ref ScriptCallQueue m_CallQueue;
 
 	
 	void BattleRoyaleServer() 
@@ -19,6 +20,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 	void Init()
 	{
+		m_CallQueue = new ScriptCallQueue;
 		match_data = new MatchData;
 
 		match_data.CreateWorld("Chernarus", "Solos"); //todo figure out world dynamically & get game mode from config
@@ -101,6 +103,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 		
 		
+		m_CallQueue.Tick( delta );
 		
 		//--- transition states
 		if(GetCurrentState().IsComplete()) //current state is complete
@@ -150,12 +153,24 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		if(!Class.CastTo(m_DebugStateObj, GetCurrentState())
 		{
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
-			GetGame().DisconnectPlayer(player.GetIdentity());
+
+			//BAD VERY BAD!
+			//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
+			//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
+			m_CallQueue.CallLater( GetGame().DisconnectPlayer, 15000, false, player.GetIdentity() );
+			
+			//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
+			
+			
+			//TODO: Create a *spectator* system that handles players conencting during non-debug zone states
+			//Note: the spectator system will also handle client respawn events too.
+			//We need to create a list of *allowed* spectators. This should be in the server config (for private servers)
+			
 			return;
 		}
 
 
-		//crash occured right here ?
+		// only add player if they connect during debug (otherwise they're a spectator)
 
 		GetCurrentState().AddPlayer(player);
 		m_LootSystem.AddPlayer( player );
@@ -191,6 +206,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			}
 		}
 
+		//if player is in the loot system, remove them
 		m_LootSystem.RemovePlayer( player );
 	}
 	
