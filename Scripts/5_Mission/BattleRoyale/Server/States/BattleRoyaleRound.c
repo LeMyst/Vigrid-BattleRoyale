@@ -118,8 +118,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 		ref BattleRoyalePlayArea m_ThisArea = NULL;
 		if(GetZone())
+		{
+			GetZone().OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
 			m_ThisArea = GetZone().GetArea();
-		
+		}
 		//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
 		//tell the client the next play area

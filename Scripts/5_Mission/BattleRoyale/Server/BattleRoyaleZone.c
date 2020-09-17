@@ -89,6 +89,13 @@ class BattleRoyaleZone
         
     }
 
+    protected void OnActivate(notnull ref array<ref PlayerBase> players)
+    {
+        //This method is run before GetArea() is ever called. This can be used to change the play area size based on players. 
+        //Note that this on the main thread, therefore it must be performant.
+        //we can look at CreatePlayArea / CreatePlayRadius & Init methods for examples of zone size creation
+    }
+
     
     protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
