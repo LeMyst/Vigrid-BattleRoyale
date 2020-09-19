@@ -20,14 +20,118 @@ class MatchData
 
     string GetJSON()
     {
-        string result = "";
-        JsonSerializer m_Serializer = new JsonSerializer;
-        if(!m_Serializer.WriteToString(this, false, result))
+        int i;
+        int j;
+
+        Print("Getting MatchData Json");
+        Print(start_time);
+        Print(end_time);
+        if(world)
         {
-            Error("Failed to parse MatchData to JSON");
-            return "{}";
+            Print(world.map_name);
+            Print(world.game_type);
+            Print(world.hour);
+            Print(world.minute);
+            Print(world.rain);
+            Print(world.fog);
         }
+        else
+        {
+            Print("World == NULL!");
+        }
+        if(winner)
+        {
+            Print(winner.steam_id);
+        }
+        else
+        {
+            Print("Winner == NULL!");
+        }
+        for(i = 0; i < deaths.Count(); i++)
+        {
+            if(deaths[i])
+            {
+                Print(deaths[i].steam_id);
+                if(deaths[i].death_data)
+                {
+                    Print(deaths[i].death_data.killer_id);
+                    Print(deaths[i].death_data.killer_position);
+                    Print(deaths[i].death_data.time);
+                    Print(deaths[i].death_data.position);
+                    if(deaths[i].death_data.killer_weapondata)
+                    {
+                        for(j = 0; j < deaths[i].death_data.killer_weapondata.Count(); j++)
+                        {
+                            Print(deaths[i].death_data.killer_weapondata[j]);
+                        }
+                    }
+                    else
+                    {
+                        Print("Death[" + i.ToString() + "].death_data.killer_weapondata == NULL!");
+                    }
+                }
+                else
+                {
+                    Print("Death[" + i.ToString() + "].death_data == NULL!");
+                }
+                
+            }
+            else
+            {
+                Print("Death[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        for(i = 0; i < zones.Count(); i++)
+        {
+            if(zones[i])
+            {
+                Print(zones[i].time);
+                Print(zones[i].position);
+                Print(zones[i].radius);
+            }
+            else
+            {
+                Print("Zones[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        for(i = 0; i < airdrops.Count(); i++)
+        {
+            if(airdrops[i])
+            {
+                Print(airdrops[i].time);
+                Print(airdrops[i].position);
+            }
+            else
+            {
+                Print("Airdrops[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        for(i = 0; i < redzones.Count(); i++)
+        {
+            if(redzones[i])
+            {
+                Print(redzones[i].time);
+                Print(redzones[i].position);
+                Print(redzones[i].radius);
+            }
+            else
+            {
+                Print("Redzones[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        
+        //this is built in method for converting object to json string (look at jsonfileloader.c in 3_game\tools)
+        return JsonFileLoader<MatchData>.JsonMakeData( this );
+        /*
+        string result;
+        JsonSerializer m_Serializer = new JsonSerializer;
+        m_Serializer.WriteToString( this, true, result )
         return result;
+        */
     }
     
     void SetEnd(int time)

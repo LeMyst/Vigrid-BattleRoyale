@@ -178,6 +178,7 @@ class BattleRoyaleAPI {
 			Error("BattleRoyaleAPI::GetServer() => ERROR: web_result = NULL");
 			return NULL;
 		}
+        
         JsonSerializer m_Serializer = new JsonSerializer;
 		ServerData p_ServerWebData;
 		string error;
