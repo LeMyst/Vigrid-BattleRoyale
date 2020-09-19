@@ -43,6 +43,13 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Start", this, "LootSystem_Start" );
         button = UIActionManager.CreateButton( wrapper, "Stop", this, "LootSystem_Stop" );
 
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
+        UIActionManager.CreateText( wrapper, "Vehicle System" );
+        button = UIActionManager.CreateButton( wrapper, "Start", this, "VehicleSystem_Start" );
+        button = UIActionManager.CreateButton( wrapper, "Stop", this, "VehicleSystem_Stop" );
+
+        m_sclr_MainActions.UpdateScroller();
+
     }
     override void OnHide() 
 	{
@@ -69,5 +76,14 @@ class BRMasterControlsForm extends JMFormBase
     void LootSystem_Stop(UIEvent eid, ref UIActionBase action)
     {
         m_Module.Loot_Stop();
+    }
+
+    void VehicleSystem_Start(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.Vehicles_Start();
+    }
+    void VehicleSystem_Stop(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.Vehicles_Stop();
     }
 }

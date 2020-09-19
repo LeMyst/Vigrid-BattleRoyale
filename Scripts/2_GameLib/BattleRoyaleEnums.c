@@ -7,6 +7,8 @@ enum BattleRoyaleCOTStateMachineRPC
 	Resume,
     Start_Loot,
     Stop_Loot,
+    Start_Vehicles,
+    Stop_Vehicles,
 
     //TODO: insert more actions here
 

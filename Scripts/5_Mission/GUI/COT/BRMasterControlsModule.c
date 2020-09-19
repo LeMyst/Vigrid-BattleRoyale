@@ -60,6 +60,13 @@ class BRMasterControlsModule: JMRenderableModuleBase
         case BattleRoyaleCOTStateMachineRPC.Stop_Loot:
 			RPC_StopLoot( ctx, sender, target );
 			break;
+        case BattleRoyaleCOTStateMachineRPC.Start_Vehicles:
+			RPC_StartVehicles( ctx, sender, target );
+			break;
+        case BattleRoyaleCOTStateMachineRPC.Stop_Vehicles:
+			Server_StopVehicles( ctx, sender, target );
+			break;
+        case  
 		}
     }
 
@@ -98,7 +105,20 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_StopLoot();
         }
     }
-
+    private void RPC_StartVehicles( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    {
+        if ( IsMissionHost() )
+		{
+            Server_StartVehicles();
+        }
+    }
+    private void RPC_StopVehicles( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    {
+        if ( IsMissionHost() )
+		{
+            Server_StopVehicles();
+        }
+    }
 
 
     //client side functionality (these get called)
@@ -144,6 +164,32 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Server called StateMachine_Resume()");
         }
+    }
+    void Vehicles_Start()
+    {
+        if ( IsMissionClient() )
+		{
+            ScriptRPC rpc = new ScriptRPC();
+			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Start_Vehicles, true, NULL );
+        }
+        else
+        {
+            Error("Server called Vehicles_Start()");
+        }
+        
+    }
+    void Vehicles_Stop()
+    {
+        if ( IsMissionClient() )
+		{
+            ScriptRPC rpc = new ScriptRPC();
+			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Stop_Vehicles, true, NULL );
+        }
+        else
+        {
+            Error("Server called Vehicles_Stop()");
+        }
+        
     }
     void Loot_Start()
     {
@@ -235,6 +281,32 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Print("[DayZBR COT] State Machine Skipping!");
             m_BrServer.GetLootSystem().Stop();
+        }
+        else
+        {
+            Error("Failed to cast GetBR() to BattleRoyaleServer");
+        }
+    }
+    private void Server_StartVehicles()
+    {
+        BattleRoyaleServer m_BrServer; 
+        if(Class.CastTo( m_BrServer, GetBR()))
+        {
+            Print("[DayZBR COT] Starting Vehicle System!");
+            m_BrServer.GetVehicleSystem().Start();
+        }
+        else
+        {
+            Error("Failed to cast GetBR() to BattleRoyaleServer");
+        }
+    }
+    private void Server_StopVehicles()
+    {
+        BattleRoyaleServer m_BrServer; 
+        if(Class.CastTo( m_BrServer, GetBR()))
+        {
+            Print("[DayZBR COT] Stopping Vehicle System!");
+            m_BrServer.GetVehicleSystem().Stop();
         }
         else
         {
