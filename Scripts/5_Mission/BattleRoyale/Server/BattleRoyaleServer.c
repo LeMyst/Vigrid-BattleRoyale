@@ -1,6 +1,7 @@
 
 class BattleRoyaleServer extends BattleRoyaleBase
 {
+	protected ref BattleRoyaleSpectators m_SpectatorSystem;
 	protected ref BattleRoyaleVehicles m_VehicleSystem; 
 	protected ref BattleRoyaleLoot m_LootSystem;
 	ref array<ref BattleRoyaleState> m_States;
@@ -27,6 +28,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
+		m_SpectatorSystem = new BattleRoyaleSpectators;
 
 		m_VehicleSystem.Preinit();
 
@@ -93,6 +95,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		
 		m_LootSystem.Update(timeslice);
 		m_VehicleSystem.Update(timeslice);
+		m_SpectatorSystem.Update(timeslice);
 
 		foreach(BattleRoyaleState state : m_States)
 		{
@@ -157,9 +160,16 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			//BAD VERY BAD!
 			//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
 			//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
-			m_CallQueue.CallLater( GetGame().DisconnectPlayer, 15000, false, player.GetIdentity() );
 			
 			//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
+			if(m_SpectatorSystem.CanSpectate(player))
+			{
+				m_SpectatorSystem.AddPlayer( player );
+			}
+			else
+			{
+				m_CallQueue.CallLater( GetGame().DisconnectPlayer, 15000, false, player.GetIdentity() );
+			}
 			
 			
 			//TODO: Create a *spectator* system that handles players conencting during non-debug zone states
@@ -265,17 +275,24 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			int life_state = player.GetPlayerState();
 			if(life_state == EPlayerStates.ALIVE)
 			{
-				//TODO: do something with this entity
 				if(player && player.GetIdentity())
 				{
-					//this ensures we only call disconnect on this player once
-					if(temp_disconnecting.Find(player) == -1)
+					if(m_SpectatorSystem.ContainsPlayer( player ))
 					{
-						temp_disconnecting.Insert(player);
-						GetGame().DisconnectPlayer( player.GetIdentity() );
-						Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+						m_SpectatorSystem.OnPlayerTick( player, timeslice );
+					}	
+					else
+					{
+						//this ensures we only call disconnect on this player once
+						if(temp_disconnecting.Find(player) == -1)
+						{
+							temp_disconnecting.Insert(player);
+							GetGame().DisconnectPlayer( player.GetIdentity() );
+							Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+						}
 					}
 				}
+				
 			}
 			//any other case here, the player is dead & therefore shouldn't count towards any state
 		}

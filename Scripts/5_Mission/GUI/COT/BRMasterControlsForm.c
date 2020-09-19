@@ -48,6 +48,12 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Start", this, "VehicleSystem_Start" );
         button = UIActionManager.CreateButton( wrapper, "Stop", this, "VehicleSystem_Stop" );
 
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
+        UIActionManager.CreateText( wrapper, "Vote Start" );
+        button = UIActionManager.CreateButton( wrapper, "Enable", this, "VehicleSystem_Start" );
+        button = UIActionManager.CreateButton( wrapper, "Disable", this, "VehicleSystem_Stop" );
+
+
         m_sclr_MainActions.UpdateScroller();
 
     }
@@ -85,5 +91,16 @@ class BRMasterControlsForm extends JMFormBase
     void VehicleSystem_Stop(UIEvent eid, ref UIActionBase action)
     {
         m_Module.Vehicles_Stop();
+    }
+
+    void VoteStart_Enable(UIEvent eid, ref UIActionBase action)
+    {
+        Print("TODO!");
+        //m_Module.Vehicles_Start();
+    }
+    void VoteStart_Disable(UIEvent eid, ref UIActionBase action)
+    {
+        Print("TODO!");
+        //m_Module.Vehicles_Stop();
     }
 }
