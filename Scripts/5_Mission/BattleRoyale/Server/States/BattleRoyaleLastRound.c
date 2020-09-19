@@ -169,8 +169,12 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 							{
 								killed_with.Insert( killer_entity.GetType() ); //vehicle kill
 							}
-							
-							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
+							string killer_steamid = "";
+							if(pbKiller.GetIdentity())
+							{
+								killer_steamid = pbKiller.GetIdentity().GetPlainId();
+							}
+							match_data.CreateDeath( player_steamid, player_position, time, killer_steamid, killed_with, killer_position );
 						}
 						
 					}
