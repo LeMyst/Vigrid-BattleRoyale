@@ -185,7 +185,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		GetCurrentState().AddPlayer(player);
 		m_LootSystem.AddPlayer( player );
 	}
-	void OnPlayerDisconnected(PlayerBase player)
+	void OnPlayerDisconnected(PlayerBase player, PlayerIdentity identity)
 	{		
 		if(GetCurrentState().ContainsPlayer(player))
 		{
@@ -193,11 +193,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			
 			if(player)
 			{
-				/*
+				
 				//--- We'll need a better hook for this
-				if(player.GetIdentity())
+				if(identity)
 				{
-					string player_steamid = player.GetIdentity().GetPlainId();
+					string player_steamid = identity.GetPlainId();
 					//--- this ensures the leaderboard logs this player's death as zone damage
 					if(!GetMatchData().ContainsDeath(player_steamid))
 					{
@@ -212,7 +212,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				{
 					Error("Player disconnected but identity is null!");
 				}
-				*/
+				
 			}
 		}
 

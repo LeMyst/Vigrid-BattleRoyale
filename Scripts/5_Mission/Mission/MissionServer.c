@@ -41,19 +41,16 @@ modded class MissionServer
 		
 		
 	}
-	override void InvokeOnDisconnect( PlayerBase player )
-	{
-		super.InvokeOnDisconnect(player);
 
+	override void PlayerDisconnected(PlayerBase player, PlayerIdentity identity, string uid)
+	{ 
 		if(player)
 		{
-			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerDisconnected(player);
+			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerDisconnected(player, identity);
 		}
-		else
-		{
-			Error("PLAYER PASSED TO IOD IS NULL");
-		}
+		super.PlayerDisconnected( player, identity, uid );
 	}
+	
 	
 	
 	

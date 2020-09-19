@@ -12,7 +12,7 @@ class BattleRoyaleSpectators
     bool CanSpectate(PlayerBase player)
     {
         //TODO: create a config of allowed players for spectating (or a config to enable global spectate)
-        return true; 
+        return false; 
     }
     bool ContainsPlayer(PlayerBase player)
     {
@@ -30,11 +30,11 @@ class BattleRoyaleSpectators
     }
     void OnPlayerTick(PlayerBase player, float delta)
     {
-
+        // just in case we need it
     }
 
     protected void InitSpectatorCamera(PlayerBase player)
     {
-
+        //we need to initialize some system on this client that lets them freecam around while updating their network bubble to the camera
     }
 }
