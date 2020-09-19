@@ -4,7 +4,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
     
-    protected ref array<ref PlayerBase> m_PlayerList;
+    protected ref array<PlayerBase> m_PlayerList;
 
     void BattleRoyaleStartMatch()
     {
@@ -17,7 +17,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
         b_IsGameplay = false;
         
-        m_PlayerList = new array<ref PlayerBase>;
+        m_PlayerList = new array<PlayerBase>;
     }
     override string GetName()
 	{
@@ -71,10 +71,11 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     }
     void UnlockPlayers()
     {
-        foreach(PlayerBase player : m_Players)
+        m_PlayerList.InsertAll( m_Players );
+        /*foreach(PlayerBase player : m_Players)
         {
             m_PlayerList.Insert(player);
-        }
+        }*/
 
         //enable player input on clients (we'll do this on server in another thread)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
@@ -89,7 +90,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     {
         for(int i = 0; i < m_PlayerList.Count(); i++)
         {
-            ref PlayerBase player = m_PlayerList[i];
+            PlayerBase player = m_PlayerList[i];
 
             player.DisableInput(false); //This will re-enable input
         }

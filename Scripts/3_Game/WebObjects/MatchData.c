@@ -33,10 +33,14 @@ class MatchData
     void SetEnd(int time)
     {
         end_time = time;
+        Print("MatchData: Setting end time");
+        Print(time);
     }
     void SetStart(int time)
     {
         start_time = time;
+        Print("MatchData: Setting start time");
+        Print(time);
     }
 
     void CreateWorld(string map_name, string game_type)
@@ -44,16 +48,23 @@ class MatchData
         world = new MatchWorld;
         world.map_name = map_name;
         world.game_type = game_type;
+        Print("MatchData: Setting world `" + map_name + "`:`" + game_type + "`");
     }
     void SetWorldStartTime(int hour, int minute)
     {
         world.hour = hour;
         world.minute = minute;
+        Print("MatchData: Setting world start time");
+        Print(hour);
+        Print(minute);
     }
     void SetWorldWeather(float rain, float fog)
     {
         world.rain = rain;
         world.fog = fog;
+        Print("MatchData: Setting world weather");
+        Print(rain);
+        Print(fog);
     }
     
     void CreateWinner(string steamid)
@@ -61,6 +72,7 @@ class MatchData
         winner = new MatchPlayer;
         winner.steam_id = steamid;
         winner.death_data = null;
+        Print("MatchData: Setting winner `" + steamid + "`");
     }
     
     bool ContainsDeath(string steamid)
@@ -89,6 +101,9 @@ class MatchData
         death.position = position;
 
         deaths.Insert( player );
+        Print("MatchData: Inserting death");
+        Print(player);
+        Print(death);
     }
 
     void CreateZone(vector position, float radius, int time)
@@ -99,6 +114,8 @@ class MatchData
         zone.time = time;
 
         zones.Insert( zone );
+        Print("MatchData: Inserting zone");
+        Print(zone);
     }
 
     void CreateAirdrop(vector position, int time)

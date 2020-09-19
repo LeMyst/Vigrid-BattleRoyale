@@ -1,6 +1,6 @@
 class BattleRoyalePrepare extends BattleRoyaleState
 {
-    protected ref array<ref PlayerBase> m_PlayerList;
+    protected ref array<PlayerBase> m_PlayerList;
     protected ref array<string> a_StartingItems;
 
 
@@ -20,7 +20,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
         
         
-        m_PlayerList = new array<ref PlayerBase>;
+        m_PlayerList = new array<PlayerBase>();
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
         world_center = GetGame().ConfigGetVector(path + " centerPosition");
@@ -44,11 +44,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
         //we process on a static list so when players possibly disconnect during this phase we don't error out or skip any clients
-        foreach(PlayerBase player : m_Players)
-        {
-            m_PlayerList.Insert(player);
-        }
+        m_PlayerList.InsertAll( m_Players ); //this gave an error when using m_Players
         
+
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them

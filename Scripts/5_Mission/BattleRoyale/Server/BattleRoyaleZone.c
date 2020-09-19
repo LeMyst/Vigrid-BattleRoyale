@@ -89,7 +89,7 @@ class BattleRoyaleZone
         
     }
 
-    protected void OnActivate(notnull ref array<ref PlayerBase> players)
+    void OnActivate(notnull ref array<PlayerBase> players)
     {
         //This method is run before GetArea() is ever called. This can be used to change the play area size based on players. 
         //Note that this on the main thread, therefore it must be performant.

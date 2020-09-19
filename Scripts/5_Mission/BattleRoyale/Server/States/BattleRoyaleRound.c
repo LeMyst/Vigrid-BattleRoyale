@@ -130,7 +130,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		//message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
 		for(i = 0; i < GetPlayers().Count(); i++)
 		{
-			ref PlayerBase player = GetPlayers()[i];
+			PlayerBase player = GetPlayers()[i];
 			if(player)
 			{
 				vector playerPos = player.GetPosition();
@@ -226,36 +226,36 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 					if(pbKiller && pbKiller.GetIdentity())
 					{
-						if(ContainsPlayer(pbKiller))
-						{
-							//RPC client to add kill count
-							GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
-						
-							if(!match_data.ContainsDeath(player_steamid))
-							{
-								if(!is_vehicle)
-								{
-									EntityAI itemInHands = pbKiller.GetHumanInventory().GetEntityInHands();
-									killed_with.Insert( itemInHands.GetType() );
-									//TODO: insert all attachments associated with the item in hands
-								}
-								else
-								{
-									killed_with.Insert( killer_entity.GetType() ); //vehicle kill
-								}
-								
-								match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
-							}
-						}
-						else
+						if(!ContainsPlayer( pbKiller ))
 						{
 							Error("Killer does not exist in the current game state!");
-							if(!match_data.ContainsDeath(player_steamid))
+							//TODO: figure out why this error is firing, it shouldn't 
+							/*if(!match_data.ContainsDeath(player_steamid))
 							{
 								killed_with.Insert( "Bugged Killer" );
 								match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
 							}
+							return;*/
 						}
+
+						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
+					
+						if(!match_data.ContainsDeath(player_steamid))
+						{
+							if(!is_vehicle)
+							{
+								EntityAI itemInHands = pbKiller.GetHumanInventory().GetEntityInHands();
+								killed_with.Insert( itemInHands.GetType() );
+								//TODO: insert all attachments associated with the item in hands
+							}
+							else
+							{
+								killed_with.Insert( killer_entity.GetType() ); //vehicle kill
+							}
+							
+							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
+						}
+						
 						
 					}
 					else

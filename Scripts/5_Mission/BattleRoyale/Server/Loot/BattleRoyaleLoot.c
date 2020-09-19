@@ -5,7 +5,7 @@ class BattleRoyaleLoot
     protected bool b_IsProcessing;
     protected ref ScriptCallQueue m_CallQueue;
 
-    protected ref array<ref PlayerBase> m_Players;
+    protected ref array<PlayerBase> m_Players;
     protected ref map<Object, ref BattleRoyaleLootableBuilding> m_LootableBuildings;
 
     
@@ -14,7 +14,7 @@ class BattleRoyaleLoot
     {
         m_CallQueue = new ScriptCallQueue;
         m_LootableBuildings = new map<Object, ref BattleRoyaleLootableBuilding>();
-        m_Players = new array<ref PlayerBase>();
+        m_Players = new array<PlayerBase>();
         b_IsProcessing = false;
 
         m_CallQueue.CallLater(this.HandleTick, 500, true);
@@ -38,14 +38,14 @@ class BattleRoyaleLoot
         }
     }
     
-    void AddPlayer(ref PlayerBase player)
+    void AddPlayer(PlayerBase player)
     {
         if(m_Players.Find(player) == -1)
         {
             m_Players.Insert(player);
         }
     }
-    void RemovePlayer(ref PlayerBase player)
+    void RemovePlayer(PlayerBase player)
     {
         m_Players.RemoveItem(player);
     }
@@ -81,9 +81,9 @@ class BattleRoyaleLoot
     void ProcessLoot()
     {
         //clone players into a new list so we can process them without interrupts from RemovePlayer()
-        ref array<ref PlayerBase> m_PlayerClone = new array<ref PlayerBase>();
+        ref array<PlayerBase> m_PlayerClone = new array<PlayerBase>();
         int i;
-        ref PlayerBase player;
+        PlayerBase player;
         for(i = 0; i < m_Players.Count(); i++)
         {
             player = m_Players[i];
@@ -101,7 +101,7 @@ class BattleRoyaleLoot
 
         b_IsProcessing = false;
     }
-    void ProcessPlayerLoot(ref PlayerBase player)
+    void ProcessPlayerLoot(PlayerBase player)
     {
         vector player_pos = player.GetPosition();
         player_pos[1] = 0;

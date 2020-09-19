@@ -131,6 +131,7 @@ class BattleRoyaleAPI {
             return "";
         }
 
+        Print(data_object);
         string request_body = data_object.GetJSON();
         Print(request_body);
 

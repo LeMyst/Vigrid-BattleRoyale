@@ -231,12 +231,12 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 	}
 
-	ref array<ref PlayerBase> temp_disconnecting;
+	ref array<PlayerBase> temp_disconnecting;
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
 		if(!temp_disconnecting)
 		{
-			temp_disconnecting = new array<ref PlayerBase>();
+			temp_disconnecting = new array<PlayerBase>();
 		}
 
 		if(GetCurrentState().ContainsPlayer(player))

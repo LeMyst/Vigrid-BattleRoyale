@@ -63,13 +63,13 @@ class BattleRoyaleState {
 		return false;
 	}
 	
-	array<PlayerBase> GetPlayers()
+	ref array<PlayerBase> GetPlayers()
 	{	
 		return m_Players;
 	}
 	void AddPlayer(PlayerBase player)
 	{
-		m_Players.Insert(player);
+		m_Players.Insert( player );
 		OnPlayerCountChanged();
 	}
 	void RemovePlayer(PlayerBase player)

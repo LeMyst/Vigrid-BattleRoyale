@@ -1,7 +1,7 @@
 class BattleRoyaleLootableBuilding 
 {
     protected Object m_Object;
-    protected ref array<ref PlayerBase> a_NearPlayers;
+    protected ref array<PlayerBase> a_NearPlayers;
     protected ref array<ref BattleRoyaleLootPile> a_LootPiles;
     protected bool b_Active;
     protected bool b_Initialized;
@@ -11,7 +11,7 @@ class BattleRoyaleLootableBuilding
     void BattleRoyaleLootableBuilding( Object obj )
     {
         m_Object = obj;
-        a_NearPlayers = new array<ref PlayerBase>();
+        a_NearPlayers = new array<PlayerBase>();
         a_LootPiles = new array<ref BattleRoyaleLootPile>();
         b_Initialized = false;
 
@@ -39,7 +39,7 @@ class BattleRoyaleLootableBuilding
         b_Initialized = true;
     }
 
-    void AddNearPlayer(ref PlayerBase player)
+    void AddNearPlayer(PlayerBase player)
     {
         if(a_NearPlayers.Find(player) == -1)
         {
@@ -51,7 +51,7 @@ class BattleRoyaleLootableBuilding
             }
         }
     }
-    void RemoveNearPlayer(ref PlayerBase player)
+    void RemoveNearPlayer(PlayerBase player)
     {
         if(a_NearPlayers.Find(player) != -1)
         {

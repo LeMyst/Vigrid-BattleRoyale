@@ -32,7 +32,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 				Print(identity.GetFullName());
 				Print(identity.GetId());
 				Print(identity.GetPlainId());
-				match_data.CreateWinner(identity.GetPlainId());
+				match_data.CreateWinner( identity.GetPlainId() );
 			}
 			HandleWinner(winner);
 		}
@@ -42,9 +42,9 @@ class BattleRoyaleWin extends BattleRoyaleState
 		float fog_intensity = GetGame().GetWeather().GetFog().GetActual();
 		match_data.SetWorldWeather( rain_intensity, fog_intensity );
 
-		BattleRoyaleAPI.GetAPI().ServerFinish(winner_name); //report winner to api
+		BattleRoyaleAPI.GetAPI().ServerFinish( winner_name ); //report winner to api
 		
-		//TODO: report match data to leaderboards
+		//report match data to leaderboard
 
 		BattleRoyaleAPI.GetAPI().SubmitMatchData( match_data );
 
