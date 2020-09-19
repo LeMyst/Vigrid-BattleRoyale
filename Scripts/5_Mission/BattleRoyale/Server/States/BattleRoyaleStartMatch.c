@@ -72,10 +72,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     void UnlockPlayers()
     {
         m_PlayerList.InsertAll( m_Players );
-        /*foreach(PlayerBase player : m_Players)
-        {
-            m_PlayerList.Insert(player);
-        }*/
 
         //enable player input on clients (we'll do this on server in another thread)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);

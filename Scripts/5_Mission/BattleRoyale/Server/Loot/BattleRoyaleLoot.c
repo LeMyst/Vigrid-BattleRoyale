@@ -84,11 +84,17 @@ class BattleRoyaleLoot
         ref array<PlayerBase> m_PlayerClone = new array<PlayerBase>();
         int i;
         PlayerBase player;
+
+        m_PlayerClone.InsertAll( m_Players );
+
+        //Note: the code below existed because NULL entries were causing errors when using a foreach (we haven't tested the above code however)
+        /*
         for(i = 0; i < m_Players.Count(); i++)
         {
             player = m_Players[i];
             m_PlayerClone.Insert(player);
         }
+        */
 
         for(i = 0; i < m_PlayerClone.Count(); i++)
         {

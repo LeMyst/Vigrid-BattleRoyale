@@ -48,7 +48,15 @@ class SkinSelectionMenu extends UIScriptedMenu
         InsertDayZTee("Red", DAYZ_TEE_PATH + "tshirt_ground_red_co.paa", DAYZ_TEE_PATH + "tshirt_red_co.paa");
         InsertDayZTee("Red Striped", DAYZ_TEE_PATH + "tshirt_ground_redblackstripes_co.paa", DAYZ_TEE_PATH + "tshirt_redblackstripes_co.paa");
         InsertDayZTee("White", DAYZ_TEE_PATH + "tshirt_ground_white_co.paa", DAYZ_TEE_PATH + "tshirt_white_co.paa");
-
+    
+        //the dayz expansion developer T-Shirt
+        ref SkinMap expansion_tee = new SkinMap();
+        ref array<string> textures = {
+            "DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa",
+            "DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa"
+        };
+        expansion_tee.Init("DZ Exp", textures, "TShirt_White", "dayz_exp_devs");
+        m_Skins.Insert( expansion_tee );
     }
 
     protected void InsertDayZTee(string name, string ground_texture, string shirt_texture)
