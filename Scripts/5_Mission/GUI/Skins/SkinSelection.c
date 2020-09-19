@@ -107,9 +107,9 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_sclr_MainActions = UIActionManager.CreateScroller( m_ElementPanel );
         m_ActionsWrapper = m_sclr_MainActions.GetContentWidget();
         
-        m_sclr_MainActions.UpdateScroller();
-
         InitSkins();
+
+        m_sclr_MainActions.UpdateScroller();
 
         return layoutRoot;
     }
