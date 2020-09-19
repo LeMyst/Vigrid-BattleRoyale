@@ -122,7 +122,7 @@ class BattleRoyaleAPI {
     }
     string SubmitMatchData(ref MatchData data_object)
     {
-        string request = "matchsubmit/" + m_ServerData._id;
+        string request = "matchsubmit/" + GetCurrentServer()._id;
         //post our JSON data
         RestContext context = GetContext(BattleRoyaleAPIContextType.Server);
         if(!context)
@@ -131,8 +131,8 @@ class BattleRoyaleAPI {
             return "";
         }
 
-        Print(data_object);
         string request_body = data_object.GetJSON();
+        Print(request);
         Print(request_body);
 
         string result = context.POST_now(request, request_body);
