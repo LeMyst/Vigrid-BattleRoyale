@@ -55,7 +55,7 @@ static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from ba
 
 
 //TODO: figure out which mission is loaded in realtime (or use a server-specific setting)
-static const string BATTLEROYALE_LOOT_XML_PATH = "$CurrentDir:mpmissions\\BattleRoyale.ChernarusPlusGloom\\mapgroupproto.xml";
+//static const string BATTLEROYALE_LOOT_XML_PATH = "$CurrentDir:mpmissions\\BattleRoyale.ChernarusPlusGloom\\mapgroupproto.xml";
 
 //TODO: move these into loot settings config file
 static const string BATTLEROYALE_LOOT_MAGAZINES_CATEGORY = "magazines";
@@ -105,7 +105,7 @@ static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
 
 
 //--- popup text
-static const string DAYZBR_CONNECTING_TO_NETWORK_MSG = "Connecting to the BattleRoyale Network...";
+static const string DAYZBR_CONNECTING_TO_NETWORK_MSG = "Connecting to the Battle Royale Network...";
 static const string DAYZBR_MATCHMAKING_MSG = "Matchmaking...";
 static const string DAYZBR_CONNECTING_TO_SERVER_MSG = "Connecting to match. Please be patient, this could take a while...";
 static const string DAYZBR_FAILED_TO_CONNECT_MSG = "Error! Failed to connect to the provided server!";

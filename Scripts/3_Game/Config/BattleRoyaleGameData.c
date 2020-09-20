@@ -26,6 +26,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     };
 
 
+    string mission = "BattleRoyale.ChernarusPlusGloom";
+
     bool use_spectate_whitelist = true;
     ref array<string> allowed_spectate_steamid64 = {
         "76561198277370562" //kegan's steam id :)
