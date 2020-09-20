@@ -35,13 +35,16 @@ modded class MissionGameplay
 	
 	void InitSpectator()
 	{
+		Print("Initializing Spectator HUD");
 		m_BattleRoyaleHud.InitSpectator();
+
 		is_spectator = true;
 
 		//hide HUD and Quickbar
 		IngameHud hud = IngameHud.Cast( GetHud() );
 		if ( hud )
 		{
+			Print("Hiding HUD");
 			hud.ShowHudUI( false );
 			hud.ShowQuickbarUI( false );
 		}
@@ -120,6 +123,7 @@ modded class MissionGameplay
 			{
 				if(hud.GetQuickBarState() || hud.GetHUDUiState())
 				{
+					Print("HUD Visible! Hiding!");
 					hud.ShowHudUI( false );
 					hud.ShowQuickbarUI( false );
 				}

@@ -76,7 +76,7 @@ class BattleRoyaleAPI {
         }
         string query_port = p_ServerSettings.query_port.ToString();
         string ip_address = p_ServerSettings.ip_address;
-        string request = "onstart/" + query_port + "/" + Encode(BATTLEROYALE_VERSION);
+        string request = "onstart/" + query_port + "/" + Encode( BATTLEROYALE_VERSION );
         if(ip_address != "127.0.0.1")
         {
             request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API
@@ -267,7 +267,7 @@ class BattleRoyaleAPI {
             Error("BattleRoyaleAPI::RequestMatchmake() => m_webplayer is NULL");
             return NULL;
         }
-		string result = SendRequest_Sync(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region);
+		string result = SendRequest_Sync(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region + "/" + Encode( BATTLEROYALE_VERSION ));
         Print("BattleRoyaleAPI::RequestMatchmake() => WEB RESULT: " + result);
 
         if(result == "")
@@ -309,7 +309,7 @@ class BattleRoyaleAPI {
         }
         Print(m_webplayer._id);
         ref MatchmakeCallback_REST rest_callback = new MatchmakeCallback_REST( callback );
-		SendRequest_Async(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region, rest_callback);
+		SendRequest_Async(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region + "/" + Encode( BATTLEROYALE_VERSION ), rest_callback);
     }
 
     RestContext GetContext(BattleRoyaleAPIContextType context_type = BattleRoyaleAPIContextType.Client)

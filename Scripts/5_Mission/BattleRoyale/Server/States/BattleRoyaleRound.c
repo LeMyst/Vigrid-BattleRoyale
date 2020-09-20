@@ -266,10 +266,18 @@ class BattleRoyaleRound extends BattleRoyaleState
 					}
 					else
 					{
-						//killer is an entity, but not a player
+						//killer is an entity, but not a player (we have a few subsystems for figuring out the killer id)
 						if(!match_data.ContainsDeath(player_steamid))
 						{
 							killed_with.Insert( killer_entity.GetType() );
+
+							Grenade_Base grenade;
+							if(Class.CastTo( grenade, killer_entity ))
+							{
+								match_data.CreateDeath( player_steamid, player_position, time, grenade.GetActivator(), killed_with, killer_position );
+								return;
+							}
+
 							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
 						}
 					}

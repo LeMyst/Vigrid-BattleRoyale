@@ -237,6 +237,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	void ActivateSpectatorCamera(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
+		Print("Activating Spectator Camera");
 		BattleRoyaleCamera br_Camera;
 		if ( Class.CastTo( br_Camera, Camera.GetCurrentCamera() ) )
 		{
@@ -251,11 +252,17 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
 			if ( mission )
 			{
+				Print("Initializing Spectator in Mission")
 				//Enable spectator HUD elements
 				mission.InitSpectator();
 			}
 
 		}
+		else
+		{
+			Error("Failed to cast camera to BattleRoyaleCamera");
+		}
+		
 	}
 
 

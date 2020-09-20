@@ -151,6 +151,7 @@ class BattleRoyaleHud
                 if(i == m_SpectatorWidgets.Count())
                 {
                     //not enough spectator widgets! create one!
+                    Print("Spectator: Creating Player Info Widget");
                     m_SpectatorWidgets.Insert( CreatePlayerWidget( PlayerBase.Cast( players[i] ) ) );
                 }
                 else
@@ -165,12 +166,14 @@ class BattleRoyaleHud
             //2. iterate over excess spectator widgets and disable (delete) them.
             for(i = players.Count(); i < m_SpectatorWidgets.Count(); i++)
             {
+                Print("Spectator: Deleting Player Info Widget");
                 m_SpectatorWidgets[i].Delete();
             }
         }
     }
     void InitSpectator()
     {
+        Print("Showing Spectator Hud");
         show_spectator = true;
     }
 
