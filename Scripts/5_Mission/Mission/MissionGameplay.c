@@ -93,53 +93,6 @@ modded class MissionGameplay
 
 		m_BattleRoyale.Update( timeslice ); //send tick to br client
 
-		return; 
-
-		//this is psuedocode for toggling UI visibility
-
-		Man player = GetGame().GetPlayer();
-		PlayerBase playerPB = PlayerBase.Cast(player);
-		Input input = GetGame().GetInput();
-		UIScriptedMenu topMenu = m_UIManager.GetMenu();
-
-		bool inputIsFocused = false;
-		Widget focusedWidget = GetFocus();
-
-		if ( focusedWidget )
-		{
-			if ( focusedWidget.ClassName().Contains( "EditBoxWidget" ) )
-			{
-				inputIsFocused = true;
-			} 
-			else if ( focusedWidget.ClassName().Contains( "MultilineEditBoxWidget" ) )
-			{
-				inputIsFocused = true;
-			}
-		}
-
-		if ( playerPB && playerPB.GetHumanInventory() ) 
-		{
-			if ( playerPB.GetPlayerState() == EPlayerStates.ALIVE && !playerPB.IsUnconscious() )
-			{
-				if ( !topMenu && !inputIsFocused )
-				{
-					if(m_BattleRoyaleHud)
-					{
-						//--- BR hud toggle
-						if ( input.LocalHold( "UAUIQuickbarToggle", false ) )
-						{
-							if ( m_BattleRoyaleHud.Shown() )
-							{
-								m_BattleRoyaleHud.ShowHud( false );
-							}
-							else
-							{
-								m_BattleRoyaleHud.ShowHud( true );
-							}
-						}
-					}
-				}
-			}
-		}
+		m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
 	}
 }
