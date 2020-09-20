@@ -109,14 +109,16 @@ modded class MissionServer
 			else
 			{
 				//can't cast current state to debug? Kick
-				GetGame().DisconnectPlayer( identity );
+				if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
+					GetGame().DisconnectPlayer( identity );
 			}
 			
 		}
 		else
 		{
 			//Really no idea what this could be... maybe dead? Kick
-			GetGame().DisconnectPlayer( identity );
+			if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
+				GetGame().DisconnectPlayer( identity );
 		}
 		
 		

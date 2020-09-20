@@ -21,6 +21,12 @@ class BattleRoyaleSpectators
         
     }
 
+    bool CanIdSpectate(PlayerIdentity identity)
+    {
+        string steamid = identity.GetPlainId();
+
+        return (a_AllowedSteamIds.Find(steamid) != -1);
+    }
     bool CanSpectate(PlayerBase player)
     {
         if(b_AllowAllSpectators)
@@ -34,12 +40,7 @@ class BattleRoyaleSpectators
         if(!identity)
             return false;
 
-        string steamid = identity.GetPlainId();
-
-        return (a_AllowedSteamIds.Find(steamid) != -1);
-
-        //TODO: create a config of allowed players for spectating (or a config to enable global spectate)
-        return false; 
+        return CanIdSpectate( identity );
     }
     bool ContainsPlayer(PlayerBase player)
     {
