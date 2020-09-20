@@ -240,6 +240,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void UpdateEntityHealth(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		
+		PlayerBase pbTarget;
 		if ( type == CallType.Client )
 		{
 			Param2<float, float> data;
@@ -249,7 +250,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 				return;
 			}
 
-			PlayerBase pbTarget;
 			if(Class.CastTo( pbTarget, target ))
 			{
 				pbTarget.UpdateHealthStats( data.param1, data.param2 );
@@ -259,11 +259,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		else
 		{
 			//--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
-			PlayerBase pbTarget;
+
 			if(Class.CastTo( pbTarget, target ))
 			{
 				pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") )
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, player);
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
 			}
 			
 		}

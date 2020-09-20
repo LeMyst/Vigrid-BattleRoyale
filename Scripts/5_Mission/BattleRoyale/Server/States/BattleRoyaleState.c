@@ -104,7 +104,7 @@ class BattleRoyaleState {
 			{
 				Print("Player Health Changed! Syncing Network...");
 				//the player's stats changed (sync it over the network)
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float>( player.health_percent, player.blood_percent ), true, NULL, player);
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float, float>( player.health_percent, player.blood_percent ), true, NULL, player);
 			}
 		}
 	}

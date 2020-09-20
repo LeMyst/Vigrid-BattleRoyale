@@ -15,6 +15,19 @@ class BattleRoyaleSpectatorPlayerWidget
     protected SpectatorRenderMode m_RenderMode;
     protected bool m_Shown;
 
+    protected float panel_max_w = 256;
+    protected float panel_max_h = 96;
+
+    protected float panel_min_w = 128;
+    protected float panel_min_h = 48;
+
+    float scale_max_dist = 40;
+    float scale_min_dist = 300;
+
+    protected float render_max_distance = 500;
+    protected float fade_max_distance = 400;
+
+    
 
     void BattleRoyaleSpectatorPlayerWidget(Widget root, PlayerBase player)
     {
@@ -160,7 +173,7 @@ class BattleRoyaleSpectatorPlayerWidget
         float x = screen_pos[0];
         float y = screen_pos[1];
         float distance = screen_pos[2];
-        if(distance > 500)
+        if(distance > 500 || distance < 0)
         {
             SetShow( false );
             return false;
@@ -170,6 +183,51 @@ class BattleRoyaleSpectatorPlayerWidget
             SetShow( true );
         }
         
+        //--- set fade
+        float root_alpha = 1;
+        float fd_1 = distance - fade_max_distance;
+        if(fd_1 > 0)
+        {
+            float max_fade = render_max_distance - fade_max_distance;
+            root_alpha = 1 - (fd_1 / max_fade);
+        }
+        m_Panel.SetAlpha( root_alpha );
+        
+        //--- set scale
+        float w_delta = panel_max_w - panel_min_w;
+        float h_delta = panel_max_h - panel_min_h;
+        
+        float new_w = panel_max_w;
+        float new_h = panel_max_h;
+        if(distance > scale_max_dist)
+        {
+            if(distance > scale_min_dist)
+            {
+                new_w = panel_min_w;
+                new_h = panel_min_h;
+            }
+            else
+            {
+                //some subscale
+                //1. figure out how far from 40m (max) we are as a percent where 100% is == 40m and 0% is == 300m
+                float delta_distance = scale_min_dist - scale_max_dist; //260m distance check that we need to clamp our % to
+
+                float adjusted_dist = distance - scale_max_dist; //get our distance from 40m limit (we know its between 0 and 260 now)
+                float percent = 1 - (adjusted_dist / delta_distance);  //this gives us the value we want
+
+                //adjust our deltas, shrinking them so they approach 0 as our percent approaches 0
+                w_delta = w_delta * percent;
+                h_delta = h_delta * percent;
+
+                //if we are at 0%, we want new_w to == panel_min_w, so w_delta will be 0 so we add w_delta to min_w
+                new_w = panel_min_w + w_delta;
+                new_h = panel_min_h + h_delta;
+
+            }
+        }
+        m_Panel.SetSize(new_w, new_h, true);
+
+
         float width;
         float height;
         m_Panel.GetSize( width, height );

@@ -22,22 +22,25 @@ modded class PlayerBase
 		controller.OverrideMovementAngle( disabled, 0 );
 	}
 
-	override bool UpdateHealthStatsServer(float hp, float blood, float delta)
+	bool UpdateHealthStatsServer(float hp, float blood, float delta)
 	{
 		time_since_last_net_sync += delta;
 		if(time_since_last_net_sync > time_between_net_sync)
 		{
 			time_since_last_net_sync = 0;
 			bool result = UpdateHealthStats(hp, blood);
-			return force_result || result;
+			bool return_me = force_result || result; //we'll need to flip force_result back to false, so we need a temp variable to store this value in
+			force_result = false;
+			return return_me;
 		}
 		else
 		{
-			force_result = UpdateHealthStats(hp, blood);
+			force_result = force_result || UpdateHealthStats(hp, blood); //if we ever get a "true" in this update system, we need to store it for the next sync tick
+			return false;
 		}
 	}
 
-	override bool UpdateHealthStats(float hp, float blood)
+	bool UpdateHealthStats(float hp, float blood)
 	{
 		Print("Updating player health stats");
 		bool changed = (health_percent != hp) || (blood_percent != blood);
