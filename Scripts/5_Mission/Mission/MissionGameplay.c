@@ -121,10 +121,14 @@ modded class MissionGameplay
 			IngameHud hud = IngameHud.Cast( GetHud() );
 			if ( hud )
 			{
-				if(hud.GetQuickBarState() || hud.GetHUDUiState())
+				if(hud.GetHUDUiState())
 				{
 					Print("HUD Visible! Hiding!");
 					hud.ShowHudUI( false );
+				}
+				if(hud.GetQuickbarUiState())
+				{
+					Print("Quickbar Visible! Hiding!");
 					hud.ShowQuickbarUI( false );
 				}
 			}

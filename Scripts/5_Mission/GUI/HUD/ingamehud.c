@@ -5,4 +5,8 @@ modded class IngameHud
     {
         return m_HudHideUI;
     }
+    bool GetQuickbarUiState()
+    {
+        return m_QuickbarHideUI;
+    }
 }

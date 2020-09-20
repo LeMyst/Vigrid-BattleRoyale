@@ -98,7 +98,7 @@ class BattleRoyaleSpectators
             GetGame().SelectSpectator( identity, "BattleRoyaleCamera", position );
 
             //activate camera on client side
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", new Param1<int>(1), true, identity, player);
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", new Param1<int>(1), true, identity);
         }
         else
         {

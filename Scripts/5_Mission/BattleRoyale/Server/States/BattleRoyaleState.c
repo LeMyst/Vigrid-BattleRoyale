@@ -97,7 +97,17 @@ class BattleRoyaleState {
 		}
 	}
 	void OnPlayerTick(PlayerBase player, float timeslice)
-	{}
+	{
+		if(player)
+		{
+			if(player.UpdateHealthStatsServer( player.GetHealth01("", "Health"), player.GetHealth01("", "Blood"), timeslice ))
+			{
+				Print("Player Health Changed! Syncing Network...");
+				//the player's stats changed (sync it over the network)
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float>( player.health_percent, player.blood_percent ), true, NULL, player);
+			}
+		}
+	}
 
 	//player count changed event handler
 	protected void OnPlayerCountChanged()

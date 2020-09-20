@@ -5,6 +5,13 @@ modded class PlayerBase
 
 	bool allow_fade = false;
 
+	float health_percent = -1;
+	float blood_percent = -1;
+
+	float time_between_net_sync = 1000;
+	float time_since_last_net_sync = 0;
+	bool force_result = true;
+
 	void DisableInput(bool disabled)
 	{
 		Print(" Call To Disable Player Input ");
@@ -13,6 +20,30 @@ modded class PlayerBase
 		controller.OverrideMeleeEvade( disabled, false );
 		controller.OverrideRaise( disabled, false );
 		controller.OverrideMovementAngle( disabled, 0 );
+	}
+
+	override bool UpdateHealthStatsServer(float hp, float blood, float delta)
+	{
+		time_since_last_net_sync += delta;
+		if(time_since_last_net_sync > time_between_net_sync)
+		{
+			time_since_last_net_sync = 0;
+			bool result = UpdateHealthStats(hp, blood);
+			return force_result || result;
+		}
+		else
+		{
+			force_result = UpdateHealthStats(hp, blood);
+		}
+	}
+
+	override bool UpdateHealthStats(float hp, float blood)
+	{
+		Print("Updating player health stats");
+		bool changed = (health_percent != hp) || (blood_percent != blood);
+		health_percent = hp;
+		blood_percent = hp;
+		return changed;
 	}
 
 	override void OnScheduledTick(float deltaTime)
