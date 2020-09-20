@@ -69,7 +69,6 @@ class BRMasterControlsModule: JMRenderableModuleBase
         case BattleRoyaleCOTStateMachineRPC.TestSpectator:
 			RPC_TestSpectator( ctx, sender, target );
 			break;
-        case  
 		}
     }
 
@@ -127,7 +126,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         if ( IsMissionHost() )
 		{
             PlayerBase pbTarget;
-            if(Class.Cast( pbTarget, target ))
+            if(Class.CastTo( pbTarget, target ))
             {
                 Server_TestSpectator( pbTarget );
             }

@@ -2,15 +2,42 @@ class BattleRoyaleSpectators
 {
     protected ref array<PlayerBase> m_Players;
     protected ref ScriptCallQueue m_CallQueue;
+    protected ref array<string> a_AllowedSteamIds;
+    protected bool b_AllowAllSpectators;
 
     void BattleRoyaleSpectators()
     {
         m_Players = new array<PlayerBase>();
         m_CallQueue = new ScriptCallQueue;
+        
+        a_AllowedSteamIds = BattleRoyaleConfig.GetConfig().GetGameData().allowed_spectate_steamid64;
+        if(!a_AllowedSteamIds)
+        {
+            Error("Missing Allowed SteamIds In Game Config");
+            a_AllowedSteamIds = new array<string>();
+        }
+
+        b_AllowAllSpectators = !(BattleRoyaleConfig.GetConfig().GetGameData().use_spectate_whitelist);
+        
     }
 
     bool CanSpectate(PlayerBase player)
     {
+        if(b_AllowAllSpectators)
+            return true;
+            
+        if(!player)
+            return false;
+
+        PlayerIdentity identity = player.GetIdentity();
+
+        if(!identity)
+            return false;
+
+        string steamid = identity.GetPlainId();
+
+        return (a_AllowedSteamIds.Find(steamid) != -1);
+
         //TODO: create a config of allowed players for spectating (or a config to enable global spectate)
         return false; 
     }
@@ -63,7 +90,10 @@ class BattleRoyaleSpectators
                 }
             }
 
+            GetGame().ObjectDelete( player ); // this is for network bubble fix
+
             GetGame().SelectPlayer( identity, NULL ); //null their character
+
             GetGame().SelectSpectator( identity, "BattleRoyaleCamera", position );
 
             //activate camera on client side

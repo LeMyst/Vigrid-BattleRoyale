@@ -52,8 +52,8 @@ class SkinSelectionMenu extends UIScriptedMenu
         //the dayz expansion developer T-Shirt
         ref SkinMap expansion_tee = new SkinMap();
         ref array<string> textures = {
-            "DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa",
-            "DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa"
+            "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa",
+            "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa"
         };
         expansion_tee.Init("DZ Exp", textures, "TShirt_White", "dayz_exp_devs");
         m_Skins.Insert( expansion_tee );

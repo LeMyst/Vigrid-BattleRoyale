@@ -31,14 +31,14 @@ class BattleRoyaleCamera: Camera
 		MoveEnabled = state; 
 	}
 	
-	void EditorCamera()
+	void BattleRoyaleCamera()
 	{
 		SetEventMask(EntityEvent.FRAME);
 		SelectTarget(null);
 
 	}
 
-	void ~EditorCamera()
+	void ~BattleRoyaleCamera()
 	{
 		SelectTarget(null);
 	}

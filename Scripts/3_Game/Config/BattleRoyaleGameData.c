@@ -26,6 +26,12 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     };
 
 
+    bool use_spectate_whitelist = true;
+    ref array<string> allowed_spectate_steamid64 = {
+        "76561198277370562" //kegan's steam id :)
+    };
+
+
     int num_vehicles = 1000;
     int vehicle_ticktime_ms = 1000;
     float vehicle_spawn_radius = 10.0;

@@ -246,6 +246,18 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			{
 				GetGame().GetPlayer().GetInputController().SetDisabled( true );
 			}
+
+			//hide HUD & quickbar
+			Mission mission = GetGame().GetMission();
+			if ( mission )
+			{
+				IngameHud hud = IngameHud.Cast( mission.GetHud() );
+				if ( hud )
+				{
+					hud.ShowHudUI( false );
+					hud.ShowQuickbarUI( false );
+				}
+			}
 		}
 	}
 
