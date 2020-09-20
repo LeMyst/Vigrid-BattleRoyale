@@ -129,7 +129,7 @@ class MatchData
         /*
         string result;
         JsonSerializer m_Serializer = new JsonSerializer;
-        m_Serializer.WriteToString( this, true, result )
+        m_Serializer.WriteToString( this, false, result )
         return result;
         */
     }
