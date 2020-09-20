@@ -76,7 +76,7 @@ class BattleRoyaleAPI {
         }
         string query_port = p_ServerSettings.query_port.ToString();
         string ip_address = p_ServerSettings.ip_address;
-        string request = "onstart/" + query_port;
+        string request = "onstart/" + query_port + "/" + Encode(BATTLEROYALE_VERSION);
         if(ip_address != "127.0.0.1")
         {
             request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API

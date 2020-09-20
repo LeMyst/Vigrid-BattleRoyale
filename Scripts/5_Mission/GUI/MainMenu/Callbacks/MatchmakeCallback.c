@@ -71,6 +71,14 @@ class MatchmakeCallback extends BattleRoyaleMatchmakeCallback
 		string ip_addr = p_ServerData.GetIP();
 		int port = p_ServerData.GetPort();
 		
+		if(!p_ServerData.IsMatchingVersion())
+		{
+			Error("Matchmaking returned a server with a mismatched version.");
+			onclick = new ClosePopupButtonCallback( m_MainMenu );
+            onretry = new RetryMatchmakeCallback( m_MainMenu );
+		    m_MainMenu.CreatePopup( "VERSION MISMATCH WITH MATCHMAKED SERVER", "Close", onclick, "Retry", onretry);
+			return;
+		}
 
 		if(!GetGame().Connect(m_MainMenu, ip_addr, port, BATTLEROYALE_SERVER_PASSWORD))
 		{

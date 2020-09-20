@@ -24,7 +24,7 @@ class ServerData
 	string region;
 	string _id;
 	int locked; //booleans are stored as int's with 0 == false and  1 == true
-
+	string version;
 	
 	//methods used for easy connecting
 	string GetIP()
@@ -44,5 +44,9 @@ class ServerData
 	bool CanConnect()
 	{
 		return (locked == 0);
+	}
+	bool IsMatchingVersion()
+	{
+		return (version == BATTLEROYALE_VERSION);
 	}
 }
