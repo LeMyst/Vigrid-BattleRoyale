@@ -3,9 +3,12 @@ modded class MissionGameplay
 	protected Widget m_BattleRoyaleHudRootWidget;
 	protected ref BattleRoyaleHud m_BattleRoyaleHud;
 
+	protected bool is_spectator;
+
 	void MissionGameplay()
 	{
 		m_BattleRoyaleHudRootWidget = null;
+		is_spectator = false;
 	}
 
 	override void OnInit()
@@ -30,7 +33,19 @@ modded class MissionGameplay
 		}
 	}
 	
+	void InitSpectator()
+	{
+		m_BattleRoyaleHud.InitSpectator();
+		is_spectator = true;
 
+		//hide HUD and Quickbar
+		IngameHud hud = IngameHud.Cast( GetHud() );
+		if ( hud )
+		{
+			hud.ShowHudUI( false );
+			hud.ShowQuickbarUI( false );
+		}
+	}
 	void UpdateKillCount(int count)
 	{
 		m_BattleRoyaleHud.ShowKillCount( true );
@@ -94,5 +109,22 @@ modded class MissionGameplay
 		m_BattleRoyale.Update( timeslice ); //send tick to br client
 
 		m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
+
+
+		if(is_spectator)
+		{
+
+			//ensure that if anything turns the hud back on, that we disable it again
+			IngameHud hud = IngameHud.Cast( GetHud() );
+			if ( hud )
+			{
+				if(hud.GetQuickBarState() || hud.GetHUDUiState())
+				{
+					hud.ShowHudUI( false );
+					hud.ShowQuickbarUI( false );
+				}
+			}
+
+		}
 	}
 }

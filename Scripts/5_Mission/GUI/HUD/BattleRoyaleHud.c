@@ -13,7 +13,7 @@ class BattleRoyaleHud
     protected TextWidget m_CountdownTextWidget;
 
     protected ref array<ref BattleRoyaleSpectatorPlayerWidget> m_SpectatorWidgets;
-
+    protected bool show_spectator;    
 
     protected bool is_shown;
 
@@ -139,32 +139,39 @@ class BattleRoyaleHud
 
     void Update(float timeslice)
     {
-        array<Man> players = new array<Man>();
-        GetGame().GetPlayers( out array<Man> players );
-        int i;
+        if(show_spectator)
+        {
+            array<Man> players = new array<Man>();
+            GetGame().GetPlayers( players );
+            int i;
 
-        //1. iterate over all players, assign them to spectator widgets (in order)
-        for(i = 0; i < players.Count(); i++)
-        {
-            if(i == m_SpectatorWidgets.Count())
+            //1. iterate over all players, assign them to spectator widgets (in order)
+            for(i = 0; i < players.Count(); i++)
             {
-                //not enough spectator widgets! create one!
-                m_SpectatorWidgets.Insert( CreatePlayerWidget( PlayerBase.Cast( players[i] ) ) );
+                if(i == m_SpectatorWidgets.Count())
+                {
+                    //not enough spectator widgets! create one!
+                    m_SpectatorWidgets.Insert( CreatePlayerWidget( PlayerBase.Cast( players[i] ) ) );
+                }
+                else
+                {
+                    //widget already exists! update it's player!
+                    m_SpectatorWidgets[i].SetPlayer( PlayerBase.Cast( players[i] ) );
+                }
+                
+                //update the widget! (position and stats)
+                m_SpectatorWidgets[i].Update(timeslice);   
             }
-            else
+            //2. iterate over excess spectator widgets and disable (delete) them.
+            for(i = players.Count(); i < m_SpectatorWidgets.Count(); i++)
             {
-                //widget already exists! update it's player!
-                m_SpectatorWidgets[i].SetPlayer( PlayerBase.Cast( players[i] ) );
+                m_SpectatorWidgets[i].Delete();
             }
-            
-            //update the widget! (position and stats)
-            m_SpectatorWidgets[i].Update(timeslice);   
         }
-        //2. iterate over excess spectator widgets and disable (delete) them.
-        for(i = players.Count(); i < m_SpectatorWidgets.Count(); i++)
-        {
-            m_SpectatorWidgets[i].Delete();
-        }
+    }
+    void InitSpectator()
+    {
+        show_spectator = true;
     }
 
     //--- spectator!
