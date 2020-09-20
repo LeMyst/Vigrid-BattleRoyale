@@ -42,11 +42,15 @@ class BattleRoyaleWin extends BattleRoyaleState
 		float fog_intensity = GetGame().GetWeather().GetFog().GetActual();
 		match_data.SetWorldWeather( rain_intensity, fog_intensity );
 
-		BattleRoyaleAPI.GetAPI().ServerFinish( winner_name ); //report winner to api
-		
-		//report match data to leaderboard
+		if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
+		{
+			BattleRoyaleAPI.GetAPI().ServerFinish( winner_name ); //report winner to api
+			
+			//report match data to leaderboard
 
-		BattleRoyaleAPI.GetAPI().SubmitMatchData( match_data );
+			BattleRoyaleAPI.GetAPI().SubmitMatchData( match_data );
+		}
+		//TODO: write match data to disk possible for private servers?
 
 		m_CallQueue.CallLater(this.KickWinner, i_SecondsTillKick * 1000, false);
 	}

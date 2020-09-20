@@ -12,6 +12,7 @@ class BattleRoyaleAPI {
 
     protected string server_private_key;
     protected string rest_api_endpoint;
+    protected bool use_api;
 
     protected ref RestApi m_Rest;
     protected ref RestContext m_ClientContext;
@@ -26,8 +27,14 @@ class BattleRoyaleAPI {
         BattleRoyaleAPIData api_settings = BattleRoyaleConfig.GetConfig().GetApiData();
         server_private_key = api_settings.api_key; 
         rest_api_endpoint = api_settings.endpoint; 
+        use_api = api_settings.use_api;
     }
     //--- public functions
+
+    bool ShouldUseApi()
+    {
+        return use_api;
+    }
 
     void SetCurrentPlayer( ref PlayerData data)
     {

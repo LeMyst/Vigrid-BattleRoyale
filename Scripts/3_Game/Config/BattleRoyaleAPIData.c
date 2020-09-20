@@ -2,7 +2,7 @@ class BattleRoyaleAPIData extends BattleRoyaleDataBase
 {
     string endpoint = BATTLEROYALE_WEB_CLIENT_ENDPOINT;  //used by clients, comes from constants
     string api_key = "no_private_key_set"; //server-only, must come from the config
-
+    bool use_api = true; //for private servers, set this to false
 
     override string GetPath()
     {

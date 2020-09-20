@@ -343,11 +343,14 @@ class BattleRoyaleCachedVehicle
 		}
         else
         {
+            
+            /*
             if(obj != NULL)
             {
                 GetGame().ObjectDelete( obj );
             }
             return false;
+            */
         }
         
 

@@ -32,12 +32,15 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		super.Activate();
 
-        ServerData m_ServerData = BattleRoyaleAPI.GetAPI().GetCurrentServer();
-        while(!m_ServerData || m_ServerData.locked == 0)
+        if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
         {
-            Print("Attempting to lock the server!");
-            BattleRoyaleAPI.GetAPI().ServerSetLock(true); //Lock the server
-            m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+            ServerData m_ServerData = BattleRoyaleAPI.GetAPI().GetCurrentServer();
+            while(!m_ServerData || m_ServerData.locked == 0)
+            {
+                Print("Attempting to lock the server!");
+                BattleRoyaleAPI.GetAPI().ServerSetLock(true); //Lock the server
+                m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+            }
         }
 
         //TODO: spawn & setup drop plane
