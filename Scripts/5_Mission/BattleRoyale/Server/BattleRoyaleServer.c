@@ -338,7 +338,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		return m_LootSystem;
 	}
-
+	ref BattleRoyaleSpectators GetSpectatorSystem()
+	{
+		return m_SpectatorSystem;
+	}
 
 	ref MatchData GetMatchData()
 	{
@@ -413,5 +416,16 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
 		weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
 		weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
+	}
+
+
+
+
+
+	//--- Admin tool functions only
+	void TestSpectator(PlayerBase player)
+	{
+		OnPlayerKilled(player, NULL); //1. simulate player killed ()
+		GetSpectatorSystem().AddPlayer( player ); //2. insert them into spectator system (like simulating joining during a non-debug state)
 	}
 }

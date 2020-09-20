@@ -64,7 +64,10 @@ class BRMasterControlsModule: JMRenderableModuleBase
 			RPC_StartVehicles( ctx, sender, target );
 			break;
         case BattleRoyaleCOTStateMachineRPC.Stop_Vehicles:
-			Server_StopVehicles( ctx, sender, target );
+			RPC_StopVehicles( ctx, sender, target );
+			break;
+        case BattleRoyaleCOTStateMachineRPC.TestSpectator:
+			RPC_TestSpectator( ctx, sender, target );
 			break;
         case  
 		}
@@ -117,6 +120,21 @@ class BRMasterControlsModule: JMRenderableModuleBase
         if ( IsMissionHost() )
 		{
             Server_StopVehicles();
+        }
+    }
+    private void RPC_TestSpectator( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    {
+        if ( IsMissionHost() )
+		{
+            PlayerBase pbTarget;
+            if(Class.Cast( pbTarget, target ))
+            {
+                Server_TestSpectator( pbTarget );
+            }
+            else
+            {
+                Error("Failed to cast TestSpectator target object to playerbase");
+            }
         }
     }
 
@@ -219,6 +237,14 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Error("Server called Loot_Stop()");
         }
     }
+    void TestSpectator()
+    {
+        if ( IsMissionClient() )
+		{
+            ScriptRPC rpc = new ScriptRPC();
+            rpc.Send( GetGame().GetPlayer(), BattleRoyaleCOTStateMachineRPC.TestSpectator, true, NULL );
+        }
+    }
 
     //server-side functionality
     private void Server_Resume()
@@ -312,5 +338,20 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Failed to cast GetBR() to BattleRoyaleServer");
         }
+    }
+
+    private void Server_TestSpectator(PlayerBase player)
+    {
+        BattleRoyaleServer m_BrServer; 
+        if(Class.CastTo( m_BrServer, GetBR()))
+        {
+            Print("[DayZBR COT] Testing Spectating!");
+            m_BrServer.TestSpectator(player);
+        }
+        else
+        {
+            Error("Failed to cast GetBR() to BattleRoyaleServer");
+        }
+        
     }
 }

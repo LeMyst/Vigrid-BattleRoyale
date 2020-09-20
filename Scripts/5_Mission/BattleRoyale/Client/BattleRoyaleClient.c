@@ -32,6 +32,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
 
 		
 		m_CallQueue.CallLater(this.OnSecond, 1000, true); //call onsecond every second
@@ -234,7 +235,19 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	}
 
 
-
+	void ActivateSpectatorCamera(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		BattleRoyaleCamera br_Camera;
+		if ( Class.CastTo( br_Camera, Camera.GetCurrentCamera() ) )
+		{
+			br_Camera.SetActive( true );
+			
+			if ( GetGame().GetPlayer() )
+			{
+				GetGame().GetPlayer().GetInputController().SetDisabled( true );
+			}
+		}
+	}
 
 
 	void UpdateCurrentPlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)

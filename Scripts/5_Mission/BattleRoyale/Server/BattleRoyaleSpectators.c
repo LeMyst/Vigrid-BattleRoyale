@@ -36,5 +36,43 @@ class BattleRoyaleSpectators
     protected void InitSpectatorCamera(PlayerBase player)
     {
         //we need to initialize some system on this client that lets them freecam around while updating their network bubble to the camera
+        PlayerIdentity identity = player.GetIdentity();
+        if(identity)
+        {
+            //if we fail to figure out the correct position, we'll just use the pre-existing head position of the spectators body
+            vector position = player.GetBonePositionWS( player.GetBoneIndexByName( "Head" ) );
+            
+            //This is a very hacky way to get the players previous death position, we'll obviously need to find a better way to do so
+            string steam_id = identity.GetPlainId();
+            BattleRoyaleServer server = BattleRoyaleServer.Cast( GetBR() );
+            MatchData match_data = server.GetMatchData();
+            if(match_data.deaths)
+            {
+                for(int i = 0; i < match_data.deaths.Count(); i++)
+                {
+                    if(match_data.deaths[i])
+                    {
+                        if(match_data.deaths[i].steam_id == steam_id)
+                        {
+                            if(match_data.deaths[i].death_data)
+                            {
+                                position = match_data.deaths[i].death_data.position
+                            }
+                        }
+                    }
+                }
+            }
+
+            GetGame().SelectPlayer( identity, NULL ); //null their character
+            GetGame().SelectSpectator( identity, "BattleRoyaleCamera", position );
+
+            //activate camera on client side
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", NULL, true, identity, player);
+        }
+        else
+        {
+            Error("What the fuck? No Player Identity in Spectator Init");
+        }
+        
     }
 }

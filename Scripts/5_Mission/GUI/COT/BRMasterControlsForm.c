@@ -53,6 +53,9 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Enable", this, "VehicleSystem_Start" );
         button = UIActionManager.CreateButton( wrapper, "Disable", this, "VehicleSystem_Stop" );
 
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
+        UIActionManager.CreateText( wrapper, "Test Spectating" );
+        button = UIActionManager.CreateButton( wrapper, "Test!", this, "TestSpectating" );
 
         m_sclr_MainActions.UpdateScroller();
 
@@ -102,5 +105,10 @@ class BRMasterControlsForm extends JMFormBase
     {
         Print("TODO!");
         //m_Module.Vehicles_Stop();
+    }
+
+    void TestSpectating(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.TestSpectator();
     }
 }

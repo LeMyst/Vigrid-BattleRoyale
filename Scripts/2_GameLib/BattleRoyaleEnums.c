@@ -9,6 +9,7 @@ enum BattleRoyaleCOTStateMachineRPC
     Stop_Loot,
     Start_Vehicles,
     Stop_Vehicles,
+    TestSpectator,
 
     //TODO: insert more actions here
 
