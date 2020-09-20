@@ -11,7 +11,6 @@
 */
 #include "$CurrentDir:\\mpmissions\\BattleRoyale.ChernarusPlusGloom\\expansion\\ExpansionObjectSpawnTools.c"
 #include "$CurrentDir:\\mpmissions\\BattleRoyale.ChernarusPlusGloom\\expansion\\missions\\MissionConstructor.c"
-
 void main()
 {
 	bool loadTraderObjects = false;
@@ -69,19 +68,7 @@ void main()
  * @brief		This class handle expansion serverside mission
  **/
 class CustomMission: MissionServer
-{
-	// ------------------------------------------------------------
-	// SetRandomHealth
-	// ------------------------------------------------------------
-	void SetRandomHealth(EntityAI itemEnt)
-	{
-		if ( itemEnt )
-		{
-			int rndHlt = Math.RandomInt(55,100);
-			itemEnt.SetHealth("","",rndHlt);
-		}
-	}
-	
+{	
 	override void OnInit()
 	{
 		ExpansionMissionModule missionModule;
@@ -92,55 +79,7 @@ class CustomMission: MissionServer
 
 		super.OnInit();
 	}
-	
-	// ------------------------------------------------------------
-	// Override PlayerBase CreateCharacter
-	// ------------------------------------------------------------
-	override PlayerBase CreateCharacter(PlayerIdentity identity, vector pos, ParamsReadContext ctx, string characterName)
-	{
-		Entity playerEnt;
-		playerEnt = GetGame().CreatePlayer(identity, characterName, pos, 0, "NONE");//Creates random player
-		Class.CastTo(m_player, playerEnt);
-
-		GetGame().SelectPlayer(identity, m_player);
-
-		return m_player;
-	}
-
-	// ------------------------------------------------------------
-	// Override StartingEquipSetup
-	// ------------------------------------------------------------
-	override void StartingEquipSetup(PlayerBase player, bool clothesChosen)
-	{
-		if ( GetExpansionSettings() && GetExpansionSettings().GetSpawn() && GetExpansionSettings().GetSpawn().StartingGear.UseStartingGear )
-		{
-			SetStartingGear(player);
-		}
-		else
-		{
-			EntityAI itemTop;
-			EntityAI itemEnt;
-			ItemBase itemBs;
-			float rand;
-
-			itemTop = player.FindAttachmentBySlotName("Body");
-
-			if ( itemTop )
-			{
-				itemEnt = itemTop.GetInventory().CreateInInventory("Rag");
-				if ( Class.CastTo(itemBs, itemEnt ) )
-					itemBs.SetQuantity(4);
-
-				SetRandomHealth(itemEnt);
-
-				string chemlightArray[] = { "Chemlight_White", "Chemlight_Yellow", "Chemlight_Green", "Chemlight_Red" };
-				int rndIndex = Math.RandomInt(0, 4);
-				itemEnt = itemTop.GetInventory().CreateInInventory(chemlightArray[rndIndex]);
-				SetRandomHealth(itemEnt);
-			}
-		}
-	}
-};
+}
 
 Mission CreateCustomMission(string path)
 {
