@@ -184,6 +184,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 
 		// only add player if they connect during debug (otherwise they're a spectator)
+		if(player.GetIdentity())
+			player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
 		GetCurrentState().AddPlayer(player);
 		m_LootSystem.AddPlayer( player );
@@ -196,11 +198,13 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			
 			if(player)
 			{
-				
-				//--- We'll need a better hook for this
-				if(identity)
+				string player_steamid = player.owner_id; //on connect, the player object gets a reference to the steamid64
+				if(identity) //this is null if the player crashes out (so we use the cached version)
 				{
-					string player_steamid = identity.GetPlainId();
+					player_steamid = identity.GetPlainId();
+				}
+				if(player_steamid != "")
+				{
 					//--- this ensures the leaderboard logs this player's death as zone damage
 					if(!GetMatchData().ContainsDeath(player_steamid))
 					{
@@ -213,7 +217,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				}
 				else
 				{
-					Error("Player disconnected but identity is null!");
+					Error("Player disconnected with unknown owner id!");
 				}
 				
 			}

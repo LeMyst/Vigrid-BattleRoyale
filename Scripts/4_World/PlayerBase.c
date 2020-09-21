@@ -12,6 +12,8 @@ modded class PlayerBase
 	float time_since_last_net_sync = 0;
 	bool force_result = true;
 
+	string owner_id = "";
+
 	void DisableInput(bool disabled)
 	{
 		Print(" Call To Disable Player Input ");

@@ -237,7 +237,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	}
 
 
-	void UpdateEntityHealth(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void UpdateEntityHealth(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		
 		PlayerBase pbTarget;
@@ -259,7 +259,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		else
 		{
 			//--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
-
+			Print("Spectator client requested status update for target");
 			if(Class.CastTo( pbTarget, target ))
 			{
 				pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") )
