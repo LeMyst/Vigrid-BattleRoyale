@@ -16,6 +16,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	void BattleRoyaleServer() 
 	{
 		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
+
 		Init();
 	}
 
@@ -355,6 +357,19 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		return match_data;
 	}
 	
+	void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		
+		//--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
+		Print("Spectator client requested status update for target");
+		if(Class.CastTo( pbTarget, target ))
+		{
+			pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") )
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
+		}
+		
+	}
+
 	void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1< bool > data;

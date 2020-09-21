@@ -141,7 +141,7 @@ class BattleRoyaleSpectatorPlayerWidget
                 m_Player.UpdateHealthStats(1, 1);
                 //request these stats from the server
                 Print("Unknown player stats! Requesting stats from the server!")
-                GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param1<int>( 1 ), true, NULL, m_Player);
+                GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", new Param1<int>( 1 ), true, NULL, m_Player);
             }
             float health = m_Player.health_percent * 100; //0-100 for HP
             float blood = m_Player.blood_percent * 100; //0-max for blood
