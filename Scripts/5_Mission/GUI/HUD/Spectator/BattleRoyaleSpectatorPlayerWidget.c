@@ -18,16 +18,18 @@ class BattleRoyaleSpectatorPlayerWidget
     protected float panel_max_w = 256;
     protected float panel_max_h = 96;
 
-    protected float panel_min_w = 128;
-    protected float panel_min_h = 48;
+    protected float panel_min_w = 64;
+    protected float panel_min_h = 24;
 
-    float scale_max_dist = 40;
-    float scale_min_dist = 300;
+    float scale_max_dist = 10;
+    float scale_min_dist = 400;
 
     protected float render_max_distance = 500;
     protected float fade_max_distance = 400;
 
-    
+
+
+
 
     void BattleRoyaleSpectatorPlayerWidget(Widget root, PlayerBase player)
     {

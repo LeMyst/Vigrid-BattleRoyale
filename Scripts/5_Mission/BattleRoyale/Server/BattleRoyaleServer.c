@@ -360,6 +360,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		
+		PlayerBase pbTarget;
 		//--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
 		Print("Spectator client requested status update for target");
 		if(Class.CastTo( pbTarget, target ))

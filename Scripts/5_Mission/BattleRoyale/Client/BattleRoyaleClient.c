@@ -258,13 +258,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		else
 		{
-			//--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
-			Print("Spectator client requested status update for target");
-			if(Class.CastTo( pbTarget, target ))
-			{
-				pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") )
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
-			}
+			Error("This is deprecated functionality and shouldn't be called");
 			
 		}
 		
