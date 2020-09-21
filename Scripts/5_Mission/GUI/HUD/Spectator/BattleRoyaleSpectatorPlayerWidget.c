@@ -234,7 +234,7 @@ class BattleRoyaleSpectatorPlayerWidget
         float height;
         m_Panel.GetSize( width, height );
 
-        x = x + (width / 2); //center along width
+        x = x - (width / 2); //center along width
         y = y - height; //align bottom of panel
 
         if(m_RenderMode == SpectatorRenderMode.names)
