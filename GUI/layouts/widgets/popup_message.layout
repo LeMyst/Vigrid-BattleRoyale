@@ -34,9 +34,9 @@ WindowWidgetClass PopupDialogRoot {
      hexactsize 0
      vexactsize 0
      text "Popup Message...."
-     font "gui/fonts/etelkatextpro16"
+     font "gui/fonts/etelkatextpro"
      "text color" 1 1 1 1
-     "exact text" 0
+     "exact text" 1
      "text halign" center
      "text valign" center
     }

@@ -11,18 +11,21 @@ class ConnectingToNetworkCallback extends BattleRoyaleOnStartCallback
 		{
 			//some generic error code
 		}
+		ref IgnoreNetworkConnectCallback ignore_callback = new IgnoreNetworkConnectCallback( m_MainMenu );
 		ref RetryNetworkConnectCallback callback = new RetryNetworkConnectCallback( m_MainMenu );
-		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Retry", callback);
+		m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Retry", callback, "Proceed", ignore_callback);
 	}
 	override void OnTimeout()
 	{
+		ref IgnoreNetworkConnectCallback ignore_callback = new IgnoreNetworkConnectCallback( m_MainMenu );
 		ref RetryNetworkConnectCallback callback = new RetryNetworkConnectCallback( m_MainMenu );
-		m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback);
+		m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback, "Proceed", ignore_callback);
 	}
 	override void OnSuccess( PlayerData data )
 	{
 		m_MainMenu.UpdateRegions();
 		m_MainMenu.ClosePopup();
+		m_MainMenu.SetConnected(true);
 		m_MainMenu.GetStats().InitBRStats(); //need to refresh the stats panel once we successfully query for our player data
 	}
 }

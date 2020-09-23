@@ -14,6 +14,27 @@ modded class MainMenu
 	
 	protected ImageWidget m_Logo;
 
+	protected bool b_IsConnected;
+
+
+	void SetConnected( bool status )
+	{
+		b_IsConnected = status;
+	}
+
+	//initialize the BR client without a connection to BattleRoyaleAPI
+	void OfflineInit()
+	{
+		UpdateRegionsOffline();
+		SetConnected(false);
+
+	}
+	protected void UpdateRegionsOffline()
+	{
+		m_Regions = {"any"};
+		i_CurrentRegion = 0;
+		RegionChanged();
+	}
 
 	void UpdateRegions()
 	{
@@ -38,6 +59,8 @@ modded class MainMenu
 
 	override Widget Init()
 	{
+		b_IsConnected = false;
+
 		super.Init(); // this calls dayz expansion init
 		
 		//ensure popup message is initialized
@@ -137,16 +160,7 @@ modded class MainMenu
 		ref ConnectingToNetworkCallback callback = new ConnectingToNetworkCallback( this );
 		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), callback);
 
-		/*
-		PlayerData p_PlayerWebData = api.RequestStart(p_User.GetUid(), p_User.GetName());
-		if(!p_PlayerWebData)
-		{
-			Error("FAILED TO GET WEB DATA!");
-		}
-		
-		
-		Print("DAYZ BATTLE ROYALE END");
-		*/
+
 		return true;
 	}
 	
@@ -157,11 +171,17 @@ modded class MainMenu
 
 	override void Play()
 	{
+		ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
+		if(!b_IsConnected)
+		{
+			ref RetryNetworkConnectCallback retry_connect = new RetryNetworkConnectCallback( m_MainMenu );
+			CreatePopup("You are not connected to the BR Network!", "Close", closecallback, "Connect", retry_connect);
+			return;
+		}
 		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
 		PlayerData p_PlayerWebData = api.GetCurrentPlayer();
 		if(!p_PlayerWebData)
 		{
-			ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
 			CreatePopup("Network Error - Code " + DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA.ToString(), "Close", closecallback);
 			return;
 		}
@@ -172,33 +192,6 @@ modded class MainMenu
 
 		
 		api.RequestMatchmakeAsync(p_PlayerWebData, callback, GetSelectedRegion());
-		
-		/*
-		ServerData p_ServerData = api.RequestMatchmake(p_PlayerWebData, m_Regions.Get(i_CurrentRegion));
-		if(!p_ServerData)
-		{
-			Error("BattleRoyale: ServerData is NULL, cannot matchmake");
-			OpenMenuServerBrowser();
-			return;
-		}
-
-		if(!p_ServerData.CanConnect())
-		{
-			Error("Result is locked (or wait result)... cannot find viable matchmake");
-			OpenMenuServerBrowser();
-			return;
-		}
-
-		string ip_addr = p_ServerData.GetIP();
-		int port = p_ServerData.GetPort();
-		
-		if(!GetGame().Connect(this, ip_addr, port, "DayZBR_Beta"))
-		{
-			Print(p_ServerData.connection);
-			Error("BattleRoyale: Failed to connect to server");
-			OpenMenuServerBrowser();
-		}
-		*/
 	}
 	
 	override void NextCharacter()

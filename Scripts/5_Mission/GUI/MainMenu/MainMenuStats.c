@@ -62,6 +62,12 @@ modded class MainMenuStats {
 			m_KillsValue.SetText("");
 			m_GlobalRankValue.SetText("");
 		}
+		
+		m_Root.Show( true ); //online mode, make sure this is visible
+	}
+	void InitOffline()
+	{
+		m_Root.Show( false ); //offline mode, don't show this box at all
 	}
 	override void UpdateStats()
 	{

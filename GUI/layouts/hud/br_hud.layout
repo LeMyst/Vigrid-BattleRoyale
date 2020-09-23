@@ -62,8 +62,8 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactsize 1
          style Bold
          text "99"
-         font "gui/fonts/etelkatextpro16"
-         "exact text" 0
+         font "gui/fonts/etelkatextpro"
+         "exact text" 1
          "size to text h" 0
          "size to text v" 0
          "text halign" right
@@ -107,7 +107,8 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactsize 1
          style Bold
          text "safe"
-         font "gui/fonts/etelkatextpro16"
+         font "gui/fonts/etelkatextpro"
+         "exact text" 1
          "text halign" right
          "text valign" center
         }
@@ -149,7 +150,8 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactsize 1
          style Bold
          text "99"
-         font "gui/fonts/etelkatextpro16"
+         font "gui/fonts/etelkatextpro"
+         "exact text" 1
          "text halign" right
          "text valign" center
         }
@@ -195,7 +197,8 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactsize 1
          style Bold
          text "10:58"
-         font "gui/fonts/etelkatextpro16"
+         font "gui/fonts/etelkatextpro"
+         "exact text" 1
          "text halign" right
          "text valign" center
         }

@@ -30,7 +30,8 @@ FrameWidgetClass SkinSelectionFrame {
      scaled 1
      style Bold
      text "TShirt Skin Selector"
-     font "gui/fonts/etelkatextpro16"
+     font "gui/fonts/etelkatextpro"
+     "exact text" 1
      "text halign" center
      "text valign" center
     }
