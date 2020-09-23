@@ -386,6 +386,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 			return GetPreviousZone();
 	}
 	
+	bool IsLocked()
+	{
+		return b_ZoneLocked;
+	}
 
 	void LockNewZone()
 	{

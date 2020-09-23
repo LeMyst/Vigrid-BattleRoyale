@@ -271,6 +271,11 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		super.OnPlayerTick(player, timeslice);
 	}
 
+	bool IsLocked()
+	{
+		return b_IsZoneLocked;
+	}
+
     void LockFinalZone()
     {
 		

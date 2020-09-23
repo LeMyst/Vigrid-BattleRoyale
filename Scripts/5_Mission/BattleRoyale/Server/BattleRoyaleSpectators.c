@@ -99,6 +99,39 @@ class BattleRoyaleSpectators
 
             //activate camera on client side
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", new Param1<int>(1), true, identity);
+
+            //Send zone information
+            ref BattleRoyaleServer br_server = BattleRoyaleServer.Cast( GetBR() );
+            ref BattleRoyaleRound br_round;
+            if(Class.CastTo(br_round, br_server.GetCurrentState()))
+            {
+                if(br_round.IsLocked())
+                {
+                    //tell the client the current area is now this area
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetZone().GetArea() ), true, identity);
+                    //tell the client we don't know the next play area
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true, identity);
+                } 
+                else
+                {
+                    //-- we are in a round! send zones!
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetPreviousZone().GetArea() ), true, identity);
+                    //tell the client the next play area
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetZone().GetArea() ), true, identity);
+                }   
+            }
+            ref BattleRoyaleLastRound br_last_round;
+            if(Class.CastTo(br_last_round, br_server.GetCurrentState()))
+            {
+                if(!br_last_round.IsLocked())
+                {
+                    //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_last_round.GetPreviousZone().GetArea() ), true, identity);
+                    //tell the client the future zone is NULL (no future zone)
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true, identity);
+                }
+                //no else case, if the last round locks, there is no circle
+            }
         }
         else
         {
