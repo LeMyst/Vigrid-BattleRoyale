@@ -34,6 +34,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
         {
+            //this is still like not working properly or something
             ServerData m_ServerData = BattleRoyaleAPI.GetAPI().GetCurrentServer();
             while(!m_ServerData || m_ServerData.locked == 0)
             {
@@ -83,6 +84,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         //remove all other items
         process_player.RemoveAllItems_Safe();
+
         foreach(string item : a_StartingItems)
         {
             process_player.GetInventory().CreateInInventory(item);
@@ -156,10 +158,15 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 
                 DisableInput(process_player);
                 
+                Sleep(100);
+
                 GiveStartingItems(process_player);
+
+                Sleep(100);
 
                 Teleport(process_player); //TODO: replace this with moving into C130 (for paradrops)
                 
+                Sleep(100);
             }
         }
     
