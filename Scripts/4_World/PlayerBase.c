@@ -1,5 +1,35 @@
 modded class PlayerBase
 {
+	//credit to wardog for the quick fix for client localplayers grabbing
+	private static autoptr array<PlayerBase> s_LocalPlayers = new array<PlayerBase>();
+    void PlayerBase()
+    {
+        if (IsMissionClient() && s_LocalPlayers)
+        {
+            s_LocalPlayers.Insert(this);
+        }
+    }
+
+    void ~PlayerBase()
+    {
+        if (IsMissionClient() && s_LocalPlayers)
+        {
+            int localIndex = s_LocalPlayers.Find(this);
+            if (localIndex >= 0)
+            {
+                s_LocalPlayers.Remove(localIndex);
+            }
+        }
+    }
+	static void GetLocalPlayers(out array<PlayerBase> players)
+    {
+        if (IsMissionClient())
+        {
+            players = new array<PlayerBase>();
+            players.Copy(s_LocalPlayers);
+        }
+    }
+
 	float time_until_heal = 0;
 	float time_until_damage = 0;
 
@@ -72,27 +102,6 @@ modded class PlayerBase
 		}
 	}
 	
-	void RemoveAllItems_Safe()
-	{
-		array<EntityAI> itemsArray = new array<EntityAI>;
-		ItemBase item;
-		GetInventory().EnumerateInventory(InventoryTraversalType.PREORDER, itemsArray);
-		
-		for (int i = 0; i < itemsArray.Count(); i++)
-		{
-			Class.CastTo(item, itemsArray.Get(i));
-			if (item && !item.IsInherited(SurvivorBase))	
-			{
-				//this extra check prevents RPT spam 
-				InventoryLocation src = new InventoryLocation;
-				if(item.GetInventory().GetCurrentInventoryLocation(src))
-				{
-					GetInventory().LocalDestroyEntity(item);
-				}
-			}
-		}
-	}
-
 	//Temp fix for disabling character saving
 	override bool Save()
 	{

@@ -83,12 +83,29 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
 
         //remove all other items
-        process_player.RemoveAllItems_Safe();
+        process_player.RemoveAllItems();
 
+        EntityAI entity;
+        ref array<string> try_again = new array<string>();
         foreach(string item : a_StartingItems)
         {
-            process_player.GetInventory().CreateInInventory(item);
-        }     
+            entity = process_player.GetInventory().CreateInInventory( item );
+            if(!entity)
+            {
+                Print("Failed to give player item '" + item + "'. Trying again!");
+                try_again.Insert( item );
+            }
+        }
+
+        //if we failed to create an entity in their inventory, then we try it again... xd
+        for(int i = 0; i < try_again.Count(); i++)
+        {
+            entity = process_player.GetInventory().CreateInInventory( item );
+            if(!entity)
+            {
+                Error("Failed to give player item '" + item + "'!");
+            }
+        }
     }
     protected void DisableInput(PlayerBase process_player)
     {

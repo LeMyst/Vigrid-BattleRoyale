@@ -141,8 +141,8 @@ class BattleRoyaleHud
     {
         if(show_spectator)
         {
-            array<Man> players = new array<Man>();
-            GetGame().GetPlayers( players );
+            array<PlayerBase> players;
+            PlayerBase.GetLocalPlayers( players ); //This doesn't seem to work on client.... wtf
             int i;
 
             //1. iterate over all players, assign them to spectator widgets (in order)
@@ -152,12 +152,12 @@ class BattleRoyaleHud
                 {
                     //not enough spectator widgets! create one!
                     Print("Spectator: Creating Player Info Widget");
-                    m_SpectatorWidgets.Insert( CreatePlayerWidget( PlayerBase.Cast( players[i] ) ) );
+                    m_SpectatorWidgets.Insert( CreatePlayerWidget( players[i] ) );
                 }
                 else
                 {
                     //widget already exists! update it's player!
-                    m_SpectatorWidgets[i].SetPlayer( PlayerBase.Cast( players[i] ) );
+                    m_SpectatorWidgets[i].SetPlayer( players[i] );
                 }
                 
                 //update the widget! (position and stats)
