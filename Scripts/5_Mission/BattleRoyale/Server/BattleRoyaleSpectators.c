@@ -23,6 +23,9 @@ class BattleRoyaleSpectators
 
     bool CanIdSpectate(PlayerIdentity identity)
     {
+        if(b_AllowAllSpectators)
+            return true;
+
         string steamid = identity.GetPlainId();
 
         return (a_AllowedSteamIds.Find(steamid) != -1);

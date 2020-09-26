@@ -162,17 +162,20 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		{
 			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 
-			//BAD VERY BAD!
-			//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
-			//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
 			
-			//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
-			if(m_SpectatorSystem.CanSpectate(player))
+			if(m_SpectatorSystem.CanSpectate( player ))
 			{
 				m_SpectatorSystem.AddPlayer( player );
 			}
 			else
 			{
+				//BAD VERY BAD!
+				//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
+				//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
+				
+				//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
+				
+				
 				m_CallQueue.CallLater( GetGame().DisconnectPlayer, 15000, false, player.GetIdentity() );
 			}
 			
