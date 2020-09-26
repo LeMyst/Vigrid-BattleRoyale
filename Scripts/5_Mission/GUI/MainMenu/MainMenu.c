@@ -174,7 +174,7 @@ modded class MainMenu
 		ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
 		if(!b_IsConnected)
 		{
-			ref RetryNetworkConnectCallback retry_connect = new RetryNetworkConnectCallback( m_MainMenu );
+			ref RetryNetworkConnectCallback retry_connect = new RetryNetworkConnectCallback( this );
 			CreatePopup("You are not connected to the BR Network!", "Close", closecallback, "Connect", retry_connect);
 			return;
 		}
