@@ -165,7 +165,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			
 			if(m_SpectatorSystem.CanSpectate( player ))
 			{
-				m_SpectatorSystem.AddPlayer( player );
+				//it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
+				m_CallQueue.CallLater( m_SpectatorSystem.AddPlayer, 15000, false, player );
+				//m_SpectatorSystem.AddPlayer( player );
 			}
 			else
 			{
@@ -295,12 +297,15 @@ class BattleRoyaleServer extends BattleRoyaleBase
 					}	
 					else
 					{
-						//this ensures we only call disconnect on this player once
-						if(temp_disconnecting.Find(player) == -1)
+						if( !m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
 						{
-							temp_disconnecting.Insert(player);
-							GetGame().DisconnectPlayer( player.GetIdentity() );
-							Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+							//this ensures we only call disconnect on this player once
+							if(temp_disconnecting.Find(player) == -1)
+							{
+								temp_disconnecting.Insert(player);
+								GetGame().DisconnectPlayer( player.GetIdentity() );
+								Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+							}
 						}
 					}
 				}
