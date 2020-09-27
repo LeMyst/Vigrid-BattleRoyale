@@ -154,8 +154,15 @@ class BattleRoyaleSpectatorPlayerWidget
             SetHealthText( text );
             SetHealthProgress(health);
 
+            EntityAI item_in_hands = m_Player.GetHumanInventory().GetEntityInHands();
+            string display_text = "";
+            if(item_in_hands)
+            {
+                //get display name for item in hands
+                display_text = item_in_hands.GetDisplayName();
+            }
             //TODO: get player kills from the server (requires a rework on kills stats storing)
-            SetKillsText(m_Player.GetIdentity().GetId()); //temp debugging for plain ids
+            SetKillsText( display_text ); 
         }
     }
     bool UpdatePosition()
