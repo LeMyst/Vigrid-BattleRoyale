@@ -27,8 +27,18 @@ class BattleRoyaleSpectators
             return true;
 
         string steamid = identity.GetPlainId();
+        if(steamid == "")
+        {
+            Error("Blank SteamId from identity!");
+            return false;
+        }
+        bool result = (a_AllowedSteamIds.Find(steamid) != -1);
 
-        return (a_AllowedSteamIds.Find(steamid) != -1);
+        if(!result)
+        {
+            Print("DEBUG: Player with id '" + steamid  + "' is not whitelisted as a spectator!");
+        }
+        return result;
     }
     bool CanSpectate(PlayerBase player)
     {
@@ -36,8 +46,10 @@ class BattleRoyaleSpectators
             return true;
             
         if(!player)
+        {
+            Error("Null player in CanSpectate");
             return false;
-
+        }
         PlayerIdentity identity = player.GetIdentity();
 
         if(!identity)

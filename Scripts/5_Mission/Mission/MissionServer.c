@@ -110,7 +110,10 @@ modded class MissionServer
 			{
 				//can't cast current state to debug? Kick
 				if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
+				{	
+					Print("Kicking player (Not in debug state | Not a spectator)");
 					GetGame().DisconnectPlayer( identity );
+				}
 			}
 			
 		}
@@ -118,7 +121,10 @@ modded class MissionServer
 		{
 			//Really no idea what this could be... maybe dead? Kick
 			if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
+			{
+				Print("Kicking player (Not a valid player object | Not a spectator)");
 				GetGame().DisconnectPlayer( identity );
+			}
 		}
 		
 		
