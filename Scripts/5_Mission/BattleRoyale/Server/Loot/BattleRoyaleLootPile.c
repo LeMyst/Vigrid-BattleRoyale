@@ -28,6 +28,34 @@ class BattleRoyaleLootPile
         float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_pile;
         b_Active =(Math.RandomFloat(0, 1) < odds); 
     }
+
+    /*
+        //TODO: LOOT RAYCASTING #1
+
+        //--- raycast position - attempt to reflect dayz's spawning system.
+        the idea here is we'll get "model_pos", "radius", and "height" as an input,
+        if b_Active (above) then run this raycast
+        if the raycast is successful, GetWorldPos() should return the raycast position result
+    
+        vector start = Vector(0, 0 ,0); //this is the ModelToWorld of the Point "pos" field
+        vector end = start + Vector(0, height, 0); //height is the "height" field
+        float radius = 0; //radius is the "radius" field
+
+        ref RaycastRVParams params = new RaycastRVParams( start, end, null, radius);
+        params.type = ObjIntersectIFire;
+
+        ref array< ref RaycastRVResult> results = new array<ref RaycastRVResult>();
+        if(RaycastRVProxy( params, results ))
+        {
+            if(results.Count() > 0)
+            {
+                vector pos = results[0].pos; //use the first collision we use nearestcontact in the params)
+                return pos;
+            }
+        }
+
+     
+    */
     
     vector GetWorldPos()
     {

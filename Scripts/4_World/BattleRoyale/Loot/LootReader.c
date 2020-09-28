@@ -53,6 +53,8 @@ class LootReader
         return false;
     }
 
+ //TODO: LOOT RAYCASTING #2
+ //this method needs to return pos, height, and radius (perhaps we have it return ref BattleRoyaleLootPoint as an array?)
     ref array<vector> GetAllLootPositions(string name) 
     {
         ref array<vector> positions = new array<vector>();
@@ -73,6 +75,7 @@ class LootReader
                             ref BattleRoyaleLootPoint point = points.Get(j);
                             if(point)
                             {
+                                //TODO: we need to also return height and radius (perhaps we could return "BattleRoyaleLootPoint" as an object in here?)
                                 vector position = point.GetPosition();
                                 positions.Insert(position);
                             }

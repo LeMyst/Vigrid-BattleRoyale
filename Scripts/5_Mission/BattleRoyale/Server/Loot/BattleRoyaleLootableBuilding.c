@@ -31,6 +31,10 @@ class BattleRoyaleLootableBuilding
 
     protected void InitLoot()
     {
+
+        //TODO: LOOT RAYCASTING #2
+        // this array should be an object containing vector, float, float | for model_position, radius, and height
+        //our loot pile constructor will be modified
         ref array<vector> model_positions = LootReader.GetReader().GetAllLootPositions(m_Object.GetType());
         for(int i = 0; i < model_positions.Count(); i++)
         {
