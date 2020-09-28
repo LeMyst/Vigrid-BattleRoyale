@@ -6,7 +6,7 @@ modded class MainMenu
 	protected TextWidget m_OpenWebsiteLabel;
 	
 	protected Widget m_PopupMessage;
-	protected TextWidget m_PopupText;
+	protected RichTextWidget m_PopupText;
 	protected ButtonWidget m_PopupButton;
 	protected ButtonWidget m_PopupButton_2;
 	protected ref PopupButtonCallback popup_onClick;
@@ -68,7 +68,7 @@ modded class MainMenu
 		{
 
 			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "BattleRoyale/GUI/layouts/widgets/popup_message.layout", layoutRoot );
-			m_PopupText = TextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
+			m_PopupText = RichTextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
 			m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
 			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
 		}

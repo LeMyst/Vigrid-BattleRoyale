@@ -24,8 +24,9 @@ WindowWidgetClass PopupDialogRoot {
    priority 4000
    style Colorable
    {
-    TextWidgetClass MessageText {
-     clipchildren 0
+    RichTextWidgetClass MessageText {
+     visible 1
+     ignorepointer 1
      position 0 0.05
      size 0.95 0.9
      halign center_ref
@@ -33,12 +34,15 @@ WindowWidgetClass PopupDialogRoot {
      vexactpos 0
      hexactsize 0
      vexactsize 0
-     text "Popup Message...."
+     scaled 1
+     scriptclass ""
+     style DayZNormal
+     text "This is a very long popup message that really shouldn't be this long but it is"
      font "gui/fonts/etelkatextpro"
-     "text color" 1 1 1 1
      "exact text" 1
      "text halign" center
      "text valign" center
+     wrap 1
     }
    }
   }
