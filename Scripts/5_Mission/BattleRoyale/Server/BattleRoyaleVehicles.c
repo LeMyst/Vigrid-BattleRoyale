@@ -82,76 +82,81 @@ class BattleRoyaleVehicles
         Print("Vehicle Subsystem:");
         Print(i_NumVehicles);
         b_IsInitializing = true;
-        for(int i = 0; i < i_NumVehicles; i++)
+
+        int i;
+
+        float max_roll = 0;
+        //max roll is only used if settings are valid
+        if(m_SettingsData && m_SettingsData.m_VehicleData && m_SettingsData.m_VehicleData.Count() > 0)
+        {
+            for(int i = 0; i < m_SettingsData.m_VehicleData.Count(); i++)
+            {
+                ref BattleRoyaleVehicleDataSerialized vehicle_data = m_SettingsData.m_VehicleData[j];
+                max_roll += vehicle_data.Weight;
+            }
+        }
+
+        for(i = 0; i < i_NumVehicles; i++)
         {
             
             vector position = DAYZBR_DEBUG_CENTER; //this is only a temp value so we'll just stuck the broken debug zone center position
-            
-            //remove this IF statement when no longer debugging vheicles
-           // if(i > 0)
-           // {
-                Print("Finding valid location...");
-                string path = "CfgWorlds " + GetGame().GetWorldName();
-                vector temp = GetGame().ConfigGetVector(path + " centerPosition");
+        
+            Print("Finding valid location...");
+            string path = "CfgWorlds " + GetGame().GetWorldName();
+            vector temp = GetGame().ConfigGetVector(path + " centerPosition");
 
-                float world_width = temp[0] * 2;
-                float world_height = temp[1] * 2;
-                int iterations = 0;
-                while(true)
-                {
-                    iterations++;
-                    float x = Math.RandomFloat(0, world_width);
-                    float z = Math.RandomFloat(0, world_height);
-                    float y = GetGame().SurfaceY(x, z);
-                    position = Vector( x, y, z );
+            float world_width = temp[0] * 2;
+            float world_height = temp[1] * 2;
+            int iterations = 0;
+            while(true)
+            {
+                iterations++;
+                float x = Math.RandomFloat(0, world_width);
+                float z = Math.RandomFloat(0, world_height);
+                float y = GetGame().SurfaceY(x, z);
+                position = Vector( x, y, z );
 
-                    if(!IsSafeSpawnPos(position))
-                        continue;
+                if(!IsSafeSpawnPos(position))
+                    continue;
 
-                    /*
-                    if(GetGame().SurfaceIsSea(x, z))
-                        continue;
-                    if(GetGame().SurfaceIsPond(x, z))
-                        continue;
+                
+                
+                Print(position);
 
 
-                    vector m_HitPosition;
-                    float check_radius = 100.0;
-                    vector start = Vector(x, y, z);
+                break;
+            }
 
-                    PGFilter filter = new PGFilter();
-                    AIWorld ai_world = GetGame().GetWorld().GetAIWorld();
-
-
-                    filter.SetFlags( PGPolyFlags.WALK, PGPolyFlags.SWIM|PGPolyFlags.SWIM_SEA, PGPolyFlags.NONE );
-                    filter.SetCost( PGAreaType.ROADWAY, 10 );
-
-                    if(!ai_world.SampleNavmeshPosition(start, check_radius, filter, m_HitPosition))
-                        continue;
-
-                    position = m_HitPosition;
-
-                    Print("Found safe vehicle spawn position using SampleNavmeshPosition");
-                    */
-                    
-                    Print(position);
-
-
-                    break;
-                }
-
-          //  }
             //--- defaults in case no config data is found
             string vehicle_class = "Sedan_02";
             ref array<string> vehicle_parts = {"CarBattery", "CarRadiator", "SparkPlug", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel"};
            
             if(m_SettingsData && m_SettingsData.m_VehicleData && m_SettingsData.m_VehicleData.Count() > 0)
             {
-                int index = Math.RandomInt(0, m_SettingsData.m_VehicleData.Count());
-                ref BattleRoyaleVehicleDataSerialized vehicle_data = m_SettingsData.m_VehicleData[index];
-                vehicle_class = vehicle_data.VehicleName;
-                vehicle_parts = vehicle_data.Parts;
-                Print("Adding " + vehicle_class + " to vehicle subsystem!");
+                if(max_roll > 0)
+                {
+                    float roll = Math.RandomFloat(0, max_roll);
+                    float val = 0;
+                    for(int j = 0; j < m_SettingsData.m_VehicleData.Count(); j++)
+                    {
+                        ref BattleRoyaleVehicleDataSerialized vehicle_data = m_SettingsData.m_VehicleData[j];
+                        val += vehicle_data.Weight;
+                        
+                        //this is the vehicle we rolled
+                        if(val > roll)
+                        {
+                            vehicle_class = vehicle_data.VehicleName;
+                            vehicle_parts = vehicle_data.Parts;
+                            Print("Adding " + vehicle_class + " to vehicle subsystem!");
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    Error("Total Vehicle Weights are set to 0, could not roll for random vehicles!");
+                }
+                
             }
             else
             {

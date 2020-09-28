@@ -67,7 +67,7 @@ class BattleRoyaleVehicleData extends BattleRoyaleDataBase
         sedan.Parts.Insert("CarBattery");
         sedan.Parts.Insert("CarRadiator");
         sedan.Parts.Insert("SparkPlug");
-
+        sedan.Weight = 1.0;
         m_VehicleData.Insert(sedan);
     }
 }
@@ -77,6 +77,7 @@ class BattleRoyaleVehicleDataSerialized : Managed
     [NonSerialized()]
     string m_FileName;
 
+    float Weight;
     string VehicleName;
     ref array<string> Parts;
 
@@ -90,5 +91,11 @@ class BattleRoyaleVehicleDataSerialized : Managed
     {
         JsonFileLoader<BattleRoyaleVehicleDataSerialized>.JsonLoadFile(BATTLEROYALE_VEHICLES_FOLDER + filename , this);
         this.m_FileName = filename;
+        if(this.Weight == 0)
+        {
+            //backwards compatibility for vehicles
+            this.Weight = 1;
+            Save();    
+        }
     }
 }
