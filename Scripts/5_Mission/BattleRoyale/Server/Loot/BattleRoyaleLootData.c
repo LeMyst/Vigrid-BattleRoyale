@@ -19,15 +19,14 @@ class BattleRoyaleLootData
     //--- cached item maps
     protected ref map<string, ref array<string>> m_Magazines;
     protected ref map<string, ref array<string>> m_Ammo;
-    protected ref map<string, ref map<string, ref array<string>>>> m_Attachments; //weapon -> [ slot -> classes, slot -> classes, ... ]
-    
+    protected ref map<string, ref map<string, ref array<ref BattleRoyaleLootEntry>>> m_AttachmentsEntries; //weapon => [ slot => [ entry, entry, ...], ...]
 
     void BattleRoyaleLootData()
     {
         m_DataFields = new map<string, ref BattleRoyaleLootDataField>();
         m_Magazines = new map<string, ref array<string>>();
         m_Ammo = new map<string, ref array<string>>();
-        m_Attachments = new map<string, ref map<string, ref array<string>>>>();
+        m_AttachmentsEntries = new map<string, ref map<string, ref array<ref BattleRoyaleLootEntry>>>();
     }
 
     protected void AddCategory( ref BattleRoyaleLootCategory category )
@@ -304,41 +303,45 @@ class BattleRoyaleLootData
                 }
             }
         }
-
         return result;
     }
-    ref map<string, ref array<string>> GetAllAttachments(string item_class) //return slot: [class, class], slot: [class, class]...
+
+
+
+    ref map<string, ref array<ref BattleRoyaleLootEntry>> GetAllAttachmentEntries(string item_class)
     {
-        //lowercase item name
         string normalized_name = item_class;
         normalized_name.ToLower();
 
-        if(m_Attachments.Contains(normalized_name))
+        if(m_AttachmentsEntries.Contains(normalized_name))
         {
-            return m_Attachments.Get(normalized_name);
+            return m_AttachmentsEntries.Get(normalized_name);
         }
 
+        //"slot" => { entry, entry, entry }
+        ref map<string, ref array<ref BattleRoyaleLootEntry>> result = new map<string, ref array<ref BattleRoyaleLootEntry>>();
 
-        ref map<string, ref array<string>> result = new map<string, ref array<string>>();
         if(!m_DataFields.Contains( BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY ))
         {
             Error("No attachments category!");
             return result;
         }
 
-        
-
         ref array<string> weapon_slots = new array<string>(); 
         string configPath = "CfgWeapons " + normalized_name + " attachments";
         GetGame().ConfigGetTextArray(configPath,weapon_slots);
 
+        
         ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY ).GetEntries();
+
 
         for(int i = 0; i < entries.Count(); i++)
         {
             for(int j = 0; j < entries[i].styles.Count(); j++)
             {
-                string attachment_name = entries[i].styles[j];
+                ref BattleRoyaleLootEntry entry = entries[i];
+
+                string attachment_name = entry.styles[j];
 
                 configPath = "CfgVehicles " + attachment_name + " inventorySlot";
                 ref array<string> attachment_slots = new array<string>(); 
@@ -352,12 +355,17 @@ class BattleRoyaleLootData
                     {
                         result.Insert(matching_slot, new array<string>()); //insert this field
                     }
-                    result.Get(matching_slot).Insert(attachment_name);//insert our attachment into the slot field
+                    if(j != 0)
+                    {
+                        Error("Found matchming attachment style (" + attachment_name + ") that isn't first style (mismatching styles in attachment?)");
+                    }
+                    result.Get(matching_slot).Insert( entry );//insert our attachment into the slot field
+                    break; //force iterate to the next entry
                 }
             }
         }
 
-        m_Attachments.Insert(normalized_name, result);
+        m_AttachmentsEntries.Insert(normalized_name, result);
 
         return result;
     }

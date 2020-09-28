@@ -45,6 +45,7 @@ class BattleRoyaleLootPile
         class_names.InsertAll( m_Entry.spawn_with ); //insert all items that need to spawn with
 
         int i;
+        int j;
         int index;
 
         if(m_Entry.SpawnWithMagazines())
@@ -91,25 +92,44 @@ class BattleRoyaleLootPile
         }
         if(m_Entry.SpawnWithAttachments())
         {
-           
-            //this returns a map of slot name to attachment classnames that fit in the slot
-            ref map<string, ref array<string>> all_slot_data = BattleRoyaleLootData.GetData().GetAllAttachments( class_name );
+            
+            ref map<string, ref array<ref BattleRoyaleLootEntry>> all_slot_entries = BattleRoyaleLootData.GetData().GetAllAttachmentEntries( class_name );
 
-            if(all_slot_data.Count() > 0)
+            if(all_slot_entries.Count() > 0)
             {
+                //odds for spawning an attachment slot
                 float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_attachment;
-                
-                for(i = 0; i < all_slot_data.Count(); i++)
+
+                for(i = 0; i < all_slot_entries.Count(); i++)
                 {
-                    float roll = Math.RandomFloat(0, 1); //roll to see if this slot should get an attachment spawned for it
+                    float roll = Math.RandomFloat(0, 1);
                     if(roll < odds)
                     {
-                        ref array<string> attachment_classes = all_slot_data.GetElement(i); 
-                        int count = attachment_classes.Count();
+                        //this slot will be populated!
+                        ref array<ref BattleRoyaleLootEntry> attachment_entries = all_slot_entries.GetElement(i);
+                        int count = attachment_entries.Count();
                         if(count > 0)
                         {
-                            index = Math.RandomInt(0, count); //roll a random attachment classname to spawn
-                            string attachment_classname = attachment_classes[index];
+                            float max = 0;
+                            for(j = 0; j < count; j++)
+                            {
+                                max += attachment_entries[j].weight;
+                            }
+                            float res = Math.RandomFloat(0, max); //roll between 0 and max
+                            float val = 0;
+                            ref BattleRoyaleLootEntry entry;
+                            for(j = 0;j < count; j++)
+                            {
+                                entry = attachment_entries[j];
+
+                                val += entry.weight;
+                                if(val > res) //if we iterated above our result, than this item is the one we want
+                                {
+                                    break; //this entry is correct so exit the for loop    
+                                }
+                            }
+
+                            string attachment_classname = entry.GetRandomStyle();
                             class_names.Insert( attachment_classname );
 
                             //figure out if this needs batteryd
@@ -133,6 +153,7 @@ class BattleRoyaleLootPile
             {
                 Error("Trying to spawn `" + class_name + "` with attachments, but none are found!");
             }
+            
         }
     }
 
