@@ -26,10 +26,7 @@ class BattleRoyaleBase
 			Print("Applying gun texture!");
 			Print(item.GetType());
 			Print(data.param1);
-			//weapon texture isn't index 0 anymore?
 			item.SetObjectTexture(0, data.param1);
-			item.SetObjectTexture(1, data.param1);
-			item.SetObjectTexture(2, data.param1);
 		}
 		if(type == CallType.Server)
 		{

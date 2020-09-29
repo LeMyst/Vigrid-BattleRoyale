@@ -39,15 +39,6 @@ class SkinSelectionMenu extends UIScriptedMenu
         InsertBRTee("Cuddles", "tshirt_grey_cc.paa", "tshirt_grey_cc.paa", "tshirt_captcuddles");
         InsertBRTee("Septic", "tshirt_white_septic.paa", "tshirt_white_septic.paa", "tshirt_sceptic");
 
-        //--- AKM skins
-        InsertBRGun("Mango", "akm_mango.paa", "AKM", AKM_Base, "");
-
-        //--- M4 skins
-        InsertBRGun("Mango", "m4_body_mango.paa", "M4A1", M4A1_Base, "");
-
-        //--- Mosin skins
-        InsertBRGun("Mango", "mosin_9130_mango", "Mosin9130", Mosin9130_Base, "");
-
         //--- default dayz skins (free)
         string DAYZ_TEE_PATH = "DZ\\characters\\tops\\data\\";
         InsertDayZTee("Beige", DAYZ_TEE_PATH + "tshirt_ground_beige_co.paa", DAYZ_TEE_PATH + "tshirt_beige_co.paa");
@@ -66,26 +57,37 @@ class SkinSelectionMenu extends UIScriptedMenu
             "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa",
             "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa"
         };
-        expansion_tee.Init("DZ Exp", textures, "TShirt_White", TShirt_ColorBase, "dayz_exp_devs");
+        expansion_tee.Init("[Shirt] DZ Exp", textures, "TShirt_White", TShirt_ColorBase, "dayz_exp_devs");
         m_Skins.Insert( expansion_tee );
+
+//--------- All TShirt skins above here! ----------------
+
+        //--- AKM skins
+        InsertBRGun("Mango", "akm_mango.paa", "AKM", AKM_Base, "");
+
+        //--- M4 skins
+        InsertBRGun("Mango", "m4_body_mango.paa", "M4A1", M4A1_Base, "");
+
+        //--- Mosin skins
+        InsertBRGun("Mango", "mosin_9130_mango", "Mosin9130", Mosin9130_Base, "");
     }
 
     protected void InsertBRGun(string name, string body_texture, string preview_item, typename gun_class, string shop_entry = "")
     {
         ref DayZBRGunSkinMap gun = new DayZBRGunSkinMap();
-        gun.InitGun( name, body_texture, preview_item, gun_class, shop_entry );
+        gun.InitGun( "[Gun] " + name, body_texture, preview_item, gun_class, shop_entry );
         m_Skins.Insert( gun );
     }
     protected void InsertDayZTee(string name, string ground_texture, string shirt_texture)
     {
         ref DayZTSkinMap tee = new DayZTSkinMap();
-        tee.InitTee(name, ground_texture, shirt_texture);
+        tee.InitTee("[Shirt] " + name, ground_texture, shirt_texture);
         m_Skins.Insert( tee );
     }
     protected void InsertBRTee(string name, string ground_texture, string shirt_texture, string item_name)
     {
         ref DayZBRTSkinMap tee = new DayZBRTSkinMap();
-        tee.InitTee(name, ground_texture, shirt_texture, item_name);
+        tee.InitTee("[Shirt] " + name, ground_texture, shirt_texture, item_name);
         m_Skins.Insert( tee );
     }
 
