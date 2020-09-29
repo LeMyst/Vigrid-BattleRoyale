@@ -63,7 +63,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          style Bold
          text "99"
          font "gui/fonts/etelkatextpro"
-         "exact text" 1
+         "exact text" 0
          "size to text h" 0
          "size to text v" 0
          "text halign" right
@@ -108,7 +108,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          style Bold
          text "safe"
          font "gui/fonts/etelkatextpro"
-         "exact text" 1
+         "exact text" 0
          "text halign" right
          "text valign" center
         }
@@ -151,7 +151,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          style Bold
          text "99"
          font "gui/fonts/etelkatextpro"
-         "exact text" 1
+         "exact text" 0
          "text halign" right
          "text valign" center
         }
@@ -189,7 +189,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         TextWidgetClass CountdownText {
          ignorepointer 1
          position 32 -0.01
-         size 96 32
+         size 96 31
          halign right_ref
          hexactpos 1
          vexactpos 0
@@ -198,7 +198,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          style Bold
          text "10:58"
          font "gui/fonts/etelkatextpro"
-         "exact text" 1
+         "exact text" 0
          "text halign" right
          "text valign" center
         }
