@@ -2,8 +2,8 @@ class SkinMap
 {
     protected string s_DisplayName;
     
-
-    protected string s_ItemClass;
+    protected string s_PreviewItemClassName;
+    protected typename t_ItemBaseClass;
     protected string s_ShopFlag;
 
     ref array<string> skin_list;
@@ -13,28 +13,37 @@ class SkinMap
         skin_list = new array<string>();
 
         s_DisplayName = "UNKNOWN";
-        s_ItemClass = "Zuccini";
+        t_ItemBaseClass = Zuccini;
+        s_PreviewItemClassName = "Zuccini";
         s_ShopFlag = "do_not_allow_to_be_visible"; //this prevents it from appearing in the shop window
     }
-    void Init(string name, ref array<string> textures, string item, string flag)
+    void Init(string name, ref array<string> textures, string item_preview_classname, typename item_base_class, string flag)
     {
         skin_list.InsertAll( textures );
         s_DisplayName = name;
-        s_ItemClass = item;
+        t_ItemBaseClass = item_base_class;
         s_ShopFlag = flag;
+        s_PreviewItemClassName = item_preview_classname;
     }
     string GetFlag()
     {
         return s_ShopFlag;
     }
-
+    bool IsValidSkinForEntity(EntityAI item)
+    {
+        item.IsInherited( GetClass() );
+    }
     string GetName()
     {
         return s_DisplayName;
     }
     string GetClassName()
     {
-        return s_ItemClass;
+        return s_PreviewItemClassName;
+    }
+    typename GetClass()
+    {
+        return item_base_class;
     }
     string GetTexture(int index = 0)
     {
@@ -56,7 +65,8 @@ class DayZBRTSkinMap extends SkinMap
     {
         skin_list.Insert( BATTLEROYALE_TSHIRT_SKINS_PATH + ground_texture ); //ground
         skin_list.Insert( BATTLEROYALE_TSHIRT_SKINS_PATH + shirt_texture ); //male & female
-        s_ItemClass = "TShirt_White";
+        t_ItemBaseClass = TShirt_ColorBase;
+        s_PreviewItemClassName = "TShirt_White";
         s_ShopFlag = shop_item;
         s_DisplayName = display_name;
     }
@@ -67,8 +77,33 @@ class DayZTSkinMap extends SkinMap
     {
         skin_list.Insert( ground_texture ); //ground
         skin_list.Insert( shirt_texture ); //male & female
-        s_ItemClass = "TShirt_White";
+        t_ItemBaseClass = TShirt_ColorBase;
+        s_PreviewItemClassName = "TShirt_White";
         s_ShopFlag = ""; //blank allows anyone to use it
+        s_DisplayName = display_name;
+    }
+}
+
+class GunSkinMap extends SkinMap
+{
+    string s_BodyTexture;
+    void GunSkinMap()
+    {
+        s_BodyTexture = "";
+    }
+    override string GetTexture(int index = 0)
+    {
+        return s_BodyTexture;
+    }
+}
+class DayZBRGunSkinMap extends GunSkinMap
+{
+    void InitGun(string display_name, string body_texture, string preview_class, typename gun_class, shop_item = "")
+    {
+        s_BodyTexture = BATTLEROYALE_WEAPON_SKINS_PATH + body_texture; //weapon texture
+        t_ItemBaseClass = gun_class;
+        s_PreviewItemClassName = preview_class;
+        s_ShopFlag = shop_item;
         s_DisplayName = display_name;
     }
 }

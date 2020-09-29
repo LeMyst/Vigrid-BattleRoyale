@@ -27,6 +27,7 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         m_Skins = new array<ref SkinMap>(); //THIS MUST BE INITIALIZED BEFORE ANYTYHING BELOW
 
+        //--- TShirt skins
         InsertBRTee("DBR v1", "tshirt_black_DBR.paa", "tshirt_black_DBR.paa", "tshirt_dayzbr"); //TODO: add a custom ground texture (param # 1)
         InsertBRTee("DBR v2", "tshirt_black_DBRv2.paa", "tshirt_black_DBRv2.paa", "tshirt_dayzbr_2");
         InsertBRTee("keganW", "tshirt_black_kegan.paa", "tshirt_black_kegan.paa", "tshirt_keganhw");
@@ -38,6 +39,16 @@ class SkinSelectionMenu extends UIScriptedMenu
         InsertBRTee("Cuddles", "tshirt_grey_cc.paa", "tshirt_grey_cc.paa", "tshirt_captcuddles");
         InsertBRTee("Septic", "tshirt_white_septic.paa", "tshirt_white_septic.paa", "tshirt_sceptic");
 
+        //--- AKM skins
+        InsertBRGun("Mango", "akm_mango.paa", "AKM", AKM_Base, "");
+
+        //--- M4 skins
+        InsertBRGun("Mango", "m4_body_mango.paa", "M4A1", M4A1_Base, "");
+
+        //--- Mosin skins
+        InsertBRGun("Mango", "mosin_9130_mango", "Mosin9130", Mosin9130_Base, "");
+
+        //--- default dayz skins (free)
         string DAYZ_TEE_PATH = "DZ\\characters\\tops\\data\\";
         InsertDayZTee("Beige", DAYZ_TEE_PATH + "tshirt_ground_beige_co.paa", DAYZ_TEE_PATH + "tshirt_beige_co.paa");
         InsertDayZTee("Black", DAYZ_TEE_PATH + "tshirt_ground_black_co.paa", DAYZ_TEE_PATH + "tshirt_black_co.paa");
@@ -59,6 +70,12 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_Skins.Insert( expansion_tee );
     }
 
+    protected void InsertBRGun(string name, string body_texture, string preview_item, typename gun_class, string shop_entry = "")
+    {
+        ref DayZBRGunSkinMap gun = new DayZBRGunSkinMap();
+        gun.InitGun( name, body_texture, preview_item, gun_class, shop_item );
+        m_Skins.Insert( gun );
+    }
     protected void InsertDayZTee(string name, string ground_texture, string shirt_texture)
     {
         ref DayZTSkinMap tee = new DayZTSkinMap();
@@ -114,6 +131,14 @@ class SkinSelectionMenu extends UIScriptedMenu
         return layoutRoot;
     }
 
+    bool IsValidSkin(EntityAI item, ref SkinMap skin)
+    {
+        if(!item)
+            return false;
+
+        return skin.IsValidSkinForEntity(item);
+    }
+
     void InitSkins()
     {
         BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
@@ -121,7 +146,12 @@ class SkinSelectionMenu extends UIScriptedMenu
         Widget wrapper;
         UIActionButton button;
 
+        PlayerBase currentPlayer = PlayerBase.Cast( GetGame().GetPlayer() );
+        HumanInventory inv = currentPlayer.GetInventory();
 
+        EntityAI in_hands = currentPlayer.GetItemInHands();
+        EntityAI shirt_slot = inv.FindAttachmentByName("Body");
+        
         //list all owned skins (and the default skins)
         for(int i = 0; i < m_Skins.Count(); i++)
         {
@@ -129,14 +159,17 @@ class SkinSelectionMenu extends UIScriptedMenu
 
             if(skin.GetFlag() == "" || api.HasPurchase(skin.GetFlag()))
             {
-                wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
-                
-                UIActionManager.CreateText( wrapper, skin.GetName() );
-                button = UIActionManager.CreateButton( wrapper, "Preview", this, "SkinPreview" );
-                button.SetUserData( skin );
-                
-                button = UIActionManager.CreateButton( wrapper, "Apply", this, "SkinApply" );
-                button.SetUserData( skin );
+                if(IsValidSkin(in_hands, skin) || IsValidSkin(shirt_slot, skin))
+                {
+                    wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
+                    
+                    UIActionManager.CreateText( wrapper, skin.GetName() );
+                    button = UIActionManager.CreateButton( wrapper, "Preview", this, "SkinPreview" );
+                    button.SetUserData( skin );
+                    
+                    button = UIActionManager.CreateButton( wrapper, "Apply", this, "SkinApply" );
+                    button.SetUserData( skin );
+                }
             }            
         }
 
@@ -152,12 +185,24 @@ class SkinSelectionMenu extends UIScriptedMenu
         Class skin;
         action.GetUserData( skin );
 
-        PreviewShirt(SkinMap.Cast( skin ));
+        ref SkinMap skin_map = SkinMap.Cast( skin );
+
+        GunSkinMap gun_skin;
+        if(skin_map.CastTo(gun_skin, skin_map))
+        {
+            PreviewGun(gun_skin);
+        }
+        else
+        {
+            PreviewShirt( skin_map );
+        }
+        
+        
     }   
     void VisitShop(UIEvent eid, ref UIActionBase action)
     {
         PlayerData web_data = BattleRoyaleAPI.GetAPI().GetCurrentPlayer();
-        string player_id = web_data._id; //TODO: get player id from web api
+        string player_id = web_data._id;
         GetGame().OpenURL("https://dayzbr.dev/shop/" + player_id);
     }
     void SkinApply(UIEvent eid, ref UIActionBase action)
@@ -165,20 +210,46 @@ class SkinSelectionMenu extends UIScriptedMenu
         Class skin;
         action.GetUserData( skin );
 
-        PreviewShirt(SkinMap.Cast( skin ));
+        ref SkinMap skin_map = SkinMap.Cast( skin );
 
-        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-        if((SkinMap.Cast( skin ).GetFlag() == "" || api.HasPurchase(SkinMap.Cast( skin ).GetFlag()))
+        GunSkinMap gun_skin;
+        if(skin_map.CastTo(gun_skin, skin_map))
         {
-            ApplyShirt(SkinMap.Cast( skin ));
+            PreviewGun(gun_skin);
+
+            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+            if((gun_skin.GetFlag() == "" || api.HasPurchase(gun_skin.GetFlag()))
+            {
+                ApplyGun( gun_skin );
+            }
+            else
+            {
+                Error("SkinApply got called, but the player does not have access!");
+            } 
         }
         else
         {
-            Error("SkinApply got called, but the player is not a Patron!");
+           
+            //not a gun, must be a shirt
+            PreviewShirt( skin_map );
+
+            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+            if((skin_map.GetFlag() == "" || api.HasPurchase(skin_map.GetFlag()))
+            {
+                ApplyShirt( skin_map );
+            }
+            else
+            {
+                Error("SkinApply got called, but the player does not have access!");
+            } 
         }
         
     }
 
+    protected void ApplyGun(GunSkinMap skin)
+    {
+        //TODO!
+    }
     protected void ApplyShirt(SkinMap skin)
     {
         BattleRoyaleClient.Cast( GetBR() ).SetShirt( skin.GetTexture( 0 ), skin.GetTexture( 1 ) );
@@ -204,18 +275,14 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_PlayerPreview.Show( true );
         m_Preview.Show( false );
     }
-    protected void PreviewItem(SkinMap skin)
+    protected void PreviewGun(GunSkinMap skin)
     {
-        //TODO: this method will need some reworks (like around skin.GetTexture) when it comes to skins
-
         CleanUpLocalObjects();
 
         m_PreviewObject = GetGame().CreateObject( skin.GetClassName() , vector.Zero, true, false );
 
         EntityAI ent = EntityAI.Cast( m_PreviewObject );
-        ent.SetObjectTexture(0, skin.GetTexture( 0 ) );//ground
-        ent.SetObjectTexture(1, skin.GetTexture( 1 ) ); //male
-        ent.SetObjectTexture(2, skin.GetTexture( 1 ) );//female
+        ent.SetObjectTexture(0, skin.GetTexture() );//body
 
         m_Preview.SetItem( ent );
         m_Preview.SetModelPosition( Vector( 0, 0, 0.5 ) );
