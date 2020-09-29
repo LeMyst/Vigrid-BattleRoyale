@@ -147,6 +147,19 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
 		}
 	}
+	void SetGun(string body_texture)
+	{
+		Print("Applying gun texture over network!");
+		PlayerBase player = GetGame().GetPlayer();
+		HumanInventory inv = player.GetHumanInventory();
+
+		EntityAI gun = player.GetItemInHands();
+		if(gun)
+		{
+			ref Param1<string> gun_value = new Param1<string>( body_texture );
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", gun_value, false, NULL, player);
+		}
+	}
 	void ReadyUp()
 	{
 		if(b_IsReady)

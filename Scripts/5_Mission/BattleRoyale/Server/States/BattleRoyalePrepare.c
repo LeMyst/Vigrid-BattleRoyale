@@ -100,10 +100,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
         //if we failed to create an entity in their inventory, then we try it again... xd
         for(int i = 0; i < try_again.Count(); i++)
         {
-            entity = process_player.GetInventory().CreateInInventory( item );
+            entity = process_player.GetInventory().CreateInInventory( try_again[i] );
             if(!entity)
             {
-                Error("Failed to give player item '" + item + "'!");
+                Error("Failed to give player item '" + try_again[i] + "'!");
             }
         }
     }

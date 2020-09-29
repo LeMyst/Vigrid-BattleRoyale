@@ -13,8 +13,8 @@ class SkinMap
         skin_list = new array<string>();
 
         s_DisplayName = "UNKNOWN";
-        t_ItemBaseClass = Zuccini;
-        s_PreviewItemClassName = "Zuccini";
+        t_ItemBaseClass = Zucchini;
+        s_PreviewItemClassName = "Zucchini";
         s_ShopFlag = "do_not_allow_to_be_visible"; //this prevents it from appearing in the shop window
     }
     void Init(string name, ref array<string> textures, string item_preview_classname, typename item_base_class, string flag)
@@ -31,7 +31,7 @@ class SkinMap
     }
     bool IsValidSkinForEntity(EntityAI item)
     {
-        item.IsInherited( GetClass() );
+        return item.IsInherited( GetClass() );
     }
     string GetName()
     {
@@ -43,7 +43,7 @@ class SkinMap
     }
     typename GetClass()
     {
-        return item_base_class;
+        return t_ItemBaseClass;
     }
     string GetTexture(int index = 0)
     {
@@ -98,7 +98,7 @@ class GunSkinMap extends SkinMap
 }
 class DayZBRGunSkinMap extends GunSkinMap
 {
-    void InitGun(string display_name, string body_texture, string preview_class, typename gun_class, shop_item = "")
+    void InitGun(string display_name, string body_texture, string preview_class, typename gun_class, string shop_item = "")
     {
         s_BodyTexture = BATTLEROYALE_WEAPON_SKINS_PATH + body_texture; //weapon texture
         t_ItemBaseClass = gun_class;

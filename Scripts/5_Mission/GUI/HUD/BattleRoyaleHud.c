@@ -146,13 +146,14 @@ class BattleRoyaleHud
             int i;
 
             //1. iterate over all players, assign them to spectator widgets (in order)
+            int index = 0;
             for(i = 0; i < players.Count(); i++)
             {
                 //don't render whatever getplayer returns (maybe this will fix the issue with freecam showing the spectator's deleted player on HUD?)
                 if(players[i] == GetGame().GetPlayer() )
                     continue;
 
-                if(i == m_SpectatorWidgets.Count())
+                if(index == m_SpectatorWidgets.Count())
                 {
                     //not enough spectator widgets! create one!
                     Print("Spectator: Creating Player Info Widget");
@@ -161,11 +162,13 @@ class BattleRoyaleHud
                 else
                 {
                     //widget already exists! update it's player!
-                    m_SpectatorWidgets[i].SetPlayer( players[i] );
+                    m_SpectatorWidgets[index].SetPlayer( players[i] );
                 }
                 
                 //update the widget! (position and stats)
-                m_SpectatorWidgets[i].Update(timeslice);   
+                m_SpectatorWidgets[index].Update(timeslice);   
+
+                index++;
             }
             //2. iterate over excess spectator widgets and disable (delete) them.
             for(i = players.Count(); i < m_SpectatorWidgets.Count(); i++)

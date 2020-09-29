@@ -7,6 +7,6 @@ class RetryNetworkConnectCallback extends PopupButtonCallback
 	} 
 	override void OnButtonClick()
 	{
-		m_MainMenu.OnStart();
+		m_MainMenu.OnStart(true); //true parameter ensures we force reconnect (incase we're in a bugged state with an invalid player object)
 	}
 }

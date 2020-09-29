@@ -353,7 +353,7 @@ class BattleRoyaleLootData
                 {
                     if(!result.Contains(matching_slot))
                     {
-                        result.Insert(matching_slot, new array<string>()); //insert this field
+                        result.Insert(matching_slot, new array<ref BattleRoyaleLootEntry>()); //insert this field
                     }
                     if(j != 0)
                     {

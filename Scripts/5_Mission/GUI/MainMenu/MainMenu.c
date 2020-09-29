@@ -25,6 +25,7 @@ modded class MainMenu
 	//initialize the BR client without a connection to BattleRoyaleAPI
 	void OfflineInit()
 	{
+		Print("INITIALIZING BR IN OFFLINE MODE");
 		UpdateRegionsOffline();
 		SetConnected(false);
 
@@ -59,6 +60,7 @@ modded class MainMenu
 
 	override Widget Init()
 	{
+		Print("INITIALIZING BR IN ONLINE MODE");
 		b_IsConnected = false;
 
 		super.Init(); // this calls dayz expansion init
@@ -129,13 +131,15 @@ modded class MainMenu
 		return m_Stats;
 	}
 
-	bool OnStart()
+	bool OnStart(bool force_restart = false)
 	{
 		
 		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-		if(api.GetCurrentPlayer())
+		if(api.GetCurrentPlayer() && !force_restart)
+		{
+			b_IsConnected = true; //player exists in the api, so we connected to the network successfully
 			return true;
-
+		}
 
 		Print("DAYZ BATTLE ROYALE INIT");
 		

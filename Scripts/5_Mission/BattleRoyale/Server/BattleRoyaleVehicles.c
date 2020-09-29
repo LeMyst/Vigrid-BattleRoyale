@@ -84,14 +84,15 @@ class BattleRoyaleVehicles
         b_IsInitializing = true;
 
         int i;
+        ref BattleRoyaleVehicleDataSerialized vehicle_data;
 
         float max_roll = 0;
         //max roll is only used if settings are valid
         if(m_SettingsData && m_SettingsData.m_VehicleData && m_SettingsData.m_VehicleData.Count() > 0)
         {
-            for(int i = 0; i < m_SettingsData.m_VehicleData.Count(); i++)
+            for(i = 0; i < m_SettingsData.m_VehicleData.Count(); i++)
             {
-                ref BattleRoyaleVehicleDataSerialized vehicle_data = m_SettingsData.m_VehicleData[j];
+                vehicle_data = m_SettingsData.m_VehicleData[i];
                 max_roll += vehicle_data.Weight;
             }
         }
@@ -139,7 +140,7 @@ class BattleRoyaleVehicles
                     float val = 0;
                     for(int j = 0; j < m_SettingsData.m_VehicleData.Count(); j++)
                     {
-                        ref BattleRoyaleVehicleDataSerialized vehicle_data = m_SettingsData.m_VehicleData[j];
+                        vehicle_data = m_SettingsData.m_VehicleData[j];
                         val += vehicle_data.Weight;
                         
                         //this is the vehicle we rolled

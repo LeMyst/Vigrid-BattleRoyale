@@ -66,14 +66,14 @@ class SkinSelectionMenu extends UIScriptedMenu
             "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa",
             "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa"
         };
-        expansion_tee.Init("DZ Exp", textures, "TShirt_White", "dayz_exp_devs");
+        expansion_tee.Init("DZ Exp", textures, "TShirt_White", TShirt_ColorBase, "dayz_exp_devs");
         m_Skins.Insert( expansion_tee );
     }
 
     protected void InsertBRGun(string name, string body_texture, string preview_item, typename gun_class, string shop_entry = "")
     {
         ref DayZBRGunSkinMap gun = new DayZBRGunSkinMap();
-        gun.InitGun( name, body_texture, preview_item, gun_class, shop_item );
+        gun.InitGun( name, body_texture, preview_item, gun_class, shop_entry );
         m_Skins.Insert( gun );
     }
     protected void InsertDayZTee(string name, string ground_texture, string shirt_texture)
@@ -190,6 +190,7 @@ class SkinSelectionMenu extends UIScriptedMenu
         GunSkinMap gun_skin;
         if(skin_map.CastTo(gun_skin, skin_map))
         {
+            Print("Previewing gun!");
             PreviewGun(gun_skin);
         }
         else
@@ -211,13 +212,13 @@ class SkinSelectionMenu extends UIScriptedMenu
         action.GetUserData( skin );
 
         ref SkinMap skin_map = SkinMap.Cast( skin );
-
+        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
         GunSkinMap gun_skin;
         if(skin_map.CastTo(gun_skin, skin_map))
         {
+            Print("Applying Gun!");
             PreviewGun(gun_skin);
 
-            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
             if((gun_skin.GetFlag() == "" || api.HasPurchase(gun_skin.GetFlag()))
             {
                 ApplyGun( gun_skin );
@@ -233,7 +234,6 @@ class SkinSelectionMenu extends UIScriptedMenu
             //not a gun, must be a shirt
             PreviewShirt( skin_map );
 
-            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
             if((skin_map.GetFlag() == "" || api.HasPurchase(skin_map.GetFlag()))
             {
                 ApplyShirt( skin_map );
@@ -248,7 +248,9 @@ class SkinSelectionMenu extends UIScriptedMenu
 
     protected void ApplyGun(GunSkinMap skin)
     {
-        //TODO!
+        string texture = skin.GetTexture();
+        Print(texture);
+        BattleRoyaleClient.Cast( GetBR() ).SetGun( texture );
     }
     protected void ApplyShirt(SkinMap skin)
     {
