@@ -203,30 +203,34 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		{
 			GetCurrentState().RemovePlayer(player);
 			
-			if(player)
+			BattleRoyaleDebug m_DebugStateObj;
+			if(!Class.CastTo( m_DebugStateObj, GetCurrentState() ))
 			{
-				string player_steamid = player.owner_id; //on connect, the player object gets a reference to the steamid64
-				if(identity) //this is null if the player crashes out (so we use the cached version)
+				if(player)
 				{
-					player_steamid = identity.GetPlainId();
-				}
-				if(player_steamid != "")
-				{
-					//--- this ensures the leaderboard logs this player's death as zone damage
-					if(!GetMatchData().ContainsDeath(player_steamid))
+					string player_steamid = player.owner_id; //on connect, the player object gets a reference to the steamid64
+					if(identity) //this is null if the player crashes out (so we use the cached version)
 					{
-						vector player_position = player.GetPosition();
-						int time = GetGame().GetTime();
-						ref array<string> killed_with = new array<string>();
-						killed_with.Insert( "Disconnected" );
-						GetMatchData().CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+						player_steamid = identity.GetPlainId();
 					}
+					if(player_steamid != "")
+					{
+						//--- this ensures the leaderboard logs this player's death as zone damage
+						if(!GetMatchData().ContainsDeath(player_steamid))
+						{
+							vector player_position = player.GetPosition();
+							int time = GetGame().GetTime();
+							ref array<string> killed_with = new array<string>();
+							killed_with.Insert( "Disconnected" );
+							GetMatchData().CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+						}
+					}
+					else
+					{
+						Error("Player disconnected with unknown owner id!");
+					}
+					
 				}
-				else
-				{
-					Error("Player disconnected with unknown owner id!");
-				}
-				
 			}
 		}
 
