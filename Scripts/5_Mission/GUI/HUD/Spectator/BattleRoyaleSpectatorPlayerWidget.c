@@ -22,7 +22,7 @@ class BattleRoyaleSpectatorPlayerWidget
     protected float panel_min_h = 24;
 
     float scale_max_dist = 10;
-    float scale_min_dist = 400;
+    float scale_min_dist = 100;
 
     protected float render_max_distance = 500;
     protected float fade_max_distance = 400;
