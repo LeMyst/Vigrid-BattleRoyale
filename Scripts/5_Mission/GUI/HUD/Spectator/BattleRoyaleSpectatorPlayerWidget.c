@@ -28,7 +28,7 @@ class BattleRoyaleSpectatorPlayerWidget
     protected float fade_max_distance = 400;
 
 
-
+    
 
 
     void BattleRoyaleSpectatorPlayerWidget(Widget root, PlayerBase player)

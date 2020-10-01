@@ -7,6 +7,9 @@ modded class ExpansionMapMenu {
     protected ref BattleRoyaleMapMarkerZone m_DebugZone;
     protected ref BattleRoyaleMapMarkerZone m_DebugZone2;
 
+    protected ref array<ref BattleRoyaleMapMarkerPlayerArrow> m_SpectatorPlayerMarkers;
+    protected ref map<string, ref BattleRoyaleMapMarkerPlayerArrow> m_NetworkPlayerMarkers;
+
     override Widget Init()
     {
         BattleRoyaleBase DayZBR = GetBR();
@@ -27,31 +30,6 @@ modded class ExpansionMapMenu {
     {
         float radius;
         vector center;
-
-        /*
-        //--- debug markers (on screen always)
-        if(!m_DebugZone)
-        {
-            //should default to 1000 0 1000 w/ a radius of 150, and a thickness of 2
-            m_DebugZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
-            m_DebugZone.SetColor( ARGB(255, 255, 0, 0) );
-            m_DebugZone.SetZoneType(ZoneType.Lined); //CrossHatch | Lined
-            Print("Creating Debug Zone Marker!");
-            m_Markers.Insert( m_DebugZone );
-        }
-
-        if(!m_DebugZone2)
-        {
-            //should default to 1000 0 1000 w/ a radius of 150, and a thickness of 2
-            m_DebugZone2 = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
-            vector pos = "2000 10 2000";
-            m_DebugZone2.SetPosition(pos);
-            m_DebugZone2.SetColor( ARGB(255, 255, 255, 0) );
-            m_DebugZone2.SetZoneType(ZoneType.CrossHatch); //CrossHatch | Lined
-            Print("Creating Debug Zone Marker #2!");
-            m_Markers.Insert( m_DebugZone2 );
-        }
-        */
 
         BattleRoyalePlayArea current_playarea = m_BattleRoyaleClient.GetPlayArea();
         if(current_playarea)
@@ -90,10 +68,126 @@ modded class ExpansionMapMenu {
         }
     }
 
+    ref array<vector> GetPlayerPositions
+
+    //this updates players within the network bubble
+    void UpdatePlayers()
+    {
+        //ensure objects exist
+        if(!m_SpectatorPlayerMarkers)
+        {
+            m_SpectatorPlayerMarkers = new array<ref BattleRoyaleMapMarkerPlayerArrow>();
+        }
+
+        //get local players
+        array<PlayerBase> players;
+        PlayerBase.GetLocalPlayers( players );
+        int i;
+        int index = 0;
+
+        array<string> local_identities = new array<string>();
+        
+        //create new markers if necessary
+        for(i = 0; i < players.Count(); i++)
+        {
+            if(players[i] && players[i].GetIdentity())
+            {
+                local_identities.Insert( players[i].GetIdentity().GetId() ); //insert this players identity (so we know not to render the networked data on the map for this client)
+            }
+
+            //skip our player in the list (this is a bugfix => our player doesn't actually exist but game thinks it does)
+            if(players[i] == GetGame().GetPlayer() )
+                continue;
+
+            if(index == m_SpectatorPlayerMarkers.Count())
+            {
+                Print("Spectator Map: Inserting new local player marker");
+                m_SpectatorPlayerMarkers.Insert( new BattleRoyaleMapMarkerPlayerArrow( layoutRoot, m_MapWidget ) );
+            }
+            
+            //update player (if necessary)
+            m_SpectatorPlayerMarkers[index].SetPlayer( players[i] );
+
+            //if player does not exist in marker list, then insert it
+            if(m_Markers.Find(m_SpectatorPlayerMarkers[index]) == -1)
+            {
+                m_Markers.Insert( m_SpectatorPlayerMarkers[index] );
+            }
+
+            index++;
+        }
+
+        //delete old markers if unnecessary
+        for(i = players.Count(); i < m_SpectatorPlayerMarkers.Count(); i++)
+        {
+            Print("Spectator Map: Deleting local player marker");
+            m_SpectatorPlayerMarkers[i].SetPlayer(null); //null out player 
+            m_Markers.RemoveItem( m_SpectatorPlayerMarkers[i] ); //remove from render list
+        }
+        
+
+        if(!m_NetworkPlayerMarkers)
+        {
+            m_NetworkPlayerMarkers = new map<string, ref BattleRoyaleMapMarkerPlayerArrow>();
+        }
+
+        ref BattleRoyaleClient brc = BattleRoyaleClient.Cast( GetBR() );
+        ref map<string, ref BattleRoyaleSpectatorMapEntityData> map_entity_data = brc.GetSpectatorMapEntityData();
+
+        for(i = 0; i < map_entity_data.Count(); i++)
+        {
+            string Id = map_entity_data.GetKey(i);
+            ref BattleRoyaleSpectatorMapEntityData data = map_entity_data.GetElement(i);
+            if(local_identities.Find(Id) == -1)
+            {
+                //RENDER!
+                //create
+                if(!m_NetworkPlayerMarkers.Contains( Id ))
+                {
+                    m_NetworkPlayerMarkers.Insert( Id, new BattleRoyaleMapMarkerPlayerArrow( layoutRoot, m_MapWidget ) );
+                }
+
+                //update
+                m_NetworkPlayerMarkers[Id].SetName( data.name );
+                m_NetworkPlayerMarkers[Id].SetEntityPosition( data.position );
+                m_NetworkPlayerMarkers[Id].SetEntityDirection( data.direction );
+
+                //insert
+                if(m_Markers.Find(m_NetworkPlayerMarkers[Id]) == -1)
+                {
+                    m_Markers.Insert( m_NetworkPlayerMarkers[Id] );
+                }
+            }
+            else
+            {
+                //UNRENDER!
+                if(m_NetworkPlayerMarkers.Contains( Id ))
+                {
+                    m_Markers.RemoveItem( m_NetworkPlayerMarkers[Id] );
+                }
+            }
+            
+        }
+    }
+
     //ensure BR markers are rendering correct
     override void Update( float timeslice )
 	{
-        UpdateZones(); //TODO: this shouldn't exist, instead we should call UpdateZones from BattleRoyaleClient (when we recieve our payload data with new zone info)
+        UpdateZones();
+        
+        //spectator markers
+        if(GetGame() && GetGame().GetMission())
+        {
+            MissionGameplay gameplay;
+            if(Class.CastTo(gameplay, GetGame().GetMission()))
+            {
+                if(gameplay.IsInSpectator())
+                {
+                    UpdatePlayers();
+                }
+            }
+        }
+
 
         super.Update( timeslice );
     }

@@ -11,6 +11,8 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	protected bool b_IsReady;
 
+	protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
+
 	void BattleRoyaleClient()
 	{
 		b_IsReady = false;
@@ -19,8 +21,12 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		i_SecondsRemaining = 0;
 		m_CallQueue = new ScriptCallQueue;
 
+		m_SpectatorMapEntityData = new map<string, ref BattleRoyaleSpectatorMapEntityData>();
+
 		Init();
 	}
+
+
 	void Init()
 	{
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
@@ -34,12 +40,19 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", this );
 
 
 		
 		m_CallQueue.CallLater(this.OnSecond, 1000, true); //call onsecond every second
 	}
 
+
+	ref map<string, ref BattleRoyaleSpectatorMapEntityData> GetSpectatorMapEntityData()
+	{
+		return m_SpectatorMapEntityData;
+	}
+	
 	//--- note: these return NULL of there is no area referenced for next or current area
 	BattleRoyalePlayArea GetPlayArea()
 	{
@@ -203,7 +216,42 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 	}
 
+	/*
+	ADD: Send [Id, Name, Position, Direction]
+	UPDATE: Send [Id, Name, Position, Direction]
+	DELETE: Send [ID, "", (0,0,0), (0,0,0)]
+	*/
+	void UpdateMapEntityData(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		if ( type == CallType.Client )
+		{
+			Param4<string, string, vector, vector> data;
+			if( !ctx.Read( data ) ) 
+			{
+				Error("FAILED TO READ UpdateMapEntityData RPC");
+				return;
+			}
 
+			if(m_SpectatorMapEntityData.Contains(data.param1))
+			{
+				if(data.param3 == Vector(0, 0, 0))
+				{
+					m_SpectatorMapEntityData.Remove(data.param1)
+				}
+				else
+				{
+					m_SpectatorMapEntityData[data.param1].name = data.param2;
+					m_SpectatorMapEntityData[data.param1].position = data.param3;
+					m_SpectatorMapEntityData[data.param1].direction = data.param4;
+				}
+			}
+			else
+			{
+				m_SpectatorMapEntityData.Insert(data.param1, new BattleRoyaleSpectatorMapEntityData( data.param2, data.param3, data.param4 ));
+			}
+			
+		}
+	}
 
 	void SetPlayerCount(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
@@ -259,7 +307,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			Param2<float, float> data;
 			if( !ctx.Read( data ) ) 
 			{
-				Error("FAILED TO READ SETPLAYERCOUNT RPC");
+				Error("FAILED TO READ UpdateEntityHealth RPC");
 				return;
 			}
 

@@ -106,6 +106,13 @@ class BattleRoyaleState {
 				//the player's stats changed (sync it over the network)
 				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float, float>( player.health_percent, player.blood_percent ), true, NULL, player);
 			}
+
+			//UpdateHealthStatsServer will ensure that time_since_last_net_sync == 0 when a potential health update gets triggered. We can use this same window to also send map entity data updates
+			//TODO: look for a more performant way of doing this maybe?
+			if(player.time_since_last_net_sync == 0)
+			{
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", new Param4<string, string, vector, vector>( player.GetIdentity().GetId(), player.GetIdentityName(), player.GetPosition(), player.GetDirection() ), true);
+			}
 		}
 	}
 

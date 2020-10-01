@@ -33,6 +33,11 @@ modded class MissionGameplay
 		}
 	}
 	
+	bool IsInSpectator()
+	{
+		return is_spectator;
+	}
+
 	void InitSpectator()
 	{
 		Print("Initializing Spectator HUD");

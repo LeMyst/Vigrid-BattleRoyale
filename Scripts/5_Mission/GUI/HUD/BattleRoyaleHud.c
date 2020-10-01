@@ -142,7 +142,7 @@ class BattleRoyaleHud
         if(show_spectator)
         {
             array<PlayerBase> players;
-            PlayerBase.GetLocalPlayers( players ); //This doesn't seem to work on client.... wtf
+            PlayerBase.GetLocalPlayers( players );
             int i;
 
             //1. iterate over all players, assign them to spectator widgets (in order)
