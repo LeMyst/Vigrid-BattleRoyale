@@ -89,7 +89,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 
 		if(b_UseVoteSystem)
 		{
-			int ready_count = m_ReadyList.Count();
+			int ready_count = GetReadyCount();
 			message += ". " + ready_count.ToString() + " player";
 			if(ready_count > 1)
 			{
@@ -100,12 +100,23 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		return message;
 	}
 
+	int GetReadyCount()
+	{
+		int ready_count = 0;
+		for(int a = 0; a < m_ReadyList.Count(); a++)
+		{
+			if(m_ReadyList[a])
+				ready_count++;
+		}
+		return ready_count;
+	}
+
 	bool IsVoteReady()
 	{
 		if(!b_UseVoteSystem)
 			return false;
 
-		int ready_count = m_ReadyList.Count();
+		int ready_count = GetReadyCount();
 		int player_count = GetPlayers().Count();
 
 		if(player_count <= 1 ) //need more than 1 player to start
@@ -117,10 +128,15 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 
 	void ReadyUp(PlayerBase player)
 	{
-		if(m_ReadyList.Find(player) >= 0)
+		MessagePlayer(player, "You have readied up!");
+
+		if(m_ReadyList.Find(player) != -1)
 			return;
 
-		MessagePlayer(player, "You have readied up!");
+		//this is here because we don't want someone mass spamming all players by spamming F1
+		int count = GetReadyCount();
+		int max = GetPlayers().Count();
+		MessagePlayers("Player readied up. (" + count.ToString() + "/" + max.ToString() + " players)");
 
 		m_ReadyList.Insert( player );
 	}

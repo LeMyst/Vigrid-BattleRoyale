@@ -175,9 +175,9 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	}
 	void ReadyUp()
 	{
-		if(b_IsReady)
-			return; //already ready!
-		
+		//if(b_IsReady)
+		//	return; //already ready!
+
 		b_IsReady = true; //this only runs once
 
 		PlayerBase player = GetGame().GetPlayer();
