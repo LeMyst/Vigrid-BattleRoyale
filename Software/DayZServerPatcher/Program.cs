@@ -66,8 +66,8 @@ namespace UnlockWritePatcher
             if (backup)
             {
                 string backup_name = exe + ".bak";
-                while (File.Exists(backup_name))
-                    backup_name += ".bak";
+                /*while (File.Exists(backup_name))
+                    backup_name += ".bak";*/
 
                 File.WriteAllBytes(backup_name, file_data);
             }
