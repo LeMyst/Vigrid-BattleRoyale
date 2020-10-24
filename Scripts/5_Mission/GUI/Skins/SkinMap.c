@@ -75,8 +75,8 @@ class DayZTSkinMap extends SkinMap
 {
     void InitTee(string display_name, string ground_texture, string shirt_texture)
     {
-        skin_list.Insert( ground_texture ); //ground
-        skin_list.Insert( shirt_texture ); //male & female
+        skin_list.Insert( DAYZ_TSHIRT_SKINS_PATH + ground_texture ); //ground
+        skin_list.Insert( DAYZ_TSHIRT_SKINS_PATH + shirt_texture ); //male & female
         t_ItemBaseClass = TShirt_ColorBase;
         s_PreviewItemClassName = "TShirt_White";
         s_ShopFlag = ""; //blank allows anyone to use it

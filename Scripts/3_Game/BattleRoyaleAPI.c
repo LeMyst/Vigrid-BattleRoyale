@@ -11,12 +11,14 @@ class BattleRoyaleAPI {
     }
 
     protected string server_private_key;
+    protected string bans_api_key;
     protected string rest_api_endpoint;
     protected bool use_api;
 
     protected ref RestApi m_Rest;
     protected ref RestContext m_ClientContext;
     protected ref RestContext m_ServerContext;
+    protected ref RestContext m_BansContext;
     
     protected ref PlayerData m_PlayerData; //player object (should only ever be set once per instance)
     protected ref ServerData m_ServerData;
@@ -26,6 +28,7 @@ class BattleRoyaleAPI {
     {
         BattleRoyaleAPIData api_settings = BattleRoyaleConfig.GetConfig().GetApiData();
         server_private_key = api_settings.api_key; 
+        bans_api_key = api_settings.bans_api_key;
         rest_api_endpoint = api_settings.endpoint; 
         use_api = api_settings.use_api;
     }
@@ -130,19 +133,11 @@ class BattleRoyaleAPI {
     string SubmitMatchData(ref MatchData data_object)
     {
         string request = "matchsubmit/" + GetCurrentServer()._id;
-        //post our JSON data
-        RestContext context = GetContext(BattleRoyaleAPIContextType.Server);
-        if(!context)
-        {
-            Error("BattleRoyaleAPI::SendRequest_Sync() => GetContext() RETURNED NULL!");
-            return "";
-        }
-
         string request_body = data_object.GetJSON();
         Print(request);
         Print(request_body);
 
-        string result = context.POST_now(request, request_body);
+        string result = SendRequest_SyncPost(BattleRoyaleAPIContextType.Server, request, request_body);
         
         Print("BattleRoyaleAPI::SubmitMatchData() => WEB RESULT: " + result);
         return result;
@@ -312,13 +307,27 @@ class BattleRoyaleAPI {
 		SendRequest_Async(BattleRoyaleAPIContextType.Client, "matchmake/" + m_webplayer._id + "/" + region + "/" + Encode( BATTLEROYALE_VERSION ), rest_callback);
     }
 
+
+    //ban system
+    string GetBanlist()
+    {
+        string request = "dumpbans/playerid/raw";
+        string banlist = SendRequest_Sync(BattleRoyaleAPIContextType.Bans, request);
+        return banlist;
+    }
+
+
     RestContext GetContext(BattleRoyaleAPIContextType context_type = BattleRoyaleAPIContextType.Client)
     {
         Print("BattleRoyale: Requesting API Context...");
         if(context_type == BattleRoyaleAPIContextType.Client)
             return GetClientContext();
-        else
+        else if(context_type == BattleRoyaleAPIContextType.Server)
             return GetServerContext();
+        else if(context_type == BattleRoyaleAPIContextType.Bans)
+            return GetBansContext();
+
+        return null;
     }
 
     string Encode(string message)
@@ -377,6 +386,16 @@ class BattleRoyaleAPI {
         }
         context.GET(callback, request);
     }
+    protected string SendRequest_SyncPost(BattleRoyaleAPIContextType context_type, string request, string bodydata)
+    {
+        RestContext context = GetContext(context_type);
+        if(!context)
+        {
+            Error("BattleRoyaleAPI::SendRequest_SyncPost() => GetContext() RETURNED NULL!");
+            return "";
+        }
+        return context.POST_now(request, bodydata);
+    }
 
     protected void InitRestApi()
     {
@@ -399,6 +418,14 @@ class BattleRoyaleAPI {
         
         m_ServerContext = m_Rest.GetRestContext( rest_api_endpoint + "/server/" + server_private_key + "/" );
     }
+    protected void InitBansContext()
+    {
+        Print("BattleRoyale: Initializing Bans Context");
+        //if(!m_Rest)
+            InitRestApi();
+        
+        m_BansContext = m_Rest.GetRestContext( rest_api_endpoint + "/bans/" + bans_api_key + "/" );
+    }
     protected RestContext GetClientContext()
     {
         Print("BattleRoyale: Grabbing Client Context");  //TODO: (client crash is caused immediately after this)
@@ -415,5 +442,12 @@ class BattleRoyaleAPI {
 
         return m_ServerContext;
     }
-    
+    protected RestContext GetBansContext()
+    {
+        Print("BattleRoyale: Grabbing Bans Context");
+       // if(!m_ServerContext)
+            InitBansContext();
+
+        return m_BansContext;
+    }
 }

@@ -23,6 +23,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 	void Init()
 	{
+		//update our banlist
+		BattleRoyaleBans.GetBans().WriteBanlist();
+
 		m_CallQueue = new ScriptCallQueue;
 		match_data = new MatchData;
 

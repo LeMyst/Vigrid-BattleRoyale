@@ -40,16 +40,15 @@ class SkinSelectionMenu extends UIScriptedMenu
         InsertBRTee("Septic", "tshirt_white_septic.paa", "tshirt_white_septic.paa", "tshirt_sceptic");
 
         //--- default dayz skins (free)
-        string DAYZ_TEE_PATH = "DZ\\characters\\tops\\data\\";
-        InsertDayZTee("Beige", DAYZ_TEE_PATH + "tshirt_ground_beige_co.paa", DAYZ_TEE_PATH + "tshirt_beige_co.paa");
-        InsertDayZTee("Black", DAYZ_TEE_PATH + "tshirt_ground_black_co.paa", DAYZ_TEE_PATH + "tshirt_black_co.paa");
-        InsertDayZTee("Blue", DAYZ_TEE_PATH + "tshirt_ground_blue_co.paa", DAYZ_TEE_PATH + "tshirt_blue_co.paa");
-        InsertDayZTee("Green", DAYZ_TEE_PATH + "tshirt_ground_green_co.paa", DAYZ_TEE_PATH + "tshirt_green_co.paa");
-        InsertDayZTee("Grey", DAYZ_TEE_PATH + "tshirt_ground_grey_co.paa", DAYZ_TEE_PATH + "tshirt_grey_co.paa");
-        InsertDayZTee("Orange Striped", DAYZ_TEE_PATH + "tshirt_orangewhitestripes_beige_co.paa", DAYZ_TEE_PATH + "tshirt_orangewhitestripes_co.paa");
-        InsertDayZTee("Red", DAYZ_TEE_PATH + "tshirt_ground_red_co.paa", DAYZ_TEE_PATH + "tshirt_red_co.paa");
-        InsertDayZTee("Red Striped", DAYZ_TEE_PATH + "tshirt_ground_redblackstripes_co.paa", DAYZ_TEE_PATH + "tshirt_redblackstripes_co.paa");
-        InsertDayZTee("White", DAYZ_TEE_PATH + "tshirt_ground_white_co.paa", DAYZ_TEE_PATH + "tshirt_white_co.paa");
+        InsertDayZTee("Beige", "tshirt_ground_beige_co.paa", "tshirt_beige_co.paa");
+        InsertDayZTee("Black", "tshirt_ground_black_co.paa", "tshirt_black_co.paa");
+        InsertDayZTee("Blue", "tshirt_ground_blue_co.paa", "tshirt_blue_co.paa");
+        InsertDayZTee("Green", "tshirt_ground_green_co.paa", "tshirt_green_co.paa");
+        InsertDayZTee("Grey", "tshirt_ground_grey_co.paa", "tshirt_grey_co.paa");
+        InsertDayZTee("Orange Striped", "tshirt_orangewhitestripes_beige_co.paa", "tshirt_orangewhitestripes_co.paa");
+        InsertDayZTee("Red", "tshirt_ground_red_co.paa", "tshirt_red_co.paa");
+        InsertDayZTee("Red Striped", "tshirt_ground_redblackstripes_co.paa", "tshirt_redblackstripes_co.paa");
+        InsertDayZTee("White", "tshirt_ground_white_co.paa", "tshirt_white_co.paa");
     
         //the dayz expansion developer T-Shirt
         ref SkinMap expansion_tee = new SkinMap();
