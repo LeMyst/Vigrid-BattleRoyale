@@ -1,4 +1,4 @@
-class BattleRoyaleZone 
+class BattleRoyaleZone
 {
     static float f_WorldRadius = -1;
 
@@ -14,16 +14,16 @@ class BattleRoyaleZone
     protected ref array<float> a_StaticSizes;
 
 
-    
+
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
     {
         m_ParentZone = parent;
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
 
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleGameData m_GameData = config_data.GetGameData();
-		i_NumRounds = m_GameData.num_zones;
+        BattleRoyaleGameData m_GameData = config_data.GetGameData();
+        i_NumRounds = m_GameData.num_zones;
 
 
         f_ConstantShrink = m_ZoneSettings.constant_scale;
@@ -72,61 +72,110 @@ class BattleRoyaleZone
             float world_center_x = world_width/2;
             float world_center_z = world_height/2;
             float Y = GetGame().SurfaceY(world_center_x, world_center_z);
-            
+
             p_Cen[0] = world_center_x;
             p_Cen[1] = Y;
             p_Cen[2] = world_center_z;
         }
 
-       
-        
+
+
 
         CreatePlayArea(p_Rad, p_Cen);
 
 
-        
 
-        
+
+
+    }
+
+    vector randomizePosition(float oldX, float oldZ)
+    {
+        vector new_center = "0 0 0";
+
+        float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
+        float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
+
+        float dX = distance * Math.Sin(moveDir);
+        float dZ = distance * Math.Cos(moveDir);
+
+        float newX = oldX + dX;
+        float newZ = oldZ + dZ;
+
+        float newY = GetGame().SurfaceY(newX, newZ);
+
+        new_center[0] = newX;
+        new_center[1] = newY;
+        new_center[2] = newZ;
+
+        return new_center;
     }
 
     void OnActivate(notnull ref array<PlayerBase> players)
     {
-        //This method is run before GetArea() is ever called. This can be used to change the play area size based on players. 
+        //This method is run before GetArea() is ever called. This can be used to change the play area size based on players.
         //Note that this on the main thread, therefore it must be performant.
         //we can look at CreatePlayArea / CreatePlayRadius & Init methods for examples of zone size creation
+        int playercount = players.count();
+        vector new_center = "0 0 0";
+
+        // calculate centroid over all players
+        float centroid_x = 0;
+        float centroid_y = 0;
+        float centroid_z = 0;
+        foreach(PlayerBase player : players)
+        {
+            float pos = player.GetPosition();
+            centroid_x += pos[0];
+            centroid_y += pos[1];
+            centroid_z += pos[2];
+        }
+        centroid_x /= playercount;
+        centroid_y /= playercount;
+        centroid_z /= playercount;
+
+        vector new_center = "0 0 0";
+        bool safeposfound = false;
+        for (i = 0; i < 5; i++) {
+            // TODO: check if y is really the height information for players
+            new_center = randomizePosition(centroid_x,centroid_z);
+
+            if (IsSafeZoneCenter(new_center[0], new_center[2])) {
+                safeposfound = true;
+                break;
+            }
+        }
+
+        // TODO: write fallback if no good center was found
+        if (safeposfound)
+        {
+            m_PlayArea.SetCenter(new_center);
+        }
+
+        // TODO: get value of max_players + max zone_size from config
+        int max_players = 60;
+        int min_size = 500;
+        int max_size = 3000;
+
+        // create an exponential growth of the play area based on the player count and intended max player count
+        float new_radius = min_size + (max_size-min_size) * Math.Pow(playercount, 1.5) / Math.Pow(max_players, 1.5)
+        m_PlayArea.SetRadius(new_radius);
     }
 
-    
+
     protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
         float new_radius = CreatePlayRadius(p_Rad);
         m_PlayArea.SetRadius(new_radius);
-        
+
         vector new_center = "0 0 0";
         float oldX = p_Cen[0];
         float oldZ = p_Cen[2];
         float max_distance = p_Rad - new_radius;
-        
-        while(true) 
+
+        while(true)
         {
-            
-            float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
-            float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
-            
-
-            float dX = distance * Math.Sin(moveDir);
-            float dZ = distance * Math.Cos(moveDir);
-            
-            
-            float newX = oldX + dX;
-            float newZ = oldZ + dZ;
-
-            float newY = GetGame().SurfaceY(newX, newZ);
-
-            
-            new_center[0] = newX;
-            new_center[1] = newY;
-            new_center[2] = newZ;
+            new_center = randomizePosition(oldX,oldZ);
 
             //check if new_center is valid (not in water)
             if(IsSafeZoneCenter(newX, newZ))
@@ -149,7 +198,7 @@ class BattleRoyaleZone
         float r = GetWorldRadius();
 
 
-        
+
         switch(i_ShrinkType)
         {
             case 1: //exponential
@@ -173,7 +222,7 @@ class BattleRoyaleZone
                 {
                     Error("Not enough static sizes for static zone sizes!");
                     return 100;
-                }   
+                }
                 return a_StaticSizes[x - 1];
             default:
                 return p_Rad * f_ConstantShrink;
@@ -209,12 +258,12 @@ class BattleRoyaleZone
         }
         return BattleRoyaleZone.f_WorldRadius;
     }
-    
+
     protected bool IsSafeZoneCenter(float X, float Z)
     {
         if(GetGame().SurfaceIsSea(X, Z))
             return false;
-            
+
         if(GetGame().SurfaceIsPond(X, Z))
             return false;
 
