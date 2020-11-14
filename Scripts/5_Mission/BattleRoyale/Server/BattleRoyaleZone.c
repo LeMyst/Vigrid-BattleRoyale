@@ -125,7 +125,7 @@ class BattleRoyaleZone
         float centroid_z = 0;
         foreach(PlayerBase player : players)
         {
-            float pos = player.GetPosition();
+            vector pos = player.GetPosition();
             centroid_x += pos[0];
             centroid_y += pos[1];
             centroid_z += pos[2];
