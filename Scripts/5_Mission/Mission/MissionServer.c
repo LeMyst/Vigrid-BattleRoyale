@@ -4,7 +4,7 @@ modded class MissionServer
 	//--- TODO: look at dayzexpansion missionserver
 	//TODO: look at dayz missionserver
 	//TODO: look at old BR missionserver
-	override void EquipCharacter()
+	override void EquipCharacter(MenuDefaultCharacterData char_data)
 	{
 		//TODO: get this from a setting file
 		m_player.GetInventory().CreateInInventory( "TShirt_White" );
@@ -85,6 +85,8 @@ modded class MissionServer
 	{
 		//TODO: figure out how to set inventory loadout (we'll hard code BR specific starting items here
 		//EntityAI item = m_player.GetInventory().CreateInInventory(topsArray.GetRandomElement());
+		
+		//i literally don't know what this is anymore
 	}
 	override void OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player)
 	{

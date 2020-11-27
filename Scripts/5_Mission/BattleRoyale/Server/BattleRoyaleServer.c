@@ -156,6 +156,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	void OnPlayerConnected(PlayerBase player)
 	{
 		//Teleport player into debug zone
+		Print("Player connected!" + player.GetIdentity().GetName()); //lets find out if respawning players end up here
+
 		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
 		vector debug_pos = m_Debug.GetCenter();
 		player.SetPosition(debug_pos);		

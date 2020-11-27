@@ -214,10 +214,10 @@ modded class MainMenu
 		
 		RegionChanged();
 	}
-	override void OnChangeCharacter()
+	override void OnChangeCharacter(bool create_character = true)
 	{
 		
-		super.OnChangeCharacter(); //temporary because I don't want to break any functionality this triggers
+		super.OnChangeCharacter(create_character); //temporary because I don't want to break any functionality this triggers
 		m_OpenWebsiteLabel.SetText( BATTLEROYALE_VISIT_WEBSITE_MESSAGE );// OnChangeCharacter replaces this text, this changes it back to the correct value!
 		
 		
@@ -320,6 +320,38 @@ modded class MainMenu
 	override void OpenMenuCustomizeCharacter()
 	{
 		GetGame().OpenURL( BATTLEROYALE_WEBSITE );
+	}
+	
+	override void LoadMods()
+	{
+		super.LoadMods(); //initialize like normal
+
+		//our goal here is to only show BR as a simplemod entry
+		ref array<ref ModInfo> modArray = new array<ref ModInfo>;		
+		GetGame().GetModInfos( modArray );
+		for(int i = 0; i < modArray.Count(); i++)
+		{
+			if(modArray[i].GetName().Contains("BattleRoyale"))
+			{
+				LoadBRModEntry(modArray[i]);
+				return;
+			}
+		}
+
+		//No BR mod found? ya just delete the lists....
+		if( m_ModsSimple )
+			delete m_ModsSimple;
+		if( m_ModsDetailed )
+			delete m_ModsDetailed;
+	}
+	private void LoadBRModEntry(ref ModInfo dbr_mod_info)
+	{
+		if( m_ModsSimple )
+			delete m_ModsSimple;
+			
+		ref array<ref ModInfo> modArray = new array<ref ModInfo>;	
+		modArray.Insert(dbr_mod_info);
+		m_ModsSimple = new ModsMenuSimple(modArray, layoutRoot.FindAnyWidget("ModsSimple"), m_ModsDetailed);
 	}
 }
 

@@ -31,7 +31,7 @@ class LootReader
 
     void ReadAsync(string path)
     {
-        XMLApi api = GetXMLApi();
+        CF_XML api = GetXMLApi();
         _callback = new LootReaderXMLCallback( this );
         api.Read(path, _callback);
     }
@@ -103,7 +103,7 @@ class LootReader
         return positions;
     }
 }
-class LootReaderXMLCallback extends XMLCallback
+class LootReaderXMLCallback extends CF_XML_Callback
 {
     protected ref LootReader p_LootReader;
     protected bool b_IsComplete;
@@ -132,25 +132,25 @@ class LootReaderXMLCallback extends XMLCallback
         return m_Entries.Get(check);
     }
 
-    override void OnStart( ref XMLDocument document )
+    override void OnStart( ref CF_XML_Document document )
     {
         Print("XML Reading...");
         Print(document);
     }
 
-    override void OnFailure( ref XMLDocument document )
+    override void OnFailure( ref CF_XML_Document document )
     {
         b_IsComplete = true;
         Print("Failed Reading XML");
         Print(document);
     }
 
-    override void OnSuccess( ref XMLDocument document )
+    override void OnSuccess( ref CF_XML_Document document )
     {
-        XMLElement ele = document.Get( 1 ).GetContent(); //read <prototype>
+        CF_XML_Element ele = document.Get( 1 ).GetContent(); //read <prototype>
         for ( int i = 0; i < ele.Count(); ++i )
 		{
-			XMLTag tag = ele.Get( i );
+			CF_XML_Tag tag = ele.Get( i );
 			if ( tag.GetName() != "group" )
 				continue; //this is triggered when we hit "defaults"
 
@@ -159,12 +159,12 @@ class LootReaderXMLCallback extends XMLCallback
             name.ToLower();
 			m_Entries.Insert(name, entry);
 			
-			array< XMLTag > containers = tag.GetContent().Get( "container" );
-			array< XMLTag > usages = tag.GetContent().Get( "usage" );
+			array< CF_XML_Tag > containers = tag.GetContent().Get( "container" );
+			array< CF_XML_Tag > usages = tag.GetContent().Get( "usage" );
             int j;
             for(j = 0; j < usages.Count(); ++j)
             {
-                XMLTag usage = usages[j];
+                CF_XML_Tag usage = usages[j];
                 name = usage.GetAttribute("name").ValueAsString();
                 name.ToLower();
                 entry.AddUsage(name);
@@ -175,13 +175,13 @@ class LootReaderXMLCallback extends XMLCallback
                 ref BattleRoyaleLootContainer container = new BattleRoyaleLootContainer();
                 entry.AddContainer(container);
 
-				array< XMLTag > points = containers[j].GetContent().Get( "point" );
-				array< XMLTag > categories = containers[j].GetContent().Get( "category" );
-				array< XMLTag > tags = containers[j].GetContent().Get( "tag" );
+				array< CF_XML_Tag > points = containers[j].GetContent().Get( "point" );
+				array< CF_XML_Tag > categories = containers[j].GetContent().Get( "category" );
+				array< CF_XML_Tag > tags = containers[j].GetContent().Get( "tag" );
                 int k;
                 for(k = 0; k < categories.Count(); ++k)
                 {
-                    XMLTag category = categories[k];
+                    CF_XML_Tag category = categories[k];
                     name = category.GetAttribute("name").ValueAsString();
                     name.ToLower();
                     container.AddCategory(name);
@@ -189,7 +189,7 @@ class LootReaderXMLCallback extends XMLCallback
                 }
                 for(k = 0; k < tags.Count(); ++k)
                 {
-                    XMLTag tag_att = tags[k];
+                    CF_XML_Tag tag_att = tags[k];
                     name = tag_att.GetAttribute("name").ValueAsString();
                     name.ToLower();
                     container.AddTag(name);
@@ -200,7 +200,7 @@ class LootReaderXMLCallback extends XMLCallback
                     int flags = 0;
                     float height = 0;
                     float range = 0;
-                    XMLAttribute attrib = NULL;
+                    CF_XML_Attribute attrib = NULL;
 
 					attrib = points[k].GetAttribute( "pos" );
 					if ( attrib )
