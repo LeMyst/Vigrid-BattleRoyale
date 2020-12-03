@@ -1,17 +1,17 @@
 modded class DayZGame {
-	private string m_DummyMissionPath = "$saves:DummyMissions/Dummy.ChernarusPlus";
+	private string m_DummyMissionPath = "$saves:DummyMissions/Dummy." + BATTLEROYALE_DUMMY_MISSION_WORLD;
 
 	void DayZGame()
 	{
-		if (FileExist("$saves:DummyMissions/Dummy.ChernarusPlus/storage_-1"))
-			DeleteFile("$saves:DummyMissions/Dummy.ChernarusPlus/storage_-1");
+		if (FileExist("$saves:DummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1"))
+			DeleteFile("$saves:DummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1");
 
 		//Create the amazing dummy mission
 		if ( !FileExist(m_DummyMissionPath) )
 		{
 			MakeDirectory("$saves:DummyMissions");
-			MakeDirectory("$saves:DummyMissions/Dummy.ChernarusPlus");
-			MakeDirectory("$saves:DummyMissions/Dummy.ChernarusPlus/db");
+			MakeDirectory("$saves:DummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD);
+			MakeDirectory("$saves:DummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/db");
 
 			FileHandle file = OpenFile(m_DummyMissionPath + "/init.c", FileMode.WRITE);
 			FPrintln(file, "class ClientDummyMission: MissionMainMenu");
@@ -86,16 +86,7 @@ modded class DayZGame {
 		SetLoadState( DayZLoadState.MAIN_MENU_START );
 	
 		Print("[ DayZGame ] Start Dummy Mission for client...");
-		switch(GetMainMenuWorld())
-		{
-			case "Enoch":
-			PlayMission(m_DummyMissionPath); //Need to setup a dummy mission for enoch aka livonia
-			break;
-
-			case "ChernarusPlus":
-			PlayMission(m_DummyMissionPath);
-			break;
-		}
+		PlayMission(m_DummyMissionPath);
 		DeleteTitleScreen();
 	}
 	//disables CLI -connect

@@ -28,6 +28,10 @@ static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not
 static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
 
+//--- dummy mission
+static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "Namalsk"; //ChernarusPlus
+
+
 //--- web API response error codes
 static const int DAYZBR_NETWORK_ERRORCODE_NULL_RESULT = 1500; //web returned 200, but response body was blank
 static const int DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT = 1600; //json response from the webserver cannot be parsed, remember dayz can't parse Booleans
