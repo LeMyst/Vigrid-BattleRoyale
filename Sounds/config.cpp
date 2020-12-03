@@ -13,7 +13,7 @@ class CfgSoundShaders
 	class BattleRoyale_Music_Namalsk_SoundShader
 	{
 		samples[] = {{"\BattleRoyale\Sounds\Music\christmas_menu",1}};
-		volume = 0.70794576;
+		volume = 0.35794576;
 	};
 };
 class CfgSoundSets
