@@ -136,6 +136,14 @@ class BattleRoyalePrepare extends BattleRoyaleState
             if(GetGame().SurfaceRoadY(x, z) != y)
                 continue;
 
+            //Namalsk snow biome check
+            ref array<string> bad_surface_types_namalsk = ActionMakeSnowball.surface_types;
+            string surface_type;
+            GetGame().SurfaceGetType(x, z, surface_type);
+            if(bad_surface_types_namalsk.Contains(surface_type))
+                continue;
+
+
             vector start = random_pos + Vector( 0, 5, 0 );
             vector end = random_pos;
             float radius = 2.0; 
