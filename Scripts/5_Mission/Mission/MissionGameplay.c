@@ -30,6 +30,7 @@ modded class MissionGameplay
 
 			m_BattleRoyaleHud = new BattleRoyaleHud( m_BattleRoyaleHudRootWidget );
 			m_BattleRoyaleHud.ShowHud( true );
+			Print("HUD Initialized");
 		}
 	}
 	
