@@ -14,6 +14,7 @@ class BattleRoyaleAPI {
     protected string bans_api_key;
     protected string rest_api_endpoint;
     protected bool use_api;
+    protected bool unlock_skins;
 
     protected ref RestApi m_Rest;
     protected ref RestContext m_ClientContext;
@@ -31,6 +32,7 @@ class BattleRoyaleAPI {
         bans_api_key = api_settings.bans_api_key;
         rest_api_endpoint = api_settings.endpoint; 
         use_api = api_settings.use_api;
+        unlock_skins = api_settings.unlock_all_purchasables;
     }
     //--- public functions
 
@@ -61,6 +63,10 @@ class BattleRoyaleAPI {
     }
     bool HasPurchase(string shop_flag)
     {
+        //this flag exists to disable monetization on servers that require mods that do not allow monetization
+        if(unlock_skins)
+            return true;
+
         if(m_PlayerData)
         {
             return (m_PlayerData.shop_purchases.Find( shop_flag ) != -1);

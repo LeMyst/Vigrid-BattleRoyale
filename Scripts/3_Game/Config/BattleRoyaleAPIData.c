@@ -4,6 +4,7 @@ class BattleRoyaleAPIData extends BattleRoyaleDataBase
     string api_key = "no_private_key_set"; //server-only, must come from the config
     string bans_api_key = "no_api_key_set"; //server-only, must come from the config for bans to operate
     bool use_api = true; //for private servers, set this to false
+    bool unlock_all_purchasables = false;
 
     override string GetPath()
     {
@@ -17,11 +18,13 @@ class BattleRoyaleAPIData extends BattleRoyaleDataBase
     {
         JsonFileLoader<BattleRoyaleAPIData>.JsonLoadFile(GetPath(), this);
 
-        //automatically update the key in config
+        //if strings are empty, they don't have values set in teh json file and need updated
         if(bans_api_key == "")
         {
             bans_api_key = "no_api_key_set";
-            Save();
         }
+
+
+        Save(); //write defaults 
     }
 }
