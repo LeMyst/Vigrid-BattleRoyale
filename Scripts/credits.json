@@ -33,7 +33,13 @@
 						"DrDeSync",
 						"Fini"
 					]
-                },
+				},
+				{
+					"SectionName": "Music By",
+					"SectionLines": [
+						"Scott Holmes Music"
+					]
+				},
                 {
                     "SectionName": "Thanks to",
                     "SectionLines": [
