@@ -29,7 +29,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		m_CallQueue = new ScriptCallQueue;
 		match_data = new MatchData;
 
-		match_data.CreateWorld("Chernarus", "Solos"); //todo figure out world dynamically & get game mode from config
+		match_data.CreateWorld("Namalsk", "Solos"); //todo figure out world dynamically & get game mode from config
 
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
