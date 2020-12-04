@@ -140,7 +140,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             ref array<string> bad_surface_types_namalsk = ActionMakeSnowball.surface_types;
             string surface_type;
             GetGame().SurfaceGetType(x, z, surface_type);
-            if(bad_surface_types_namalsk.Contains(surface_type))
+            if(bad_surface_types_namalsk.Find(surface_type) != -1)
                 continue;
 
 
