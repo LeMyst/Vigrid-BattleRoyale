@@ -97,6 +97,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
             }
         }
 
+        //remove any bugged items
+        process_player.RemoveAllItems();
+
         //if we failed to create an entity in their inventory, then we try it again... xd
         for(int i = 0; i < try_again.Count(); i++)
         {
@@ -137,7 +140,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 continue;
 
             //Namalsk snow biome check
-            ref array<string> bad_surface_types_namalsk = ActionMakeSnowball.surface_types;
+            ref array<string> bad_surface_types_namalsk = {
+                "nam_seaice",
+                "nam_lakeice_ext"
+            };
             string surface_type;
             GetGame().SurfaceGetType(x, z, surface_type);
             if(bad_surface_types_namalsk.Find(surface_type) != -1)

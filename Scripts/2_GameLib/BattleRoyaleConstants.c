@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.p_namalsk_playtest";
+static const string BATTLEROYALE_VERSION = "0.1.p_1";
 
 //--- default web endpoint
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
@@ -51,6 +51,8 @@ static const int DAYZBR_SKIN_SELECTION_MENU = 5000;
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
 
 static const string BATTLEROYALE_LOADING_SCREENS_PATH = "BattleRoyale/GUI/textures/loading_screens/";
+
+//TODO: this is no longer used in this way, so we'll need to remove these
 static const string BATTLEROYALE_TSHIRT_SKINS_PATH = "BattleRoyale\\GUI\\textures\\tshirt\\";
 static const string BATTLEROYALE_WEAPON_SKINS_PATH = "BattleRoyale\\GUI\\textures\\weapons\\";
 static const string DAYZ_TSHIRT_SKINS_PATH = "DZ\\characters\\tops\\data\\";
