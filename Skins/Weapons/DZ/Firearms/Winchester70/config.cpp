@@ -19,7 +19,7 @@ class cfgWeapons
 		scope=0;
 		hiddenSelectionsMaterials[]=
 		{
-			"DZ\weapons\firearms\Winchester70\data\nocurves.rvmat"
+			"BattleRoyale\Skins\Weapons\DZ\Firearms\Winchester70\nocurves.rvmat"
 		};
 	};
 	class DZBR_Winchester70_Depth: DZBR_Winchester70_Base_NoCurves

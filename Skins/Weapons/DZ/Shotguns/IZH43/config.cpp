@@ -43,7 +43,7 @@ class cfgWeapons
 		};
 		hiddenSelectionsMaterials[]=
 		{
-			"BattleRoyale\Skins\Weapons\DZ\Shotguns\IZH43\golden.rvmat"
+			"BattleRoyale\Skins\Weapons\DZ\Shotguns\IZH43\gold.rvmat"
 		};
 	};
 	class DZBR_Izh43Shotgun_SilverPrestige: DZBR_Izh43Shotgun_Base
