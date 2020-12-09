@@ -309,7 +309,7 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_PreviewPlayer.GetInventory().CreateInInventory( "Jeans_Black" ); //TODO: get this from a setting file (match MissionServer )
         m_PreviewPlayer.GetInventory().CreateInInventory( "Sneakers_Black" );
 
-        skin.ApplyTo( item );
+       // skin.ApplyTo( item );
 
         m_PlayerPreview.SetPlayer( m_PreviewPlayer );
         m_PlayerPreview.SetModelPosition( Vector( 0, 0, 0.5 ) );
@@ -318,7 +318,7 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_PlayerPreview.Show( true );
         m_Preview.Show( false );
     }
-    protected void PreviewGun(GunSkinMap skin)
+    protected void PreviewGun(SkinMap skin)
     {
         CleanUpLocalObjects();
 
@@ -326,7 +326,7 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         EntityAI ent = EntityAI.Cast( m_PreviewObject );
 
-        skin.ApplyTo( ent );
+       // skin.ApplyTo( ent );
 
         m_Preview.SetItem( ent );
         m_Preview.SetModelPosition( Vector( 0, 0, 0.5 ) );

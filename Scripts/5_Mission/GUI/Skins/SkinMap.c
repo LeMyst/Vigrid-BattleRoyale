@@ -39,7 +39,7 @@ class SkinMap
     {
         return GetClass().IsInherited( Clothing );
     }
-
+/*
     void ApplyTo(EntityAI item)
     {
         int i;
@@ -54,7 +54,7 @@ class SkinMap
             item.SetObjectMaterial(i, values.Get(i));
         }
     }
-
+*/
     ref array<string> GetTextures()
     {
         ref array<string> result = new array<string>;
