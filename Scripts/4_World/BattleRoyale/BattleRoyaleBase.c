@@ -2,7 +2,7 @@ class BattleRoyaleBase
 {
 	void BattleRoyaleBase()
 	{
-		GetRPCManager().AddRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", this);
+		GetRPCManager().AddRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", this);
 		GetRPCManager().AddRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", this);
 	}
 
@@ -35,38 +35,51 @@ class BattleRoyaleBase
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", gun_value, false, NULL, targetBase);
 		}
 	}
-	void SetShirtTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetItemSkin(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		Param2< string, string > data;
-		if( !ctx.Read( data ) ) return; //i have absolutely no idea if i have to read this twice?
+		Param3< int, ref array<string>, ref array<string> > data;
 		
+		//read & check sanity
+		if( !ctx.Read( data ) ) return;
 		if(!target) return;
-			
 		PlayerBase targetBase = PlayerBase.Cast(target);
-
 		if(!targetBase) return;
-
-		HumanInventory inv = targetBase.GetHumanInventory();
-		if(inv)
+		
+		EntityAI item = null;
+		switch(data.param1) {
+			case 0:
+				HumanInventory inv = targetBase.GetHumanInventory();
+				if(inv)
+				{
+					item = inv.FindAttachment(InventorySlots.BODY);
+				}
+				break;
+			case 1:
+				item = targetBase.GetItemInHands();
+				break;
+		}
+		if(item)
 		{
-			//set shirt texture
-			EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
-			if(shirt) 
+			Print(item.GetType());
+
+			//apply texture data to item
+			int i;
+			ref array<string> values = data.param2;
+			for(i = 0; i < values.Count(); i++)
 			{
-				Print(shirt.GetType());
-				shirt.SetObjectTexture(0,data.param1);
-				shirt.SetObjectTexture(1,data.param2);
-				shirt.SetObjectTexture(2,data.param2); 
+				item.SetObjectTexture(i, values.Get(i));
+			}
+			values = data.param3;
+			for(i = 0; i < values.Count(); i++)
+			{
+				item.SetObjectMaterial(i, values.Get(i));
 			}
 		}
 
 		if(type == CallType.Server)
 		{
-			ref Param2<string, string> value_string = new Param2<string, string>(data.param1, data.param2);
-			
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", value_string, false , NULL, targetBase);
+			//rebroadcast to all clients
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", data, false , NULL, targetBase);
 		}
-
-
 	}
 }

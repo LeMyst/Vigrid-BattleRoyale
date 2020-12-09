@@ -148,31 +148,30 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		b_MatchStarted = true;
 	}
 
-	void SetShirt(string ground_texture, string shirt_texture)
+	void SetSkin(int type, ref array<string> textures, ref array<string> materials)
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		HumanInventory inv = player.GetHumanInventory();
 
-		EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
-		if(shirt)
-		{
-			ref Param2<string, string> shirt_value = new Param2<string, string>( ground_texture, shirt_texture );
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
+		EntityAI entity = null;
+		switch(type) {
+			case 0: 
+				entity = inv.FindAttachment(InventorySlots.BODY);
+				break;
+			case 1: 
+				entity = player.GetItemInHands();
+				break
 		}
-	}
-	void SetGun(string body_texture)
-	{
-		Print("Applying gun texture over network!");
-		PlayerBase player = GetGame().GetPlayer();
-		HumanInventory inv = player.GetHumanInventory();
 
-		EntityAI gun = player.GetItemInHands();
-		if(gun)
+		//send RPC to the server
+		if(entity)
 		{
-			ref Param1<string> gun_value = new Param1<string>( body_texture );
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", gun_value, false, NULL, player);
+			//no idea if I can broadcast arrays
+			ref Param3<int, ref array<string>, ref array<string>> skin_value = new Param3<int, array<string>, array<string>>(type, textures, materials);
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player);
 		}
 	}
+
 	void ReadyUp()
 	{
 		//if(b_IsReady)

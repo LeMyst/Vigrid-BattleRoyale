@@ -14,6 +14,16 @@ class CfgPatches
 class CfgVehicles
 {
     class TShirt_ColorBase;
+	class TShirt_DayZExpansion: TShirt_ColorBase
+	{
+		scope=2;
+		hiddenSelectionsTextures[]=
+		{
+			"\DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa",
+			"\DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa",
+			"\DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa"
+		};
+	};
     class TShirt_Chazie: TShirt_ColorBase
 	{
 		scope=2;

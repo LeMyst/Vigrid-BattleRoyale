@@ -28,68 +28,122 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_Skins = new array<ref SkinMap>(); //THIS MUST BE INITIALIZED BEFORE ANYTYHING BELOW
 
         //--- TShirt skins
-        InsertBRTee("DBR v1", "tshirt_black_DBR.paa", "tshirt_black_DBR.paa", "tshirt_dayzbr"); //TODO: add a custom ground texture (param # 1)
-        InsertBRTee("DBR v2", "tshirt_black_DBRv2.paa", "tshirt_black_DBRv2.paa", "tshirt_dayzbr_2");
-        InsertBRTee("keganW", "tshirt_black_kegan.paa", "tshirt_black_kegan.paa", "tshirt_keganhw");
-        InsertBRTee("I <3 Kegan", "tshirt_black_KLove.paa", "tshirt_black_KLove.paa", "tshirt_keganlove");
-        InsertBRTee("DSR", "tshirt_white_DSR.paa", "tshirt_white_DSR.paa", "tshirt_dsr");
-        InsertBRTee("Chazie", "tshirt_black_Chazie.paa", "tshirt_black_Chazie.paa", "tshirt_chazie");
-        InsertBRTee("Psi", "tshirt_black_psi.paa", "tshirt_black_psi.paa", "tshirt_psi");
-        InsertBRTee("Gibs", "tshirt_orange_gibs.paa", "tshirt_orange_gibs.paa", "tshirt_gibs");
-        InsertBRTee("Cuddles", "tshirt_grey_cc.paa", "tshirt_grey_cc.paa", "tshirt_captcuddles");
-        InsertBRTee("Septic", "tshirt_white_septic.paa", "tshirt_white_septic.paa", "tshirt_sceptic");
+        m_Skins.Insert(new SkinMap("[Shirt] DBR v1", "TShirt_DBR", TShirt_ColorBase, "tshirt_dayzbr"));
+        m_Skins.Insert(new SkinMap("[Shirt] DBR v2", "TShirt_DBRv2", TShirt_ColorBase, "tshirt_dayzbr_2"));
+        m_Skins.Insert(new SkinMap("[Shirt] keganW", "TShirt_kegan", TShirt_ColorBase, "tshirt_keganhw"));
+        m_Skins.Insert(new SkinMap("[Shirt] I <3 Kegan", "TShirt_KLove", TShirt_ColorBase, "tshirt_keganlove"));
+        m_Skins.Insert(new SkinMap("[Shirt] DSR", "TShirt_DSR", TShirt_ColorBase, "tshirt_dsr"));
+        m_Skins.Insert(new SkinMap("[Shirt] Chazie", "TShirt_Chazie", TShirt_ColorBase, "tshirt_chazie"));
+        m_Skins.Insert(new SkinMap("[Shirt] Psi", "TShirt_psi", TShirt_ColorBase, "tshirt_psi"));
+        m_Skins.Insert(new SkinMap("[Shirt] Gibs", "TShirt_gibs", TShirt_ColorBase, "tshirt_gibs"));
+        m_Skins.Insert(new SkinMap("[Shirt] Cuddles", "TShirt_cc", TShirt_ColorBase, "tshirt_captcuddles"));
+        m_Skins.Insert(new SkinMap("[Shirt] Septic", "TShirt_septic", TShirt_ColorBase, "tshirt_sceptic"));
 
         //--- default dayz skins (free)
-        InsertDayZTee("Beige", "tshirt_ground_beige_co.paa", "tshirt_beige_co.paa");
-        InsertDayZTee("Black", "tshirt_ground_black_co.paa", "tshirt_black_co.paa");
-        InsertDayZTee("Blue", "tshirt_ground_blue_co.paa", "tshirt_blue_co.paa");
-        InsertDayZTee("Green", "tshirt_ground_green_co.paa", "tshirt_green_co.paa");
-        InsertDayZTee("Grey", "tshirt_ground_grey_co.paa", "tshirt_grey_co.paa");
-        InsertDayZTee("Orange Striped", "tshirt_orangewhitestripes_beige_co.paa", "tshirt_orangewhitestripes_co.paa");
-        InsertDayZTee("Red", "tshirt_ground_red_co.paa", "tshirt_red_co.paa");
-        InsertDayZTee("Red Striped", "tshirt_ground_redblackstripes_co.paa", "tshirt_redblackstripes_co.paa");
-        InsertDayZTee("White", "tshirt_ground_white_co.paa", "tshirt_white_co.paa");
-    
+        m_Skins.Insert(new SkinMap("[Shirt] Beige", "TShirt_Beige", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Black", "TShirt_Black", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Blue", "TShirt_Blue", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Green", "TShirt_Green", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Grey", "TShirt_Grey", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Orange Striped", "TShirt_OrangeWhiteStripes", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Red", "TShirt_Red", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] Red Striped", "TShirt_RedBlackStripes", TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] White", "TShirt_White", TShirt_ColorBase));
+
         //the dayz expansion developer T-Shirt
-        ref SkinMap expansion_tee = new SkinMap();
-        ref array<string> textures = {
-            "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa",
-            "DayZExpansion\\Data\\Characters\\Tops\\Data\\expansion_shirt.paa"
-        };
-        expansion_tee.Init("[Shirt] DZ Exp", textures, "TShirt_White", TShirt_ColorBase, "dayz_exp_devs");
-        m_Skins.Insert( expansion_tee );
+        m_Skins.Insert(new SkinMap("[Shirt] Expansion", "TShirt_DayZExpansion", TShirt_ColorBase, "dayz_exp_devs"));
 
 //--------- All TShirt skins above here! ----------------
 
-        //--- AKM skins
-        InsertBRGun("Mango", "akm_mango.paa", "AKM", AKM_Base, "");
+        //--- AK74
+        m_Skins.Insert(new SkinMap("[Gun] Bee", "DZBR_AK74_Bee", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Rainbow", "DZBR_AK74_Rainbow", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Apple", "DZBR_AK74_Apple", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Glacier", "DZBR_AK74_Glacier", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Depth", "DZBR_AK74_Depth", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_AK74_FB_Bug", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_AK74_FB_Reward_White_Black", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_AK74_FB_Reward_White_Orange", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_AK74_FB_Reward_White_Blue", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_AK74_FB_Reward_White_Red", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_AK74_FB_Reward_White_Grey", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_AK74_FB_Reward_Black_Orange", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_AK74_FB_Reward_Black_Blue", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_AK74_FB_Reward_Black_Red", AK74, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_AK74_FB_Reward_Black_Grey", AK74, "todo_skins"));
+        //--- AKS74U
+        m_Skins.Insert(new SkinMap("[Gun] Bee", "DZBR_AKS74U_Bee", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Rainbow", "DZBR_AKS74U_Rainbow", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Rattlesnake", "DZBR_AKS74U_RattleSnake", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Tactical", "DZBR_AKS74U_Tactical", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_AKS74U_FB_Bug", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_AKS74U_FB_Reward_White_Black", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_AKS74U_FB_Reward_White_Orange", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_AKS74U_FB_Reward_White_Blue", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_AKS74U_FB_Reward_White_Red", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_AKS74U_FB_Reward_White_Grey", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_AKS74U_FB_Reward_Black_Orange", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_AKS74U_FB_Reward_Black_Blue", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_AKS74U_FB_Reward_Black_Red", AKS74U, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_AKS74U_FB_Reward_Black_Grey", AKS74U, "todo_skins"));
+        //--- AK1010
+        m_Skins.Insert(new SkinMap("[Gun] Bee", "DZBR_AK101_Bee", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Rainbow", "DZBR_AK101_Rainbow", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Apple", "DZBR_AK101_Apple", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Glacier", "DZBR_AK101_Glacier", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Depth", "DZBR_AK101_Depth", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_AK101_FB_Bug", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_AK101_FB_Reward_White_Black", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_AK101_FB_Reward_White_Orange", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_AK101_FB_Reward_White_Blue", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_AK101_FB_Reward_White_Red", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_AK101_FB_Reward_White_Grey", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_AK101_FB_Reward_Black_Orange", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_AK101_FB_Reward_Black_Blue", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_AK101_FB_Reward_Black_Red", AK101, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_AK101_FB_Reward_Black_Grey", AK101, "todo_skins"));
+        //--- AKM
 
-        //--- M4 skins
-        InsertBRGun("Mango", "m4_body_mango.paa", "M4A1", M4A1_Base, "");
+        //--- FAL
 
-        //--- Mosin skins
-        InsertBRGun("Mango", "mosin_9130_mango", "Mosin9130", Mosin9130_Base, "");
-    }
+        //--- M4
 
-    protected void InsertBRGun(string name, string body_texture, string preview_item, typename gun_class, string shop_entry = "")
-    {
-        ref DayZBRGunSkinMap gun = new DayZBRGunSkinMap();
-        gun.InitGun( "[Gun] " + name, body_texture, preview_item, gun_class, shop_entry );
-        m_Skins.Insert( gun );
-    }
-    protected void InsertDayZTee(string name, string ground_texture, string shirt_texture)
-    {
-        ref DayZTSkinMap tee = new DayZTSkinMap();
-        tee.InitTee("[Shirt] " + name, ground_texture, shirt_texture);
-        m_Skins.Insert( tee );
-    }
-    protected void InsertBRTee(string name, string ground_texture, string shirt_texture, string item_name)
-    {
-        ref DayZBRTSkinMap tee = new DayZBRTSkinMap();
-        tee.InitTee("[Shirt] " + name, ground_texture, shirt_texture, item_name);
-        m_Skins.Insert( tee );
-    }
+        //--- MOSIN9130
 
+        //--- MOSIN9130_SAWEDOFF
+
+        //--- MP5
+
+        //--- SKS
+
+        //--- UMP45
+
+        //--- VSS
+
+        //--- WINCHESTER70
+
+        //--- 1911
+
+        //--- DEAGLE
+
+        //--- FNX45
+
+        //--- GLOCK
+
+        //--- IZH43
+
+        //--- MP133
+
+        //--- SAIGA
+
+        //--- AWP
+
+        //--- MP5A5
+
+        //--- BENELIM4
+
+    }
+    
     void ~SkinSelectionMenu()
     {
         CleanUpLocalObjects();
@@ -188,18 +242,8 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         ref SkinMap skin_map = SkinMap.Cast( skin );
 
-        GunSkinMap gun_skin;
-        if(skin_map.CastTo(gun_skin, skin_map))
-        {
-            Print("Previewing gun!");
-            PreviewGun(gun_skin);
-        }
-        else
-        {
-            PreviewShirt( skin_map );
-        }
-        
-        
+        //preview skin_map  
+        PreviewSkin(skin_map);      
     }   
     void VisitShop(UIEvent eid, ref UIActionBase action)
     {
@@ -213,50 +257,48 @@ class SkinSelectionMenu extends UIScriptedMenu
         action.GetUserData( skin );
 
         ref SkinMap skin_map = SkinMap.Cast( skin );
+        
+        //verify the player can apply this skin!
         BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-        GunSkinMap gun_skin;
-        if(skin_map.CastTo(gun_skin, skin_map))
+        string skin_flag = skin_map.GetFlag();
+        if(skin_flag != "" && !api.HasPurchase(skin_flag))
         {
-            Print("Applying Gun!");
-            PreviewGun(gun_skin);
-
-            if((gun_skin.GetFlag() == "" || api.HasPurchase(gun_skin.GetFlag()))
-            {
-                ApplyGun( gun_skin );
-            }
-            else
-            {
-                Error("SkinApply got called, but the player does not have access!");
-            } 
+            Error("SkinApply got called, but the player does not have access!");
+            return;
         }
-        else
-        {
-           
-            //not a gun, must be a shirt
-            PreviewShirt( skin_map );
 
-            if((skin_map.GetFlag() == "" || api.HasPurchase(skin_map.GetFlag()))
-            {
-                ApplyShirt( skin_map );
-            }
-            else
-            {
-                Error("SkinApply got called, but the player does not have access!");
-            } 
-        }
+        //preview skin!
+        PreviewSkin(skin_map);
+        //apply skin!
+        ApplySkin(skin_map);
         
     }
 
-    protected void ApplyGun(GunSkinMap skin)
+    protected void PreviewSkin(ref SkinMap skin)
     {
-        string texture = skin.GetTexture();
-        Print(texture);
-        BattleRoyaleClient.Cast( GetBR() ).SetGun( texture );
+        if(skin.IsClothing())
+        {
+            //preview shirt
+            PreviewShirt(skin);
+        }
+        else
+        {
+            //preview gun
+            PreviewGun(skin);
+        }
     }
-    protected void ApplyShirt(SkinMap skin)
+    protected void ApplySkin(ref SkinMap skin)
     {
-        BattleRoyaleClient.Cast( GetBR() ).SetShirt( skin.GetTexture( 0 ), skin.GetTexture( 1 ) );
+        if(skin.IsClothing())
+        {
+            BattleRoyaleClient.Cast( GetBR() ).SetSkin( 0, skin.GetTextures(), skin.GetMaterials() ); //type 0 for shirt
+        }
+        else
+        {
+            BattleRoyaleClient.Cast( GetBR() ).SetSkin( 1, skin.GetTextures(), skin.GetMaterials() ); //type 1 for gun
+        }
     }
+
     protected void PreviewShirt(SkinMap skin)
     {
 
@@ -267,9 +309,7 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_PreviewPlayer.GetInventory().CreateInInventory( "Jeans_Black" ); //TODO: get this from a setting file (match MissionServer )
         m_PreviewPlayer.GetInventory().CreateInInventory( "Sneakers_Black" );
 
-        item.SetObjectTexture(0,skin.GetTexture( 0 )); //0 is for ground
-        item.SetObjectTexture(1,skin.GetTexture( 1 )); //1 is for male
-        item.SetObjectTexture(2,skin.GetTexture( 1 )); //1 is for female
+        skin.ApplyTo( item );
 
         m_PlayerPreview.SetPlayer( m_PreviewPlayer );
         m_PlayerPreview.SetModelPosition( Vector( 0, 0, 0.5 ) );
@@ -285,7 +325,8 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_PreviewObject = GetGame().CreateObject( skin.GetClassName() , vector.Zero, true, false );
 
         EntityAI ent = EntityAI.Cast( m_PreviewObject );
-        ent.SetObjectTexture(0, skin.GetTexture() );//body
+
+        skin.ApplyTo( ent );
 
         m_Preview.SetItem( ent );
         m_Preview.SetModelPosition( Vector( 0, 0, 0.5 ) );
