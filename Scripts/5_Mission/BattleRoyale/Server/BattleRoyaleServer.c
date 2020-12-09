@@ -155,6 +155,14 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	}
 	void OnPlayerConnected(PlayerBase player)
 	{
+		//Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
+		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
+		BattleRoyaleAPIData m_APIData = config_data.GetApiData();
+		bool is_unlock_skins_enabled = m_APIData.unlock_all_purchasables;
+		if(is_unlock_skins_enabled)
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetServerSkinUnlockValue", new Param1<bool>(true), true, player.GetIdentity());
+
+
 		//Teleport player into debug zone
 		Print("Player connected!" + player.GetIdentity().GetName()); //lets find out if respawning players end up here
 

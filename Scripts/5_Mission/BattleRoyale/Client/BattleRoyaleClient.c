@@ -9,12 +9,16 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected bool b_MatchStarted;
 	protected int i_SecondsRemaining;
 
+	protected bool b_UnlockAllSkins;
+
 	protected bool b_IsReady;
 
 	protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
 
 	void BattleRoyaleClient()
 	{
+		b_UnlockAllSkins = false;
+
 		b_IsReady = false;
 		b_MatchStarted = false;
 		i_Kills = 0;
@@ -26,6 +30,14 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		Init();
 	}
 
+	//this should be used to check over the default API functionality
+	bool AreSkinsUnlocked()
+	{
+		if(b_UnlockAllSkins)
+			return true;
+		else
+			return false;
+	}
 
 	void Init()
 	{
@@ -35,7 +47,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", this );
-
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetServerSkinUnlockValue", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
@@ -175,7 +187,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			Print(type);
 			Print(textures);
 			Print(materials);
-			
+
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player);
 		}
 	}
@@ -195,6 +207,15 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	
 	//Client RPC calls
+	void SetServerSkinUnlockValue(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		if ( type == CallType.Client )
+		{
+			b_UnlockAllSkins = true;
+		}
+	}
+
+
 	void StartMatch(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		if ( type == CallType.Client )
