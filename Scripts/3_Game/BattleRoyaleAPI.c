@@ -33,6 +33,10 @@ class BattleRoyaleAPI {
         rest_api_endpoint = api_settings.endpoint; 
         use_api = api_settings.use_api;
         unlock_skins = api_settings.unlock_all_purchasables;
+        if(unlock_skins)
+        {
+            Print("API Settings: All Skins Unlocked!");
+        }
     }
     //--- public functions
 

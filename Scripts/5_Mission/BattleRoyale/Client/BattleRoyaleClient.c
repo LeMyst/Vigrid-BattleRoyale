@@ -157,9 +157,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		switch(type) {
 			case 0: 
 				entity = inv.FindAttachment(InventorySlots.BODY);
+				Print("Setting Shirt Skin");
 				break;
 			case 1: 
 				entity = player.GetItemInHands();
+				Print("Setting Gun Skin");
 				break
 		}
 
@@ -167,7 +169,13 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if(entity)
 		{
 			//no idea if I can broadcast arrays
-			ref Param3<int, ref array<string>, ref array<string>> skin_value = new Param3<int, array<string>, array<string>>(type, textures, materials);
+			ref Param3<int, ref array<string>, ref array<string>> skin_value = new Param3<int, ref array<string>, ref array<string>>(type, textures, materials);
+			
+			Print("Sending RPC");
+			Print(type);
+			Print(textures);
+			Print(materials);
+			
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player);
 		}
 	}

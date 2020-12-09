@@ -38,7 +38,7 @@ class BattleRoyaleBase
 	void SetItemSkin(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param3< int, ref array<string>, ref array<string> > data;
-		
+
 		//read & check sanity
 		if( !ctx.Read( data ) ) return;
 		if(!target) return;
@@ -52,10 +52,12 @@ class BattleRoyaleBase
 				if(inv)
 				{
 					item = inv.FindAttachment(InventorySlots.BODY);
+					Print("[Base] Setting Shirt Skin");
 				}
 				break;
 			case 1:
 				item = targetBase.GetItemInHands();
+				Print("[Base] Setting Gun Skin");
 				break;
 		}
 		if(item)
@@ -67,19 +69,26 @@ class BattleRoyaleBase
 			ref array<string> values = data.param2;
 			for(i = 0; i < values.Count(); i++)
 			{
-				item.SetObjectTexture(i, values.Get(i));
+				string texture = values.Get(i);
+				Print("Setting texture: " + i.ToString() + "," + texture);
+				item.SetObjectTexture(i, texture);
 			}
 			values = data.param3;
 			for(i = 0; i < values.Count(); i++)
 			{
-				item.SetObjectMaterial(i, values.Get(i));
+				string material = values.Get(i);
+				Print("Setting material: " + i.ToString() + "," + material);
+				item.SetObjectMaterial(i, material);
 			}
 		}
 
 		if(type == CallType.Server)
 		{
+			Print("Rebroadcasting!");
 			//rebroadcast to all clients
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", data, false , NULL, targetBase);
+			Param3<int, ref array<string>, ref array<string>> new_data = new Param3<int, ref array<string>, ref array<string>>(data.param1, data.param2, data.param3);
+			Print(new_data);
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", new_data, false , NULL, targetBase);
 		}
 	}
 }

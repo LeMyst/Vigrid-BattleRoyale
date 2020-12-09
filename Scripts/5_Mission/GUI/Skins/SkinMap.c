@@ -21,7 +21,13 @@ class SkinMap
     }
     bool IsValidSkinForEntity(EntityAI item)
     {
-        return item.IsInherited( GetClass() );
+        Print("Checking if valid skin for entity");
+        Print(item.Type());
+        Print(GetClass());
+        Print(item.IsInherited( GetClass() ));
+        Print(item.Type() == GetClass());
+        
+        return (item.IsInherited( GetClass() ) || (item.Type() == GetClass()));
     }
     string GetName()
     {

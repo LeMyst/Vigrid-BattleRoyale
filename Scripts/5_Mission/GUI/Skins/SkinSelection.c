@@ -24,9 +24,10 @@ class SkinSelectionMenu extends UIScriptedMenu
 
     void SkinSelectionMenu()
     {
-
+        Print("Initializing Skin Objects!");
         m_Skins = new array<ref SkinMap>(); //THIS MUST BE INITIALIZED BEFORE ANYTYHING BELOW
 
+        Print("Initializing TShirts");
         //--- TShirt skins
         m_Skins.Insert(new SkinMap("[Shirt] DBR v1", "TShirt_DBR", TShirt_ColorBase, "tshirt_dayzbr"));
         m_Skins.Insert(new SkinMap("[Shirt] DBR v2", "TShirt_DBRv2", TShirt_ColorBase, "tshirt_dayzbr_2"));
@@ -38,6 +39,7 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_Skins.Insert(new SkinMap("[Shirt] Gibs", "TShirt_gibs", TShirt_ColorBase, "tshirt_gibs"));
         m_Skins.Insert(new SkinMap("[Shirt] Cuddles", "TShirt_cc", TShirt_ColorBase, "tshirt_captcuddles"));
         m_Skins.Insert(new SkinMap("[Shirt] Septic", "TShirt_septic", TShirt_ColorBase, "tshirt_sceptic"));
+        
 
         //--- default dayz skins (free)
         m_Skins.Insert(new SkinMap("[Shirt] Beige", "TShirt_Beige", TShirt_ColorBase));
@@ -52,9 +54,10 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         //the dayz expansion developer T-Shirt
         m_Skins.Insert(new SkinMap("[Shirt] Expansion", "TShirt_DayZExpansion", TShirt_ColorBase, "dayz_exp_devs"));
-
+        
+        Print(m_Skins);
 //--------- All TShirt skins above here! ----------------
-
+        Print("Intializing Weapons");
         //--- AK74
         m_Skins.Insert(new SkinMap("[Gun] Bee", "DZBR_AK74_Bee", AK74, "todo_skins"));
         m_Skins.Insert(new SkinMap("[Gun] Rainbow", "DZBR_AK74_Rainbow", AK74, "todo_skins"));
@@ -142,6 +145,7 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         //--- BENELIM4
 
+        Print(m_Skins);
     }
     
     void ~SkinSelectionMenu()
@@ -207,6 +211,10 @@ class SkinSelectionMenu extends UIScriptedMenu
         EntityAI in_hands = currentPlayer.GetItemInHands();
         EntityAI shirt_slot = inv.FindAttachmentByName("Body");
         
+        Print("InitSkins()");
+        Print(in_hands);
+        Print(shirt_slot);
+
         //list all owned skins (and the default skins)
         for(int i = 0; i < m_Skins.Count(); i++)
         {
@@ -225,7 +233,11 @@ class SkinSelectionMenu extends UIScriptedMenu
                     button = UIActionManager.CreateButton( wrapper, "Apply", this, "SkinApply" );
                     button.SetUserData( skin );
                 }
-            }            
+            } 
+            else
+            {
+                Print("player does not own flag: " + skin.GetFlag());
+            }           
         }
 
         //Buy more skins at the shop button
@@ -278,24 +290,31 @@ class SkinSelectionMenu extends UIScriptedMenu
     {
         if(skin.IsClothing())
         {
+            Print("Previewing Clothing!");
             //preview shirt
             PreviewShirt(skin);
         }
         else
         {
+            Print("Previewing Gun!");
             //preview gun
             PreviewGun(skin);
         }
     }
     protected void ApplySkin(ref SkinMap skin)
     {
+        ref array<string> textures = skin.GetTextures();
+        ref array<string> materials = skin.GetMaterials();
+        Print("Applying Skin");
+        Print(textures);
+        Print(materials);
         if(skin.IsClothing())
         {
-            BattleRoyaleClient.Cast( GetBR() ).SetSkin( 0, skin.GetTextures(), skin.GetMaterials() ); //type 0 for shirt
+            BattleRoyaleClient.Cast( GetBR() ).SetSkin( 0, textures, materials ); //type 0 for shirt
         }
         else
         {
-            BattleRoyaleClient.Cast( GetBR() ).SetSkin( 1, skin.GetTextures(), skin.GetMaterials() ); //type 1 for gun
+            BattleRoyaleClient.Cast( GetBR() ).SetSkin( 1, textures, materials ); //type 1 for gun
         }
     }
 
@@ -304,8 +323,11 @@ class SkinSelectionMenu extends UIScriptedMenu
 
         CleanUpLocalObjects();
 
+        string class_name = skin.GetClassName();
+        Print("Preview Class: " + class_name)
+
         m_PreviewPlayer = PlayerBase.Cast( GetGame().CreatePlayer( NULL, GetGame().CreateRandomPlayer(), Vector( 0, 0, 0 ), 0, "NONE") );
-        EntityAI item = m_PreviewPlayer.GetInventory().CreateInInventory( skin.GetClassName() );
+        EntityAI item = m_PreviewPlayer.GetInventory().CreateInInventory( class_name );
         m_PreviewPlayer.GetInventory().CreateInInventory( "Jeans_Black" ); //TODO: get this from a setting file (match MissionServer )
         m_PreviewPlayer.GetInventory().CreateInInventory( "Sneakers_Black" );
 
@@ -322,7 +344,10 @@ class SkinSelectionMenu extends UIScriptedMenu
     {
         CleanUpLocalObjects();
 
-        m_PreviewObject = GetGame().CreateObject( skin.GetClassName() , vector.Zero, true, false );
+        string class_name = skin.GetClassName();
+        Print("Preview Class: " + class_name)
+
+        m_PreviewObject = GetGame().CreateObject( class_name, vector.Zero, true, false );
 
         EntityAI ent = EntityAI.Cast( m_PreviewObject );
 
