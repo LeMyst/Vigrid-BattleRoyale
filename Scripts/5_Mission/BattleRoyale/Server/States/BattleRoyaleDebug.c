@@ -17,7 +17,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		if(m_DebugSettings)
 		{
 			i_MinPlayers = m_DebugSettings.minimum_players; 
-			i_TimeBetweenMessages = 120;
+			i_TimeBetweenMessages = 45;
 			b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
 			f_VoteThreshold = m_DebugSettings.ready_up_percent;
 		}

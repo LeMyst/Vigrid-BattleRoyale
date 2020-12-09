@@ -137,6 +137,7 @@ modded class PlayerBase
 		
 		// BURNING_TRESHOLD = 199 -> 100 should be fine
 		GetStatHeatComfort().Set(100);
+		GetStatHeatBuffer().Set(GetStatHeatBuffer().GetMax()); //max heat buffer
 		
 		// seems unused
 		// player.GetStatHeatIsolation().Set(100);
