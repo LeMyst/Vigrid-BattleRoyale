@@ -31,12 +31,12 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	}
 
 	//this should be used to check over the default API functionality
-	bool AreSkinsUnlocked()
+	bool HasPurchase(string flag)
 	{
 		if(b_UnlockAllSkins)
 			return true;
 		else
-			return false;
+			return BattleRoyaleAPI.GetAPI().HasPurchase(flag);
 	}
 
 	void Init()

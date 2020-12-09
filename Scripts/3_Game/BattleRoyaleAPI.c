@@ -61,17 +61,6 @@ class BattleRoyaleAPI {
     }
     bool HasPurchase(string shop_flag)
     {
-        BattleRoyaleBase base = GetBR();
-        if(base)
-        {
-            BattleRoyaleClient br_client = BattleRoyaleClient.Cast( base );
-            if(br_client)
-            {
-                //client machine!
-                if(br_client.AreSkinsUnlocked())
-                    return true;
-            }
-        }
         if(m_PlayerData)
         {
             return (m_PlayerData.shop_purchases.Find( shop_flag ) != -1);

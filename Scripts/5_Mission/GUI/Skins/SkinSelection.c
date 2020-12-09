@@ -271,9 +271,9 @@ class SkinSelectionMenu extends UIScriptedMenu
         ref SkinMap skin_map = SkinMap.Cast( skin );
         
         //verify the player can apply this skin!
-        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+        BattleRoyaleClient br_c = BattleRoyaleClient.Cast( GetBR() ); 
         string skin_flag = skin_map.GetFlag();
-        if(skin_flag != "" && !api.HasPurchase(skin_flag))
+        if(skin_flag != "" && !br_c.HasPurchase(skin_flag))
         {
             Error("SkinApply got called, but the player does not have access!");
             return;
