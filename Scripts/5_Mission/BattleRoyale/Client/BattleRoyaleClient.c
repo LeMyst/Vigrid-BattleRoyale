@@ -185,10 +185,10 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			
 			Print("Sending RPC");
 			Print(type);
-			Print(textures);
-			Print(materials);
+			Print("Texture Count: " + textures.Count().ToString());
+			Print("Material Count: " + materials.Count().ToString());
 
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player);
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player); //target myself
 		}
 	}
 
@@ -211,6 +211,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	{
 		if ( type == CallType.Client )
 		{
+			Print("Unlocking All Skins!");
 			b_UnlockAllSkins = true;
 		}
 	}

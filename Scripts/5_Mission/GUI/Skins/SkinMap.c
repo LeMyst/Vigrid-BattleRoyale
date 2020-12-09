@@ -65,12 +65,20 @@ class SkinMap
     {
         ref array<string> result = new array<string>;
         GetGame().ConfigGetTextArray("CfgVehicles " + s_ItemConfigName + " hiddenSelectionsTextures",result);
+        if(result.Count() == 0)
+        {
+            GetGame().ConfigGetTextArray("cfgWeapons " + s_ItemConfigName + " hiddenSelectionsTextures", result); //weapons lol
+        }
         return result;
     }
     ref array<string> GetMaterials()
     {
         ref array<string> result = new array<string>;
         GetGame().ConfigGetTextArray("CfgVehicles " + s_ItemConfigName + " hiddenSelectionsMaterials",result);
+        if(result.Count() == 0)
+        {
+            GetGame().ConfigGetTextArray("cfgWeapons " + s_ItemConfigName + " hiddenSelectionsMaterials", result); //weapons lol
+        }
         return result;
     }
 }

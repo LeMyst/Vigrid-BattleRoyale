@@ -42,7 +42,7 @@ class BattleRoyaleBase
 		//read & check sanity
 		if( !ctx.Read( data ) ) return;
 		if(!target) return;
-		PlayerBase targetBase = PlayerBase.Cast(target);
+		PlayerBase targetBase = PlayerBase.Cast( target );
 		if(!targetBase) return;
 		
 		EntityAI item = null;
@@ -67,6 +67,7 @@ class BattleRoyaleBase
 			//apply texture data to item
 			int i;
 			ref array<string> values = data.param2;
+			Print("Texture Count: " + values.Count().ToString());
 			for(i = 0; i < values.Count(); i++)
 			{
 				string texture = values.Get(i);
@@ -74,6 +75,7 @@ class BattleRoyaleBase
 				item.SetObjectTexture(i, texture);
 			}
 			values = data.param3;
+			Print("Material Count: " + values.Count().ToString());
 			for(i = 0; i < values.Count(); i++)
 			{
 				string material = values.Get(i);
@@ -86,7 +88,9 @@ class BattleRoyaleBase
 		{
 			Print("Rebroadcasting!");
 			//rebroadcast to all clients
-			Param3<int, ref array<string>, ref array<string>> new_data = new Param3<int, ref array<string>, ref array<string>>(data.param1, data.param2, data.param3);
+			ref array<string> textures = data.param2; //this should solve an issue where the value is derefed and not sent to the client...
+			ref array<string> materials = data.param3; 
+			Param3<int, ref array<string>, ref array<string>> new_data = new Param3<int, ref array<string>, ref array<string>>(data.param1, textures, materials);
 			Print(new_data);
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", new_data, false , NULL, targetBase);
 		}

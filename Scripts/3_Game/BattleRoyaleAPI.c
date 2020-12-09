@@ -61,6 +61,7 @@ class BattleRoyaleAPI {
     }
     bool HasPurchase(string shop_flag)
     {
+        Print("Checking API for purchase flag " + shop_flag);
         if(m_PlayerData)
         {
             return (m_PlayerData.shop_purchases.Find( shop_flag ) != -1);

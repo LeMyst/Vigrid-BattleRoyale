@@ -200,7 +200,7 @@ class SkinSelectionMenu extends UIScriptedMenu
 
     void InitSkins()
     {
-        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+        BattleRoyaleClient br_c = BattleRoyaleClient.Cast( GetBR() ); 
 
         Widget wrapper;
         UIActionButton button;
@@ -219,8 +219,8 @@ class SkinSelectionMenu extends UIScriptedMenu
         for(int i = 0; i < m_Skins.Count(); i++)
         {
             ref SkinMap skin = m_Skins[i];
-
-            if(skin.GetFlag() == "" || api.HasPurchase(skin.GetFlag()))
+            
+            if(skin.GetFlag() == "" || br_c.HasPurchase(skin.GetFlag()))
             {
                 if(IsValidSkin(in_hands, skin) || IsValidSkin(shirt_slot, skin))
                 {

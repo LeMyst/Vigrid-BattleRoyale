@@ -24,6 +24,7 @@ class BattleRoyaleAPIData extends BattleRoyaleDataBase
             bans_api_key = "no_api_key_set";
         }
 
+        Print(unlock_all_purchasables);
 
         Save(); //write defaults 
     }
