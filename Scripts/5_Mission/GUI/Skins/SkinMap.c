@@ -6,13 +6,15 @@ class SkinMap
     protected typename t_ItemBaseClass;
     protected string s_ShopFlag;
 
+    protected bool b_Inheritable;
 
-    void SkinMap(string name, string item_config_name, typename item_base_class, string flag = "")
+    void SkinMap(string name, string item_config_name, typename item_base_class, string flag = "", bool can_inherit = true)
     {
         s_DisplayName = name;
         s_ItemConfigName = item_config_name;
         t_ItemBaseClass = item_base_class;
         s_ShopFlag = flag;
+        b_Inheritable = can_inherit;
     }
 
     string GetFlag()
@@ -21,13 +23,7 @@ class SkinMap
     }
     bool IsValidSkinForEntity(EntityAI item)
     {
-        Print("Checking if valid skin for entity");
-        Print(item.Type());
-        Print(GetClass());
-        Print(item.IsInherited( GetClass() ));
-        Print(item.Type() == GetClass());
-        
-        return (item.IsInherited( GetClass() ) || (item.Type() == GetClass()));
+        return ((item.IsInherited(GetClass()) && b_Inheritable) || (item.Type() == GetClass()));
     }
     string GetName()
     {
