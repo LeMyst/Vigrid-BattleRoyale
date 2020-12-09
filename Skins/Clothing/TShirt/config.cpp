@@ -24,6 +24,26 @@ class CfgVehicles
 			"\DayZExpansion\Data\Characters\Tops\Data\expansion_shirt.paa"
 		};
 	};
+	class TShirt_DayZPodcast: TShirt_ColorBase
+	{
+		scope=2;
+		hiddenSelectionsTextures[]=
+		{
+			"\BattleRoyale\Skins\Clothing\TShirt\tshirt_white_podcast.paa",
+			"\BattleRoyale\Skins\Clothing\TShirt\tshirt_white_podcast.paa",
+			"\BattleRoyale\Skins\Clothing\TShirt\tshirt_white_podcast.paa"
+		};
+	};
+	class TShirt_VPP: TShirt_ColorBase
+	{
+		scope=2;
+		hiddenSelectionsTextures[]=
+		{
+			"\BattleRoyale\Skins\Clothing\TShirt\tshirt_black_vpp.paa",
+			"\BattleRoyale\Skins\Clothing\TShirt\tshirt_black_vpp.paa",
+			"\BattleRoyale\Skins\Clothing\TShirt\tshirt_black_vpp.paa"
+		};
+	};
     class TShirt_Chazie: TShirt_ColorBase
 	{
 		scope=2;

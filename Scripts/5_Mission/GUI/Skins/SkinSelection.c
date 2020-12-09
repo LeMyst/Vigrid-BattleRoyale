@@ -55,6 +55,10 @@ class SkinSelectionMenu extends UIScriptedMenu
         //the dayz expansion developer T-Shirt
         m_Skins.Insert(new SkinMap("[Shirt] Expansion", "TShirt_DayZExpansion", TShirt_ColorBase, "dayz_exp_devs"));
         
+        //--- free shirts :)
+        m_Skins.Insert(new SkinMap("[Shirt] Podcast","TShirt_DayZPodcast",TShirt_ColorBase));
+        m_Skins.Insert(new SkinMap("[Shirt] V++","TShirt_VPP",TShirt_ColorBase));
+
         Print(m_Skins);
 //--------- All TShirt skins above here! ----------------
         Print("Intializing Weapons");
