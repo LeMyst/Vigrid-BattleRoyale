@@ -351,16 +351,82 @@ class SkinSelectionMenu extends UIScriptedMenu
         m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_SawedoffIzh43Shotgun_FB_Reward_Black_Blue", SawedoffIzh43Shotgun, "todo_skins"));
         m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_SawedoffIzh43Shotgun_FB_Reward_Black_Red", SawedoffIzh43Shotgun, "todo_skins"));
         m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_SawedoffIzh43Shotgun_FB_Reward_Black_Grey", SawedoffIzh43Shotgun, "todo_skins"));
-
         //--- MP133
-
+        m_Skins.Insert(new SkinMap("[Gun] Battle", "DZBR_MP133_Battle", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Hotline", "DZBR_MP133_Hotline", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Taser", "DZBR_MP133_Taser", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Rainbow", "DZBR_MP133_Rainbow", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_MP133_FB_Bug", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_MP133_FB_Reward_White_Black", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_MP133_FB_Reward_White_Orange", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_MP133_FB_Reward_White_Blue", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_MP133_FB_Reward_White_Red", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_MP133_FB_Reward_White_Grey", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_MP133_FB_Reward_Black_Orange", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_MP133_FB_Reward_Black_Blue", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_MP133_FB_Reward_Black_Red", Mp133Shotgun_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_MP133_FB_Reward_Black_Grey", Mp133Shotgun_Base, "todo_skins"));
         //--- SAIGA
-
+        m_Skins.Insert(new SkinMap("[Gun] Blue Web", "DZBR_Saiga_BlueWeb", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Neon", "DZBR_Saiga_Neon", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Prestige", "DZBR_Saiga_Prestige", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Silver", "DZBR_Saiga_Silver", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_Saiga_FB_Bug", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_Saiga_FB_Reward_White_Black", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_Saiga_FB_Reward_White_Orange", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_Saiga_FB_Reward_White_Blue", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_Saiga_FB_Reward_White_Red", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_Saiga_FB_Reward_White_Grey", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_Saiga_FB_Reward_Black_Orange", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_Saiga_FB_Reward_Black_Blue", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_Saiga_FB_Reward_Black_Red", Saiga_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_Saiga_FB_Reward_Black_Grey", Saiga_Base, "todo_skins"));
         //--- AWP
-
+        m_Skins.Insert(new SkinMap("[Gun] Digital", "DZBR_Expansion_AWM_Digital", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Love", "DZBR_Expansion_AWM_Love", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Marine", "DZBR_Expansion_AWM_Marine", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] White Net", "DZBR_Expansion_AWM_WhiteNet", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_Expansion_AWM_FB_Bug", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_Expansion_AWM_FB_Reward_White_Black", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_Expansion_AWM_FB_Reward_White_Orange", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_Expansion_AWM_FB_Reward_White_Blue", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_Expansion_AWM_FB_Reward_White_Red", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_Expansion_AWM_FB_Reward_White_Grey", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_Expansion_AWM_FB_Reward_Black_Orange", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_Expansion_AWM_FB_Reward_Black_Blue", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_Expansion_AWM_FB_Reward_Black_Red", Expansion_AWM_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_Expansion_AWM_FB_Reward_Black_Grey", Expansion_AWM_Base, "todo_skins"));
         //--- MP5A5
-
+        m_Skins.Insert(new SkinMap("[Gun] Abyss", "DZBR_Expansion_MP5_Abyss", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Blue", "DZBR_Expansion_MP5_Blue", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Exhibit", "DZBR_Expansion_MP5_Exhibit", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Orange", "DZBR_Expansion_MP5_Orange", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Killer", "DZBR_Expansion_MP5_Killer", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_Expansion_MP5_FB_Bug", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_Expansion_MP5_FB_Reward_White_Black", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_Expansion_MP5_FB_Reward_White_Orange", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_Expansion_MP5_FB_Reward_White_Blue", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_Expansion_MP5_FB_Reward_White_Red", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_Expansion_MP5_FB_Reward_White_Grey", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_Expansion_MP5_FB_Reward_Black_Orange", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_Expansion_MP5_FB_Reward_Black_Blue", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_Expansion_MP5_FB_Reward_Black_Red", Expansion_MP5_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_Expansion_MP5_FB_Reward_Black_Grey", Expansion_MP5_Base, "todo_skins"));
         //--- BENELIM4
+        m_Skins.Insert(new SkinMap("[Gun] Killer", "DZBR_Expansion_BenelliM4_Killer", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Neon", "DZBR_Expansion_BenelliM4_Neon", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Army", "DZBR_Expansion_BenelliM4_Army", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Blue Marine", "DZBR_Expansion_BenelliM4_BlueMarine", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] Debug", "DZBR_Expansion_BenelliM4_FB_Bug", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBK", "DZBR_Expansion_BenelliM4_FB_Reward_White_Black", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WO", "DZBR_Expansion_BenelliM4_FB_Reward_White_Orange", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WBL", "DZBR_Expansion_BenelliM4_FB_Reward_White_Blue", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WR", "DZBR_Expansion_BenelliM4_FB_Reward_White_Red", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_WG", "DZBR_Expansion_BenelliM4_FB_Reward_White_Grey", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BO", "DZBR_Expansion_BenelliM4_FB_Reward_Black_Orange", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BB", "DZBR_Expansion_BenelliM4_FB_Reward_Black_Blue", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BR", "DZBR_Expansion_BenelliM4_FB_Reward_Black_Red", Expansion_BenelliM4_Base, "todo_skins"));
+        m_Skins.Insert(new SkinMap("[Gun] FB_BG", "DZBR_Expansion_BenelliM4_FB_Reward_Black_Grey", Expansion_BenelliM4_Base, "todo_skins"));
 
         Print(m_Skins);
     }
