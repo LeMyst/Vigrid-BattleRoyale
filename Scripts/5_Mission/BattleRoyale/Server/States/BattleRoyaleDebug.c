@@ -133,12 +133,13 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		if(m_ReadyList.Find(player) != -1)
 			return;
 
+		m_ReadyList.Insert( player );
+
 		//this is here because we don't want someone mass spamming all players by spamming F1
 		int count = GetReadyCount();
 		int max = GetPlayers().Count();
 		MessagePlayers("Player readied up. (" + count.ToString() + "/" + max.ToString() + " players)");
 
-		m_ReadyList.Insert( player );
 	}
 	override void RemovePlayer(PlayerBase player)
 	{

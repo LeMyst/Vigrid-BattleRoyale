@@ -16,7 +16,7 @@ class cfgWeapons
 	class Glock19;
 	class DZBR_Glock19_Base: Glock19
 	{
-		scope=0;
+		scope=2;
 		hiddenSelections[]=
 		{
 			"zbytek"

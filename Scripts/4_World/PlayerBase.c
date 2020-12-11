@@ -125,8 +125,8 @@ modded class PlayerBase
 		//GetStatStomachWater().Set(250);
 		
 		// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
-		GetStatWater().Set(5000);
-		GetStatEnergy().Set(5000);
+		GetStatWater().Set(4500);
+		GetStatEnergy().Set(4500);
 		// is get max an good idea?
 		// player.GetStatWater().Set(player.GetStatWater().GetMax());
 		// player.GetStatEnergy().Set(player.GetStatEnergy().GetMax());
@@ -136,8 +136,8 @@ modded class PlayerBase
 		//player.GetStatTemperature().Set(37.4);
 		
 		// BURNING_TRESHOLD = 199 -> 100 should be fine
-		GetStatHeatComfort().Set(100);
-		GetStatHeatBuffer().Set(GetStatHeatBuffer().GetMax()); //max heat buffer
+		//GetStatHeatComfort().Set(100); //no temperature flashing
+		GetStatHeatBuffer().Set(25); //give players a + by default
 		
 		// seems unused
 		// player.GetStatHeatIsolation().Set(100);

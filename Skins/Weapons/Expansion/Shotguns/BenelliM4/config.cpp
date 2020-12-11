@@ -16,7 +16,7 @@ class cfgWeapons
 	class Expansion_BenelliM4;
 	class DZBR_Expansion_BenelliM4_Base: Expansion_BenelliM4
 	{
-		scope=0;
+		scope=2;
 		hiddenSelections[]=
 		{
 			"camo"

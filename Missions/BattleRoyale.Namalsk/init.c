@@ -128,61 +128,7 @@ class CustomMission: MissionServer
 
 	override void StartingEquipSetup( PlayerBase player, bool clothesChosen )
 	{
-		if ( !GetExpansionSettings().GetSpawn().StartingClothing.EnableCustomClothing )
-		{
-			EntityAI itemClothing;
-			EntityAI itemEnt;
-			ItemBase itemBs;
-			float rand;
-			
-			// top
-			itemClothing = player.FindAttachmentBySlotName( "Body" );
-			if ( itemClothing )
-			{
-				SetRandomHealth( itemClothing );
-
-				itemEnt = itemClothing.GetInventory().CreateInInventory( "Rag" );
-				if ( Class.CastTo( itemBs, itemEnt ) )
-					itemBs.SetQuantity( 4 );
-				player.SetQuickBarEntityShortcut( itemEnt, 0 );
-
-				SetRandomHealth( itemEnt );
-				
-				itemEnt = itemClothing.GetInventory().CreateInInventory( "RoadFlare" );
-				SetRandomHealth( itemEnt );
-				itemEnt = itemClothing.GetInventory().CreateInInventory( "RoadFlare" );
-				SetRandomHealth( itemEnt );
-				player.SetQuickBarEntityShortcut( itemEnt, 1 );
-			}
-
-			// pants
-			itemClothing = player.FindAttachmentBySlotName( "Legs" );
-			if ( itemClothing )
-			{
-				SetRandomHealth( itemClothing );
-
-				itemEnt = itemClothing.GetInventory().CreateInInventory( "Heatpack" );
-				SetRandomHealth( itemEnt );
-
-				int throwDice = Math.RandomInt( 0, 2 );
-				if ( throwDice == 0 )
-					itemEnt = itemClothing.GetInventory().CreateInInventory( "dzn_tool_watch" );
-				else
-					itemEnt = itemClothing.GetInventory().CreateInInventory( "dzn_tool_watch2" );
-				player.SetQuickBarEntityShortcut( itemEnt, 2 );
-			}
-
-			// shoes
-			itemClothing = player.FindAttachmentBySlotName( "Feet" );
-			if ( itemClothing )
-			{
-				SetRandomHealth( itemClothing );
-			}
-
-			// bump fresh spawn water and energy values (to compensate for the frozen food and harder-to-get wells)
-			player.GetStatWater().Set( 900 );
-			player.GetStatEnergy().Set( 1100 );
-		}
+		//BR sets starting gear itself
 	}
 };
   

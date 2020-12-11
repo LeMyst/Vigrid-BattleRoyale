@@ -97,9 +97,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
             }
         }
 
-        //remove any bugged items
-        process_player.RemoveAllItems();
-
         //if we failed to create an entity in their inventory, then we try it again... xd
         for(int i = 0; i < try_again.Count(); i++)
         {
