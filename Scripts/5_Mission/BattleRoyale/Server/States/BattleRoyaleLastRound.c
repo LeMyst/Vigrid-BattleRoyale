@@ -12,6 +12,9 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     bool b_IsZoneLocked;
 
+	protected ref Timer m_FinalZoneLockTimer;
+	protected ref array<ref Timer> m_MessageTimers;
+
 
     void BattleRoyaleLastRound(ref BattleRoyaleState previous_state)
 	{
@@ -28,6 +31,8 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		f_Damage = m_GameSettings.zone_damage_delta;
 		b_DoZoneDamage = m_GameSettings.enable_zone_damage;
         b_IsZoneLocked = false;
+
+		m_MessageTimers = new array<ref Timer>;
     }
 
     override void Activate()
@@ -44,14 +49,14 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 			min = lock_notif_min[i];
 			val = time_till_lock - (min*60*1000);
 			if(val > 0)
-				m_CallQueue.CallLater(this.NotifyTimeToEndMinutes, val, false, min);
+				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeToEndMinutes", new Param1<int>( min ), false) ); //we need to store the object in case it's automatically deconstructed ?
 		}
 		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
 			sec = lock_notif_sec[i];
 			val = time_till_lock - (sec*1000);
 			if(val > 0)
-				m_CallQueue.CallLater(this.NotifyTimeToEndSeconds, val, false, sec); //30 seconds until zone locks
+				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeToEndSeconds", new Param1<int>( sec ), false) ); //we need to store the object in case it's automatically deconstructed ?
 		}
 
 
@@ -59,8 +64,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
 		//lock zone event
-		m_CallQueue.CallLater(this.LockFinalZone, time_till_lock); //set timer to lock new zone after X seconds
-
+		m_FinalZoneLockTimer = AddTimer( time_till_lock / 1000.0, this, "LockFinalZone", NULL, false);
 
         //send play area to clients
 		ref BattleRoyalePlayArea m_PreviousArea = NULL;
@@ -77,6 +81,10 @@ class BattleRoyaleLastRound extends BattleRoyaleState
     }
     override void Deactivate()
 	{
+		m_FinalZoneLockTimer.Stop();
+		for(int i = 0; i < m_MessageTimers.Count(); i++)
+			m_MessageTimers[i].Stop();
+			
 		//we just deactivated this round (players not yet transfered from previous state)
 		super.Deactivate();
 	}

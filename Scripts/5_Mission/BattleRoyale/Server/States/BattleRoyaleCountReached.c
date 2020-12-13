@@ -1,6 +1,7 @@
 class BattleRoyaleCountReached extends BattleRoyaleDebugState
 {
     protected int i_TimeToStart;
+    protected ref Timer m_StartTimer;
     
     void BattleRoyaleCountReached()
     {
@@ -32,10 +33,11 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
         //TODO: use string replace and make this string a constant in BattleRoyaleConstants (perhaps a setting eventually)
 
         MessagePlayers("Player count reached! Match is starting in " + i_TimeToStart.ToString() + " " + second + "!");
-        m_CallQueue.CallLater(this.DoStart, i_TimeToStart*1000, false);
+        m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
 	}
 	override void Deactivate()
 	{
+        m_StartTimer.Stop();
 		super.Deactivate();
 	}
     

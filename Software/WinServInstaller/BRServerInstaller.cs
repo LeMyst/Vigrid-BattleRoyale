@@ -108,12 +108,12 @@ namespace WinServInstaller
         {
             string latest_git_for_win = S3.GetLatestKey("server-install/git-for-win");
             S3.WriteToFile("gitforwin.7z", latest_git_for_win);
-            extract_to_folder("writepatcher.7z", "gitforwin");
+            extract_to_folder("gitforwin.7z", "gitforwin");
             Process proc = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "gitforwin/installer.exe"
+                    FileName = "gitforwin\\installer.exe"
                 }
             };
             proc.Start();

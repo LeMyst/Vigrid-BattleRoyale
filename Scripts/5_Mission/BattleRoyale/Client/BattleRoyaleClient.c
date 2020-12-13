@@ -3,8 +3,8 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	protected ref BattleRoyalePlayArea m_CurrentPlayArea;
 	protected ref BattleRoyalePlayArea m_FuturePlayArea;
-	protected ref ScriptCallQueue m_CallQueue;
-	
+	protected ref Timer m_Timer;
+
 	protected int i_Kills; //TODO: this needs to be done differently (most likely)
 	protected bool b_MatchStarted;
 	protected int i_SecondsRemaining;
@@ -23,7 +23,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		b_MatchStarted = false;
 		i_Kills = 0;
 		i_SecondsRemaining = 0;
-		m_CallQueue = new ScriptCallQueue;
+		m_Timer = new Timer;
 
 		m_SpectatorMapEntityData = new map<string, ref BattleRoyaleSpectatorMapEntityData>();
 
@@ -56,7 +56,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 
 		
-		m_CallQueue.CallLater(this.OnSecond, 1000, true); //call onsecond every second
+		m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 	}
 
 
@@ -94,8 +94,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			}
 		}
 		
-
-		m_CallQueue.Tick( delta );
 	}
 
 

@@ -7,8 +7,8 @@ class BattleRoyaleVehicles
     protected float f_DespawnRadius = 500;
 
     protected ref array<ref BattleRoyaleCachedVehicle> m_Vehicles;
-    protected ref ScriptCallQueue m_CallQueue;
-
+    //protected ref ScriptCallQueue m_CallQueue;
+    protected ref Timer m_Timer;
 
     protected ref BattleRoyaleVehicleData m_SettingsData;
 
@@ -30,12 +30,14 @@ class BattleRoyaleVehicles
         Print(f_DespawnRadius);
 
         m_Vehicles = new array<ref BattleRoyaleCachedVehicle>();
-        m_CallQueue = new ScriptCallQueue;
+        //m_CallQueue = new ScriptCallQueue;
+        m_Timer = new Timer;
 
         m_SettingsData = BattleRoyaleVehicleData.Cast( BattleRoyaleConfig.GetConfig().GetConfig("VehicleData") );
 
-        m_CallQueue.CallLater( this.OnTick, i_TickTime, true); //tick every second
-        
+        //m_CallQueue.CallLater( this.OnTick, i_TickTime, true); //tick every second
+        m_Timer.Run( i_TickTime / 1000.0, this, "OnTick", NULL, true);
+
         b_IsBusy = false;
         b_IsReady = false;
         b_Enabled = false;
@@ -44,10 +46,10 @@ class BattleRoyaleVehicles
 
     void Update(float delta)
     {
-        if(b_Enabled && b_IsReady)
-        {
-            m_CallQueue.Tick(delta);
-        }
+        //if(b_Enabled && b_IsReady)
+        //{
+            //m_CallQueue.Tick(delta);
+        //}
     }
 
     
@@ -176,10 +178,13 @@ class BattleRoyaleVehicles
 
     void OnTick()
     {
-        if(!b_IsBusy)
+        if(b_Enabled && b_IsReady)
         {
-            b_IsBusy = true;
-            GetGame().GameScript.Call(this, "ProcessVehicles", NULL); //spin up thread
+            if(!b_IsBusy)
+            {
+                b_IsBusy = true;
+                GetGame().GameScript.Call(this, "ProcessVehicles", NULL); //spin up thread
+            }
         }
     }
 

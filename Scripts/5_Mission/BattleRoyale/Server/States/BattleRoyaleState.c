@@ -1,9 +1,11 @@
-class BattleRoyaleState {
+class BattleRoyaleState extends Timeable {
 	
 	protected ref array<PlayerBase> m_Players;
 	protected bool b_IsActive;
-	protected ref ScriptCallQueue m_CallQueue;
 	protected bool b_IsPaused;
+
+	
+	
 
 	string GetName()
 	{
@@ -13,14 +15,15 @@ class BattleRoyaleState {
 	void BattleRoyaleState()
 	{		
 		m_Players = new array<PlayerBase>();
-		m_CallQueue = new ScriptCallQueue;
+		
+		
 		b_IsActive = false;
 		b_IsPaused = false;
 	}
 
 	void Update(float timeslice)
 	{
-		m_CallQueue.Tick(timeslice);
+		
 	}
 	
 	//state controls
@@ -32,6 +35,10 @@ class BattleRoyaleState {
 	void Deactivate()
 	{
 		//Note: this is called BEFORE players are removed
+
+		//--- stop all repeating timers
+		StopTimers();
+
 		b_IsActive = false; 
 	}
 	bool IsActive()

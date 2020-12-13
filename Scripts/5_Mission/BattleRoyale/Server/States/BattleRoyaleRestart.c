@@ -1,11 +1,12 @@
 class BattleRoyaleRestart extends BattleRoyaleState
 {
+	protected ref Timer m_ShutdownTimer;
 	override void Activate()
 	{
 		super.Activate();
         Print("[Restart State] Restarting!");
 		
-		m_CallQueue.CallLater(this.Shutdown, 10000, false);
+		m_ShutdownTimer = AddTimer(10.0, this, "Shutdown", NULL, false);
 	}
 	override string GetName()
 	{
@@ -14,6 +15,7 @@ class BattleRoyaleRestart extends BattleRoyaleState
 	override void Deactivate()
 	{
 		Error("RESTART STATE WAS DEACTIVATED!");
+		m_ShutdownTimer.Stop();
 		super.Deactivate();
 	}
 	
