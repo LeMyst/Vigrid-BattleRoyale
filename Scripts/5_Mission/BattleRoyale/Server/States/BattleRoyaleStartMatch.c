@@ -39,10 +39,10 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         int max_time = i_TimeToUnlock - 1;
         for(int i = max_time;i > 0;i--)
         {
-            m_MessageTimers.Insert( Addtimer(i, this, "MessageUnlock", new Param1<int>(i_TimeToUnlock - i), false) );
+            m_MessageTimers.Insert( AddTimer(i, this, "MessageUnlock", new Param1<int>(i_TimeToUnlock - i), false) );
         }
 
-        m_UnlockTimer = Addtimer(i_TimeToUnlock, this, "UnlockPlayers", NULL, false);
+        m_UnlockTimer = AddTimer(i_TimeToUnlock, this, "UnlockPlayers", NULL, false);
 
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 

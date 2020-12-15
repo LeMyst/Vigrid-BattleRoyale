@@ -18,7 +18,7 @@ class Timeable {
         m_Timer.Run( duration, obj, fn_name, params, loop );
         if(loop)
         {
-            m_Timers.Add( m_Timer );
+            m_Timers.Insert( m_Timer );
         }
         return m_Timer;
     }
@@ -30,6 +30,7 @@ class Timeable {
             return false;
 
         m_Timers.Remove(index);
+        return true;
     }
 
     void StopTimers()

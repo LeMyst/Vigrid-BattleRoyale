@@ -95,7 +95,7 @@ class BattleRoyaleRound extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
 		//lock zone event
-		m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LocknewZone", NULL, false);
+		m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LockNewZone", NULL, false);
 
 		//--- notification message timers
 		for(i = 0; i < lock_notif_min.Count();i++)
@@ -114,7 +114,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		}
 
 		//end state event
-		m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeup", NULL, false);
+		m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
 
 		//send play area to clients
 		ref BattleRoyalePlayArea m_PreviousArea = NULL;

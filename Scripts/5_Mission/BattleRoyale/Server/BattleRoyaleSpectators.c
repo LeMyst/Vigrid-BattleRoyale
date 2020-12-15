@@ -1,7 +1,6 @@
 class BattleRoyaleSpectators
 {
     protected ref array<PlayerBase> m_Players;
-    //protected ref ScriptCallQueue m_CallQueue;
     protected ref Timer m_Timer;
     protected ref array<string> a_AllowedSteamIds;
     protected bool b_AllowAllSpectators;
@@ -9,7 +8,6 @@ class BattleRoyaleSpectators
     void BattleRoyaleSpectators()
     {
         m_Players = new array<PlayerBase>();
-        //m_CallQueue = new ScriptCallQueue;
         m_Timer = new Timer;
         
         a_AllowedSteamIds = BattleRoyaleConfig.GetConfig().GetGameData().allowed_spectate_steamid64;
@@ -71,7 +69,6 @@ class BattleRoyaleSpectators
     }
     void Update(float delta)
     {
-        //m_CallQueue.Tick( delta );
     }
     void OnPlayerTick(PlayerBase player, float delta)
     {

@@ -10,7 +10,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	int i_NumRounds;
 	
 	protected ref MatchData match_data;
-	//protected ref ScriptCallQueue m_CallQueue;
 	protected ref Timer m_Timer;
 
 	
@@ -27,7 +26,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//update our banlist
 		BattleRoyaleBans.GetBans().WriteBanlist();
 
-		//m_CallQueue = new ScriptCallQueue;
 		m_Timer = new Timer;
 
 		match_data = new MatchData;
@@ -84,16 +82,19 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		i_CurrentStateIndex = 0;
 		GetCurrentState().Activate();
 
-		RandomizeServerEnvironment();
+		string worldName = "empty";
+		GetGame().GetWorldName( worldName );
+		if ( worldName != "namalsk" )
+			RandomizeServerEnvironment();
 
 		//--- this will halt the server until we successfully register is as unlocked in the DB
 		if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
 		{
 			Print("Requesting Server Startup...")
 			ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
-			while(m_ServerData.locked != 0)
+			while(!m_ServerData || m_ServerData.locked != 0)
 			{
-				Print("Server state is locked! Unlocking...");
+				Print("Invalid Server State on Startup...");
 				BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
 				m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
 			}
@@ -185,7 +186,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			if(m_SpectatorSystem.CanSpectate( player ))
 			{
 				//it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
-				//m_CallQueue.CallLater( m_SpectatorSystem.AddPlayer, 15000, false, player );
 				m_Timer.Run( 15.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
 				//m_SpectatorSystem.AddPlayer( player );
 			}
@@ -198,8 +198,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
 				
 				
-				//m_CallQueue.CallLater( GetGame().DisconnectPlayer, 15000, false, player.GetIdentity() );
-				m_Timer.Run( 15.0, GetGame(), "DisconnectPlayer", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
+				m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 			}
 			
 			
@@ -217,6 +216,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		GetCurrentState().AddPlayer(player);
 		m_LootSystem.AddPlayer( player );
+	}
+	
+	void Disconnect(PlayerIdentity identity)
+	{
+		GetGame().DisconnectPlayer( identity ); //can't directly call disconnectplayer with timer, so we use this method
 	}
 
 	void OnPlayerDisconnected(PlayerBase player, PlayerIdentity identity)
@@ -443,6 +447,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	//TODO: This will need a rework!
 	void RandomizeServerEnvironment()
 	{
+		Print("BattleRoyale: Randomizing Environment!");
 		//NOTE: this is all legacy, we should find a better way to do this
 		int year = 2018;
 		int month = 12;

@@ -192,7 +192,7 @@ namespace WinServInstaller
 
 
         //--- updating template files
-        public void UpdateSettings(string Server_Path,string ip, string query_port, string mission_name, string unlock_skins, string use_api, string api_endpoint, string api_key, string bans_api_key)
+        public void UpdateSettings(string Server_Path,string ip, string port, string query_port, string mission_name, string unlock_skins, string use_api, string api_endpoint, string api_key, string bans_api_key)
         {
             if (Server_Path.EndsWith("/") || Server_Path.EndsWith("\\"))
                 Server_Path = Server_Path.TrimEnd('/', '\\');
@@ -201,6 +201,7 @@ namespace WinServInstaller
 
             //--- server_settings
             string file_contents = File.ReadAllText(settings_dir + "\\server_settings.json");
+            file_contents = file_contents.Replace("##SERVER_PORT##", port);
             file_contents = file_contents.Replace("##QUERY_PORT##", query_port);
             file_contents = file_contents.Replace("##IP_ADDR##", ip);
             File.WriteAllText(settings_dir + "\\server_settings.json", file_contents);

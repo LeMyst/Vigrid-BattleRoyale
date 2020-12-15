@@ -110,7 +110,7 @@ namespace WinServInstaller
             installer.UpdateConfig(settings.SERVER_PATH, settings.SERVER_NAME, settings.SERVER_PASSWORD, settings.PASSWORD_ADMIN, settings.MAX_PLAYERS, settings.STEAM_QUERY_PORT, settings.LIGHTING_CONFIG_VALUE, settings.WORLD_NAME);
             installer.UpdateRunBatch(settings.SERVER_PATH, settings.SERVER_NAME, settings.EXTRA_MODS, settings.SERVER_PORT);
             installer.UpdateUpdateBatch(settings.SERVER_PATH, settings.STEAMCMD_PATH, settings.WORLD_NAME, settings.GIT_REPO_PATH, settings.CF_WORKSHOP_ID, settings.COT_WORKSHOP_ID, settings.EXP_WORKSHOP_ID, settings.EXP_LIC_WORKSHOP_ID, settings.EXP_VEH_WORKSHOP_ID, settings.EXP_COR_WORKSHOP_ID, settings.BR_WORKSHOP_ID, settings.EXTRA_MODS, settings.GIT_INSTALL_PATH);
-            installer.UpdateSettings(settings.SERVER_PATH, settings.IP_ADDR, settings.STEAM_QUERY_PORT, settings.WORLD_NAME, settings.UNLOCK_SKINS, settings.USE_API, settings.API_ENDPOINT, settings.API_KEY, settings.BANS_API_KEY);
+            installer.UpdateSettings(settings.SERVER_PATH, settings.IP_ADDR, settings.SERVER_PORT, settings.STEAM_QUERY_PORT, settings.WORLD_NAME, settings.UNLOCK_SKINS, settings.USE_API, settings.API_ENDPOINT, settings.API_KEY, settings.BANS_API_KEY);
 
             Console.WriteLine("Running Update. Please wait...");
             installer.RunUpdate(settings.SERVER_PATH);

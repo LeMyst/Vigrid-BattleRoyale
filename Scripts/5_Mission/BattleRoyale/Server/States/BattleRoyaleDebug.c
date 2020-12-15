@@ -51,8 +51,6 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		//these loop & will be automatically cleaned up on Deactivation
 		AddTimer(i_TimeBetweenMessages, this, "MessageWaiting", NULL, true);
 		AddTimer(2.0, this, "CheckReadyState", NULL, true);
-		//m_CallQueue.CallLater(this.MessageWaiting, i_TimeBetweenMessages*1000, true);
-		//m_CallQueue.CallLater(this.CheckReadyState, 2000, true);
 		super.Activate();
 
 
@@ -61,8 +59,6 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 	}
 	override void Deactivate()
 	{
-		//m_CallQueue.Remove(this.MessageWaiting);
-		//m_CallQueue.Remove(this.CheckReadyState);
 		super.Deactivate();
 	}
 	

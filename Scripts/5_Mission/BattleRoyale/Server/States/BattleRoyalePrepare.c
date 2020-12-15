@@ -84,6 +84,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         //remove all other items
         process_player.RemoveAllItems();
+        process_player.RemoveAllItems();
+        process_player.RemoveAllItems();
+        process_player.RemoveAllItems();
 
         EntityAI entity;
         ref array<string> try_again = new array<string>();
