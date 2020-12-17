@@ -84,6 +84,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		string worldName = "empty";
 		GetGame().GetWorldName( worldName );
+		worldName.ToLower();
 		if ( worldName != "namalsk" )
 			RandomizeServerEnvironment();
 

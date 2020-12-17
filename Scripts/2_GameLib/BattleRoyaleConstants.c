@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.s_namalsk_2";
+static const string BATTLEROYALE_VERSION = "0.1.t_namalsk_0";
 
 //--- default web endpoint
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
@@ -29,6 +29,7 @@ static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
 
 //--- dummy mission
+//--- perhaps this could be pulled from the mod config? (or dynamically generated? randomized?)
 static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "Namalsk"; //ChernarusPlus
 
 
