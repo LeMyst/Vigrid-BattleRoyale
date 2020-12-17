@@ -133,6 +133,7 @@ class BattleRoyaleSpectatorPlayerWidget
                 UpdateStats();
             }
         }
+        //TODO: need another sanity check here (some elements get gliched and stay on the Hud (I think because of our new render distance settings in config))
     }
     void UpdateStats()
     {
