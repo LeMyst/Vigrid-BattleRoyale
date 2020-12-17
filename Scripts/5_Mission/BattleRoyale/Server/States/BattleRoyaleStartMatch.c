@@ -6,6 +6,10 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     
     protected ref array<PlayerBase> m_PlayerList;
 
+    protected ref array<ref Timer> m_MessageTimers;
+    protected ref Timer m_UnlockTimer;
+    protected ref Timer m_ZoneStartTimer;
+
     void BattleRoyaleStartMatch()
     {
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
@@ -18,6 +22,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         b_IsGameplay = false;
         
         m_PlayerList = new array<PlayerBase>;
+
+        m_MessageTimers = new array<ref Timer>;
     }
     override string GetName()
 	{
@@ -33,17 +39,24 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         int max_time = i_TimeToUnlock - 1;
         for(int i = max_time;i > 0;i--)
         {
-            m_CallQueue.CallLater(this.MessageUnlock, i*1000, false, i_TimeToUnlock - i); //30 seconds until zone locks
+            m_MessageTimers.Insert( AddTimer(i, this, "MessageUnlock", new Param1<int>(i_TimeToUnlock - i), false) );
         }
-        m_CallQueue.CallLater(this.UnlockPlayers, i_TimeToUnlock*1000, false); //delay before we unlock player input
-        
-        m_CallQueue.CallLater(this.StartZoning, i_FirstRoundDelay*1000, false); //delay before first zone appears
-        
+
+        m_UnlockTimer = AddTimer(i_TimeToUnlock, this, "UnlockPlayers", NULL, false);
+
+        m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
+
         //timer before first zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true); 
 	}
 	override void Deactivate()
 	{
+        //deactivate all one-time timers
+        m_UnlockTimer.Stop();
+        m_ZoneStartTimer.Stop();
+        for(int i = 0; i < m_MessageTimers.Count(); i++)
+            m_MessageTimers[i].Stop();
+
 		super.Deactivate();
 	}
     
@@ -52,9 +65,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         if(GetPlayers().Count() <= 1 && IsActive())
 		{
 			//clean call queue?
-            m_CallQueue.Remove(this.StartZoning);
-            m_CallQueue.Remove(this.UnlockPlayers);
-            m_CallQueue.Remove(this.MessageUnlock);
 			Deactivate();
 		}
 		return super.IsComplete();
