@@ -13,152 +13,116 @@ namespace WinServInstaller
         static void Main(string[] args)
         {
             Console.Title = "DayZBR Windows Server Installer";
-            if (!GetYN("Is SteamCMD installed already?"))
-                return;
-            if (!GetYN("Is the Git repository cloned?"))
-                return;
-            if (!GetYN("Is the steam user already authenticated through SteamCMD?"))
-                return;
-
-            string steamcmd_path = GetPath("Enter the directory of your steamcmd.exe install").TrimEnd('\\'); ;
-            string gitlab_path = GetPath("Enter the directory of your gitlab repository").TrimEnd('\\'); ;
-
-            string install_path = GetPath("Enter the directory to install the server into").TrimEnd('\\');
-
-            string server_name = "[DayZ] Battle Royale " + GetInput("Enter the subname of the server");
-            int port = -1;
-            string server_port;
-            do
-            {
-                server_port = GetInput("Enter the port of the server");
-            } while (!int.TryParse(server_port, out port));
-            int query_port = -1;
-            do
-            {
-                server_port = GetInput("Enter the query port of the server");
-            } while (!int.TryParse(server_port, out query_port));
-
-            string git_install_path;
-            do
-            {
-                string path = GetInput("Enter your git install path (leave blank for default)");
-                if(path.Trim() != "")
-                {
-                    git_install_path = path;
-                }
-                else
-                {
-                    git_install_path = @"C:\Program Files\Git\bin";
-                }
-            } while (!Directory.Exists(git_install_path));
-            string server_ip;
-            string path = GetInput("Enter your server IP (leave blank for default)");
-            if (path.Trim() != "")
-            {
-                server_ip = path;
-            }
+            //read s3 config file
+            string access_key, secret_key, service;
+            string[] data_lines;
+            if (File.Exists("s3cfg.ini"))
+                data_lines = File.ReadAllLines("s3cfg.ini");
             else
+                data_lines = new string[] { };
+
+            if (data_lines.Length > 0)
+                access_key = data_lines[0].Trim();
+            else
+                access_key = GetInput("Enter S3 Access Key").Trim();
+            if (data_lines.Length > 1)
+                secret_key = data_lines[1].Trim();
+            else
+                secret_key = GetInput("Enter S3 Secret Key").Trim();
+            if (data_lines.Length > 2)
+                service = data_lines[2].Trim();
+            else
+                service = GetInput("Enter Service URL (Leave blank for VULTR)").Trim();
+            //make object store controller
+            ObjectStore s3;
+            if (service == "")
+                s3 = new ObjectStore(access_key, secret_key);
+            else
+                s3 = new ObjectStore(access_key, secret_key, service);
+            //test and write config
+            try
             {
-                server_ip = "127.0.0.1";
+                Console.Write("Testing S3 Connection...");
+                s3.TestConnection();
+                if (access_key != "")
+                {
+                    List<string> lines = new List<string>();
+                    lines.Add(access_key);
+                    if(secret_key != "")
+                    {
+                        lines.Add(secret_key);
+                        if(service != "")
+                        {
+                            lines.Add(service);
+                        }
+                    }
+                    File.WriteAllLines("s3cfg.ini", lines);
+                }
+                Console.WriteLine("Pass");
+            } catch(Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                goto end;
             }
 
-            string APIKey = GetInput("Enter your DayZBR API Key");
+            //set our bucket
+            s3.SetBucket("dayzbr");
 
-            string steam_user = GetInput("Enter steam username");
-            string steam_pass = GetInput("Enter steam password");
+            //initializes settings
+            ServerInstallSettings settings = new ServerInstallSettings(s3);
 
-            string run_dayzbr_bat = Properties.Resources.RUN_DAYZBR
-                .Replace("##SERVERPATH##", install_path)
-                .Replace("##SERVERNAME##", server_name)
-                .Replace("##PORT##", port.ToString());
-            File.WriteAllText(install_path + "\\RUN_DAYZBR.bat", run_dayzbr_bat);
+            //create server installer object
+            BRServerInstaller installer = new BRServerInstaller(s3);
 
-            string update_server = Properties.Resources.UPDATE_SERVER
-                .Replace("##GITINSTALLPATH##", git_install_path)
-                .Replace("##STEAMCMD##", steamcmd_path)
-                .Replace("##SERVERPATH##", install_path)
-                .Replace("##GITLABPATH##", gitlab_path)
-                .Replace("##STEAMUSER##", steam_user)
-                .Replace("##STEAMPASS##", steam_pass);
-            File.WriteAllText(install_path + "\\UPDATE_SERVER.bat", update_server);
-
-            if (!Directory.Exists($"{install_path}\\profiles"))
-                Directory.CreateDirectory($"{install_path}\\profiles");
-
-            Console.WriteLine("");
-
-            //--- TODO: handle JSON configs in the profile folder (done in the UPDATE_SERVER.bat file as it needs to run every restart)
-            var process = new Process();
-            var startinfo = new ProcessStartInfo("cmd.exe", "/C \"" + install_path + "\\UPDATE_SERVER.bat\"");
-            startinfo.RedirectStandardOutput = true;
-            startinfo.RedirectStandardError = true;
-            startinfo.UseShellExecute = false;
-            process.StartInfo = startinfo;
-            process.ErrorDataReceived += (sender, outp) => Console.WriteLine(outp.Data);
-            process.OutputDataReceived += (sender, outp) => Console.WriteLine(outp.Data); // do whatever processing you need to do in this handler
-            process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
-
-            Console.WriteLine("");
-            Console.WriteLine("");
-            Console.WriteLine("Install Complete --- Configuring...");
-            Console.WriteLine("");
-            Console.WriteLine("");
-
-            string serverDZ = File.ReadAllText($"{install_path}\\serverDZ.cfg");
-
-            if (!Directory.Exists($"{install_path}\\profiles"))
-                Directory.CreateDirectory($"{install_path}\\profiles");
-
-            //TODO: pull configs via git
-
-            //--- TODO: update serverDZ.cfg
-            /*
-             * ======== new data ====
-             
-                steamQueryPort = 2403;
-                networkRangeClose = 20;			// network bubble distance for spawn of close objects with items in them (f.i. backpacks), set in meters, default value if not set is 20
-                networkRangeNear = 150;			// network bubble distance for spawn (despawn +10%) of near inventory items objects, set in meters, default value if not set is 150
-                networkRangeFar = 1000;			// network bubble distance for spawn (despawn +10%) of far objects (other than inventory items), set in meters, default value if not set is 1000
-                networkRangeDistantEffect = 4000; // network bubble distance for spawn of effects (currently only sound effects), set in meters, default value if not set is 4000
-
-                defaultVisibility=1375;			// highest terrain render distance on server (if higher than "viewDistance=" in DayZ client profile, clientside parameter applies)
-                defaultObjectViewDistance=1375;	// highest object render distance on server (if higher than "preferredObjectViewDistance=" in DayZ client profile, clientside parameter applies)
-
-
-            ==== replace data 
-                hostname = "[Beta] DayZ Battle Royale - Chicago #2";  // Server name
-                password = "PASSWORD HERE";              // Password to connect to the server
-                passwordAdmin = "PASSWORD HERE";         // Password to become a server admin
-
-                instanceId = 2;             // DayZ server instance id, to identify the number of instances per box and their storage folders with persistence files
-                class Missions
-                {
-                    class DayZ
-                    {
-                        template="BattleRoyale.ChernarusPlusGloom";
-                    };
-                };
-             
-             */
-
-
-            //handle unique server BR configs
-            if (!Directory.Exists($"{install_path}\\profiles\\BattleRoyale"))
-                Directory.CreateDirectory($"{install_path}\\profiles\\BattleRoyale");
+            //--- step 0: install dependencies
+            if (!File.Exists(settings.GIT_INSTALL_PATH + "\\git.exe"))
+            {
+                Console.WriteLine("Please follow the installer instructions to install Git for Windows...");
+                Console.WriteLine("!!!IMPORTANT!!! - If you choose an alternative installation path, you need to EXIT this server installer NOW. BEFORE you finish installing Git!!");
+                installer.InstallGitForWindows();
+            }
+            //--- step 1: steamcmd & git setup
+            Console.WriteLine("Installing SteamCMD. Please wait...");
+            installer.InstallSteamCMD(settings.STEAMCMD_PATH); //install & firsttime setup of steamcmd
             
-            File.WriteAllText($"{install_path}\\profiles\\BattleRoyale\\api_settings.json", Properties.Resources.API_Settings.Replace("##APIKEY##", APIKey));
-            File.WriteAllText($"{install_path}\\profiles\\BattleRoyale\\server_settings.json", Properties.Resources.Server_Settings.Replace("##IPADDR##", server_ip).Replace("##QUERYPORT##", query_port.ToString());
+            Console.WriteLine("If prompted, please enter your steamguard code into SteamCMD");
+            Console.WriteLine("Waiting for user to complete input in SteamCMD...");
+            installer.VerifySteamLogin(settings.STEAMCMD_PATH, settings.STEAM_USER, settings.STEAM_PASS); //login verification (steamguard)
 
+            Console.WriteLine("Cloning Git Repo. Please wait...");
+            installer.CloneGitRepo(settings.GIT_INSTALL_PATH, settings.GIT_REPO_PATH, settings.GIT_BRANCH_NAME); //clone and checkout branch
 
+            //--- step 2: blank dayz server install
+            Console.WriteLine("Installing DayZ Server. Please wait...");
+            installer.InstallServer(settings.STEAMCMD_PATH, settings.STEAM_USER, settings.STEAM_PASS, settings.SERVER_PATH, "223350");
 
+            //--- step 3: install write patcher application & batch file
+            Console.WriteLine("Installing DayZ Server Application Patcher. Please wait...");
+            installer.InstallWritePatcher(settings.SERVER_PATH);
+
+            //--- step 4: install template files 
+            Console.WriteLine("Installing BR Template Files. Please wait...");
+            installer.InstallServerConfig(settings.SERVER_PATH);
+            installer.InstallBatchTemplates(settings.SERVER_PATH);
+            installer.InstallSettings(settings.SERVER_PATH);
+
+            //--- step 5: update template files
+            installer.UpdateConfig(settings.SERVER_PATH, settings.SERVER_NAME, settings.SERVER_PASSWORD, settings.PASSWORD_ADMIN, settings.MAX_PLAYERS, settings.STEAM_QUERY_PORT, settings.LIGHTING_CONFIG_VALUE, settings.WORLD_NAME);
+            installer.UpdateRunBatch(settings.SERVER_PATH, settings.SERVER_NAME, settings.EXTRA_MODS, settings.SERVER_PORT);
+            installer.UpdateUpdateBatch(settings.SERVER_PATH, settings.STEAMCMD_PATH, settings.WORLD_NAME, settings.GIT_REPO_PATH, settings.CF_WORKSHOP_ID, settings.COT_WORKSHOP_ID, settings.EXP_WORKSHOP_ID, settings.EXP_LIC_WORKSHOP_ID, settings.EXP_VEH_WORKSHOP_ID, settings.EXP_COR_WORKSHOP_ID, settings.BR_WORKSHOP_ID, settings.EXTRA_MODS, settings.GIT_INSTALL_PATH);
+            installer.UpdateSettings(settings.SERVER_PATH, settings.IP_ADDR, settings.SERVER_PORT, settings.STEAM_QUERY_PORT, settings.WORLD_NAME, settings.UNLOCK_SKINS, settings.USE_API, settings.API_ENDPOINT, settings.API_KEY, settings.BANS_API_KEY);
+
+            Console.WriteLine("Running Update. Please wait...");
+            installer.RunUpdate(settings.SERVER_PATH);
+end: 
             Console.WriteLine("");
             Console.WriteLine("Install Complete! Press Any Key to Quit");
             Console.ReadKey();
         }
-        static bool GetYN(string question)
+
+
+
+        public static bool GetYN(string question)
         {
             Console.Write(question);
             Console.Write("(y/N): ");
@@ -170,13 +134,13 @@ namespace WinServInstaller
             }
             return false;
         }
-        static string GetInput(string message)
+        public static string GetInput(string message)
         {
             Console.Write(message);
             Console.Write(": ");
             return Console.ReadLine();
         }
-        static string GetPath(string message)
+        public static string GetPath(string message)
         {
         retry:
             try

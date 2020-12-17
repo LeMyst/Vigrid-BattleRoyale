@@ -12,6 +12,11 @@ class BattleRoyaleRound extends BattleRoyaleState
 	array<int> lock_notif_min;
 	array<int> lock_notif_sec;
 
+	
+	protected ref array<ref Timer> m_MessageTimers;
+	protected ref Timer m_NewZoneLockTimer;
+	protected ref Timer m_RoundTimeUpTimer;
+
 	//If this is NULL, we assume previous state is debug 
 	//a battle royale round represents a playing state with a play area
 	/*
@@ -34,6 +39,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 		i_NumZones = m_GameSettings.num_zones;
 
 		b_DoZoneDamage = m_GameSettings.enable_zone_damage;
+
+		m_MessageTimers = new array<ref Timer>;
 
 		Init();
 	}
@@ -73,14 +80,14 @@ class BattleRoyaleRound extends BattleRoyaleState
 			min = lock_notif_min[i];
 			val = time_till_lock - (min*60*1000);
 			if(val > 0)
-				m_CallQueue.CallLater(this.NotifyTimeTillLockMinutes, val, false, min);
+				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockMinutes", new Param1<int>( min ), false) );
 		}
 		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
 			sec = lock_notif_sec[i];
 			val = time_till_lock - (sec*1000);
 			if(val > 0)
-				m_CallQueue.CallLater(this.NotifyTimeTillLockSeconds, val, false, sec); //30 seconds until zone locks
+				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockSeconds", new Param1<int>( sec ), false) );
 		}
 
 
@@ -88,8 +95,7 @@ class BattleRoyaleRound extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
 		//lock zone event
-		m_CallQueue.CallLater(this.LockNewZone, time_till_lock); //set timer to lock new zone after X seconds
-
+		m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LockNewZone", NULL, false);
 
 		//--- notification message timers
 		for(i = 0; i < lock_notif_min.Count();i++)
@@ -97,19 +103,18 @@ class BattleRoyaleRound extends BattleRoyaleState
 			min = lock_notif_min[i];
 			val = time_till_end - (min*60*1000);
 			if(val > 0)
-				m_CallQueue.CallLater(this.NotifyTimeTillNewZoneMinutes, val, false, min);
+				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneMinutes", new Param1<int>( min ), false) );
 		}
 		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
 			sec = lock_notif_sec[i];
 			val = time_till_end - (sec*1000);
 			if(val > 0)
-				m_CallQueue.CallLater(this.NotifyTimeTillNewZoneSeconds, val, false, sec); //30 seconds until zone locks
+				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneSeconds", new Param1<int>( sec ), false) );
 		}
 
 		//end state event
-		m_CallQueue.CallLater(this.OnRoundTimeUp, time_till_end); //set timer to end round after X seconds
-
+		m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
 
 		//send play area to clients
 		ref BattleRoyalePlayArea m_PreviousArea = NULL;
@@ -153,6 +158,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 	}
 	override void Deactivate()
 	{
+		m_NewZoneLockTimer.Stop();
+		m_RoundTimeUpTimer.Stop();
+		for(int i = 0; i < m_MessageTimers.Count(); i++)
+			m_MessageTimers[i].Stop();
 		//we just deactivated this round (players not yet transfered from previous state)
 		super.Deactivate();
 	}
@@ -160,16 +169,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 
-		//when Player count <= 1 -> automatically clean up anything in the CallQueue (removing it) and complete this state
 		if(GetPlayers().Count() <= 1 && IsActive())
 		{
-			//clean call queue?
-			m_CallQueue.Remove(this.OnRoundTimeUp);
-			m_CallQueue.Remove(this.NotifyTimeTillNewZoneSeconds);
-			m_CallQueue.Remove(this.NotifyTimeTillNewZoneMinutes);
-			m_CallQueue.Remove(this.LockNewZone);
-			m_CallQueue.Remove(this.NotifyTimeTillLockSeconds);
-			m_CallQueue.Remove(this.NotifyTimeTillLockMinutes);
 			Deactivate();
 		}
 		return super.IsComplete();

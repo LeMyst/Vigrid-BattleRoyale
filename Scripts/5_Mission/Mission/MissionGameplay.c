@@ -30,6 +30,7 @@ modded class MissionGameplay
 
 			m_BattleRoyaleHud = new BattleRoyaleHud( m_BattleRoyaleHudRootWidget );
 			m_BattleRoyaleHud.ShowHud( true );
+			Print("HUD Initialized");
 		}
 	}
 	
@@ -89,6 +90,7 @@ modded class MissionGameplay
 	override void OnKeyPress(int key)
 	{
 		super.OnKeyPress(key);
+		//Skin selection needs a rework, so we'll come back to this
 		
 		if ( key == KeyCode.KC_SLASH )
 		{
@@ -97,7 +99,7 @@ modded class MissionGameplay
 				SkinSelectionMenu.OpenMenu();
 			}
 		}
-
+	
 		if( key == KeyCode.KC_F1 )
 		{
 		

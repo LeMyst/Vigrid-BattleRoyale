@@ -4,6 +4,8 @@ class BattleRoyaleWin extends BattleRoyaleState
 	PlayerBase winner;
 	bool complete;
 
+	protected ref Timer m_KickTimer;
+
 	void BattleRoyaleWin()
 	{
 		i_SecondsTillKick = 15; //TODO: config this
@@ -52,13 +54,17 @@ class BattleRoyaleWin extends BattleRoyaleState
 		}
 		//TODO: write match data to disk possible for private servers?
 
-		m_CallQueue.CallLater(this.KickWinner, i_SecondsTillKick * 1000, false);
+		m_KickTimer = AddTimer(i_SecondsTillKick, this, "KickWinner", NULL, false);
 	}
 	override string GetName()
 	{
 		return DAYZBR_SM_WIN_NAME;
 	}
-	
+	override void Deactivate()
+	{
+		m_KickTimer.Stop();
+		super.Deactivate();
+	}
 	override bool IsComplete()
 	{
 		if(GetPlayers().Count() == 0 && IsActive())

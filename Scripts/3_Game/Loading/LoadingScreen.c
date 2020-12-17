@@ -11,6 +11,12 @@ modded class LoadingScreen
         result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_4.edds" );
         result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_5.edds" );
         result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_6.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_7.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_8.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_9.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_10.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_11.edds" );
+        result.Insert( BATTLEROYALE_LOADING_SCREENS_PATH + "br_loading_12.edds" );
 
 
 

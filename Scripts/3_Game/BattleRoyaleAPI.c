@@ -61,6 +61,7 @@ class BattleRoyaleAPI {
     }
     bool HasPurchase(string shop_flag)
     {
+        Print("Checking API for purchase flag " + shop_flag);
         if(m_PlayerData)
         {
             return (m_PlayerData.shop_purchases.Find( shop_flag ) != -1);
@@ -71,15 +72,17 @@ class BattleRoyaleAPI {
     //server startup request
     ServerData RequestServerStart()
     {
+        //TODO: this API is getting rebuilt, this method needs to not fail
         BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
         if(!p_ServerSettings)
         {
             Error("BattleRoyaleAPI::RequestServerStart() => ERROR: p_ServerSettings = NULL");
             return NULL;
         }
+        string server_port = p_ServerSettings.port.ToString();
         string query_port = p_ServerSettings.query_port.ToString();
         string ip_address = p_ServerSettings.ip_address;
-        string request = "onstart/" + query_port + "/" + Encode( BATTLEROYALE_VERSION );
+        string request = "onstart/" + query_port + "/" + server_port + "/" + Encode( BATTLEROYALE_VERSION );
         if(ip_address != "127.0.0.1")
         {
             request += "/" + ip_address + "/admin_only"; //admin_only is hard coded into web API

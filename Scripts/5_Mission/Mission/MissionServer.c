@@ -10,6 +10,10 @@ modded class MissionServer
 		m_player.GetInventory().CreateInInventory( "TShirt_White" );
 		m_player.GetInventory().CreateInInventory( "Jeans_Black" );
 		m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
+		for(int i = 0; i < 10; i++)
+		{
+			m_player.GetInventory().CreateInInventory( "dzn_snowball_small" );
+		}
 		
 		StartingEquipSetup(m_player, false);
 	}

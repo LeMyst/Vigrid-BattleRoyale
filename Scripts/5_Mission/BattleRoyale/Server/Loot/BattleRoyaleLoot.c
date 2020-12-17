@@ -3,7 +3,7 @@ class BattleRoyaleLoot
 {
     protected bool b_Enabled;
     protected bool b_IsProcessing;
-    protected ref ScriptCallQueue m_CallQueue;
+    protected ref Timer m_TickTimer;
 
     protected ref array<PlayerBase> m_Players;
     protected ref map<Object, ref BattleRoyaleLootableBuilding> m_LootableBuildings;
@@ -12,12 +12,13 @@ class BattleRoyaleLoot
 
     void BattleRoyaleLoot()
     {
-        m_CallQueue = new ScriptCallQueue;
+        m_TickTimer = new Timer;
+
         m_LootableBuildings = new map<Object, ref BattleRoyaleLootableBuilding>();
         m_Players = new array<PlayerBase>();
         b_IsProcessing = false;
 
-        m_CallQueue.CallLater(this.HandleTick, 500, true);
+        m_TickTimer.Run( 0.5, this, "HandleTick", NULL, true);
 
         string mission_name = BattleRoyaleConfig.GetConfig().GetGameData().mission;
         LootReader.GetReader().ReadAsync( "$CurrentDir:mpmissions\\" + mission_name + "\\mapgroupproto.xml" );
@@ -26,17 +27,13 @@ class BattleRoyaleLoot
     }
     void ~BattleRoyaleLoot()
     {
+        m_TickTimer.Stop();
         delete m_LootableBuildings;
-        delete m_CallQueue;
         delete m_Players;
     }
 
     void Update(float delta)
     {
-        if(b_Enabled)
-        {
-            m_CallQueue.Tick(delta);
-        }
     }
     
     void AddPlayer(PlayerBase player)
@@ -67,6 +64,9 @@ class BattleRoyaleLoot
 
     void HandleTick()
     {
+        if(!b_Enabled)
+            return;
+            
         if(!b_IsProcessing) //this prevents a second thread from spinning up if processloot takes longer than 0.5s
         {
             b_IsProcessing = true;

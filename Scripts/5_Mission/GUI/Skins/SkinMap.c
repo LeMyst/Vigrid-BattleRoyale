@@ -1,37 +1,29 @@
 class SkinMap
 {
-    protected string s_DisplayName;
-    
-    protected string s_PreviewItemClassName;
+    protected string s_DisplayName; 
+
+    protected string s_ItemConfigName;
     protected typename t_ItemBaseClass;
     protected string s_ShopFlag;
 
-    ref array<string> skin_list;
+    protected bool b_Inheritable;
 
-    void SkinMap()
+    void SkinMap(string name, string item_config_name, typename item_base_class, string flag = "", bool can_inherit = true)
     {
-        skin_list = new array<string>();
-
-        s_DisplayName = "UNKNOWN";
-        t_ItemBaseClass = Zucchini;
-        s_PreviewItemClassName = "Zucchini";
-        s_ShopFlag = "do_not_allow_to_be_visible"; //this prevents it from appearing in the shop window
-    }
-    void Init(string name, ref array<string> textures, string item_preview_classname, typename item_base_class, string flag)
-    {
-        skin_list.InsertAll( textures );
         s_DisplayName = name;
+        s_ItemConfigName = item_config_name;
         t_ItemBaseClass = item_base_class;
         s_ShopFlag = flag;
-        s_PreviewItemClassName = item_preview_classname;
+        b_Inheritable = can_inherit;
     }
+
     string GetFlag()
     {
         return s_ShopFlag;
     }
     bool IsValidSkinForEntity(EntityAI item)
     {
-        return item.IsInherited( GetClass() );
+        return ((item.IsInherited(GetClass()) && b_Inheritable) || (item.Type() == GetClass()));
     }
     string GetName()
     {
@@ -39,71 +31,50 @@ class SkinMap
     }
     string GetClassName()
     {
-        return s_PreviewItemClassName;
+        return s_ItemConfigName;
     }
     typename GetClass()
     {
         return t_ItemBaseClass;
     }
-    string GetTexture(int index = 0)
+    bool IsClothing()
     {
-        if(skin_list.Count() <= index)
+        return GetClass().IsInherited( Clothing );
+    }
+/*
+    void ApplyTo(EntityAI item)
+    {
+        int i;
+        ref array<string> values = GetTextures();
+        for(i = 0; i < values.Count(); i++)
         {
-            Print(index);
-            Print(skin_list);
-            Error("Not enough skins for index");
-            return "";
+            item.SetObjectTexture(i, values.Get(i));
         }
-        return skin_list[index];
+        values = GetMaterials();
+        for(i = 0; i < values.Count(); i++)
+        {
+            item.SetObjectMaterial(i, values.Get(i));
+        }
     }
-}
-
-
-class DayZBRTSkinMap extends SkinMap
-{
-    void InitTee(string display_name, string ground_texture, string shirt_texture, string shop_item)
+*/
+    ref array<string> GetTextures()
     {
-        skin_list.Insert( BATTLEROYALE_TSHIRT_SKINS_PATH + ground_texture ); //ground
-        skin_list.Insert( BATTLEROYALE_TSHIRT_SKINS_PATH + shirt_texture ); //male & female
-        t_ItemBaseClass = TShirt_ColorBase;
-        s_PreviewItemClassName = "TShirt_White";
-        s_ShopFlag = shop_item;
-        s_DisplayName = display_name;
+        ref array<string> result = new array<string>;
+        GetGame().ConfigGetTextArray("CfgVehicles " + s_ItemConfigName + " hiddenSelectionsTextures",result);
+        if(result.Count() == 0)
+        {
+            GetGame().ConfigGetTextArray("cfgWeapons " + s_ItemConfigName + " hiddenSelectionsTextures", result); //weapons lol
+        }
+        return result;
     }
-}
-class DayZTSkinMap extends SkinMap
-{
-    void InitTee(string display_name, string ground_texture, string shirt_texture)
+    ref array<string> GetMaterials()
     {
-        skin_list.Insert( DAYZ_TSHIRT_SKINS_PATH + ground_texture ); //ground
-        skin_list.Insert( DAYZ_TSHIRT_SKINS_PATH + shirt_texture ); //male & female
-        t_ItemBaseClass = TShirt_ColorBase;
-        s_PreviewItemClassName = "TShirt_White";
-        s_ShopFlag = ""; //blank allows anyone to use it
-        s_DisplayName = display_name;
-    }
-}
-
-class GunSkinMap extends SkinMap
-{
-    string s_BodyTexture;
-    void GunSkinMap()
-    {
-        s_BodyTexture = "";
-    }
-    override string GetTexture(int index = 0)
-    {
-        return s_BodyTexture;
-    }
-}
-class DayZBRGunSkinMap extends GunSkinMap
-{
-    void InitGun(string display_name, string body_texture, string preview_class, typename gun_class, string shop_item = "")
-    {
-        s_BodyTexture = BATTLEROYALE_WEAPON_SKINS_PATH + body_texture; //weapon texture
-        t_ItemBaseClass = gun_class;
-        s_PreviewItemClassName = preview_class;
-        s_ShopFlag = shop_item;
-        s_DisplayName = display_name;
+        ref array<string> result = new array<string>;
+        GetGame().ConfigGetTextArray("CfgVehicles " + s_ItemConfigName + " hiddenSelectionsMaterials",result);
+        if(result.Count() == 0)
+        {
+            GetGame().ConfigGetTextArray("cfgWeapons " + s_ItemConfigName + " hiddenSelectionsMaterials", result); //weapons lol
+        }
+        return result;
     }
 }

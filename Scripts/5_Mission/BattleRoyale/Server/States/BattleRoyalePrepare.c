@@ -84,6 +84,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         //remove all other items
         process_player.RemoveAllItems();
+        process_player.RemoveAllItems();
+        process_player.RemoveAllItems();
+        process_player.RemoveAllItems();
 
         EntityAI entity;
         ref array<string> try_again = new array<string>();
@@ -135,6 +138,17 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             if(GetGame().SurfaceRoadY(x, z) != y)
                 continue;
+
+            //Namalsk snow biome check
+            ref array<string> bad_surface_types_namalsk = {
+                "nam_seaice",
+                "nam_lakeice_ext"
+            };
+            string surface_type;
+            GetGame().SurfaceGetType(x, z, surface_type);
+            if(bad_surface_types_namalsk.Find(surface_type) != -1)
+                continue;
+
 
             vector start = random_pos + Vector( 0, 5, 0 );
             vector end = random_pos;

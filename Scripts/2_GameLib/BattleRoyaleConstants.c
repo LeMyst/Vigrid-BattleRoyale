@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.p_a";
+static const string BATTLEROYALE_VERSION = "0.1.t_namalsk_0";
 
 //--- default web endpoint
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
@@ -28,6 +28,11 @@ static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not
 static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
 
+//--- dummy mission
+//--- perhaps this could be pulled from the mod config? (or dynamically generated? randomized?)
+static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "Namalsk"; //ChernarusPlus
+
+
 //--- web API response error codes
 static const int DAYZBR_NETWORK_ERRORCODE_NULL_RESULT = 1500; //web returned 200, but response body was blank
 static const int DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT = 1600; //json response from the webserver cannot be parsed, remember dayz can't parse Booleans
@@ -47,9 +52,6 @@ static const int DAYZBR_SKIN_SELECTION_MENU = 5000;
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
 
 static const string BATTLEROYALE_LOADING_SCREENS_PATH = "BattleRoyale/GUI/textures/loading_screens/";
-static const string BATTLEROYALE_TSHIRT_SKINS_PATH = "BattleRoyale\\GUI\\textures\\tshirt\\";
-static const string BATTLEROYALE_WEAPON_SKINS_PATH = "BattleRoyale\\GUI\\textures\\weapons\\";
-static const string DAYZ_TSHIRT_SKINS_PATH = "DZ\\characters\\tops\\data\\";
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
@@ -90,8 +92,8 @@ static const string DAYZBR_MSG_TAKING_DAMAGE = "You are taking zone damage!";
 static const string DAYZBR_MSG_MATCH_STARTED = "The match has started!";
 
 //--- broken debug zone values
-static const vector DAYZBR_DEBUG_CENTER = "14829.2 72.3148 14572.3";
-static const float DAYZBR_DEBUG_RADIUS = 50;
+static const vector DAYZBR_DEBUG_CENTER = "3954.45 5.67608 10243.8";
+static const float DAYZBR_DEBUG_RADIUS = 100;
 static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 

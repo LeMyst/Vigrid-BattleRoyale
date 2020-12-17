@@ -2,7 +2,7 @@ class BattleRoyaleBase
 {
 	void BattleRoyaleBase()
 	{
-		GetRPCManager().AddRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", this);
+		GetRPCManager().AddRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", this);
 		GetRPCManager().AddRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", this);
 	}
 
@@ -35,38 +35,64 @@ class BattleRoyaleBase
 			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", gun_value, false, NULL, targetBase);
 		}
 	}
-	void SetShirtTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetItemSkin(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		Param2< string, string > data;
-		if( !ctx.Read( data ) ) return; //i have absolutely no idea if i have to read this twice?
-		
+		Param3< int, ref array<string>, ref array<string> > data;
+
+		//read & check sanity
+		if( !ctx.Read( data ) ) return;
 		if(!target) return;
-			
-		PlayerBase targetBase = PlayerBase.Cast(target);
-
+		PlayerBase targetBase = PlayerBase.Cast( target );
 		if(!targetBase) return;
-
-		HumanInventory inv = targetBase.GetHumanInventory();
-		if(inv)
+		
+		EntityAI item = null;
+		switch(data.param1) {
+			case 0:
+				HumanInventory inv = targetBase.GetHumanInventory();
+				if(inv)
+				{
+					item = inv.FindAttachment(InventorySlots.BODY);
+					Print("[Base] Setting Shirt Skin");
+				}
+				break;
+			case 1:
+				item = targetBase.GetItemInHands();
+				Print("[Base] Setting Gun Skin");
+				break;
+		}
+		if(item)
 		{
-			//set shirt texture
-			EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
-			if(shirt) 
+			Print(item.GetType());
+
+			//apply texture data to item
+			int i;
+			ref array<string> values = data.param2;
+			Print("Texture Count: " + values.Count().ToString());
+			for(i = 0; i < values.Count(); i++)
 			{
-				Print(shirt.GetType());
-				shirt.SetObjectTexture(0,data.param1);
-				shirt.SetObjectTexture(1,data.param2);
-				shirt.SetObjectTexture(2,data.param2); 
+				string texture = values.Get(i);
+				Print("Setting texture: " + i.ToString() + "," + texture);
+				item.SetObjectTexture(i, texture);
+			}
+			values = data.param3;
+			Print("Material Count: " + values.Count().ToString());
+			for(i = 0; i < values.Count(); i++)
+			{
+				string material = values.Get(i);
+				Print("Setting material: " + i.ToString() + "," + material);
+				item.SetObjectMaterial(i, material);
 			}
 		}
 
 		if(type == CallType.Server)
 		{
-			ref Param2<string, string> value_string = new Param2<string, string>(data.param1, data.param2);
-			
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", value_string, false , NULL, targetBase);
+			Print("Rebroadcasting!");
+			//rebroadcast to all clients
+			ref array<string> textures = data.param2; //this should solve an issue where the value is derefed and not sent to the client...
+			ref array<string> materials = data.param3; 
+			Param3<int, ref array<string>, ref array<string>> new_data = new Param3<int, ref array<string>, ref array<string>>(data.param1, textures, materials);
+			Print(new_data);
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", new_data, false , NULL, targetBase);
 		}
-
-
 	}
 }

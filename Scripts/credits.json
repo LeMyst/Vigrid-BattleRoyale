@@ -33,7 +33,14 @@
 						"DrDeSync",
 						"Fini"
 					]
-                },
+				},
+				{
+					"SectionName": "Music By",
+					"SectionLines": [
+						"Christmas - Scott Holmes Music",
+						"Apocalypse - Desolation Redux"
+					]
+				},
                 {
                     "SectionName": "Thanks to",
                     "SectionLines": [

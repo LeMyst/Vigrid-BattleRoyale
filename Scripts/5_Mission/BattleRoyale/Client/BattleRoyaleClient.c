@@ -3,11 +3,13 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	protected ref BattleRoyalePlayArea m_CurrentPlayArea;
 	protected ref BattleRoyalePlayArea m_FuturePlayArea;
-	protected ref ScriptCallQueue m_CallQueue;
-	
+	protected ref Timer m_Timer;
+
 	protected int i_Kills; //TODO: this needs to be done differently (most likely)
 	protected bool b_MatchStarted;
 	protected int i_SecondsRemaining;
+
+	protected bool b_UnlockAllSkins;
 
 	protected bool b_IsReady;
 
@@ -15,17 +17,27 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	void BattleRoyaleClient()
 	{
+		b_UnlockAllSkins = false;
+
 		b_IsReady = false;
 		b_MatchStarted = false;
 		i_Kills = 0;
 		i_SecondsRemaining = 0;
-		m_CallQueue = new ScriptCallQueue;
+		m_Timer = new Timer;
 
 		m_SpectatorMapEntityData = new map<string, ref BattleRoyaleSpectatorMapEntityData>();
 
 		Init();
 	}
 
+	//this should be used to check over the default API functionality
+	bool HasPurchase(string flag)
+	{
+		if(b_UnlockAllSkins)
+			return true;
+		else
+			return BattleRoyaleAPI.GetAPI().HasPurchase(flag);
+	}
 
 	void Init()
 	{
@@ -35,7 +47,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", this );
-
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetServerSkinUnlockValue", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
@@ -44,7 +56,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 
 		
-		m_CallQueue.CallLater(this.OnSecond, 1000, true); //call onsecond every second
+		m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 	}
 
 
@@ -82,8 +94,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			}
 		}
 		
-
-		m_CallQueue.Tick( delta );
 	}
 
 
@@ -148,31 +158,38 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		b_MatchStarted = true;
 	}
 
-	void SetShirt(string ground_texture, string shirt_texture)
+	void SetSkin(int type, ref array<string> textures, ref array<string> materials)
 	{
 		PlayerBase player = GetGame().GetPlayer();
 		HumanInventory inv = player.GetHumanInventory();
 
-		EntityAI shirt = inv.FindAttachment(InventorySlots.BODY);
-		if(shirt)
-		{
-			ref Param2<string, string> shirt_value = new Param2<string, string>( ground_texture, shirt_texture );
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetShirtTexture", shirt_value, false , NULL, player);
+		EntityAI entity = null;
+		switch(type) {
+			case 0: 
+				entity = inv.FindAttachment(InventorySlots.BODY);
+				Print("Setting Shirt Skin");
+				break;
+			case 1: 
+				entity = player.GetItemInHands();
+				Print("Setting Gun Skin");
+				break
 		}
-	}
-	void SetGun(string body_texture)
-	{
-		Print("Applying gun texture over network!");
-		PlayerBase player = GetGame().GetPlayer();
-		HumanInventory inv = player.GetHumanInventory();
 
-		EntityAI gun = player.GetItemInHands();
-		if(gun)
+		//send RPC to the server
+		if(entity)
 		{
-			ref Param1<string> gun_value = new Param1<string>( body_texture );
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetGunTexture", gun_value, false, NULL, player);
+			//no idea if I can broadcast arrays
+			ref Param3<int, ref array<string>, ref array<string>> skin_value = new Param3<int, ref array<string>, ref array<string>>(type, textures, materials);
+			
+			Print("Sending RPC");
+			Print(type);
+			Print("Texture Count: " + textures.Count().ToString());
+			Print("Material Count: " + materials.Count().ToString());
+
+			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player); //target myself
 		}
 	}
+
 	void ReadyUp()
 	{
 		//if(b_IsReady)
@@ -188,6 +205,16 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	
 	//Client RPC calls
+	void SetServerSkinUnlockValue(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		if ( type == CallType.Client )
+		{
+			Print("Unlocking All Skins!");
+			b_UnlockAllSkins = true;
+		}
+	}
+
+
 	void StartMatch(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		if ( type == CallType.Client )
