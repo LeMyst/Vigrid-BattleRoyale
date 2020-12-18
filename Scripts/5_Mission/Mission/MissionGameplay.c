@@ -46,14 +46,7 @@ modded class MissionGameplay
 
 		is_spectator = true;
 
-		//hide HUD and Quickbar
-		IngameHud hud = IngameHud.Cast( GetHud() );
-		if ( hud )
-		{
-			Print("Hiding HUD");
-			hud.ShowHudUI( false );
-			hud.ShowQuickbarUI( false );
-		}
+		HideHud();
 	}
 	void UpdateKillCount(int count)
 	{
@@ -123,23 +116,17 @@ modded class MissionGameplay
 
 		if(is_spectator)
 		{
+			HideHud();
+		}
+	}
 
-			//ensure that if anything turns the hud back on, that we disable it again
-			IngameHud hud = IngameHud.Cast( GetHud() );
-			if ( hud )
-			{
-				if(hud.GetHUDUiState())
-				{
-					Print("HUD Visible! Hiding!");
-					hud.ShowHudUI( false );
-				}
-				if(hud.GetQuickbarUiState())
-				{
-					Print("Quickbar Visible! Hiding!");
-					hud.ShowQuickbarUI( false );
-				}
-			}
 
+	void HideHud()
+	{
+		IngameHud hud = IngameHud.Cast( GetHud() );
+		if ( hud )
+		{
+			hud.BR_HIDE();
 		}
 	}
 }

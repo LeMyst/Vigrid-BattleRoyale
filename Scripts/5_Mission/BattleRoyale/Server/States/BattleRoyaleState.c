@@ -151,7 +151,7 @@ class BattleRoyaleState extends Timeable {
 				GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
 			}
 		}
-		ExpansionNotificationSystem m_notif_sys = GetNotificationSystem();
+		//ExpansionNotificationSystem m_notif_sys = GetNotificationSystem();
 	}
 }
 

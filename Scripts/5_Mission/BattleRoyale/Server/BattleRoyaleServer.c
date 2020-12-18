@@ -181,14 +181,37 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BattleRoyaleDebugState m_DebugStateObj;
 		if(!Class.CastTo(m_DebugStateObj, GetCurrentState())
 		{
-			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
+			
 
 			
 			if(m_SpectatorSystem.CanSpectate( player ))
 			{
+				Print("Spectator connected, inserting into spectator system");
+
 				//it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
+				//note that 15 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
 				m_Timer.Run( 15.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
+				
+				string message = "You will be given spectator in ~15 seconds...";
+				string title = DAYZBR_MSG_TITLE;
+				string icon = DAYZBR_MSG_IMAGE;
+				int color = COLOR_EXPANSION_NOTIFICATION_INFO;
+				float time = DAYZBR_MSG_TIME;
+
 				//m_SpectatorSystem.AddPlayer( player );
+				if(player)
+				{
+					PlayerIdentity identity = player.GetIdentity();
+					if(identity)
+					{
+						StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
+						StringLocaliser text = new StringLocaliser( message );
+						GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
+					}
+				}
+
+
+
 			}
 			else
 			{
@@ -198,7 +221,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				
 				//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
 				
-				
+				Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 				m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 			}
 			

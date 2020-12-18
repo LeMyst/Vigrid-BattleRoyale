@@ -15,8 +15,8 @@ modded class InGameMenu
 
         SetServerInfoVisibility( false ); //Don't ever show what server you're on for DayZBR
 
-
-        ButtonWidget.Cast( layoutRoot.FindAnyWidget( "respawn_button" ) ).SetText("Spectate");
+        //this does not work :)
+        ButtonSetText(m_RestartButton, "Spectate");
 
         return result;
     }

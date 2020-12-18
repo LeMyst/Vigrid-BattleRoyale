@@ -1,12 +1,23 @@
 modded class IngameHud
 {
-    //lmao there was no way to get this variable value
-    bool GetHUDUiState()
+    protected bool b_BrVisibilityOverride;
+    void IngameHud()
     {
-        return m_HudHideUI;
+        b_BrVisibilityOverride = false;
     }
-    bool GetQuickbarUiState()
+
+    void BR_HIDE()
     {
-        return m_QuickbarHideUI;
+        Show( false );
+        b_BrVisibilityOverride = true;
     }
+
+    override void Show( bool show )
+	{
+        if(b_BrVisibilityOverride)
+            return;
+
+        super.Show( show );
+    }
+    
 }
