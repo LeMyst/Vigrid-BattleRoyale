@@ -1,0 +1,286 @@
+class MatchData
+{
+    int start_time; //MS since server start that match starts
+    int end_time; //MS since server start that match ends
+    
+    ref MatchWorld world;
+    ref MatchPlayer winner; 
+    ref array<ref MatchPlayer> deaths;
+    ref array<ref MatchZone> zones;
+    ref array<ref MatchAirdrop> airdrops;
+    ref array<ref MatchRedzone> redzones;
+
+    void MatchData()
+    {
+        deaths = new array<ref MatchPlayer>();
+        zones = new array<ref MatchZone>();
+        airdrops = new array<ref MatchAirdrop>();
+        redzones = new array<ref MatchRedzone>();
+    }
+
+    string GetJSON()
+    {
+        int i;
+        int j;
+
+        Print("Getting MatchData Json");
+        Print(start_time);
+        Print(end_time);
+        if(world)
+        {
+            Print(world.map_name);
+            Print(world.game_type);
+            Print(world.hour);
+            Print(world.minute);
+            Print(world.rain);
+            Print(world.fog);
+        }
+        else
+        {
+            Print("World == NULL!");
+        }
+        if(winner)
+        {
+            Print(winner.steam_id);
+        }
+        else
+        {
+            Print("Winner == NULL!");
+        }
+        for(i = 0; i < deaths.Count(); i++)
+        {
+            if(deaths[i])
+            {
+                Print(deaths[i].steam_id);
+                if(deaths[i].death_data)
+                {
+                    Print(deaths[i].death_data.killer_id);
+                    Print(deaths[i].death_data.killer_position);
+                    Print(deaths[i].death_data.time);
+                    Print(deaths[i].death_data.position);
+                    if(deaths[i].death_data.killer_weapondata)
+                    {
+                        for(j = 0; j < deaths[i].death_data.killer_weapondata.Count(); j++)
+                        {
+                            Print(deaths[i].death_data.killer_weapondata[j]);
+                        }
+                    }
+                    else
+                    {
+                        Print("Death[" + i.ToString() + "].death_data.killer_weapondata == NULL!");
+                    }
+                }
+                else
+                {
+                    Print("Death[" + i.ToString() + "].death_data == NULL!");
+                }
+                
+            }
+            else
+            {
+                Print("Death[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        for(i = 0; i < zones.Count(); i++)
+        {
+            if(zones[i])
+            {
+                Print(zones[i].time);
+                Print(zones[i].position);
+                Print(zones[i].radius);
+            }
+            else
+            {
+                Print("Zones[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        for(i = 0; i < airdrops.Count(); i++)
+        {
+            if(airdrops[i])
+            {
+                Print(airdrops[i].time);
+                Print(airdrops[i].position);
+            }
+            else
+            {
+                Print("Airdrops[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        for(i = 0; i < redzones.Count(); i++)
+        {
+            if(redzones[i])
+            {
+                Print(redzones[i].time);
+                Print(redzones[i].position);
+                Print(redzones[i].radius);
+            }
+            else
+            {
+                Print("Redzones[" + i.ToString() + "] == NULL!");
+            }
+            
+        }
+        
+        //this is built in method for converting object to json string (look at jsonfileloader.c in 3_game\tools)
+        return JsonFileLoader<MatchData>.JsonMakeData( this );
+        /*
+        string result;
+        JsonSerializer m_Serializer = new JsonSerializer;
+        m_Serializer.WriteToString( this, false, result )
+        return result;
+        */
+    }
+    
+    void SetEnd(int time)
+    {
+        end_time = time;
+        Print("MatchData: Setting end time");
+        Print(time);
+    }
+    void SetStart(int time)
+    {
+        start_time = time;
+        Print("MatchData: Setting start time");
+        Print(time);
+    }
+
+    void CreateWorld(string map_name, string game_type)
+    {
+        world = new MatchWorld;
+        world.map_name = map_name;
+        world.game_type = game_type;
+        Print("MatchData: Setting world `" + map_name + "`:`" + game_type + "`");
+    }
+    void SetWorldStartTime(int hour, int minute)
+    {
+        world.hour = hour;
+        world.minute = minute;
+        Print("MatchData: Setting world start time");
+        Print(hour);
+        Print(minute);
+    }
+    void SetWorldWeather(float rain, float fog)
+    {
+        world.rain = rain;
+        world.fog = fog;
+        Print("MatchData: Setting world weather");
+        Print(rain);
+        Print(fog);
+    }
+    
+    void CreateWinner(string steamid)
+    {
+        winner = new MatchPlayer;
+        winner.steam_id = steamid;
+        winner.death_data = null;
+        Print("MatchData: Setting winner `" + steamid + "`");
+    }
+    
+    bool ContainsDeath(string steamid)
+    {
+        bool result = false;
+        for(int i = 0; i < deaths.Count(); i++)
+        {
+            if(deaths[i].steam_id == steamid)
+                return true;
+        }
+        return result;
+    }
+
+    void CreateDeath(string steamid, vector position, int time, string killer_steamid, notnull ref array<string> killer_weapon_attachments, vector killer_position)
+    {
+        ref MatchPlayer player = new MatchPlayer;
+        ref MatchDeath death = new MatchDeath;
+        
+        player.steam_id = steamid;
+        player.death_data = death;
+
+        death.killer_id = killer_steamid;
+        death.killer_weapondata = killer_weapon_attachments;
+        death.killer_position = killer_position;
+        death.time = time;
+        death.position = position;
+
+        deaths.Insert( player );
+        Print("MatchData: Inserting death");
+        Print(player);
+        Print(death);
+    }
+
+    void CreateZone(vector position, float radius, int time)
+    {
+        ref MatchZone zone = new MatchZone;
+        zone.position = position;
+        zone.radius = radius;
+        zone.time = time;
+
+        zones.Insert( zone );
+        Print("MatchData: Inserting zone");
+        Print(zone);
+    }
+
+    void CreateAirdrop(vector position, int time)
+    {
+        ref MatchAirdrop airdrop = new MatchAirdrop;
+        airdrop.position = position;
+        airdrop.time = time;
+
+        airdrops.Insert( airdrop );
+    }
+
+    void CreateRedzone(vector position, float radius, int time)
+    {
+        ref MatchRedzone zone = new MatchRedzone;
+        zone.position = position;
+        zone.radius = radius;
+        zone.time = time;
+
+        redzones.Insert( zone );
+    }
+}
+//match objects
+class MatchPlayer
+{
+    string steam_id;
+    ref MatchDeath death_data; //if winner this is NULL
+}
+class MatchWorld
+{
+    string map_name;
+    string game_type;
+    int hour; //on start
+    int minute; //on start
+    float rain; //on end
+    float fog; //on end
+}
+
+//timed events
+class MatchRedzone
+{
+    int time;
+    vector position;
+    float radius;
+}
+class MatchAirdrop
+{
+    int time;
+    vector position;
+}
+class MatchZone
+{
+    int time; //time since start of match
+    vector position;
+    float radius;
+}
+class MatchDeath
+{
+    string killer_id;
+    ref array<string> killer_weapondata; //weapon and all it's attachments
+    vector killer_position;
+
+    int time; //time since start of match
+    vector position;
+}

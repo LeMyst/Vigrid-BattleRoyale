@@ -1,0 +1,132 @@
+modded class MissionGameplay
+{
+	protected Widget m_BattleRoyaleHudRootWidget;
+	protected ref BattleRoyaleHud m_BattleRoyaleHud;
+
+	protected bool is_spectator;
+
+	void MissionGameplay()
+	{
+		m_BattleRoyaleHudRootWidget = null;
+		is_spectator = false;
+	}
+
+	override void OnInit()
+	{
+		super.OnInit();
+	
+		m_BattleRoyale = new BattleRoyaleClient;
+
+		InitBRhud();
+	}
+
+
+	void InitBRhud()
+	{
+		Print("Initializing BattleRoyale HUD");
+		if(!m_BattleRoyaleHudRootWidget)
+		{
+			m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("BattleRoyale/GUI/layouts/hud/br_hud.layout");
+
+			m_BattleRoyaleHud = new BattleRoyaleHud( m_BattleRoyaleHudRootWidget );
+			m_BattleRoyaleHud.ShowHud( true );
+			Print("HUD Initialized");
+		}
+	}
+	
+	bool IsInSpectator()
+	{
+		return is_spectator;
+	}
+
+	void InitSpectator()
+	{
+		Print("Initializing Spectator HUD");
+		m_BattleRoyaleHud.InitSpectator();
+
+		is_spectator = true;
+
+		HideHud();
+	}
+	void UpdateKillCount(int count)
+	{
+		m_BattleRoyaleHud.ShowKillCount( true );
+		m_BattleRoyaleHud.SetKillCount( count );
+	}
+	void HideCountdownTimer()
+	{
+		m_BattleRoyaleHud.ShowCountdown( false );
+	}
+	void UpdateCountdownTimer(int seconds)
+	{
+		m_BattleRoyaleHud.ShowCountdown( true );
+		m_BattleRoyaleHud.SetCountdown( seconds );
+	}
+	void UpdatePlayerCount(int count)
+	{
+		if(count == 0)
+		{
+			m_BattleRoyaleHud.ShowCount( false );
+			return;
+		}
+		
+		m_BattleRoyaleHud.ShowCount( true );
+		m_BattleRoyaleHud.SetCount( count );
+	}
+	void UpdateZoneDistance(float distance)
+	{
+		m_BattleRoyaleHud.ShowDistance( true );
+		m_BattleRoyaleHud.SetDistance( distance );
+	}
+
+	//TODO: move this into modded keybinds systems
+	override void OnKeyPress(int key)
+	{
+		super.OnKeyPress(key);
+		//Skin selection needs a rework, so we'll come back to this
+		
+		if ( key == KeyCode.KC_SLASH )
+		{
+			if(!GetGame().GetUIManager().GetMenu())
+			{
+				SkinSelectionMenu.OpenMenu();
+			}
+		}
+	
+		if( key == KeyCode.KC_F1 )
+		{
+		
+			BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
+			
+		}
+
+	}
+
+
+	override void OnUpdate( float timeslice )
+	{	
+		
+
+		super.OnUpdate( timeslice ); //no more using fade out because it causes way to much compatibility issues, instead we'll use widgets
+
+		m_BattleRoyale.Update( timeslice ); //send tick to br client
+
+		m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
+
+
+		if(is_spectator)
+		{
+			HideHud();
+		}
+	}
+
+
+	void HideHud()
+	{
+		IngameHud hud = IngameHud.Cast( GetHud() );
+		if ( hud )
+		{
+			hud.BR_HIDE();
+		}
+	}
+}
