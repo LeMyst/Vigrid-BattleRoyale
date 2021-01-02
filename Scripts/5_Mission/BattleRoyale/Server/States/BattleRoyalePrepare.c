@@ -197,11 +197,12 @@ class BattleRoyalePrepare extends BattleRoyaleState
     void ProcessPlayers()
     {
         Print("Starting to process players...");
+        int i;
+        PlayerBase process_player;
 
         int pCount = m_Players.Count();
-        int i;
         for (i = 0; i < pCount; i++) {
-            PlayerBase process_player = m_Players[i];
+            process_player = m_Players[i];
             if (process_player) DisableInput(process_player);
 
             Sleep(100);
@@ -209,7 +210,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         Print("Players are disabled");
 
         for (i = 0; i < pCount; i++) {
-            PlayerBase process_player = m_Players[i];
+            process_player = m_Players[i];
             if (process_player) GiveStartingItems(process_player);
 
             Sleep(100);
@@ -217,7 +218,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         Print("Gave starting items");
 
         for (i = 0; i < pCount; i++) {
-            PlayerBase process_player = m_Players[i];
+            process_player = m_Players[i];
             if (process_player) Teleport(process_player);
 
             Sleep(100);
