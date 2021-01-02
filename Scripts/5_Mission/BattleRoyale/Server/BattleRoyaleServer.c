@@ -179,7 +179,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		player.SetPosition(debug_pos);		
 
 		BattleRoyaleDebugState m_DebugStateObj;
-		if(!Class.CastTo(m_DebugStateObj, GetCurrentState())
+		if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
 		{
 			
 
@@ -447,7 +447,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		if(type == CallType.Server)
 		{
 			BattleRoyaleDebug m_DebugStateObj;
-			if(!Class.CastTo(m_DebugStateObj, GetCurrentState()) //this ensures we can only ready up during the debug state
+			if(!Class.CastTo(m_DebugStateObj, GetCurrentState())) //this ensures we can only ready up during the debug state
 				return;
 
 			if(!m_DebugStateObj.ContainsPlayer(targetBase))

@@ -7,10 +7,11 @@ modded class MissionServer
 	override void EquipCharacter(MenuDefaultCharacterData char_data)
 	{
 		//TODO: get this from a setting file
-		m_player.GetInventory().CreateInInventory( "TShirt_White" );
+		m_player.GetInventory().CreateInInventory( "TShirt_DayZPodcast" );
 		m_player.GetInventory().CreateInInventory( "Jeans_Black" );
 		m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
-		for(int i = 0; i < 10; i++)
+		
+		for(int i = 1; i < 4; i++)
 		{
 			m_player.GetInventory().CreateInInventory( "dzn_snowball_small" );
 		}
