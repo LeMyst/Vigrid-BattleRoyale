@@ -74,7 +74,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected bool DeleteAllItems(PlayerBase process_player) {
         int dontCrash = 5;
         
-        while (process_player.CountInventory() > 0) {
+        while (process_player.GetInventory().CountInventory() > 0) {
             process_player.RemoveAllItems();
             Sleep(10);
 
@@ -95,7 +95,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         int dontCrash = 5;
         int startingItemsLen = a_StartingItems.Count();
         
-        while (process_player.CountInventory() != startingItemsLen) {
+        while (process_player.GetInventory().CountInventory() != startingItemsLen) {
             DeleteAllItems(process_player);
 
             foreach(string item : a_StartingItems)
