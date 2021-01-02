@@ -1,13 +1,12 @@
 modded class MissionServer
 {
-	
 	//--- TODO: look at dayzexpansion missionserver
 	//TODO: look at dayz missionserver
 	//TODO: look at old BR missionserver
 	override void EquipCharacter(MenuDefaultCharacterData char_data)
 	{
 		//TODO: get this from a setting file
-		m_player.GetInventory().CreateInInventory( "TShirt_DayZPodcast" );
+		m_player.GetInventory().CreateInInventory( "TShirt_DBR" );
 		m_player.GetInventory().CreateInInventory( "Jeans_Black" );
 		m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
 		
