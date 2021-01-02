@@ -202,7 +202,8 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		}
 		super.AddPlayer(player);
 	}
-    override ref array<PlayerBase> RemoveAllPlayers()
+	
+    /*override ref array<PlayerBase> RemoveAllPlayers()
 	{
 		ref array<PlayerBase> players = super.RemoveAllPlayers();
 		foreach(PlayerBase player : players)
@@ -220,7 +221,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
             player.Heal();
         }
 		super.RemovePlayer(player);
-	}
+	}*/
 
 	//--- debug states must lock players into the debug zone & heal them
     override void OnPlayerTick(PlayerBase player, float timeslice)

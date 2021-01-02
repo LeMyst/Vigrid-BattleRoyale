@@ -71,6 +71,49 @@ class BattleRoyalePrepare extends BattleRoyaleState
 		return DAYZBR_SM_PREPARE_NAME;
 	}
 
+    protected bool DeleteAllItems(PlayerBase process_player) {
+        int dontCrash = 5;
+        
+        while (process_player.CountInventory() > 0) {
+            process_player.RemoveAllItems();
+            Sleep(10);
+
+            // this is easier to remove later if this works
+            dontCrash--;
+            if (dontCrash < 0) break;
+        }
+
+        bool worked = dontCrash >= 0;
+        if (!worked) {
+            Error("Failed to delete all items from player, tried 5 times.");
+        }
+
+        return worked;
+    }
+
+    protected bool AddStartItems(PlayerBase process_player) {
+        int dontCrash = 5;
+        int startingItemsLen = a_StartingItems.Count();
+        
+        while (process_player.CountInventory() != startingItemsLen) {
+            DeleteAllItems(process_player);
+
+            foreach(string item : a_StartingItems)
+            {
+                EntityAI entity = process_player.GetInventory().CreateInInventory( item );
+                if (!entity)
+                {
+                    Error("Failed to give player item '" + item + "'. Trying again!");
+                }
+            }
+
+            dontCrash--;
+            if (dontCrash < 0) break;
+        }
+
+        return dontCrash >= 0;
+    }
+
     protected void GiveStartingItems(PlayerBase process_player)
     {
         //drop the item out of the player's hands before we delete it
@@ -81,34 +124,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
             //GetGame().GameScript.Call(GetGame(), "ObjectDelete", item_inhands);
             GetGame().ObjectDelete( item_inhands );
         }
-
-        //remove all other items
-        process_player.RemoveAllItems();
-        process_player.RemoveAllItems();
-        process_player.RemoveAllItems();
-        process_player.RemoveAllItems();
-
-        EntityAI entity;
-        ref array<string> try_again = new array<string>();
-        foreach(string item : a_StartingItems)
-        {
-            entity = process_player.GetInventory().CreateInInventory( item );
-            if(!entity)
-            {
-                Print("Failed to give player item '" + item + "'. Trying again!");
-                try_again.Insert( item );
-            }
-        }
-
-        //if we failed to create an entity in their inventory, then we try it again... xd
-        for(int i = 0; i < try_again.Count(); i++)
-        {
-            entity = process_player.GetInventory().CreateInInventory( try_again[i] );
-            if(!entity)
-            {
-                Error("Failed to give player item '" + try_again[i] + "'!");
-            }
-        }
+        DeleteAllItems(process_player);
+        AddStartItems(process_player);
     }
     protected void DisableInput(PlayerBase process_player)
     {
@@ -203,6 +220,20 @@ class BattleRoyalePrepare extends BattleRoyaleState
     
         Deactivate();
     }
+
+    override void OnPlayerTick(PlayerBase player, float timeslice)
+	{
+		super.OnPlayerTick(player, timeslice);
+
+		if(player.time_until_heal <= 0)
+		{
+			player.time_until_heal = 5;
+			player.Heal();
+		}
+		player.time_until_heal -= timeslice;
+
+
+	}
 
     override void AddPlayer(PlayerBase player)
 	{
