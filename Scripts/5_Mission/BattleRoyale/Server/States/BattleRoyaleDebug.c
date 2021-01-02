@@ -127,11 +127,12 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 
 	void ReadyUp(PlayerBase player)
 	{
-		MessagePlayer(player, "You have readied up!");
-
-		if(m_ReadyList.Find(player) != -1)
+		if(m_ReadyList.Find(player) != -1) {
+			MessagePlayer(player, "You have already readied up...");
 			return;
+		}
 
+		MessagePlayer(player, "You have readied up!");
 		m_ReadyList.Insert( player );
 
 		//this is here because we don't want someone mass spamming all players by spamming F1
