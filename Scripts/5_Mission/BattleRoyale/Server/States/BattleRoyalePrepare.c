@@ -196,28 +196,34 @@ class BattleRoyalePrepare extends BattleRoyaleState
     }
     void ProcessPlayers()
     {
-        //m_Players is a static list so it won't change during this stage
-        for(int i = 0; i < m_Players.Count(); i++)
-        {
+        Print("Starting to process players...");
+
+        int pCount = m_Players.Count();
+        int i;
+        for (i = 0; i < pCount; i++) {
             PlayerBase process_player = m_Players[i];
+            if (process_player) DisableInput(process_player);
 
-            if(process_player)
-            {
-                
-                DisableInput(process_player);
-                
-                Sleep(100);
-
-                GiveStartingItems(process_player);
-
-                Sleep(100);
-
-                Teleport(process_player); //TODO: replace this with moving into C130 (for paradrops)
-                
-                Sleep(100);
-            }
+            Sleep(100);
         }
-    
+        Print("Players are disabled");
+
+        for (i = 0; i < pCount; i++) {
+            PlayerBase process_player = m_Players[i];
+            if (process_player) GiveStartingItems(process_player);
+
+            Sleep(100);
+        }
+        Print("Gave starting items");
+
+        for (i = 0; i < pCount; i++) {
+            PlayerBase process_player = m_Players[i];
+            if (process_player) Teleport(process_player);
+
+            Sleep(100);
+        }
+        Print("Teleported players");
+
         Deactivate();
     }
 
