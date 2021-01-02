@@ -203,4 +203,33 @@ class BattleRoyalePrepare extends BattleRoyaleState
     
         Deactivate();
     }
+
+    override void AddPlayer(PlayerBase player)
+	{
+		if(player)
+		{
+			player.SetAllowDamage(false); //all players in this state are god mode
+			player.Heal();
+		}
+		super.AddPlayer(player);
+	}
+    override ref array<PlayerBase> RemoveAllPlayers()
+	{
+		ref array<PlayerBase> players = super.RemoveAllPlayers();
+		foreach(PlayerBase player : players)
+		{
+			player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.Heal();
+		}
+		return players;
+	}
+	override void RemovePlayer(PlayerBase player)
+	{
+		if(player)
+        {
+			player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.Heal();
+        }
+		super.RemovePlayer(player);
+	}
 }
