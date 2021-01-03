@@ -72,46 +72,53 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	}
 
     protected bool DeleteAllItems(PlayerBase process_player) {
-        int dontCrash = 5;
+        //int dontCrash = 5;
         
-        while (process_player.GetInventory().CountInventory() > 0) {
+        //while (process_player.GetInventory().CountInventory() > 0) {
             process_player.RemoveAllItems();
-            Sleep(10);
+         //   Sleep(10);
 
             // this is easier to remove later if this works
-            dontCrash--;
-            if (dontCrash < 0) break;
-        }
+        //    dontCrash--;
+        //    if (dontCrash < 0) break;
+       // }
 
-        bool worked = dontCrash >= 0;
-        if (!worked) {
-            Error("Failed to delete all items from player, tried 5 times.");
-        }
+        //bool worked = dontCrash >= 0;
+       // if (!worked) {
+        //    Error("Failed to delete all items from player, tried 5 times.");
+       // }
 
-        return worked;
+        //return worked;
+        return true;
     }
 
     protected bool AddStartItems(PlayerBase process_player) {
         int dontCrash = 5;
         int startingItemsLen = a_StartingItems.Count();
         
-        while (process_player.GetInventory().CountInventory() != startingItemsLen) {
+       // while (process_player.GetInventory().CountInventory() != startingItemsLen) {
             DeleteAllItems(process_player);
 
-            foreach(string item : a_StartingItems)
-            {
-                EntityAI entity = process_player.GetInventory().CreateInInventory( item );
-                if (!entity)
-                {
-                    Error("Failed to give player item '" + item + "'. Trying again!");
-                }
-            }
 
-            dontCrash--;
-            if (dontCrash < 0) break;
-        }
 
-        return dontCrash >= 0;
+            EntityAI shirt = process_player.GetInventory().CreateAttachment("TrackSuitJacket_Black");
+            EntityAI pants = process_player.GetInventory().CreateAttachment("TrackSuitPants_Black");
+            EntityAI shoes = process_player.GetInventory().CreateAttachment("JoggingShoes_Black");
+
+            shirt.GetInventory().CreateEntityInCargo("Heatpack");
+            shirt.GetInventory().CreateEntityInCargo("Heatpack");
+            shirt.GetInventory().CreateEntityInCargo("Heatpack");
+
+            pants.GetInventory().CreateEntityInCargo("HuntingKnife");
+            pants.GetInventory().CreateEntityInCargo("BandageDressing");
+            
+
+       //     dontCrash--;
+       //    if (dontCrash < 0) break;
+       // }
+
+        //return dontCrash >= 0;
+        return true;
     }
 
     protected void GiveStartingItems(PlayerBase process_player)
@@ -161,6 +168,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 "nam_seaice",
                 "nam_lakeice_ext"
             };
+            
             string surface_type;
             GetGame().SurfaceGetType(x, z, surface_type);
             if(bad_surface_types_namalsk.Find(surface_type) != -1)
@@ -187,6 +195,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         //set pos
         process_player.SetPosition(random_pos);
+
+        //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
+        //TODO: force stand up
         
         //random direction
         float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
