@@ -95,9 +95,18 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
 			while(!m_ServerData || m_ServerData.locked != 0)
 			{
-				Print("Invalid Server State on Startup...");
-				BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
-				m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+				if(!m_ServerData)
+				{
+					Print("Failed to start server...");
+					m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request startup failed (maybe API was offline when this happened?)
+				}
+				else
+				{
+					//startup succesfull but locked! need to unlock
+					Print("Invalid Server State on Startup...");
+					BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
+					m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+				}
 			}
 		}
 	}
