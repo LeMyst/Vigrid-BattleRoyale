@@ -208,6 +208,17 @@ class BattleRoyalePrepare extends BattleRoyaleState
             Sleep(100);
         }
         Print("Players are disabled");
+        
+        for (i = 0; i < pCount; i++) {
+            process_player = m_Players[i];
+            if (process_player) Teleport(process_player);
+
+            Sleep(100);
+        }
+        Print("Teleported players");
+
+        // plz fix this
+        Sleep(1000);
 
         for (i = 0; i < pCount; i++) {
             process_player = m_Players[i];
@@ -217,13 +228,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
         Print("Gave starting items");
 
-        for (i = 0; i < pCount; i++) {
-            process_player = m_Players[i];
-            if (process_player) Teleport(process_player);
-
-            Sleep(100);
-        }
-        Print("Teleported players");
 
         Deactivate();
     }
