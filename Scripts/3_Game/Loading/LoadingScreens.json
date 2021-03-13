@@ -1,0 +1,20 @@
+[
+    {
+        "MapName": "default",
+        "Path":
+        [
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_1.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_2.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_3.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_4.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_5.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_6.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_7.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_8.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_9.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_10.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_11.edds",
+            "BattleRoyale/GUI/textures/loading_screens/br_loading_12.edds"
+        ]
+    }
+]

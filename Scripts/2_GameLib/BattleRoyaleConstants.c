@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.u_b";
+static const string BATTLEROYALE_VERSION = "0.1.u_c";
 
 //--- default web endpoint
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
@@ -117,3 +117,10 @@ static const string DAYZBR_NULL_RESPONSE_MSG = "Error! NULL Response!";
 
 //TODO: move this to the web API
 static const string BATTLEROYALE_SERVER_PASSWORD = "DayZBR_Beta";
+
+
+//---- DayZ Expansion Loading Screens
+static const string DAYZBR_LOADING_SCREENS_PATH 	= "BattleRoyale/Scripts/3_Game/Loading/LoadingScreens.json";
+static const string DAYZBR_LOADING_MESSAGES_PATH 	= "BattleRoyale/Scripts/3_Game/Loading/LoadingMessages.json";
+static const int DAYZBR_LOADING_BAR_COLOR = ARGB( 255, 0, 0, 0 ); 	//! A = Alpha (opacity) / R = Red / G = Green / B = Blue
+	
