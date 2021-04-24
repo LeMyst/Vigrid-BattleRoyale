@@ -3,7 +3,7 @@
 // so instead, below we defined individual HttpPostRequest objects for each req/res pair....
 
 /*
-class HttpPostRequest<Class T1, Class T2> extends RestMiddleman {
+class HttpPostRequest<Class T1, Class T2> extends RestCallback {
     static T2 SendSync(string server, string function, T1 data)
     {
         string jsondata = JsonFileLoader<T1>.JsonMakeData(data); //convert data to json
