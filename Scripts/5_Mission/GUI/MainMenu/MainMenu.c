@@ -161,7 +161,7 @@ modded class MainMenu
 		//--- connecting to BattleRoyale network UI
 		CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
 
-		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), this.RequestStartCallback);
+		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), this, "RequestStartCallback");
 
 
 		return true;
@@ -239,7 +239,7 @@ modded class MainMenu
 		
 
 
-		api.RequestMatchmakeAsync(p_PlayerWebData, mmaction.OnMatchmakeComplete, GetSelectedRegion());
+		api.RequestMatchmakeAsync(p_PlayerWebData, mmaction, "OnMatchmakeComplete", GetSelectedRegion());
 	}
 
 	override void NextCharacter()

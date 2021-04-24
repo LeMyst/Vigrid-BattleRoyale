@@ -22,8 +22,11 @@ modded class DayZGame {
 			FPrintln(file, "Print(\"[ClientDummyMission] --Hive--\");");
 			FPrintln(file, "Hive ce = CreateHive();");
 			FPrintln(file, "if ( ce )");
+			FPrintln(file, "Print(\"Hive created\");");
 			FPrintln(file, "ce.InitSandbox();");
-			FPrintln(file, "}");
+			FPrintln(file, "Print(\"Sandbox initialized\");");
+			FPrintln(file, "} else {");
+			FPrintln(file, "Print(\"Hive create Failed\");");
 			FPrintln(file, "};");
 			FPrintln(file, "Mission CreateCustomMission(string path)");
 			FPrintln(file, "{");
@@ -92,6 +95,8 @@ modded class DayZGame {
 	//disables CLI -connect
 	override void ConnectFromCLI()
 	{
+		//if we're using -connect, check if it is an official server. if it is not, allow direct connect
+
 	  g_Game.MainMenuLaunch();
 	}
 

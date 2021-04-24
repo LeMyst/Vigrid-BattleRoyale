@@ -17,7 +17,7 @@ class MatchmakeAction {
     void RepeatRequest()
     {
         BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-        api.RequestMatchmakeAsync(api.GetCurrentPlayer(), this.OnMatchmakeComplete, m_MainMenu.GetSelectedRegion());
+        api.RequestMatchmakeAsync(api.GetCurrentPlayer(), this, "OnMatchmakeComplete", m_MainMenu.GetSelectedRegion());
     }
     void OnMatchmakeComplete(ref ClientMatchMakeResponse res, string error_msg) {
         if(this.cancelled) return;
@@ -77,6 +77,13 @@ class MatchmakeAction {
         //connect to target server!
         string ip_addr = p_ServerData.GetIP();
 		int port = p_ServerData.GetPort();
+
+        if(ip_addr == "") {
+            //wait is 0, but server returned is invalid.
+            m_MainMenu.CreatePopup( "DayZBR Mod is Out Of Date! No Servers Found!", "Close", onclick, "Retry", onretry);
+            return;
+        }
+
         if(!p_ServerData.IsMatchingVersion())
 		{
             //mismatched version match made (weird!) lets notify the player.

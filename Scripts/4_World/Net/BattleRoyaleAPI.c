@@ -63,6 +63,7 @@ class BattleRoyaleAPI {
     }
 
     ref ServerData RequestServerStart() {
+        Print("requesting server start...");
         BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
         if(!p_ServerSettings)
         {
@@ -92,6 +93,7 @@ class BattleRoyaleAPI {
     }
 
     void ServerFinish(string winner_name) {
+        Print("requesting server finish...");
         BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
         if(!p_ServerSettings)
         {
@@ -114,6 +116,7 @@ class BattleRoyaleAPI {
     }   
 
     void SubmitMatchData(ref MatchData data_object) {
+        Print("submitting match data...");
         ref SubmitMatchRequest req = new SubmitMatchRequest;
         req.server_id = GetCurrentServer()._id;
         req.match_data = BRMatch.Cast( data_object );
@@ -128,6 +131,7 @@ class BattleRoyaleAPI {
     }
 
     void ServerSetLock(bool value) {
+        Print("updating lock state...");
         BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
         if(!p_ServerSettings)
         {
@@ -148,6 +152,7 @@ class BattleRoyaleAPI {
         }
     }
     ref ServerData GetServer(string server_id) {
+        Print("getting server by id...");
         ref GetServerRequest req = new GetServerRequest;
         req.id = server_id;
 
@@ -163,6 +168,7 @@ class BattleRoyaleAPI {
         return res.data;
     }
     ref PlayerData GetPlayer(string SteamID) {
+        Print("getting player by id...");
         ref GetPlayerRequest req = new GetPlayerRequest;
         req.id = SteamID;
 
@@ -177,20 +183,25 @@ class BattleRoyaleAPI {
         }
         return res.data;
     }
-    void RequestStartAsync(string SteamID, string Name, func Callback) {
+    void RequestStartAsync(string SteamID, string Name, Class inst, string callback) {
+        Print("requesting async start...");
         ref StartRequest req = new StartRequest;
         req.steamid = SteamID;
         req.name = Name;
 
-        HttpPostRequestStartClient.SendAsync(rest_api_endpoint, "/client/start", req, Callback);
+        Print(rest_api_endpoint);
+        Print("/client/start");
+
+        HttpPostRequestStartClient.SendAsync(rest_api_endpoint, "/client/start", req, new HttpAsyncCallback(inst, callback));
     }
-    void RequestMatchmakeAsync(ref PlayerData m_webplayer, func Callback, string region = "any") {
+    void RequestMatchmakeAsync(ref PlayerData m_webplayer, Class inst, string callback, string region = "any") {
+        Print("requesting async matchmake...");
         if(!m_webplayer) {
             Error("player data is null")
-            ScriptCallQueue callQueue = new ScriptCallQueue;
-            callQueue.Call(Callback, null, DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL);
-            callQueue.Tick(1000);
-            return
+
+            ref Param2<ref ClientMatchMakeResponse, string> params = new Param2<ref ClientMatchMakeResponse, string>(null, DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL);
+            GetGame().GameScript.CallFunctionParams(inst, callback, NULL, params);
+            return;
         }
         
         ref MatchMakeRequest req = new MatchMakeRequest;
@@ -198,6 +209,6 @@ class BattleRoyaleAPI {
         req.region = region;
         req.version = BATTLEROYALE_VERSION;
 
-        HttpPostRequestMatchmake.SendAsync(rest_api_endpoint, "/client/matchmake", req, Callback);
+        HttpPostRequestMatchmake.SendAsync(rest_api_endpoint, "/client/matchmake", req, new HttpAsyncCallback(inst, callback));
     }
 }
