@@ -1,0 +1,201 @@
+class BattleRoyaleAPI {
+    static ref BattleRoyaleAPI m_Instance;
+    static BattleRoyaleAPI GetAPI()
+    {
+        if(!m_Instance)
+        {
+            Print("INITIALIZING BATTLE ROYALE WEB API");
+            m_Instance = new BattleRoyaleAPI;
+        }
+        return m_Instance;
+    }
+
+    protected string server_private_key;
+    protected string bans_api_key;
+    protected string rest_api_endpoint;
+    protected bool use_api;
+
+    protected ref PlayerData m_PlayerData; //player object (should only ever be set once per instance)
+    protected ref ServerData m_ServerData;
+    protected ref RegionData m_RegionData;
+
+    void BattleRoyaleAPI()
+    {
+        BattleRoyaleAPIData api_settings = BattleRoyaleConfig.GetConfig().GetApiData();
+        server_private_key = api_settings.api_key; 
+        bans_api_key = api_settings.bans_api_key;
+        rest_api_endpoint = api_settings.endpoint; 
+        use_api = api_settings.use_api;
+    }
+
+    bool ShouldUseApi()
+    {
+        return use_api;
+    }
+    void SetCurrentPlayer( ref PlayerData data)
+    {
+        m_PlayerData = data;
+    }
+    ref PlayerData GetCurrentPlayer()
+    {
+        return m_PlayerData;
+    }
+    void SetRegionData( ref RegionData data)
+    {
+        m_RegionData = data;
+    }
+    ref RegionData GetRegionData()
+    {
+        return m_RegionData;
+    }
+    ref ServerData GetCurrentServer()
+    {
+        return m_ServerData;
+    }
+    bool HasPurchase(string shop_flag)
+    {
+        Print("Checking API for purchase flag " + shop_flag);
+        if(m_PlayerData)
+        {
+            return (m_PlayerData.shop_purchases.Find( shop_flag ) != -1);
+        }
+        return false;
+    }
+
+    ref ServerData RequestServerStart() {
+        BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
+        if(!p_ServerSettings)
+        {
+            Error("p_ServerSettings = NULL");
+            return NULL;
+        }
+        ref OnStartRequest req = new OnStartRequest;
+        req.query_port = p_ServerSettings.query_port.ToString();
+        req.server_ip = p_ServerSettings.ip_address;
+        req.server_version = BATTLEROYALE_VERSION;
+        ref OnStartResponse res = HttpPostRequest<OnStartRequest, OnStartResponse>.SendSync(rest_api_endpoint,"/server/" + server_private_key + "/onstart", req)
+    
+        if(res == null) {
+            Error("OnStartResponse is null");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+            return NULL;
+        }
+        if(res.data == null) {
+            Error("Response data field is null")
+            return NULL;
+        }
+        return res.data;
+    }
+
+    void ServerFinish(string winner_name) {
+        BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
+        if(!p_ServerSettings)
+        {
+            Error("p_ServerSettings = NULL");
+            return NULL;
+        }
+        ref OnFinishRequest req = new OnFinishRequest;
+        req.winner = winner_name;
+        req.query_port = p_ServerSettings.query_port.ToString();
+        req.server_ip = p_ServerSettings.ip_address;
+        ref OnFinishResponse res = HttpPostRequest<OnFinishRequest, OnFinishResponse>.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/onfinish", req);
+        if(res == null) {
+            Error("OnStartResponse is null");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+        }
+    }   
+
+    void SubmitMatchData(ref MatchData data_object) {
+        ref SubmitMatchRequest req = new SubmitMatchRequest;
+        req.server_id = GetCurrentServer()._id;
+        req.match_data = BRMatch.Cast( data_object );
+        ref SubmitMatchResponse res = HttpPostRequest<SubmitMatchRequest, SubmitMatchResponse>.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/matchsubmit", req);
+        if(res == null) {
+            Error("OnStartResponse is null");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+        }
+    }
+
+    void ServerSetLock(bool value) {
+        BattleRoyaleServerData p_ServerSettings = BattleRoyaleConfig.GetConfig().GetServerData();
+        if(!p_ServerSettings)
+        {
+            Error("p_ServerSettings = NULL");
+            return NULL;
+        }
+        ref SetLockRequest req = new SetLockRequest;
+        req.lock = value;
+        req.query_port = p_ServerSettings.query_port.ToString();
+        req.server_ip = p_ServerSettings.ip_address;
+        ref SetLockResponse res = HttpPostRequest<SetLockRequest, SetLockResponse>.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/setlock", req);
+        if(res == null) {
+            Error("OnStartResponse is null");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+        }
+    }
+    ref ServerData GetServer(string server_id) {
+        ref GetServerRequest req = new GetServerRequest;
+        req.id = server_id;
+
+        ref GetServerResponse res = HttpPostRequest<GetServerRequest, GetServerResponse>.SendSync(rest_api_endpoint, "/client/server", req);
+        if(res == null) {
+            Error("OnStartResponse is null");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+            return NULL;
+        }
+        return res.data;
+    }
+    ref PlayerData GetPlayer(string SteamID) {
+        ref GetPlayerRequest req = new GetPlayerRequest;
+        req.id = SteamID;
+
+        ref GetPlayerResponse res = HttpPostRequest<GetPlayerRequest, GetPlayerResponse>.SendSync(rest_api_endpoint, "/client/player", req);
+        if(res == null) {
+            Error("OnStartResponse is null");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+            return NULL;
+        }
+        return res.data;
+    }
+    void RequestStartAsync(string SteamID, string Name, func Callback) {
+        ref StartRequest req = new StartRequest;
+        req.steamid = SteamID;
+        req.name = Name;
+
+        HttpPostRequest<StartRequest,ClientStartResponse>.SendAsync(rest_api_endpoint, "/client/start", req, Callback);
+    }
+    void RequestMatchmakeAsync(ref PlayerData m_webplayer, func Callback, string region = "any") {
+        if(!m_webplayer) {
+            Error("player data is null")
+            ScriptCallQueue callQueue = new ScriptCallQueue;
+            callQueue.Call(this.cb, null, DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL);
+            callQueue.Tick(1000);
+            return
+        }
+        
+        ref MatchMakeRequest req = new MatchMakeRequest;
+        req.id = m_webplayer._id;
+        req.region = region;
+        req.version = BATTLEROYALE_VERSION;
+
+        HttpPostRequest<MatchMakeRequest, ClientMatchMakeResponse>.SendAsync(rest_api_endpoint, "/client/matchmake", req, Callback);
+    }
+}

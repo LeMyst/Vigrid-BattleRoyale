@@ -161,11 +161,53 @@ modded class MainMenu
 		//--- connecting to BattleRoyale network UI
 		CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
 
-		ref ConnectingToNetworkCallback callback = new ConnectingToNetworkCallback( this );
-		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), callback);
+		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), this.RequestStartCallback);
 
 
 		return true;
+	}
+
+	void RequestStartCallback(ref ClientStartResponse res, string error_msg) {
+		ref IgnoreNetworkConnectCallback ignore_callback = new IgnoreNetworkConnectCallback( this );
+		ref RetryNetworkConnectCallback callback = new RetryNetworkConnectCallback( this );
+
+		if(!res) {
+			Error("result null?");
+			
+			if(error_msg == DAYZBR_NETWORK_ERRORCODE_TIMEOUT) {
+				m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback, "Proceed", ignore_callback);
+			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL) {
+				CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Retry", callback, "Proceed", ignore_callback);
+			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL) {
+				CreatePopup("Failed to connect! Error WEBPLAYER_NULL", "Retry", callback, "Proceed", ignore_callback);
+			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_FILE) {
+				CreatePopup("Failed to connect! Error FILE", "Retry", callback, "Proceed", ignore_callback);
+			} else {
+				CreatePopup("Failed to connect! Error " + error_msg, "Retry", callback, "Proceed", ignore_callback);
+			}
+			return;
+		}
+		if(!res.success) {
+			Error(res.error);
+			CreatePopup("Failed to connect! Internal Server Error", "Retry", callback, "Proceed", ignore_callback);
+			return;
+		}
+		if(!res.data) {
+			Error("null data");
+			CreatePopup("Failed to connect! No Data Received", "Retry", callback, "Proceed", ignore_callback);
+			return;
+		}
+		ref StartResponse start_res = res.data;
+		ref PlayerData player = start_res.player;
+    	ref RegionData region = start_res.region;
+	
+		BattleRoyaleAPI.GetAPI().SetRegionData( region );
+		BattleRoyaleAPI.GetAPI().SetCurrentPlayer( player ); 
+
+		UpdateRegions();
+		ClosePopup();
+		SetConnected(true);
+		GetStats().InitBRStats();
 	}
 	
 	string GetSelectedRegion()
@@ -190,14 +232,16 @@ modded class MainMenu
 			return;
 		}
 
-		ref MatchmakeCallback callback = new MatchmakeCallback( this );
-		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, callback );
+		ref MatchmakeAction mmaction = new MatchmakeAction( this );		
+		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, mmaction );
 		CreatePopup( DAYZBR_MATCHMAKING_MSG, "Cancel", onclick);
 
 		
-		api.RequestMatchmakeAsync(p_PlayerWebData, callback, GetSelectedRegion());
+
+
+		api.RequestMatchmakeAsync(p_PlayerWebData, mmaction.OnMatchmakeComplete, GetSelectedRegion());
 	}
-	
+
 	override void NextCharacter()
 	{
 		i_CurrentRegion++;

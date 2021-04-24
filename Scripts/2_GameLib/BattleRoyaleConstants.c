@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.u_c";
+static const string BATTLEROYALE_VERSION = "0.1.u_d";
 
 //--- default web endpoint
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
@@ -33,12 +33,11 @@ static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "Namalsk"; //ChernarusPlus
 
 
-//--- web API response error codes
-static const int DAYZBR_NETWORK_ERRORCODE_NULL_RESULT = 1500; //web returned 200, but response body was blank
-static const int DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL_RESULT = 1600; //json response from the webserver cannot be parsed, remember dayz can't parse Booleans
-static const int DAYZBR_NETWORK_ERRORCODE_CONTEXT_NULL_RESULT = 1700; //somehow the REST context is returning NULL
-static const int DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL_RESULT = 1800; //same as 1900 but internal to the API class structure
-
+//--- net manager constants
+static const string DAYZBR_NETWORK_ERRORCODE_TIMEOUT = "request timed out";
+static const string DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL = "failed to parse json";
+static const string DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL = "webplayer is null";
+static const string DAYZBR_NETWORK_ERRORCODE_FILE = "file transfered? wierd error";
 
 //--- error codes
 static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json object in API is NULL
@@ -124,3 +123,4 @@ static const string DAYZBR_LOADING_SCREENS_PATH 	= "BattleRoyale/Scripts/3_Game/
 static const string DAYZBR_LOADING_MESSAGES_PATH 	= "BattleRoyale/Scripts/3_Game/Loading/LoadingMessages.json";
 static const int DAYZBR_LOADING_BAR_COLOR = ARGB( 255, 0, 0, 0 ); 	//! A = Alpha (opacity) / R = Red / G = Green / B = Blue
 	
+

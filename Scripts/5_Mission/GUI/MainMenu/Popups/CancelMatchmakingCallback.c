@@ -1,11 +1,11 @@
 class CancelMatchmakingCallback extends PopupButtonCallback
 {
 	protected ref MainMenu m_MainMenu;
-	protected ref MatchmakeCallback m_Matchmaking;
-	void CancelMatchmakingCallback(ref MainMenu menu, ref MatchmakeCallback callback)
+	protected ref MatchmakeAction m_Matchmaking;
+	void CancelMatchmakingCallback(ref MainMenu menu, ref MatchmakeAction action)
 	{
 		m_MainMenu = menu;
-		m_Matchmaking = callback;
+		m_Matchmaking = action;
 	} 
 	override void OnButtonClick()
 	{

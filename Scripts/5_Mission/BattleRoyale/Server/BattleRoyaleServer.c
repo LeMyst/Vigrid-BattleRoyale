@@ -23,8 +23,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 	void Init()
 	{
-		//update our banlist
-		BattleRoyaleBans.GetBans().WriteBanlist();
 
 		m_Timer = new Timer;
 
