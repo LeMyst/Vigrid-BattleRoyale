@@ -9,8 +9,8 @@
  * To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-nd/4.0/.
  *
 */
-#include "$CurrentDir:\\mpmissions\\Expansion.ChernarusPlusGloom\\expansion\\ExpansionObjectSpawnTools.c"
-#include "$CurrentDir:\\mpmissions\\Expansion.ChernarusPlusGloom\\expansion\\missions\\MissionConstructor.c"
+#include "$CurrentDir:\\mpmissions\\BattleRoyale.ChernarusPlusGloom\\expansion\\ExpansionObjectSpawnTools.c"
+#include "$CurrentDir:\\mpmissions\\BattleRoyale.ChernarusPlusGloom\\expansion\\missions\\MissionConstructor.c"
 
 void main()
 {
