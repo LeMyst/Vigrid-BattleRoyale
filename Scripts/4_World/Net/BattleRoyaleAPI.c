@@ -73,8 +73,9 @@ class BattleRoyaleAPI {
         req.query_port = p_ServerSettings.query_port.ToString();
         req.server_ip = p_ServerSettings.ip_address;
         req.server_version = BATTLEROYALE_VERSION;
-        ref OnStartResponse res = HttpPostRequest<OnStartRequest, OnStartResponse>.SendSync(rest_api_endpoint,"/server/" + server_private_key + "/onstart", req)
-    
+        
+        ref OnStartResponse res = HttpPostRequestOnStart.SendSync(rest_api_endpoint,"/server/" + server_private_key + "/onstart", req);
+
         if(res == null) {
             Error("OnStartResponse is null");
             return NULL;
@@ -101,7 +102,8 @@ class BattleRoyaleAPI {
         req.winner = winner_name;
         req.query_port = p_ServerSettings.query_port.ToString();
         req.server_ip = p_ServerSettings.ip_address;
-        ref OnFinishResponse res = HttpPostRequest<OnFinishRequest, OnFinishResponse>.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/onfinish", req);
+        ref OnFinishResponse res = HttpPostRequestOnFinish.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/onfinish", req);
+        
         if(res == null) {
             Error("OnStartResponse is null");
             return NULL;
@@ -115,7 +117,7 @@ class BattleRoyaleAPI {
         ref SubmitMatchRequest req = new SubmitMatchRequest;
         req.server_id = GetCurrentServer()._id;
         req.match_data = BRMatch.Cast( data_object );
-        ref SubmitMatchResponse res = HttpPostRequest<SubmitMatchRequest, SubmitMatchResponse>.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/matchsubmit", req);
+        ref SubmitMatchResponse res = HttpPostRequestSubmitMatch.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/matchsubmit", req);
         if(res == null) {
             Error("OnStartResponse is null");
             return NULL;
@@ -136,7 +138,7 @@ class BattleRoyaleAPI {
         req.lock = value;
         req.query_port = p_ServerSettings.query_port.ToString();
         req.server_ip = p_ServerSettings.ip_address;
-        ref SetLockResponse res = HttpPostRequest<SetLockRequest, SetLockResponse>.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/setlock", req);
+        ref SetLockResponse res = HttpPostRequestSetLock.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/setlock", req);
         if(res == null) {
             Error("OnStartResponse is null");
             return NULL;
@@ -149,7 +151,7 @@ class BattleRoyaleAPI {
         ref GetServerRequest req = new GetServerRequest;
         req.id = server_id;
 
-        ref GetServerResponse res = HttpPostRequest<GetServerRequest, GetServerResponse>.SendSync(rest_api_endpoint, "/client/server", req);
+        ref GetServerResponse res = HttpPostRequestGetServer.SendSync(rest_api_endpoint, "/client/server", req);
         if(res == null) {
             Error("OnStartResponse is null");
             return NULL;
@@ -164,7 +166,7 @@ class BattleRoyaleAPI {
         ref GetPlayerRequest req = new GetPlayerRequest;
         req.id = SteamID;
 
-        ref GetPlayerResponse res = HttpPostRequest<GetPlayerRequest, GetPlayerResponse>.SendSync(rest_api_endpoint, "/client/player", req);
+        ref GetPlayerResponse res = HttpPostRequestGetPlayer.SendSync(rest_api_endpoint, "/client/player", req);
         if(res == null) {
             Error("OnStartResponse is null");
             return NULL;
@@ -180,7 +182,7 @@ class BattleRoyaleAPI {
         req.steamid = SteamID;
         req.name = Name;
 
-        HttpPostRequest<StartRequest,ClientStartResponse>.SendAsync(rest_api_endpoint, "/client/start", req, Callback);
+        HttpPostRequestStartClient.SendAsync(rest_api_endpoint, "/client/start", req, Callback);
     }
     void RequestMatchmakeAsync(ref PlayerData m_webplayer, func Callback, string region = "any") {
         if(!m_webplayer) {
@@ -196,6 +198,6 @@ class BattleRoyaleAPI {
         req.region = region;
         req.version = BATTLEROYALE_VERSION;
 
-        HttpPostRequest<MatchMakeRequest, ClientMatchMakeResponse>.SendAsync(rest_api_endpoint, "/client/matchmake", req, Callback);
+        HttpPostRequestMatchmake.SendAsync(rest_api_endpoint, "/client/matchmake", req, Callback);
     }
 }
