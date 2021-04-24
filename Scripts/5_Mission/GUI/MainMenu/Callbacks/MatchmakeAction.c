@@ -11,9 +11,13 @@ class MatchmakeAction {
 
     void Cancel() {
         //if we're waiting 10 seconds between calls, we need to kick that action out of the callqueue
-        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove( api.RequestMatchmakeAsync );
+        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove( this.RepeatRequest );
         this.cancelled = true; //cancel this so when we get a response from any current post request, we ignore it.
+    }
+    void RepeatRequest()
+    {
+        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+        api.RequestMatchmakeAsync(api.GetCurrentPlayer(), this.OnMatchmakeComplete, m_MainMenu.GetSelectedRegion());
     }
     void OnMatchmakeComplete(ref ClientMatchMakeResponse res, string error_msg) {
         if(this.cancelled) return;
@@ -29,13 +33,13 @@ class MatchmakeAction {
             if(error_msg == DAYZBR_NETWORK_ERRORCODE_TIMEOUT) {
 				m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Close", onclick, "Retry", onretry);
 			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL) {
-				CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Close", onclick, "Retry", onretry);
+				m_MainMenu.CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Close", onclick, "Retry", onretry);
 			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL) {
 				m_MainMenu. CreatePopup("Failed to connect! Error WEBPLAYER_NULL", "Close", onclick, "Retry", onretry);
 			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_FILE) {
 				m_MainMenu.CreatePopup("Failed to connect! Error FILE", "Close", onclick, "Retry", onretry);
 			} else {
-				m_MainMenu.CreatePopup("Failed to connect! Error " + errorCode.ToString(), "Close", onclick, "Retry", onretry);
+				m_MainMenu.CreatePopup("Failed to connect! Error " + error_msg, "Close", onclick, "Retry", onretry);
 			}
 
             
@@ -57,9 +61,7 @@ class MatchmakeAction {
         ref MatchMakingResponse mm_res = res.data;
         if(mm_res.wait) {
             //wait! run another matchmake in 10 seconds!
-            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-            PlayerData p_PlayerWebData = api.GetCurrentPlayer();
-            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( api.RequestMatchmakeAsync, 10*1000, false, p_PlayerWebData, this.OnMatchmakeComplete,  m_MainMenu.GetSelectedRegion());
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( this.RepeatRequest, 10*1000, false );
             return;          
         }
 
@@ -68,9 +70,7 @@ class MatchmakeAction {
         if(!p_ServerData.CanConnect()) {
 
             //invalid server recieved, wait 10 seconds and run another matchmake
-            BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-            PlayerData p_PlayerWebData = api.GetCurrentPlayer();
-            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( api.RequestMatchmakeAsync, 10*1000, false, p_PlayerWebData, this.OnMatchmakeComplete,  m_MainMenu.GetSelectedRegion());
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( this.RepeatRequest, 10*1000, false );
             return;
         }
 

@@ -175,7 +175,7 @@ modded class MainMenu
 			Error("result null?");
 			
 			if(error_msg == DAYZBR_NETWORK_ERRORCODE_TIMEOUT) {
-				m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback, "Proceed", ignore_callback);
+				CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback, "Proceed", ignore_callback);
 			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL) {
 				CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Retry", callback, "Proceed", ignore_callback);
 			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL) {

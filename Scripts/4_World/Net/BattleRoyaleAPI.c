@@ -96,7 +96,7 @@ class BattleRoyaleAPI {
         if(!p_ServerSettings)
         {
             Error("p_ServerSettings = NULL");
-            return NULL;
+            return;
         }
         ref OnFinishRequest req = new OnFinishRequest;
         req.winner = winner_name;
@@ -106,7 +106,7 @@ class BattleRoyaleAPI {
         
         if(res == null) {
             Error("OnStartResponse is null");
-            return NULL;
+            return;
         }
         if(!res.success) {
             Error(res.error);
@@ -120,7 +120,7 @@ class BattleRoyaleAPI {
         ref SubmitMatchResponse res = HttpPostRequestSubmitMatch.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/matchsubmit", req);
         if(res == null) {
             Error("OnStartResponse is null");
-            return NULL;
+            return;
         }
         if(!res.success) {
             Error(res.error);
@@ -132,7 +132,7 @@ class BattleRoyaleAPI {
         if(!p_ServerSettings)
         {
             Error("p_ServerSettings = NULL");
-            return NULL;
+            return;
         }
         ref SetLockRequest req = new SetLockRequest;
         req.lock = value;
@@ -141,7 +141,7 @@ class BattleRoyaleAPI {
         ref SetLockResponse res = HttpPostRequestSetLock.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/setlock", req);
         if(res == null) {
             Error("OnStartResponse is null");
-            return NULL;
+            return;
         }
         if(!res.success) {
             Error(res.error);
@@ -188,7 +188,7 @@ class BattleRoyaleAPI {
         if(!m_webplayer) {
             Error("player data is null")
             ScriptCallQueue callQueue = new ScriptCallQueue;
-            callQueue.Call(this.cb, null, DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL);
+            callQueue.Call(Callback, null, DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL);
             callQueue.Tick(1000);
             return
         }
