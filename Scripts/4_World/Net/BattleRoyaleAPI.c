@@ -89,6 +89,7 @@ class BattleRoyaleAPI {
             Error("Response data field is null")
             return NULL;
         }
+        this.m_ServerData = res.data;
         return res.data;
     }
 
@@ -120,7 +121,7 @@ class BattleRoyaleAPI {
         ref SubmitMatchRequest req = new SubmitMatchRequest;
         req.server_id = GetCurrentServer()._id;
         req.match_data = BRMatch.Cast( data_object );
-        ref SubmitMatchResponse res = HttpPostRequestSubmitMatch.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/matchsubmit", req);
+        ref SubmitMatchResponse res = HttpPostRequestSubmitMatch.SendSync(rest_api_endpoint, "/data/" + server_private_key + "/matchsubmit", req);
         if(res == null) {
             Error("OnStartResponse is null");
             return;
