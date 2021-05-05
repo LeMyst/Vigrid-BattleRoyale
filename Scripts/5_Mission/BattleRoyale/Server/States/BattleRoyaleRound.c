@@ -355,8 +355,22 @@ class BattleRoyaleRound extends BattleRoyaleState
 			{
 				//send movement update 
 				string steamid = player.GetIdentity().GetPlainId();
-				
-				BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, .../*TODO*/);
+				vector dirvector = player.GetDirection();
+				dirvector[1] = 0;
+				dirvector = dirvector.Normalized(); //renormalize
+				float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
+				//clamp range (-pi, pi]
+				if (angle_rads > Math.PI) 
+				{ 
+					angle_rads -= 2 * Math.PI; 
+				} 
+				else if (angle_rads <= -Math.PI) 
+				{ 
+					angle_rads += 2 * Math.PI; 
+				}
+				float angle = angle_rads * Math.RAD2DEG;
+
+				BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
 
 				time_until_move = 5;
 			}
@@ -365,6 +379,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				time_until_move -= timeslice;
 			}
 		}
+		
 		super.OnPlayerTick(player, timeslice);
 	}
 

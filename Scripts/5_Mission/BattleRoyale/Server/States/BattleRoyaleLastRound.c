@@ -266,11 +266,36 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         {
             player.time_until_damage = Math.Min(i_DamageTickTime, player.time_until_damage + timeslice);
         }
-		
-		if(player.time_until_move <= 0)
+
+		if(player.GetIdentity())
 		{
-			//send movement update 
-			
+			if(player.time_until_move <= 0)
+			{
+				//send movement update 
+				string steamid = player.GetIdentity().GetPlainId();
+				vector dirvector = player.GetDirection();
+				dirvector[1] = 0;
+				dirvector = dirvector.Normalized(); //renormalize
+				float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
+				//clamp range (-pi, pi]
+				if (angle_rads > Math.PI) 
+				{ 
+					angle_rads -= 2 * Math.PI; 
+				} 
+				else if (angle_rads <= -Math.PI) 
+				{ 
+					angle_rads += 2 * Math.PI; 
+				}
+				float angle = angle_rads * Math.RAD2DEG;
+
+				BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
+
+				time_until_move = 5;
+			}
+			else
+			{
+				time_until_move -= timeslice;
+			}
 		}
 
 		super.OnPlayerTick(player, timeslice);

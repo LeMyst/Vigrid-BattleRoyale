@@ -36,7 +36,7 @@ class BRRawMatchEvents {
     ref array<ref BRRawMatchVehicleEvent> vehicles;
     ref array<ref BRRawMatchShotEvent> shots;
     ref array<ref BRRawMatchHitEvent> hits;
-    ref array<ref BRRawMatchMovementEvent> movements;
+    ref array<ref BRRawMatchMovementEvent> movements;//DONE!
     ref array<ref BRRawMatchLootEvent> loots;
     ref array<ref BRRawMatchCircleEvent> circles; //DONE!
     ref array<ref BRRawMatchAirdropEvent> airdrops;
@@ -261,17 +261,15 @@ class MatchData extends BRRawMatch {
 
         events.circles.Insert( event );
     }
-    //events! --- need implementations!
-
-   
-    void KillZombie(string playerid, vector zombiepos, int time)
+    void Movement(string playerid, vector pos, float dir, int time)
     {
-        ref BRRawMatchZombieEvent event = new BRRawMatchZombieEvent;
+        ref BRRawMatchMovementEvent event = new BRRawMatchMovementEvent;
         event.playerid = playerid;
-        event.pos = zombiepos;
+        event.pos = pos;
+        event.direction = dir;
         event.timestamp = time;
 
-        events.zombiekills.Insert( event );
+        events.movements.Insert( event );
     }
     void GetInVehicle(string playerid, string vehicletype, vector vehiclepos, int time)
     {
@@ -295,6 +293,18 @@ class MatchData extends BRRawMatch {
 
         events.vehicles.Insert( event );
     }
+    //events! --- need implementations!
+
+   
+    void KillZombie(string playerid, vector zombiepos, int time)
+    {
+        ref BRRawMatchZombieEvent event = new BRRawMatchZombieEvent;
+        event.playerid = playerid;
+        event.pos = zombiepos;
+        event.timestamp = time;
+
+        events.zombiekills.Insert( event );
+    }
     void Shoot(string playerid, vector pos, int time)
     {
         ref BRRawMatchShotEvent event = new BRRawMatchShotEvent;
@@ -313,16 +323,6 @@ class MatchData extends BRRawMatch {
         event.shooter = shooterid;
 
         events.hits.Insert( event );
-    }
-    void Movement(string playerid, vector pos, float dir, int time)
-    {
-        ref BRRawMatchMovementEvent event = new BRRawMatchMovementEvent;
-        event.playerid = playerid;
-        event.pos = pos;
-        event.direction = dir;
-        event.timestamp = time;
-
-        events.movements.Insert( event );
     }
     void LootPickedUp(string playerid, string loottype, vector pos, int time)
     {
