@@ -5,11 +5,6 @@ class OnStartRequest {
     string server_ip;
 }
 
-class SubmitMatchRequest {
-    string server_id;
-    ref BRMatch match_data;
-}
-
 class OnFinishRequest {
     string winner;
     string query_port;

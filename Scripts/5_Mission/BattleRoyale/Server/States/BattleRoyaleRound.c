@@ -126,11 +126,14 @@ class BattleRoyaleRound extends BattleRoyaleState
 		{
 			GetZone().OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
 			m_ThisArea = GetZone().GetArea();
+			
+			BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
 		}
 		//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
 		//tell the client the next play area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+
 
 		//message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
 		for(i = 0; i < GetPlayers().Count(); i++)
@@ -209,7 +212,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				EntityAI killer_entity;
 				if(Class.CastTo(killer_entity, killer))
 				{
-					ref array<string> killed_with = new array<string>();
+					string killed_with = "";
 					vector killer_position = killer_entity.GetPosition();
 
 					bool is_vehicle = false;
@@ -230,13 +233,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 						if(!ContainsPlayer( pbKiller ))
 						{
 							Error("Killer does not exist in the current game state!");
-							//TODO: figure out why this error is firing, it shouldn't 
-							/*if(!match_data.ContainsDeath(player_steamid))
-							{
-								killed_with.Insert( "Bugged Killer" );
-								match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
-							}
-							return;*/
 						}
 
 						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
@@ -246,12 +242,11 @@ class BattleRoyaleRound extends BattleRoyaleState
 							if(!is_vehicle)
 							{
 								EntityAI itemInHands = pbKiller.GetHumanInventory().GetEntityInHands();
-								killed_with.Insert( itemInHands.GetType() );
-								//TODO: insert all attachments associated with the item in hands
+								killed_with = itemInHands.GetType();
 							}
 							else
 							{
-								killed_with.Insert( killer_entity.GetType() ); //vehicle kill
+								killed_with = killer_entity.GetType();
 							}
 							
 							string killer_steamid = "";
@@ -270,7 +265,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 						//killer is an entity, but not a player (we have a few subsystems for figuring out the killer id)
 						if(!match_data.ContainsDeath(player_steamid))
 						{
-							killed_with.Insert( killer_entity.GetType() );
+							killed_with = killer_entity.GetType();
 
 							Grenade_Base grenade;
 							if(Class.CastTo( grenade, killer_entity ))
@@ -289,7 +284,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 					//Unhandled killer case (not an entity?)
 					if(!match_data.ContainsDeath(player_steamid))
 					{
-						match_data.CreateDeath( player_steamid, player_position, time, "", new array<string>(), killer_position );
+						match_data.CreateDeath( player_steamid, player_position, time, "", "Environment", killer_position );
 					}
 				}
 				
@@ -299,7 +294,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				//null killer
 				if(!match_data.ContainsDeath(player_steamid))
 				{
-					match_data.CreateDeath( player_steamid, player_position, time, "", new array<string>(), Vector(0,0,0) );
+					match_data.CreateDeath( player_steamid, player_position, time, "", "Environment", Vector(0,0,0) );
 				}
 			}
 		}
@@ -337,9 +332,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 						//--- this ensures the leaderboard logs this player's death as zone damage
 						if(!match_data.ContainsDeath(player_steamid))
 						{
-							ref array<string> killed_with = new array<string>();
-							killed_with.Insert( "Zone Damage" );
-							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+							match_data.CreateDeath( player_steamid, player_position, time, "", "Zone", Vector(0,0,0) );
 						}
 					}
 					player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
@@ -356,6 +349,22 @@ class BattleRoyaleRound extends BattleRoyaleState
 			
 		}
 
+		if(player.GetIdentity())
+		{
+			if(player.time_until_move <= 0)
+			{
+				//send movement update 
+				string steamid = player.GetIdentity().GetPlainId();
+				
+				BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, .../*TODO*/);
+
+				time_until_move = 5;
+			}
+			else
+			{
+				time_until_move -= timeslice;
+			}
+		}
 		super.OnPlayerTick(player, timeslice);
 	}
 
@@ -405,7 +414,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		if(GetZone())
 			m_ThisArea = GetZone().GetArea();
 			
-		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().CreateZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
+		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().LockZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
 			
 		//tell the client the current area is now this area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);

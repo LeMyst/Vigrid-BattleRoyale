@@ -26,9 +26,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		m_Timer = new Timer;
 
-		match_data = new MatchData;
-
-		match_data.CreateWorld("Namalsk", "Solos"); //todo figure out world dynamically & get game mode from config
+		//TODO: this needs to be dynamically aquired (probably via configs)
+		match_data = new MatchData("HC FPP Namalsk - Chicago #1", "Namalsk", "Solos");
 
 		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
 		m_VehicleSystem = new BattleRoyaleVehicles;
@@ -277,9 +276,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 						{
 							vector player_position = player.GetPosition();
 							int time = GetGame().GetTime();
-							ref array<string> killed_with = new array<string>();
-							killed_with.Insert( "Disconnected" );
-							GetMatchData().CreateDeath( player_steamid, player_position, time, "", killed_with, Vector(0,0,0) );
+							//no killer, killed with disconnected, killer at 0,0,0
+							GetMatchData().CreateDeath( player_steamid, player_position, time, "", "disconnected", Vector(0,0,0) );
 						}
 					}
 					else
@@ -487,7 +485,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		int minute = 0;
 		GetGame().GetWorld().SetDate(year, month, day, hour, minute);
 		
-		GetMatchData().SetWorldStartTime( hour, minute );
+		GetMatchData().SetStartTime( hour, minute );
 
 		//Set Random Weather
 		Weather weather = GetGame().GetWeather();

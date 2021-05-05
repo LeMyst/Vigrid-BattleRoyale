@@ -70,6 +70,19 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 		return super.IsComplete();
 	}
 
+    override void OnPlayerTick(PlayerBase player, float timeslice)
+    {
+        if(b_IsGameplay)
+        {
+            if(player.time_until_move <= 0)
+            {
+                //send movement update 
+                
+            }
+        }
+        super.OnPlayerTick(player, timeslice);
+    }
+
     //TODO: add this to battleroyaleconstants and use string replace to insert seconds_till
     void MessageUnlock(int seconds_till)
     {
@@ -103,7 +116,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         
         MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
 
-        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetStart(GetGame().GetTime()); //match start time logging
+        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetStart( GetGame().GetTime() ); //match start time logging
         b_IsGameplay = true;
     }
 

@@ -91,11 +91,14 @@ class MatchmakeAction {
             return;
         }
 
-        if(!GetGame().Connect(m_MainMenu, ip_addr, port, BATTLEROYALE_SERVER_PASSWORD))
+        int connect_code = GetGame().Connect(m_MainMenu, ip_addr, port, BATTLEROYALE_SERVER_PASSWORD);
+
+        if(connect_code != 0)
 		{
+            string message = ErrorModuleHandler.GetClientMessageByCode(connect_code, "");
 			Print(p_ServerData.connection);
-			Error("BattleRoyale: Failed to connect to server");	
-		    m_MainMenu.CreatePopup(DAYZBR_FAILED_TO_CONNECT_MSG, "Close", onclick, "Retry", onretry);
+			Error("BattleRoyale: Failed to connect to server (" + connect_code.ToString() + ")");
+		    m_MainMenu.CreatePopup(DAYZBR_FAILED_TO_CONNECT_MSG + message, "Close", onclick, "Retry", onretry);
             return;
 		}
         

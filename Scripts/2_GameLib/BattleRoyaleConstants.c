@@ -110,7 +110,7 @@ static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
 static const string DAYZBR_CONNECTING_TO_NETWORK_MSG = "Connecting to the Battle Royale Network...";
 static const string DAYZBR_MATCHMAKING_MSG = "Matchmaking...";
 static const string DAYZBR_CONNECTING_TO_SERVER_MSG = "Connecting to match. Please be patient, this could take a while...";
-static const string DAYZBR_FAILED_TO_CONNECT_MSG = "Error! Failed to connect to the provided server!";
+static const string DAYZBR_FAILED_TO_CONNECT_MSG = "Error! ";
 static const string DAYZBR_TIMEOUT_MSG = "Failed to connect! Timed out!";
 static const string DAYZBR_NULL_RESPONSE_MSG = "Error! NULL Response!";
 

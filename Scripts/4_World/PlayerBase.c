@@ -32,6 +32,7 @@ modded class PlayerBase
 
 	float time_until_heal = 0;
 	float time_until_damage = 0;
+	float time_until_move = 0;
 
 	bool allow_fade = false;
 
