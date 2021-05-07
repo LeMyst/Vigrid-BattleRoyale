@@ -104,9 +104,25 @@ modded class PlayerBase
 	}
 	override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
 	{
-		if(GetGame().IsServer())
+		if(GetGame().IsServer() && source && GetBR())
 		{
 			//! server - hit event!
+			Man killer = source.GetHierarchyRootPlayer();
+			if(killer && killer.IsPlayer())
+			{
+				BattleRoyaleDebug m_Debug;
+				BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( GetBR() ).GetCurrentState();
+				if(!Class.CastTo(m_Debug, m_CurrentState))
+				{
+	
+					PlayerBase shooter = PlayerBase.Cast( killer );
+					if(shooter && shooter.GetIdentity() && this.GetIdentity())
+					{
+						string shooterid = shooter.GetIdentity().GetPlainId();
+						BattleRoyaleServer.Cast(  GetBR() ).GetMatchData().Hit( this.GetIdentity().GetPlainId(), shooterid, this.GetPosition(), GetGame().GetTime() );
+					}
+				}
+			}
 		}
 		super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
 	}

@@ -311,12 +311,6 @@ class MatchData extends BRRawMatch {
 
         events.shots.Insert( event );
     }
-
-    //events! --- need implementations!
-
-   
-    
-    
     void Hit(string playerid, string shooterid, vector playerpos, int time)
     {
         ref BRRawMatchHitEvent event = new BRRawMatchHitEvent;
@@ -349,6 +343,7 @@ class MatchData extends BRRawMatch {
 
         events.loots.Insert( event );
     }
+    
     //NOT IMPLEMENTED!!!
     void Airdrop(vector pos, int time)
     {
