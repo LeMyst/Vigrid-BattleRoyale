@@ -293,9 +293,6 @@ class MatchData extends BRRawMatch {
 
         events.vehicles.Insert( event );
     }
-    //events! --- need implementations!
-
-   
     void KillZombie(string playerid, vector zombiepos, int time)
     {
         ref BRRawMatchZombieEvent event = new BRRawMatchZombieEvent;
@@ -305,6 +302,11 @@ class MatchData extends BRRawMatch {
 
         events.zombiekills.Insert( event );
     }
+    
+    //events! --- need implementations!
+
+   
+    
     void Shoot(string playerid, vector pos, int time)
     {
         ref BRRawMatchShotEvent event = new BRRawMatchShotEvent;

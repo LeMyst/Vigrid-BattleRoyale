@@ -102,6 +102,14 @@ modded class PlayerBase
 			m_BR.OnPlayerKilled(this, killer);
 		}
 	}
+	override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
+	{
+		if(GetGame().IsServer())
+		{
+			//! server - hit event!
+		}
+		super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
+	}
 	
 	//Temp fix for disabling character saving
 	override bool Save()

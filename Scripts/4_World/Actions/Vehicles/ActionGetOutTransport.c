@@ -12,7 +12,7 @@ modded class ActionGetOutTransport {
                 if ( Class.CastTo(car, got_action_data.m_Car) )
                 {   
 
-                    //TODO: register event if match is ongoing! (we have CAR and PLAYER)
+                    //register event if match is ongoing! (we have CAR and PLAYER)
                     string cartype = car.GetDisplayName();
                     string playerid =  player.GetIdentity().GetPlainId();
                     vector vehiclepos = car.GetPosition();
