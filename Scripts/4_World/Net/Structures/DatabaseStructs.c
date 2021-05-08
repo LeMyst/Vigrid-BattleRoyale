@@ -29,7 +29,7 @@ class LeaderboardPlayer {
     string description;
     float rating;
     ref LeaderboardPlayerPentagon pentagon;
-    ref map<int, float> ratingtime;
+   // ref map<int, float> ratingtime; //--- dayz doesn't support floats in map keytype?! "Map's key type can be only int, string and enum"
     float averageplace;
     int totalkills;
     int totalwins;

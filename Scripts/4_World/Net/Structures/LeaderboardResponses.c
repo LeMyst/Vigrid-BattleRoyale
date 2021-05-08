@@ -3,9 +3,9 @@ class RankResponseData {
     int rank;
 }
 
-typedef GenericResponse<NoDataResponse> SubmitMatchResponse;
+typedef GenericResponse<ref NoDataResponse> SubmitMatchResponse;
 
-typedef GenericResponse<LeaderboardPlayer> PlayerDataResponse;
+typedef GenericResponse<ref LeaderboardPlayer> PlayerDataResponse;
 
-typedef GenericResponse<RankResponseData> RankResponse;
+typedef GenericResponse<ref RankResponseData> RankResponse;
 

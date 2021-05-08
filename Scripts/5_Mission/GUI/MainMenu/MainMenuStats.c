@@ -47,32 +47,55 @@ modded class MainMenuStats {
 		if(!p_UserManager)
 		{
 			Error("DBR ERROR: p_UserManager = NULL");
-			return false;
+			return;
 		}
 		BiosUser p_User = p_UserManager.GetTitleInitiator();
 		if(!p_User)
 		{
 			Error("DBR ERROR: p_User = NULL");
-			return false;
+			return;
 		}
 		string steamid = p_User.GetUid();
 		
 		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
 		LeaderboardPlayer p_PlayerData = api.GetPlayerLeaderboardData(steamid);
-		int rank = api.GetRankForRating(p_PlayerData.rating);
+		int rank = 0;
+		if(!p_PlayerData) 
+		{
 
-		if(p_PlayerData)
+			p_PlayerData = new LeaderboardPlayer;
+			p_PlayerData.rating = 0;
+			p_PlayerData.totaltimealive = 0;
+			p_PlayerData.totalwins = 0;
+			p_PlayerData.totalkills = 0;
+
+		} 
+		else 
+		{
+			rank = api.GetRankForRating(p_PlayerData.rating);
+		}
+		
+
+		if(p_PlayerData && rank > 0)
 		{
 			m_TimePlayedValue.SetText(p_PlayerData.totaltimealive.ToString());
 			m_RatingValue.SetText(p_PlayerData.rating.ToString());
 			m_WinsValue.SetText(p_PlayerData.totalwins.ToString());
 			m_KillsValue.SetText(p_PlayerData.totalkills.ToString());
-			m_GlobalRankValue.SetText(rank);
+			m_GlobalRankValue.SetText(rank.ToString());
+		}
+		else if(p_PlayerData)
+		{
+			m_TimePlayedValue.SetText("0");
+			m_RatingValue.SetText("N/a");
+			m_WinsValue.SetText("0");
+			m_KillsValue.SetText("0");
+			m_GlobalRankValue.SetText("N/a");
 		}
 		else
 		{
-			Print("No Simple Data Set, Displaying Blank Stats");
-			m_TimePlayedValue.SetText("0:00");
+			Error("Failed to display");
+			m_TimePlayedValue.SetText("0");
 			m_RatingValue.SetText("0");
 			m_WinsValue.SetText("0");
 			m_KillsValue.SetText("0");
