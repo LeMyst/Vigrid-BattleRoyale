@@ -11,21 +11,29 @@ modded class ZombieBase {
                 if(!GetBR().IsDebug())
                 {
                     Print("attempting to get killer!");
-                    //TODO: review if this actually does capture all types of zombie kills (what about running them over with a vehicle?)
-                    PlayerBase pbKiller;
-                    if(Class.CastTo( pbKiller, killer ))
+
+                    EntityAI eAI;
+                    if(Class.CastTo( eAI, killer ))
                     {
-                        Print("killer aquired");
-                        if(pbKiller.GetIdentity())
+                        Man player = eAI.GetHierarchyRootPlayer(); //get root player of this hierarchy
+                        if(player)
                         {
-                            Print("registering zombie kill");
-                            string playerid = pbKiller.GetIdentity().GetPlainId();
-                            GetBR().GetMatchData().KillZombie( playerid, this.GetPosition(), GetGame().GetTime() );
+                            PlayerBase pbKiller;
+                            if(Class.CastTo( pbKiller, player ))
+                            {
+                                Print("killer aquired");
+                                if(pbKiller.GetIdentity())
+                                {
+                                    Print("registering zombie kill");
+                                    string playerid = pbKiller.GetIdentity().GetPlainId();
+                                    GetBR().GetMatchData().KillZombie( playerid, this.GetPosition(), GetGame().GetTime() );
+                                }
+                            }
                         }
                     }
                     else
                     {
-                        Print("zombie killed by unknown entitiy: " + killer.GetDisplayName());
+                        Print("zombie killed by unknown object: " + killer.GetDisplayName());
                     }
                 }
             }
