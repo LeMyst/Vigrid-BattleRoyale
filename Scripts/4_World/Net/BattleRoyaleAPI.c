@@ -108,7 +108,7 @@ class BattleRoyaleAPI {
         ref OnFinishResponse res = HttpPostRequestOnFinish.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/onfinish", req);
         
         if(res == null) {
-            Error("OnStartResponse is null");
+            Error("OnFinishResponse is null");
             return;
         }
         if(!res.success) {
@@ -120,10 +120,10 @@ class BattleRoyaleAPI {
         Print("submitting match data...");
         ref SubmitMatchRequest req = new SubmitMatchRequest;
         req.server_id = GetCurrentServer()._id;
-        req.match_data = BRMatch.Cast( data_object );
+        req.match_data = data_object;
         ref SubmitMatchResponse res = HttpPostRequestSubmitMatch.SendSync(rest_api_endpoint, "/data/" + server_private_key + "/matchsubmit", req);
         if(res == null) {
-            Error("OnStartResponse is null");
+            Error("SubmitMatchResponse is null");
             return;
         }
         if(!res.success) {
@@ -145,7 +145,7 @@ class BattleRoyaleAPI {
         req.server_ip = p_ServerSettings.ip_address;
         ref SetLockResponse res = HttpPostRequestSetLock.SendSync(rest_api_endpoint, "/server/" + server_private_key + "/setlock", req);
         if(res == null) {
-            Error("OnStartResponse is null");
+            Error("SetLockResponse is null");
             return;
         }
         if(!res.success) {
@@ -159,7 +159,7 @@ class BattleRoyaleAPI {
 
         ref GetServerResponse res = HttpPostRequestGetServer.SendSync(rest_api_endpoint, "/client/server", req);
         if(res == null) {
-            Error("OnStartResponse is null");
+            Error("GetServerResponse is null");
             return NULL;
         }
         if(!res.success) {
@@ -175,7 +175,7 @@ class BattleRoyaleAPI {
 
         ref GetPlayerResponse res = HttpPostRequestGetPlayer.SendSync(rest_api_endpoint, "/client/player", req);
         if(res == null) {
-            Error("OnStartResponse is null");
+            Error("GetPlayerRequest is null");
             return NULL;
         }
         if(!res.success) {

@@ -1,0 +1,2 @@
+
+typedef GenericResponse<NoDataResponse> SubmitMatchResponse;
