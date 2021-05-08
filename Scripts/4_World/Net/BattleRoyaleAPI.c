@@ -184,6 +184,39 @@ class BattleRoyaleAPI {
         }
         return res.data;
     }
+
+    int GetRankForRating(float rating) {
+        ref RankRequest req = new RankRequest;
+        req.rating = rating;
+
+
+        ref RankResponse res = HttpPostRequestRanking.SendSync(rest_api_endpoint, "/data/rank", req);
+        if(res == null) {
+            Error("RankRequest is null)");
+            return 0;
+        }
+        if(!res.success) {
+            Error(res.error);
+            return 0;
+        }
+        return res.data.rank;
+    }
+
+    ref LeaderboardPlayer GetPlayerLeaderboardData(string steamid) {
+        ref PlayerDataRequest req = new PlayerDataRequest;
+        req.steamid = steamid;
+
+        ref PlayerDataResponse res = HttpPostRequestPlayerData.SendSync(rest_api_endpoint, "/data/player", req);
+        if(res == null) {
+            Error("PlayerDataRequest is null)");
+            return NULL;
+        }
+        if(!res.success) {
+            Error(res.error);
+            return NULL;
+        }
+        return res.data;
+    }
     void RequestStartAsync(string SteamID, string Name, Class inst, string callback) {
         Print("requesting async start...");
         ref StartRequest req = new StartRequest;

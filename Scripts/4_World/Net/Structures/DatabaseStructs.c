@@ -22,6 +22,43 @@ class RegionData {
     ref array<string> regions;
 }
 
+class LeaderboardPlayer {
+    string _id;
+    string playerid;
+    string steamid;
+    string description;
+    float rating;
+    ref LeaderboardPlayerPentagon pentagon;
+    ref map<int, float> ratingtime;
+    float averageplace;
+    int totalkills;
+    int totalwins;
+    int totalmatches;
+    int totallooted;
+    int totalhits;
+    float totaldistanceonfoot;
+    float totaldistanceinvehicle;
+    int totaltimealive;
+    int maxpossibletimealive;
+    int averagetimealive;
+    ref array<ref LeaderboardPlayerMatch> matches;
+}
+class LeaderboardPlayerPentagon {
+    float looting;
+    float fighting;
+    float walking;
+    float surviving;
+    float driving;
+}
+class LeaderboardPlayerMatch {
+    string matchid;
+    string matchname;
+    int placement;
+    int kills;
+    float postmatchrating;
+    float deltarating;
+    int timestamp;
+}
 
 class BRRawMatch {
     ref BRRawMatchWeather weather;  //DONE!

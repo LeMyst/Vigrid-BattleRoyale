@@ -604,3 +604,121 @@ class HttpPostRequestMatchmake extends RestCallback {
         RunCallback(null, DAYZBR_NETWORK_ERRORCODE_FILE);
     }
 }
+
+//typedef HttpPostRequest<PlayerDataRequest, PlayerDataResponse> HttpPostRequestPlayerData;
+class HttpPostRequestPlayerData extends RestCallback {
+    static PlayerDataResponse SendSync(string server, string function, PlayerDataRequest data)
+    {
+        string jsondata = JsonFileLoader<PlayerDataRequest>.JsonMakeData(data); //convert data to json
+        RestContext ctx = GetRestApi().GetRestContext(server);
+        string outdata = ctx.POST_now(function, jsondata); //post request synchronous
+        PlayerDataResponse result;//convert output to T2 object
+        JsonFileLoader<PlayerDataResponse>.JsonLoadData(outdata, result);
+        return result;//return out object
+    }
+    static void SendAsync(string server, string function, PlayerDataRequest data, ref HttpAsyncCallback callback = null)
+    {
+        string jsondata = JsonFileLoader<PlayerDataRequest>.JsonMakeData(data);
+        ref HttpPostRequestGetPlayer rest_callback = new HttpPostRequestGetPlayer(callback);
+        RestContext ctx = GetRestApi().GetRestContext(server);
+        ctx.POST(rest_callback, function, jsondata); //post asynchronously
+    }
+
+    private ref HttpAsyncCallback cb;
+    void HttpPostRequestGetPlayer(ref HttpAsyncCallback callback)
+    {
+        this.cb = callback;
+    }
+    void RunCallback(PlayerDataResponse result, string error_msg)
+    {
+        if(this.cb == null) return;
+
+        ref Param2<PlayerDataResponse, string> params = new Param2<PlayerDataResponse, string>(result, error_msg);
+        GetGame().GameScript.CallFunctionParams(this.cb.c_Inst, this.cb.s_Func, NULL, params);
+    }
+    override void OnError( int errorCode )
+    {
+        RunCallback(null, errorCode.ToString());
+    }
+    override void OnTimeout()
+    {
+        RunCallback(null, DAYZBR_NETWORK_ERRORCODE_TIMEOUT);
+    }
+    override void OnSuccess( string data, int dataSize )
+    {
+        if( dataSize > 0 )
+        {
+            PlayerDataResponse result;
+            JsonFileLoader<PlayerDataResponse>.JsonLoadData(data, result);
+            if(result)
+            {
+                RunCallback(result, "");
+                return;
+            }
+        }
+        RunCallback(null, DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL);
+    }
+    override void OnFileCreated( string fileName, int dataSize )
+    {
+        RunCallback(null, DAYZBR_NETWORK_ERRORCODE_FILE);
+    }
+}
+
+//typedef HttpPostRequest<RankRequest, RankResponse> HttpPostRequestRanking;
+class HttpPostRequestRanking extends RestCallback {
+    static RankResponse SendSync(string server, string function, RankRequest data)
+    {
+        string jsondata = JsonFileLoader<RankRequest>.JsonMakeData(data); //convert data to json
+        RestContext ctx = GetRestApi().GetRestContext(server);
+        string outdata = ctx.POST_now(function, jsondata); //post request synchronous
+        RankResponse result;//convert output to T2 object
+        JsonFileLoader<RankResponse>.JsonLoadData(outdata, result);
+        return result;//return out object
+    }
+    static void SendAsync(string server, string function, RankRequest data, ref HttpAsyncCallback callback = null)
+    {
+        string jsondata = JsonFileLoader<RankRequest>.JsonMakeData(data);
+        ref HttpPostRequestGetPlayer rest_callback = new HttpPostRequestGetPlayer(callback);
+        RestContext ctx = GetRestApi().GetRestContext(server);
+        ctx.POST(rest_callback, function, jsondata); //post asynchronously
+    }
+
+    private ref HttpAsyncCallback cb;
+    void HttpPostRequestGetPlayer(ref HttpAsyncCallback callback)
+    {
+        this.cb = callback;
+    }
+    void RunCallback(RankResponse result, string error_msg)
+    {
+        if(this.cb == null) return;
+
+        ref Param2<RankResponse, string> params = new Param2<RankResponse, string>(result, error_msg);
+        GetGame().GameScript.CallFunctionParams(this.cb.c_Inst, this.cb.s_Func, NULL, params);
+    }
+    override void OnError( int errorCode )
+    {
+        RunCallback(null, errorCode.ToString());
+    }
+    override void OnTimeout()
+    {
+        RunCallback(null, DAYZBR_NETWORK_ERRORCODE_TIMEOUT);
+    }
+    override void OnSuccess( string data, int dataSize )
+    {
+        if( dataSize > 0 )
+        {
+            RankResponse result;
+            JsonFileLoader<RankResponse>.JsonLoadData(data, result);
+            if(result)
+            {
+                RunCallback(result, "");
+                return;
+            }
+        }
+        RunCallback(null, DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL);
+    }
+    override void OnFileCreated( string fileName, int dataSize )
+    {
+        RunCallback(null, DAYZBR_NETWORK_ERRORCODE_FILE);
+    }
+}
