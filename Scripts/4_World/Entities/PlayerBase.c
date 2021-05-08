@@ -108,7 +108,7 @@ modded class PlayerBase
 		{
 			//! server - hit event!
 			Man killer = source.GetHierarchyRootPlayer();
-			if(killer && killer.IsPlayer())
+			if(killer)
 			{
 				if(!GetBR().IsDebug())
 				{

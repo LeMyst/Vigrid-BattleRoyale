@@ -110,7 +110,7 @@ class BRRawMatchMovementEvent {
 class BRRawMatchHitEvent {
     string playerid;
     vector pos;
-    string shooter;
+    string shooterid;
     int timestamp;
 }
 class BRRawMatchShotEvent {
@@ -352,7 +352,7 @@ class MatchData extends BRRawMatch {
         brevent.playerid = playerid;
         brevent.pos = playerpos;
         brevent.timestamp = time;
-        brevent.shooter = shooterid;
+        brevent.shooterid = shooterid;
 
         events.hits.Insert( brevent );
     }
