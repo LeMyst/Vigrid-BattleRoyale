@@ -32,7 +32,7 @@ modded class ItemBase {
     override void OnInventoryExit(Man player) {
         super.OnInventoryExit(player);
 
-        if(GetGame().IsServer() && GetBR())
+        if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
         {
             PlayerBase nplayer;
             if ( PlayerBase.CastTo(nplayer, player) )

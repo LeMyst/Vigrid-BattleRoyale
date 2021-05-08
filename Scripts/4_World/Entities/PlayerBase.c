@@ -104,7 +104,7 @@ modded class PlayerBase
 	}
 	override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
 	{
-		if(GetGame().IsServer() && source && GetBR())
+		if(GetGame().IsMultiplayer() && GetGame().IsServer() && source && GetBR())
 		{
 			//! server - hit event!
 			Man killer = source.GetHierarchyRootPlayer();

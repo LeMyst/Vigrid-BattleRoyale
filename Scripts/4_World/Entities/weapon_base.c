@@ -2,7 +2,7 @@ modded class Weapon_Base {
 
     override void EEFired (int muzzleType, int mode, string ammoType) 
     {
-        if(GetGame().IsServer() && GetBR())
+        if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
         {
             //! server - log zombie kill event!
             if(!GetBR().IsDebug())

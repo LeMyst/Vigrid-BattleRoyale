@@ -1,7 +1,7 @@
 modded class ZombieBase {
     override void EEKilled(Object killer)
 	{
-        if(GetGame().IsServer() && GetBR())
+        if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
         {
             //! server - log zombie kill event!
             if(!GetBR().IsDebug())
