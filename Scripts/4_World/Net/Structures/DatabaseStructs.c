@@ -14,8 +14,6 @@ class BRPlayer {
     string _id;
     string name;
     string steam_id;
-    ref array<string> match_ids;
-    int rating;
     ref array<string> ips;
     ref array<string> shop_purchases;
 }
@@ -52,7 +50,7 @@ enum BRRawMatchCircleEvent_Events {
 class BRRawMatchCircleEvent {
     vector pos;
     float radius;
-    BRRawMatchCircleEvent_Events event;
+    int brevent;
     int timestamp;
 }
 enum BRRawMatchLootEvent_Events {
@@ -63,7 +61,7 @@ class BRRawMatchLootEvent {
     string playerid;
     string item;
     vector pos;
-    BRRawMatchLootEvent_Events event;
+    int brevent;
     int timestamp;
 }
 class BRRawMatchMovementEvent {
@@ -74,7 +72,7 @@ class BRRawMatchMovementEvent {
 }
 class BRRawMatchHitEvent {
     string playerid;
-    float pos;
+    vector pos;
     string shooter;
     int timestamp;
 }
@@ -91,7 +89,7 @@ class BRRawMatchVehicleEvent {
     string playerid;
     string vehicle;
     vector pos;
-    BRRawMatchVehicleEvent_Events event;
+    int brevent;
     int timestamp;
 }
 class BRRawMatchZombieEvent {
@@ -109,7 +107,7 @@ class BRRawMatchPlayer {
 }
 class BRRawMatchGame {
     string name;
-    string map;
+    string mapname;
     string gametype;
     int start;
     int end;
@@ -171,7 +169,7 @@ class MatchData extends BRRawMatch {
 
         //--- initialize our game constants
         game.name = match_name;
-        game.map = map_name;
+        game.mapname = map_name;
         game.gametype = game_type;
 
 
@@ -236,121 +234,121 @@ class MatchData extends BRRawMatch {
     {
         for(int i = 0; i < results.Count(); i++)
         {
-            if(deaths[i].steamid == playerid)
+            if(results[i].steamid == playerid)
                 return true;
         }
         return false;
     }
     void ShowZone(vector position, float radius, int time)
     {
-        ref BRRawMatchCircleEvent event = new BRRawMatchCircleEvent;
-        event.event = BRRawMatchCircleEvent_Events.Event_ShowCircle;
-        event.pos = position;
-        event.radius = radius;
-        event.timestamp = time;
+        ref BRRawMatchCircleEvent brevent = new BRRawMatchCircleEvent;
+        brevent.brevent = BRRawMatchCircleEvent_Events.Event_ShowCircle;
+        brevent.pos = position;
+        brevent.radius = radius;
+        brevent.timestamp = time;
 
-        events.circles.Insert( event );
+        events.circles.Insert( brevent );
     }
     void LockZone(vector position, float radius, int time)
     {
-        ref BRRawMatchCircleEvent event = new BRRawMatchCircleEvent;
-        event.event = BRRawMatchCircleEvent_Events.Event_LockCircle;
-        event.pos = position;
-        event.radius = radius;
-        event.timestamp = time;
+        ref BRRawMatchCircleEvent brevent = new BRRawMatchCircleEvent;
+        brevent.brevent = BRRawMatchCircleEvent_Events.Event_LockCircle;
+        brevent.pos = position;
+        brevent.radius = radius;
+        brevent.timestamp = time;
 
-        events.circles.Insert( event );
+        events.circles.Insert( brevent );
     }
     void Movement(string playerid, vector pos, float dir, int time)
     {
-        ref BRRawMatchMovementEvent event = new BRRawMatchMovementEvent;
-        event.playerid = playerid;
-        event.pos = pos;
-        event.direction = dir;
-        event.timestamp = time;
+        ref BRRawMatchMovementEvent brevent = new BRRawMatchMovementEvent;
+        brevent.playerid = playerid;
+        brevent.pos = pos;
+        brevent.direction = dir;
+        brevent.timestamp = time;
 
-        events.movements.Insert( event );
+        events.movements.Insert( brevent );
     }
     void GetInVehicle(string playerid, string vehicletype, vector vehiclepos, int time)
     {
-        ref BRRawMatchVehicleEvent event = new BRRawMatchVehicleEvent;
-        event.event = BRRawMatchVehicleEvent_Events.Event_GetIn;
-        event.playerid = playerid;
-        event.vehicle = vehicletype;
-        event.pos = vehiclepos;
-        event.timestamp = time;
+        ref BRRawMatchVehicleEvent brevent = new BRRawMatchVehicleEvent;
+        brevent.brevent = BRRawMatchVehicleEvent_Events.Event_GetIn;
+        brevent.playerid = playerid;
+        brevent.vehicle = vehicletype;
+        brevent.pos = vehiclepos;
+        brevent.timestamp = time;
 
-        events.vehicles.Insert( event );
+        events.vehicles.Insert( brevent );
     }
     void GetOutVehicle(string playerid, string vehicletype, vector vehiclepos, int time)
     {
-        ref BRRawMatchVehicleEvent event = new BRRawMatchVehicleEvent;
-        event.event = BRRawMatchVehicleEvent_Events.Event_GetOut;
-        event.playerid = playerid;
-        event.vehicle = vehicletype;
-        event.pos = vehiclepos;
-        event.timestamp = time;
+        ref BRRawMatchVehicleEvent brevent = new BRRawMatchVehicleEvent;
+        brevent.brevent = BRRawMatchVehicleEvent_Events.Event_GetOut;
+        brevent.playerid = playerid;
+        brevent.vehicle = vehicletype;
+        brevent.pos = vehiclepos;
+        brevent.timestamp = time;
 
-        events.vehicles.Insert( event );
+        events.vehicles.Insert( brevent );
     }
     void KillZombie(string playerid, vector zombiepos, int time)
     {
-        ref BRRawMatchZombieEvent event = new BRRawMatchZombieEvent;
-        event.playerid = playerid;
-        event.pos = zombiepos;
-        event.timestamp = time;
+        ref BRRawMatchZombieEvent brevent = new BRRawMatchZombieEvent;
+        brevent.playerid = playerid;
+        brevent.pos = zombiepos;
+        brevent.timestamp = time;
 
-        events.zombiekills.Insert( event );
+        events.zombiekills.Insert( brevent );
     }
     void Shoot(string playerid, vector pos, int time)
     {
-        ref BRRawMatchShotEvent event = new BRRawMatchShotEvent;
-        event.playerid = playerid;
-        event.pos = pos;
-        event.timestamp = timestamp;
+        ref BRRawMatchShotEvent brevent = new BRRawMatchShotEvent;
+        brevent.playerid = playerid;
+        brevent.pos = pos;
+        brevent.timestamp = time;
 
-        events.shots.Insert( event );
+        events.shots.Insert( brevent );
     }
     void Hit(string playerid, string shooterid, vector playerpos, int time)
     {
-        ref BRRawMatchHitEvent event = new BRRawMatchHitEvent;
-        event.playerid = playerid;
-        event.pos = playerpos;
-        event.timestamp = timestamp;
-        event.shooter = shooterid;
+        ref BRRawMatchHitEvent brevent = new BRRawMatchHitEvent;
+        brevent.playerid = playerid;
+        brevent.pos = playerpos;
+        brevent.timestamp = time;
+        brevent.shooter = shooterid;
 
-        events.hits.Insert( event );
+        events.hits.Insert( brevent );
     }
     void LootPickedUp(string playerid, string loottype, vector pos, int time)
     {
-        ref BRRawMatchLootEvent event = new BRRawMatchLootEvent;
-        event.event = BRRawMatchLootEvent_Events.Event_PickUp;
-        event.playerid = playerid;
-        event.item = loottype;
-        event.pos = pos;
-        event.timestamp = time;
+        ref BRRawMatchLootEvent brevent = new BRRawMatchLootEvent;
+        brevent.brevent = BRRawMatchLootEvent_Events.Event_PickUp;
+        brevent.playerid = playerid;
+        brevent.item = loottype;
+        brevent.pos = pos;
+        brevent.timestamp = time;
 
-        events.loots.Insert( event );
+        events.loots.Insert( brevent );
     }
     void LootDropped(string playerid, string loottype, vector pos, int time)
     {
-        ref BRRawMatchLootEvent event = new BRRawMatchLootEvent;
-        event.event = BRRawMatchLootEvent_Events.Event_Drop;
-        event.playerid = playerid;
-        event.item = loottype;
-        event.pos = pos;
-        event.timestamp = time;
+        ref BRRawMatchLootEvent brevent = new BRRawMatchLootEvent;
+        brevent.brevent = BRRawMatchLootEvent_Events.Event_Drop;
+        brevent.playerid = playerid;
+        brevent.item = loottype;
+        brevent.pos = pos;
+        brevent.timestamp = time;
 
-        events.loots.Insert( event );
+        events.loots.Insert( brevent );
     }
     
     //NOT IMPLEMENTED!!!
     void Airdrop(vector pos, int time)
     {
-        ref BRRawMatchAirdropEvent event = new BRRawMatchAirdropEvent;
-        event.pos = pos;
-        event.timestamp = time;
+        ref BRRawMatchAirdropEvent brevent = new BRRawMatchAirdropEvent;
+        brevent.pos = pos;
+        brevent.timestamp = time;
 
-        events.airdrops.Insert( event );
+        events.airdrops.Insert( brevent );
     }
 }

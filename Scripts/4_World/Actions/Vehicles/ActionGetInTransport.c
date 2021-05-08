@@ -17,12 +17,10 @@ modded class ActionGetInTransport
                 string playerid =  player.GetIdentity().GetPlainId();
                 vector vehiclepos = car.GetPosition();
                 int time = GetGame().GetTime();
-                BattleRoyaleDebug m_Debug;
-                BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( GetBR() ).GetCurrentState();
-                if(!Class.CastTo(m_Debug, m_CurrentState))
+                if(!GetBR().IsDebug())
                 {
                     //we are not in a debug state, therefore we assume we're in game and events need processed!
-                    BattleRoyaleServer.Cast(  GetBR() ).GetMatchData().GetInVehicle( playerid, cartype, vehiclepos, time );
+                     GetBR().GetMatchData().GetInVehicle( playerid, cartype, vehiclepos, time );
                 }
             }
         }

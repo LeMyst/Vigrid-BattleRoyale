@@ -48,7 +48,7 @@ modded class MainMenuStats {
 		if(p_SimpleData)
 		{
 			m_TimePlayedValue.SetText("<Incomplete>");
-			m_RatingValue.SetText(p_SimpleData.rating.ToString());
+			m_RatingValue.SetText("<Incomplete>";
 			m_WinsValue.SetText("<Incomplete>");
 			m_KillsValue.SetText("<Incomplete>");
 			m_GlobalRankValue.SetText("<Incomplete>");

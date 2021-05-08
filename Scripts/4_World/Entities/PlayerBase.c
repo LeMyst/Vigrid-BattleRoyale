@@ -110,16 +110,14 @@ modded class PlayerBase
 			Man killer = source.GetHierarchyRootPlayer();
 			if(killer && killer.IsPlayer())
 			{
-				BattleRoyaleDebug m_Debug;
-				BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( GetBR() ).GetCurrentState();
-				if(!Class.CastTo(m_Debug, m_CurrentState))
+				if(!GetBR().IsDebug())
 				{
 	
 					PlayerBase shooter = PlayerBase.Cast( killer );
 					if(shooter && shooter.GetIdentity() && this.GetIdentity())
 					{
 						string shooterid = shooter.GetIdentity().GetPlainId();
-						BattleRoyaleServer.Cast(  GetBR() ).GetMatchData().Hit( this.GetIdentity().GetPlainId(), shooterid, this.GetPosition(), GetGame().GetTime() );
+						GetBR().GetMatchData().Hit( this.GetIdentity().GetPlainId(), shooterid, this.GetPosition(), GetGame().GetTime() );
 					}
 				}
 			}

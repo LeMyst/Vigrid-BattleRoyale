@@ -88,18 +88,15 @@ class BattleRoyaleSpectators
             string steam_id = identity.GetPlainId();
             BattleRoyaleServer server = BattleRoyaleServer.Cast( GetBR() );
             MatchData match_data = server.GetMatchData();
-            if(match_data.deaths)
+            if(match_data.results)
             {
-                for(int i = 0; i < match_data.deaths.Count(); i++)
+                for(int i = 0; i < match_data.results.Count(); i++)
                 {
-                    if(match_data.deaths[i])
+                    if(match_data.results[i])
                     {
-                        if(match_data.deaths[i].steam_id == steam_id)
+                        if(match_data.results[i].steamid == steam_id)
                         {
-                            if(match_data.deaths[i].death_data)
-                            {
-                                position = match_data.deaths[i].death_data.position
-                            }
+                            position = match_data.results[i].pos
                         }
                     }
                 }

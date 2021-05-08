@@ -107,6 +107,14 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			}
 		}
 	}
+
+	override bool IsDebug() 
+	{
+		BattleRoyaleState m_CurrentState = GetCurrentState();
+		BattleRoyaleDebug m_Debug;
+		return Class.CastTo(m_Debug, m_CurrentState);
+	}
+
 	override void Update(float delta)
 	{
 		float timeslice = delta; //Legacy
@@ -419,7 +427,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		return m_SpectatorSystem;
 	}
 
-	ref MatchData GetMatchData()
+	override ref MatchData GetMatchData()
 	{
 		return match_data;
 	}

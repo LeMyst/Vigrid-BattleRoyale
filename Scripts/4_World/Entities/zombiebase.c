@@ -4,9 +4,7 @@ modded class ZombieBase {
         if(GetGame().IsServer() && GetBR())
         {
             //! server - log zombie kill event!
-            BattleRoyaleDebug m_Debug;
-            BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( GetBR() ).GetCurrentState();
-            if(!Class.CastTo(m_Debug, m_CurrentState))
+            if(!GetBR().IsDebug())
             {
                 //TODO: review if this actually does capture all types of zombie kills (what about running them over with a vehicle?)
                 PlayerBase pbKiller;
@@ -15,7 +13,7 @@ modded class ZombieBase {
                     if(pbKiller.GetIdentity())
                     {
                         string playerid = pbKiller.GetIdentity().GetPlainId();
-                        BattleRoyaleServer.Cast(  GetBR() ).GetMatchData().KillZombie( playerid, this.GetPosition(), GetGame().GetTime() );
+                        GetBR().GetMatchData().KillZombie( playerid, this.GetPosition(), GetGame().GetTime() );
                     }
                 }
             }

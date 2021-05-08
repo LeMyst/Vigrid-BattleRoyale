@@ -13,9 +13,7 @@ modded class ItemBase {
                 //! server - process loot pick up   
                 if(nplayer.GetIdentity())
                 {
-                    BattleRoyaleDebug m_Debug;
-                    BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( GetBR() ).GetCurrentState();
-                    if(!Class.CastTo(m_Debug, m_CurrentState))
+                    if(!GetBR().IsDebug())
                     {
                         //not in debug! collect event!
 
@@ -24,7 +22,7 @@ modded class ItemBase {
                         int time = GetGame().GetTime();
                         string playerid = nplayer.GetIdentity().GetPlainId();
 
-						BattleRoyaleServer.Cast(  GetBR() ).GetMatchData().LootPickedUp( playerid, itemtype, pos, time );
+						 GetBR().GetMatchData().LootPickedUp( playerid, itemtype, pos, time );
 
                     }
                 }
@@ -42,9 +40,7 @@ modded class ItemBase {
                 //! server - process loot pick up   
                 if(nplayer.GetIdentity())
                 {
-                    BattleRoyaleDebug m_Debug;
-                    BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( GetBR() ).GetCurrentState();
-                    if(!Class.CastTo(m_Debug, m_CurrentState))
+                    if(!GetBR().IsDebug())
                     {
                         //not in debug! collect event!
 
@@ -53,7 +49,7 @@ modded class ItemBase {
                         int time = GetGame().GetTime();
                         string playerid = nplayer.GetIdentity().GetPlainId();
 
-						BattleRoyaleServer.Cast(  GetBR() ).GetMatchData().LootDropped( playerid, itemtype, pos, time );
+						 GetBR().GetMatchData().LootDropped( playerid, itemtype, pos, time );
 
                     }
                 }

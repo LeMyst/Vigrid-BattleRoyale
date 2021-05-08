@@ -13,6 +13,16 @@ class BattleRoyaleBase
 	void Update(float delta)
 	{}
 	
+	ref MatchData GetMatchData()
+	{
+		return NULL;
+	}
+	
+	bool IsDebug() 
+	{
+		return true;
+	}
+
 	void SetGunTexture(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1< string > data;

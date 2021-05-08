@@ -290,11 +290,11 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
 				BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
 
-				time_until_move = 5;
+				player.time_until_move = 5;
 			}
 			else
 			{
-				time_until_move -= timeslice;
+				player.time_until_move -= timeslice;
 			}
 		}
 
