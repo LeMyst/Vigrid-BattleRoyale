@@ -1,19 +1,31 @@
 modded class ZombieBase {
     override void EEKilled(Object killer)
 	{
-        if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
+        if(killer)
         {
-            //! server - log zombie kill event!
-            if(!GetBR().IsDebug())
+            Print("zombie killed!");
+
+            if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
             {
-                //TODO: review if this actually does capture all types of zombie kills (what about running them over with a vehicle?)
-                PlayerBase pbKiller;
-                if(Class.CastTo( pbKiller, killer ))
+                //! server - log zombie kill event!
+                if(!GetBR().IsDebug())
                 {
-                    if(pbKiller.GetIdentity())
+                    Print("attempting to get killer!");
+                    //TODO: review if this actually does capture all types of zombie kills (what about running them over with a vehicle?)
+                    PlayerBase pbKiller;
+                    if(Class.CastTo( pbKiller, killer ))
                     {
-                        string playerid = pbKiller.GetIdentity().GetPlainId();
-                        GetBR().GetMatchData().KillZombie( playerid, this.GetPosition(), GetGame().GetTime() );
+                        Print("killer aquired");
+                        if(pbKiller.GetIdentity())
+                        {
+                            Print("registering zombie kill");
+                            string playerid = pbKiller.GetIdentity().GetPlainId();
+                            GetBR().GetMatchData().KillZombie( playerid, this.GetPosition(), GetGame().GetTime() );
+                        }
+                    }
+                    else
+                    {
+                        Print("zombie killed by unknown entitiy: " + killer.GetDisplayName());
                     }
                 }
             }

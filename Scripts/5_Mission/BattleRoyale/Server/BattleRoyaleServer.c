@@ -112,7 +112,19 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		BattleRoyaleState m_CurrentState = GetCurrentState();
 		BattleRoyaleDebug m_Debug;
-		return Class.CastTo(m_Debug, m_CurrentState);
+		if(Class.CastTo(m_Debug, m_CurrentState))
+		{
+			return true;
+		}
+
+		//not debug state, check if match is actually running!
+		BattleRoyalePrepare m_Prep;
+		if(Class.CastTo(m_Prep, m_CurrentState))
+		{
+			//we are in prep state! - consider this a debug state!
+			return true;
+		}
+		return false;
 	}
 
 	override void Update(float delta)

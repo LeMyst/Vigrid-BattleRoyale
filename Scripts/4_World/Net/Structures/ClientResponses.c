@@ -9,12 +9,12 @@ class StartResponse {
 }
 
 
-typedef GenericResponse<StartResponse> ClientStartResponse;
+typedef GenericResponse<ref StartResponse> ClientStartResponse;
 
-typedef GenericResponse<MatchMakingResponse> ClientMatchMakeResponse;
+typedef GenericResponse<ref MatchMakingResponse> ClientMatchMakeResponse;
 
-typedef GenericResponse<PlayerData> GetPlayerResponse;
+typedef GenericResponse<ref PlayerData> GetPlayerResponse;
 
-typedef GenericResponse<MatchData> GetMatchResponse;
+typedef GenericResponse<ref MatchData> GetMatchResponse;
 
-typedef GenericResponse<ServerData> GetServerResponse;
+typedef GenericResponse<ref ServerData> GetServerResponse;
