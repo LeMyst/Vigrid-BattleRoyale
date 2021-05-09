@@ -117,7 +117,11 @@ modded class PlayerBase
 					if(shooter && shooter.GetIdentity() && this.GetIdentity())
 					{
 						string shooterid = shooter.GetIdentity().GetPlainId();
-						GetBR().GetMatchData().Hit( this.GetIdentity().GetPlainId(), shooterid, this.GetPosition(), GetGame().GetTime() );
+						string playerid = this.GetIdentity().GetPlainId();
+						if (playerid != shooterid)
+						{
+							GetBR().GetMatchData().Hit( playerid, shooterid, this.GetPosition(), GetGame().GetTime() );
+						}
 					}
 				}
 			}
