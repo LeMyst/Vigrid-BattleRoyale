@@ -1,17 +1,18 @@
 modded class DayZGame {
-	private string m_DummyMissionPath = "$saves:DayZBRDummyMissions/Dummy." + BATTLEROYALE_DUMMY_MISSION_WORLD;
+	//dummy mission foldername should be based on the mods we have loaded (dynamic)
+	private string m_DummyMissionPath = "$saves:DayZBR/Dummy." + BATTLEROYALE_DUMMY_MISSION_WORLD;
 
 	void DayZGame()
 	{
-		if (FileExist("$saves:DayZBRDummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1"))
-			DeleteFile("$saves:DayZBRDummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1");
+		if (FileExist("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1"))
+			DeleteFile("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1");
 
 		//Create the amazing dummy mission
 		if ( !FileExist(m_DummyMissionPath) )
 		{
-			MakeDirectory("$saves:DayZBRDummyMissions");
-			MakeDirectory("$saves:DayZBRDummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD);
-			MakeDirectory("$saves:DayZBRDummyMissions/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/db");
+			MakeDirectory("$saves:DayZBR");
+			MakeDirectory("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD);
+			MakeDirectory("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/db");
 
 			FileHandle file = OpenFile(m_DummyMissionPath + "/init.c", FileMode.WRITE);
 			FPrintln(file, "class ClientDummyMission: MissionMainMenu");
@@ -27,6 +28,8 @@ modded class DayZGame {
 			FPrintln(file, "Print(\"Sandbox initialized\");");
 			FPrintln(file, "} else {");
 			FPrintln(file, "Print(\"Hive create Failed\");");
+			FPrintln(file, "}");
+			FPrintln(file, "}");
 			FPrintln(file, "};");
 			FPrintln(file, "Mission CreateCustomMission(string path)");
 			FPrintln(file, "{");
