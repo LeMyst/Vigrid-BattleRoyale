@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "UnlockWritePatcher": {
-      "commandName": "Project",
-      "commandLineArgs": "exe=DayZServer_x64.exe pattern1=\"83 FF 01 0F 84 95 00 00 00\" pattern2=\"0F 84 95 00 00 00 48 8D 0D ? ? ? ?\" byteoff1=2 byteoff2=1 backup=false"
-    }
-  }
-}

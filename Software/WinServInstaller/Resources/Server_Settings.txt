@@ -1,4 +1,0 @@
-{
-    "query_port": ##QUERYPORT##,
-    "ip_address": "##IPADDR##"
-}
