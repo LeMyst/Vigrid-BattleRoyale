@@ -15,7 +15,6 @@ class BRPlayer {
     string name;
     string steam_id;
     ref array<string> ips;
-    ref array<string> shop_purchases;
 }
 
 class RegionData {

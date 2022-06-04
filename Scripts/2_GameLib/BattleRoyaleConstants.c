@@ -42,11 +42,6 @@ static const string DAYZBR_NETWORK_ERRORCODE_FILE = "file transfered? wierd erro
 //--- error codes
 static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json object in API is NULL
 
-
-//--- GUI
-static const int DAYZBR_SKIN_SELECTION_MENU = 5000;
-
-
 // Textures
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
 

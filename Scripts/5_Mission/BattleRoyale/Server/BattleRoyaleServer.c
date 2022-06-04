@@ -192,14 +192,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleAPIData m_APIData = config_data.GetApiData();
-		bool is_unlock_skins_enabled = m_APIData.unlock_all_purchasables;
-		if(is_unlock_skins_enabled)
-		{
-			Print("Notifying of unlocked skins flag")
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetServerSkinUnlockValue", new Param1<bool>(true), true, player.GetIdentity());
-		}
 
-		
 		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
 		vector debug_pos = m_Debug.GetCenter();
 		player.SetPosition(debug_pos);		

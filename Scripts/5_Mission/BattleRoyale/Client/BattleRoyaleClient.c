@@ -9,16 +9,12 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected bool b_MatchStarted;
 	protected int i_SecondsRemaining;
 
-	protected bool b_UnlockAllSkins;
-
 	protected bool b_IsReady;
 
 	protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
 
 	void BattleRoyaleClient()
 	{
-		b_UnlockAllSkins = false;
-
 		b_IsReady = false;
 		b_MatchStarted = false;
 		i_Kills = 0;
@@ -30,15 +26,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		Init();
 	}
 
-	//this should be used to check over the default API functionality
-	bool HasPurchase(string flag)
-	{
-		if(b_UnlockAllSkins)
-			return true;
-		else
-			return BattleRoyaleAPI.GetAPI().HasPurchase(flag);
-	}
-
 	void Init()
 	{
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
@@ -47,7 +34,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", this );
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetServerSkinUnlockValue", this);
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
@@ -158,37 +144,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		b_MatchStarted = true;
 	}
 
-	void SetSkin(int type, ref array<string> textures, ref array<string> materials)
-	{
-		PlayerBase player = GetGame().GetPlayer();
-		HumanInventory inv = player.GetHumanInventory();
-
-		EntityAI entity = null;
-		switch(type) {
-			case 0: 
-				entity = inv.FindAttachment(InventorySlots.BODY);
-				Print("Setting Shirt Skin");
-				break;
-			case 1: 
-				entity = player.GetItemInHands();
-				Print("Setting Gun Skin");
-				break
-		}
-
-		//send RPC to the server
-		if(entity)
-		{
-			//no idea if I can broadcast arrays
-			ref Param3<int, ref array<string>, ref array<string>> skin_value = new Param3<int, ref array<string>, ref array<string>>(type, textures, materials);
-			
-			Print("Sending RPC");
-			Print(type);
-			Print("Texture Count: " + textures.Count().ToString());
-			Print("Material Count: " + materials.Count().ToString());
-
-			GetRPCManager().SendRPC( RPC_DAYZBRBASE_NAMESPACE, "SetItemSkin", skin_value, false , NULL, player); //target myself
-		}
-	}
 
 	void ReadyUp()
 	{
@@ -201,17 +156,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
 		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false , NULL, player);
 
-	}
-
-	
-	//Client RPC calls
-	void SetServerSkinUnlockValue(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-	{
-		if ( type == CallType.Client )
-		{
-			Print("Unlocking All Skins!");
-			b_UnlockAllSkins = true;
-		}
 	}
 
 

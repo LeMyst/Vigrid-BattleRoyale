@@ -48,12 +48,6 @@ class BattleRoyaleConfig
         else
             Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
 
-        BattleRoyaleAPIData p_ApiData = new BattleRoyaleAPIData;
-        if(p_ApiData)
-            m_Configs.Insert("ApiData", p_ApiData);
-        else
-            Error("BattleRoyaleAPIData Setting Constructor Returned NULL");
-
         //--- adding a new config? copy below 
         BattleRoyaleServerData p_ServerData = new BattleRoyaleServerData;
         if(p_ServerData)
@@ -145,11 +139,6 @@ class BattleRoyaleConfig
     {
         Print("Accessing Server Data Config...");
         return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
-    }
-    BattleRoyaleAPIData GetApiData()
-    {
-        Print("Accessing Api Data Config...");
-        return BattleRoyaleAPIData.Cast( GetConfig("ApiData") );
     }
     BattleRoyaleGameData GetGameData()
     {

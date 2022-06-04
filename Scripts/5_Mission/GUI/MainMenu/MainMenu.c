@@ -236,9 +236,6 @@ modded class MainMenu
 		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, mmaction );
 		CreatePopup( DAYZBR_MATCHMAKING_MSG, "Cancel", onclick);
 
-		
-
-
 		api.RequestMatchmakeAsync(p_PlayerWebData, mmaction, "OnMatchmakeComplete", GetSelectedRegion());
 	}
 
