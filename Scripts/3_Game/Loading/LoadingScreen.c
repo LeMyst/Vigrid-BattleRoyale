@@ -2,6 +2,8 @@ modded class LoadingScreen
 {
     void LoadingScreen(DayZGame game)
 	{
+	    Print("Loading screens DayZ-BR");
+
 		JsonFileLoader< ref array< ref ExpansionLoadingScreenBackground > >.JsonLoadFile( DAYZBR_LOADING_SCREENS_PATH, m_Backgrounds );
 		JsonFileLoader< ref array< ref ExpansionLoadingScreenMessageData > >.JsonLoadFile( DAYZBR_LOADING_MESSAGES_PATH, m_MessageJson );
 		
@@ -12,6 +14,8 @@ modded class LoadingScreen
         float y;
         m_ModdedWarning.GetPos(x, y);
         m_ModdedWarning.SetPos( x, y + 5 ); //add a buffer of 5 pixels
+
+        m_ModdedWarning.Show( false );
 
 		m_ProgressLoading.SetColor( DAYZBR_LOADING_BAR_COLOR );
 	}

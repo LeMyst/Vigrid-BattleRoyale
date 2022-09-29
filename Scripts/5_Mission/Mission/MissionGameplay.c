@@ -26,7 +26,7 @@ modded class MissionGameplay
 		Print("Initializing BattleRoyale HUD");
 		if(!m_BattleRoyaleHudRootWidget)
 		{
-			m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("BattleRoyale/GUI/layouts/hud/br_hud.layout");
+			m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("DayZBR-Mod/GUI/layouts/hud/br_hud.layout");
 
 			m_BattleRoyaleHud = new BattleRoyaleHud( m_BattleRoyaleHudRootWidget );
 			m_BattleRoyaleHud.ShowHud( true );

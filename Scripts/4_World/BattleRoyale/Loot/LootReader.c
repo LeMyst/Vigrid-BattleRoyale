@@ -95,7 +95,7 @@ class LootReader
             }
             else
             {
-                Error("Loot Entry does not exist for: " + name)
+                Error("Loot Entry does not exist for: " + name);
             }
             
         }
@@ -132,20 +132,20 @@ class LootReaderXMLCallback extends CF_XML_Callback
         return m_Entries.Get(check);
     }
 
-    override void OnStart( ref CF_XML_Document document )
+    override void OnStart( CF_XML_Document document )
     {
         Print("XML Reading...");
         Print(document);
     }
 
-    override void OnFailure( ref CF_XML_Document document )
+    override void OnFailure( CF_XML_Document document )
     {
         b_IsComplete = true;
         Print("Failed Reading XML");
         Print(document);
     }
 
-    override void OnSuccess( ref CF_XML_Document document )
+    override void OnSuccess( CF_XML_Document document )
     {
         CF_XML_Element ele = document.Get( 1 ).GetContent(); //read <prototype>
         for ( int i = 0; i < ele.Count(); ++i )

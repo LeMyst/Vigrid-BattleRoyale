@@ -16,8 +16,8 @@ class MatchmakeAction {
     }
     void RepeatRequest()
     {
-        BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-        api.RequestMatchmakeAsync(api.GetCurrentPlayer(), this, "OnMatchmakeComplete", m_MainMenu.GetSelectedRegion());
+        //BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+        //api.RequestMatchmakeAsync(api.GetCurrentPlayer(), this, "OnMatchmakeComplete", m_MainMenu.GetSelectedRegion());
     }
     void OnMatchmakeComplete(ref ClientMatchMakeResponse res, string error_msg) {
         if(this.cancelled) return;
@@ -26,9 +26,6 @@ class MatchmakeAction {
         
         if(!res) {
             Error("res null!");
-
-
-            
 
             if(error_msg == DAYZBR_NETWORK_ERRORCODE_TIMEOUT) {
 				m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Close", onclick, "Retry", onretry);

@@ -39,17 +39,17 @@ modded class MainMenu
 
 	void UpdateRegions()
 	{
-		ref RegionData region_data = BattleRoyaleAPI.GetAPI().GetRegionData();
-		if(region_data)
-		{
-			m_Regions = region_data.regions;
-			//TODO: reload i_CurrentRegion from it's config file
-		}
-		else
-		{
+		//ref RegionData region_data = BattleRoyaleAPI.GetAPI().GetRegionData();
+		//if(region_data)
+		//{
+		//	m_Regions = region_data.regions;
+		//	//TODO: reload i_CurrentRegion from it's config file
+		//}
+		//else
+		//{
 			//default regions
 			m_Regions = {"any","na","eu","au"};
-		}
+		//}
 		if(i_CurrentRegion >= m_Regions.Count())
 		{
 			i_CurrentRegion = 0;
@@ -69,7 +69,7 @@ modded class MainMenu
 		if(!m_PopupMessage)
 		{
 
-			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "BattleRoyale/GUI/layouts/widgets/popup_message.layout", layoutRoot );
+			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "DayZBR-Mod/GUI/layouts/widgets/popup_message.layout", layoutRoot );
 			m_PopupText = RichTextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
 			m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
 			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
@@ -134,12 +134,12 @@ modded class MainMenu
 	bool OnStart(bool force_restart = false)
 	{
 		
-		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-		if(api.GetCurrentPlayer() && !force_restart)
-		{
-			b_IsConnected = true; //player exists in the api, so we connected to the network successfully
-			return true;
-		}
+		//BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		//if(api.GetCurrentPlayer() && !force_restart)
+		//{
+		//	b_IsConnected = true; //player exists in the api, so we connected to the network successfully
+		//	return true;
+		//}
 
 		Print("DAYZ BATTLE ROYALE INIT");
 		
@@ -159,9 +159,9 @@ modded class MainMenu
 		
 
 		//--- connecting to BattleRoyale network UI
-		CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
+		//CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
 
-		api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), this, "RequestStartCallback");
+		//api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), this, "RequestStartCallback");
 
 
 		return true;
@@ -198,11 +198,11 @@ modded class MainMenu
 			return;
 		}
 		ref StartResponse start_res = res.data;
-		ref PlayerData player = start_res.player;
+		ref BRPlayerData player = start_res.player;
     	ref RegionData region = start_res.region;
 	
-		BattleRoyaleAPI.GetAPI().SetRegionData( region );
-		BattleRoyaleAPI.GetAPI().SetCurrentPlayer( player ); 
+		//BattleRoyaleAPI.GetAPI().SetRegionData( region );
+		//BattleRoyaleAPI.GetAPI().SetCurrentPlayer( player );
 
 		UpdateRegions();
 		ClosePopup();
@@ -218,25 +218,26 @@ modded class MainMenu
 	override void Play()
 	{
 		ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
-		if(!b_IsConnected)
-		{
-			ref RetryNetworkConnectCallback retry_connect = new RetryNetworkConnectCallback( this );
-			CreatePopup("You are not connected to the BR Network!", "Close", closecallback, "Connect", retry_connect);
-			return;
-		}
-		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-		PlayerData p_PlayerWebData = api.GetCurrentPlayer();
-		if(!p_PlayerWebData)
-		{
-			CreatePopup("Network Error - Code " + DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA.ToString(), "Close", closecallback);
-			return;
-		}
+		//if(!b_IsConnected)
+		//{
+		//	ref RetryNetworkConnectCallback retry_connect = new RetryNetworkConnectCallback( this );
+		//	CreatePopup("You are not connected to the BR Network!", "Close", closecallback, "Connect", retry_connect);
+		//	return;
+		//}
+		//BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		//BRPlayerData p_PlayerWebData = api.GetCurrentPlayer();
+		//if(!p_PlayerWebData)
+		//{
+		//	CreatePopup("Network Error - Code " + DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA.ToString(), "Close", closecallback);
+		//	return;
+		//}
 
-		ref MatchmakeAction mmaction = new MatchmakeAction( this );		
-		ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, mmaction );
-		CreatePopup( DAYZBR_MATCHMAKING_MSG, "Cancel", onclick);
+		//ref Match"makeAction mmaction = new MatchmakeAction( this );
+		//ref CancelMatchmakingCallback onclick = new CancelMatchmakingCallback( this, mmaction );
+		//CreatePopup( DAYZBR_MATCHMAKING_MSG, "Cancel", onclick);
 
-		api.RequestMatchmakeAsync(p_PlayerWebData, mmaction, "OnMatchmakeComplete", GetSelectedRegion());
+		//api.RequestMatchmakeAsync(p_PlayerWebData, mmaction, "OnMatchmakeComplete", GetSelectedRegion());
+		GetGame().Connect(this, "127.0.0.1", 2302, "");
 	}
 
 	override void NextCharacter()

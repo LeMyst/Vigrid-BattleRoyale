@@ -86,26 +86,26 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			RandomizeServerEnvironment();
 
 		//--- this will halt the server until we successfully register is as unlocked in the DB
-		if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
-		{
-			Print("Requesting Server Startup...")
-			ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
-			while(!m_ServerData || m_ServerData.locked != 0)
-			{
-				if(!m_ServerData)
-				{
-					Print("Failed to start server...");
-					m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request startup failed (maybe API was offline when this happened?)
-				}
-				else
-				{
-					//startup succesfull but locked! need to unlock
-					Print("Invalid Server State on Startup...");
-					BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
-					m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
-				}
-			}
-		}
+		//if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
+		//{
+		//	Print("Requesting Server Startup...")
+		//	ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
+		//	while(!m_ServerData || m_ServerData.locked != 0)
+		//	{
+		//		if(!m_ServerData)
+		//		{
+		//			Print("Failed to start server...");
+		//			m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request startup failed (maybe API was offline when this happened?)
+		//		}
+		//		else
+		//		{
+		//			//startup succesfull but locked! need to unlock
+		//			Print("Invalid Server State on Startup...");
+		//			BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
+		//			m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
+		//		}
+		//	}
+		//}
 	}
 
 	override bool IsDebug() 
@@ -191,7 +191,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		//Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleAPIData m_APIData = config_data.GetApiData();
+		//BattleRoyaleAPIData m_APIData = config_data.GetApiData();
 
 		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
 		vector debug_pos = m_Debug.GetCenter();
@@ -515,16 +515,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		weather.GetRain().SetForecastTimeLimits( 300 , 300 );
 		weather.GetFog().SetForecastTimeLimits( 3600 , 3600 );
 
-
-		
 		weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
 		weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
 		weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
 	}
-
-
-
-
 
 	//--- Admin tool functions only
 	void TestSpectator(PlayerBase player)

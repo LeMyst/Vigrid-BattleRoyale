@@ -19,6 +19,7 @@ modded class MissionServer
 	}
 	override void OnInit()
 	{
+	    Print("DayZBR-Mod OnInit()");
 		super.OnInit();
 		// br things
 		m_BattleRoyale = new BattleRoyaleServer;
@@ -42,8 +43,6 @@ modded class MissionServer
 		{
 			Error("PLAYER PASSED TO IOC IS NULL");
 		}
-		
-		
 	}
 
 	override void PlayerDisconnected(PlayerBase player, PlayerIdentity identity, string uid)
@@ -54,11 +53,6 @@ modded class MissionServer
 		}
 		super.PlayerDisconnected( player, identity, uid );
 	}
-	
-	
-	
-	
-
 
 	//--- Functional overrides
 	override void HandleBody(PlayerBase player)
@@ -132,7 +126,5 @@ modded class MissionServer
 				GetGame().DisconnectPlayer( identity );
 			}
 		}
-		
-		
 	}
 }

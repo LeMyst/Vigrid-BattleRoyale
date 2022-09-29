@@ -12,7 +12,7 @@ static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
 
 //--- settings files
-static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:BattleRoyale\\";
+static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:DayZBR-Mod\\";
 static const string BATTLEROYALE_VEHICLES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Vehicles\\";
 static const string BATTLEROYALE_LOOT_ENTRIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Entries\\";
 static const string BATTLEROYALE_LOOT_CATEGORIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Categories\\";
@@ -30,7 +30,7 @@ static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
 //--- dummy mission
 //--- perhaps this could be pulled from the mod config? (or dynamically generated? randomized?)
-static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "Namalsk"; //ChernarusPlus
+static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "ChernarusPlus"; //ChernarusPlus
 
 
 //--- net manager constants
@@ -45,7 +45,7 @@ static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json
 // Textures
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
 
-static const string BATTLEROYALE_LOADING_SCREENS_PATH = "BattleRoyale/GUI/textures/loading_screens/";
+static const string BATTLEROYALE_LOADING_SCREENS_PATH = "DayZBR-Mod/GUI/textures/loading_screens/";
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
@@ -114,8 +114,8 @@ static const string BATTLEROYALE_SERVER_PASSWORD = "DayZBR_Beta";
 
 
 //---- DayZ Expansion Loading Screens
-static const string DAYZBR_LOADING_SCREENS_PATH 	= "BattleRoyale/Scripts/3_Game/Loading/LoadingScreens.json";
-static const string DAYZBR_LOADING_MESSAGES_PATH 	= "BattleRoyale/Scripts/3_Game/Loading/LoadingMessages.json";
+static const string DAYZBR_LOADING_SCREENS_PATH 	= "DayZBR-Mod/Data/LoadingScreens.json";
+static const string DAYZBR_LOADING_MESSAGES_PATH 	= "DayZBR-Mod/Data/LoadingMessages.json";
 static const int DAYZBR_LOADING_BAR_COLOR = ARGB( 255, 0, 0, 0 ); 	//! A = Alpha (opacity) / R = Red / G = Green / B = Blue
 	
 

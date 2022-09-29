@@ -57,50 +57,50 @@ modded class MainMenuStats {
 		}
 		string steamid = p_User.GetUid();
 		
-		BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
-		LeaderboardPlayer p_PlayerData = api.GetPlayerLeaderboardData(steamid);
+		//BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
+		//LeaderboardPlayer p_PlayerData = api.GetPlayerLeaderboardData(steamid);
 		int rank = 0;
-		if(!p_PlayerData) 
-		{
+		//if(!p_PlayerData)
+		//{
 
-			p_PlayerData = new LeaderboardPlayer;
+			LeaderboardPlayer p_PlayerData = new LeaderboardPlayer;
 			p_PlayerData.rating = 0;
 			p_PlayerData.totaltimealive = 0;
 			p_PlayerData.totalwins = 0;
 			p_PlayerData.totalkills = 0;
 
-		} 
-		else 
-		{
-			rank = api.GetRankForRating(p_PlayerData.rating);
-		}
+		//}
+		//else
+		//{
+		//	rank = api.GetRankForRating(p_PlayerData.rating);
+		//}
 		
 
-		if(p_PlayerData && rank > 0)
-		{
-			m_TimePlayedValue.SetText(p_PlayerData.totaltimealive.ToString());
-			m_RatingValue.SetText(p_PlayerData.rating.ToString());
-			m_WinsValue.SetText(p_PlayerData.totalwins.ToString());
-			m_KillsValue.SetText(p_PlayerData.totalkills.ToString());
-			m_GlobalRankValue.SetText(rank.ToString());
-		}
-		else if(p_PlayerData)
-		{
-			m_TimePlayedValue.SetText("0");
-			m_RatingValue.SetText("N/a");
-			m_WinsValue.SetText("0");
-			m_KillsValue.SetText("0");
-			m_GlobalRankValue.SetText("N/a");
-		}
-		else
-		{
-			Error("Failed to display");
+		//if(p_PlayerData && rank > 0)
+		//{
+		//	m_TimePlayedValue.SetText(p_PlayerData.totaltimealive.ToString());
+		//	m_RatingValue.SetText(p_PlayerData.rating.ToString());
+		//	m_WinsValue.SetText(p_PlayerData.totalwins.ToString());
+		//	m_KillsValue.SetText(p_PlayerData.totalkills.ToString());
+		//	m_GlobalRankValue.SetText(rank.ToString());
+		//}
+		//else if(p_PlayerData)
+		//{
+		//	m_TimePlayedValue.SetText("0");
+		//	m_RatingValue.SetText("N/a");
+		//	m_WinsValue.SetText("0");
+		//	m_KillsValue.SetText("0");
+		//	m_GlobalRankValue.SetText("N/a");
+		//}
+		//else
+		//{
+			//Error("Failed to display");
 			m_TimePlayedValue.SetText("0");
 			m_RatingValue.SetText("0");
 			m_WinsValue.SetText("0");
 			m_KillsValue.SetText("0");
 			m_GlobalRankValue.SetText("0");
-		}
+		//}
 		
 		m_Root.Show( true ); //online mode, make sure this is visible
 	}

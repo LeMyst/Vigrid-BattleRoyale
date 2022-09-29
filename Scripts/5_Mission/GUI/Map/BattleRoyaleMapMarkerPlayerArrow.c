@@ -29,7 +29,8 @@ class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
         }
 
         SetPosition( v_Position );
-        GetIconWidget().LoadImageFile( 0, EXPANSION_NOTIFICATION_ICON_POSITION );
+        //GetIconWidget().LoadImageFile( 0, EXPANSION_NOTIFICATION_ICON_POSITION );
+        GetIconWidget().LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
 		GetDragWidget().SetRotation( 0, 0, GetMapDirection(), true );
     }
     private int GetMapDirection()

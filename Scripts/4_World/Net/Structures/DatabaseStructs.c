@@ -158,7 +158,7 @@ class BRRawMatchWeather {
 
 //---- below are the wrapped objects that make managing these structures WAY easier
 
-class PlayerData extends BRPlayer {}
+class BRPlayerData extends BRPlayer {}
 class ServerData extends BRServer {
     string GetIP()
 	{
@@ -247,10 +247,8 @@ class MatchData extends BRRawMatch {
         winner.killedwith = "";
         winner.timestamp = time;
         winner.pos = pos;
-        winner.killerpos = Vector(0,0,0)
-
-
-        results.Insert(winner)
+        winner.killerpos = Vector(0,0,0);
+        results.Insert(winner);
     }
     void CreateDeath(string playerid, vector pos, int time, string killerid, string killerweapon, vector killerpos)
     {
@@ -261,10 +259,8 @@ class MatchData extends BRRawMatch {
         dead.killedwith = killerweapon;
         dead.timestamp = time;
         dead.pos = pos;
-        dead.killerpos = killerpos
-
-
-        results.Insert(dead)
+        dead.killerpos = killerpos;
+        results.Insert(dead);
     }
     bool ContainsDeath(string playerid)
     {

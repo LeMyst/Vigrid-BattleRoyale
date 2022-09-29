@@ -27,7 +27,7 @@ modded class ActionGetOutTransport {
         }
         else
         {
-            Error("invalid get out action?!")
+            Error("invalid get out action?!");
         }
 
         super.OnEndServer( action_data );

@@ -7,7 +7,7 @@ class BattleRoyaleSpectatorPlayerWidget
     protected Widget m_Panel;
     protected Widget m_CharacterPanel;
     protected Widget m_StatsPanel;
-    protected TextWidget m_Name;
+    protected TextWidget m_BRName;
     protected TextWidget m_Health;
     protected TextWidget m_Kills;
     protected ProgressBarWidget m_HealthProgressBar;
@@ -43,14 +43,14 @@ class BattleRoyaleSpectatorPlayerWidget
     }
     void Init(PlayerBase player)
     {
-        m_Root = GetGame().GetWorkspace().CreateWidgets("BattleRoyale/GUI/layouts/hud/spectator/player.layout", m_ParentWidget);
+        m_Root = GetGame().GetWorkspace().CreateWidgets("DayZBR-Mod/GUI/layouts/hud/spectator/player.layout", m_ParentWidget);
 
         m_Panel = Widget.Cast( m_Root.FindAnyWidget( "InfoPanel" ) );
 
         m_StatsPanel = Widget.Cast( m_Panel.FindAnyWidget( "StatsPanel" ) );
         m_CharacterPanel = Widget.Cast( m_Panel.FindAnyWidget( "CharacterPanel" ) );
 
-        m_Name = TextWidget.Cast( m_CharacterPanel.FindAnyWidget( "Name" ) );
+        m_BRName = TextWidget.Cast( m_CharacterPanel.FindAnyWidget( "Name" ) );
         m_Health = TextWidget.Cast( m_StatsPanel.FindAnyWidget( "HPTextBar" ) );
         m_Kills = TextWidget.Cast( m_StatsPanel.FindAnyWidget( "KillsTextBar" ) );
         m_HealthProgressBar = ProgressBarWidget.Cast( m_StatsPanel.FindAnyWidget( "HPProgressBar" ) );
@@ -98,7 +98,7 @@ class BattleRoyaleSpectatorPlayerWidget
 
     void SetName(string name)
     {
-        m_Name.SetText(name);
+        m_BRName.SetText(name);
     }
     void SetHealthText(string health)
     {

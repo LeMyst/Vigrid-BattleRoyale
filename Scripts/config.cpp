@@ -5,7 +5,7 @@ class CfgPatches
 		requiredAddons[]=
 		{
 			"DZ_Data",
-			"DayZExpansion_Scripts" 
+			"DayZExpansion_Scripts"
 		};
 	};
 };
@@ -13,9 +13,9 @@ class CfgMods
 {
 	class DZ_BattleRoyale
 	{
-		dir = "BattleRoyale";		
-		credits = "Kegan";
-		creditsJson = "BattleRoyale/Scripts/credits.json";
+		dir = "DayZBR-Mod";
+		credits = "Kegan / Modified by Myst";
+		creditsJson = "DayZBR-Mod/Scripts/credits.json";
 		type = "mod";
 		name = "DayZ BattleRoyale";
 		
@@ -37,7 +37,7 @@ class CfgMods
 			{
 				files[]=
 				{
-					"BattleRoyale/GUI/imagesets/dayzbr_gui.imageset"
+					"DayZBR-Mod/GUI/imagesets/dayzbr_gui.imageset"
 				};
 			};
 			class engineScriptModule
@@ -45,7 +45,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
-					"BattleRoyale/Scripts/1_Core"
+					"DayZBR-Mod/Scripts/1_Core"
 				};
 			};
 			class gameLibScriptModule
@@ -53,7 +53,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
-					"BattleRoyale/Scripts/2_GameLib"
+					"DayZBR-Mod/Scripts/2_GameLib"
 				};
 			};
 			class gameScriptModule
@@ -61,7 +61,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
-					"BattleRoyale/Scripts/3_Game"
+					"DayZBR-Mod/Scripts/3_Game"
 				};
 			};
 			class worldScriptModule
@@ -69,7 +69,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
-					"BattleRoyale/Scripts/4_World"
+					"DayZBR-Mod/Scripts/4_World"
 				};
 			};
 			class missionScriptModule
@@ -77,7 +77,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
-					"BattleRoyale/Scripts/5_Mission"
+					"DayZBR-Mod/Scripts/5_Mission"
 				};
 			};
 		};

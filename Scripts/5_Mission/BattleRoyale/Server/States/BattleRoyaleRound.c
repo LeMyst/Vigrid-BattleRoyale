@@ -270,7 +270,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 							Grenade_Base grenade;
 							if(Class.CastTo( grenade, killer_entity ))
 							{
-								match_data.CreateDeath( player_steamid, player_position, time, grenade.GetActivator(), killed_with, killer_position );
+								match_data.CreateDeath( player_steamid, player_position, time, grenade.GetDZBRActivator(), killed_with, killer_position );
 								return;
 							}
 

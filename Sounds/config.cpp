@@ -12,12 +12,12 @@ class CfgSoundShaders
 {
 	class BattleRoyale_Music_Namalsk_SoundShader
 	{
-		samples[] = {{"\BattleRoyale\Sounds\Music\christmas_menu",1}};
+		samples[] = {{"\DayZBR-Mod\Sounds\Music\christmas_menu",1}};
 		volume = 0.35794576;
 	};
     class BattleRoyale_Music_1_SoundShader
 	{
-		samples[] = {{"\BattleRoyale\Sounds\Music\apocalypse",1}};
+		samples[] = {{"\BDayZBR-Mod\Sounds\Music\apocalypse",1}};
 		volume = 0.70794576;
 	};
 };

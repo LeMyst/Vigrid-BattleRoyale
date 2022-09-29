@@ -14,10 +14,10 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     protected float f_Thickness;
     protected int i_Color;
 
-    protected CanvasWidget m_Canvas;
-	protected Widget m_DragWidget;
-	protected Widget m_Frame;
-	protected TextWidget m_Name;
+    protected CanvasWidget m_BRCanvas;
+	protected Widget m_BRDragWidget;
+	protected Widget m_BRFrame;
+	protected TextWidget m_BRName;
     protected ZoneType e_ZoneType;
 
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
@@ -32,22 +32,22 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     protected override void OnInit( Widget layoutRoot )
     {
         
-		Class.CastTo( m_Frame, layoutRoot.FindAnyWidget( "marker_frame" ) );
-        Class.CastTo( m_Canvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
-		Class.CastTo( m_DragWidget, layoutRoot.FindAnyWidget( "marker_icon_panel" ) );
-		Class.CastTo( m_Name, layoutRoot.FindAnyWidget( "marker_name" ) );
+		Class.CastTo( m_BRFrame, layoutRoot.FindAnyWidget( "marker_frame" ) );
+        Class.CastTo( m_BRCanvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
+		Class.CastTo( m_BRDragWidget, layoutRoot.FindAnyWidget( "marker_icon_panel" ) );
+		Class.CastTo( m_BRName, layoutRoot.FindAnyWidget( "marker_name" ) );
 
-        if(!m_Canvas)
+        if(!m_BRCanvas)
         {
             Error("[BattleRoyaleMapMarkerZone] marker_canvas not found!");
             return;
         }
 
-        m_Name.Show( false ); //--- the marker name is for debugging
+        m_BRName.Show( false ); //--- the marker name is for debugging
 
-		m_Frame.SetColor( ARGB( 0, 0, 0, 0 ) );
+		m_BRFrame.SetColor( ARGB( 0, 0, 0, 0 ) );
 
-        m_Canvas.Show( true ); //ensure canvas is visible
+        m_BRCanvas.Show( true ); //ensure canvas is visible
 
         SetColor( ARGB(255,255,255,255) );
         SetSize_A(150);
@@ -63,7 +63,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
         Show();
 
-        m_Canvas.Clear();
+        m_BRCanvas.Clear();
 
         vector m_edgePos_A = GetPosition();
         m_edgePos_A[0] = m_edgePos_A[0] + f_SizeA;
@@ -80,7 +80,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
         float canvas_width;
         float canvas_height;
-        m_Canvas.GetSize(canvas_width,canvas_height);
+        m_BRCanvas.GetSize(canvas_width,canvas_height);
         float center_x = canvas_width / 2.0;
         float center_y = canvas_height / 2.0;
 
@@ -92,7 +92,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             float new_y = (center_y + distance_B) + 2;
             float new_size = Math.Max(Math.Max(new_x,new_y), 32.0);
 
-            m_Canvas.SetSize(new_size,new_size);
+            m_BRCanvas.SetSize(new_size,new_size);
 
             Print("Resize Marker");
             Print(canvas_width);
@@ -139,7 +139,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             float x2 = cx + (a * Math.Cos((i+1)*Math.DEG2RAD));
             float y2 = cy + (b * Math.Sin((i+1)*Math.DEG2RAD));
 
-            m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+            m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
         }
     }
     void RenderCrosshatched(float cx, float cy, float a, float b)
@@ -159,7 +159,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             float x2 = cx + (a * Math.Cos((i+1)*Math.DEG2RAD));
             float y2 = cy + (b * Math.Sin((i+1)*Math.DEG2RAD));
 
-            m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+            m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
 
             //--- render circle second half
             x1 = cx + (a * Math.Cos(-1*i*Math.DEG2RAD));
@@ -168,7 +168,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             x2 = cx + (a * Math.Cos(-1*(i+1)*Math.DEG2RAD));
             y2 = cy + (b * Math.Sin(-1*(i+1)*Math.DEG2RAD));
 
-            m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+            m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
 
             //--- render line between EP1 and EP2 (skipping 4 degrees each step)
             if((ep1 != ep2) && ((i % 4) == 0))
@@ -179,7 +179,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
                 x2 = cx + (a * Math.Cos(ep2*Math.DEG2RAD));
                 y2 = cy + (b * Math.Sin(ep2*Math.DEG2RAD));
 
-                m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+                m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
             }
             if((ep3 != ep4) && ((i % 4) == 0))
             {
@@ -189,7 +189,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
                 x2 = cx + (a * Math.Cos(ep4*Math.DEG2RAD));
                 y2 = cy + (b * Math.Sin(ep4*Math.DEG2RAD));
 
-                m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+                m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
             }
 
             ep1++;
@@ -212,7 +212,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             float x2 = cx + (a * Math.Cos((i+1)*Math.DEG2RAD));
             float y2 = cy + (b * Math.Sin((i+1)*Math.DEG2RAD));
 
-            m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+            m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
 
             //--- render circle second half
             x1 = cx + (a * Math.Cos(-1*i*Math.DEG2RAD));
@@ -221,7 +221,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             x2 = cx + (a * Math.Cos(-1*(i+1)*Math.DEG2RAD));
             y2 = cy + (b * Math.Sin(-1*(i+1)*Math.DEG2RAD));
 
-            m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+            m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
 
             //--- render line between EP1 and EP2 (skipping 4 degrees each step)
             if((ep1 != ep2) && ((i % 4) == 0))
@@ -232,7 +232,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
                 x2 = cx + (a * Math.Cos(ep2*Math.DEG2RAD));
                 y2 = cy + (b * Math.Sin(ep2*Math.DEG2RAD));
 
-                m_Canvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+                m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
             }
 
             ep1++;
@@ -251,7 +251,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     }
     override string GetLayoutPath()
     {
-        return "BattleRoyale/GUI/layouts/map/royale_map_marker.layout";// custom BR widget structure
+        return "DayZBR-Mod/GUI/layouts/map/royale_map_marker.layout";// custom BR widget structure
     }
     int GetColor()
     {

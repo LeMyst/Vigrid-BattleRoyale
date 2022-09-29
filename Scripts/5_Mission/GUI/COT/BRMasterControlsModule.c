@@ -11,7 +11,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
 	}
     override string GetLayoutRoot()
 	{
-		return "BattleRoyale/GUI/layouts/COT/master_controls.layout";
+		return "DayZBR-Mod/GUI/layouts/COT/master_controls.layout";
 	}
     override string GetTitle()
 	{
