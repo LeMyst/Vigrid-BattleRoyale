@@ -4,15 +4,15 @@ modded class DayZGame {
 
 	void DayZGame()
 	{
-		if (FileExist("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1"))
-			DeleteFile("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/storage_-1");
-
 		//Create the amazing dummy mission
 		if ( !FileExist(m_DummyMissionPath) )
 		{
+            if (FileExist(m_DummyMissionPath+"/storage_-1"))
+                DeleteFile(m_DummyMissionPath+"/storage_-1");
+
 			MakeDirectory("$saves:DayZBR");
-			MakeDirectory("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD);
-			MakeDirectory("$saves:DayZBR/Dummy."+BATTLEROYALE_DUMMY_MISSION_WORLD+"/db");
+			MakeDirectory(m_DummyMissionPath);
+			MakeDirectory(m_DummyMissionPath+"/db");
 
 			FileHandle file = OpenFile(m_DummyMissionPath + "/init.c", FileMode.WRITE);
 			FPrintln(file, "class ClientDummyMission: MissionMainMenu");
