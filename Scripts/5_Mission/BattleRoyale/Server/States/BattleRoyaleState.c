@@ -143,7 +143,7 @@ class BattleRoyaleState extends Timeable {
 	{
 		StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
 		StringLocaliser text = new StringLocaliser( message );
-		GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time);
+		ExpansionNotification(title_sl, text, icon, color, time).Create();
 	}
 
 	void MessagePlayer(PlayerBase player, string message, string title = DAYZBR_MSG_TITLE, string icon = DAYZBR_MSG_IMAGE, int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = DAYZBR_MSG_TIME)
@@ -155,7 +155,7 @@ class BattleRoyaleState extends Timeable {
 			{
 				StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
 				StringLocaliser text = new StringLocaliser( message );
-				GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
+				ExpansionNotification(title_sl, text, icon, color, time).Create(identity);
 			}
 		}
 	}

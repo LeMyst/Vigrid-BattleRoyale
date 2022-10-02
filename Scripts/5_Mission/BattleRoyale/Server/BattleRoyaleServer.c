@@ -210,12 +210,12 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				//m_SpectatorSystem.AddPlayer( player );
 				if(player)
 				{
-					PlayerIdentity identity = player.GetIdentity();
-					if(identity)
+					PlayerIdentity playerIdentity = player.GetIdentity();
+					if(playerIdentity)
 					{
 						StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
 						StringLocaliser text = new StringLocaliser( message );
-						GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
+						ExpansionNotification(title_sl, text, icon, color, time).Create(playerIdentity);
 					}
 				}
 			}
