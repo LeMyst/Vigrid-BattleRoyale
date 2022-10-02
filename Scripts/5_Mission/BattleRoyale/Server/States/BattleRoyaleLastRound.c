@@ -15,7 +15,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 	protected ref Timer m_FinalZoneLockTimer;
 	protected ref array<ref Timer> m_MessageTimers;
 
-
     void BattleRoyaleLastRound(ref BattleRoyaleState previous_state)
 	{
         m_PreviousSate = previous_state;
@@ -59,7 +58,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeToEndSeconds", new Param1<int>( sec ), false) ); //we need to store the object in case it's automatically deconstructed ?
 		}
 
-
 		//timer before 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
@@ -70,8 +68,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		ref BattleRoyalePlayArea m_PreviousArea = NULL;
 		if(GetPreviousZone())
 			m_PreviousArea = GetPreviousZone().GetArea();
-        
-		
+
 		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(Vector(0, 0, 0), 0, GetGame().GetTime()); //final zone temp data
 
 		//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
@@ -81,6 +78,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
         super.Activate();
     }
+
     override void Deactivate()
 	{
 		m_FinalZoneLockTimer.Stop();
@@ -90,6 +88,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		//we just deactivated this round (players not yet transfered from previous state)
 		super.Deactivate();
 	}
+
     override bool SkipState(BattleRoyaleState m_PreviousState) 
 	{
 		//only one (or less) players remaining, must skip to win state
@@ -98,10 +97,12 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		
 		return false;
 	}
+
 	override string GetName()
 	{
 		return DAYZBR_SM_LAST_ROUND_NAME;
 	}
+
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 		if(GetPlayers().Count() <= 1 && IsActive())
@@ -123,7 +124,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		{
 			Error("Unknown player killed! Not in current state?");
 		}
-		
+
 		if(player.GetIdentity())
 		{
 			string player_steamid = player.GetIdentity().GetPlainId();
@@ -178,7 +179,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 							}
 							match_data.CreateDeath( player_steamid, player_position, time, killer_steamid, killed_with, killer_position );
 						}
-						
 					}
 					else
 					{
@@ -189,7 +189,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
 						}
 					}
-					
 				}
 				else
 				{
@@ -199,7 +198,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 						match_data.CreateDeath( player_steamid, player_position, time, "", "Environment", killer_position );
 					}
 				}
-				
 			}
 			else
 			{
@@ -211,7 +209,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 			}
 		}
 	}
-    
+
     override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
         //determine if the player needs to take damage

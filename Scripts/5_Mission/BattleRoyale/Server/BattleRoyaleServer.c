@@ -108,6 +108,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		BattleRoyaleState m_CurrentState = GetCurrentState();
 		BattleRoyaleDebug m_Debug;
+
 		if(Class.CastTo(m_Debug, m_CurrentState))
 		{
 			return true;
@@ -115,6 +116,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		//not debug state, check if match is actually running!
 		BattleRoyalePrepare m_Prep;
+
 		if(Class.CastTo(m_Prep, m_CurrentState))
 		{
 			//we are in prep state! - consider this a debug state!
@@ -126,8 +128,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	override void Update(float delta)
 	{
 		float timeslice = delta; //Legacy
-		
-		
+
 		m_LootSystem.Update(timeslice);
 		m_VehicleSystem.Update(timeslice);
 		m_SpectatorSystem.Update(timeslice);
@@ -148,7 +149,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			{
 				BattleRoyaleState next_state = GetState(next_index);
 
-
 				Print("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
 				if(GetCurrentState().IsActive())
 				{
@@ -165,7 +165,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 					{
 						Error("null player in RemoveAllPlayers result!");
 					}
-					
 				}
 				i_CurrentStateIndex = next_index;//move us to the next state
 				Print("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
@@ -182,7 +181,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		//Teleport player into debug zone
 		Print("Player connected!" + player.GetIdentity().GetName()); //lets find out if respawning players end up here
-
 
 		//Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -220,9 +218,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 						GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
 					}
 				}
-
-
-
 			}
 			else
 			{
@@ -328,7 +323,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		{
 			GetCurrentState().OnPlayerTick(player,timeslice);
 
-
 			//--- check if they have entered an invalid position
 			vector pos = player.GetPosition();
 			float bigNum = 1000000;
@@ -376,9 +370,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 		
 	}
-	
-	
-	
+
 	BattleRoyaleState GetState(int index)
 	{
 		if(index < 0 || index >= m_States.Count())
@@ -386,13 +378,14 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		return m_States[index];
 	}
+
 	BattleRoyaleState GetCurrentState()
 	{
 		return GetState(i_CurrentStateIndex);
 	}
+
 	int GetNextStateIndex()
 	{
-		
 		if(m_States.Count() <= (i_CurrentStateIndex + 1))
 			return -1;
 
@@ -407,15 +400,17 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		return -1;
 	}
-	
+
 	ref BattleRoyaleVehicles GetVehicleSystem()
 	{
 		return m_VehicleSystem;
 	}
+
 	ref BattleRoyaleLoot GetLootSystem()
 	{
 		return m_LootSystem;
 	}
+
 	ref BattleRoyaleSpectators GetSpectatorSystem()
 	{
 		return m_SpectatorSystem;
@@ -425,7 +420,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		return match_data;
 	}
-	
+
 	void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		

@@ -12,15 +12,14 @@ class BattleRoyaleState extends Timeable {
 	void BattleRoyaleState()
 	{		
 		m_Players = new array<PlayerBase>();
-		
-		
+
 		b_IsActive = false;
 		b_IsPaused = false;
 	}
 
 	void Update(float timeslice)
 	{
-		
+
 	}
 	
 	//state controls
@@ -32,7 +31,6 @@ class BattleRoyaleState extends Timeable {
 	void Deactivate()
 	{
 		//Note: this is called BEFORE players are removed
-
 		//--- stop all repeating timers
 		StopTimers();
 

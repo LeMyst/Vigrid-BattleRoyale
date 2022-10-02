@@ -5,22 +5,27 @@ class BRMasterControlsModule: JMRenderableModuleBase
 		GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.View" );
 		GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.Update" );
 	}
+
     override bool HasAccess()
 	{
 		return GetPermissionsManager().HasPermission( "BattleRoyale.StateMachine.View" );
 	}
+
     override string GetLayoutRoot()
 	{
 		return "DayZBR-Mod/GUI/layouts/COT/master_controls.layout";
 	}
+
     override string GetTitle()
 	{
 		return "[BR] State Machine";
 	}
+
     override string GetIconName()
 	{
 		return "BR";
 	}
+
     override bool ImageIsIcon()
 	{
 		return false;
@@ -79,6 +84,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_Next(); //Server recieved next command
         }
     }
+
     private void RPC_Pause( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -86,6 +92,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_Pause(); //Server recieved next command
         }
     }
+
     private void RPC_Resume( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -93,6 +100,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_Resume(); //Server recieved next command
         }
     }
+
     private void RPC_StartLoot( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -100,6 +108,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_StartLoot();
         }
     }
+
     private void RPC_StopLoot( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -107,6 +116,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_StopLoot();
         }
     }
+
     private void RPC_StartVehicles( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -114,6 +124,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_StartVehicles();
         }
     }
+
     private void RPC_StopVehicles( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -121,6 +132,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Server_StopVehicles();
         }
     }
+
     private void RPC_TestSpectator( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
@@ -136,7 +148,6 @@ class BRMasterControlsModule: JMRenderableModuleBase
             }
         }
     }
-
 
     //client side functionality (these get called)
     void StateMachine_Next()
@@ -154,6 +165,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         }
         
     }
+
     void StateMachine_Pause()
     {
         if ( IsMissionClient() )
@@ -168,6 +180,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Error("Server called StateMachine_Pause()");
         }
     }
+
     void StateMachine_Resume()
     {
         if ( IsMissionClient() )

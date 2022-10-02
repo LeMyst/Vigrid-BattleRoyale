@@ -12,17 +12,12 @@ class BattleRoyaleRound extends BattleRoyaleState
 	array<int> lock_notif_min;
 	array<int> lock_notif_sec;
 
-	
 	protected ref array<ref Timer> m_MessageTimers;
 	protected ref Timer m_NewZoneLockTimer;
 	protected ref Timer m_RoundTimeUpTimer;
 
 	//If this is NULL, we assume previous state is debug 
 	//a battle royale round represents a playing state with a play area
-	/*
-		
-	
-	*/
 	void BattleRoyaleRound(ref BattleRoyaleState previous_state)
 	{
 		m_PreviousSate = previous_state;
@@ -44,8 +39,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 		Init();
 	}
-	
-	
+
 	void Init()
 	{
 		b_IsFirstRound = false;
@@ -60,10 +54,12 @@ class BattleRoyaleRound extends BattleRoyaleState
 		//scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone # 
 		f_Damage = f_Damage * ( zone_num / num_zones );
 	}
+
 	override string GetName()
 	{
 		return DAYZBR_SM_GAMEPLAY_NAME;
 	}
+
 	override void Activate()
 	{
 		//we just activated this round (players not yet transfered from previous state)
@@ -105,6 +101,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			if(val > 0)
 				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneMinutes", new Param1<int>( min ), false) );
 		}
+
 		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
 			sec = lock_notif_sec[i];
@@ -134,7 +131,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 		//tell the client the next play area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 
-
 		//message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
 		for(i = 0; i < GetPlayers().Count(); i++)
 		{
@@ -159,6 +155,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 		super.Activate();
 	}
+
 	override void Deactivate()
 	{
 		m_NewZoneLockTimer.Stop();
@@ -168,7 +165,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		//we just deactivated this round (players not yet transfered from previous state)
 		super.Deactivate();
 	}
-	
+
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 
@@ -177,8 +174,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 			Deactivate();
 		}
 		return super.IsComplete();
-		
 	}
+
 	override bool SkipState(BattleRoyaleState m_PreviousState) 
 	{
 		//only one (or less) players remaining, must skip to win state
@@ -187,7 +184,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		
 		return false;
 	}
-	
+
 	void OnPlayerKilled(PlayerBase player, Object killer)
 	{
 		ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
@@ -200,7 +197,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		{
 			Error("Unknown player killed! Not in current state?");
 		}
-		
+
 		if(player.GetIdentity())
 		{
 			string player_steamid = player.GetIdentity().GetPlainId();
@@ -257,8 +254,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 							match_data.CreateDeath( player_steamid, player_position, time, killer_steamid, killed_with, killer_position );
 						}
-						
-						
 					}
 					else
 					{
@@ -277,7 +272,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 							match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
 						}
 					}
-					
 				}
 				else
 				{
@@ -287,7 +281,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 						match_data.CreateDeath( player_steamid, player_position, time, "", "Environment", killer_position );
 					}
 				}
-				
 			}
 			else
 			{
@@ -298,9 +291,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 				}
 			}
 		}
-
-
 	}
+
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
 		BattleRoyaleZone current_zone = GetActiveZone();
@@ -346,7 +338,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 				//this way you can't just keep jumping in and out of the zone to edgeplay
 				player.time_until_damage = Math.Min(i_DamageTickTime, player.time_until_damage + timeslice);
 			}
-			
 		}
 
 		if(player.GetIdentity())
@@ -379,16 +370,15 @@ class BattleRoyaleRound extends BattleRoyaleState
 				player.time_until_move -= timeslice;
 			}
 		}
-		
 		super.OnPlayerTick(player, timeslice);
 	}
 
 	//handle zoning stuff
-
 	BattleRoyaleZone GetZone()
 	{
 		return m_Zone;
 	}
+
 	BattleRoyaleZone GetPreviousZone()
 	{
 		BattleRoyaleRound prev_round;
@@ -403,6 +393,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		
 		return NULL;
 	}
+
 	BattleRoyaleZone GetActiveZone() //returns NULL if first zone & not locked
 	{
 		if(b_ZoneLocked)
@@ -410,7 +401,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		else
 			return GetPreviousZone();
 	}
-	
+
 	bool IsLocked()
 	{
 		return b_ZoneLocked;
@@ -439,12 +430,11 @@ class BattleRoyaleRound extends BattleRoyaleState
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
 	}
+
 	void OnRoundTimeUp()
 	{
 		Deactivate();
 	}
-
-
 
 	// Round messaging
 	//TODO: add these to dayzbrconstants and use String Replace to insert the seconds or minutes values
@@ -458,6 +448,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		
 		MessagePlayers(message);
 	}
+
 	void NotifyTimeTillLockMinutes(int minutes)
 	{
 		string message = "The new zone will lock in " + minutes.ToString() + " ";
@@ -468,6 +459,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		
 		MessagePlayers(message);
 	}
+
 	void NotifyTimeTillNewZoneSeconds(int seconds)
 	{
 		string message = "A new zone will appear in " + seconds.ToString() + " ";
@@ -478,6 +470,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		
 		MessagePlayers(message);
 	}
+
 	void NotifyTimeTillNewZoneMinutes(int minutes)
 	{
 		string message = "A new zone will appear in " + minutes.ToString() + " ";

@@ -8,8 +8,6 @@ class BattleRoyaleLoot
     protected ref array<PlayerBase> m_Players;
     protected ref map<Object, ref BattleRoyaleLootableBuilding> m_LootableBuildings;
 
-    
-
     void BattleRoyaleLoot()
     {
         m_TickTimer = new Timer;
@@ -25,6 +23,7 @@ class BattleRoyaleLoot
 
         BattleRoyaleLootData.GetData(); //--- this will call LootData.Load() so this is enough
     }
+
     void ~BattleRoyaleLoot()
     {
         m_TickTimer.Stop();
@@ -48,15 +47,16 @@ class BattleRoyaleLoot
         m_Players.RemoveItem(player);
     }
 
-
     void Start()
     {
         b_Enabled = true;
     }
+
     void Stop()
     {
         b_Enabled = false;
     }
+
     bool IsEnabled()
     {
         return b_Enabled;
@@ -79,6 +79,7 @@ class BattleRoyaleLoot
         }
         
     }
+
     void ProcessLoot()
     {
         //clone players into a new list so we can process them without interrupts from RemovePlayer()
@@ -108,6 +109,7 @@ class BattleRoyaleLoot
 
         b_IsProcessing = false;
     }
+
     void ProcessPlayerLoot(PlayerBase player)
     {
         vector player_pos = player.GetPosition();
@@ -157,7 +159,6 @@ class BattleRoyaleLoot
             {
                 Error("ObjectsAtPosition returned NULL object");
             }
-            
         }
     }
 }

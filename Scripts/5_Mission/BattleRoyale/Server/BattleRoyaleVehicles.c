@@ -45,15 +45,13 @@ class BattleRoyaleVehicles
     {
     }
 
-    
-
-
     void Start()
     {
         Print("Starting vehicle subsystem...");
         b_Enabled = true;
         Preinit();
     }
+
     void Stop()
     {
         b_Enabled = false;
@@ -72,6 +70,7 @@ class BattleRoyaleVehicles
         }
         
     }
+
     void Init()
     {
         Print("Vehicle Subsystem:");
@@ -115,10 +114,7 @@ class BattleRoyaleVehicles
                 if(!IsSafeSpawnPos(position))
                     continue;
 
-                
-                
                 Print(position);
-
 
                 break;
             }
@@ -317,6 +313,7 @@ class BattleRoyaleCachedVehicle
     {
         return (game_object != NULL);
     }
+
     bool Spawn()
     {
         Print("Spawning Vehicle " + vehicle_name);
@@ -347,7 +344,6 @@ class BattleRoyaleCachedVehicle
 		}
         else
         {
-            
             /*
             if(obj != NULL)
             {
@@ -356,7 +352,6 @@ class BattleRoyaleCachedVehicle
             return false;
             */
         }
-        
 
         ent.SetPosition( position );
         
@@ -370,7 +365,7 @@ class BattleRoyaleCachedVehicle
             vector dir = vector.YawToVector(random_dir);
             ent.SetDirection( Vector( dir[0], 0, dir[1]) );
         }
-        
+
         vector tmItem[4];
 		ent.GetTransform( tmItem );
 
@@ -382,6 +377,7 @@ class BattleRoyaleCachedVehicle
 
         return true;
     }
+
     bool Despawn()
     {
         if(game_object)

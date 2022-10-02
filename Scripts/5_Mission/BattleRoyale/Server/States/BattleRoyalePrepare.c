@@ -44,7 +44,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         //we process on a static list so when players possibly disconnect during this phase we don't error out or skip any clients
         m_PlayerList.InsertAll( m_Players ); //this gave an error when using m_Players
-        
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
@@ -96,8 +95,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
        // while (process_player.GetInventory().CountInventory() != startingItemsLen) {
             DeleteAllItems(process_player);
 
-
-
             EntityAI shirt = process_player.GetInventory().CreateAttachment("TrackSuitJacket_Black");
             EntityAI pants = process_player.GetInventory().CreateAttachment("TrackSuitPants_Black");
             EntityAI shoes = process_player.GetInventory().CreateAttachment("JoggingShoes_Black");
@@ -108,7 +105,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             pants.GetInventory().CreateEntityInCargo("HuntingKnife");
             pants.GetInventory().CreateEntityInCargo("BandageDressing");
-            
 
        //     dontCrash--;
        //    if (dontCrash < 0) break;
@@ -173,7 +169,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
             if(bad_surface_types_namalsk.Find(surface_type) != -1)
                 continue;
 
-
             vector start = random_pos + Vector( 0, 5, 0 );
             vector end = random_pos;
             float radius = 2.0; 
@@ -201,7 +196,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
         float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
         vector playerDir = vector.YawToVector(dir);
         process_player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
-        
     }
 
     void ProcessPlayers()

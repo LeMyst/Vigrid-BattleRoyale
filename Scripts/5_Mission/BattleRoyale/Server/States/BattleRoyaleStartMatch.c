@@ -25,10 +25,12 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
         m_MessageTimers = new array<ref Timer>;
     }
+
     override string GetName()
 	{
 		return DAYZBR_SM_START_MATCH_NAME;
 	}
+
 	override void Activate()
 	{
 		super.Activate();
@@ -49,6 +51,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         //timer before first zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true); 
 	}
+
 	override void Deactivate()
 	{
         //deactivate all one-time timers
@@ -59,7 +62,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
 		super.Deactivate();
 	}
-    
+
 	override bool IsComplete()
 	{
         if(GetPlayers().Count() <= 1 && IsActive())
