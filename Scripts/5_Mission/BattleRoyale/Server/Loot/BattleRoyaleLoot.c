@@ -19,7 +19,8 @@ class BattleRoyaleLoot
         m_TickTimer.Run( 0.5, this, "HandleTick", NULL, true);
 
         string mission_name = BattleRoyaleConfig.GetConfig().GetGameData().mission;
-        LootReader.GetReader().ReadAsync( "$CurrentDir:mpmissions\\" + mission_name + "\\mapgroupproto.xml" );
+        Print( "Read $CurrentDir:mpmissions\\" + mission_name + "\\mapgroupproto.xml" );
+        LootReader.GetReader().ReadAsync( "$mission:mapgroupproto.xml" );
 
         BattleRoyaleLootData.GetData(); //--- this will call LootData.Load() so this is enough
     }
