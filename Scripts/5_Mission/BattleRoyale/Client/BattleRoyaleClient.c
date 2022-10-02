@@ -86,7 +86,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected float GetZoneDistance(BattleRoyalePlayArea play_area)
 	{
 		vector center = play_area.GetCenter();
-		PlayerBase player = GetGame().GetPlayer();
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		vector playerpos = player.GetPosition();
 
 		//2d distance check
@@ -104,14 +104,14 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	}
 	protected void FadeIn()
 	{
-		PlayerBase player = GetGame().GetPlayer();
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE IN!");
 		//TODO: create Fade UI
 	}
 	protected void FadeOut()
 	{
-		PlayerBase player = GetGame().GetPlayer();
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE OUT!");
 	}
@@ -152,7 +152,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		b_IsReady = true; //this only runs once
 
-		PlayerBase player = GetGame().GetPlayer();
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
 		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false , NULL, player);
 
@@ -247,7 +247,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		if ( type == CallType.Client )
 		{
-			PlayerBase player = GetGame().GetPlayer();
+			PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 			player.DisableInput( data.param1 );
 		}
 	}

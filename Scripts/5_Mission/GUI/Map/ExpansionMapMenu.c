@@ -96,7 +96,7 @@ modded class ExpansionMapMenu {
             }
 
             //skip our player in the list (this is a bugfix => our player doesn't actually exist but game thinks it does)
-            if(players[i] == GetGame().GetPlayer() )
+            if(players[i] == PlayerBase.Cast( GetGame().GetPlayer() ) )
                 continue;
 
             if(index == m_SpectatorPlayerMarkers.Count())

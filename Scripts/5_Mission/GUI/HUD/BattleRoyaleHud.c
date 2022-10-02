@@ -150,7 +150,7 @@ class BattleRoyaleHud
             for(i = 0; i < players.Count(); i++)
             {
                 //don't render whatever getplayer returns (maybe this will fix the issue with freecam showing the spectator's deleted player on HUD?)
-                if(players[i] == GetGame().GetPlayer() )
+                if(players[i] == PlayerBase.Cast( GetGame().GetPlayer() ) )
                     continue;
 
                 if(index == m_SpectatorWidgets.Count())
