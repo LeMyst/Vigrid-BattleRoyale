@@ -65,6 +65,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
 	override bool IsComplete()
 	{
+	    Print(GetName() + " IsComplete!")
         if(GetPlayers().Count() <= 1 && IsActive())
 		{
 			//clean call queue?

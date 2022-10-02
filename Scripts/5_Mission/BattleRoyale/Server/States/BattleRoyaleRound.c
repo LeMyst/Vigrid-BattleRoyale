@@ -168,7 +168,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
-
+		Print(GetName() + " IsComplete!")
 		if(GetPlayers().Count() <= 1 && IsActive())
 		{
 			Deactivate();

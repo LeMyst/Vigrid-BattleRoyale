@@ -59,6 +59,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     
 	override bool IsComplete()
 	{
+	    Print(GetName() + " IsComplete!")
 		return super.IsComplete();
 	}
 
