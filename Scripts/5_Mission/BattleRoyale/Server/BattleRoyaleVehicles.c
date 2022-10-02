@@ -386,7 +386,7 @@ class BattleRoyaleCachedVehicle
     {
         if(game_object)
         {
-            Print("Despawning Vehicle " + vehicle_name)
+            Print("Despawning Vehicle " + vehicle_name);
             position = GetPosition();
             direction = game_object.GetDirection();
             //TODO: cache vehicle inventory contents

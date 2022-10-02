@@ -69,7 +69,7 @@ class BattleRoyaleSpectatorPlayerWidget
         }
         else
         {
-            Error("Failed to find player or identity when initialize spectator icons")
+            Error("Failed to find player or identity when initialize spectator icons");
         }
 
         SetShow( true );
@@ -143,7 +143,7 @@ class BattleRoyaleSpectatorPlayerWidget
             {
                 m_Player.UpdateHealthStats(1, 1);
                 //request these stats from the server
-                Print("Unknown player stats! Requesting stats from the server!")
+                Print("Unknown player stats! Requesting stats from the server!");
                 GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", new Param1<int>( 1 ), true, NULL, m_Player);
             }
             float health = m_Player.health_percent * 100; //0-100 for HP

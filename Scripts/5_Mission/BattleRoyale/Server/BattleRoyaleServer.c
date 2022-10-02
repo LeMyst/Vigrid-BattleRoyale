@@ -12,7 +12,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	protected ref MatchData match_data;
 	protected ref Timer m_Timer;
 
-	
 	void BattleRoyaleServer() 
 	{
 		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
@@ -23,7 +22,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 	void Init()
 	{
-
 		m_Timer = new Timer;
 
 		//TODO: this needs to be dynamically aquired (probably via configs)
@@ -59,7 +57,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BattleRoyaleStartMatch start_match = new BattleRoyaleStartMatch;
 		m_States.Insert(start_match);
 
-		
 		int num_states = m_States.Count();
 		for(int i = 0; i < i_NumRounds;i++)
 		{
@@ -67,7 +64,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			BattleRoyaleState previous_state = m_States[prev_state_ind];
 			BattleRoyaleRound round = new BattleRoyaleRound(previous_state);
 			m_States.Insert(round);
-			
 		}
 
 		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
@@ -143,9 +139,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			else
 				Error("BAD STATE IN m_States!");
 		}
-		
-		
-		
+
 		//--- transition states
 		if(GetCurrentState().IsComplete()) //current state is complete
 		{
@@ -183,6 +177,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			}
 		}
 	}
+
 	void OnPlayerConnected(PlayerBase player)
 	{
 		//Teleport player into debug zone
@@ -200,9 +195,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		BattleRoyaleDebugState m_DebugStateObj;
 		if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
 		{
-			
-
-			
 			if(m_SpectatorSystem.CanSpectate( player ))
 			{
 				Print("Spectator connected, inserting into spectator system");
@@ -243,15 +235,13 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 				m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 			}
-			
-			
+
 			//TODO: Create a *spectator* system that handles players conencting during non-debug zone states
 			//Note: the spectator system will also handle client respawn events too.
 			//We need to create a list of *allowed* spectators. This should be in the server config (for private servers)
 			
 			return;
 		}
-
 
 		// only add player if they connect during debug (otherwise they're a spectator)
 		if(player.GetIdentity())
@@ -297,7 +287,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
 					{
 						Error("Player disconnected with unknown owner id!");
 					}
-					
 				}
 			}
 		}
@@ -445,7 +434,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		Print("Spectator client requested status update for target");
 		if(Class.CastTo( pbTarget, target ))
 		{
-			pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") )
+			pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") );
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
 		}
 		

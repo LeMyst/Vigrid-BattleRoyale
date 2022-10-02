@@ -26,7 +26,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 			Error("DEBUG SETTINGS IS NULL!");
 			i_MinPlayers = 10;
 			i_TimeBetweenMessages = 120;
-			b_UseVoteSystem = 1;
+			b_UseVoteSystem = true;
 			f_VoteThreshold = 0.8;
 		}
 	}
@@ -45,23 +45,20 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		}
 		return super.IsComplete();
 	}
-	
+
 	override void Activate()
 	{
 		//these loop & will be automatically cleaned up on Deactivation
 		AddTimer(i_TimeBetweenMessages, this, "MessageWaiting", NULL, true);
 		AddTimer(2.0, this, "CheckReadyState", NULL, true);
 		super.Activate();
-
-
-		
-
 	}
+
 	override void Deactivate()
 	{
 		super.Deactivate();
 	}
-	
+
 	void CheckReadyState()
 	{
 		if(IsVoteReady())
@@ -69,10 +66,12 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 			Deactivate();
 		}
 	}
+
 	void MessageWaiting()
 	{
 		MessagePlayers(GetWaitingMessage());
 	}
+
 	string GetWaitingMessage()
 	{
 		int waiting_on_count = i_MinPlayers - GetPlayers().Count();
@@ -141,11 +140,13 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 		MessagePlayers("Player readied up. (" + count.ToString() + "/" + max.ToString() + " players)");
 
 	}
+
 	override void RemovePlayer(PlayerBase player)
 	{
 		super.RemovePlayer( player );
 		m_ReadyList.RemoveItem( player );
 	}
+
 	override ref array<PlayerBase> RemoveAllPlayers()
 	{
 		m_ReadyList.Clear();

@@ -78,7 +78,7 @@ modded class MainMenu
 
 		UpdateRegions();
 	
-		m_Logo 						= ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
+		m_Logo = ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 		
@@ -97,8 +97,7 @@ modded class MainMenu
 		{
 			m_Version.SetText( "DayZ SA #main_menu_version" + " " + version );
 		}
-		
-		
+
 		if(OnStart())
 		{		
 			Print("You are running a developer build of DayZBR");
@@ -142,8 +141,7 @@ modded class MainMenu
 		//}
 
 		Print("DAYZ BATTLE ROYALE INIT");
-		
-		
+
 		BiosUserManager p_UserManager = GetGame().GetUserManager();
 		if(!p_UserManager)
 		{
@@ -298,15 +296,15 @@ modded class MainMenu
 			//hide button
 			m_PopupButton_2.Show(false);
 		}
-		
-
 
 		m_PopupMessage.Show(true);
 	}
+
 	void ClosePopup()
 	{
 		m_PopupMessage.Show(false);
 	}
+
 	void PopupActionClicked(int button_num)
 	{
 		if(button_num == 1)
@@ -329,6 +327,7 @@ modded class MainMenu
 		}
 		
 	}
+
 	override bool OnClick( Widget w, int x, int y, int button )
 	{
 		if( button == MouseState.LEFT )
@@ -386,11 +385,12 @@ modded class MainMenu
 		if( m_ModsDetailed )
 			delete m_ModsDetailed;
 	}
+
 	private void LoadBRModEntry(ref ModInfo dbr_mod_info)
 	{
 		if( m_ModsSimple )
 			delete m_ModsSimple;
-			
+
 		ref array<ref ModInfo> modArray = new array<ref ModInfo>;	
 		modArray.Insert(dbr_mod_info);
 		m_ModsSimple = new ModsMenuSimple(modArray, layoutRoot.FindAnyWidget("ModsSimple"), m_ModsDetailed);

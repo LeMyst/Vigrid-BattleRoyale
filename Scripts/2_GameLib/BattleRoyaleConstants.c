@@ -27,11 +27,9 @@ static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";
 static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not normal DayZ.";
 static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
-
 //--- dummy mission
 //--- perhaps this could be pulled from the mod config? (or dynamically generated? randomized?)
 static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "ChernarusPlus"; //ChernarusPlus
-
 
 //--- net manager constants
 static const string DAYZBR_NETWORK_ERRORCODE_TIMEOUT = "request timed out";

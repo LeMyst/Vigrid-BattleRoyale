@@ -8,17 +8,19 @@ class BattleRoyaleRestart extends BattleRoyaleState
 		
 		m_ShutdownTimer = AddTimer(10.0, this, "Shutdown", NULL, false);
 	}
+
 	override string GetName()
 	{
 		return DAYZBR_SM_RESTART_NAME;
 	}
+
 	override void Deactivate()
 	{
 		Error("RESTART STATE WAS DEACTIVATED!");
 		m_ShutdownTimer.Stop();
 		super.Deactivate();
 	}
-	
+
 	override bool IsComplete()
 	{
 		return false; //win state is never complete (it is an end state)

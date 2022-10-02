@@ -85,6 +85,7 @@ modded class DayZGame {
 			CloseFile(file);
 		}
 	}
+
 	//This will start the dummy mission ONLY when the game is launched into main menu so using "-connect=x.x.x.x" will not hit this function
 	override void MainMenuLaunch()
 	{

@@ -13,8 +13,6 @@ class BattleRoyaleZone
     protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
 
-
-    
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
     {
         m_ParentZone = parent;
@@ -32,7 +30,6 @@ class BattleRoyaleZone
         f_Exponent = m_ZoneSettings.shrink_exponent;
         a_StaticSizes = m_ZoneSettings.static_sizes;
 
-
         m_PlayArea = new BattleRoyalePlayArea;
 
         Init();
@@ -42,6 +39,7 @@ class BattleRoyaleZone
     {
         return m_PlayArea;
     }
+
     ref BattleRoyaleZone GetParent()
     {
         return m_ParentZone;
@@ -78,15 +76,7 @@ class BattleRoyaleZone
             p_Cen[2] = world_center_z;
         }
 
-       
-        
-
         CreatePlayArea(p_Rad, p_Cen);
-
-
-        
-
-        
     }
 
     void OnActivate(notnull ref array<PlayerBase> players)
@@ -96,7 +86,6 @@ class BattleRoyaleZone
         //we can look at CreatePlayArea / CreatePlayRadius & Init methods for examples of zone size creation
     }
 
-    
     protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
         float new_radius = CreatePlayRadius(p_Rad);
@@ -109,21 +98,17 @@ class BattleRoyaleZone
         
         while(true) 
         {
-            
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
             float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
-            
 
             float dX = distance * Math.Sin(moveDir);
             float dZ = distance * Math.Cos(moveDir);
-            
-            
+
             float newX = oldX + dX;
             float newZ = oldZ + dZ;
 
             float newY = GetGame().SurfaceY(newX, newZ);
 
-            
             new_center[0] = newX;
             new_center[1] = newY;
             new_center[2] = newZ;
@@ -148,8 +133,6 @@ class BattleRoyaleZone
         float x = GetZoneNumber(); //this needs to start at 1 (because x=0 for r=initial play area  == initial play area)
         float r = GetWorldRadius();
 
-
-        
         switch(i_ShrinkType)
         {
             case 1: //exponential
@@ -182,7 +165,6 @@ class BattleRoyaleZone
         return -1;
     }
 
-
     //returns which # zone this is ( 1 for the first zone )
     int GetZoneNumber()
     {
@@ -195,6 +177,7 @@ class BattleRoyaleZone
         }
         return number;
     }
+
     protected float GetWorldRadius()
     {
         if(BattleRoyaleZone.f_WorldRadius == -1)
@@ -209,7 +192,7 @@ class BattleRoyaleZone
         }
         return BattleRoyaleZone.f_WorldRadius;
     }
-    
+
     protected bool IsSafeZoneCenter(float X, float Z)
     {
         if(GetGame().SurfaceIsSea(X, Z))

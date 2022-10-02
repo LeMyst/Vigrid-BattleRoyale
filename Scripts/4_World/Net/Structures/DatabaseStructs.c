@@ -10,6 +10,7 @@ class BRServer {
     string region;
     bool locked;
 }
+
 class BRPlayer {
     string _id;
     string name;
@@ -42,6 +43,7 @@ class LeaderboardPlayer {
     int averagetimealive;
     ref array<ref LeaderboardPlayerMatch> matches;
 }
+
 class LeaderboardPlayerPentagon {
     float looting;
     float fighting;
@@ -49,6 +51,7 @@ class LeaderboardPlayerPentagon {
     float surviving;
     float driving;
 }
+
 class LeaderboardPlayerMatch {
     string matchid;
     string matchname;
@@ -65,6 +68,7 @@ class BRRawMatch {
     ref array<ref BRRawMatchPlayer> results;  //DONE! //index 0 is the first dead, last index is the winner
     ref BRRawMatchEvents events;
 }
+
 class BRRawMatchEvents {
     ref array<ref BRRawMatchZombieEvent> zombiekills;
     ref array<ref BRRawMatchVehicleEvent> vehicles;
@@ -75,24 +79,29 @@ class BRRawMatchEvents {
     ref array<ref BRRawMatchCircleEvent> circles; //DONE!
     ref array<ref BRRawMatchAirdropEvent> airdrops;
 }
+
 class BRRawMatchAirdropEvent {
     vector pos;
     int timestamp;
 }
+
 enum BRRawMatchCircleEvent_Events {
     Event_ShowCircle = 0,
     Event_LockCircle
 }
+
 class BRRawMatchCircleEvent {
     vector pos;
     float radius;
     int brevent;
     int timestamp;
 }
+
 enum BRRawMatchLootEvent_Events {
     Event_PickUp = 0,
     Event_Drop
 }
+
 class BRRawMatchLootEvent {
     string playerid;
     string item;
@@ -100,27 +109,32 @@ class BRRawMatchLootEvent {
     int brevent;
     int timestamp;
 }
+
 class BRRawMatchMovementEvent {
     string playerid;
     vector pos;
     float direction;
     int timestamp;
 }
+
 class BRRawMatchHitEvent {
     string playerid;
     vector pos;
     string shooterid;
     int timestamp;
 }
+
 class BRRawMatchShotEvent {
     string playerid;
     vector pos;
     int timestamp;
 }
+
 enum BRRawMatchVehicleEvent_Events {
     Event_GetIn = 0,
     Event_GetOut
 }
+
 class BRRawMatchVehicleEvent {
     string playerid;
     string vehicle;
@@ -128,11 +142,13 @@ class BRRawMatchVehicleEvent {
     int brevent;
     int timestamp;
 }
+
 class BRRawMatchZombieEvent {
     string playerid;
     vector pos;
     int timestamp;
 }
+
 class BRRawMatchPlayer {
     string steamid;
     string killedby;
@@ -141,6 +157,7 @@ class BRRawMatchPlayer {
     vector pos;
     vector killerpos;
 }
+
 class BRRawMatchGame {
     string name;
     string mapname;
@@ -148,6 +165,7 @@ class BRRawMatchGame {
     int start;
     int end;
 }
+
 class BRRawMatchWeather {
     float fog;
     float rain;
@@ -155,10 +173,9 @@ class BRRawMatchWeather {
     int minute;
 }
 
-
 //---- below are the wrapped objects that make managing these structures WAY easier
-
 class BRPlayerData extends BRPlayer {}
+
 class ServerData extends BRServer {
     string GetIP()
 	{
@@ -167,6 +184,7 @@ class ServerData extends BRServer {
 		
 		return parts.Get(0);
 	}
+
 	int GetPort()
 	{
 		TStringArray parts = new TStringArray;
@@ -174,10 +192,12 @@ class ServerData extends BRServer {
 
 		return parts.Get(1).ToInt();
 	}
+
 	bool CanConnect()
 	{
 		return !locked;
 	}
+
 	bool IsMatchingVersion()
 	{
 		return (version == BATTLEROYALE_VERSION);

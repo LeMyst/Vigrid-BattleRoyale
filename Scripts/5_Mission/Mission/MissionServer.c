@@ -17,6 +17,7 @@ modded class MissionServer
 		
 		StartingEquipSetup(m_player, false);
 	}
+
 	override void OnInit()
 	{
 	    Print("DayZBR-Mod OnInit()");
@@ -25,14 +26,16 @@ modded class MissionServer
 		m_BattleRoyale = new BattleRoyaleServer;
 		
 	}
+
 	override void OnUpdate(float timeslice)
 	{
 		super.OnUpdate(timeslice);
-		
 		BattleRoyaleServer.Cast( m_BattleRoyale ).Update(timeslice);
 	}
+
 	override void InvokeOnConnect( PlayerBase player, PlayerIdentity identity )
 	{
+	    Print("InvokeOnConnect()");
 		super.InvokeOnConnect(player, identity);
 		
 		if(player)
@@ -86,6 +89,7 @@ modded class MissionServer
 		
 		//i literally don't know what this is anymore
 	}
+
 	override void OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player)
 	{
 		super.OnClientRespawnEvent(identity, player);
@@ -115,7 +119,6 @@ modded class MissionServer
 					GetGame().DisconnectPlayer( identity );
 				}
 			}
-			
 		}
 		else
 		{

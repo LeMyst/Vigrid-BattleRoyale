@@ -54,11 +54,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	//--- note: these return NULL of there is no area referenced for next or current area
 	BattleRoyalePlayArea GetPlayArea()
 	{
-		return m_CurrentPlayArea
+		return m_CurrentPlayArea;
 	}
 	BattleRoyalePlayArea GetNextArea()
 	{
-		return m_FuturePlayArea
+		return m_FuturePlayArea;
 	}
 	
 	override void Update(float delta)
@@ -207,7 +207,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			{
 				if(data.param3 == Vector(0, 0, 0))
 				{
-					m_SpectatorMapEntityData.Remove(data.param1)
+					m_SpectatorMapEntityData.Remove(data.param1);
 				}
 				else
 				{
@@ -312,7 +312,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
 			if ( mission )
 			{
-				Print("Initializing Spectator in Mission")
+				Print("Initializing Spectator in Mission");
 				//Enable spectator HUD elements
 				mission.InitSpectator();
 			}

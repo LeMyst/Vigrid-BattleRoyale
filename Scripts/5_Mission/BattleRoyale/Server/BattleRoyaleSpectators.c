@@ -96,7 +96,7 @@ class BattleRoyaleSpectators
                     {
                         if(match_data.results[i].steamid == steam_id)
                         {
-                            position = match_data.results[i].pos
+                            position = match_data.results[i].pos;
                         }
                     }
                 }

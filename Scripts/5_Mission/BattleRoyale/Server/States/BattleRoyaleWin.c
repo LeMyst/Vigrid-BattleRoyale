@@ -17,7 +17,6 @@ class BattleRoyaleWin extends BattleRoyaleState
 	{
 		super.Activate();
 
-
 		ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
 		
 		string winner_name = "<NO:WINNER>";
@@ -58,15 +57,18 @@ class BattleRoyaleWin extends BattleRoyaleState
 
 		m_KickTimer = AddTimer(i_SecondsTillKick, this, "KickWinner", NULL, false);
 	}
+
 	override string GetName()
 	{
 		return DAYZBR_SM_WIN_NAME;
 	}
+
 	override void Deactivate()
 	{
 		m_KickTimer.Stop();
 		super.Deactivate();
 	}
+
 	override bool IsComplete()
 	{
 		if(GetPlayers().Count() == 0 && IsActive())
@@ -80,6 +82,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 	{
 		MessagePlayer(winner, "Congratulations! You won Battle Royale!");
 	}
+
 	void KickWinner()
 	{
 		if(winner && winner.GetIdentity() )

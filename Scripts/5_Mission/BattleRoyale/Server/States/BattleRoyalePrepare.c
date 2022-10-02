@@ -2,10 +2,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 {
     protected ref array<PlayerBase> m_PlayerList;
     protected ref array<string> a_StartingItems;
-
-
-
     protected vector world_center;
+
     void BattleRoyalePrepare()
     {
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
@@ -16,16 +14,13 @@ class BattleRoyalePrepare extends BattleRoyaleState
         else
         {
             Error("GameSettings is NULL!");
-            a_StartingItems = {"TrackSuitJacket_Red","TrackSuitPants_Red","JoggingShoes_Red"}; 
+            a_StartingItems = {"TrackSuitJacket_Red", "TrackSuitPants_Red", "JoggingShoes_Red"};
         }
-        
-        
+
         m_PlayerList = new array<PlayerBase>();
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
         world_center = GetGame().ConfigGetVector(path + " centerPosition");
-
-
     }
 
 	override void Activate()
@@ -55,6 +50,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
 	}
+
 	override void Deactivate()
 	{
 		super.Deactivate();
@@ -66,6 +62,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 	{
 		return super.IsComplete();
 	}
+
     override string GetName()
 	{
 		return DAYZBR_SM_PREPARE_NAME;
@@ -134,11 +131,13 @@ class BattleRoyalePrepare extends BattleRoyaleState
         DeleteAllItems(process_player);
         AddStartItems(process_player);
     }
+
     protected void DisableInput(PlayerBase process_player)
     {
         process_player.DisableInput(true);
 
     }
+
     protected void Teleport(PlayerBase process_player)
     {
         vector random_pos = "0 0 0";
@@ -192,7 +191,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
             break;
         }
 
-
         //set pos
         process_player.SetPosition(random_pos);
 
@@ -205,6 +203,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         process_player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         
     }
+
     void ProcessPlayers()
     {
         Print("Starting to process players...");
@@ -238,8 +237,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
             Sleep(100);
         }
         Print("Gave starting items");
-
-
         Deactivate();
     }
 
@@ -253,8 +250,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
 			player.Heal();
 		}
 		player.time_until_heal -= timeslice;
-
-
 	}
 
     override void AddPlayer(PlayerBase player)
@@ -266,6 +261,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 		}
 		super.AddPlayer(player);
 	}
+
     override ref array<PlayerBase> RemoveAllPlayers()
 	{
 		ref array<PlayerBase> players = super.RemoveAllPlayers();
@@ -276,6 +272,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 		}
 		return players;
 	}
+
 	override void RemovePlayer(PlayerBase player)
 	{
 		if(player)

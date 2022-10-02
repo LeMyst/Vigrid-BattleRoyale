@@ -4,9 +4,6 @@ class BattleRoyaleState extends Timeable {
 	protected bool b_IsActive;
 	protected bool b_IsPaused;
 
-	
-	
-
 	string GetName()
 	{
 		return DAYZBR_SM_UNKNOWN_NAME;
@@ -41,22 +38,27 @@ class BattleRoyaleState extends Timeable {
 
 		b_IsActive = false; 
 	}
+
 	bool IsActive()
 	{
 		return b_IsActive;
 	}
+
 	bool IsPaused()
 	{
 		return b_IsPaused;
 	}
+
 	void Pause()
 	{
 		b_IsPaused = true;
 	}
+
 	void Resume()
 	{
 		b_IsPaused = false;
 	}
+
 	bool IsComplete()
 	{
 		//state cannot complete if paused
@@ -65,25 +67,29 @@ class BattleRoyaleState extends Timeable {
 
 		return !IsActive();
 	}
+
 	bool SkipState(BattleRoyaleState m_PreviousState)  //if true, we will skip activating/deactivating this state entirely
 	{
 		return false;
 	}
-	
+
 	ref array<PlayerBase> GetPlayers()
 	{	
 		return m_Players;
 	}
+
 	void AddPlayer(PlayerBase player)
 	{
 		m_Players.Insert( player );
 		OnPlayerCountChanged();
 	}
+
 	void RemovePlayer(PlayerBase player)
 	{
 		m_Players.RemoveItem(player);
 		OnPlayerCountChanged();
 	}
+
 	ref array<PlayerBase> RemoveAllPlayers()
 	{
 		ref array<PlayerBase> result_array = new array<PlayerBase>();
@@ -92,6 +98,7 @@ class BattleRoyaleState extends Timeable {
 		OnPlayerCountChanged();
 		return result_array;
 	}
+
 	bool ContainsPlayer(PlayerBase player)
 	{
 		if(m_Players.Find(player) >= 0)
@@ -103,6 +110,7 @@ class BattleRoyaleState extends Timeable {
 			return false;
 		}
 	}
+
 	void OnPlayerTick(PlayerBase player, float timeslice)
 	{
 		if(player)
@@ -139,6 +147,7 @@ class BattleRoyaleState extends Timeable {
 		StringLocaliser text = new StringLocaliser( message );
 		GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time);
 	}
+
 	void MessagePlayer(PlayerBase player, string message, string title = DAYZBR_MSG_TITLE, string icon = DAYZBR_MSG_IMAGE, int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = DAYZBR_MSG_TIME)
 	{
 		if(player)
@@ -151,10 +160,8 @@ class BattleRoyaleState extends Timeable {
 				GetNotificationSystem().CreateNotification(title_sl,text,icon,color,time, identity);
 			}
 		}
-		//ExpansionNotificationSystem m_notif_sys = GetNotificationSystem();
 	}
 }
-
 
 //base state for the Debug Zone.
 //This handles healing / godmode / and teleporting
@@ -180,7 +187,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData(); 
 		if(m_GameSettings)
 		{
-			i_HealTickTime = m_GameSettings.debug_heal_tick_seconds
+			i_HealTickTime = m_GameSettings.debug_heal_tick_seconds;
 		}
 		else
 		{
@@ -189,10 +196,12 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		}
 		
 	}
+
 	override string GetName()
 	{
 		return DAYZBR_SM_UNKNOWN_DEBUG_NAME;
 	}
+
 	override void AddPlayer(PlayerBase player)
 	{
 		if(player)
@@ -202,7 +211,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		}
 		super.AddPlayer(player);
 	}
-	
+
     /*override ref array<PlayerBase> RemoveAllPlayers()
 	{
 		ref array<PlayerBase> players = super.RemoveAllPlayers();
@@ -235,15 +244,12 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 			player.SetPosition(v_Center);
 		}
 
-
 		if(player.time_until_heal <= 0)
 		{
 			player.time_until_heal = i_HealTickTime;
 			player.Heal();
 		}
 		player.time_until_heal -= timeslice;
-
-
 	}
 
 	//TODO:
@@ -253,6 +259,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 	{
 		return v_Center;
 	}
+
 	//DEPRECATED: should pull value from config
 	//GOAL: make this protected
 	float GetRadius()
