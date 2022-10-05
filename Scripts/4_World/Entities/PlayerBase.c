@@ -21,6 +21,7 @@ modded class PlayerBase
             }
         }
     }
+
 	static void GetLocalPlayers(out array<PlayerBase> players)
     {
         if (IsMissionClient())
@@ -92,6 +93,7 @@ modded class PlayerBase
 			m_BR.OnPlayerTick(this, deltaTime);
 		}
 	}
+
 	override void EEKilled( Object killer )
 	{
 		super.EEKilled( killer );
@@ -102,6 +104,7 @@ modded class PlayerBase
 			m_BR.OnPlayerKilled(this, killer);
 		}
 	}
+
 	override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
 	{
 		if(GetGame().IsMultiplayer() && GetGame().IsServer() && source && GetBR())
@@ -128,12 +131,13 @@ modded class PlayerBase
 		}
 		super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
 	}
-	
+
 	//Temp fix for disabling character saving
 	override bool Save()
 	{
 		return false;
 	}
+
 	void Heal()
 	{
 		//TODO: sstop player from beleding!
@@ -184,6 +188,5 @@ modded class PlayerBase
 		
 		// required for repairing and stuff, so no need to change for godmode
 		//player.GetStatSpecialty().Set(100);
-
 	}
 }
