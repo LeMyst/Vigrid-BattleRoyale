@@ -40,11 +40,12 @@ class BattleRoyaleSpectators
         }
         return result;
     }
+
     bool CanSpectate(PlayerBase player)
     {
         if(b_AllowAllSpectators)
             return true;
-            
+
         if(!player)
         {
             Error("Null player in CanSpectate");
@@ -57,19 +58,23 @@ class BattleRoyaleSpectators
 
         return CanIdSpectate( identity );
     }
+
     bool ContainsPlayer(PlayerBase player)
     {
         return (m_Players.Find(player) != -1);
     }
+
     void AddPlayer(PlayerBase player)
     {
         m_Players.Insert(player);
         //spin up a thread to handle spectator camera initialization
         GetGame().GameScript.Call(this, "InitSpectatorCamera", player); 
     }
+
     void Update(float delta)
     {
     }
+
     void OnPlayerTick(PlayerBase player, float delta)
     {
         // just in case we need it
@@ -148,6 +153,5 @@ class BattleRoyaleSpectators
         {
             Error("What the fuck? No Player Identity in Spectator Init");
         }
-        
     }
 }

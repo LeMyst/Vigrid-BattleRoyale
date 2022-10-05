@@ -11,7 +11,6 @@ class BattleRoyaleLootData
     }
     static ref BattleRoyaleLootData m_Singleton;
 
-
     protected ref map<string, ref BattleRoyaleLootDataField> m_DataFields;
 
     float total_weight = 0; //used for efficiency
@@ -37,6 +36,7 @@ class BattleRoyaleLootData
         m_DataFields.Insert(name, field);
         total_weight += category.weight;
     }
+
     protected void AddEntry( ref BattleRoyaleLootEntry entry, bool is_recurs = false )
     {
         string category_name = entry.category;
@@ -211,15 +211,13 @@ class BattleRoyaleLootData
             return m_Magazines.Get(normalized_name);
         }
 
-
         ref array<string> result = new array<string>();
         if(!m_DataFields.Contains( BATTLEROYALE_LOOT_MAGAZINES_CATEGORY ))
         {
             Error("No magazines category!");
             return result;
         }
-        
-        
+
         //get all possible magazines for this item
         string configPath = "CfgWeapons " + normalized_name + " magazines";
         ref array<string> magazines = new array<string>(); 
@@ -244,6 +242,7 @@ class BattleRoyaleLootData
         return result;
 
     }
+
     ref array<string> GetAllAmmo(string item_class)
     {
         //lowercase item name
@@ -262,7 +261,6 @@ class BattleRoyaleLootData
             return result;
         }
 
-        
         //get all possible ammo for this item
         string configPath = "CfgWeapons " + normalized_name + " chamberableFrom";
         ref array<string> ammo = new array<string>(); 
@@ -306,8 +304,6 @@ class BattleRoyaleLootData
         return result;
     }
 
-
-
     ref map<string, ref array<ref BattleRoyaleLootEntry>> GetAllAttachmentEntries(string item_class)
     {
         string normalized_name = item_class;
@@ -331,9 +327,7 @@ class BattleRoyaleLootData
         string configPath = "CfgWeapons " + normalized_name + " attachments";
         GetGame().ConfigGetTextArray(configPath,weapon_slots);
 
-        
         ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY ).GetEntries();
-
 
         for(int i = 0; i < entries.Count(); i++)
         {

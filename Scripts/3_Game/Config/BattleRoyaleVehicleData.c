@@ -6,10 +6,12 @@ class BattleRoyaleVehicleData extends BattleRoyaleDataBase
     {
         m_VehicleData = new array<ref BattleRoyaleVehicleDataSerialized>();
     }
+
     override string GetPath()
     {
         return BATTLEROYALE_VEHICLES_FOLDER;
     }
+
     override void Save()
     {
         if( !FileExist(BATTLEROYALE_VEHICLES_FOLDER))
@@ -21,12 +23,12 @@ class BattleRoyaleVehicleData extends BattleRoyaleDataBase
             Defaults();
         }
 
-
         for(int i = 0; i < m_VehicleData.Count(); i++)
         {
             m_VehicleData[i].Save();
         }
     }
+
     override void Load()
     {
         m_VehicleData.Clear();
@@ -81,12 +83,11 @@ class BattleRoyaleVehicleDataSerialized : Managed
     string VehicleName;
     ref array<string> Parts;
 
-
-
     void Save()
     {
         JsonFileLoader<BattleRoyaleVehicleDataSerialized>.JsonSaveFile(BATTLEROYALE_VEHICLES_FOLDER + m_FileName, this);
     }
+
     void Load(string filename)
     {
         JsonFileLoader<BattleRoyaleVehicleDataSerialized>.JsonLoadFile(BATTLEROYALE_VEHICLES_FOLDER + filename , this);

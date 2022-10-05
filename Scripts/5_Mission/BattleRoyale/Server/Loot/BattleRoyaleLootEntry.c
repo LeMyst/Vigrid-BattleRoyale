@@ -10,7 +10,6 @@ class BattleRoyaleLootEntry : Managed {
     int needs_ammo;
     int needs_attachments;
 
-
     void Load(string filename)
     {
         JsonFileLoader<BattleRoyaleLootEntry>.JsonLoadFile(BATTLEROYALE_LOOT_ENTRIES_FOLDER + filename , this);
@@ -29,14 +28,17 @@ class BattleRoyaleLootEntry : Managed {
         int ind = Math.RandomInt(0, count);
         return styles[ind];
     }
+
     bool SpawnWithMagazines()
     {
         return (needs_magazines == 1);
     }
+
     bool SpawnWithAmmo()
     {
         return (needs_ammo == 1);
     }
+
     bool SpawnWithAttachments()
     {
         return (needs_attachments == 1);

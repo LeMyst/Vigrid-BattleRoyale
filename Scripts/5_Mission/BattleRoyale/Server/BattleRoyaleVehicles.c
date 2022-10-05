@@ -93,7 +93,6 @@ class BattleRoyaleVehicles
 
         for(i = 0; i < i_NumVehicles; i++)
         {
-            
             vector position = DAYZBR_DEBUG_CENTER; //this is only a temp value so we'll just stuck the broken debug zone center position
         
             Print("Finding valid location...");
@@ -177,7 +176,6 @@ class BattleRoyaleVehicles
         }
     }
 
-
     protected bool IsSafeSpawnPos(vector pos)
     {
         float x = pos[0];
@@ -204,7 +202,6 @@ class BattleRoyaleVehicles
         if(friction < DAYZBR_VS_MIN_SURFACE_FRICTION)
             return false;
 
-
         vector start = pos;
         vector end = pos + Vector( 0, 1, 0 );
         float radius = 2.0; 
@@ -219,7 +216,6 @@ class BattleRoyaleVehicles
         if(m_Hit)
             return false;
 
-       
         Print("Found safe vehicle spawn position using IsSafeSpawnPos");
         return true;
     }
@@ -252,8 +248,6 @@ class BattleRoyaleVehicles
                     }
                 }            
 
-
-
                 if(m_Vehicle.IsSpawned() && !b_IsPlayerNear)
                 {
 
@@ -274,7 +268,6 @@ class BattleRoyaleVehicles
 
         b_IsBusy = false; //complete!
     }
-
 }
 
 class BattleRoyaleCachedVehicle
@@ -291,6 +284,7 @@ class BattleRoyaleCachedVehicle
         vehicle_parts = parts;
         position = pos;
     }
+
     private void FillCar( Car car, CarFluid fluid )
 	{
 		float cap = car.GetFluidCapacity( fluid );
@@ -354,7 +348,7 @@ class BattleRoyaleCachedVehicle
         }
 
         ent.SetPosition( position );
-        
+
         if(direction)
         {
 		    ent.SetDirection( direction );
