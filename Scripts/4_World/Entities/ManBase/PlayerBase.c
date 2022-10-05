@@ -140,7 +140,7 @@ modded class PlayerBase
 
 	void Heal()
 	{
-		//TODO: sstop player from beleding!
+		//TODO: sstop player from bleeding!
 		//NOTE: this heal function was done by legodev, not sure it's performance, we'll have to see
 
 		SetHealth("", "Health", GetMaxHealth("", "Health"));

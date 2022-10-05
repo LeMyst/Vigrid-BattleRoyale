@@ -1,7 +1,6 @@
 modded class Grenade_Base
 {
     protected string m_ActivatorId = "";
-    
 
     string GetDZBRActivator()
     {
@@ -21,6 +20,7 @@ modded class Grenade_Base
         }
         super.EEKilled(killer);
     }
+
     protected override void OnUnpin()
 	{
         super.OnUnpin();

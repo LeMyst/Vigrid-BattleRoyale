@@ -1,8 +1,5 @@
-
 modded class ActionGetInTransport
 {
-
-
     override void OnEndServer( ActionData action_data ) 
     {
         PlayerBase player = action_data.m_Player;
@@ -11,10 +8,9 @@ modded class ActionGetInTransport
             CarScript car = CarScript.Cast(action_data.m_Target.GetObject());
             if (car)
             {
-
                 //register event with br if in match!
                 string cartype = car.GetDisplayName();
-                string playerid =  player.GetIdentity().GetPlainId();
+                string playerid = player.GetIdentity().GetPlainId();
                 vector vehiclepos = car.GetPosition();
                 int time = GetGame().GetTime();
                 if(!GetBR().IsDebug())
@@ -27,5 +23,4 @@ modded class ActionGetInTransport
 
         super.OnEndServer( action_data );
     }
-
 }

@@ -78,7 +78,6 @@ class BattleRoyaleLoot
         {
             Print("Warning! Loot System Can't Keep Up!");
         }
-        
     }
 
     void ProcessLoot()

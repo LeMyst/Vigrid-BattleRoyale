@@ -1,7 +1,5 @@
-
-modded class ItemBase {
-
-
+modded class ItemBase
+{
     override void OnInventoryEnter(Man player) {
         super.OnInventoryEnter(player);
 
@@ -16,19 +14,18 @@ modded class ItemBase {
                     if(!GetBR().IsDebug())
                     {
                         //not in debug! collect event!
-
                         string itemtype = this.GetDisplayName();
                         vector pos = nplayer.GetPosition();
                         int time = GetGame().GetTime();
                         string playerid = nplayer.GetIdentity().GetPlainId();
 
 						 GetBR().GetMatchData().LootPickedUp( playerid, itemtype, pos, time );
-
                     }
                 }
             }
         }
     }
+
     override void OnInventoryExit(Man player) {
         super.OnInventoryExit(player);
 

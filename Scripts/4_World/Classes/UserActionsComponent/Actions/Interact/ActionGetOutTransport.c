@@ -1,5 +1,5 @@
-modded class ActionGetOutTransport {
-
+modded class ActionGetOutTransport
+{
     override void OnEndServer( ActionData action_data ) 
     {
 		GetOutTransportActionData got_action_data = GetOutTransportActionData.Cast(action_data);
@@ -10,8 +10,7 @@ modded class ActionGetOutTransport {
             {
                 CarScript car;
                 if ( Class.CastTo(car, got_action_data.m_Car) )
-                {   
-
+                {
                     //register event if match is ongoing! (we have CAR and PLAYER)
                     string cartype = car.GetDisplayName();
                     string playerid =  player.GetIdentity().GetPlainId();

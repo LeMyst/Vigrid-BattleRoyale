@@ -134,7 +134,6 @@ class BattleRoyaleConfig
         return m_Configs.Get(key);
     }
 
-
     BattleRoyaleServerData GetServerData()
     {
         Print("Accessing Server Data Config...");

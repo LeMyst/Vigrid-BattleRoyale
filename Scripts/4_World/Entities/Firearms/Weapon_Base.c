@@ -1,5 +1,5 @@
-modded class Weapon_Base {
-
+modded class Weapon_Base
+{
     override void EEFired (int muzzleType, int mode, string ammoType) 
     {
         if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
@@ -16,7 +16,6 @@ modded class Weapon_Base {
                 }
             }
         }
-        
         super.EEFired(muzzleType, mode, ammoType);
     }
 }

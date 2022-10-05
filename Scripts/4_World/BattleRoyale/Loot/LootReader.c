@@ -103,6 +103,7 @@ class LootReader
         return positions;
     }
 }
+
 class LootReaderXMLCallback extends CF_XML_Callback
 {
     protected ref LootReader p_LootReader;

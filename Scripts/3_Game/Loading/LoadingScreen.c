@@ -19,6 +19,7 @@ modded class LoadingScreen
 
 		m_ProgressLoading.SetColor( DAYZBR_LOADING_BAR_COLOR );
 	}
+
     override void Show()
 	{
 		m_Backgrounds.Clear();
