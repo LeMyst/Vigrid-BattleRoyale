@@ -6,8 +6,6 @@ class BattleRoyaleLootableBuilding
     protected bool b_Active;
     protected bool b_Initialized;
 
-    
-
     void BattleRoyaleLootableBuilding( Object obj )
     {
         m_Object = obj;
@@ -31,7 +29,6 @@ class BattleRoyaleLootableBuilding
 
     protected void InitLoot()
     {
-
         //TODO: LOOT RAYCASTING #2
         // this array should be an object containing vector, float, float | for model_position, radius, and height
         //our loot pile constructor will be modified
@@ -55,6 +52,7 @@ class BattleRoyaleLootableBuilding
             }
         }
     }
+
     void RemoveNearPlayer(PlayerBase player)
     {
         if(a_NearPlayers.Find(player) != -1)
@@ -67,6 +65,7 @@ class BattleRoyaleLootableBuilding
             }
         }   
     }
+
     protected void SpawnLoot()
     {
         if(!b_Active)
@@ -78,10 +77,10 @@ class BattleRoyaleLootableBuilding
         for(int i = 0; i < a_LootPiles.Count(); i++)
         {
             ref BattleRoyaleLootPile loot_pile = a_LootPiles[i];
-
             loot_pile.Spawn();
         }
     }
+
     protected void DespawnLoot()
     {
         if(!b_Active)
@@ -90,7 +89,6 @@ class BattleRoyaleLootableBuilding
         for(int i = 0; i < a_LootPiles.Count(); i++)
         {
             ref BattleRoyaleLootPile loot_pile = a_LootPiles[i];
-
             loot_pile.Despawn();
         }
     }

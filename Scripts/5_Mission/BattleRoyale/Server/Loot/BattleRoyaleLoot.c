@@ -140,7 +140,6 @@ class BattleRoyaleLoot
                     }
                     //we may need to serialized the building object in case dayz hands us unique instances every time GetObjectsAtPosition returns
                     ref BattleRoyaleLootableBuilding lootable_building = m_LootableBuildings.Get(building_object);
-                    
 
                     float dist = vector.Distance(player_pos, obj_pos);
                     if(dist < spawn_radius)

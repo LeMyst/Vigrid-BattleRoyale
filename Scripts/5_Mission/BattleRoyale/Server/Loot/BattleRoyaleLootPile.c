@@ -13,7 +13,6 @@ class BattleRoyaleLootPile
     protected ref array<string> class_names;
     protected ref array<ItemBase> spawned_items;
 
-
     void BattleRoyaleLootPile(vector model_pos, ref BattleRoyaleLootableBuilding parent )
     {
         spawned_items = new array<ItemBase>();
@@ -23,7 +22,6 @@ class BattleRoyaleLootPile
         b_IsSpawned = false;
 
         v_WorldPosition = "0 0 0";
-
 
         float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_pile;
         b_Active =(Math.RandomFloat(0, 1) < odds); 
@@ -53,8 +51,6 @@ class BattleRoyaleLootPile
                 return pos;
             }
         }
-
-     
     */
     
     vector GetWorldPos()
@@ -173,7 +169,6 @@ class BattleRoyaleLootPile
                         {
                             Error("Slot Attachments Contains no Entries!");
                         }
-                        
                     }
                 }
             }
@@ -181,7 +176,6 @@ class BattleRoyaleLootPile
             {
                 Error("Trying to spawn `" + class_name + "` with attachments, but none are found!");
             }
-            
         }
     }
 
@@ -208,8 +202,6 @@ class BattleRoyaleLootPile
         
         if(!m_Entry)
             Init();
-        
-        
 
         Print("Spawning Items");
         for(int i = 0; i < class_names.Count(); i++)
@@ -228,6 +220,7 @@ class BattleRoyaleLootPile
 
         b_IsSpawned = true;
     }
+
     void Despawn()
     {
         if(!b_Active)
@@ -262,11 +255,13 @@ class BattleRoyaleLootPile
                 break;
             }
         }
+
         if(was_moved)
         {
             b_Active = false;
             return;
         }
+
         for(i = 0; i < spawned_items.Count(); i++)
         {
             GetGame().ObjectDelete( spawned_items[i] );
@@ -274,5 +269,4 @@ class BattleRoyaleLootPile
         spawned_items.Clear();
         b_IsSpawned = false;
     }
-
 }

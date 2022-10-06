@@ -2,7 +2,7 @@
 class BattleRoyaleServer extends BattleRoyaleBase
 {
 	protected ref BattleRoyaleSpectators m_SpectatorSystem;
-	protected ref BattleRoyaleVehicles m_VehicleSystem; 
+	protected ref BattleRoyaleVehicles m_VehicleSystem;
 	protected ref BattleRoyaleLoot m_LootSystem;
 	ref array<ref BattleRoyaleState> m_States;
 	int i_CurrentStateIndex;

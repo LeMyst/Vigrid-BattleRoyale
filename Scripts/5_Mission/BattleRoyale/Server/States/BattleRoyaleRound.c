@@ -86,7 +86,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockSeconds", new Param1<int>( sec ), false) );
 		}
 
-
 		//timer before zone locks
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
 
@@ -152,7 +151,6 @@ class BattleRoyaleRound extends BattleRoyaleState
 				}
 			}
 		}
-
 		super.Activate();
 	}
 

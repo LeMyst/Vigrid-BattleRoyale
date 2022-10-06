@@ -23,7 +23,6 @@ class BattleRoyaleZone
 		BattleRoyaleGameData m_GameData = config_data.GetGameData();
 		i_NumRounds = m_GameData.num_zones;
 
-
         f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
         f_Eulers = m_ZoneSettings.shrink_base;
