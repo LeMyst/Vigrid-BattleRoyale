@@ -155,6 +155,7 @@ class LootReaderXMLCallback extends CF_XML_Callback
 			ref BattleRoyaleLootPosition entry = new BattleRoyaleLootPosition();
             string name = tag.GetAttribute( "name" ).ValueAsString();
             name.ToLower();
+			m_Entries.Insert(name, entry);
 			
 			array< CF_XML_Tag > containers = tag.GetContent().Get( "container" );
 			array< CF_XML_Tag > usages = tag.GetContent().Get( "usage" );
@@ -227,12 +228,10 @@ class LootReaderXMLCallback extends CF_XML_Callback
 					container.AddPoint( point_pos, range, height, flags );
 				}
 			}
-			m_Entries.Insert(name, entry);
 		}
 
-        
         b_IsComplete = true;
-        
+
         // some debug logging
         Print("==== Loot XML Reading Complete! ====");
         Print("Found " + m_Entries.Count().ToString() + " entries!");
