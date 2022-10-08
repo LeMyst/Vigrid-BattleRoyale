@@ -9,11 +9,7 @@ string object_class_name = ...;
 object_class_name.ToLower();
 
 array<vector> local_coord_positions = lr.GetAllLootPositions(object_class_name);
-
-
-
 */
-
 
 class LootReader
 {
@@ -25,6 +21,7 @@ class LootReader
         }
         return m_Singleton;
     }
+
     static ref LootReader m_Singleton;
 
     ref LootReaderXMLCallback _callback;
@@ -44,6 +41,7 @@ class LootReader
         }
         return false;
     }
+
     bool ContainsObject(string name)
     {
         if(_callback && IsReady())
@@ -83,23 +81,19 @@ class LootReader
                             {
                                 Error("Null point in: " + name);
                             }
-                            
                         }
                     }
                     else
                     {
                         Error("Null container in: " + name);
                     }
-                    
                 }
             }
             else
             {
                 Error("Loot Entry does not exist for: " + name);
             }
-            
         }
-
         return positions;
     }
 }
@@ -116,16 +110,19 @@ class LootReaderXMLCallback extends CF_XML_Callback
         b_IsComplete = false;
         m_Entries = new map<string, ref BattleRoyaleLootPosition>();
     }
+
     bool Contains(string name)
     {
         string check = name;
         check.ToLower();
         return m_Entries.Contains(check);
     }
+
     bool IsComplete()
     {
         return b_IsComplete;
     }
+
     ref BattleRoyaleLootPosition Get(string name)
     {
         string check = name;
@@ -158,7 +155,6 @@ class LootReaderXMLCallback extends CF_XML_Callback
 			ref BattleRoyaleLootPosition entry = new BattleRoyaleLootPosition();
             string name = tag.GetAttribute( "name" ).ValueAsString();
             name.ToLower();
-			m_Entries.Insert(name, entry);
 			
 			array< CF_XML_Tag > containers = tag.GetContent().Get( "container" );
 			array< CF_XML_Tag > usages = tag.GetContent().Get( "usage" );
@@ -180,6 +176,7 @@ class LootReaderXMLCallback extends CF_XML_Callback
 				array< CF_XML_Tag > categories = containers[j].GetContent().Get( "category" );
 				array< CF_XML_Tag > tags = containers[j].GetContent().Get( "tag" );
                 int k;
+
                 for(k = 0; k < categories.Count(); ++k)
                 {
                     CF_XML_Tag category = categories[k];
@@ -188,6 +185,7 @@ class LootReaderXMLCallback extends CF_XML_Callback
                     container.AddCategory(name);
 
                 }
+
                 for(k = 0; k < tags.Count(); ++k)
                 {
                     CF_XML_Tag tag_att = tags[k];
@@ -195,6 +193,7 @@ class LootReaderXMLCallback extends CF_XML_Callback
                     name.ToLower();
                     container.AddTag(name);
                 }
+
 				for (k = 0; k < points.Count(); ++k )
 				{
 					vector point_pos = "0 0 0";
@@ -204,24 +203,31 @@ class LootReaderXMLCallback extends CF_XML_Callback
                     CF_XML_Attribute attrib = NULL;
 
 					attrib = points[k].GetAttribute( "pos" );
+
+					attrib.Debug(1);
+
 					if ( attrib )
 						point_pos = attrib.ValueAsVector();
 
 					attrib = points[k].GetAttribute( "height" );
+
 					if ( attrib )
 						height = attrib.ValueAsFloat();
 
 					attrib = points[k].GetAttribute( "range" );
+
 					if ( attrib )
 						range = attrib.ValueAsFloat();
 
 					attrib = points[k].GetAttribute( "flags" );
+
 					if ( attrib )
 						flags = attrib.ValueAsInt();
 
 					container.AddPoint( point_pos, range, height, flags );
 				}
 			}
+			m_Entries.Insert(name, entry);
 		}
 
         
@@ -232,6 +238,7 @@ class LootReaderXMLCallback extends CF_XML_Callback
         Print("Found " + m_Entries.Count().ToString() + " entries!");
     }
 }
+
 class BattleRoyaleLootPosition
 {
     protected ref array<string> a_Usages;
@@ -261,6 +268,7 @@ class BattleRoyaleLootPosition
         a_Containers.Insert(container);
     }
 }
+
 class BattleRoyaleLootContainer
 {
     protected ref array<string> a_Categories;
@@ -273,32 +281,39 @@ class BattleRoyaleLootContainer
         a_Tags = new array<string>();
         a_Points = new array<ref BattleRoyaleLootPoint>();
     }
+
     ref array<string> GetCategories()
     {
         return a_Categories;
     }
+
     ref array<string> GetTags()
     {
         return a_Tags;
     }
+
     ref array<ref BattleRoyaleLootPoint> GetPoints()
     {
         return a_Points;
     }
+
     void AddCategory(string cat)
     {
         a_Categories.Insert(cat);
     }
+
     void AddTag(string tag)
     {
         a_Tags.Insert(tag);
     }
+
     void AddPoint(vector pos, float range, float height, int flags = 32)
     {
         ref BattleRoyaleLootPoint point = new BattleRoyaleLootPoint( pos, range, height, flags );
         a_Points.Insert(point);
     }
 }
+
 class BattleRoyaleLootPoint
 {
     protected vector v_Position;
@@ -318,14 +333,17 @@ class BattleRoyaleLootPoint
     {
         return v_Position;
     }
+
     float GetRange()
     {
         return f_Range;
     }
+
     float GetHeight()
     {
         return f_Height;
     }
+
     int GetFlags()
     {
         return i_Flags;

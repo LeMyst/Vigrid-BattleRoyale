@@ -67,11 +67,10 @@ class BattleRoyaleLoot
     {
         if(!b_Enabled)
             return;
-            
+
         if(!b_IsProcessing) //this prevents a second thread from spinning up if processloot takes longer than 0.5s
         {
             b_IsProcessing = true;
-
             GetGame().GameScript.Call( this, "ProcessLoot", NULL ); 
         }
         else
@@ -147,6 +146,7 @@ class BattleRoyaleLoot
                         //handle spawning loot
                         lootable_building.AddNearPlayer(player);
                     }
+
                     if(dist > despawn_radius)
                     {
                         //handle despawning loot

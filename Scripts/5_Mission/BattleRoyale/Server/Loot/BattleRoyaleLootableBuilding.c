@@ -15,7 +15,8 @@ class BattleRoyaleLootableBuilding
 
         float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_building;
         b_Active = (Math.RandomFloat(0, 1) < odds);
-    } 
+    }
+
     void ~BattleRoyaleLootableBuilding()
     {
         delete a_NearPlayers;

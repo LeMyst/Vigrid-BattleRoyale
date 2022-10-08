@@ -1,4 +1,3 @@
-
 class BattleRoyaleLootPile
 {
     protected ref BattleRoyaleLootableBuilding m_Parent;
@@ -52,7 +51,7 @@ class BattleRoyaleLootPile
             }
         }
     */
-    
+
     vector GetWorldPos()
     {
         return m_Parent.GetObject().ModelToWorld( v_ModelPosition );
@@ -194,12 +193,13 @@ class BattleRoyaleLootPile
             Error("Trying to spawn loot that is already spawned!");
             return;
         }
+
         if(spawned_items.Count() != 0)
         {
             Error("Trying to spawn loot but some items are already spawned!");
             return;
         }
-        
+
         if(!m_Entry)
             Init();
 
