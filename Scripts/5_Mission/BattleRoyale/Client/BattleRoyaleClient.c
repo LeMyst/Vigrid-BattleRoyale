@@ -139,7 +139,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	{
 		if(b_MatchStarted)
 		{
-			Error("Match started already but recieved another RPC?");
+			Error("Match started already but received another RPC?");
 		}
 		b_MatchStarted = true;
 	}

@@ -81,7 +81,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     {
         if ( IsMissionHost() )
 		{
-            Server_Next(); //Server recieved next command
+            Server_Next(); //Server received next command
         }
     }
 
@@ -89,7 +89,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     {
         if ( IsMissionHost() )
 		{
-            Server_Pause(); //Server recieved next command
+            Server_Pause(); //Server received next command
         }
     }
 
@@ -97,7 +97,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     {
         if ( IsMissionHost() )
 		{
-            Server_Resume(); //Server recieved next command
+            Server_Resume(); //Server received next command
         }
     }
 

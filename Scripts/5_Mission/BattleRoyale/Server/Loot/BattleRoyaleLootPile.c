@@ -23,7 +23,7 @@ class BattleRoyaleLootPile
         v_WorldPosition = "0 0 0";
 
         float odds = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).chance_to_spawn_pile;
-        b_Active =(Math.RandomFloat(0, 1) < odds); 
+        b_Active = (Math.RandomFloat(0, 1) < odds);
     }
 
     /*

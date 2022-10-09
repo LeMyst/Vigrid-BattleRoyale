@@ -66,7 +66,7 @@ class MatchmakeAction {
 
         if(!p_ServerData.CanConnect()) {
 
-            //invalid server recieved, wait 10 seconds and run another matchmake
+            //invalid server received, wait 10 seconds and run another matchmake
             GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( this.RepeatRequest, 10*1000, false );
             return;
         }

@@ -351,7 +351,7 @@ class BattleRoyaleLootData
                     }
                     if(j != 0)
                     {
-                        Error("Found matchming attachment style (" + attachment_name + ") that isn't first style (mismatching styles in attachment?)");
+                        Error("Found matching attachment style (" + attachment_name + ") that isn't first style (mismatching styles in attachment?)");
                     }
                     result.Get(matching_slot).Insert( entry );//insert our attachment into the slot field
                     break; //force iterate to the next entry
