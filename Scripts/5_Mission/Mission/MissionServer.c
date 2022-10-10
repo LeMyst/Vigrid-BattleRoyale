@@ -24,7 +24,6 @@ modded class MissionServer
 		super.OnInit();
 		// br things
 		m_BattleRoyale = new BattleRoyaleServer;
-		
 	}
 
 	override void OnUpdate(float timeslice)

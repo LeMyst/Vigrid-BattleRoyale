@@ -20,7 +20,6 @@ modded class MissionGameplay
 		InitBRhud();
 	}
 
-
 	void InitBRhud()
 	{
 		Print("Initializing BattleRoyale HUD");
@@ -48,20 +47,24 @@ modded class MissionGameplay
 
 		HideHud();
 	}
+
 	void UpdateKillCount(int count)
 	{
 		m_BattleRoyaleHud.ShowKillCount( true );
 		m_BattleRoyaleHud.SetKillCount( count );
 	}
+
 	void HideCountdownTimer()
 	{
 		m_BattleRoyaleHud.ShowCountdown( false );
 	}
+
 	void UpdateCountdownTimer(int seconds)
 	{
 		m_BattleRoyaleHud.ShowCountdown( true );
 		m_BattleRoyaleHud.SetCountdown( seconds );
 	}
+
 	void UpdatePlayerCount(int count)
 	{
 		if(count == 0)
@@ -73,6 +76,7 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.ShowCount( true );
 		m_BattleRoyaleHud.SetCount( count );
 	}
+
 	void UpdateZoneDistance(float distance)
 	{
 		m_BattleRoyaleHud.ShowDistance( true );
@@ -90,24 +94,19 @@ modded class MissionGameplay
 		}
 	}
 
-
 	override void OnUpdate( float timeslice )
-	{	
-		
-
+	{
 		super.OnUpdate( timeslice ); //no more using fade out because it causes way to much compatibility issues, instead we'll use widgets
 
 		m_BattleRoyale.Update( timeslice ); //send tick to br client
 
 		m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
 
-
 		if(is_spectator)
 		{
 			HideHud();
 		}
 	}
-
 
 	void HideHud()
 	{
