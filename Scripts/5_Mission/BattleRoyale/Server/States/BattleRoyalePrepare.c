@@ -135,15 +135,35 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
     }
 
+    protected Town GetRandomVillage()
+    {
+        ref array<ref Town> villages = Town.GetMapTowns(4);
+        Town random_village = villages[Math.RandomInt(0,villages.Count())];
+        return random_village;
+    }
+
     protected void Teleport(PlayerBase process_player)
     {
         vector random_pos = "0 0 0";
         while(true) 
         {
-            float edge_pad = 0.1;
-            float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-            float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
-            float y = GetGame().SurfaceY(x, z);
+            if (m_GameSettings.spawn_in_villages) {
+                float village_pad = 50.0;
+
+                Town village = GetRandomVillage();
+                float village_x = village.Position[0];
+                float village_z = village.Position[2];
+
+                float x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
+                float z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
+                float y = GetGame().SurfaceY(x, z);
+            } else {
+                float edge_pad = 0.1;
+
+                float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
+                float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+                float y = GetGame().SurfaceY(x, z);
+            }
             
             random_pos[0] = x;
             random_pos[1] = y;

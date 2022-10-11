@@ -14,6 +14,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     float zone_damage_delta = 0.1;
     bool enable_zone_damage = true;
 
+    bool spawn_in_villages = true;
+
     ref array<string> player_starting_items = {
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",
