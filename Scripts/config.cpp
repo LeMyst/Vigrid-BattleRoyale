@@ -9,13 +9,14 @@ class CfgPatches
 		};
 	};
 };
+
 class CfgMods
 {
 	class DZ_BattleRoyale
 	{
 		dir = "DayZBR-Mod";
-		credits = "Kegan / Modified by Myst";
-		creditsJson = "DayZBR-Mod/Scripts/credits.json";
+		credits = "Kegan - Modified by Myst";
+		creditsJson = "DayZBR-Mod/Data/credits.json";
 		type = "mod";
 		name = "DayZ BattleRoyale";
 		
