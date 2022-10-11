@@ -59,7 +59,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     
 	override bool IsComplete()
 	{
-	    Print(GetName() + " IsComplete!")
+	    Print(GetName() + " IsComplete!");
 		return super.IsComplete();
 	}
 
@@ -100,9 +100,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
             EntityAI pants = process_player.GetInventory().CreateAttachment("TrackSuitPants_Black");
             EntityAI shoes = process_player.GetInventory().CreateAttachment("JoggingShoes_Black");
 
-            shirt.GetInventory().CreateEntityInCargo("Heatpack");
-            shirt.GetInventory().CreateEntityInCargo("Heatpack");
-            shirt.GetInventory().CreateEntityInCargo("Heatpack");
+            //shirt.GetInventory().CreateEntityInCargo("Heatpack");
+            //shirt.GetInventory().CreateEntityInCargo("Heatpack");
+            //shirt.GetInventory().CreateEntityInCargo("Heatpack");
 
             pants.GetInventory().CreateEntityInCargo("HuntingKnife");
             pants.GetInventory().CreateEntityInCargo("BandageDressing");
