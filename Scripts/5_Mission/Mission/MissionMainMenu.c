@@ -4,7 +4,7 @@ modded class MissionMainMenu
 	{
 		if ( !m_MenuMusic )
 		{
-			ref SoundParams soundParams			= new SoundParams( "BattleRoyale_Music_Namalsk_SoundSet" );
+			ref SoundParams soundParams			= new SoundParams( "BattleRoyale_Music_SoundSet" );
 			ref SoundObjectBuilder soundBuilder	= new SoundObjectBuilder( soundParams );
 			ref SoundObject soundObject			= soundBuilder.BuildSoundObject();
 			soundObject.SetKind( WaveKind.WAVEMUSIC );
