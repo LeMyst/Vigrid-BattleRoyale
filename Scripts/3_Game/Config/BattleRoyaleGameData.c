@@ -32,7 +32,7 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
 
     int num_vehicles = 1000;
     int vehicle_ticktime_ms = 1000;
-    float vehicle_spawn_radius = 10.0;
+    float vehicle_spawn_radius = 500.0;
 
     //--- do not modify    
     override string GetPath()
