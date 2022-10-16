@@ -1,0 +1,9 @@
+name = "DayZ-BattleRoyale";                             // name
+picture = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";       // picture in expanded description
+logo = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";          // below game menu
+logoSmall = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";     // next to name when not expanded
+logoOver = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";      // on mouse hover over logo
+tooltip = "DayZ Battle Royale";                         // tooltip on mouse hover
+overview = "DayZ Battle Royale Mod";                    // overview
+author = "From mod.cpp";                                // author
+version = "0.0.1-Myst";                                 // version
