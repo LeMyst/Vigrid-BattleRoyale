@@ -70,6 +70,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		int min;
 		int sec;
 		int val;
+
 		//--- notification message timers
 		for(i = 0; i < lock_notif_min.Count();i++)
 		{
@@ -78,6 +79,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			if(val > 0)
 				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockMinutes", new Param1<int>( min ), false) );
 		}
+
 		for(i = 0; i < lock_notif_sec.Count();i++)
 		{
 			sec = lock_notif_sec[i];
@@ -125,8 +127,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 			
 			BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
 		}
+
 		//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+
 		//tell the client the next play area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 

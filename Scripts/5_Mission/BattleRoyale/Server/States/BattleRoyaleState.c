@@ -161,8 +161,8 @@ class BattleRoyaleState extends Timeable {
 	}
 }
 
-//base state for the Debug Zone.
-//This handles healing / godmode / and teleporting
+// Base state for the Debug Zone.
+// This handles healing / godmode / and teleporting
 class BattleRoyaleDebugState extends BattleRoyaleState {
 	protected vector v_Center;
 	protected float f_Radius;

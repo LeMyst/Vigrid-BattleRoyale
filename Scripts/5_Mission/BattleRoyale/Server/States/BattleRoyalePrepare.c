@@ -132,7 +132,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected void DisableInput(PlayerBase process_player)
     {
         process_player.DisableInput(true);
-
     }
 
     protected Town GetRandomVillage()
@@ -145,6 +144,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected void Teleport(PlayerBase process_player)
     {
         vector random_pos = "0 0 0";
+
         while(true) 
         {
             if (m_GameSettings.spawn_in_villages) {

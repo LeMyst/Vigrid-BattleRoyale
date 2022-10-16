@@ -204,16 +204,6 @@ class ServerData extends BRServer {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
 //TODO update!
 class MatchData extends BRRawMatch {
     void MatchData(string match_name, string map_name, string game_type)

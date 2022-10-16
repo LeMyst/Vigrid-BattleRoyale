@@ -140,7 +140,7 @@ modded class PlayerBase
 
 	void Heal()
 	{
-		//TODO: sstop player from bleeding!
+		//TODO: stop player from bleeding!
 		//NOTE: this heal function was done by legodev, not sure it's performance, we'll have to see
 
 		SetHealth("", "Health", GetMaxHealth("", "Health"));
@@ -179,11 +179,11 @@ modded class PlayerBase
 		// wet if > 0.2
 		GetStatWet().Set(0);
 		
-		// unknow effect, don't alter yet
+		// unknown effect, don't alter yet
 		// player.GetStatStomachEnergy().Set(100);
 		// player.GetStatDiet().Set(100);
 		
-		// think max stamima does not break the game
+		// think max stamina does not break the game
 		GetStatStamina().Set(GetStatStamina().GetMax());
 		
 		// required for repairing and stuff, so no need to change for godmode

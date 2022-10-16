@@ -92,6 +92,7 @@ class BattleRoyaleLootPile
             }
             
         }
+
         if(m_Entry.SpawnWithAmmo())
         {
 
@@ -113,6 +114,7 @@ class BattleRoyaleLootPile
             }
 
         }
+
         if(m_Entry.SpawnWithAttachments())
         {
             

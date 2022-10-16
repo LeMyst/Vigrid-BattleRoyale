@@ -1,8 +1,17 @@
-
-
 class BattleRoyaleConfig
 {
     static ref BattleRoyaleConfig m_Instance;
+    ref map<string, ref BattleRoyaleDataBase> m_Configs;
+    ref array<string> m_ConfigNames;
+    bool b_HasLoaded;
+
+    void BattleRoyaleConfig()
+    {
+        b_HasLoaded = false;
+        m_Configs = new map<string, ref BattleRoyaleDataBase>();
+        Init();
+    }
+
     static BattleRoyaleConfig GetConfig()
     {
         if(!m_Instance)
@@ -11,18 +20,6 @@ class BattleRoyaleConfig
             m_Instance.Load();
         }
         return m_Instance;
-    }
-
-    ref map<string, ref BattleRoyaleDataBase> m_Configs;
-    ref array<string> m_ConfigNames;
-
-    bool b_HasLoaded;
-
-    void BattleRoyaleConfig()
-    {
-        b_HasLoaded = false;
-        m_Configs = new map<string, ref BattleRoyaleDataBase>();
-        Init(); //omg i didn't call init
     }
 
     //if you want to add more battle royale configs, do so here.
@@ -67,8 +64,6 @@ class BattleRoyaleConfig
             m_Configs.Insert("VehicleData", p_VehicleData);
         else
             Error("BattleRoyaleVehicleData Setting Constructor Returned NULL");
-
-            
     }
 
     void Load()
@@ -139,16 +134,19 @@ class BattleRoyaleConfig
         Print("Accessing Server Data Config...");
         return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
     }
+
     BattleRoyaleGameData GetGameData()
     {
         Print("Accessing Game Data Config...");
         return BattleRoyaleGameData.Cast( GetConfig("GameData") );
     }
+
     BattleRoyaleDebugData GetDebugData()
     {
         Print("Accessing Debug Data Config...");
         return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
     }
+
     BattleRoyaleZoneData GetZoneData()
     {
         Print("Accessing Zone Data Config...");

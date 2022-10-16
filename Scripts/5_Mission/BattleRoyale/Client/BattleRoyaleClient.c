@@ -40,27 +40,25 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", this );
 
-
-		
 		m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 	}
-
 
 	ref map<string, ref BattleRoyaleSpectatorMapEntityData> GetSpectatorMapEntityData()
 	{
 		return m_SpectatorMapEntityData;
 	}
-	
+
 	//--- note: these return NULL of there is no area referenced for next or current area
 	BattleRoyalePlayArea GetPlayArea()
 	{
 		return m_CurrentPlayArea;
 	}
+
 	BattleRoyalePlayArea GetNextArea()
 	{
 		return m_FuturePlayArea;
 	}
-	
+
 	override void Update(float delta)
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
@@ -82,7 +80,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		
 	}
 
-
 	protected float GetZoneDistance(BattleRoyalePlayArea play_area)
 	{
 		vector center = play_area.GetCenter();
@@ -102,6 +99,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		gameplay.UpdatePlayerCount( new_count );
 	}
+
 	protected void FadeIn()
 	{
 		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
@@ -109,12 +107,14 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		Print("BattleRoyale: FADE IN!");
 		//TODO: create Fade UI
 	}
+
 	protected void FadeOut()
 	{
 		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		Print("BattleRoyale: FADE OUT!");
 	}
+
 	protected void OnSecond()
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
@@ -127,14 +127,15 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		{
 			gameplay.HideCountdownTimer();
 		}
-		
 	}
+
 	protected void AddPlayerKilled(int increase)
 	{
 		i_Kills += increase;
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 		gameplay.UpdateKillCount(i_Kills);
 	}
+
 	protected void OnMatchStarted()
 	{
 		if(b_MatchStarted)
@@ -143,7 +144,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		b_MatchStarted = true;
 	}
-
 
 	void ReadyUp()
 	{
@@ -158,7 +158,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	}
 
-
 	void StartMatch(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		if ( type == CallType.Client )
@@ -166,6 +165,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			OnMatchStarted();
 		}
 	}
+
 	void AddPlayerKill(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		if ( type == CallType.Client )
@@ -173,6 +173,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			AddPlayerKilled(1); //TODO: maybe we'll eventually store kills on the server & just send that across. Idk we'll figure it out
 		}
 	}
+
 	void SetCountdownSeconds(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<int> data;
@@ -237,6 +238,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			PlayerCountChanged( data.param1 );
 		}
 	}
+
 	void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<bool> data;
@@ -251,6 +253,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			player.DisableInput( data.param1 );
 		}
 	}
+
 	void SetFade(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<bool> data;
@@ -267,7 +270,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 				FadeOut();
 		}
 	}
-
 
 	void UpdateEntityHealth(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
@@ -295,6 +297,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 		
 	}
+
 	void ActivateSpectatorCamera(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Print("Activating Spectator Camera");
@@ -325,7 +328,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		
 	}
 
-
 	void UpdateCurrentPlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<ref BattleRoyalePlayArea> data;
@@ -340,6 +342,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			m_CurrentPlayArea = data.param1;
 		}
 	}
+
 	void UpdateFuturePlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<ref BattleRoyalePlayArea> data;
@@ -354,12 +357,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		}
 	}
 
-
-
 	override void OnPlayerTick(PlayerBase player, float timeslice)
 	{
 		//unused
 	}
+
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
 		//unused	

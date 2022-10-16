@@ -11,25 +11,30 @@ static const string BATTLEROYALE_VERSION = "0.1.v";
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
 
+
 //--- settings files
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:DayZBR-Mod\\";
 static const string BATTLEROYALE_VEHICLES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Vehicles\\";
 static const string BATTLEROYALE_LOOT_ENTRIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Entries\\";
 static const string BATTLEROYALE_LOOT_CATEGORIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Categories\\";
 
+
 //--- RPC namespaces
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR"; //BattleRoyaleClient.c RPC calls
 static const string RPC_DAYZBRBASE_NAMESPACE = "RPC-DayZBR-Base"; //BattleRoyaleBase.c RPC calls
 static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRoyaleServer.c RPC calls
+
 
 //--- constant strings
 static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";
 static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not normal DayZ.";
 static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
+
 //--- dummy mission
 //--- perhaps this could be pulled from the mod config? (or dynamically generated? randomized?)
 static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "ChernarusPlus"; //ChernarusPlus
+
 
 //--- net manager constants
 static const string DAYZBR_NETWORK_ERRORCODE_TIMEOUT = "request timed out";
@@ -37,13 +42,15 @@ static const string DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL = "failed to parse 
 static const string DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL = "webplayer is null";
 static const string DAYZBR_NETWORK_ERRORCODE_FILE = "file transfered? wierd error";
 
+
 //--- error codes
 static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json object in API is NULL
 
+
 // Textures
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
-
 static const string BATTLEROYALE_LOADING_SCREENS_PATH = "DayZBR-Mod/GUI/textures/loading_screens/";
+
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
@@ -57,7 +64,6 @@ static const string BATTLEROYALE_LOOT_MAGAZINES_CATEGORY = "magazines";
 static const string BATTLEROYALE_LOOT_AMMO_CATEGORY = "ammo";
 static const string BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY = "attachments";
 static const string BATTLEROYALE_LOOT_BROKEN_STYLE_ITEM_CLASSNAME = "Zucchini"; //This item spawns whenever an entry has no styles defined
-
 
 
 //--- state machine | state names
@@ -83,6 +89,7 @@ static const string DAYZBR_MSG_NEW_ZONE_INSIDE = "A new zone has appeared! You a
 static const string DAYZBR_MSG_TAKING_DAMAGE = "You are taking zone damage!";
 static const string DAYZBR_MSG_MATCH_STARTED = "The match has started!";
 
+
 //--- broken debug zone values
 static const vector DAYZBR_DEBUG_CENTER = "3954.45 5.67608 10243.8";
 static const float DAYZBR_DEBUG_RADIUS = 100;
@@ -91,6 +98,7 @@ static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 //--- vehicle subsystem
 static const float DAYZBR_VS_MIN_SURFACE_FRICTION = 0.94; //todo: config this as a setting
+
 
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0; //min next zone distance as a percent of maximum distance (1 => 100%)
@@ -112,8 +120,6 @@ static const string BATTLEROYALE_SERVER_PASSWORD = "DayZBR_Beta";
 
 
 //---- DayZ Expansion Loading Screens
-static const string DAYZBR_LOADING_SCREENS_PATH 	= "DayZBR-Mod/Data/LoadingScreens.json";
-static const string DAYZBR_LOADING_MESSAGES_PATH 	= "DayZBR-Mod/Data/LoadingMessages.json";
-static const int DAYZBR_LOADING_BAR_COLOR = ARGB( 255, 0, 0, 0 ); 	//! A = Alpha (opacity) / R = Red / G = Green / B = Blue
-	
-
+static const string DAYZBR_LOADING_SCREENS_PATH     = "DayZBR-Mod/Data/LoadingScreens.json";
+static const string DAYZBR_LOADING_MESSAGES_PATH    = "DayZBR-Mod/Data/LoadingMessages.json";
+static const int DAYZBR_LOADING_BAR_COLOR           = ARGB( 255, 0, 0, 0 ); 	//! A = Alpha (opacity) / R = Red / G = Green / B = Blue

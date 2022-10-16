@@ -1,5 +1,3 @@
-
-
 class MatchmakeAction {
     private bool cancelled;
     private ref MainMenu m_MainMenu;
@@ -14,16 +12,18 @@ class MatchmakeAction {
         GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove( this.RepeatRequest );
         this.cancelled = true; //cancel this so when we get a response from any current post request, we ignore it.
     }
+
     void RepeatRequest()
     {
         //BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
         //api.RequestMatchmakeAsync(api.GetCurrentPlayer(), this, "OnMatchmakeComplete", m_MainMenu.GetSelectedRegion());
     }
+
     void OnMatchmakeComplete(ref ClientMatchMakeResponse res, string error_msg) {
         if(this.cancelled) return;
         ref ClosePopupButtonCallback onclick = new ClosePopupButtonCallback( m_MainMenu );
         ref RetryMatchmakeCallback onretry = new RetryMatchmakeCallback( m_MainMenu );
-        
+
         if(!res) {
             Error("res null!");
 
@@ -44,11 +44,13 @@ class MatchmakeAction {
 
             return;
         }
+
         if(!res.success) {
             Error(res.error);
             m_MainMenu.CreatePopup("Failed to connect! Internal Server Error", "Close", onclick, "Retry", onretry);
             return;
         }
+
         if(!res.data) {
             Error("data null!");
             m_MainMenu.CreatePopup("Failed to connect! No Data Received", "Close", onclick, "Retry", onretry);
@@ -98,7 +100,7 @@ class MatchmakeAction {
 		    m_MainMenu.CreatePopup(DAYZBR_FAILED_TO_CONNECT_MSG + message, "Close", onclick, "Retry", onretry);
             return;
 		}
-        
+
 		m_MainMenu.CreatePopup(DAYZBR_CONNECTING_TO_SERVER_MSG,"Close", onclick);
     }
 }

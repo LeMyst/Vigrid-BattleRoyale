@@ -125,8 +125,8 @@ class BattleRoyaleLootData
                 }
             }
         }
-        //load entries & populate loot data fields
 
+        //load entries & populate loot data fields
         files = FindFilesInLocation( BATTLEROYALE_LOOT_ENTRIES_FOLDER );
         for ( i = 0; i < files.Count(); i++ )
 		{

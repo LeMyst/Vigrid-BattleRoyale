@@ -39,7 +39,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", new Param1<bool>(true), true); //don't need a param, but id rather keep it just so i know nothing wierd occurs (eventually find out if we can remove it)
 
         int max_time = i_TimeToUnlock - 1;
-        for(int i = max_time;i > 0;i--)
+        for(int i = max_time; i > 0; i--)
         {
             m_MessageTimers.Insert( AddTimer(i, this, "MessageUnlock", new Param1<int>(i_TimeToUnlock - i), false) );
         }
