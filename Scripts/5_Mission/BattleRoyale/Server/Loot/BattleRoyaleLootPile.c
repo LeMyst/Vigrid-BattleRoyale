@@ -10,12 +10,14 @@ class BattleRoyaleLootPile
     protected ref BattleRoyaleLootEntry m_Entry;
 
     protected ref array<string> class_names;
+    protected ref array<string> class_names_attachments;
     protected ref array<ItemBase> spawned_items;
 
     void BattleRoyaleLootPile(vector model_pos, ref BattleRoyaleLootableBuilding parent )
     {
         spawned_items = new array<ItemBase>();
         class_names = new array<string>();
+        class_names_attachments = new array<string>();
         v_ModelPosition = model_pos;
         m_Parent = parent;
         b_IsSpawned = false;
@@ -60,6 +62,7 @@ class BattleRoyaleLootPile
     void Init()
     {
         v_WorldPosition = GetWorldPos(); //calculate our world position
+        Print(v_WorldPosition);
         //select a random loot entry! (this is all done in the background)
         m_Entry = BattleRoyaleLootData.GetData().GetRandomFieldByWeight().GetRandomEntryByWeight();
 
@@ -112,12 +115,10 @@ class BattleRoyaleLootPile
             {
                 Error("Trying to spawn `" + class_name + "` with ammo, but none are found!");
             }
-
         }
 
         if(m_Entry.SpawnWithAttachments())
         {
-            
             ref map<string, ref array<ref BattleRoyaleLootEntry>> all_slot_entries = BattleRoyaleLootData.GetData().GetAllAttachmentEntries( class_name );
 
             if(all_slot_entries.Count() > 0)
@@ -155,15 +156,17 @@ class BattleRoyaleLootPile
                             }
 
                             string attachment_classname = entry.GetRandomStyle();
-                            class_names.Insert( attachment_classname );
+                            //class_names.Insert( attachment_classname );
+                            class_names_attachments.Insert( attachment_classname )
 
-                            //figure out if this needs batteryd
+                            // Figure out if this needs batteryd
                             string configPath = "CfgVehicles " + attachment_classname + " attachments";
                             ref array<string> attach_subattach_list = new array<string>(); 
-                            GetGame().ConfigGetTextArray(configPath,attach_subattach_list);
+                            GetGame().ConfigGetTextArray(configPath, attach_subattach_list);
                             if(attach_subattach_list.Find("BatteryD") != -1)
                             {
-                                class_names.Insert( "Battery9V" ); //spawn with battery
+                                //class_names.Insert( "Battery9V" ); //spawn with battery
+                                class_names_attachments.Insert( "Battery9V" )
                             }
                         }
                         else
@@ -182,7 +185,10 @@ class BattleRoyaleLootPile
 
     protected ItemBase CreateItem(string class_name)
     {
-        return ItemBase.Cast(GetGame().CreateObject(class_name, v_WorldPosition));
+        Print("CreateItem");
+        Print(v_WorldPosition);
+        return ItemBase.Cast( GetGame().CreateObjectEx( class_name, v_WorldPosition, ECE_PLACE_ON_SURFACE ) );
+        //return ItemBase.Cast(GetGame().CreateObject(class_name, v_WorldPosition));
     }
 
     void Spawn()
@@ -212,6 +218,26 @@ class BattleRoyaleLootPile
             ItemBase item = CreateItem( class_names[i] );
             if(item)
             {
+                if(item.GetInventory().GetAttachmentSlotsCount() > 0)
+                {
+                    for(int j = 0; j < class_names_attachments.Count(); j++)
+                    {
+                        Print("==> Attachment " + class_names_attachments[j]);
+                        EntityAI item_attachment = item.GetInventory().CreateInInventory( class_names_attachments[j] );
+                        if(!item_attachment)
+                        {
+                            Error("Can't add attachment `" + class_names_attachments[j] + "`! Spawn it independently!");
+                            ItemBase new_attachment = CreateItem( class_names_attachments[j] );
+                            if(new_attachment)
+                            {
+                                // We add the un-added attachment to the loot pile
+                                spawned_items.Insert( new_attachment );
+                            }
+                        } else {
+                            Print("Attachment added");
+                        }
+                    }
+                }
                 spawned_items.Insert(item);
             }
             else
