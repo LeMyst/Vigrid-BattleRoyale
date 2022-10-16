@@ -110,6 +110,19 @@ modded class DayZGame {
 	{
 		return BATTLEROYALE_VERSION;
 	}
+
+    void ConnectToBR()
+    {
+        Print("ConnectToBR()");
+        if (BATTLEROYALE_SOLO_GAME)
+        {
+            m_ConnectAddress	= "127.0.0.1";
+        } else {
+            m_ConnectAddress	= "br.nimih.fr";
+        }
+        m_ConnectPort		= 2302;
+        m_ConnectPassword	= "";
+        m_ConnectFromJoin	= false;
+        Connect();
+    }
 }
-
-

@@ -171,8 +171,9 @@ class BattleRoyaleRound extends BattleRoyaleState
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 		Print(GetName() + " IsComplete!");
-		if(GetPlayers().Count() <= 1 && IsActive())
+		if(GetPlayers().Count() <= 1 && IsActive() && !BATTLEROYALE_SOLO_GAME)
 		{
+		    // TODO: toggle to debug game
 			Deactivate();
 		}
 		return super.IsComplete();
@@ -181,7 +182,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 	override bool SkipState(BattleRoyaleState m_PreviousState) 
 	{
 		//only one (or less) players remaining, must skip to win state
-		if(m_PreviousState.GetPlayers().Count() <= 1)
+		// TODO: toggle to debug game
+		if(m_PreviousState.GetPlayers().Count() <= 1 && !BATTLEROYALE_SOLO_GAME)
 			return true;
 		
 		return false;

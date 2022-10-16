@@ -7,6 +7,9 @@
 
 static const string BATTLEROYALE_VERSION = "0.1.v";
 
+//--- debug settings
+static const int BATTLEROYALE_SOLO_GAME = 0
+
 //--- default web endpoint
 static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
