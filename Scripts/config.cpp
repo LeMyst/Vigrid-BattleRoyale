@@ -19,19 +19,19 @@ class CfgMods
 		creditsJson = "DayZBR-Mod/Data/credits.json";
 		type = "mod";
 		name = "DayZ BattleRoyale";
-		
-		//picture = "BattleRoyale/GUI/textures/logo.edds";
-		//logo = "BattleRoyale/GUI/textures/logo.edds";
-		//logoSmall = "BattleRoyale/GUI/textures/logo.edds";
-		//logoOver = "BattleRoyale/GUI/textures/logo.edds";
-		
+
+		picture = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
+		logo = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
+		logoSmall = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
+		logoOver = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
+
 		dependencies[]= 
 		{
 			"Game",
 			"World",
 			"Mission"
 		};
-		
+
 		class defs
 		{
 			class imageSets
