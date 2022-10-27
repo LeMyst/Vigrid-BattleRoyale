@@ -4,6 +4,8 @@ modded class DayZGame {
 
 	void DayZGame()
 	{
+		Print("DayZGame constructor called");
+		Print(m_DummyMissionPath);
 		//Create the amazing dummy mission
 		if ( !FileExist(m_DummyMissionPath) )
 		{
@@ -87,22 +89,23 @@ modded class DayZGame {
 	}
 
 	//This will start the dummy mission ONLY when the game is launched into main menu so using "-connect=x.x.x.x" will not hit this function
-	override void MainMenuLaunch()
-	{
-		SetGameState( DayZGameState.MAIN_MENU );
-		SetLoadState( DayZLoadState.MAIN_MENU_START );
+	//override void MainMenuLaunch()
+	//{
+		//SetGameState( DayZGameState.MAIN_MENU );
+		//SetLoadState( DayZLoadState.MAIN_MENU_START );
 	
-		Print("[ DayZGame ] Start Dummy Mission for client...");
-		PlayMission(m_DummyMissionPath);
-		DeleteTitleScreen();
-	}
+		//Print("[ DayZGame ] Start Dummy Mission for client...");
+		//PlayMission(m_DummyMissionPath);
+		//DeleteTitleScreen();
+	//}
+
 	//disables CLI -connect
-	override void ConnectFromCLI()
-	{
+	//override void ConnectFromCLI()
+	//{
 		//if we're using -connect, check if it is an official server. if it is not, allow direct connect
 
-	  g_Game.MainMenuLaunch();
-	}
+	 // g_Game.MainMenuLaunch();
+	//}
 
 	//--- above this is a patch for GetRestApi
 

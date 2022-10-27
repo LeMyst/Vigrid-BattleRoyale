@@ -1,6 +1,6 @@
 class BattleRoyaleDebugData extends BattleRoyaleDataBase
 {
-    vector spawn_point = "14829.2 72.3148 14572.3";
+    vector spawn_point = "14829.2 0 14572.3";
     float radius = 50;
     int minimum_players = 10;
     int use_ready_up = 1;

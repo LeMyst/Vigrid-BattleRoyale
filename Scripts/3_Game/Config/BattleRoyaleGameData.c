@@ -1,7 +1,7 @@
 class BattleRoyaleGameData extends BattleRoyaleDataBase
 {
-    int num_zones = 7;
-    int round_duration_minutes = 8; //round length in minutes
+    int num_zones = 5;
+    int round_duration_minutes = 6; //round length in minutes
 
     int time_until_teleport_unlock = 10; //seconds before unlock after teleporting & preparing
 
@@ -30,7 +30,7 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "76561198277370562" //kegan's steam id :)
     };
 
-    int num_vehicles = 1000;
+    int num_vehicles = 1000; // TODO: Move this to world config
     int vehicle_ticktime_ms = 1000;
     float vehicle_spawn_radius = 500.0;
 
