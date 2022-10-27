@@ -15,9 +15,6 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     protected int i_Color;
 
     protected CanvasWidget m_BRCanvas;
-	protected Widget m_BRDragWidget;
-	protected Widget m_BRFrame;
-	protected TextWidget m_BRName;
     protected ZoneType e_ZoneType;
 
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
@@ -32,10 +29,14 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     protected override void OnInit( Widget layoutRoot )
     {
         
-		Class.CastTo( m_BRFrame, layoutRoot.FindAnyWidget( "marker_frame" ) );
+		Class.CastTo( m_Frame, layoutRoot.FindAnyWidget( "marker_frame" ) );
+		Class.CastTo( m_Name, layoutRoot.FindAnyWidget( "marker_name" ) );
+		Class.CastTo( m_EditName, layoutRoot.FindAnyWidget("marker_edit_name") );
+		Class.CastTo( m_Icon, layoutRoot.FindAnyWidget("marker_icon") );
+		Class.CastTo( m_EditButton, layoutRoot.FindAnyWidget("marker_button") );
+		Class.CastTo( m_DragWidget, layoutRoot.FindAnyWidget( "marker_icon_panel" ) );
+
         Class.CastTo( m_BRCanvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
-		Class.CastTo( m_BRDragWidget, layoutRoot.FindAnyWidget( "marker_icon_panel" ) );
-		Class.CastTo( m_BRName, layoutRoot.FindAnyWidget( "marker_name" ) );
 
         if(!m_BRCanvas)
         {
@@ -43,9 +44,10 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             return;
         }
 
-        m_BRName.Show( false ); //--- the marker name is for debugging
+        m_Name.Show( false ); //--- the marker name is for debugging
 
-		m_BRFrame.SetColor( ARGB( 0, 0, 0, 0 ) );
+		m_Frame.SetColor( ARGB( 0, 0, 0, 0 ) );
+		m_PrimaryColor = ARGB( 220, 220, 220, 220 );
 
         m_BRCanvas.Show( true ); //ensure canvas is visible
 
@@ -57,6 +59,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         SetPosition(pos);
         SetZoneType(ZoneType.Circle);
     }
+
     override void Update( float pDt )
 	{
         super.Update(pDt);
@@ -142,6 +145,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
         }
     }
+
     void RenderCrosshatched(float cx, float cy, float a, float b)
     {
         int ep1 = 45;
@@ -198,6 +202,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             ep4--;
         }
     }
+
     void RenderLined(float cx, float cy, float a, float b)
     {
         int ep1 = 45;
@@ -240,27 +245,31 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         }
     }
 
-    
     ZoneType GetZoneType()
     {
         return e_ZoneType;
     }
+
     void SetZoneType( ZoneType type )
     {
         e_ZoneType = type;
     }
+
     override string GetLayoutPath()
     {
-        return "DayZBR-Mod/GUI/layouts/map/royale_map_marker.layout";// custom BR widget structure
+        return "DayZBR-Mod/GUI/layouts/map/royale_map_marker.layout"; // custom BR widget structure
     }
+
     int GetColor()
     {
         return i_Color;
     }
+
     void SetColor(int color)
     {
         i_Color = color;
     }
+
     float GetSize_A()
     {
         return f_SizeA;

@@ -1,10 +1,5 @@
 modded class MainMenu
 {
-	protected ref array<string> m_Regions; //TODO: return these values in the "OnStart" web request
-	protected int i_CurrentRegion = 0;
-	protected TextWidget m_SelectServerLabel;
-	protected TextWidget m_OpenWebsiteLabel;
-	
 	protected Widget m_PopupMessage;
 	protected RichTextWidget m_PopupText;
 	protected ButtonWidget m_PopupButton;
@@ -14,54 +9,9 @@ modded class MainMenu
 	
 	protected ImageWidget m_Logo;
 
-	protected bool b_IsConnected;
-
-
-	void SetConnected( bool status )
-	{
-		b_IsConnected = status;
-	}
-
-	//initialize the BR client without a connection to BattleRoyaleAPI
-	void OfflineInit()
-	{
-		Print("INITIALIZING BR IN OFFLINE MODE");
-		UpdateRegionsOffline();
-		SetConnected(false);
-
-	}
-	protected void UpdateRegionsOffline()
-	{
-		m_Regions = {"any"};
-		i_CurrentRegion = 0;
-		RegionChanged();
-	}
-
-	void UpdateRegions()
-	{
-		//ref RegionData region_data = BattleRoyaleAPI.GetAPI().GetRegionData();
-		//if(region_data)
-		//{
-		//	m_Regions = region_data.regions;
-		//	//TODO: reload i_CurrentRegion from it's config file
-		//}
-		//else
-		//{
-			//default regions
-			m_Regions = {"any","na","eu","au"};
-		//}
-		if(i_CurrentRegion >= m_Regions.Count())
-		{
-			i_CurrentRegion = 0;
-		}
-		//update display text based on i_CurrentRegion and m_Regions
-		RegionChanged();
-	}
-
 	override Widget Init()
 	{
 		Print("INITIALIZING BR IN ONLINE MODE");
-		b_IsConnected = false;
 
 		super.Init(); // this calls dayz expansion init
 		
@@ -75,14 +25,14 @@ modded class MainMenu
 			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
 		}
 		ClosePopup(); //if init is called twice, close any popup that exists
-
-		UpdateRegions();
 	
 		m_Logo = ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
 		
-		m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
+		//m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
+
+		m_ChooseServer.Show( false );
 		
 		string version;
 		GetGame().GetVersion( version );
@@ -106,29 +56,16 @@ modded class MainMenu
 		{
 			Error("Something Went Wrong! BR Failed To Start?!");
 		}
-		
-		m_SelectServerLabel = TextWidget.Cast( layoutRoot.FindAnyWidget( "choose_server_label" ) );
-		m_SelectServerLabel.SetText("Select Server");
-		//TODO: find a use for this button besides "open website" See: OpenMenuCustomizeCharacter()
-		m_OpenWebsiteLabel = TextWidget.Cast( layoutRoot.FindAnyWidget( "customize_character_label" ) );
-		m_OpenWebsiteLabel.SetText( BATTLEROYALE_VISIT_WEBSITE_MESSAGE );
-		
-		
-		RegionChanged();
+
 		m_LastPlayedTooltip.Show(false);// ensure last played is not shown
 		
 		return layoutRoot;
 	}
 	
-	override void ShowNewsfeed(bool state)
-	{
-		super.ShowNewsfeed( false ); //completely disable news feeds
-	}
-
-	MainMenuStats GetStats()
-	{
-		return m_Stats;
-	}
+//	override void ShowNewsfeed(bool state)
+//	{
+//		super.ShowNewsfeed( false ); //completely disable news feeds
+//	}
 
 	bool OnStart(bool force_restart = false)
 	{
@@ -165,54 +102,6 @@ modded class MainMenu
 		return true;
 	}
 
-	void RequestStartCallback(ref ClientStartResponse res, string error_msg) {
-		ref IgnoreNetworkConnectCallback ignore_callback = new IgnoreNetworkConnectCallback( this );
-		ref RetryNetworkConnectCallback callback = new RetryNetworkConnectCallback( this );
-
-		if(!res) {
-			Error("result null?");
-			
-			if(error_msg == DAYZBR_NETWORK_ERRORCODE_TIMEOUT) {
-				CreatePopup( DAYZBR_TIMEOUT_MSG, "Retry", callback, "Proceed", ignore_callback);
-			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL) {
-				CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Retry", callback, "Proceed", ignore_callback);
-			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL) {
-				CreatePopup("Failed to connect! Error WEBPLAYER_NULL", "Retry", callback, "Proceed", ignore_callback);
-			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_FILE) {
-				CreatePopup("Failed to connect! Error FILE", "Retry", callback, "Proceed", ignore_callback);
-			} else {
-				CreatePopup("Failed to connect! Error " + error_msg, "Retry", callback, "Proceed", ignore_callback);
-			}
-			return;
-		}
-		if(!res.success) {
-			Error(res.error);
-			CreatePopup("Failed to connect! Internal Server Error", "Retry", callback, "Proceed", ignore_callback);
-			return;
-		}
-		if(!res.data) {
-			Error("null data");
-			CreatePopup("Failed to connect! No Data Received", "Retry", callback, "Proceed", ignore_callback);
-			return;
-		}
-		ref StartResponse start_res = res.data;
-		ref BRPlayerData player = start_res.player;
-    	ref RegionData region = start_res.region;
-	
-		//BattleRoyaleAPI.GetAPI().SetRegionData( region );
-		//BattleRoyaleAPI.GetAPI().SetCurrentPlayer( player );
-
-		UpdateRegions();
-		ClosePopup();
-		SetConnected(true);
-		GetStats().InitBRStats();
-	}
-	
-	string GetSelectedRegion()
-	{
-		return m_Regions.Get(i_CurrentRegion);
-	}
-
 	override void Play()
 	{
 		ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
@@ -235,40 +124,11 @@ modded class MainMenu
 		//CreatePopup( DAYZBR_MATCHMAKING_MSG, "Cancel", onclick);
 
 		//api.RequestMatchmakeAsync(p_PlayerWebData, mmaction, "OnMatchmakeComplete", GetSelectedRegion());
-		GetGame().Connect(this, "127.0.0.1", 2302, "");
+		//GetGame().Connect(this, "127.0.0.1", 2302, "");
+		Print("Play()");
+		g_Game.ConnectToBR();
 	}
 
-	override void NextCharacter()
-	{
-		i_CurrentRegion++;
-		if(i_CurrentRegion >= m_Regions.Count())
-			i_CurrentRegion = 0;
-		
-		RegionChanged();
-	}
-	override void PreviousCharacter()
-	{
-		i_CurrentRegion--;
-		if(i_CurrentRegion < 0)
-			i_CurrentRegion = m_Regions.Count() - 1;
-		
-		RegionChanged();
-	}
-	override void OnChangeCharacter(bool create_character = true)
-	{
-		
-		super.OnChangeCharacter(create_character); //temporary because I don't want to break any functionality this triggers
-		m_OpenWebsiteLabel.SetText( BATTLEROYALE_VISIT_WEBSITE_MESSAGE );// OnChangeCharacter replaces this text, this changes it back to the correct value!
-		
-		
-		RegionChanged();
-	}
-	void RegionChanged()
-	{
-		string region_text = m_Regions.Get(i_CurrentRegion);
-		m_PlayerName.SetText("Region: " + region_text);
-	}
-	
 	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL, string button_text_2 = "",  ref PopupButtonCallback onClickCallback_2 = NULL )
 	{
 		m_PopupText.SetText(message);
@@ -358,11 +218,6 @@ modded class MainMenu
 		return false;
 	}
 
-	override void OpenMenuCustomizeCharacter()
-	{
-		GetGame().OpenURL( BATTLEROYALE_WEBSITE );
-	}
-	
 	override void LoadMods()
 	{
 		super.LoadMods(); //initialize like normal

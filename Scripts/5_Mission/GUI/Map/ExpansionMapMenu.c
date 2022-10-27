@@ -173,6 +173,7 @@ modded class ExpansionMapMenu {
     //ensure BR markers are rendering correct
     override void Update( float timeslice )
 	{
+        //Print("Updating Zones...");
         UpdateZones();
         
         //spectator markers
