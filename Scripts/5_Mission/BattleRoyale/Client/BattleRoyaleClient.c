@@ -333,7 +333,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		Param1<ref BattleRoyalePlayArea> data;
 		if( !ctx.Read( data ) ) 
 		{
-			Error("FAILED TO READ SETFADE RPC");
+			Error("FAILED TO READ UpdateCurrentPlayArea RPC");
 			return;
 		}
 
@@ -348,7 +348,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		Param1<ref BattleRoyalePlayArea> data;
 		if( !ctx.Read( data ) ) 
 		{
-			Error("FAILED TO READ SETFADE RPC");
+			Error("FAILED TO READ UpdateFuturePlayArea RPC");
 			return;
 		}
 		if ( type == CallType.Client )
