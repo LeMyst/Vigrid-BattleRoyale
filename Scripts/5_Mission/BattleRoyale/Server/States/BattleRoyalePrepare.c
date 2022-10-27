@@ -4,9 +4,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected ref array<string> a_StartingItems;
     protected vector world_center;
 
+    private BattleRoyaleGameData m_GameSettings;
+
     void BattleRoyalePrepare()
     {
-        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
         {
             a_StartingItems = m_GameSettings.player_starting_items;
@@ -68,50 +70,28 @@ class BattleRoyalePrepare extends BattleRoyaleState
 		return DAYZBR_SM_PREPARE_NAME;
 	}
 
-    protected bool DeleteAllItems(PlayerBase process_player) {
-        //int dontCrash = 5;
-        
-        //while (process_player.GetInventory().CountInventory() > 0) {
+    protected bool DeleteAllItems(PlayerBase process_player)
+    {
+        if (process_player.GetInventory().CountInventory() > 0)
+        {
             process_player.RemoveAllItems();
-         //   Sleep(10);
+        }
 
-            // this is easier to remove later if this works
-        //    dontCrash--;
-        //    if (dontCrash < 0) break;
-       // }
-
-        //bool worked = dontCrash >= 0;
-       // if (!worked) {
-        //    Error("Failed to delete all items from player, tried 5 times.");
-       // }
-
-        //return worked;
         return true;
     }
 
-    protected bool AddStartItems(PlayerBase process_player) {
-        int dontCrash = 5;
-        int startingItemsLen = a_StartingItems.Count();
-        
-       // while (process_player.GetInventory().CountInventory() != startingItemsLen) {
-            DeleteAllItems(process_player);
+    protected bool AddStartItems(PlayerBase process_player)
+    {
+        DeleteAllItems(process_player);
 
-            EntityAI shirt = process_player.GetInventory().CreateAttachment("TrackSuitJacket_Black");
-            EntityAI pants = process_player.GetInventory().CreateAttachment("TrackSuitPants_Black");
-            EntityAI shoes = process_player.GetInventory().CreateAttachment("JoggingShoes_Black");
+        EntityAI shirt = process_player.GetInventory().CreateAttachment("TrackSuitJacket_Black");
+        EntityAI pants = process_player.GetInventory().CreateAttachment("TrackSuitPants_Black");
+        EntityAI shoes = process_player.GetInventory().CreateAttachment("JoggingShoes_Black");
 
-            //shirt.GetInventory().CreateEntityInCargo("Heatpack");
-            //shirt.GetInventory().CreateEntityInCargo("Heatpack");
-            //shirt.GetInventory().CreateEntityInCargo("Heatpack");
+        pants.GetInventory().CreateEntityInCargo("HuntingKnife");
+        pants.GetInventory().CreateEntityInCargo("BandageDressing");
+        pants.GetInventory().CreateEntityInCargo("Compass");
 
-            pants.GetInventory().CreateEntityInCargo("HuntingKnife");
-            pants.GetInventory().CreateEntityInCargo("BandageDressing");
-
-       //     dontCrash--;
-       //    if (dontCrash < 0) break;
-       // }
-
-        //return dontCrash >= 0;
         return true;
     }
 
@@ -145,24 +125,32 @@ class BattleRoyalePrepare extends BattleRoyaleState
     {
         vector random_pos = "0 0 0";
 
+        BattleRoyaleZone m_Zone = new BattleRoyaleZone;
+        m_Zone = m_Zone.GetZone(1);
+
         while(true) 
         {
-            if (m_GameSettings.spawn_in_villages) {
+            float x;
+            float y;
+            float z;
+
+            if (m_GameSettings.spawn_in_villages)
+            {
                 float village_pad = 50.0;
 
                 Town village = GetRandomVillage();
                 float village_x = village.Position[0];
                 float village_z = village.Position[2];
 
-                float x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
-                float z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
-                float y = GetGame().SurfaceY(x, z);
+                x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
+                z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
+                y = GetGame().SurfaceY(x, z);
             } else {
                 float edge_pad = 0.1;
 
-                float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-                float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
-                float y = GetGame().SurfaceY(x, z);
+                x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
+                z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+                y = GetGame().SurfaceY(x, z);
             }
             
             random_pos[0] = x;
@@ -177,6 +165,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 continue;
 
             if(GetGame().SurfaceRoadY(x, z) != y)
+                continue;
+
+            if(!m_Zone.IsInZone(x, z))
                 continue;
 
             //Namalsk snow biome check

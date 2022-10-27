@@ -23,7 +23,7 @@ class BattleRoyaleRestart extends BattleRoyaleState
 
 	override bool IsComplete()
 	{
-		return false; //win state is never complete (it is an end state)
+		return false;
 	}
 
 	void Shutdown()

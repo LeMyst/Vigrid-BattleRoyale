@@ -2,8 +2,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 {
 	ref BattleRoyaleState m_PreviousSate; 
 	ref BattleRoyaleZone m_Zone;
-	int i_RoundTimeInSeconds; 
-	bool b_IsFirstRound;
+	int i_RoundTimeInSeconds;
 	bool b_ZoneLocked;
 	bool b_DoZoneDamage;
 	int i_DamageTickTime;
@@ -42,10 +41,17 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	void Init()
 	{
-		b_IsFirstRound = false;
+		Print(GetName() + " Init!");
 		b_ZoneLocked = false;
+        m_Zone = new BattleRoyaleZone;
 
-		m_Zone = new BattleRoyaleZone(GetPreviousZone());
+        if(GetPreviousZone())
+        {
+            int previous_zone_number = Math.Floor(GetPreviousZone().GetZoneNumber());
+            m_Zone = m_Zone.GetZone(previous_zone_number + 1);
+        } else {
+            m_Zone = m_Zone.GetZone(1);
+        }
 
 		//dear god i hope i really don't have to keep this, but it should work
 		float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
@@ -62,6 +68,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	override void Activate()
 	{
+		Print(GetName() + " Activate!");
 		//we just activated this round (players not yet transfered from previous state)
 		int time_till_end = i_RoundTimeInSeconds * 1000;
 		int time_till_lock = time_till_end / 2;
@@ -170,9 +177,9 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
-		Print(GetName() + " IsComplete!");
 		if(GetPlayers().Count() <= 1 && IsActive() && !BATTLEROYALE_SOLO_GAME)
 		{
+		    Print(GetName() + " IsComplete!");
 		    // TODO: toggle to debug game
 			Deactivate();
 		}
@@ -374,6 +381,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 				player.time_until_move -= timeslice;
 			}
 		}
+
+		// Unlimited stamina
+		//player.GetStatStamina().Set(CfgGameplayHandler.GetStaminaMax());
+
 		super.OnPlayerTick(player, timeslice);
 	}
 
@@ -390,11 +401,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		{
 			return prev_round.GetZone();
 		}
-		else
-		{
-			b_IsFirstRound = true;
-		}
-		
+
 		return NULL;
 	}
 
@@ -423,9 +430,9 @@ class BattleRoyaleRound extends BattleRoyaleState
 		ref BattleRoyalePlayArea m_ThisArea = NULL;
 		if(GetZone())
 			m_ThisArea = GetZone().GetArea();
-			
+
 		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().LockZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
-			
+
 		//tell the client the current area is now this area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
 		//tell the client we don't know the next play area

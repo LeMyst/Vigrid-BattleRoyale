@@ -73,6 +73,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
 		//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+
 		//tell the client the future zone is NULL (no future zone)
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
 

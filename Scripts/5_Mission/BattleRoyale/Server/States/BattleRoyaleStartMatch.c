@@ -49,7 +49,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
         //timer before first zone appears
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true); 
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true);
 	}
 
 	override void Deactivate()
@@ -65,9 +65,9 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
 	override bool IsComplete()
 	{
-	    Print(GetName() + " IsComplete!");
         if(GetPlayers().Count() <= 1 && IsActive() && !BATTLEROYALE_SOLO_GAME)
 		{
+	        Print(GetName() + " IsComplete!");
 			// TODO: clean call queue?
 			// TODO: toggle to debug game
 			Deactivate();
@@ -132,7 +132,20 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         GetGame().GameScript.Call(this, "HandleUnlock", NULL); //spin up unlocking thread
         
         BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
-        BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
+        //BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
+
+        // Show first circle
+        Print("[BattleRoyaleStartMatch] Show first circle");
+        BattleRoyaleZone m_Zone = new BattleRoyaleZone;
+        m_Zone = m_Zone.GetZone(1);
+        m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
+        ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
+
+        Print(m_ThisArea.GetCenter());
+        Print(m_ThisArea.GetRadius());
+
+        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
     }
 
     void HandleUnlock()

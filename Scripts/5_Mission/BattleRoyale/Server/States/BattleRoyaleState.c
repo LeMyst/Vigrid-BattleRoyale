@@ -235,11 +235,17 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 	{
 		super.OnPlayerTick(player, timeslice);
 
+		vector spawn_pos = "0 0 0";
+        spawn_pos[0] = v_Center[0];
+        spawn_pos[1] = GetGame().SurfaceY(v_Center[0], v_Center[2]);
+        spawn_pos[2] = v_Center[2];
+
 		vector playerPos = player.GetPosition();
-		float distance = vector.Distance(playerPos, v_Center);
+		float distance = vector.Distance(playerPos, spawn_pos);
+
 		if(distance > f_Radius)
 		{
-			player.SetPosition(v_Center);
+			player.SetPosition(spawn_pos);
 		}
 
 		if(player.time_until_heal <= 0)
