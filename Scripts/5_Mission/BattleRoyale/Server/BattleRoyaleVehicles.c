@@ -62,6 +62,7 @@ class BattleRoyaleVehicles
         if(!b_IsReady && !b_IsInitializing)
         {
             Print("Initializing Vehicle Subsystem...");
+            // TODO: Reenable vehicles
             GetGame().GameScript.Call(this, "Init", NULL);
         }
         else
@@ -310,7 +311,7 @@ class BattleRoyaleCachedVehicle
 
     bool Spawn()
     {
-        Print("Spawning Vehicle " + vehicle_name);
+        Print("Spawning Vehicle " + vehicle_name + " " + position[0] + " " + position[2]);
 
         Object obj = GetGame().CreateObject( vehicle_name, position, false, false, true );
 
@@ -363,7 +364,7 @@ class BattleRoyaleCachedVehicle
         vector tmItem[4];
 		ent.GetTransform( tmItem );
 
-        //ent.PlaceOnSurfaceRotated( tmItem, position, 0, 0, 0, true ); // TOOD: this needs done to support vehicles in tight spaces
+        //ent.PlaceOnSurfaceRotated( tmItem, position, 0, 0, 0, true ); // TODO: this needs done to support vehicles in tight spaces
         tmItem[3] = position + "0 5 0";
 		ent.SetTransform( tmItem );
 

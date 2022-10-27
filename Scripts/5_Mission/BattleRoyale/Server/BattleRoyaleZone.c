@@ -16,12 +16,16 @@ class BattleRoyaleZone
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
     {
         m_ParentZone = parent;
+    }
+
+    void Create()
+    {
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
 
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleGameData m_GameData = config_data.GetGameData();
-		i_NumRounds = m_GameData.num_zones;
+        BattleRoyaleGameData m_GameData = config_data.GetGameData();
+        i_NumRounds = m_GameData.num_zones;
 
         f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
@@ -33,6 +37,39 @@ class BattleRoyaleZone
 
         Init();
     }
+
+    static ref BattleRoyaleZone GetZone(int x = 1)
+    {
+        BattleRoyaleZone m_Zone;
+
+        if(!m_Zones)
+        {
+            m_Zones = new map<int, ref BattleRoyaleZone>();
+        }
+
+        int z_Index = x - 1;
+
+        if(!m_Zones.Contains(z_Index)) {
+            Print("[BattleRoyaleZone] Create zone " + z_Index);
+            if(z_Index > 0)
+            {
+                //m_Zones[z_Index] = new BattleRoyaleZone(m_Zones[z_Index - 1]);
+                m_Zone = new BattleRoyaleZone(m_Zones.Get(z_Index - 1));
+            } else {
+                // First zone
+                //m_Zones[0] = new BattleRoyaleZone;
+                m_Zone = new BattleRoyaleZone;
+                z_Index = 0;
+            }
+            m_Zone.Create();
+            m_Zones.Insert(z_Index, m_Zone);
+            return m_Zone;
+        } else {
+            return m_Zones.Get(z_Index);
+        }
+    }
+
+    static ref map<int, ref BattleRoyaleZone> m_Zones;
 
     ref BattleRoyalePlayArea GetArea()
     {
@@ -46,6 +83,7 @@ class BattleRoyaleZone
 
     void Init()
     {
+        Print("BattleRoyaleZone Init()");
         float p_Rad;
         vector p_Cen = "0 0 0";
 
@@ -53,13 +91,16 @@ class BattleRoyaleZone
         if(m_ParentZone)
         {
             //this zone has a parent
+            Print("Create Another Zone");
             p_Rad = m_ParentZone.GetArea().GetRadius();
             p_Cen = m_ParentZone.GetArea().GetCenter();
         }
         else
         {
+            Print("Create First Zone");
             //This zone is a "full map" zone (ie, the first zone)
             string path = "CfgWorlds " + GetGame().GetWorldName();
+            Print(path);
             vector temp = GetGame().ConfigGetVector(path + " centerPosition");
 
             float world_width = temp[0] * 2;
@@ -93,7 +134,7 @@ class BattleRoyaleZone
         vector new_center = "0 0 0";
         float oldX = p_Cen[0];
         float oldZ = p_Cen[2];
-        float max_distance = p_Rad - new_radius;
+        float max_distance = p_Rad - new_radius; // TODO: Define default size for last zone
         
         while(true) 
         {
@@ -145,6 +186,7 @@ class BattleRoyaleZone
                 float shrinkfactor = Math.Pow(e, shrinkexp) + yoffset; //e^((3/m)*x) + (-(e^3))
 
                 return sizefactor * shrinkfactor; //(-(r/(e^3)))*(e^((3/m)*x) + (-(e^3)))
+
             case 2: //linear
                 // code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
                 float gradient = -1.0 * (r / m);
@@ -203,5 +245,18 @@ class BattleRoyaleZone
         //put any extra checks here
 
         return true;
+    }
+
+    bool IsInZone(float x, float z)
+    {
+        vector center = GetArea().GetCenter();
+
+        float d = (Math.Pow(x - center[0], 2) + Math.Pow(z - center[2], 2));
+        float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
+
+        Print(d);
+        Print(radius_pow)
+
+        return (d < radius_pow);
     }
 }
