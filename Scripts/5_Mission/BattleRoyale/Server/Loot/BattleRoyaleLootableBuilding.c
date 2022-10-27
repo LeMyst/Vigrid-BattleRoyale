@@ -8,6 +8,7 @@ class BattleRoyaleLootableBuilding
 
     void BattleRoyaleLootableBuilding( Object obj )
     {
+        Print("BattleRoyaleLootableBuilding");
         m_Object = obj;
         a_NearPlayers = new array<PlayerBase>();
         a_LootPiles = new array<ref BattleRoyaleLootPile>();

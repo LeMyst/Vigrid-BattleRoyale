@@ -10,6 +10,7 @@ class BattleRoyaleLoot
 
     void BattleRoyaleLoot()
     {
+        Print("BattleRoyaleLoot");
         m_TickTimer = new Timer;
 
         m_LootableBuildings = new map<Object, ref BattleRoyaleLootableBuilding>();
@@ -133,7 +134,7 @@ class BattleRoyaleLoot
                 {
                     if(!m_LootableBuildings.Contains(building_object))
                     {
-                        Print("First time player near building");
+                        Print("First time player near that building");
                         Print(building_object);
                         m_LootableBuildings.Insert(building_object, new BattleRoyaleLootableBuilding( building_object ));
                     }

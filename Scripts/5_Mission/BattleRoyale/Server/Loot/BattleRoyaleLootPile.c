@@ -157,7 +157,7 @@ class BattleRoyaleLootPile
 
                             string attachment_classname = entry.GetRandomStyle();
                             //class_names.Insert( attachment_classname );
-                            class_names_attachments.Insert( attachment_classname )
+                            class_names_attachments.Insert( attachment_classname );
 
                             // Figure out if this needs batteryd
                             string configPath = "CfgVehicles " + attachment_classname + " attachments";
@@ -166,7 +166,7 @@ class BattleRoyaleLootPile
                             if(attach_subattach_list.Find("BatteryD") != -1)
                             {
                                 //class_names.Insert( "Battery9V" ); //spawn with battery
-                                class_names_attachments.Insert( "Battery9V" )
+                                class_names_attachments.Insert( "Battery9V" );
                             }
                         }
                         else
@@ -218,6 +218,12 @@ class BattleRoyaleLootPile
             ItemBase item = CreateItem( class_names[i] );
             if(item)
             {
+                if(item.IsInherited(Weapon_Base))
+                {
+                    Weapon_Base weapon_base = Weapon_Base.Cast( item );
+                    weapon_base.SpawnAmmo("", WeaponWithAmmoFlags.CHAMBER | WeaponWithAmmoFlags.QUANTITY_RNG );
+                }
+
                 if(item.GetInventory().GetAttachmentSlotsCount() > 0)
                 {
                     for(int j = 0; j < class_names_attachments.Count(); j++)
