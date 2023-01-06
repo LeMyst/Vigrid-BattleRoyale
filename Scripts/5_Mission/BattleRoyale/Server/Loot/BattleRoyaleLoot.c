@@ -44,6 +44,7 @@ class BattleRoyaleLoot
             m_Players.Insert(player);
         }
     }
+
     void RemovePlayer(PlayerBase player)
     {
         m_Players.RemoveItem(player);
