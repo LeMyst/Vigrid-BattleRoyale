@@ -18,7 +18,6 @@ class BattleRoyaleSpectators
         }
 
         b_AllowAllSpectators = !(BattleRoyaleConfig.GetConfig().GetGameData().use_spectate_whitelist);
-        
     }
 
     bool CanIdSpectate(PlayerIdentity identity)
