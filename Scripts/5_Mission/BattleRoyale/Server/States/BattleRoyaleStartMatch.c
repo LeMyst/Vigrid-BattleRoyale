@@ -130,8 +130,9 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
 
         GetGame().GameScript.Call(this, "HandleUnlock", NULL); //spin up unlocking thread
-        
-        BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
+
+        // TODO: reenable loot and vehicles system
+        //BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
         //BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
 
         // Show first circle
