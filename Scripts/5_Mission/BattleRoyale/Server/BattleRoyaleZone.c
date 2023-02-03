@@ -255,7 +255,7 @@ class BattleRoyaleZone
         float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
 
         Print(d);
-        Print(radius_pow)
+        Print(radius_pow);
 
         return (d < radius_pow);
     }
