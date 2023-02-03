@@ -11,8 +11,8 @@ static const string BATTLEROYALE_VERSION = "0.0.1-Myst";
 static const int BATTLEROYALE_SOLO_GAME = 0;
 
 //--- default web endpoint
-static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
-static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
+//static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
+//static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
 
 
 //--- settings files
@@ -31,7 +31,7 @@ static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRo
 //--- constant strings
 static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";
 static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not normal DayZ.";
-static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
+//static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
 
 
 //--- dummy mission
