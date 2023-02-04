@@ -193,12 +193,12 @@ class BattleRoyaleZone
                 return gradient * x + r;
 
             case 3: //static sizes (lift from array in config)
-                if((x - 1) >= a_StaticSizes.Count())
+                if(x > a_StaticSizes.Count())
                 {
-                    Error("Not enough static sizes for static zone sizes!");
-                    return 100;
+                    Error("Not enough static sizes for static zone sizes! (want " + x + " have " + a_StaticSizes.Count());
+                    return 10000;
                 }   
-                return a_StaticSizes[x - 1];
+                return a_StaticSizes[i_NumRounds - x];
             default:
                 return p_Rad * f_ConstantShrink;
         }
