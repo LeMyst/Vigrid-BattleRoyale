@@ -1,7 +1,7 @@
 class BattleRoyaleGameData extends BattleRoyaleDataBase
 {
-    int num_zones = 5;
-    int round_duration_minutes = 6; //round length in minutes
+    int num_zones = 6;
+    int round_duration_minutes = 5; //round length in minutes
 
     int time_until_teleport_unlock = 10; //seconds before unlock after teleporting & preparing
 
