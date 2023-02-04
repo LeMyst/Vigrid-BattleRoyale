@@ -27,11 +27,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//TODO: this needs to be dynamically aquired (probably via configs)
 		match_data = new MatchData("HC FPP Namalsk - Chicago #1", "Namalsk", "Solos");
 
-		m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
-		m_VehicleSystem = new BattleRoyaleVehicles;
+		//m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
+		//m_VehicleSystem = new BattleRoyaleVehicles;
 		m_SpectatorSystem = new BattleRoyaleSpectators;
 
-		m_VehicleSystem.Preinit();
+		//m_VehicleSystem.Preinit();
 
 		//load config (this may error because GetBattleRoyale would return false)
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -130,8 +130,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	{
 		float timeslice = delta; //Legacy
 
-		m_LootSystem.Update(timeslice);
-		m_VehicleSystem.Update(timeslice);
+		//m_LootSystem.Update(timeslice); // TODO: Reenable when correct
+		//m_VehicleSystem.Update(timeslice); // TODO: Reenable when correct
 		m_SpectatorSystem.Update(timeslice);
 
 		foreach(BattleRoyaleState state : m_States)
@@ -232,7 +232,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 			}
 
-			//TODO: Create a *spectator* system that handles players conencting during non-debug zone states
+			//TODO: Create a *spectator* system that handles players connecting during non-debug zone states
 			//Note: the spectator system will also handle client respawn events too.
 			//We need to create a list of *allowed* spectators. This should be in the server config (for private servers)
 			
@@ -244,7 +244,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
 		GetCurrentState().AddPlayer(player);
-		m_LootSystem.AddPlayer( player );
+		//m_LootSystem.AddPlayer( player ); // TODO: Reenable when correct
 	}
 	
 	void Disconnect(PlayerIdentity identity)
@@ -288,7 +288,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		}
 
 		//if player is in the loot system, remove them
-		m_LootSystem.RemovePlayer( player );
+		//m_LootSystem.RemovePlayer( player ); // TODO: Reenable when correct
 	}
 	
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
