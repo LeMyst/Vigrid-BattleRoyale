@@ -97,12 +97,12 @@ class BattleRoyaleConfig
                         {
                             Print("Loading Config: " + path);
                             config.Load();
-                            config.Save(); //re-save (if there are new config values that need added to the json file)
+                            //config.Save(); //re-save (if there are new config values that need added to the json file)
                         }
                         else
                         {
                             Print("Saving Config: " + path);
-                            config.Save();
+                            //config.Save();
                         }
                     }
                     else
