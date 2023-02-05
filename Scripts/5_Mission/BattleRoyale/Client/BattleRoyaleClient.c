@@ -288,14 +288,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			{
 				pbTarget.UpdateHealthStats( data.param1, data.param2 );
 			}
-
 		}
 		else
 		{
 			Error("This is deprecated functionality and shouldn't be called");
-			
 		}
-		
 	}
 
 	void ActivateSpectatorCamera(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
@@ -305,7 +302,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( Class.CastTo( br_Camera, Camera.GetCurrentCamera() ) )
 		{
 			br_Camera.SetActive( true );
-			
+
 			if ( GetGame().GetPlayer() )
 			{
 				GetGame().GetPlayer().GetInputController().SetDisabled( true );
@@ -319,13 +316,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
 				//Enable spectator HUD elements
 				mission.InitSpectator();
 			}
-
 		}
 		else
 		{
 			Error("Failed to cast camera to BattleRoyaleCamera");
 		}
-		
 	}
 
 	void UpdateCurrentPlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
