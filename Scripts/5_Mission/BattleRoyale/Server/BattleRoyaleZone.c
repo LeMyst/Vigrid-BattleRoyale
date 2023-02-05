@@ -110,7 +110,7 @@ class BattleRoyaleZone
             float world_center_x = world_width/2;
             float world_center_z = world_height/2;
             float Y = GetGame().SurfaceY(world_center_x, world_center_z);
-            
+
             p_Cen[0] = world_center_x;
             p_Cen[1] = Y;
             p_Cen[2] = world_center_z;

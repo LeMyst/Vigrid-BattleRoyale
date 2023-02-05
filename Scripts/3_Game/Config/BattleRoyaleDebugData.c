@@ -11,10 +11,12 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "debug_settings.json";
     }
+
     override void Save()
     {
         JsonFileLoader<BattleRoyaleDebugData>.JsonSaveFile(GetPath(), this);
     }
+
     override void Load()
     {
         JsonFileLoader<BattleRoyaleDebugData>.JsonLoadFile(GetPath(), this);

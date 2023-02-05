@@ -152,7 +152,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
                 y = GetGame().SurfaceY(x, z);
             }
-            
+
             random_pos[0] = x;
             random_pos[1] = y;
             random_pos[2] = z;
