@@ -116,7 +116,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
     protected Town GetRandomVillage()
     {
-        ref array<ref Town> villages = Town.GetMapTowns(4);
+        // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/Town/TownFlags.c
+        ref array<ref Town> villages = Town.GetMapTowns(15);
         Town random_village = villages[Math.RandomInt(0,villages.Count())];
         return random_village;
     }
