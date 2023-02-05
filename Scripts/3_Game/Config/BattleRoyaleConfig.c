@@ -97,12 +97,18 @@ class BattleRoyaleConfig
                         {
                             Print("Loading Config: " + path);
                             config.Load();
-                            //config.Save(); //re-save (if there are new config values that need added to the json file)
+                            if(BATTLEROYALE_SOLO_GAME)
+                            {
+                                //config.Save(); //re-save (if there are new config values that need added to the json file)
+                            }
                         }
                         else
                         {
                             Print("Saving Config: " + path);
-                            //config.Save();
+                            if(BATTLEROYALE_SOLO_GAME)
+                            {
+                                //config.Save();
+                            }
                         }
                     }
                     else
