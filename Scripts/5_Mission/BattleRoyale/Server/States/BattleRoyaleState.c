@@ -261,6 +261,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 	//GOAL: make this protected
 	vector GetCenter()
 	{
+		v_Center[1] = GetGame().SurfaceY(v_Center[0], v_Center[2]);
 		return v_Center;
 	}
 
