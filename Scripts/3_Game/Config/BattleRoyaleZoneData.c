@@ -1,6 +1,6 @@
 class BattleRoyaleZoneData extends BattleRoyaleDataBase
 {
-    int shrink_type = 1; // Exp/Lin/Static/Const
+    int shrink_type = 3; // Exp/Lin/Static/Const
 
     //constant
     float constant_scale = 0.65;
