@@ -137,7 +137,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             if (m_GameSettings.spawn_in_villages)
             {
-                float village_pad = 50.0;
+                float village_pad = 100.0;
 
                 Town village = GetRandomVillage();
                 float village_x = village.Position[0];
