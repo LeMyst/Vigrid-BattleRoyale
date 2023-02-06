@@ -77,7 +77,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 				gameplay.UpdateZoneDistance( distance );
 			}
 		}
-		
 	}
 
 	protected float GetZoneDistance(BattleRoyalePlayArea play_area)
