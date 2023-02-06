@@ -122,6 +122,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
         MessagePlayers("Starting in " + seconds_till.ToString() + " " + second + "!");
     }
+
     void UnlockPlayers()
     {
         m_PlayerList.InsertAll( m_Players );
