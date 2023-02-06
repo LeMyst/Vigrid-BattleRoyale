@@ -63,13 +63,20 @@ class BattleRoyaleSpectatorPlayerWidget
     {
         m_Player = player;
 
-        if(m_Player && m_Player.GetIdentity())
+        if(m_Player)
         {
-            SetName(m_Player.GetIdentity().GetName());
+            if(m_Player.GetIdentity())
+            {
+                SetName(m_Player.GetIdentity().GetName());
+            }
+            else
+            {
+                Error("Failed to find identity when initialize spectator icons");
+            }
         }
         else
         {
-            Error("Failed to find player or identity when initialize spectator icons");
+            Error("Failed to find player when initialize spectator icons");
         }
 
         SetShow( true );
