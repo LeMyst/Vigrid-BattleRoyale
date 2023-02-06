@@ -50,6 +50,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
+
+        Print("Reset date time to random");
+        int year, month, day, hour, minute;
+        GetGame().GetWorld().GetDate(year, month, day, hour, minute);
+        GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(7, 16), minute);
 	}
 
 	override void Deactivate()
@@ -262,6 +267,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             Sleep(100);
         }
         Print("Gave starting items");
+
         Deactivate();
     }
 
