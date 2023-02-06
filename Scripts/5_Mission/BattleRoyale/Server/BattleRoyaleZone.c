@@ -12,6 +12,9 @@ class BattleRoyaleZone
     protected float f_Eulers;
     protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
+    protected ref array<int> a_StaticTimers;
+
+    protected int i_RoundDurationMinutes;
 
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
     {
@@ -26,12 +29,14 @@ class BattleRoyaleZone
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
         i_NumRounds = m_GameData.num_zones;
+        i_RoundDurationMinutes = m_GameData.round_duration_minutes;
 
         f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
         f_Eulers = m_ZoneSettings.shrink_base;
         f_Exponent = m_ZoneSettings.shrink_exponent;
         a_StaticSizes = m_ZoneSettings.static_sizes;
+        a_StaticTimers = m_ZoneSettings.static_timers;
 
         m_PlayArea = new BattleRoyalePlayArea;
 
@@ -217,6 +222,22 @@ class BattleRoyaleZone
             number++;
         }
         return number;
+    }
+
+    int GetZoneTimer()
+    {
+        if (i_ShrinkType ==  3)
+        {
+            float x = GetZoneNumber();
+            if(x > a_StaticTimers.Count())
+            {
+                Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
+                return 300;
+            }
+            return a_StaticTimers[i_NumRounds - x];
+        }
+
+        return 60 * i_RoundDurationMinutes;
     }
 
     protected float GetWorldRadius()

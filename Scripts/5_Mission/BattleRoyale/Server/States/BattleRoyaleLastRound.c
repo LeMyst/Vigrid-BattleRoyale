@@ -21,7 +21,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
-		i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
 		
 		lock_notif_min =  m_GameSettings.zone_notification_minutes;
 		lock_notif_sec =  m_GameSettings.zone_notification_seconds;
@@ -32,6 +31,14 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         b_IsZoneLocked = false;
 
 		m_MessageTimers = new array<ref Timer>;
+
+        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+        if (m_ZoneSettings.shrink_type == 3)
+        {
+            i_RoundTimeInSeconds = m_ZoneSettings.static_timers[0];
+        } else {
+            i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
+        }
     }
 
     override void Activate()

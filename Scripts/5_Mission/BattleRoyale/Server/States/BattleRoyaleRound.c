@@ -53,13 +53,15 @@ class BattleRoyaleRound extends BattleRoyaleState
             m_Zone = m_Zone.GetZone(1);
         }
 
-		//dear god i hope i really don't have to keep this, but it should work
-		float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
-		float num_zones = i_NumZones * 1.0;
+        // Update zone timer
 
-		//scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone # 
-		f_Damage = f_Damage * ( zone_num / num_zones );
-	}
+        //dear god i hope i really don't have to keep this, but it should work
+        float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
+        float num_zones = i_NumZones * 1.0;
+
+        //scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone #
+        f_Damage = f_Damage * ( zone_num / num_zones );
+    }
 
 	override string GetName()
 	{
@@ -68,7 +70,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	override void Activate()
 	{
-		Print(GetName() + " Activate!");
+		Print(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds !");
 		//we just activated this round (players not yet transfered from previous state)
 		int time_till_end = i_RoundTimeInSeconds * 1000;
 		int time_till_lock = time_till_end / 2;
