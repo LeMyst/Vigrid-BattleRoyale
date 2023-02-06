@@ -129,23 +129,41 @@ class BattleRoyalePrepare extends BattleRoyaleState
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;
         m_Zone = m_Zone.GetZone(1);
 
+        int spawn_try = 1;
+
         while(true) 
         {
             float x;
             float y;
             float z;
 
+            Print("Try " + spawn_try)
+            spawn_try = spawn_try + 1;
+
             if (m_GameSettings.spawn_in_villages)
             {
-                float village_pad = 200.0;
-
                 Town village = GetRandomVillage();
                 float village_x = village.Position[0];
                 float village_z = village.Position[2];
 
+                float village_pad;
+
+                if (village.Type == TownFlags.CITY)
+                    village_pad = 300.0;
+                else if (village.Type == TownFlags.CAPITAL)
+                    village_pad = 500.0;
+                else
+                    village_pad = 100.0;
+
                 x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
                 z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
                 y = GetGame().SurfaceY(x, z);
+
+                Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ")");
+
+                if (village.Name == "Kumyrna")  // Skip Kumyrna because no loot
+                    continue;
+
             } else {
                 float edge_pad = 0.1;
 
