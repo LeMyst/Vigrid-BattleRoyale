@@ -130,6 +130,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected void Teleport(PlayerBase process_player)
     {
         vector random_pos = "0 0 0";
+        Town village;
 
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;
         m_Zone = m_Zone.GetZone(1);
@@ -142,12 +143,12 @@ class BattleRoyalePrepare extends BattleRoyaleState
             float y;
             float z;
 
-            Print("Try " + spawn_try)
+            Print("Try " + spawn_try);
             spawn_try = spawn_try + 1;
 
             if (m_GameSettings.spawn_in_villages)
             {
-                Town village = GetRandomVillage();
+                village = GetRandomVillage();
                 float village_x = village.Position[0];
                 float village_z = village.Position[2];
 
@@ -227,11 +228,16 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
         //TODO: force stand up
-        
-        //random direction
-        float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
-        vector playerDir = vector.YawToVector(dir);
-        process_player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
+
+        if (village)
+        {
+            process_player.SetDirection(vector.Direction(process_player.GetPosition(), village.Position));
+        } else {
+            //random direction
+            float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
+            vector playerDir = vector.YawToVector(dir);
+            process_player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
+        }
     }
 
     void ProcessPlayers()
