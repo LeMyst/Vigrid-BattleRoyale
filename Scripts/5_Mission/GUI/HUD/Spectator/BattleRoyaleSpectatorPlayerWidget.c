@@ -27,10 +27,6 @@ class BattleRoyaleSpectatorPlayerWidget
     protected float render_max_distance = 500;
     protected float fade_max_distance = 400;
 
-
-    
-
-
     void BattleRoyaleSpectatorPlayerWidget(Widget root, PlayerBase player)
     {
         m_ParentWidget = root;
@@ -41,6 +37,7 @@ class BattleRoyaleSpectatorPlayerWidget
 
         Init( player );
     }
+
     void Init(PlayerBase player)
     {
         m_Root = GetGame().GetWorkspace().CreateWidgets("DayZBR-Mod/GUI/layouts/hud/spectator/player.layout", m_ParentWidget);
@@ -81,6 +78,7 @@ class BattleRoyaleSpectatorPlayerWidget
 
         SetShow( true );
     }
+
     PlayerBase GetPlayer()
     {
         return m_Player;
@@ -107,14 +105,17 @@ class BattleRoyaleSpectatorPlayerWidget
     {
         m_BRName.SetText(name);
     }
+
     void SetHealthText(string health)
     {
         m_Health.SetText( health );
     }
+
     void SetKillsText(string kills)
     {
         m_Kills.SetText( kills );
     }
+
     void SetHealthProgress(float value)
     {
         if(value < 0)
@@ -124,6 +125,7 @@ class BattleRoyaleSpectatorPlayerWidget
 
         m_HealthProgressBar.SetCurrent( value );
     }
+
     void Update(float timeslice)
     {
         if(!m_Player || (m_Player.GetPlayerState() != EPlayerStates.ALIVE))
@@ -142,6 +144,7 @@ class BattleRoyaleSpectatorPlayerWidget
         }
         //TODO: need another sanity check here (some elements get gliched and stay on the Hud (I think because of our new render distance settings in config))
     }
+
     void UpdateStats()
     {
         if(m_Player)

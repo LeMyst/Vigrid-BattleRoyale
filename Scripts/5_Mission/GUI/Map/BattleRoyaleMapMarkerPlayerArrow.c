@@ -14,6 +14,7 @@ class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
     {
         v_Position = position;
     }
+
     void SetEntityDirection(vector direction)
     {
         v_Direction = direction;

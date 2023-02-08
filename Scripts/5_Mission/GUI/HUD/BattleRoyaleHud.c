@@ -6,7 +6,7 @@ class BattleRoyaleHud
     protected Widget m_ZoneDistancePanel;
     protected Widget m_KillCountPanel;
     protected Widget m_CountdownPanel;
-    
+
     protected TextWidget m_CountTextWidget;
     protected TextWidget m_DistanceTextWidget;
     protected TextWidget m_KillTextWidget;
@@ -24,7 +24,6 @@ class BattleRoyaleHud
         Init();
         ShowHud( false );
     }
-
 
     protected void Init()
     {
@@ -50,6 +49,7 @@ class BattleRoyaleHud
     {
         return is_shown;
     }
+
     void ShowHud( bool show )
     {
         is_shown = show;
@@ -61,14 +61,17 @@ class BattleRoyaleHud
     {
         m_PlayerCountPanel.Show( show );
     }
+
     void ShowDistance( bool show )
     {
         m_ZoneDistancePanel.Show( show );
     }
+
     void ShowKillCount( bool show )
     {
         m_KillCountPanel.Show( show );
     }
+
     void ShowCountdown( bool show )
     {
         m_CountdownPanel.Show( show );
@@ -91,6 +94,7 @@ class BattleRoyaleHud
             m_DistanceTextWidget.SetText( Math.Round(value).ToString() + "m");//2000m for example
         }
     }
+
     void SetCount(int count)
     {
         if(!m_CountTextWidget)
@@ -101,6 +105,7 @@ class BattleRoyaleHud
 
         m_CountTextWidget.SetText( count.ToString() );   
     }
+
     void SetKillCount(int count)
     {
         if(!m_CountdownTextWidget)
@@ -110,6 +115,7 @@ class BattleRoyaleHud
         }
         m_KillTextWidget.SetText( count.ToString() );
     }
+
     void SetCountdown(int value)
     {
         if(!m_CountdownTextWidget)
@@ -178,6 +184,7 @@ class BattleRoyaleHud
             }
         }
     }
+
     void InitSpectator()
     {
         Print("Showing Spectator Hud");

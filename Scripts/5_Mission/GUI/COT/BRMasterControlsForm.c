@@ -11,6 +11,7 @@ class BRMasterControlsForm extends JMFormBase
     {
         //map lists
     }
+
     void ~BRMasterControlsForm()
     {
         //Delete any mapped lists
@@ -60,19 +61,21 @@ class BRMasterControlsForm extends JMFormBase
         m_sclr_MainActions.UpdateScroller();
 
     }
+
     override void OnHide() 
 	{
-
     }
 
     void StateMachine_Next(UIEvent eid, ref UIActionBase action)
     {
         m_Module.StateMachine_Next();
     }
+
     void StateMachine_Pause(UIEvent eid, ref UIActionBase action)
     {
         m_Module.StateMachine_Pause();
     }
+
     void StateMachine_Resume(UIEvent eid, ref UIActionBase action)
     {
         m_Module.StateMachine_Resume();
@@ -82,6 +85,7 @@ class BRMasterControlsForm extends JMFormBase
     {
         m_Module.Loot_Start();
     }
+
     void LootSystem_Stop(UIEvent eid, ref UIActionBase action)
     {
         m_Module.Loot_Stop();
@@ -91,6 +95,7 @@ class BRMasterControlsForm extends JMFormBase
     {
         m_Module.Vehicles_Start();
     }
+
     void VehicleSystem_Stop(UIEvent eid, ref UIActionBase action)
     {
         m_Module.Vehicles_Stop();
@@ -101,6 +106,7 @@ class BRMasterControlsForm extends JMFormBase
         Print("TODO!");
         //m_Module.Vehicles_Start();
     }
+
     void VoteStart_Disable(UIEvent eid, ref UIActionBase action)
     {
         Print("TODO!");

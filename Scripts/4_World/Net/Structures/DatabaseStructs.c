@@ -234,21 +234,25 @@ class MatchData extends BRRawMatch {
     {
         game.end = time;
     }
-    void SetStart(int time) 
+
+    void SetStart(int time)
     {
         game.start = time;
     }
+
     void SetStartTime(int hour, int minute)
     {
         weather.hour = hour;
         weather.minute = minute;
     }
+
     void SetEndWeather(float rain, float fog)
     {
         weather.rain = rain;
         weather.fog = fog;
     }
-    void CreateWinner(string playerid, vector pos, int time) 
+
+    void CreateWinner(string playerid, vector pos, int time)
     {
         ref BRRawMatchPlayer winner = new BRRawMatchPlayer;
 
@@ -260,6 +264,7 @@ class MatchData extends BRRawMatch {
         winner.killerpos = Vector(0,0,0);
         results.Insert(winner);
     }
+
     void CreateDeath(string playerid, vector pos, int time, string killerid, string killerweapon, vector killerpos)
     {
         ref BRRawMatchPlayer dead = new BRRawMatchPlayer;
@@ -281,6 +286,7 @@ class MatchData extends BRRawMatch {
         }
         return false;
     }
+
     void ShowZone(vector position, float radius, int time)
     {
         ref BRRawMatchCircleEvent brevent = new BRRawMatchCircleEvent;
@@ -291,6 +297,7 @@ class MatchData extends BRRawMatch {
 
         events.circles.Insert( brevent );
     }
+
     void LockZone(vector position, float radius, int time)
     {
         ref BRRawMatchCircleEvent brevent = new BRRawMatchCircleEvent;
@@ -301,6 +308,7 @@ class MatchData extends BRRawMatch {
 
         events.circles.Insert( brevent );
     }
+
     void Movement(string playerid, vector pos, float dir, int time)
     {
         ref BRRawMatchMovementEvent brevent = new BRRawMatchMovementEvent;
@@ -311,6 +319,7 @@ class MatchData extends BRRawMatch {
 
         events.movements.Insert( brevent );
     }
+
     void GetInVehicle(string playerid, string vehicletype, vector vehiclepos, int time)
     {
         ref BRRawMatchVehicleEvent brevent = new BRRawMatchVehicleEvent;
@@ -322,6 +331,7 @@ class MatchData extends BRRawMatch {
 
         events.vehicles.Insert( brevent );
     }
+
     void GetOutVehicle(string playerid, string vehicletype, vector vehiclepos, int time)
     {
         ref BRRawMatchVehicleEvent brevent = new BRRawMatchVehicleEvent;
@@ -333,6 +343,7 @@ class MatchData extends BRRawMatch {
 
         events.vehicles.Insert( brevent );
     }
+
     void KillZombie(string playerid, vector zombiepos, int time)
     {
         ref BRRawMatchZombieEvent brevent = new BRRawMatchZombieEvent;
@@ -342,6 +353,7 @@ class MatchData extends BRRawMatch {
 
         events.zombiekills.Insert( brevent );
     }
+
     void Shoot(string playerid, vector pos, int time)
     {
         ref BRRawMatchShotEvent brevent = new BRRawMatchShotEvent;
@@ -351,6 +363,7 @@ class MatchData extends BRRawMatch {
 
         events.shots.Insert( brevent );
     }
+
     void Hit(string playerid, string shooterid, vector playerpos, int time)
     {
         ref BRRawMatchHitEvent brevent = new BRRawMatchHitEvent;
@@ -361,6 +374,7 @@ class MatchData extends BRRawMatch {
 
         events.hits.Insert( brevent );
     }
+
     void LootPickedUp(string playerid, string loottype, vector pos, int time)
     {
         ref BRRawMatchLootEvent brevent = new BRRawMatchLootEvent;
@@ -372,6 +386,7 @@ class MatchData extends BRRawMatch {
 
         events.loots.Insert( brevent );
     }
+
     void LootDropped(string playerid, string loottype, vector pos, int time)
     {
         ref BRRawMatchLootEvent brevent = new BRRawMatchLootEvent;

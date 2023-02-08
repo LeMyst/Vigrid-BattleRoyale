@@ -195,6 +195,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Error("Server called StateMachine_Resume()");
         }
     }
+
     void Vehicles_Start()
     {
         if ( IsMissionClient() )
@@ -208,6 +209,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         }
         
     }
+
     void Vehicles_Stop()
     {
         if ( IsMissionClient() )
@@ -221,6 +223,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         }
         
     }
+
     void Loot_Start()
     {
         if ( IsMissionClient() )
@@ -235,6 +238,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Error("Server called Loot_Start()");
         }
     }
+
     void Loot_Stop()
     {
         if ( IsMissionClient() )
@@ -249,6 +253,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
             Error("Server called Loot_Stop()");
         }
     }
+
     void TestSpectator()
     {
         if ( IsMissionClient() )

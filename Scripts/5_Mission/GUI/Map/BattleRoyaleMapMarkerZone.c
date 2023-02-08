@@ -21,6 +21,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 	{
         Print("BattleRoyaleMapMarkerZone::Constructor()");
     }
+
     void ~BattleRoyaleMapMarkerZone()
     {
         Print("BattleRoyaleMapMarkerZone::Deconstructor()");
@@ -274,6 +275,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     {
         return f_SizeA;
     }
+
     void SetSize_A(float value)
     {
         f_SizeA = value;
@@ -282,6 +284,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     {
         return f_SizeB;
     }
+
     void SetSize_B(float value)
     {
         f_SizeB = value;
@@ -290,6 +293,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     {
         return f_Thickness;
     }
+
     void SetThickness(float value)
     {
         f_Thickness = value;

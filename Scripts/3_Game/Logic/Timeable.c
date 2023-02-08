@@ -5,6 +5,7 @@ class Timeable {
     {
         m_Timers = new array<ref Timer>;
     }
+
     void ~Timeable()
     {
         StopTimers();

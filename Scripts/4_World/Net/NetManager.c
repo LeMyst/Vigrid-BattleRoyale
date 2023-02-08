@@ -26,6 +26,7 @@ class HttpPostRequest<Class T1, Class T2> extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(T2 result, string error_msg)
     {
         if(this.cb == null) return;
@@ -153,6 +154,7 @@ class HttpPostRequestOnStart extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref OnStartResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -212,6 +214,7 @@ class HttpPostRequestOnFinish extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref OnFinishResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -271,6 +274,7 @@ class HttpPostRequestSubmitMatch extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref SubmitMatchResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -330,6 +334,7 @@ class HttpPostRequestSetLock extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref SetLockResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -389,6 +394,7 @@ class HttpPostRequestGetServer extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref GetServerResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -448,6 +454,7 @@ class HttpPostRequestGetPlayer extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(GetPlayerResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -508,6 +515,7 @@ class HttpPostRequestStartClient extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref ClientStartResponse result, string error_msg)
     {
         Print("running callback!");
@@ -570,6 +578,7 @@ class HttpPostRequestMatchmake extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(ref ClientMatchMakeResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -629,6 +638,7 @@ class HttpPostRequestPlayerData extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(PlayerDataResponse result, string error_msg)
     {
         if(this.cb == null) return;
@@ -688,6 +698,7 @@ class HttpPostRequestRanking extends RestCallback {
     {
         this.cb = callback;
     }
+
     void RunCallback(RankResponse result, string error_msg)
     {
         if(this.cb == null) return;

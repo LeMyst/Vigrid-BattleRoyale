@@ -4,10 +4,12 @@ class BattleRoyaleDataBase
     {
         return "";
     }
+
     void Save()
     {
         return;
     }
+
     void Load()
     {
         return;

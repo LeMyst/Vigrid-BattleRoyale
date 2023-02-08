@@ -13,6 +13,7 @@ class BattleRoyaleLootDataField
         p_Category = category;
         a_Entries = new array<ref BattleRoyaleLootEntry>;
     }
+
     void ~BattleRoyaleLootDataField()
     {
         delete a_Entries;

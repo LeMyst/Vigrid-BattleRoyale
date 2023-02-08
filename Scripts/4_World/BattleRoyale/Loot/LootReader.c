@@ -262,6 +262,7 @@ class BattleRoyaleLootPosition
     {
         a_Usages.Insert(usage);
     }
+
     void AddContainer(ref BattleRoyaleLootContainer container)
     {
         a_Containers.Insert(container);
