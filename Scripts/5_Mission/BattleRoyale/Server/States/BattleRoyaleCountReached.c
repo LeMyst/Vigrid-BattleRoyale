@@ -45,6 +45,7 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
 	{
 		return super.IsComplete();
 	}
+
     void DoStart()
     {
         Deactivate();

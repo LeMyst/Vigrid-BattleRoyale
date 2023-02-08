@@ -1,4 +1,3 @@
-
 class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
 {
     protected PlayerBase m_Entity;
@@ -34,10 +33,12 @@ class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
         GetIconWidget().LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
 		GetDragWidget().SetRotation( 0, 0, GetMapDirection(), true );
     }
+
     private int GetMapDirection()
 	{
 		return Math.Round( Math.NormalizeAngle( v_Direction.VectorToAngles()[0] ) );
 	}
+
     void ShowRoot(bool show)
 	{
 		GetLayoutRoot().Show(show);

@@ -90,7 +90,6 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
         if(((center_x + distance_A) > canvas_width) || ((center_y + distance_B) > canvas_height))
         {
-            
             //Resize to fit
             float new_x = (center_x + distance_A) + 2;
             float new_y = (center_y + distance_B) + 2;
@@ -110,7 +109,6 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             Print(center_y);
             Print(distance_A);
             Print(distance_B);
-
         }
 
         if(f_Thickness <= 0)
@@ -280,6 +278,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     {
         f_SizeA = value;
     }
+
     float GetSize_B()
     {
         return f_SizeB;
@@ -289,6 +288,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     {
         f_SizeB = value;
     }
+
     float GetThickness()
     {
         return f_Thickness;

@@ -343,6 +343,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		
 		MessagePlayers(message);
 	}
+
     void NotifyTimeToEndSeconds(int seconds)
 	{
 		string message = "The zone will disappear in " + seconds.ToString() + " ";
