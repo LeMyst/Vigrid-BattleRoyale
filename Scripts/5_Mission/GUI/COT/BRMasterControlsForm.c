@@ -39,7 +39,7 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
         button = UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
 
-        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
+        /*wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
         UIActionManager.CreateText( wrapper, "Loot System" );
         button = UIActionManager.CreateButton( wrapper, "Start", this, "LootSystem_Start" );
         button = UIActionManager.CreateButton( wrapper, "Stop", this, "LootSystem_Stop" );
@@ -52,7 +52,7 @@ class BRMasterControlsForm extends JMFormBase
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
         UIActionManager.CreateText( wrapper, "Vote Start" );
         button = UIActionManager.CreateButton( wrapper, "Enable", this, "VehicleSystem_Start" );
-        button = UIActionManager.CreateButton( wrapper, "Disable", this, "VehicleSystem_Stop" );
+        button = UIActionManager.CreateButton( wrapper, "Disable", this, "VehicleSystem_Stop" );*/
 
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
         UIActionManager.CreateText( wrapper, "Test Spectating" );
