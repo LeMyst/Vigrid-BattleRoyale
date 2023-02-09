@@ -1,4 +1,3 @@
-
 modded class UiHintPanel {
 
     //load BR hints instead of native engines

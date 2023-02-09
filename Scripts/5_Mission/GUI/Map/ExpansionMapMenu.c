@@ -3,9 +3,6 @@ modded class ExpansionMapMenu {
     protected ref BattleRoyaleMapMarkerZone m_CurrentZone;
     protected ref BattleRoyaleMapMarkerZone m_NextZone;
 
-    protected ref BattleRoyaleMapMarkerZone m_DebugZone;
-    protected ref BattleRoyaleMapMarkerZone m_DebugZone2;
-
     protected ref array<ref BattleRoyaleMapMarkerPlayerArrow> m_SpectatorPlayerMarkers;
     protected ref map<string, ref BattleRoyaleMapMarkerPlayerArrow> m_NetworkPlayerMarkers;
 
