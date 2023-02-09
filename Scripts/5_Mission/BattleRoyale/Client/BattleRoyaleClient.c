@@ -3,6 +3,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	protected ref BattleRoyalePlayArea m_CurrentPlayArea;
 	protected ref BattleRoyalePlayArea m_FuturePlayArea;
+	//protected ref ExpansionMarkerData m_ZoneMarker;
 	protected ref Timer m_Timer;
 
 	protected int i_Kills; //TODO: this needs to be done differently (most likely)
@@ -12,6 +13,8 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected bool b_IsReady;
 
 	protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
+
+    protected ref ExpansionServerMarkerData m_ZoneCenterMapMarker;
 
 	void BattleRoyaleClient()
 	{
@@ -62,12 +65,38 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	override void Update(float delta)
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        /*if(!m_ZoneMarker)
+        {
+            m_ZoneMarker = ExpansionMarkerData.Create(ExpansionMapMarkerType.PERSONAL);
+            m_ZoneMarker.SetName("Center");
+            m_ZoneMarker.Set3D(true);
+            m_ZoneMarker.SetLockState(true);
+        }*/
+
+        if (!m_ZoneCenterMapMarker)
+        {
+            //m_ZoneCenterMapMarker = new ExpansionServerMarkerData(layoutRoot, m_MapWidget, false);
+            m_ZoneCenterMapMarker = new ExpansionServerMarkerData("ServerMarker_Zone_Center");
+            m_ZoneCenterMapMarker.Set3D(true);
+            m_ZoneCenterMapMarker.SetName("Center");
+            m_ZoneCenterMapMarker.SetIconName("Map Marker");
+            m_ZoneCenterMapMarker.SetColor(ARGB(255, 255, 0, 0));
+            m_ZoneCenterMapMarker.SetVisibility(EXPANSION_MARKER_VIS_WORLD | EXPANSION_MARKER_VIS_MAP);
+            //GetMarkerList().AddServerEntry(m_ZoneCenterMapMarker);
+            GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
+        }
 
 		float distance;
 		if(m_FuturePlayArea)
 		{
 			distance = GetZoneDistance( m_FuturePlayArea );
 			gameplay.UpdateZoneDistance( distance ); //update HUD element
+            //Print("Add 3D Marker at future " + m_FuturePlayArea.GetCenter());
+            //m_ZoneMarker.SetPosition( m_FuturePlayArea.GetCenter() );
+
+            //GetExpansionSettings().GetMap().RemoveServerMarker("ServerMarker_Zone_Center");
+            m_ZoneCenterMapMarker.SetPosition( m_FuturePlayArea.GetCenter() );
+            //GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
 		}
 		else
 		{
@@ -75,6 +104,12 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			{
 				distance = GetZoneDistance( m_CurrentPlayArea );
 				gameplay.UpdateZoneDistance( distance );
+                //Print("Add 3D Marker at current " + m_CurrentPlayArea.GetCenter());
+                //m_ZoneMarker.SetPosition( m_CurrentPlayArea.GetCenter() );
+
+                //GetExpansionSettings().GetMap().RemoveServerMarker("ServerMarker_Zone_Center");
+                m_ZoneCenterMapMarker.SetPosition( m_CurrentPlayArea.GetCenter() );
+                //GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
 			}
 		}
 	}
@@ -96,7 +131,8 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	protected void PlayerCountChanged(int new_count)
 	{
 		MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-		gameplay.UpdatePlayerCount( new_count );
+		if (gameplay)
+		    gameplay.UpdatePlayerCount( new_count );
 	}
 
 	protected void FadeIn()
