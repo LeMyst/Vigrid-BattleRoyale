@@ -453,7 +453,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	//TODO: add these to dayzbrconstants and use String Replace to insert the seconds or minutes values
 	void NotifyTimeTillLockSeconds(int seconds)
 	{
-		string message = "The new zone will lock in " + seconds.ToString() + " ";
+		string message = "The current zone will lock in " + seconds.ToString() + " ";
 		if(seconds > 1)
 			message += "seconds";
 		else
@@ -464,7 +464,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	void NotifyTimeTillLockMinutes(int minutes)
 	{
-		string message = "The new zone will lock in " + minutes.ToString() + " ";
+		string message = "The current zone will lock in " + minutes.ToString() + " ";
 		if(minutes > 1)
 			message += "minutes";
 		else
