@@ -53,6 +53,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         vector pos = "1000 10 1000";
         SetPosition(pos);
         SetZoneType(ZoneType.Circle);
+        GetIconWidget().Show( false );
     }
 
     override void Update( float pDt )
