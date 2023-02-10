@@ -42,6 +42,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", this );
 
 		m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 	}
@@ -95,6 +96,17 @@ class BattleRoyaleClient extends BattleRoyaleBase
                 m_ZoneCenterMapMarker.SetPosition( m_CurrentPlayArea.GetCenter() );
 			}
 		}
+		if(m_CurrentPlayArea)
+        {
+            PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+            distance = GetZoneDistance( m_CurrentPlayArea );
+            if (distance > 0)
+            {
+                player.QueueAddGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
+            } else {
+                player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
+            }
+        }
 	}
 
 	protected float GetZoneDistance(BattleRoyalePlayArea play_area)
@@ -291,7 +303,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	void UpdateEntityHealth(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		
 		PlayerBase pbTarget;
 		if ( type == CallType.Client )
 		{
@@ -367,6 +378,28 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( type == CallType.Client )
 		{
 			m_FuturePlayArea = data.param1;
+		}
+	}
+
+	void TakeZoneDamage(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ TakeZoneDamage RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			if( data.param1 )
+			{
+			    PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+                CachedObjectsParams.PARAM2_FLOAT_FLOAT.param1 = 32;
+                CachedObjectsParams.PARAM2_FLOAT_FLOAT.param2 = 0.3;
+                player.SpawnDamageDealtEffect2(CachedObjectsParams.PARAM2_FLOAT_FLOAT);
+                float shake_strength = Math.InverseLerp(0, 500, Math.RandomIntInclusive(125, 250));
+                player.GetCurrentCamera().SpawnCameraShake(shake_strength);
+			}
 		}
 	}
 

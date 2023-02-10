@@ -249,6 +249,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
             {
                 //DAMAGE
 				MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
+                GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
 				//TODO: determine if this last health tick will kill the player
 				bool b_WillKillThisTick = false;
 				if(b_WillKillThisTick)
@@ -294,7 +295,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 				}
 				float angle = angle_rads * Math.RAD2DEG;
 
-				BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
+				//BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
 
 				player.time_until_move = 5;
 			}
@@ -314,7 +315,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     void LockFinalZone()
     {
-		
 		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().LockZone(Vector(0, 0, 0), 0, GetGame().GetTime()); //final zone temp data
 		//TODO: this doesn't fucking work | if zone is null, no damage occurs
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);

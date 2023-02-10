@@ -68,7 +68,8 @@ class BattleRoyaleSpectatorPlayerWidget
             }
             else
             {
-                Error("Failed to find identity when initialize spectator icons");
+                return;
+                //Error("Failed to find identity when initialize spectator icons");
             }
         }
         else

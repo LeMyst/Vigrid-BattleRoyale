@@ -20,6 +20,9 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
 	{
         Print("BattleRoyaleMapMarkerZone::Constructor()");
+        SetIgnorePointer(true);
+        //! Do NOT show by default, otherwise it'll pop up on the load screen in the top left corner at the end of the loading progress
+        Hide();
     }
 
     void ~BattleRoyaleMapMarkerZone()
@@ -29,13 +32,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
     protected override void OnInit( Widget layoutRoot )
     {
-        
-		Class.CastTo( m_Frame, layoutRoot.FindAnyWidget( "marker_frame" ) );
-		Class.CastTo( m_Name, layoutRoot.FindAnyWidget( "marker_name" ) );
-		Class.CastTo( m_EditName, layoutRoot.FindAnyWidget("marker_edit_name") );
-		Class.CastTo( m_Icon, layoutRoot.FindAnyWidget("marker_icon") );
-		Class.CastTo( m_EditButton, layoutRoot.FindAnyWidget("marker_button") );
-		Class.CastTo( m_DragWidget, layoutRoot.FindAnyWidget( "marker_icon_panel" ) );
+        super.OnInit( layoutRoot );
 
         Class.CastTo( m_BRCanvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
 
@@ -46,9 +43,6 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         }
 
         m_Name.Show( false ); //--- the marker name is for debugging
-
-		m_Frame.SetColor( ARGB( 0, 0, 0, 0 ) );
-		m_PrimaryColor = ARGB( 220, 220, 220, 220 );
 
         m_BRCanvas.Show( true ); //ensure canvas is visible
 
@@ -84,7 +78,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
         float canvas_width;
         float canvas_height;
-        m_BRCanvas.GetSize(canvas_width,canvas_height);
+        m_BRCanvas.GetSize(canvas_width, canvas_height);
         float center_x = canvas_width / 2.0;
         float center_y = canvas_height / 2.0;
 

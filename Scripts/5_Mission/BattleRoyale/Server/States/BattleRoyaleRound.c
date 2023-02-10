@@ -54,6 +54,8 @@ class BattleRoyaleRound extends BattleRoyaleState
         }
 
         // Update zone timer
+        i_RoundTimeInSeconds = m_Zone.GetZoneTimer();
+        Print("Create round with timer " + i_RoundTimeInSeconds);
 
         //dear god i hope i really don't have to keep this, but it should work
         float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
@@ -70,10 +72,11 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 	override void Activate()
 	{
-		Print(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds !");
 		//we just activated this round (players not yet transfered from previous state)
 		int time_till_end = i_RoundTimeInSeconds * 1000;
-		int time_till_lock = time_till_end / 2;
+		int time_till_lock = time_till_end * 0.75;
+		int time_between_lock_and_end = time_till_end - time_till_lock;
+		Print(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds with a lock at " + time_till_lock / 1000 + " seconds (so " + time_between_lock_and_end / 1000 + " seconds after lock before end) !");
 
 		int i;
 		int min;
@@ -98,10 +101,10 @@ class BattleRoyaleRound extends BattleRoyaleState
 		}
 
 		//timer before zone locks
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( time_till_lock / 1000 ), true);
 
 		//lock zone event
-		m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LockNewZone", NULL, false);
+		m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LockNewZone", new Param1<int>( time_between_lock_and_end / 1000 ), false);
 
 		//--- notification message timers
 		for(i = 0; i < lock_notif_min.Count();i++)
@@ -158,7 +161,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				{
 					MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_OUTSIDE);
 				}
-				else
+				else if (m_Zone.GetZoneNumber() != 1)
 				{
 					MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_INSIDE);
 				}
@@ -326,6 +329,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 				{
 					//DAMAGE
 					MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
 					//TODO: determine if this last health tick will kill the player
 					bool b_WillKillThisTick = false;
 					if(b_WillKillThisTick)
@@ -420,7 +424,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		return b_ZoneLocked;
 	}
 
-	void LockNewZone()
+	void LockNewZone(int seconds)
 	{
 		b_ZoneLocked = true;
 
@@ -440,8 +444,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		//tell the client we don't know the next play area
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
 		//tell the client how much time until the next zone appears
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
-
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( seconds ) , true);
 	}
 
 	void OnRoundTimeUp()
