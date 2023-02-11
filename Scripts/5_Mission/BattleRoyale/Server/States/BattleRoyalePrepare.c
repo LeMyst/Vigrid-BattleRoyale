@@ -229,6 +229,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
             break;
         }
 
+        Print("Spawn player " + process_player.GetIdentity().GetName() + " at " + random_pos);
+
         //set pos
         process_player.SetPosition(random_pos);
 
