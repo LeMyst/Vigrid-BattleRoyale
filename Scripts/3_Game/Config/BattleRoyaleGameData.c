@@ -20,14 +20,15 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",
         "JoggingShoes_Red",
-        "MedicalBandage" //zombies at start can be brutal. this will help
+        "MedicalBandage"
     };
 
     string mission = "BattleRoyale.ChernarusPlusGloom";
 
     bool use_spectate_whitelist = true;
+    bool auto_spectate_mode = true;
     ref array<string> allowed_spectate_steamid64 = {
-        "76561198277370562" //kegan's steam id :)
+        "123456789123456789" // Dummy SteamID64
     };
 
     int num_vehicles = 1000; // TODO: Move this to world config

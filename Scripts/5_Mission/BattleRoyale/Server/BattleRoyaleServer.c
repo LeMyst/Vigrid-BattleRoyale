@@ -191,33 +191,38 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		vector debug_pos = m_Debug.GetCenter();
 		player.SetPosition(debug_pos);		
 
+        bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
+
 		BattleRoyaleDebugState m_DebugStateObj;
 		if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
 		{
 			if(m_SpectatorSystem.CanSpectate( player ))
 			{
-				Print("Spectator connected, inserting into spectator system");
+			    if (b_AutoSpectateMode)
+			    {
+                    Print("Spectator connected, inserting into spectator system");
 
-				//it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
-				//note that 15 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
-				m_Timer.Run( 30.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
-				
-				string message = "You will be given spectator in ~30 seconds...";
-				string title = DAYZBR_MSG_TITLE;
-				string icon = DAYZBR_MSG_IMAGE;
-				int color = COLOR_EXPANSION_NOTIFICATION_INFO;
-				float time = DAYZBR_MSG_TIME;
+                    //it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
+                    //note that 15 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
+                    m_Timer.Run( 15.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
 
-				//m_SpectatorSystem.AddPlayer( player );
-				if(player)
-				{
-					PlayerIdentity playerIdentity = player.GetIdentity();
-					if(playerIdentity)
-					{
-						StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
-						StringLocaliser text = new StringLocaliser( message );
-						ExpansionNotification(title_sl, text, icon, color, time).Create(playerIdentity);
-					}
+                    string message = "You will be given spectator in ~15 seconds...";
+                    string title = DAYZBR_MSG_TITLE;
+                    string icon = DAYZBR_MSG_IMAGE;
+                    int color = COLOR_EXPANSION_NOTIFICATION_INFO;
+                    float time = DAYZBR_MSG_TIME;
+
+                    //m_SpectatorSystem.AddPlayer( player );
+                    if(player)
+                    {
+                        PlayerIdentity playerIdentity = player.GetIdentity();
+                        if(playerIdentity)
+                        {
+                            StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
+                            StringLocaliser text = new StringLocaliser( message );
+                            ExpansionNotification(title_sl, text, icon, color, time).Create(playerIdentity);
+                        }
+                    }
 				}
 			}
 			else
