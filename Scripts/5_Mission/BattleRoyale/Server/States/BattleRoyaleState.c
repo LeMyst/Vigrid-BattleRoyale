@@ -236,9 +236,9 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 		super.OnPlayerTick(player, timeslice);
 
 		vector spawn_pos = "0 0 0";
-        spawn_pos[0] = v_Center[0];
+        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
         spawn_pos[1] = GetGame().SurfaceY(v_Center[0], v_Center[2]);
-        spawn_pos[2] = v_Center[2];
+        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 5), (v_Center[2] + 5));
 
 		vector playerPos = player.GetPosition();
 		float distance = vector.Distance(playerPos, spawn_pos);
