@@ -19,5 +19,5 @@ modded class IngameHud
 
         super.Show( show );
     }
-    
+
 }

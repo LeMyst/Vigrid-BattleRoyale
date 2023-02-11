@@ -1,5 +1,5 @@
 
-class BattleRoyaleLoot 
+class BattleRoyaleLoot
 {
     protected bool b_Enabled;
     protected bool b_IsProcessing;
@@ -36,7 +36,7 @@ class BattleRoyaleLoot
     void Update(float delta)
     {
     }
-    
+
     void AddPlayer(PlayerBase player)
     {
         if(m_Players.Find(player) == -1)
@@ -73,7 +73,7 @@ class BattleRoyaleLoot
         if(!b_IsProcessing) //this prevents a second thread from spinning up if processloot takes longer than 0.5s
         {
             b_IsProcessing = true;
-            GetGame().GameScript.Call( this, "ProcessLoot", NULL ); 
+            GetGame().GameScript.Call( this, "ProcessLoot", NULL );
         }
         else
         {

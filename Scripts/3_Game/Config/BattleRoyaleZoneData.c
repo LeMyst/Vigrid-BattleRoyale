@@ -5,7 +5,7 @@ class BattleRoyaleZoneData extends BattleRoyaleDataBase
     //constant
     float constant_scale = 0.65;
 
-    //exponential 
+    //exponential
     float shrink_base = 2.718281828459; // ~ e
     float shrink_exponent = 3.0;
 

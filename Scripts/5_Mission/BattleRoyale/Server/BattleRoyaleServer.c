@@ -6,13 +6,13 @@ class BattleRoyaleServer extends BattleRoyaleBase
 	protected ref BattleRoyaleLoot m_LootSystem;
 	ref array<ref BattleRoyaleState> m_States;
 	int i_CurrentStateIndex;
-	
+
 	int i_NumRounds;
-	
+
 	protected ref MatchData match_data;
 	protected ref Timer m_Timer;
 
-	void BattleRoyaleServer() 
+	void BattleRoyaleServer()
 	{
 		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
 		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
@@ -44,7 +44,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//DEBUG ZONE
 		BattleRoyaleDebug debug_state = new BattleRoyaleDebug;
 		m_States.Insert(debug_state); //insert debug state
-		
+
 		//PLAYER COUNT REACHED COUNTDOWN
 		BattleRoyaleCountReached count_reached = new BattleRoyaleCountReached;
 		m_States.Insert(count_reached);
@@ -69,10 +69,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
 		m_States.Insert(last_round);
-			
+
 		m_States.Insert(new BattleRoyaleWin);
 		m_States.Insert(new BattleRoyaleRestart);
-		
+
 		i_CurrentStateIndex = 0;
 		GetCurrentState().Activate();
 
@@ -105,7 +105,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//}
 	}
 
-	override bool IsDebug() 
+	override bool IsDebug()
 	{
 		BattleRoyaleState m_CurrentState = GetCurrentState();
 		BattleRoyaleDebug m_Debug;
@@ -159,7 +159,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 				{
 					if(players[i])
-					{					
+					{
 						next_state.AddPlayer(players[i]); //add players to new state
 					}
 					else
@@ -229,9 +229,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 				//BAD VERY BAD!
 				//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
 				//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
-				
+
 				//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
-				
+
 				Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
 				m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 			}
@@ -239,7 +239,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			//TODO: Create a *spectator* system that handles players connecting during non-debug zone states
 			//Note: the spectator system will also handle client respawn events too.
 			//We need to create a list of *allowed* spectators. This should be in the server config (for private servers)
-			
+
 			return;
 		}
 
@@ -250,18 +250,18 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		GetCurrentState().AddPlayer(player);
 		//m_LootSystem.AddPlayer( player ); // TODO: Reenable when correct
 	}
-	
+
 	void Disconnect(PlayerIdentity identity)
 	{
 		GetGame().DisconnectPlayer( identity ); //can't directly call disconnectplayer with timer, so we use this method
 	}
 
 	void OnPlayerDisconnected(PlayerBase player, PlayerIdentity identity)
-	{		
+	{
 		if(GetCurrentState().ContainsPlayer(player))
 		{
 			GetCurrentState().RemovePlayer(player);
-			
+
 			BattleRoyaleDebug m_DebugStateObj;
 			if(!Class.CastTo( m_DebugStateObj, GetCurrentState() ))
 			{
@@ -294,12 +294,12 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		//if player is in the loot system, remove them
 		//m_LootSystem.RemovePlayer( player ); // TODO: Reenable when correct
 	}
-	
+
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
 		if(GetCurrentState().ContainsPlayer(killed))
 		{
-			//if we are in a round, then we need to call the onkilled event 
+			//if we are in a round, then we need to call the onkilled event
 			BattleRoyaleRound p_Round;
 			if(Class.CastTo(p_Round, GetCurrentState()))
 			{
@@ -354,7 +354,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 					if(m_SpectatorSystem.ContainsPlayer( player ))
 					{
 						m_SpectatorSystem.OnPlayerTick( player, timeslice );
-					}	
+					}
 					else
 					{
 						if( !m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
@@ -369,11 +369,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
 						}
 					}
 				}
-				
+
 			}
 			//any other case here, the player is dead & therefore shouldn't count towards any state
 		}
-		
+
 	}
 
 	BattleRoyaleState GetState(int index)
@@ -428,7 +428,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 	void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		
+
 		PlayerBase pbTarget;
 		//--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
 		Print("Spectator client requested status update for target");
@@ -437,14 +437,14 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") );
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
 		}
-		
+
 	}
 
 	void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1< bool > data;
 		if( !ctx.Read( data ) ) return;
-		
+
 		if(!target) return;
 
 		PlayerBase targetBase = PlayerBase.Cast(target);
@@ -471,7 +471,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 			{
 				//perhaps allow readyup to be toggled?
 			}
-			
+
 		}
 	}
 
@@ -486,7 +486,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 		int hour = Math.RandomIntInclusive(8,17); //7am to 5pm
 		int minute = 0;
 		GetGame().GetWorld().SetDate(year, month, day, hour, minute);
-		
+
 		GetMatchData().SetStartTime( hour, minute );
 
 		//Set Random Weather

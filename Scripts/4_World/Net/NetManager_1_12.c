@@ -42,7 +42,7 @@ class HttpCallback {
 class HttpPostRequest extends RestCallback {
     static ref PostData SendSync(string server, string function, ref PostData data) {
         string jsondata = data.RequestToJson();
-        
+
         RestContext ctx = GetRestApi().GetRestContext(server);
         string outdata = ctx.POST_now(function, jsondata);
 

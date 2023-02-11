@@ -2,7 +2,7 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
 {
     protected int i_TimeToStart;
     protected ref Timer m_StartTimer;
-    
+
     void BattleRoyaleCountReached()
     {
 
@@ -25,7 +25,7 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
 	override void Activate()
 	{
 		super.Activate();
-		
+
         string second = "second";
         if(i_TimeToStart != 1)
             second = "seconds";
@@ -40,7 +40,7 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
         m_StartTimer.Stop();
 		super.Deactivate();
 	}
-    
+
 	override bool IsComplete()
 	{
 		return super.IsComplete();

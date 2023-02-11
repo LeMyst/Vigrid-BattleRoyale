@@ -3,7 +3,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     protected int i_TimeToUnlock;
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
-    
+
     protected ref array<PlayerBase> m_PlayerList;
 
     protected ref array<ref Timer> m_MessageTimers;
@@ -20,7 +20,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
 
         b_IsGameplay = false;
-        
+
         m_PlayerList = new array<PlayerBase>;
 
         m_MessageTimers = new array<ref Timer>;
@@ -83,20 +83,20 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
             {
                 if(player.time_until_move <= 0)
                 {
-                    //send movement update 
+                    //send movement update
                     string steamid = player.GetIdentity().GetPlainId();
                     vector dirvector = player.GetDirection();
                     dirvector[1] = 0;
                     dirvector = dirvector.Normalized(); //renormalize
                     float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
                     //clamp range (-pi, pi]
-                    if (angle_rads > Math.PI) 
-                    { 
-                        angle_rads -= 2 * Math.PI; 
-                    } 
-                    else if (angle_rads <= -Math.PI) 
-                    { 
-                        angle_rads += 2 * Math.PI; 
+                    if (angle_rads > Math.PI)
+                    {
+                        angle_rads -= 2 * Math.PI;
+                    }
+                    else if (angle_rads <= -Math.PI)
+                    {
+                        angle_rads += 2 * Math.PI;
                     }
                     float angle = angle_rads * Math.RAD2DEG;
 
@@ -158,7 +158,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
             player.DisableInput(false); //This will re-enable input
         }
-        
+
         MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
 
         BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetStart( GetGame().GetTime() ); //match start time logging

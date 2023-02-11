@@ -15,7 +15,7 @@ class BattleRoyaleLootEntry : Managed {
         JsonFileLoader<BattleRoyaleLootEntry>.JsonLoadFile(BATTLEROYALE_LOOT_ENTRIES_FOLDER + filename , this);
         this.m_FileName = filename;
     }
-    
+
     //--- functionality
     string GetRandomStyle()
     {
@@ -24,7 +24,7 @@ class BattleRoyaleLootEntry : Managed {
             return styles[0];
         if(count == 0)
             return BATTLEROYALE_LOOT_BROKEN_STYLE_ITEM_CLASSNAME; //anything broken will be Zucchini
-        
+
         int ind = Math.RandomInt(0, count);
         return styles[ind];
     }

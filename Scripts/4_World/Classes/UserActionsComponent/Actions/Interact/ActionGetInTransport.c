@@ -1,6 +1,6 @@
 modded class ActionGetInTransport
 {
-    override void OnEndServer( ActionData action_data ) 
+    override void OnEndServer( ActionData action_data )
     {
         PlayerBase player = action_data.m_Player;
         if(player.GetIdentity())

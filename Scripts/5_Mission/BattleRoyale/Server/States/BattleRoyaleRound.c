@@ -1,6 +1,6 @@
-class BattleRoyaleRound extends BattleRoyaleState 
+class BattleRoyaleRound extends BattleRoyaleState
 {
-	ref BattleRoyaleState m_PreviousSate; 
+	ref BattleRoyaleState m_PreviousSate;
 	ref BattleRoyaleZone m_Zone;
 	int i_RoundTimeInSeconds;
 	bool b_ZoneLocked;
@@ -15,7 +15,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 	protected ref Timer m_NewZoneLockTimer;
 	protected ref Timer m_RoundTimeUpTimer;
 
-	//If this is NULL, we assume previous state is debug 
+	//If this is NULL, we assume previous state is debug
 	//a battle royale round represents a playing state with a play area
 	void BattleRoyaleRound(ref BattleRoyaleState previous_state)
 	{
@@ -24,7 +24,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
 		i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
-		
+
 		lock_notif_min =  m_GameSettings.zone_notification_minutes;
 		lock_notif_sec =  m_GameSettings.zone_notification_seconds;
 
@@ -136,7 +136,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 		{
 			GetZone().OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
 			m_ThisArea = GetZone().GetArea();
-			
+
 			BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
 		}
 
@@ -191,13 +191,13 @@ class BattleRoyaleRound extends BattleRoyaleState
 		return super.IsComplete();
 	}
 
-	override bool SkipState(BattleRoyaleState m_PreviousState) 
+	override bool SkipState(BattleRoyaleState m_PreviousState)
 	{
 		//only one (or less) players remaining, must skip to win state
 		// TODO: toggle to debug game
 		if(m_PreviousState.GetPlayers().Count() <= 1 && !BATTLEROYALE_SOLO_GAME)
 			return true;
-		
+
 		return false;
 	}
 
@@ -249,7 +249,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 						}
 
 						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
-					
+
 						if(!match_data.ContainsDeath(player_steamid))
 						{
 							if(!is_vehicle)
@@ -261,7 +261,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 							{
 								killed_with = killer_entity.GetType();
 							}
-							
+
 							string killer_steamid = "";
 							if(pbKiller.GetIdentity())
 							{
@@ -318,11 +318,11 @@ class BattleRoyaleRound extends BattleRoyaleState
 			vector center = current_zone.GetArea().GetCenter();
 
 			vector playerPos = player.GetPosition();
-			
+
 			//distance needs to be done in 2D, not 3D, set Z coord to 0 so this can be done
 			playerPos[1] = 0;
-			center[1] = 0; 
-			float distance = vector.Distance(playerPos, center); 
+			center[1] = 0;
+			float distance = vector.Distance(playerPos, center);
 			if(distance >= radius)
 			{
 				if(player.time_until_damage <= 0)
@@ -361,20 +361,20 @@ class BattleRoyaleRound extends BattleRoyaleState
 		{
 			if(player.time_until_move <= 0)
 			{
-				//send movement update 
+				//send movement update
 				string steamid = player.GetIdentity().GetPlainId();
 				vector dirvector = player.GetDirection();
 				dirvector[1] = 0;
 				dirvector = dirvector.Normalized(); //renormalize
 				float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
 				//clamp range (-pi, pi]
-				if (angle_rads > Math.PI) 
-				{ 
-					angle_rads -= 2 * Math.PI; 
-				} 
-				else if (angle_rads <= -Math.PI) 
-				{ 
-					angle_rads += 2 * Math.PI; 
+				if (angle_rads > Math.PI)
+				{
+					angle_rads -= 2 * Math.PI;
+				}
+				else if (angle_rads <= -Math.PI)
+				{
+					angle_rads += 2 * Math.PI;
 				}
 				float angle = angle_rads * Math.RAD2DEG;
 
@@ -461,7 +461,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			message += "seconds";
 		else
 			message += "second";
-		
+
 		MessagePlayers(message);
 	}
 
@@ -472,7 +472,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			message += "minutes";
 		else
 			message += "minute";
-		
+
 		MessagePlayers(message);
 	}
 
@@ -483,7 +483,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			message += "seconds";
 		else
 			message += "second";
-		
+
 		MessagePlayers(message);
 	}
 
@@ -494,7 +494,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 			message += "minutes";
 		else
 			message += "minute";
-		
+
 		MessagePlayers(message);
 	}
 }

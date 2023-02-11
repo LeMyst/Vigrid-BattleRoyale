@@ -6,7 +6,7 @@ class CancelMatchmakingCallback extends PopupButtonCallback
 	{
 		m_MainMenu = menu;
 		m_Matchmaking = action;
-	} 
+	}
 	override void OnButtonClick()
 	{
 		Print("CANCELING MATCHMAKING!");

@@ -51,8 +51,8 @@ class BattleRoyaleSpectatorPlayerWidget
         m_Health = TextWidget.Cast( m_StatsPanel.FindAnyWidget( "HPTextBar" ) );
         m_Kills = TextWidget.Cast( m_StatsPanel.FindAnyWidget( "KillsTextBar" ) );
         m_HealthProgressBar = ProgressBarWidget.Cast( m_StatsPanel.FindAnyWidget( "HPProgressBar" ) );
-        
-        
+
+
         SetPlayer( player );
     }
 
@@ -174,7 +174,7 @@ class BattleRoyaleSpectatorPlayerWidget
                 display_text = item_in_hands.GetDisplayName();
             }
             //TODO: get player kills from the server (requires a rework on kills stats storing)
-            SetKillsText( display_text ); 
+            SetKillsText( display_text );
         }
     }
     bool UpdatePosition()
@@ -203,7 +203,7 @@ class BattleRoyaleSpectatorPlayerWidget
         {
             SetShow( true );
         }
-        
+
         //--- set fade
         float root_alpha = 1;
         float fd_1 = distance - fade_max_distance;
@@ -213,11 +213,11 @@ class BattleRoyaleSpectatorPlayerWidget
             root_alpha = 1 - (fd_1 / max_fade);
         }
         m_Panel.SetAlpha( root_alpha );
-        
+
         //--- set scale
         float w_delta = panel_max_w - panel_min_w;
         float h_delta = panel_max_h - panel_min_h;
-        
+
         float new_w = panel_max_w;
         float new_h = panel_max_h;
         if(distance > scale_max_dist)

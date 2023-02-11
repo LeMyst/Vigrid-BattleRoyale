@@ -1,7 +1,7 @@
-modded class MissionBaseWorld 
+modded class MissionBaseWorld
 {
 	ref BattleRoyaleBase m_BattleRoyale;
-	
+
 	BattleRoyaleBase GetBattleRoyale()
 	{
 		return m_BattleRoyale;

@@ -35,7 +35,7 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     int vehicle_ticktime_ms = 1000;
     float vehicle_spawn_radius = 500.0;
 
-    //--- do not modify    
+    //--- do not modify
     override string GetPath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "general_settings.json";

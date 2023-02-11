@@ -53,7 +53,7 @@ class LootReader
 
  //TODO: LOOT RAYCASTING #2
  //this method needs to return pos, height, and radius (perhaps we have it return ref BattleRoyaleLootPoint as an array?)
-    ref array<vector> GetAllLootPositions(string name) 
+    ref array<vector> GetAllLootPositions(string name)
     {
         ref array<vector> positions = new array<vector>();
         if(IsReady() && ContainsObject(name))
@@ -156,7 +156,7 @@ class LootReaderXMLCallback extends CF_XML_Callback
             string name = tag.GetAttribute( "name" ).ValueAsString();
             name.ToLower();
 			m_Entries.Insert(name, entry);
-			
+
 			array< CF_XML_Tag > containers = tag.GetContent().Get( "container" );
 			array< CF_XML_Tag > usages = tag.GetContent().Get( "usage" );
             int j;

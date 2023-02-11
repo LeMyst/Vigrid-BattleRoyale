@@ -26,13 +26,13 @@ class BattleRoyaleConfig
     void Init()
     {
         Print("Initializing Settings...");
-        
+
         BattleRoyaleGameData p_GameData = new BattleRoyaleGameData;
         if(p_GameData)
             m_Configs.Insert("GameData",p_GameData);
         else
             Error("BattleRoyaleGameData Setting Constructor Returned NULL");
-        
+
         BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
         if(p_DebugData)
             m_Configs.Insert("DebugData", p_DebugData);
@@ -45,7 +45,7 @@ class BattleRoyaleConfig
         else
             Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
 
-        //--- adding a new config? copy below 
+        //--- adding a new config? copy below
         BattleRoyaleServerData p_ServerData = new BattleRoyaleServerData;
         if(p_ServerData)
             m_Configs.Insert("ServerData", p_ServerData);
@@ -131,7 +131,7 @@ class BattleRoyaleConfig
         {
             Error("Requesting Config Data from Unloaded Config?");
             Load();
-        }   
+        }
         return m_Configs.Get(key);
     }
 

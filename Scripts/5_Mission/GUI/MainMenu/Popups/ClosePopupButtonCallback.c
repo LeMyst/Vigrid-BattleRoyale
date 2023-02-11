@@ -4,7 +4,7 @@ class ClosePopupButtonCallback extends PopupButtonCallback
 	void ClosePopupButtonCallback(ref MainMenu menu)
 	{
 		m_MainMenu = menu;
-	} 
+	}
 	override void OnButtonClick()
 	{
 		m_MainMenu.ClosePopup();

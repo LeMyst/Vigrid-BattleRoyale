@@ -1,9 +1,9 @@
-//--- circle/oval marker 
+//--- circle/oval marker
 
 enum ZoneType
 {
     Circle = 1,
-    CrossHatch = 2, 
+    CrossHatch = 2,
     Lined = 3
 }
 
@@ -70,7 +70,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         vector m_edgePos_B = GetPosition();
         m_edgePos_B[2] = m_edgePos_B[2] + f_SizeB;
 
-        vector mapPos_edge_A = GetMapWidget().MapToScreen(m_edgePos_A);				
+        vector mapPos_edge_A = GetMapWidget().MapToScreen(m_edgePos_A);
         vector mapPos_edge_B = GetMapWidget().MapToScreen(m_edgePos_B);
         vector mapPos_center = GetMapWidget().MapToScreen(GetPosition());
 

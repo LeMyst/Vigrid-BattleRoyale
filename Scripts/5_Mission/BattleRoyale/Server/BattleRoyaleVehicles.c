@@ -69,7 +69,7 @@ class BattleRoyaleVehicles
         {
             Print("Preinit called on vehicle subsystem when not necessary!");
         }
-        
+
     }
 
     void Init()
@@ -95,7 +95,7 @@ class BattleRoyaleVehicles
         for(i = 0; i < i_NumVehicles; i++)
         {
             vector position = DAYZBR_DEBUG_CENTER; //this is only a temp value so we'll just stuck the broken debug zone center position
-        
+
             Print("Finding valid location...");
             string path = "CfgWorlds " + GetGame().GetWorldName();
             vector temp = GetGame().ConfigGetVector(path + " centerPosition");
@@ -122,7 +122,7 @@ class BattleRoyaleVehicles
             //--- defaults in case no config data is found
             string vehicle_class = "Sedan_02";
             ref array<string> vehicle_parts = {"CarBattery", "CarRadiator", "SparkPlug", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel", "Sedan_02_Wheel"};
-           
+
             if(m_SettingsData && m_SettingsData.m_VehicleData && m_SettingsData.m_VehicleData.Count() > 0)
             {
                 if(max_roll > 0)
@@ -133,7 +133,7 @@ class BattleRoyaleVehicles
                     {
                         vehicle_data = m_SettingsData.m_VehicleData[j];
                         val += vehicle_data.Weight;
-                        
+
                         //this is the vehicle we rolled
                         if(val > roll)
                         {
@@ -148,13 +148,13 @@ class BattleRoyaleVehicles
                 {
                     Error("Total Vehicle Weights are set to 0, could not roll for random vehicles!");
                 }
-                
+
             }
             else
             {
                 Error("Failed to access Vehicle Data Settings!");
             }
-            
+
             //create server marker for this vehicle
             //ExpansionMarkerModule.Cast( GetModuleManager().GetModule( ExpansionMarkerModule ) ).CreateServerMarker( vehicle_class, "Car", position, ARGB(255, 0, 255, 0), false );
 
@@ -199,13 +199,13 @@ class BattleRoyaleVehicles
 
         float friction = GetGame().ConfigGetFloat(cfgSurfacePath + " friction");
 
-        //Invalid if GetFloat(... friction) < 0.94     
+        //Invalid if GetFloat(... friction) < 0.94
         if(friction < DAYZBR_VS_MIN_SURFACE_FRICTION)
             return false;
 
         vector start = pos;
         vector end = pos + Vector( 0, 1, 0 );
-        float radius = 2.0; 
+        float radius = 2.0;
         PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
         Object m_HitObject;
         vector m_HitPosition;
@@ -236,7 +236,7 @@ class BattleRoyaleVehicles
             if(m_Vehicle)
             {
                 vector position = m_Vehicle.GetPosition();
-               
+
                 bool b_IsPlayerNear = false;
 
                 for(int j = 0; j < spawnable_players.Count(); j++)
@@ -247,7 +247,7 @@ class BattleRoyaleVehicles
                         b_IsPlayerNear = true;
                         break;
                     }
-                }            
+                }
 
                 if(m_Vehicle.IsSpawned() && !b_IsPlayerNear)
                 {
@@ -381,7 +381,7 @@ class BattleRoyaleCachedVehicle
             position = GetPosition();
             direction = game_object.GetDirection();
             //TODO: cache vehicle inventory contents
-            GetGame().ObjectDelete( game_object ); 
+            GetGame().ObjectDelete( game_object );
             game_object = NULL;
             return true;
         }

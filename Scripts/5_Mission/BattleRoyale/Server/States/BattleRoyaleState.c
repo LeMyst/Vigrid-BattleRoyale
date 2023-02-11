@@ -1,5 +1,5 @@
 class BattleRoyaleState extends Timeable {
-	
+
 	protected ref array<PlayerBase> m_Players;
 	protected bool b_IsActive;
 	protected bool b_IsPaused;
@@ -10,7 +10,7 @@ class BattleRoyaleState extends Timeable {
 	}
 
 	void BattleRoyaleState()
-	{		
+	{
 		m_Players = new array<PlayerBase>();
 
 		b_IsActive = false;
@@ -21,7 +21,7 @@ class BattleRoyaleState extends Timeable {
 	{
 
 	}
-	
+
 	//state controls
 	void Activate()
 	{
@@ -34,7 +34,7 @@ class BattleRoyaleState extends Timeable {
 		//--- stop all repeating timers
 		StopTimers();
 
-		b_IsActive = false; 
+		b_IsActive = false;
 	}
 
 	bool IsActive()
@@ -72,7 +72,7 @@ class BattleRoyaleState extends Timeable {
 	}
 
 	ref array<PlayerBase> GetPlayers()
-	{	
+	{
 		return m_Players;
 	}
 
@@ -173,8 +173,8 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
         BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
         if(m_DebugSettings)
 		{
-			v_Center = m_DebugSettings.spawn_point; 
-			f_Radius = m_DebugSettings.radius; 
+			v_Center = m_DebugSettings.spawn_point;
+			f_Radius = m_DebugSettings.radius;
 		}
 		else
 		{
@@ -182,7 +182,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 			v_Center = DAYZBR_DEBUG_CENTER;
 			f_Radius = DAYZBR_DEBUG_RADIUS;
 		}
-		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData(); 
+		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
 		if(m_GameSettings)
 		{
 			i_HealTickTime = m_GameSettings.debug_heal_tick_seconds;

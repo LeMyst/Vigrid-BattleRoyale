@@ -62,7 +62,7 @@ class BRMasterControlsForm extends JMFormBase
 
     }
 
-    override void OnHide() 
+    override void OnHide()
 	{
     }
 

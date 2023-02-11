@@ -25,7 +25,7 @@ class CfgMods
 		logoSmall = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
 		logoOver = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
 
-		dependencies[]= 
+		dependencies[]=
 		{
 			"Game",
 			"World",

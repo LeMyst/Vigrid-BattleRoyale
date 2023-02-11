@@ -86,7 +86,7 @@ modded class PlayerBase
 	override void OnScheduledTick(float deltaTime)
 	{
 		super.OnScheduledTick(deltaTime);
-		
+
 		BattleRoyaleBase m_BR = GetBR();
 		if(m_BR)
 		{
@@ -97,7 +97,7 @@ modded class PlayerBase
 	override void EEKilled( Object killer )
 	{
 		super.EEKilled( killer );
-		
+
 		BattleRoyaleBase m_BR = GetBR();
 		if(m_BR)
 		{
@@ -115,7 +115,7 @@ modded class PlayerBase
 			{
 				if(!GetBR().IsDebug())
 				{
-	
+
 					PlayerBase shooter = PlayerBase.Cast( killer );
 					if(shooter && shooter.GetIdentity() && this.GetIdentity())
 					{
@@ -146,46 +146,46 @@ modded class PlayerBase
 		SetHealth("", "Health", GetMaxHealth("", "Health"));
 		SetHealth("", "Blood", GetMaxHealth("", "Blood"));
 		SetHealth("", "Shock", GetMaxHealth("", "Shock"));
-		
+
 		// GetStatStomachVolume + GetStatStomachWater > 1000 == STUFFED!
 
 		SetBleedingBits(0);
-		
+
 		//--- legacy function (need to access m_PlayerStomach [PlayerStomach] and try from there)
 		//GetStatStomachVolume().Set(250);
 		//GetStatStomachWater().Set(250);
-		
+
 		// for bone regen: water = 2500 and energy = 4000 so 5000 should be ok
 		GetStatWater().Set(4500);
 		GetStatEnergy().Set(4500);
 		// is get max an good idea?
 		// player.GetStatWater().Set(player.GetStatWater().GetMax());
 		// player.GetStatEnergy().Set(player.GetStatEnergy().GetMax());
-		
-		
+
+
 		// default body temperature is  37.4 -> HYPOTHERMIC_TEMPERATURE_TRESHOLD = 35.8
 		//player.GetStatTemperature().Set(37.4);
-		
+
 		// BURNING_TRESHOLD = 199 -> 100 should be fine
 		//GetStatHeatComfort().Set(100); //no temperature flashing
 		GetStatHeatBuffer().Set(25); //give players a + by default
-		
+
 		// seems unused
 		// player.GetStatHeatIsolation().Set(100);
-		
+
 		// we don't want shaking -> limit is 0.008
 		GetStatTremor().Set(GetStatTremor().GetMin());
-		
+
 		// wet if > 0.2
 		GetStatWet().Set(0);
-		
+
 		// unknown effect, don't alter yet
 		// player.GetStatStomachEnergy().Set(100);
 		// player.GetStatDiet().Set(100);
-		
+
 		// think max stamina does not break the game
 		GetStatStamina().Set(GetStatStamina().GetMax());
-		
+
 		// required for repairing and stuff, so no need to change for godmode
 		//player.GetStatSpecialty().Set(100);
 	}

@@ -7,16 +7,16 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 
 	protected int i_MinPlayers;
 	protected int i_TimeBetweenMessages;
-	
+
 	void BattleRoyaleDebug()
-	{	
+	{
 		m_ReadyList = new array<PlayerBase>();
 
 		BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
-		
+
 		if(m_DebugSettings)
 		{
-			i_MinPlayers = m_DebugSettings.minimum_players; 
+			i_MinPlayers = m_DebugSettings.minimum_players;
 			i_TimeBetweenMessages = 45;
 			b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
 			f_VoteThreshold = m_DebugSettings.ready_up_percent;
@@ -82,7 +82,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 			message += "players";
 		else
 			message += "player";
-		
+
 		message += " to connect";
 
 		if(b_UseVoteSystem)

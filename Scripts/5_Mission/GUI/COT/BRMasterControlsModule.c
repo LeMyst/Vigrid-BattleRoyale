@@ -163,7 +163,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Server called StateMachine_Next()");
         }
-        
+
     }
 
     void StateMachine_Pause()
@@ -207,7 +207,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Server called Vehicles_Start()");
         }
-        
+
     }
 
     void Vehicles_Stop()
@@ -221,7 +221,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Server called Vehicles_Stop()");
         }
-        
+
     }
 
     void Loot_Start()
@@ -266,7 +266,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     //server-side functionality
     private void Server_Resume()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] State Machine Resuming!");
@@ -276,11 +276,11 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Failed to cast GetBR() to BattleRoyaleServer");
         }
-        
+
     }
     private void Server_Pause()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] State Machine Pausing!");
@@ -293,7 +293,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     }
     private void Server_Next()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] State Machine Skipping!");
@@ -306,7 +306,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     }
     private void Server_StartLoot()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] Starting Loot System!");
@@ -319,7 +319,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     }
     private void Server_StopLoot()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] State Machine Skipping!");
@@ -332,7 +332,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     }
     private void Server_StartVehicles()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] Starting Vehicle System!");
@@ -345,7 +345,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     }
     private void Server_StopVehicles()
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] Stopping Vehicle System!");
@@ -359,7 +359,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
     private void Server_TestSpectator(PlayerBase player)
     {
-        BattleRoyaleServer m_BrServer; 
+        BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
             Print("[DayZBR COT] Testing Spectating!");
@@ -369,6 +369,6 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             Error("Failed to cast GetBR() to BattleRoyaleServer");
         }
-        
+
     }
 }

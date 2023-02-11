@@ -23,7 +23,7 @@ modded class InGameMenu
 
         string version;
 		GetGame().GetVersion( version );
-		
+
 		if ( GetDayZGame() )
 		{
 			string expansion_version = GetDayZGame().GetExpansionClientVersion();

@@ -1,4 +1,4 @@
-class BattleRoyaleHud 
+class BattleRoyaleHud
 {
     protected Widget m_Root;
 
@@ -13,14 +13,14 @@ class BattleRoyaleHud
     protected TextWidget m_CountdownTextWidget;
 
     protected ref array<ref BattleRoyaleSpectatorPlayerWidget> m_SpectatorWidgets;
-    protected bool show_spectator;    
+    protected bool show_spectator;
 
     protected bool is_shown;
 
     void BattleRoyaleHud( Widget root )
     {
         m_Root = root;
-        
+
         Init();
         ShowHud( false );
     }
@@ -103,7 +103,7 @@ class BattleRoyaleHud
             return;
         }
 
-        m_CountTextWidget.SetText( count.ToString() );   
+        m_CountTextWidget.SetText( count.ToString() );
     }
 
     void SetKillCount(int count)
@@ -170,9 +170,9 @@ class BattleRoyaleHud
                     //widget already exists! update it's player!
                     m_SpectatorWidgets[index].SetPlayer( players[i] );
                 }
-                
+
                 //update the widget! (position and stats)
-                m_SpectatorWidgets[index].Update(timeslice);   
+                m_SpectatorWidgets[index].Update(timeslice);
 
                 index++;
             }

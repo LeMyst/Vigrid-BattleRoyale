@@ -1,4 +1,4 @@
-class BattleRoyaleLootableBuilding 
+class BattleRoyaleLootableBuilding
 {
     protected Object m_Object;
     protected ref array<PlayerBase> a_NearPlayers;
@@ -65,7 +65,7 @@ class BattleRoyaleLootableBuilding
             {
                 DespawnLoot();
             }
-        }   
+        }
     }
 
     protected void SpawnLoot()
@@ -75,7 +75,7 @@ class BattleRoyaleLootableBuilding
 
         if(!b_Initialized)
             InitLoot();
-        
+
         for(int i = 0; i < a_LootPiles.Count(); i++)
         {
             ref BattleRoyaleLootPile loot_pile = a_LootPiles[i];

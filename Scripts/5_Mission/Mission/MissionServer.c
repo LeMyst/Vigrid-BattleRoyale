@@ -9,12 +9,12 @@ modded class MissionServer
 		m_player.GetInventory().CreateInInventory( "TShirt_DBR" );
 		m_player.GetInventory().CreateInInventory( "Jeans_Black" );
 		m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
-		
+
 		for(int i = 1; i < 4; i++)
 		{
 			m_player.GetInventory().CreateInInventory( "dzn_snowball_small" );
 		}
-		
+
 		StartingEquipSetup(m_player, false);
 	}
 
@@ -36,7 +36,7 @@ modded class MissionServer
 	{
 	    Print("InvokeOnConnect()");
 		super.InvokeOnConnect(player, identity);
-		
+
 		if(player)
 		{
 			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerConnected(player); //this never ran?
@@ -48,7 +48,7 @@ modded class MissionServer
 	}
 
 	override void PlayerDisconnected(PlayerBase player, PlayerIdentity identity, string uid)
-	{ 
+	{
 		if(player)
 		{
 			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerDisconnected(player, identity);
@@ -76,23 +76,23 @@ modded class MissionServer
 				}
 			}
 
-			
+
 		}
 		super.HandleBody( player );
 	}
-	
+
 	override void StartingEquipSetup(PlayerBase player, bool clothesChosen)
 	{
 		//TODO: figure out how to set inventory loadout (we'll hard code BR specific starting items here
 		//EntityAI item = m_player.GetInventory().CreateInInventory(topsArray.GetRandomElement());
-		
+
 		//i literally don't know what this is anymore
 	}
 
 	override void OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player)
 	{
 		super.OnClientRespawnEvent(identity, player);
-		
+
 		//this should never happen, but maybe it could if in the debug zone so lets handle that case
 		if(player)
 		{
@@ -113,7 +113,7 @@ modded class MissionServer
 			{
 				//can't cast current state to debug? Kick
 				if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
-				{	
+				{
 					Print("Kicking player (Not in debug state | Not a spectator)");
 					GetGame().DisconnectPlayer( identity );
 				}

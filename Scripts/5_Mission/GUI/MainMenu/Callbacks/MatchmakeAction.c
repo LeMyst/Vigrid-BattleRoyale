@@ -39,7 +39,7 @@ class MatchmakeAction {
 				m_MainMenu.CreatePopup("Failed to connect! Error " + error_msg, "Close", onclick, "Retry", onretry);
 			}
 
-            
+
             //some error occured
 
             return;
@@ -61,7 +61,7 @@ class MatchmakeAction {
         if(mm_res.wait) {
             //wait! run another matchmake in 10 seconds!
             GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater( this.RepeatRequest, 10*1000, false );
-            return;          
+            return;
         }
 
         ref ServerData p_ServerData = mm_res.server;

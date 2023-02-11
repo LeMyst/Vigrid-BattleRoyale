@@ -1,4 +1,4 @@
-class BattleRoyaleZone 
+class BattleRoyaleZone
 {
     static float f_WorldRadius = -1;
 
@@ -126,7 +126,7 @@ class BattleRoyaleZone
 
     void OnActivate(notnull ref array<PlayerBase> players)
     {
-        //This method is run before GetArea() is ever called. This can be used to change the play area size based on players. 
+        //This method is run before GetArea() is ever called. This can be used to change the play area size based on players.
         //Note that this on the main thread, therefore it must be performant.
         //we can look at CreatePlayArea / CreatePlayRadius & Init methods for examples of zone size creation
     }
@@ -135,13 +135,13 @@ class BattleRoyaleZone
     {
         float new_radius = CreatePlayRadius(p_Rad);
         m_PlayArea.SetRadius(new_radius);
-        
+
         vector new_center = "0 0 0";
         float oldX = p_Cen[0];
         float oldZ = p_Cen[2];
         float max_distance = p_Rad - new_radius; // TODO: Define default size for last zone
-        
-        while(true) 
+
+        while(true)
         {
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
             float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
@@ -202,7 +202,7 @@ class BattleRoyaleZone
                 {
                     Error("Not enough static sizes for static zone sizes! (want " + x + " have " + a_StaticSizes.Count());
                     return 10000;
-                }   
+                }
                 return a_StaticSizes[i_NumRounds - x];
             default:
                 return p_Rad * f_ConstantShrink;
@@ -259,7 +259,7 @@ class BattleRoyaleZone
     {
         if(GetGame().SurfaceIsSea(X, Z))
             return false;
-            
+
         if(GetGame().SurfaceIsPond(X, Z))
             return false;
 

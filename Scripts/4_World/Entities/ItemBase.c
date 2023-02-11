@@ -8,7 +8,7 @@ modded class ItemBase
             PlayerBase nplayer;
             if ( PlayerBase.CastTo(nplayer, player) )
             {
-                //! server - process loot pick up   
+                //! server - process loot pick up
                 if(nplayer.GetIdentity())
                 {
                     if(!GetBR().IsDebug())
@@ -34,7 +34,7 @@ modded class ItemBase
             PlayerBase nplayer;
             if ( PlayerBase.CastTo(nplayer, player) )
             {
-                //! server - process loot pick up   
+                //! server - process loot pick up
                 if(nplayer.GetIdentity())
                 {
                     if(!GetBR().IsDebug())

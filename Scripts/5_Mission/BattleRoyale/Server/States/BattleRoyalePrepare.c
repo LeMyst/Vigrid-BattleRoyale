@@ -63,7 +63,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(false), true); //fade out screen
 	}
-    
+
 	override bool IsComplete()
 	{
 	    //Print(GetName() + " IsComplete!");
@@ -139,7 +139,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         int spawn_try = 1;
 
-        while(true) 
+        while(true)
         {
             Print("Try " + spawn_try);
             spawn_try = spawn_try + 1;
@@ -192,7 +192,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             //check if random_pos is bad
             if(GetGame().SurfaceIsSea(x, z))
                 continue;
-            
+
             if(GetGame().SurfaceIsPond(x, z))
                 continue;
 
@@ -206,7 +206,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 "nam_seaice",
                 "nam_lakeice_ext"
             };
-            
+
             string surface_type;
             GetGame().SurfaceGetType(x, z, surface_type);
             if(bad_surface_types.Find(surface_type) != -1)
@@ -214,7 +214,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             vector start = random_pos + Vector( 0, 5, 0 );
             vector end = random_pos;
-            float radius = 2.0; 
+            float radius = 2.0;
 
             PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
             Object m_HitObject;
@@ -262,7 +262,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             Sleep(100);
         }
         Print("Players are disabled");
-        
+
         for (i = 0; i < pCount; i++) {
             process_player = m_Players[i];
             if (process_player) Teleport(process_player);

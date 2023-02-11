@@ -1,7 +1,7 @@
-class BattleRoyaleLastRound extends BattleRoyaleState 
+class BattleRoyaleLastRound extends BattleRoyaleState
 {
-    ref BattleRoyaleState m_PreviousSate; 
-    
+    ref BattleRoyaleState m_PreviousSate;
+
     int i_RoundTimeInSeconds;
 	bool b_DoZoneDamage;
 	int i_DamageTickTime;
@@ -21,7 +21,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
 		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
-		
+
 		lock_notif_min =  m_GameSettings.zone_notification_minutes;
 		lock_notif_sec =  m_GameSettings.zone_notification_seconds;
 
@@ -65,8 +65,8 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 				m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeToEndSeconds", new Param1<int>( sec ), false) ); //we need to store the object in case it's automatically deconstructed ?
 		}
 
-		//timer before 
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true); 
+		//timer before
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true);
 
 		//lock zone event
 		m_FinalZoneLockTimer = AddTimer( time_till_lock / 1000.0, this, "LockFinalZone", NULL, false);
@@ -92,17 +92,17 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		m_FinalZoneLockTimer.Stop();
 		for(int i = 0; i < m_MessageTimers.Count(); i++)
 			m_MessageTimers[i].Stop();
-			
+
 		//we just deactivated this round (players not yet transfered from previous state)
 		super.Deactivate();
 	}
 
-    override bool SkipState(BattleRoyaleState m_PreviousState) 
+    override bool SkipState(BattleRoyaleState m_PreviousState)
 	{
 		//only one (or less) players remaining, must skip to win state
 		if(m_PreviousState.GetPlayers().Count() <= 1)
 			return true;
-		
+
 		return false;
 	}
 
@@ -168,7 +168,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 						}
 
 						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
-					
+
 						if(!match_data.ContainsDeath(player_steamid))
 						{
 							if(!is_vehicle)
@@ -231,11 +231,11 @@ class BattleRoyaleLastRound extends BattleRoyaleState
                 vector center = current_zone.GetArea().GetCenter();
 
                 vector playerPos = player.GetPosition();
-                
+
                 //distance needs to be done in 2D, not 3D, set Z coord to 0 so this can be done
                 playerPos[1] = 0;
-                center[1] = 0; 
-                float distance = vector.Distance(playerPos, center); 
+                center[1] = 0;
+                float distance = vector.Distance(playerPos, center);
                 if(distance >= radius)
                 {
                     do_damage = true;
@@ -264,7 +264,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 						match_data.CreateDeath( player_steamid, player_position, time, "", "Zone", Vector(0,0,0) );
 					}
 				}
-                player.DecreaseHealthCoef( f_Damage ); 
+                player.DecreaseHealthCoef( f_Damage );
                 player.time_until_damage = i_DamageTickTime; //reset timer
             }
             player.time_until_damage -= timeslice;
@@ -278,20 +278,20 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		{
 			if(player.time_until_move <= 0)
 			{
-				//send movement update 
+				//send movement update
 				string steamid = player.GetIdentity().GetPlainId();
 				vector dirvector = player.GetDirection();
 				dirvector[1] = 0;
 				dirvector = dirvector.Normalized(); //renormalize
 				float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
 				//clamp range (-pi, pi]
-				if (angle_rads > Math.PI) 
-				{ 
-					angle_rads -= 2 * Math.PI; 
-				} 
-				else if (angle_rads <= -Math.PI) 
-				{ 
-					angle_rads += 2 * Math.PI; 
+				if (angle_rads > Math.PI)
+				{
+					angle_rads -= 2 * Math.PI;
+				}
+				else if (angle_rads <= -Math.PI)
+				{
+					angle_rads += 2 * Math.PI;
 				}
 				float angle = angle_rads * Math.RAD2DEG;
 
@@ -328,7 +328,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 		{
 			return prev_round.GetZone();
 		}
-		
+
 		return NULL;
 	}
 
@@ -340,7 +340,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 			message += "minutes";
 		else
 			message += "minute";
-		
+
 		MessagePlayers(message);
 	}
 
@@ -351,7 +351,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 			message += "seconds";
 		else
 			message += "second";
-		
+
 		MessagePlayers(message);
 	}
 }

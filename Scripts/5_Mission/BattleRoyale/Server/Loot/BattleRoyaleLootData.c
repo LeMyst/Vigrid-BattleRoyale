@@ -71,7 +71,7 @@ class BattleRoyaleLootData
         int index = str.IndexOf(str);
         if(index == -1)
             return -1;
-        
+
         int val = index;
         while(val != -1)
         {
@@ -115,9 +115,9 @@ class BattleRoyaleLootData
                     ref BattleRoyaleLootCategory category = new BattleRoyaleLootCategory();
                     Print("[Loot] Loading Category " + fileName);
                     category.Load(fileName);
-                    
+
                     AddCategory(category); //insert this category to our fields
-                    
+
                 }
                 else
                 {
@@ -130,7 +130,7 @@ class BattleRoyaleLootData
         files = FindFilesInLocation( BATTLEROYALE_LOOT_ENTRIES_FOLDER );
         for ( i = 0; i < files.Count(); i++ )
 		{
-            
+
 			pos = LastIndexOf( files[i], "." );
             if ( pos > -1 )
 			{
@@ -145,14 +145,14 @@ class BattleRoyaleLootData
                     ref BattleRoyaleLootEntry entry = new BattleRoyaleLootEntry();
                     Print("[Loot] Loading Entry " + fileName);
                     entry.Load(fileName);
-                    
+
                     AddEntry( entry );
                 }
                 else
                 {
                     Print("[Loot] Found entry file with invalid extension `" + ext + "`");
                 }
-                
+
             }
         }
     }
@@ -164,7 +164,7 @@ class BattleRoyaleLootData
         for(int i = 0; i < m_DataFields.Count(); i++)
         {
             ref BattleRoyaleLootDataField field = m_DataFields.GetElement(i);
-            
+
             cur_value += field.GetWeight();
 
             if(cur_value > value)
@@ -220,7 +220,7 @@ class BattleRoyaleLootData
 
         //get all possible magazines for this item
         string configPath = "CfgWeapons " + normalized_name + " magazines";
-        ref array<string> magazines = new array<string>(); 
+        ref array<string> magazines = new array<string>();
         GetGame().ConfigGetTextArray(configPath,magazines);
 
         ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_MAGAZINES_CATEGORY ).GetEntries();
@@ -263,7 +263,7 @@ class BattleRoyaleLootData
 
         //get all possible ammo for this item
         string configPath = "CfgWeapons " + normalized_name + " chamberableFrom";
-        ref array<string> ammo = new array<string>(); 
+        ref array<string> ammo = new array<string>();
         GetGame().ConfigGetTextArray(configPath,ammo);
 
         ref array<ref BattleRoyaleLootEntry> entries = m_DataFields.Get( BATTLEROYALE_LOOT_AMMO_CATEGORY ).GetEntries();
@@ -323,7 +323,7 @@ class BattleRoyaleLootData
             return result;
         }
 
-        ref array<string> weapon_slots = new array<string>(); 
+        ref array<string> weapon_slots = new array<string>();
         string configPath = "CfgWeapons " + normalized_name + " attachments";
         GetGame().ConfigGetTextArray(configPath,weapon_slots);
 
@@ -338,7 +338,7 @@ class BattleRoyaleLootData
                 string attachment_name = entry.styles[j];
 
                 configPath = "CfgVehicles " + attachment_name + " inventorySlot";
-                ref array<string> attachment_slots = new array<string>(); 
+                ref array<string> attachment_slots = new array<string>();
                 GetGame().ConfigGetTextArray(configPath,attachment_slots);
 
                 string matching_slot = GetCollide(weapon_slots, attachment_slots);

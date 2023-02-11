@@ -35,7 +35,7 @@ class BattleRoyaleLootPile
         the idea here is we'll get "model_pos", "radius", and "height" as an input,
         if b_Active (above) then run this raycast
         if the raycast is successful, GetWorldPos() should return the raycast position result
-    
+
         vector start = Vector(0, 0 ,0); //this is the ModelToWorld of the Point "pos" field
         vector end = start + Vector(0, height, 0); //height is the "height" field
         float radius = 0; //radius is the "radius" field
@@ -93,14 +93,14 @@ class BattleRoyaleLootPile
             {
                 Error("Trying to spawn `" + class_name + "` with mags, but none are found!");
             }
-            
+
         }
 
         if(m_Entry.SpawnWithAmmo())
         {
 
             ref array<string> all_ammo = BattleRoyaleLootData.GetData().GetAllAmmo( class_name );
-            
+
             if(all_ammo.Count() > 0)
             {
                 int num_ammo = BattleRoyaleLootSettings.Cast( BattleRoyaleConfig.GetConfig().GetConfig("LootData") ).num_ammoboxs_to_spawn_with;
@@ -151,7 +151,7 @@ class BattleRoyaleLootPile
                                 val += entry.weight;
                                 if(val > res) //if we iterated above our result, than this item is the one we want
                                 {
-                                    break; //this entry is correct so exit the for loop    
+                                    break; //this entry is correct so exit the for loop
                                 }
                             }
 
@@ -161,7 +161,7 @@ class BattleRoyaleLootPile
 
                             // Figure out if this needs batteryd
                             string configPath = "CfgVehicles " + attachment_classname + " attachments";
-                            ref array<string> attach_subattach_list = new array<string>(); 
+                            ref array<string> attach_subattach_list = new array<string>();
                             GetGame().ConfigGetTextArray(configPath, attach_subattach_list);
                             if(attach_subattach_list.Find("BatteryD") != -1)
                             {
@@ -269,9 +269,9 @@ class BattleRoyaleLootPile
         Print("Despawning Loot Pile");
 
         int i;
-        
+
         //TODO: instead of disabling activity when moved,
-        // Remove the GetType() name from `class_names` if the item was moved. 
+        // Remove the GetType() name from `class_names` if the item was moved.
         // This way unmoved items in the pile can still despawn & save perf
         bool was_moved = false;
         for(i = 0; i < spawned_items.Count(); i++)

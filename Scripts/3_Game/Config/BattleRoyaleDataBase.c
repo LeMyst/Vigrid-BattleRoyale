@@ -1,4 +1,4 @@
-class BattleRoyaleDataBase 
+class BattleRoyaleDataBase
 {
     string GetPath()
     {

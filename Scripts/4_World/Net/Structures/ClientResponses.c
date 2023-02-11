@@ -1,4 +1,4 @@
-//--- response obejcts 
+//--- response obejcts
 class MatchMakingResponse {
     bool wait;
     ref ServerData server;

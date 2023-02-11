@@ -9,7 +9,7 @@ class BattleRoyaleSpectators
     {
         m_Players = new array<PlayerBase>();
         m_Timer = new Timer;
-        
+
         a_AllowedSteamIds = BattleRoyaleConfig.GetConfig().GetGameData().allowed_spectate_steamid64;
         if(!a_AllowedSteamIds)
         {
@@ -67,7 +67,7 @@ class BattleRoyaleSpectators
     {
         m_Players.Insert(player);
         //spin up a thread to handle spectator camera initialization
-        GetGame().GameScript.Call(this, "InitSpectatorCamera", player); 
+        GetGame().GameScript.Call(this, "InitSpectatorCamera", player);
     }
 
     void Update(float delta)
@@ -87,7 +87,7 @@ class BattleRoyaleSpectators
         {
             //if we fail to figure out the correct position, we'll just use the pre-existing head position of the spectators body
             vector position = player.GetBonePositionWS( player.GetBoneIndexByName( "Head" ) );
-            
+
             //This is a very hacky way to get the players previous death position, we'll obviously need to find a better way to do so
             string steam_id = identity.GetPlainId();
             BattleRoyaleServer server = BattleRoyaleServer.Cast( GetBR() );
@@ -126,14 +126,14 @@ class BattleRoyaleSpectators
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetZone().GetArea() ), true, identity);
                     //tell the client we don't know the next play area
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true, identity);
-                } 
+                }
                 else
                 {
                     //-- we are in a round! send zones!
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetPreviousZone().GetArea() ), true, identity);
                     //tell the client the next play area
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetZone().GetArea() ), true, identity);
-                }   
+                }
             }
             ref BattleRoyaleLastRound br_last_round;
             if(Class.CastTo(br_last_round, br_server.GetCurrentState()))

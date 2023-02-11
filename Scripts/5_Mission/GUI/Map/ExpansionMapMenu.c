@@ -12,7 +12,7 @@ modded class ExpansionMapMenu {
         if(!Class.CastTo(m_BattleRoyaleClient, DayZBR))
         {
             Error("Failed to cast DayZBR to BattleRoyaleClient!");
-        } 
+        }
 
         super.Init();
 
@@ -82,7 +82,7 @@ modded class ExpansionMapMenu {
         int index = 0;
 
         array<string> local_identities = new array<string>();
-        
+
         //create new markers if necessary
         for(i = 0; i < players.Count(); i++)
         {
@@ -100,7 +100,7 @@ modded class ExpansionMapMenu {
                 Print("Spectator Map: Inserting new local player marker");
                 m_SpectatorPlayerMarkers.Insert( new BattleRoyaleMapMarkerPlayerArrow( layoutRoot, m_MapWidget ) );
             }
-            
+
             //update player (if necessary)
             m_SpectatorPlayerMarkers[index].SetPlayer( players[i] );
 
@@ -117,10 +117,10 @@ modded class ExpansionMapMenu {
         for(i = players.Count(); i < m_SpectatorPlayerMarkers.Count(); i++)
         {
             Print("Spectator Map: Deleting local player marker");
-            m_SpectatorPlayerMarkers[i].SetPlayer(null); //null out player 
+            m_SpectatorPlayerMarkers[i].SetPlayer(null); //null out player
             m_Markers.RemoveItem( m_SpectatorPlayerMarkers[i] ); //remove from render list
         }
-        
+
 
         if(!m_NetworkPlayerMarkers)
         {
@@ -162,7 +162,7 @@ modded class ExpansionMapMenu {
                     m_Markers.RemoveItem( m_NetworkPlayerMarkers[Id] );
                 }
             }
-            
+
         }
     }
 
@@ -171,7 +171,7 @@ modded class ExpansionMapMenu {
 	{
         //Print("Updating Zones...");
         UpdateZones();
-        
+
         //spectator markers
         if(GetGame() && GetGame().GetMission())
         {

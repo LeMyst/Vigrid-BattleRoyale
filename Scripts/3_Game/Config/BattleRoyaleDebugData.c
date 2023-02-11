@@ -20,6 +20,6 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
     override void Load()
     {
         JsonFileLoader<BattleRoyaleDebugData>.JsonLoadFile(GetPath(), this);
-        
+
     }
 }

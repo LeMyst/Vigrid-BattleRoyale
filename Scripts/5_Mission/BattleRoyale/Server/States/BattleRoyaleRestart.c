@@ -5,7 +5,7 @@ class BattleRoyaleRestart extends BattleRoyaleState
 	{
 		super.Activate();
         Print("[Restart State] Restarting!");
-		
+
 		m_ShutdownTimer = AddTimer(10.0, this, "Shutdown", NULL, false);
 	}
 

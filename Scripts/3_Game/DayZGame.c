@@ -93,7 +93,7 @@ modded class DayZGame {
 	//{
 		//SetGameState( DayZGameState.MAIN_MENU );
 		//SetLoadState( DayZLoadState.MAIN_MENU_START );
-	
+
 		//Print("[ DayZGame ] Start Dummy Mission for client...");
 		//PlayMission(m_DummyMissionPath);
 		//DeleteTitleScreen();
@@ -109,7 +109,7 @@ modded class DayZGame {
 
 	//--- above this is a patch for GetRestApi
 
-	string GetBattleRoyaleClientVersion() 
+	string GetBattleRoyaleClientVersion()
 	{
 		return BATTLEROYALE_VERSION;
 	}

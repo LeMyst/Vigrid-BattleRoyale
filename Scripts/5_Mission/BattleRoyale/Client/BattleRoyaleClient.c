@@ -117,7 +117,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 		//2d distance check
 		center[1] = 0;
-		playerpos[1] = 0; 
+		playerpos[1] = 0;
 		float distance_from_center = vector.Distance(center, playerpos);
 		float distance_from_outside = distance_from_center - play_area.GetRadius();
 		return distance_from_outside;
@@ -207,7 +207,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void SetCountdownSeconds(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<int> data;
-		if( !ctx.Read( data ) ) 
+		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ SetCountdownSeconds RPC");
 			return;
@@ -228,7 +228,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( type == CallType.Client )
 		{
 			Param4<string, string, vector, vector> data;
-			if( !ctx.Read( data ) ) 
+			if( !ctx.Read( data ) )
 			{
 				Error("FAILED TO READ UpdateMapEntityData RPC");
 				return;
@@ -251,14 +251,14 @@ class BattleRoyaleClient extends BattleRoyaleBase
 			{
 				m_SpectatorMapEntityData.Insert(data.param1, new BattleRoyaleSpectatorMapEntityData( data.param2, data.param3, data.param4 ));
 			}
-			
+
 		}
 	}
 
 	void SetPlayerCount(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<int> data;
-		if( !ctx.Read( data ) ) 
+		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ SETPLAYERCOUNT RPC");
 			return;
@@ -272,7 +272,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<bool> data;
-		if( !ctx.Read( data ) ) 
+		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ SETINPUT RPC");
 			return;
@@ -287,7 +287,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void SetFade(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<bool> data;
-		if( !ctx.Read( data ) ) 
+		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ SETFADE RPC");
 			return;
@@ -307,7 +307,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 		if ( type == CallType.Client )
 		{
 			Param2<float, float> data;
-			if( !ctx.Read( data ) ) 
+			if( !ctx.Read( data ) )
 			{
 				Error("FAILED TO READ UpdateEntityHealth RPC");
 				return;
@@ -355,7 +355,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void UpdateCurrentPlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<ref BattleRoyalePlayArea> data;
-		if( !ctx.Read( data ) ) 
+		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ UpdateCurrentPlayArea RPC");
 			return;
@@ -370,7 +370,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 	void UpdateFuturePlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
 		Param1<ref BattleRoyalePlayArea> data;
-		if( !ctx.Read( data ) ) 
+		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ UpdateFuturePlayArea RPC");
 			return;
@@ -410,6 +410,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
 	override void OnPlayerKilled(PlayerBase killed, Object killer)
 	{
-		//unused	
+		//unused
 	}
 }

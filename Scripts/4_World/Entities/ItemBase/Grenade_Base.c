@@ -9,7 +9,7 @@ modded class Grenade_Base
 
     override void EEKilled(Object killer)
 	{
-        //TODO: if killer is a player, then 
+        //TODO: if killer is a player, then
         PlayerBase pbKiller;
         if(Class.CastTo( pbKiller, killer ))
         {

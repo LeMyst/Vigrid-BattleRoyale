@@ -1,5 +1,5 @@
 class BattleRoyaleVehicleData extends BattleRoyaleDataBase
-{   
+{
     ref array<ref BattleRoyaleVehicleDataSerialized> m_VehicleData;
 
     void BattleRoyaleVehicleData()
@@ -96,7 +96,7 @@ class BattleRoyaleVehicleDataSerialized : Managed
         {
             //backwards compatibility for vehicles
             this.Weight = 1;
-            Save();    
+            Save();
         }
     }
 }

@@ -14,7 +14,7 @@ modded class MissionGameplay
 	override void OnInit()
 	{
 		super.OnInit();
-	
+
 		m_BattleRoyale = new BattleRoyaleClient;
 
 		InitBRhud();
@@ -32,7 +32,7 @@ modded class MissionGameplay
 			Print("HUD Initialized");
 		}
 	}
-	
+
 	bool IsInSpectator()
 	{
 		return is_spectator;
@@ -72,7 +72,7 @@ modded class MissionGameplay
 			m_BattleRoyaleHud.ShowCount( false );
 			return;
 		}
-		
+
 		m_BattleRoyaleHud.ShowCount( true );
 		m_BattleRoyaleHud.SetCount( count );
 	}
@@ -87,7 +87,7 @@ modded class MissionGameplay
 	override void OnKeyPress(int key)
 	{
 		super.OnKeyPress(key);
-	
+
 		if( key == KeyCode.KC_F1 )
 		{
 			BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();

@@ -18,7 +18,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 		super.Activate();
 
 		ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
-		
+
 		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{
@@ -36,7 +36,7 @@ class BattleRoyaleWin extends BattleRoyaleState
 			}
 			HandleWinner(winner);
 		}
-		
+
 		//SetEnd must be called after we create winner
 		BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetEnd( GetGame().GetTime() ); //match end time logging
 

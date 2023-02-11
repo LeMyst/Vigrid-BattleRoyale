@@ -181,7 +181,7 @@ class ServerData extends BRServer {
 	{
 		TStringArray parts = new TStringArray;
 		connection.Split(":",parts);
-		
+
 		return parts.Get(0);
 	}
 
@@ -398,7 +398,7 @@ class MatchData extends BRRawMatch {
 
         events.loots.Insert( brevent );
     }
-    
+
     //NOT IMPLEMENTED!!!
     void Airdrop(vector pos, int time)
     {

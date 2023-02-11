@@ -6,7 +6,7 @@ modded class MainMenu
 	protected ButtonWidget m_PopupButton_2;
 	protected ref PopupButtonCallback popup_onClick;
 	protected ref PopupButtonCallback popup_onClick2;
-	
+
 	protected ImageWidget m_Logo;
 
 	override Widget Init()
@@ -14,7 +14,7 @@ modded class MainMenu
 		Print("INITIALIZING BR IN ONLINE MODE");
 
 		super.Init(); // this calls dayz expansion init
-		
+
 		//ensure popup message is initialized
 		if(!m_PopupMessage)
 		{
@@ -25,18 +25,18 @@ modded class MainMenu
 			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
 		}
 		ClosePopup(); //if init is called twice, close any popup that exists
-	
+
 		m_Logo = ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
 			Error("Failed to load imageset image");
-		
+
 		//m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
 
 		m_ChooseServer.Show( false );
-		
+
 		string version;
 		GetGame().GetVersion( version );
-		
+
 		if ( GetDayZGame() )
 		{
 			string expansion_version = GetDayZGame().GetExpansionClientVersion();
@@ -49,7 +49,7 @@ modded class MainMenu
 		}
 
 		if(OnStart())
-		{		
+		{
 			Print("You are running a developer build of DayZBR");
 		}
 		else
@@ -58,10 +58,10 @@ modded class MainMenu
 		}
 
 		m_LastPlayedTooltip.Show(false);// ensure last played is not shown
-		
+
 		return layoutRoot;
 	}
-	
+
 //	override void ShowNewsfeed(bool state)
 //	{
 //		super.ShowNewsfeed( false ); //completely disable news feeds
@@ -69,7 +69,7 @@ modded class MainMenu
 
 	bool OnStart(bool force_restart = false)
 	{
-		
+
 		//BattleRoyaleAPI api = BattleRoyaleAPI.GetAPI();
 		//if(api.GetCurrentPlayer() && !force_restart)
 		//{
@@ -91,7 +91,7 @@ modded class MainMenu
 			Error("DBR ERROR: p_User = NULL");
 			return false;
 		}
-		
+
 
 		//--- connecting to BattleRoyale network UI
 		//CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
@@ -185,7 +185,7 @@ modded class MainMenu
 			}
 			popup_onClick2.OnButtonClick();
 		}
-		
+
 	}
 
 	override bool OnClick( Widget w, int x, int y, int button )
@@ -223,7 +223,7 @@ modded class MainMenu
 		super.LoadMods(); //initialize like normal
 
 		//our goal here is to only show BR as a simplemod entry
-		ref array<ref ModInfo> modArray = new array<ref ModInfo>;		
+		ref array<ref ModInfo> modArray = new array<ref ModInfo>;
 		GetGame().GetModInfos( modArray );
 		for(int i = 0; i < modArray.Count(); i++)
 		{
@@ -246,7 +246,7 @@ modded class MainMenu
 		if( m_ModsSimple )
 			delete m_ModsSimple;
 
-		ref array<ref ModInfo> modArray = new array<ref ModInfo>;	
+		ref array<ref ModInfo> modArray = new array<ref ModInfo>;
 		modArray.Insert(dbr_mod_info);
 		m_ModsSimple = new ModsMenuSimple(modArray, layoutRoot.FindAnyWidget("ModsSimple"), m_ModsDetailed);
 	}

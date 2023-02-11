@@ -6,7 +6,7 @@ modded class LoadingScreen
 
 		JsonFileLoader< ref array< ref ExpansionLoadingScreenBackground > >.JsonLoadFile( DAYZBR_LOADING_SCREENS_PATH, m_Backgrounds );
 		JsonFileLoader< ref array< ref ExpansionLoadingScreenMessageData > >.JsonLoadFile( DAYZBR_LOADING_MESSAGES_PATH, m_MessageJson );
-		
+
 		m_ImageLogoMid.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
         m_ImageLogoCorner.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
         m_ModdedWarning.SetText( BATTLEROYALE_LOADING_MODDED_MESSAGE );
@@ -27,7 +27,7 @@ modded class LoadingScreen
 
 		m_MessageJson.Clear();
         JsonFileLoader< ref array< ref ExpansionLoadingScreenMessageData > >.JsonLoadFile( DAYZBR_LOADING_MESSAGES_PATH, m_MessageJson );
-		
+
 		super.Show();
 	}
 }
