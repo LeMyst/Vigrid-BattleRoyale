@@ -96,6 +96,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
         pants.GetInventory().CreateEntityInCargo("HuntingKnife");
         pants.GetInventory().CreateEntityInCargo("BandageDressing");
         pants.GetInventory().CreateEntityInCargo("Compass");
+        pants.GetInventory().CreateEntityInCargo("Battery9V");
+        pants.GetInventory().CreateEntityInCargo("Battery9V");
 
         return true;
     }
