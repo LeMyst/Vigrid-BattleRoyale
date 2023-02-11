@@ -1,6 +1,3 @@
-
-
-
 class BRMasterControlsForm extends JMFormBase
 {
     private UIActionScroller m_sclr_MainActions;
