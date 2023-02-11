@@ -185,11 +185,10 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
 		//Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
 		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
-		//BattleRoyaleAPIData m_APIData = config_data.GetApiData();
 
 		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
 		vector debug_pos = m_Debug.GetCenter();
-		player.SetPosition(debug_pos);		
+		player.SetPosition(debug_pos);
 
         bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
 

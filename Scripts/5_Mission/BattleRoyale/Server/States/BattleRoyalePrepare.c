@@ -125,7 +125,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     {
         // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/Town/TownFlags.c
         ref array<ref Town> villages = Town.GetMapTowns(15);
-        Town random_village = villages[Math.RandomInt(0,villages.Count())];
+        Town random_village = villages[Math.RandomInt(0, villages.Count())];
         return random_village;
     }
 
@@ -202,15 +202,14 @@ class BattleRoyalePrepare extends BattleRoyaleState
             if(!m_Zone.IsInZone(x, z))
                 continue;
 
-            //Namalsk snow biome check
-            ref array<string> bad_surface_types_namalsk = {
+            ref array<string> bad_surface_types = {
                 "nam_seaice",
                 "nam_lakeice_ext"
             };
             
             string surface_type;
             GetGame().SurfaceGetType(x, z, surface_type);
-            if(bad_surface_types_namalsk.Find(surface_type) != -1)
+            if(bad_surface_types.Find(surface_type) != -1)
                 continue;
 
             vector start = random_pos + Vector( 0, 5, 0 );

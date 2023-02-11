@@ -192,7 +192,6 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
 			Error("GAME SETTINGS IS NULL");
 			i_HealTickTime = DAYZBR_DEBUG_HEAL_TICK;
 		}
-		
 	}
 
 	override string GetName()
