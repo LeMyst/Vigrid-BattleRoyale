@@ -57,6 +57,7 @@ static const string BATTLEROYALE_LOADING_SCREENS_PATH = "DayZBR-Mod/GUI/textures
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
+static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 5; //multiplier from base game values on blood regen speed
 
 
 //TODO: figure out which mission is loaded in realtime (or use a server-specific setting)
