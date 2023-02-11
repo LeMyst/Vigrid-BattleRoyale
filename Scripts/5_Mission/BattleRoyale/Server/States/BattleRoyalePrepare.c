@@ -141,43 +141,48 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         while(true) 
         {
-            float x;
-            float y;
-            float z;
-
             Print("Try " + spawn_try);
             spawn_try = spawn_try + 1;
+            float edge_pad = 0.1;
 
-            if (m_GameSettings.spawn_in_villages)
+            float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
+            float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+            float y = GetGame().SurfaceY(x, z);
+
+            if (m_GameSettings.spawn_in_villages && spawn_try < 25)
             {
                 village = GetRandomVillage();
-                float village_x = village.Position[0];
-                float village_z = village.Position[2];
+                if (village.Name != "")
+                {
+                    float village_x = village.Position[0];
+                    float village_z = village.Position[2];
 
-                float village_pad;
+                    float village_pad;
 
-                if (village.Type == TownFlags.CITY)
-                    village_pad = 300.0;
-                else if (village.Type == TownFlags.CAPITAL)
-                    village_pad = 500.0;
-                else
-                    village_pad = 100.0;
+                    if (village.Type == TownFlags.CITY)
+                        village_pad = 300.0;
+                    else if (village.Type == TownFlags.CAPITAL)
+                        village_pad = 500.0;
+                    else
+                        village_pad = 100.0;
 
-                x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
-                z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
-                y = GetGame().SurfaceY(x, z);
+                    x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
+                    z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
+                    y = GetGame().SurfaceY(x, z);
 
-                Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ")");
+                    Print("Trying to spawn player " + process_player.GetIdentity().GetName() + " to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ") with a radius of " + village_pad);
 
-                if (village.Name == "Kumyrna")  // Skip Kumyrna because no loot
+                    if (village.Name == "Kumyrna")  // Skip Kumyrna because no loot
+                        continue;
+                    if (village.Name == "Altar")  // Skip Altar because no loot
+                        continue;
+                    if (village.Name == "Radio Zenit")  // Skip Altar because no loot
+                        continue;
+                } else {
+                    Print("Another fucked up village!");
                     continue;
+                }
 
-            } else {
-                float edge_pad = 0.1;
-
-                x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-                z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
-                y = GetGame().SurfaceY(x, z);
             }
 
             random_pos[0] = x;
