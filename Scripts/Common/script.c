@@ -1,0 +1,1 @@
+#define DAYZ_BATTLEROYALE

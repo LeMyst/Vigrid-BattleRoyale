@@ -27,9 +27,7 @@ class CfgMods
 
 		dependencies[]=
 		{
-			"Game",
-			"World",
-			"Mission"
+			"Game", "World", "Mission"
 		};
 
 		class defs
@@ -41,19 +39,21 @@ class CfgMods
 					"DayZBR-Mod/GUI/imagesets/dayzbr_gui.imageset"
 				};
 			};
-			class engineScriptModule
+			/*class engineScriptModule
 			{
 				value = "";
 				files[] =
 				{
+					"DayZBR-Mod/Scripts/Common",
 					"DayZBR-Mod/Scripts/1_Core"
 				};
-			};
+			};*/
 			class gameLibScriptModule
 			{
 				value = "";
 				files[] =
 				{
+					"DayZBR-Mod/Scripts/Common",
 					"DayZBR-Mod/Scripts/2_GameLib"
 				};
 			};
@@ -62,6 +62,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
+					"DayZBR-Mod/Scripts/Common",
 					"DayZBR-Mod/Scripts/3_Game"
 				};
 			};
@@ -70,6 +71,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
+					"DayZBR-Mod/Scripts/Common",
 					"DayZBR-Mod/Scripts/4_World"
 				};
 			};
@@ -78,6 +80,7 @@ class CfgMods
 				value = "";
 				files[] =
 				{
+					"DayZBR-Mod/Scripts/Common",
 					"DayZBR-Mod/Scripts/5_Mission"
 				};
 			};
