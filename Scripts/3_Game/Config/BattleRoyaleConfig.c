@@ -53,7 +53,7 @@ class BattleRoyaleConfig
             Error("BattleRoyaleServerData Setting Constructor Returned NULL");
 
         //--- paste it here
-        BattleRoyaleLootSettings p_LootData = new BattleRoyaleLootSettings;
+        /*BattleRoyaleLootSettings p_LootData = new BattleRoyaleLootSettings;
         if(p_LootData)
             m_Configs.Insert("LootData", p_LootData);
         else
@@ -63,7 +63,7 @@ class BattleRoyaleConfig
         if(p_VehicleData)
             m_Configs.Insert("VehicleData", p_VehicleData);
         else
-            Error("BattleRoyaleVehicleData Setting Constructor Returned NULL");
+            Error("BattleRoyaleVehicleData Setting Constructor Returned NULL");*/
     }
 
     void Load()

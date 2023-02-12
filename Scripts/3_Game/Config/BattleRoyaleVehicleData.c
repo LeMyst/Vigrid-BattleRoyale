@@ -1,4 +1,4 @@
-class BattleRoyaleVehicleData extends BattleRoyaleDataBase
+/*class BattleRoyaleVehicleData extends BattleRoyaleDataBase
 {
     ref array<ref BattleRoyaleVehicleDataSerialized> m_VehicleData;
 
@@ -100,3 +100,4 @@ class BattleRoyaleVehicleDataSerialized : Managed
         }
     }
 }
+*/

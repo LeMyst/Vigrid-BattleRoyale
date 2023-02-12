@@ -1,4 +1,4 @@
-class BattleRoyaleLootSettings extends BattleRoyaleDataBase
+/*class BattleRoyaleLootSettings extends BattleRoyaleDataBase
 {
     float chance_to_spawn_building = 0.95;
     float chance_to_spawn_pile = 0.5;
@@ -23,3 +23,4 @@ class BattleRoyaleLootSettings extends BattleRoyaleDataBase
         JsonFileLoader<BattleRoyaleLootSettings>.JsonLoadFile(GetPath(), this);
     }
 }
+*/

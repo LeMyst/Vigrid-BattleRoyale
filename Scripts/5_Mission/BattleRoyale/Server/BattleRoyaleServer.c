@@ -1,9 +1,8 @@
-
 class BattleRoyaleServer extends BattleRoyaleBase
 {
     protected ref BattleRoyaleSpectators m_SpectatorSystem;
-    protected ref BattleRoyaleVehicles m_VehicleSystem;
-    protected ref BattleRoyaleLoot m_LootSystem;
+    //protected ref BattleRoyaleVehicles m_VehicleSystem;
+    //protected ref BattleRoyaleLoot m_LootSystem;
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
 
@@ -406,7 +405,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
         return -1;
     }
 
-    ref BattleRoyaleVehicles GetVehicleSystem()
+    /*ref BattleRoyaleVehicles GetVehicleSystem()
     {
         return m_VehicleSystem;
     }
@@ -414,7 +413,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
     ref BattleRoyaleLoot GetLootSystem()
     {
         return m_LootSystem;
-    }
+    }*/
 
     ref BattleRoyaleSpectators GetSpectatorSystem()
     {
