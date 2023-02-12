@@ -6,6 +6,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
     private BattleRoyaleGameData m_GameSettings;
 
+    private ref array<ref Town> villages;
+
     void BattleRoyalePrepare()
     {
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
@@ -49,12 +51,12 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
-        GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
-
         Print("Reset date time to random");
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(7, 14), 0);
+
+        GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
 	}
 
 	override void Deactivate()
@@ -124,7 +126,34 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected Town GetRandomVillage()
     {
         // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/Town/TownFlags.c
-        ref array<ref Town> villages = Town.GetMapTowns(15);
+        if(!villages)
+        {
+            villages = new array<ref Town>;
+
+            ref array<ref Town> temp_villages = Town.GetMapTowns(TownFlags.CAPITAL | TownFlags.CITY | TownFlags.VILLAGE | TownFlags.CAMP);
+            Print(temp_villages);
+            for(int i = 0; i < temp_villages.Count(); i++)
+            {
+                ref Town temp_village = temp_villages[i];
+                Print("- " + i + ". " + temp_village.Name + " (" + Town.GetTownTypeString(temp_village.Type) + ")");
+
+                if(temp_village.Name == "" || Town.GetTownTypeString(temp_village.Type) == "")
+                    continue;
+
+                if(temp_village.Name == "Kumyrna")  // Ruins
+                    continue;
+
+                if(temp_village.Name == "Skalisty")  // South-east island
+                    continue;
+
+                if(temp_village.Name == "Shkolnik")  // North-east BR lobby
+                    continue;
+
+                villages.Insert(temp_village)
+            }
+
+            Print(villages);
+        }
         Town random_village = villages[Math.RandomInt(0, villages.Count())];
         return random_village;
     }
@@ -149,7 +178,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
             float y = GetGame().SurfaceY(x, z);
 
-            if (m_GameSettings.spawn_in_villages && spawn_try < 25)
+            if (m_GameSettings.spawn_in_villages && spawn_try < 100)
             {
                 village = GetRandomVillage();
                 if (village.Name != "")
@@ -171,13 +200,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
                     y = GetGame().SurfaceY(x, z);
 
                     Print("Trying to spawn player " + process_player.GetIdentity().GetName() + " to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ") with a radius of " + village_pad);
-
-                    if (village.Name == "Kumyrna")  // Skip Kumyrna because no loot
-                        continue;
-                    if (village.Name == "Altar")  // Skip Altar because no loot
-                        continue;
-                    if (village.Name == "Radio Zenit")  // Skip Altar because no loot
-                        continue;
                 } else {
                     Print("Another fucked up village!");
                     continue;
@@ -254,9 +276,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
         int i;
         PlayerBase process_player;
 
-        int pCount = m_Players.Count();
+        int pCount = m_PlayerList.Count();
         for (i = 0; i < pCount; i++) {
-            process_player = m_Players[i];
+            process_player = m_PlayerList[i];
             if (process_player) DisableInput(process_player);
 
             Sleep(100);
@@ -264,7 +286,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         Print("Players are disabled");
 
         for (i = 0; i < pCount; i++) {
-            process_player = m_Players[i];
+            process_player = m_PlayerList[i];
             if (process_player) Teleport(process_player);
 
             Sleep(100);
@@ -275,12 +297,20 @@ class BattleRoyalePrepare extends BattleRoyaleState
         Sleep(1000);
 
         for (i = 0; i < pCount; i++) {
-            process_player = m_Players[i];
+            process_player = m_PlayerList[i];
             if (process_player) GiveStartingItems(process_player);
 
             Sleep(100);
         }
         Print("Gave starting items");
+
+        for (i = 0; i < pCount; i++) {
+            process_player = m_PlayerList[i];
+            if (process_player) process_player.ResetPlayer(true);
+
+            Sleep(100);
+        }
+        Print("Healed players");
 
         Deactivate();
     }
