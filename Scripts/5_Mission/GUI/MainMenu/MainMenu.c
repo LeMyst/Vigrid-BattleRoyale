@@ -126,7 +126,7 @@ modded class MainMenu
 		//api.RequestMatchmakeAsync(p_PlayerWebData, mmaction, "OnMatchmakeComplete", GetSelectedRegion());
 		//GetGame().Connect(this, "127.0.0.1", 2302, "");
 		Print("Play()");
-		g_Game.ConnectToBR();
+		//g_Game.ConnectToBR();
 	}
 
 	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL, string button_text_2 = "",  ref PopupButtonCallback onClickCallback_2 = NULL )
