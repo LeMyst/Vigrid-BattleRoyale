@@ -2,7 +2,7 @@ modded class ActionGetOutTransport
 {
     override void OnEndServer( ActionData action_data )
     {
-		GetOutTransportActionData got_action_data = GetOutTransportActionData.Cast(action_data);
+        GetOutTransportActionData got_action_data = GetOutTransportActionData.Cast(action_data);
         if(got_action_data)
         {
             PlayerBase player = action_data.m_Player;

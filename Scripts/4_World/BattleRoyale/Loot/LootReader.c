@@ -147,18 +147,18 @@ class LootReaderXMLCallback extends CF_XML_Callback
     {
         CF_XML_Element ele = document.Get( 1 ).GetContent(); //read <prototype>
         for ( int i = 0; i < ele.Count(); ++i )
-		{
-			CF_XML_Tag tag = ele.Get( i );
-			if ( tag.GetName() != "group" )
-				continue; //this is triggered when we hit "defaults"
+        {
+            CF_XML_Tag tag = ele.Get( i );
+            if ( tag.GetName() != "group" )
+                continue; //this is triggered when we hit "defaults"
 
-			ref BattleRoyaleLootPosition entry = new BattleRoyaleLootPosition();
+            ref BattleRoyaleLootPosition entry = new BattleRoyaleLootPosition();
             string name = tag.GetAttribute( "name" ).ValueAsString();
             name.ToLower();
-			m_Entries.Insert(name, entry);
+            m_Entries.Insert(name, entry);
 
-			array< CF_XML_Tag > containers = tag.GetContent().Get( "container" );
-			array< CF_XML_Tag > usages = tag.GetContent().Get( "usage" );
+            array< CF_XML_Tag > containers = tag.GetContent().Get( "container" );
+            array< CF_XML_Tag > usages = tag.GetContent().Get( "usage" );
             int j;
             for(j = 0; j < usages.Count(); ++j)
             {
@@ -168,14 +168,14 @@ class LootReaderXMLCallback extends CF_XML_Callback
                 entry.AddUsage(name);
             }
 
-			for (j = 0; j < containers.Count(); ++j )
-			{
+            for (j = 0; j < containers.Count(); ++j )
+            {
                 ref BattleRoyaleLootContainer container = new BattleRoyaleLootContainer();
                 entry.AddContainer(container);
 
-				array< CF_XML_Tag > points = containers[j].GetContent().Get( "point" );
-				array< CF_XML_Tag > categories = containers[j].GetContent().Get( "category" );
-				array< CF_XML_Tag > tags = containers[j].GetContent().Get( "tag" );
+                array< CF_XML_Tag > points = containers[j].GetContent().Get( "point" );
+                array< CF_XML_Tag > categories = containers[j].GetContent().Get( "category" );
+                array< CF_XML_Tag > tags = containers[j].GetContent().Get( "tag" );
                 int k;
 
                 for(k = 0; k < categories.Count(); ++k)
@@ -195,40 +195,40 @@ class LootReaderXMLCallback extends CF_XML_Callback
                     container.AddTag(name);
                 }
 
-				for (k = 0; k < points.Count(); ++k )
-				{
-					vector point_pos = "0 0 0";
+                for (k = 0; k < points.Count(); ++k )
+                {
+                    vector point_pos = "0 0 0";
                     int flags = 0;
                     float height = 0;
                     float range = 0;
                     CF_XML_Attribute attrib = NULL;
 
-					attrib = points[k].GetAttribute( "pos" );
+                    attrib = points[k].GetAttribute( "pos" );
 
-					attrib.Debug(1);
+                    attrib.Debug(1);
 
-					if ( attrib )
-						point_pos = attrib.ValueAsVector();
+                    if ( attrib )
+                        point_pos = attrib.ValueAsVector();
 
-					attrib = points[k].GetAttribute( "height" );
+                    attrib = points[k].GetAttribute( "height" );
 
-					if ( attrib )
-						height = attrib.ValueAsFloat();
+                    if ( attrib )
+                        height = attrib.ValueAsFloat();
 
-					attrib = points[k].GetAttribute( "range" );
+                    attrib = points[k].GetAttribute( "range" );
 
-					if ( attrib )
-						range = attrib.ValueAsFloat();
+                    if ( attrib )
+                        range = attrib.ValueAsFloat();
 
-					attrib = points[k].GetAttribute( "flags" );
+                    attrib = points[k].GetAttribute( "flags" );
 
-					if ( attrib )
-						flags = attrib.ValueAsInt();
+                    if ( attrib )
+                        flags = attrib.ValueAsInt();
 
-					container.AddPoint( point_pos, range, height, flags );
-				}
-			}
-		}
+                    container.AddPoint( point_pos, range, height, flags );
+                }
+            }
+        }
 
         b_IsComplete = true;
 

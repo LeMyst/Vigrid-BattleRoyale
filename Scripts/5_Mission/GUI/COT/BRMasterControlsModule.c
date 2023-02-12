@@ -1,35 +1,35 @@
 class BRMasterControlsModule: JMRenderableModuleBase
 {
     void BRMasterControlsModule()
-	{
-		GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.View" );
-		GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.Update" );
-	}
+    {
+        GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.View" );
+        GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.Update" );
+    }
 
     override bool HasAccess()
-	{
-		return GetPermissionsManager().HasPermission( "BattleRoyale.StateMachine.View" );
-	}
+    {
+        return GetPermissionsManager().HasPermission( "BattleRoyale.StateMachine.View" );
+    }
 
     override string GetLayoutRoot()
-	{
-		return "DayZBR-Mod/GUI/layouts/COT/master_controls.layout";
-	}
+    {
+        return "DayZBR-Mod/GUI/layouts/COT/master_controls.layout";
+    }
 
     override string GetTitle()
-	{
-		return "[BR] State Machine";
-	}
+    {
+        return "[BR] State Machine";
+    }
 
     override string GetIconName()
-	{
-		return "BR";
-	}
+    {
+        return "BR";
+    }
 
     override bool ImageIsIcon()
-	{
-		return false;
-	}
+    {
+        return false;
+    }
 
     override string GetWebhookTitle()
     {
@@ -37,50 +37,50 @@ class BRMasterControlsModule: JMRenderableModuleBase
     }
 
     override int GetRPCMin()
-	{
-		return BattleRoyaleCOTStateMachineRPC.GET;
-	}
+    {
+        return BattleRoyaleCOTStateMachineRPC.GET;
+    }
 
     override int GetRPCMax()
-	{
-		return BattleRoyaleCOTStateMachineRPC.ERROR;
-	}
+    {
+        return BattleRoyaleCOTStateMachineRPC.ERROR;
+    }
 
     override void OnRPC( PlayerIdentity sender, Object target, int rpc_type, ref ParamsReadContext ctx )
-	{
+    {
         switch ( rpc_type )
-		{
-		case BattleRoyaleCOTStateMachineRPC.Next:
-			RPC_Next( ctx, sender, target );
-			break;
-		case BattleRoyaleCOTStateMachineRPC.Pause:
-			RPC_Pause( ctx, sender, target );
-			break;
-		case BattleRoyaleCOTStateMachineRPC.Resume:
-			RPC_Resume( ctx, sender, target );
-			break;
+        {
+        case BattleRoyaleCOTStateMachineRPC.Next:
+            RPC_Next( ctx, sender, target );
+            break;
+        case BattleRoyaleCOTStateMachineRPC.Pause:
+            RPC_Pause( ctx, sender, target );
+            break;
+        case BattleRoyaleCOTStateMachineRPC.Resume:
+            RPC_Resume( ctx, sender, target );
+            break;
         case BattleRoyaleCOTStateMachineRPC.Start_Loot:
-			RPC_StartLoot( ctx, sender, target );
-			break;
+            RPC_StartLoot( ctx, sender, target );
+            break;
         case BattleRoyaleCOTStateMachineRPC.Stop_Loot:
-			RPC_StopLoot( ctx, sender, target );
-			break;
+            RPC_StopLoot( ctx, sender, target );
+            break;
         case BattleRoyaleCOTStateMachineRPC.Start_Vehicles:
-			RPC_StartVehicles( ctx, sender, target );
-			break;
+            RPC_StartVehicles( ctx, sender, target );
+            break;
         case BattleRoyaleCOTStateMachineRPC.Stop_Vehicles:
-			RPC_StopVehicles( ctx, sender, target );
-			break;
+            RPC_StopVehicles( ctx, sender, target );
+            break;
         case BattleRoyaleCOTStateMachineRPC.TestSpectator:
-			RPC_TestSpectator( ctx, sender, target );
-			break;
-		}
+            RPC_TestSpectator( ctx, sender, target );
+            break;
+        }
     }
 
     private void RPC_Next( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_Next(); //Server received next command
         }
     }
@@ -88,7 +88,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_Pause( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_Pause(); //Server received next command
         }
     }
@@ -96,7 +96,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_Resume( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_Resume(); //Server received next command
         }
     }
@@ -104,7 +104,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_StartLoot( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_StartLoot();
         }
     }
@@ -112,7 +112,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_StopLoot( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_StopLoot();
         }
     }
@@ -120,7 +120,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_StartVehicles( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_StartVehicles();
         }
     }
@@ -128,7 +128,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_StopVehicles( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             Server_StopVehicles();
         }
     }
@@ -136,7 +136,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     private void RPC_TestSpectator( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         if ( IsMissionHost() )
-		{
+        {
             PlayerBase pbTarget;
             if(Class.CastTo( pbTarget, target ))
             {
@@ -153,11 +153,11 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void StateMachine_Next()
     {
         if ( IsMissionClient() )
-		{
+        {
             //send RPC to server
             ScriptRPC rpc = new ScriptRPC();
-			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Next, true, NULL );
+            //rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Next, true, NULL );
         }
         else
         {
@@ -169,11 +169,11 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void StateMachine_Pause()
     {
         if ( IsMissionClient() )
-		{
+        {
             //send RPC to server
             ScriptRPC rpc = new ScriptRPC();
-			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Pause, true, NULL );
+            //rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Pause, true, NULL );
         }
         else
         {
@@ -184,11 +184,11 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void StateMachine_Resume()
     {
         if ( IsMissionClient() )
-		{
+        {
             //send RPC to server
             ScriptRPC rpc = new ScriptRPC();
-			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Resume, true, NULL );
+            //rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Resume, true, NULL );
         }
         else
         {
@@ -199,9 +199,9 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void Vehicles_Start()
     {
         if ( IsMissionClient() )
-		{
+        {
             ScriptRPC rpc = new ScriptRPC();
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Start_Vehicles, true, NULL );
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Start_Vehicles, true, NULL );
         }
         else
         {
@@ -213,9 +213,9 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void Vehicles_Stop()
     {
         if ( IsMissionClient() )
-		{
+        {
             ScriptRPC rpc = new ScriptRPC();
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Stop_Vehicles, true, NULL );
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Stop_Vehicles, true, NULL );
         }
         else
         {
@@ -227,11 +227,11 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void Loot_Start()
     {
         if ( IsMissionClient() )
-		{
+        {
             //send RPC to server
             ScriptRPC rpc = new ScriptRPC();
-			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Start_Loot, true, NULL );
+            //rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Start_Loot, true, NULL );
         }
         else
         {
@@ -242,11 +242,11 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void Loot_Stop()
     {
         if ( IsMissionClient() )
-		{
+        {
             //send RPC to server
             ScriptRPC rpc = new ScriptRPC();
-			//rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
-			rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Stop_Loot, true, NULL );
+            //rpc.Write( 0 ); //I don't think we need to write any data to send this RPC
+            rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Stop_Loot, true, NULL );
         }
         else
         {
@@ -257,7 +257,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
     void TestSpectator()
     {
         if ( IsMissionClient() )
-		{
+        {
             ScriptRPC rpc = new ScriptRPC();
             rpc.Send( GetGame().GetPlayer(), BattleRoyaleCOTStateMachineRPC.TestSpectator, true, NULL );
         }

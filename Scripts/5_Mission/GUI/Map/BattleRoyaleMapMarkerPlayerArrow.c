@@ -20,7 +20,7 @@ class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
     }
 
     override void Update( float pDt )
-	{
+    {
         if(m_Entity)
         {
             v_Position = m_Entity.GetPosition();
@@ -32,16 +32,16 @@ class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
         //GetIconWidget().LoadImageFile( 0, EXPANSION_NOTIFICATION_ICON_POSITION );
         //GetIconWidget().LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
         GetIconWidget().LoadImageFile(0, "DayZExpansion\\Core\\GUI\\icons\\misc\\T_Fox_256x256.edds");
-		GetDragWidget().SetRotation( 0, 0, GetMapDirection(), true );
+        GetDragWidget().SetRotation( 0, 0, GetMapDirection(), true );
     }
 
     private int GetMapDirection()
-	{
-		return Math.Round( Math.NormalizeAngle( v_Direction.VectorToAngles()[0] ) );
-	}
+    {
+        return Math.Round( Math.NormalizeAngle( v_Direction.VectorToAngles()[0] ) );
+    }
 
     void ShowRoot(bool show)
-	{
-		GetLayoutRoot().Show(show);
-	}
+    {
+        GetLayoutRoot().Show(show);
+    }
 }

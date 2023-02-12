@@ -36,12 +36,12 @@ class BattleRoyaleVehicleData extends BattleRoyaleDataBase
         array< string > files = FindFilesInLocation( BATTLEROYALE_VEHICLES_FOLDER );
 
         for ( int i = 0; i < files.Count(); i++ )
-		{
+        {
             string fileName;
-			int pos = files[i].IndexOf(".");
+            int pos = files[i].IndexOf(".");
             if ( pos > -1 )
-			{
-				fileName = files[i];
+            {
+                fileName = files[i];
                 ref BattleRoyaleVehicleDataSerialized vehicle_data = new BattleRoyaleVehicleDataSerialized();
                 vehicle_data.Load(fileName);
                 m_VehicleData.Insert(vehicle_data);

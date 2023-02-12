@@ -287,10 +287,10 @@ class BattleRoyaleCachedVehicle
     }
 
     private void FillCar( Car car, CarFluid fluid )
-	{
-		float cap = car.GetFluidCapacity( fluid );
-		car.Fill( fluid, cap );
-	}
+    {
+        float cap = car.GetFluidCapacity( fluid );
+        car.Fill( fluid, cap );
+    }
 
     vector GetPosition()
     {
@@ -322,21 +322,21 @@ class BattleRoyaleCachedVehicle
             {
                 GetGame().ObjectDelete( obj );
             }
-			return false;
+            return false;
         }
         for ( int j = 0; j < vehicle_parts.Count(); j++ )
-		{
-			ent.GetInventory().CreateInInventory( vehicle_parts[j] );
-		}
+        {
+            ent.GetInventory().CreateInInventory( vehicle_parts[j] );
+        }
 
         Car car;
-		if ( Class.CastTo( car, ent ) )
-		{
-			FillCar( car, CarFluid.FUEL );
-			FillCar( car, CarFluid.OIL );
-			FillCar( car, CarFluid.BRAKE );
-			FillCar( car, CarFluid.COOLANT );
-		}
+        if ( Class.CastTo( car, ent ) )
+        {
+            FillCar( car, CarFluid.FUEL );
+            FillCar( car, CarFluid.OIL );
+            FillCar( car, CarFluid.BRAKE );
+            FillCar( car, CarFluid.COOLANT );
+        }
         else
         {
             /*
@@ -352,7 +352,7 @@ class BattleRoyaleCachedVehicle
 
         if(direction)
         {
-		    ent.SetDirection( direction );
+            ent.SetDirection( direction );
         }
         else
         {
@@ -362,11 +362,11 @@ class BattleRoyaleCachedVehicle
         }
 
         vector tmItem[4];
-		ent.GetTransform( tmItem );
+        ent.GetTransform( tmItem );
 
         //ent.PlaceOnSurfaceRotated( tmItem, position, 0, 0, 0, true ); // TODO: this needs done to support vehicles in tight spaces
         tmItem[3] = position + "0 5 0";
-		ent.SetTransform( tmItem );
+        ent.SetTransform( tmItem );
 
         game_object = obj;
 

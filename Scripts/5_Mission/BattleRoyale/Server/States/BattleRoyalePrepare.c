@@ -27,9 +27,9 @@ class BattleRoyalePrepare extends BattleRoyaleState
         world_center = GetGame().ConfigGetVector(path + " centerPosition");
     }
 
-	override void Activate()
-	{
-		super.Activate();
+    override void Activate()
+    {
+        super.Activate();
 
         //if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
         //{
@@ -57,25 +57,25 @@ class BattleRoyalePrepare extends BattleRoyaleState
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(7, 14), 0);
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
-	}
+    }
 
-	override void Deactivate()
-	{
-		super.Deactivate();
+    override void Deactivate()
+    {
+        super.Deactivate();
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(false), true); //fade out screen
-	}
+    }
 
-	override bool IsComplete()
-	{
-	    //Print(GetName() + " IsComplete!");
-		return super.IsComplete();
-	}
+    override bool IsComplete()
+    {
+        //Print(GetName() + " IsComplete!");
+        return super.IsComplete();
+    }
 
     override string GetName()
-	{
-		return DAYZBR_SM_PREPARE_NAME;
-	}
+    {
+        return DAYZBR_SM_PREPARE_NAME;
+    }
 
     protected bool DeleteAllItems(PlayerBase process_player)
     {
@@ -316,45 +316,45 @@ class BattleRoyalePrepare extends BattleRoyaleState
     }
 
     override void OnPlayerTick(PlayerBase player, float timeslice)
-	{
-		super.OnPlayerTick(player, timeslice);
+    {
+        super.OnPlayerTick(player, timeslice);
 
-		if(player.time_until_heal <= 0)
-		{
-			player.time_until_heal = 5;
-			player.Heal();
-		}
-		player.time_until_heal -= timeslice;
-	}
-
-    override void AddPlayer(PlayerBase player)
-	{
-		if(player)
-		{
-			player.SetAllowDamage(false); //all players in this state are god mode
-			player.Heal();
-		}
-		super.AddPlayer(player);
-	}
-
-    override ref array<PlayerBase> RemoveAllPlayers()
-	{
-		ref array<PlayerBase> players = super.RemoveAllPlayers();
-		foreach(PlayerBase player : players)
-		{
-			player.SetAllowDamage(true); //leaving debug state = disable god mode
-            player.Heal();
-		}
-		return players;
-	}
-
-	override void RemovePlayer(PlayerBase player)
-	{
-		if(player)
+        if(player.time_until_heal <= 0)
         {
-			player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.time_until_heal = 5;
             player.Heal();
         }
-		super.RemovePlayer(player);
-	}
+        player.time_until_heal -= timeslice;
+    }
+
+    override void AddPlayer(PlayerBase player)
+    {
+        if(player)
+        {
+            player.SetAllowDamage(false); //all players in this state are god mode
+            player.Heal();
+        }
+        super.AddPlayer(player);
+    }
+
+    override ref array<PlayerBase> RemoveAllPlayers()
+    {
+        ref array<PlayerBase> players = super.RemoveAllPlayers();
+        foreach(PlayerBase player : players)
+        {
+            player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.Heal();
+        }
+        return players;
+    }
+
+    override void RemovePlayer(PlayerBase player)
+    {
+        if(player)
+        {
+            player.SetAllowDamage(true); //leaving debug state = disable god mode
+            player.Heal();
+        }
+        super.RemovePlayer(player);
+    }
 }

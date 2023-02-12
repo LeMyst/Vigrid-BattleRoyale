@@ -1,9 +1,9 @@
 modded class JMModuleConstructor
 {
-	override void RegisterModules( out TTypenameArray modules )
-	{
-		super.RegisterModules( modules );
+    override void RegisterModules( out TTypenameArray modules )
+    {
+        super.RegisterModules( modules );
 
-		modules.Insert( BRMasterControlsModule );
-	}
+        modules.Insert( BRMasterControlsModule );
+    }
 }

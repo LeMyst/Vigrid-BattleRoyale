@@ -19,7 +19,7 @@ modded class ItemBase
                         int time = GetGame().GetTime();
                         string playerid = nplayer.GetIdentity().GetPlainId();
 
-						 GetBR().GetMatchData().LootPickedUp( playerid, itemtype, pos, time );
+                         GetBR().GetMatchData().LootPickedUp( playerid, itemtype, pos, time );
                     }
                 }
             }
@@ -46,7 +46,7 @@ modded class ItemBase
                         int time = GetGame().GetTime();
                         string playerid = nplayer.GetIdentity().GetPlainId();
 
-						 GetBR().GetMatchData().LootDropped( playerid, itemtype, pos, time );
+                         GetBR().GetMatchData().LootDropped( playerid, itemtype, pos, time );
 
                     }
                 }

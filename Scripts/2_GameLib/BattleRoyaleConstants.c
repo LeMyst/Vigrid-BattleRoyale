@@ -126,4 +126,4 @@ static const string BATTLEROYALE_SERVER_PASSWORD = "DayZBR_Beta";
 //---- DayZ Expansion Loading Screens
 static const string DAYZBR_LOADING_SCREENS_PATH     = "DayZBR-Mod/Data/LoadingScreens.json";
 static const string DAYZBR_LOADING_MESSAGES_PATH    = "DayZBR-Mod/Data/LoadingMessages.json";
-static const int DAYZBR_LOADING_BAR_COLOR           = ARGB( 255, 0, 0, 0 ); 	//! A = Alpha (opacity) / R = Red / G = Green / B = Blue
+static const int DAYZBR_LOADING_BAR_COLOR           = ARGB( 255, 0, 0, 0 );     //! A = Alpha (opacity) / R = Red / G = Green / B = Blue

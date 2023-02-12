@@ -18,7 +18,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     protected ZoneType e_ZoneType;
 
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
-	{
+    {
         Print("BattleRoyaleMapMarkerZone::Constructor()");
         SetIgnorePointer(true);
         //! Do NOT show by default, otherwise it'll pop up on the load screen in the top left corner at the end of the loading progress
@@ -57,7 +57,7 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     }
 
     override void Update( float pDt )
-	{
+    {
         super.Update(pDt);
 
         Show();

@@ -1,7 +1,7 @@
 class BRMasterControlsForm extends JMFormBase
 {
     private UIActionScroller m_sclr_MainActions;
-	private Widget m_ActionsWrapper;
+    private Widget m_ActionsWrapper;
     private BRMasterControlsModule m_Module;
 
     void BRMasterControlsForm()
@@ -15,20 +15,20 @@ class BRMasterControlsForm extends JMFormBase
     }
 
     protected override bool SetModule( JMRenderableModuleBase mdl )
-	{
+    {
         return Class.CastTo( m_Module, mdl );
     }
 
     override void OnInit()
-	{
-		m_sclr_MainActions = UIActionManager.CreateScroller( layoutRoot.FindAnyWidget( "panel" ) );
-		m_ActionsWrapper = m_sclr_MainActions.GetContentWidget();
+    {
+        m_sclr_MainActions = UIActionManager.CreateScroller( layoutRoot.FindAnyWidget( "panel" ) );
+        m_ActionsWrapper = m_sclr_MainActions.GetContentWidget();
 
-		m_sclr_MainActions.UpdateScroller();
-	}
+        m_sclr_MainActions.UpdateScroller();
+    }
 
     override void OnShow()
-	{
+    {
         //create button widgets dynamically
         Widget wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
         UIActionManager.CreateText( wrapper, "State Machine" );
@@ -60,7 +60,7 @@ class BRMasterControlsForm extends JMFormBase
     }
 
     override void OnHide()
-	{
+    {
     }
 
     void StateMachine_Next(UIEvent eid, ref UIActionBase action)

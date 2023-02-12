@@ -2,9 +2,9 @@ enum BattleRoyaleCOTStateMachineRPC
 {
     GET = 50000, //Do not move this
 
-	Next,
-	Pause,
-	Resume,
+    Next,
+    Pause,
+    Resume,
     Start_Loot,
     Stop_Loot,
     Start_Vehicles,

@@ -13,8 +13,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     void BattleRoyaleStartMatch()
     {
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
-		i_FirstRoundDelay = (60 * m_GameSettings.round_duration_minutes) / 2;
+        BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
+        i_FirstRoundDelay = (60 * m_GameSettings.round_duration_minutes) / 2;
 
         //seconds until unlock
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
@@ -27,13 +27,13 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     }
 
     override string GetName()
-	{
-		return DAYZBR_SM_START_MATCH_NAME;
-	}
+    {
+        return DAYZBR_SM_START_MATCH_NAME;
+    }
 
-	override void Activate()
-	{
-		super.Activate();
+    override void Activate()
+    {
+        super.Activate();
 
         //send start match RPC (this will enable UI such as kill count)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", new Param1<bool>(true), true); //don't need a param, but id rather keep it just so i know nothing wierd occurs (eventually find out if we can remove it)
@@ -50,30 +50,30 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
         //timer before first zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true);
-	}
+    }
 
-	override void Deactivate()
-	{
+    override void Deactivate()
+    {
         //deactivate all one-time timers
         m_UnlockTimer.Stop();
         m_ZoneStartTimer.Stop();
         for(int i = 0; i < m_MessageTimers.Count(); i++)
             m_MessageTimers[i].Stop();
 
-		super.Deactivate();
-	}
+        super.Deactivate();
+    }
 
-	override bool IsComplete()
-	{
+    override bool IsComplete()
+    {
         if(GetPlayers().Count() <= 1 && IsActive() && !BATTLEROYALE_SOLO_GAME)
-		{
-	        Print(GetName() + " IsComplete!");
-			// TODO: clean call queue?
-			// TODO: toggle to debug game
-			Deactivate();
-		}
-		return super.IsComplete();
-	}
+        {
+            Print(GetName() + " IsComplete!");
+            // TODO: clean call queue?
+            // TODO: toggle to debug game
+            Deactivate();
+        }
+        return super.IsComplete();
+    }
 
     override void OnPlayerTick(PlayerBase player, float timeslice)
     {
@@ -147,7 +147,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         Print(m_ThisArea.GetRadius());
 
         BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
     }
 
     void HandleUnlock()
@@ -171,21 +171,21 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     }
 
     void OnPlayerKilled(PlayerBase player, Object killer)
-	{
+    {
         if(!b_IsGameplay)
         {
             Error("Player killed before gameplay!");
             return;
         }
         if(ContainsPlayer(player))
-		{
-			RemovePlayer(player);
-		}
+        {
+            RemovePlayer(player);
+        }
         /*
-		if(player.GetIdentity())
-			GetGame().DisconnectPlayer(player.GetIdentity()); //TODO: delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
-		else
-			Error("FAILED TO GET KILLED PLAYER IDENTITY!");
+        if(player.GetIdentity())
+            GetGame().DisconnectPlayer(player.GetIdentity()); //TODO: delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)
+        else
+            Error("FAILED TO GET KILLED PLAYER IDENTITY!");
         */
-	}
+    }
 }

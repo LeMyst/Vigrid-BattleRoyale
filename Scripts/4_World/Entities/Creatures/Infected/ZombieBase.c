@@ -1,6 +1,6 @@
 modded class ZombieBase {
     override void EEKilled(Object killer)
-	{
+    {
         if(killer)
         {
             if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())

@@ -178,30 +178,30 @@ class BRPlayerData extends BRPlayer {}
 
 class ServerData extends BRServer {
     string GetIP()
-	{
-		TStringArray parts = new TStringArray;
-		connection.Split(":",parts);
+    {
+        TStringArray parts = new TStringArray;
+        connection.Split(":",parts);
 
-		return parts.Get(0);
-	}
+        return parts.Get(0);
+    }
 
-	int GetPort()
-	{
-		TStringArray parts = new TStringArray;
-		connection.Split(":",parts);
+    int GetPort()
+    {
+        TStringArray parts = new TStringArray;
+        connection.Split(":",parts);
 
-		return parts.Get(1).ToInt();
-	}
+        return parts.Get(1).ToInt();
+    }
 
-	bool CanConnect()
-	{
-		return !locked;
-	}
+    bool CanConnect()
+    {
+        return !locked;
+    }
 
-	bool IsMatchingVersion()
-	{
-		return (version == BATTLEROYALE_VERSION);
-	}
+    bool IsMatchingVersion()
+    {
+        return (version == BATTLEROYALE_VERSION);
+    }
 }
 
 //TODO update!

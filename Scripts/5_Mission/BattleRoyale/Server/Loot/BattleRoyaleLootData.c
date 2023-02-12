@@ -96,10 +96,10 @@ class BattleRoyaleLootData
         int start_index;
         int length;
         for ( i = 0; i < files.Count(); i++ )
-		{
-			pos = LastIndexOf( files[i], "." );
+        {
+            pos = LastIndexOf( files[i], "." );
             if ( pos > -1 )
-			{
+            {
                 start_index = pos + 1;
                 length = files[i].Length() - start_index;
 
@@ -129,11 +129,11 @@ class BattleRoyaleLootData
         //load entries & populate loot data fields
         files = FindFilesInLocation( BATTLEROYALE_LOOT_ENTRIES_FOLDER );
         for ( i = 0; i < files.Count(); i++ )
-		{
+        {
 
-			pos = LastIndexOf( files[i], "." );
+            pos = LastIndexOf( files[i], "." );
             if ( pos > -1 )
-			{
+            {
                 start_index = pos + 1;
                 length = files[i].Length() - start_index;
 

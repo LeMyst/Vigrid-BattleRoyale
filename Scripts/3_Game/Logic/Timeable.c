@@ -37,9 +37,9 @@ class Timeable {
     void StopTimers()
     {
         for(int i = 0; i < m_Timers.Count(); i++)
-		{
+        {
             if(m_Timers[i].IsRunning())
-			    m_Timers[i].Stop();
-		}
+                m_Timers[i].Stop();
+        }
     }
 }

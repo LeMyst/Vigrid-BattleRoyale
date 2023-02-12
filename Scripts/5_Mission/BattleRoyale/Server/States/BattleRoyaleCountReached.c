@@ -18,13 +18,13 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
         }
     }
     override string GetName()
-	{
-		return DAYZBR_SM_COUNT_REACHED_NAME;
-	}
+    {
+        return DAYZBR_SM_COUNT_REACHED_NAME;
+    }
 
-	override void Activate()
-	{
-		super.Activate();
+    override void Activate()
+    {
+        super.Activate();
 
         string second = "second";
         if(i_TimeToStart != 1)
@@ -34,17 +34,17 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
 
         MessagePlayers("Player count reached! Match is starting in " + i_TimeToStart.ToString() + " " + second + "!");
         m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
-	}
-	override void Deactivate()
-	{
+    }
+    override void Deactivate()
+    {
         m_StartTimer.Stop();
-		super.Deactivate();
-	}
+        super.Deactivate();
+    }
 
-	override bool IsComplete()
-	{
-		return super.IsComplete();
-	}
+    override bool IsComplete()
+    {
+        return super.IsComplete();
+    }
 
     void DoStart()
     {

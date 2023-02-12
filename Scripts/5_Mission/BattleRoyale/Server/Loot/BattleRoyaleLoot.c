@@ -120,7 +120,7 @@ class BattleRoyaleLoot
         float despawn_radius = 25;  //outside 25m? despawn
 
         array<Object> buildings = new array<Object>();
-		array<CargoBase> proxies = new array<CargoBase>();
+        array<CargoBase> proxies = new array<CargoBase>();
         GetGame().GetObjectsAtPosition(player_pos, despawn_radius + 5, buildings, proxies);
 
         for(int i = 0; i < buildings.Count(); i++)

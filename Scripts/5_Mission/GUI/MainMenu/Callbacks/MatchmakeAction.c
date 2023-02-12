@@ -28,16 +28,16 @@ class MatchmakeAction {
             Error("res null!");
 
             if(error_msg == DAYZBR_NETWORK_ERRORCODE_TIMEOUT) {
-				m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Close", onclick, "Retry", onretry);
-			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL) {
-				m_MainMenu.CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Close", onclick, "Retry", onretry);
-			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL) {
-				m_MainMenu. CreatePopup("Failed to connect! Error WEBPLAYER_NULL", "Close", onclick, "Retry", onretry);
-			} else if(error_msg == DAYZBR_NETWORK_ERRORCODE_FILE) {
-				m_MainMenu.CreatePopup("Failed to connect! Error FILE", "Close", onclick, "Retry", onretry);
-			} else {
-				m_MainMenu.CreatePopup("Failed to connect! Error " + error_msg, "Close", onclick, "Retry", onretry);
-			}
+                m_MainMenu.CreatePopup( DAYZBR_TIMEOUT_MSG, "Close", onclick, "Retry", onretry);
+            } else if(error_msg == DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL) {
+                m_MainMenu.CreatePopup("Failed to connect! Error JSON_PARSE_FAIL", "Close", onclick, "Retry", onretry);
+            } else if(error_msg == DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL) {
+                m_MainMenu. CreatePopup("Failed to connect! Error WEBPLAYER_NULL", "Close", onclick, "Retry", onretry);
+            } else if(error_msg == DAYZBR_NETWORK_ERRORCODE_FILE) {
+                m_MainMenu.CreatePopup("Failed to connect! Error FILE", "Close", onclick, "Retry", onretry);
+            } else {
+                m_MainMenu.CreatePopup("Failed to connect! Error " + error_msg, "Close", onclick, "Retry", onretry);
+            }
 
 
             //some error occured
@@ -75,7 +75,7 @@ class MatchmakeAction {
 
         //connect to target server!
         string ip_addr = p_ServerData.GetIP();
-		int port = p_ServerData.GetPort();
+        int port = p_ServerData.GetPort();
 
         if(ip_addr == "") {
             //wait is 0, but server returned is invalid.
@@ -84,7 +84,7 @@ class MatchmakeAction {
         }
 
         if(!p_ServerData.IsMatchingVersion())
-		{
+        {
             //mismatched version match made (weird!) lets notify the player.
             m_MainMenu.CreatePopup( "VERSION MISMATCH WITH MATCHMAKED SERVER", "Close", onclick, "Retry", onretry);
             return;
@@ -93,14 +93,14 @@ class MatchmakeAction {
         int connect_code = GetGame().Connect(m_MainMenu, ip_addr, port, BATTLEROYALE_SERVER_PASSWORD);
 
         if(connect_code != 0)
-		{
+        {
             string message = ErrorModuleHandler.GetClientMessageByCode(connect_code, "");
-			Print(p_ServerData.connection);
-			Error("BattleRoyale: Failed to connect to server (" + connect_code.ToString() + ")");
-		    m_MainMenu.CreatePopup(DAYZBR_FAILED_TO_CONNECT_MSG + message, "Close", onclick, "Retry", onretry);
+            Print(p_ServerData.connection);
+            Error("BattleRoyale: Failed to connect to server (" + connect_code.ToString() + ")");
+            m_MainMenu.CreatePopup(DAYZBR_FAILED_TO_CONNECT_MSG + message, "Close", onclick, "Retry", onretry);
             return;
-		}
+        }
 
-		m_MainMenu.CreatePopup(DAYZBR_CONNECTING_TO_SERVER_MSG,"Close", onclick);
+        m_MainMenu.CreatePopup(DAYZBR_CONNECTING_TO_SERVER_MSG,"Close", onclick);
     }
 }

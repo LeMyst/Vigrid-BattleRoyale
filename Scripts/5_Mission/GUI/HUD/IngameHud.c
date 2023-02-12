@@ -13,7 +13,7 @@ modded class IngameHud
     }
 
     override void Show( bool show )
-	{
+    {
         if(b_BrVisibilityOverride)
             return;
 

@@ -8,7 +8,7 @@ modded class Grenade_Base
     }
 
     override void EEKilled(Object killer)
-	{
+    {
         //TODO: if killer is a player, then
         PlayerBase pbKiller;
         if(Class.CastTo( pbKiller, killer ))
@@ -22,7 +22,7 @@ modded class Grenade_Base
     }
 
     protected override void OnUnpin()
-	{
+    {
         super.OnUnpin();
         if(GetHierarchyRootPlayer())
         {
