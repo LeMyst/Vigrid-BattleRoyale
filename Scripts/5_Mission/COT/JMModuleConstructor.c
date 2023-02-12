@@ -1,3 +1,4 @@
+#ifdef JM_COT
 modded class JMModuleConstructor
 {
     override void RegisterModules( out TTypenameArray modules )
@@ -7,3 +8,4 @@ modded class JMModuleConstructor
         modules.Insert( BRMasterControlsModule );
     }
 }
+#endif

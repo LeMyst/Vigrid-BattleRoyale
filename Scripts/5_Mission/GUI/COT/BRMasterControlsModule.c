@@ -1,3 +1,4 @@
+#ifdef JM_COT
 class BRMasterControlsModule: JMRenderableModuleBase
 {
     void BRMasterControlsModule()
@@ -372,3 +373,4 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
     }
 }
+#endif // JM_COT

@@ -1,3 +1,4 @@
+#ifdef JM_COT
 class BRMasterControlsForm extends JMFormBase
 {
     private UIActionScroller m_sclr_MainActions;
@@ -115,3 +116,4 @@ class BRMasterControlsForm extends JMFormBase
         m_Module.TestSpectator();
     }
 }
+#endif

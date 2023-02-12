@@ -1,3 +1,4 @@
+#ifdef JM_COT
 enum BattleRoyaleCOTStateMachineRPC
 {
     GET = 50000, //Do not move this
@@ -15,3 +16,4 @@ enum BattleRoyaleCOTStateMachineRPC
 
     ERROR //Do not move this
 }
+#endif //JM_COT
