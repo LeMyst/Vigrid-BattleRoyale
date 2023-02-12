@@ -14,7 +14,7 @@ class BRMasterControlsForm extends JMFormBase
         //Delete any mapped lists
     }
 
-    protected override bool SetModule( ref JMRenderableModuleBase mdl )
+    protected override bool SetModule( JMRenderableModuleBase mdl )
 	{
         return Class.CastTo( m_Module, mdl );
     }
