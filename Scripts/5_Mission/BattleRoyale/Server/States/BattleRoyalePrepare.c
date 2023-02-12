@@ -149,7 +149,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 if(temp_village.Name == "Shkolnik")  // North-east BR lobby
                     continue;
 
-                villages.Insert(temp_village)
+                villages.Insert(temp_village);
             }
 
             Print(villages);

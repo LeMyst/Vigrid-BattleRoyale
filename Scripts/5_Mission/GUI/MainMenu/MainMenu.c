@@ -62,11 +62,6 @@ modded class MainMenu
         return layoutRoot;
     }
 
-//    override void ShowNewsfeed(bool state)
-//    {
-//        super.ShowNewsfeed( false ); //completely disable news feeds
-//    }
-
     bool OnStart(bool force_restart = false)
     {
 
@@ -92,12 +87,10 @@ modded class MainMenu
             return false;
         }
 
-
         //--- connecting to BattleRoyale network UI
         //CreatePopup( DAYZBR_CONNECTING_TO_NETWORK_MSG );
 
         //api.RequestStartAsync(p_User.GetUid(), p_User.GetName(), this, "RequestStartCallback");
-
 
         return true;
     }
@@ -185,7 +178,6 @@ modded class MainMenu
             }
             popup_onClick2.OnButtonClick();
         }
-
     }
 
     override bool OnClick( Widget w, int x, int y, int button )
@@ -251,5 +243,3 @@ modded class MainMenu
         m_ModsSimple = new ModsMenuSimple(modArray, layoutRoot.FindAnyWidget("ModsSimple"), m_ModsDetailed);
     }
 }
-
-
