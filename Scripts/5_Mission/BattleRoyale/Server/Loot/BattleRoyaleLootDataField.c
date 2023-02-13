@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 class BattleRoyaleLootDataField
 {
     protected ref BattleRoyaleLootCategory p_Category;
@@ -59,3 +60,4 @@ class BattleRoyaleLootDataField
         return NULL;
     }
 }
+#endif

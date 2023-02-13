@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 class BattleRoyaleLootCategory : Managed {
     [NonSerialized()]
     string m_FileName;
@@ -15,3 +16,4 @@ class BattleRoyaleLootCategory : Managed {
         return m_FileName.Substring(0, m_FileName.IndexOf(".")); //ignore the file extension
     }
 }
+#endif

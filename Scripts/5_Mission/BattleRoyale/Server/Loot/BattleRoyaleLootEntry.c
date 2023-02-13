@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 class BattleRoyaleLootEntry : Managed {
     [NonSerialized()]
     string m_FileName;
@@ -44,3 +45,4 @@ class BattleRoyaleLootEntry : Managed {
         return (needs_attachments == 1);
     }
 }
+#endif

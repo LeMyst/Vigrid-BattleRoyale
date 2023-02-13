@@ -1,4 +1,4 @@
-
+#ifdef BR_VEHICLE
 //--- vehicle spawning subsystem
 class BattleRoyaleVehicles
 {
@@ -388,3 +388,4 @@ class BattleRoyaleCachedVehicle
         return false;
     }
 }
+#endif //BR_VEHICLE

@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 class BattleRoyaleLootableBuilding
 {
     protected Object m_Object;
@@ -95,3 +96,4 @@ class BattleRoyaleLootableBuilding
         }
     }
 }
+#endif //BR_LOOT

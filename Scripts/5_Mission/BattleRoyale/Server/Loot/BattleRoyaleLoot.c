@@ -1,4 +1,4 @@
-
+#ifdef BR_LOOT
 class BattleRoyaleLoot
 {
     protected bool b_Enabled;
@@ -163,3 +163,4 @@ class BattleRoyaleLoot
         }
     }
 }
+#endif //BR_LOOT

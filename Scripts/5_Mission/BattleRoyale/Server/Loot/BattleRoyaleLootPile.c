@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 class BattleRoyaleLootPile
 {
     protected ref BattleRoyaleLootableBuilding m_Parent;
@@ -304,3 +305,4 @@ class BattleRoyaleLootPile
         b_IsSpawned = false;
     }
 }
+#endif

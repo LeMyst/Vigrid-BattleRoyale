@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 class BattleRoyaleLootData
 {
     static ref BattleRoyaleLootData GetData()
@@ -364,4 +365,4 @@ class BattleRoyaleLootData
         return result;
     }
 }
-
+#endif
