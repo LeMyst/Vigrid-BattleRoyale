@@ -96,6 +96,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
                 m_ZoneCenterMapMarker.SetPosition( m_CurrentPlayArea.GetCenter() );
             }
         }
+
         if(m_CurrentPlayArea)
         {
             PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );

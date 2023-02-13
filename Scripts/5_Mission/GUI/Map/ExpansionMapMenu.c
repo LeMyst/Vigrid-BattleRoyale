@@ -162,7 +162,6 @@ modded class ExpansionMapMenu {
                     m_Markers.RemoveItem( m_NetworkPlayerMarkers[Id] );
                 }
             }
-
         }
     }
 

@@ -204,7 +204,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
                     Print("Another fucked up village!");
                     continue;
                 }
-
             }
 
             random_pos[0] = x;

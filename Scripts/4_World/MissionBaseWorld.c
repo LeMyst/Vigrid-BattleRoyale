@@ -8,7 +8,6 @@ modded class MissionBaseWorld
     }
 }
 
-
 BattleRoyaleBase GetBR()
 {
     MissionBaseWorld world = MissionBaseWorld.Cast( GetGame().GetMission() );

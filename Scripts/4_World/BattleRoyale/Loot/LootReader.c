@@ -1,3 +1,4 @@
+#ifdef BR_LOOT
 /*
 Example Usage
 
@@ -349,3 +350,4 @@ class BattleRoyaleLootPoint
         return i_Flags;
     }
 }
+#endif
