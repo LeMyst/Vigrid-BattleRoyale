@@ -5,7 +5,8 @@ class CfgPatches
         requiredAddons[]=
         {
             "DF_Scripts",
-            "DayZExpansion_Scripts"
+            "DayZExpansion_Scripts",
+            "DZM_VPPAdminToolsScripts"
         };
     };
 };

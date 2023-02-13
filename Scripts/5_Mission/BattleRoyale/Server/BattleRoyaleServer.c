@@ -15,12 +15,20 @@ class BattleRoyaleServer extends BattleRoyaleBase
     {
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
+#ifdef VPPADMINTOOLS
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this, SingleplayerExecutionType.Server);
+#endif
 
         Init();
     }
 
     void Init()
     {
+#ifdef VPPADMINTOOLS
+        GetPermissionManager().AddPermissionType({ "MenuBattleRoyaleManager" });
+#endif
+
         m_Timer = new Timer;
 
         //TODO: this needs to be dynamically aquired (probably via configs)
@@ -513,5 +521,53 @@ class BattleRoyaleServer extends BattleRoyaleBase
     {
         OnPlayerKilled(player, NULL); //1. simulate player killed ()
         GetSpectatorSystem().AddPlayer( player ); //2. insert them into spectator system (like simulating joining during a non-debug state)
+    }
+
+    void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+	    Print("BattleRoyaleManager NextState");
+        if ( IsMissionHost() )
+        {
+            BattleRoyaleServer m_BrServer;
+            if(Class.CastTo( m_BrServer, GetBR()))
+            {
+                Print("[DayZBR COT] State Machine Skipping!");
+                m_BrServer.GetCurrentState().Deactivate();// super.IsComplete() will return TRUE when this is run
+            }
+            else
+            {
+                Error("Failed to cast GetBR() to BattleRoyaleServer");
+            }
+        }
+    }
+
+    void StartSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+	    Print("BattleRoyaleManager StartSpectate");
+        if ( IsMissionHost() )
+        {
+            PlayerBase pbTarget;
+            if(Class.CastTo( pbTarget, target ))
+            {
+                BattleRoyaleServer m_BrServer;
+                if(Class.CastTo( m_BrServer, GetBR()))
+                {
+                    Print("[DayZBR COT] Testing Spectating!");
+                    m_BrServer.TestSpectator(pbTarget);
+                }
+                else
+                {
+                    Error("Failed to cast GetBR() to BattleRoyaleServer");
+                }
+            }
+            else
+            {
+                Error("Failed to cast TestSpectator target object to playerbase");
+            }
+        }
+        else
+        {
+            Error("Server called StartSpectate()");
+        }
     }
 }
