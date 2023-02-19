@@ -130,14 +130,43 @@ class BattleRoyalePrepare extends BattleRoyaleState
         {
             villages = new array<ref Town>;
 
-            ref array<ref Town> temp_villages = Town.GetMapTowns(TownFlags.CAPITAL | TownFlags.CITY | TownFlags.VILLAGE | TownFlags.CAMP);
-            Print(temp_villages);
-            for(int i = 0; i < temp_villages.Count(); i++)
-            {
-                ref Town temp_village = temp_villages[i];
-                Print("- " + i + ". " + temp_village.Name + " (" + Town.GetTownTypeString(temp_village.Type) + ")");
+            //ref array<ref Town> temp_villages = Town.GetMapTowns(TownFlags.CAPITAL | TownFlags.CITY | TownFlags.VILLAGE | TownFlags.CAMP);
+            ref array<ref Town> temp_villages = new array<ref Town>;
 
-                if(temp_village.Name == "" || Town.GetTownTypeString(temp_village.Type) == "")
+            string world_name = "";
+            GetGame().GetWorldName(world_name);
+            string cfg = "CfgWorlds " + world_name + " Names";
+            Print(cfg);
+            for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++) {
+                string city;
+                GetGame().ConfigGetChildName(cfg, i, city);
+                vector city_position;
+                TFloatArray float_array = {};
+                GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
+                city_position[0] = float_array[0]; city_position[2] = float_array[1];
+                city_position[1] = GetGame().SurfaceY(city_position[0], city_position[2]);
+
+                string town_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
+                if(town_type != "Capital" && town_type != "City" && town_type != "Village")
+                    continue;
+
+                Print("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
+
+                Town town_entry();
+                town_entry.Entry = city;
+                town_entry.Type = Town.GetTownFlag(GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
+                town_entry.Name = GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city));
+                town_entry.Position = city_position;
+                temp_villages.Insert(town_entry);
+            }
+
+            Print(temp_villages);
+            for(int j = 0; j < temp_villages.Count(); j++)
+            {
+                ref Town temp_village = temp_villages[j];
+                Print("- " + j + ". " + temp_village.Name + " (" + Town.GetTownTypeString(temp_village.Type) + ")");
+
+                if(temp_village.Name == "" || Town.GetTownTypeString(temp_village.Type) == "") // useless ?
                     continue;
 
                 if(temp_village.Name == "Kumyrna")  // Ruins
