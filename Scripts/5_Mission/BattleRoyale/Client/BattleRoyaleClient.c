@@ -383,6 +383,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
         if ( type == CallType.Client )
         {
             m_FuturePlayArea = data.param1;
+            UpdateZoneCenterMaker( m_FuturePlayArea.GetCenter() );
         }
     }
 
