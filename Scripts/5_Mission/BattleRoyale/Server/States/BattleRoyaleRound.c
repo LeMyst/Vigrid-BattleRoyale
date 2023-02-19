@@ -109,21 +109,41 @@ class BattleRoyaleRound extends BattleRoyaleState
         //lock zone event
         m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LockNewZone", new Param1<int>( time_between_lock_and_end / 1000 ), false);
 
-        //--- notification message timers
-        for(i = 0; i < lock_notif_min.Count();i++)
+        if (m_Zone.GetZoneNumber() < i_NumZones)  // Not the last zone
         {
-            min = lock_notif_min[i];
-            val = time_till_end - (min*60*1000);
-            if(val > 0)
-                m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneMinutes", new Param1<int>( min ), false) );
-        }
+            //--- notification message timers
+            for(i = 0; i < lock_notif_min.Count();i++)
+            {
+                min = lock_notif_min[i];
+                val = time_till_end - (min*60*1000);
+                if(val > 0)
+                    m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneMinutes", new Param1<int>( min ), false) );
+            }
 
-        for(i = 0; i < lock_notif_sec.Count();i++)
-        {
-            sec = lock_notif_sec[i];
-            val = time_till_end - (sec*1000);
-            if(val > 0)
-                m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneSeconds", new Param1<int>( sec ), false) );
+            for(i = 0; i < lock_notif_sec.Count();i++)
+            {
+                sec = lock_notif_sec[i];
+                val = time_till_end - (sec*1000);
+                if(val > 0)
+                    m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNewZoneSeconds", new Param1<int>( sec ), false) );
+            }
+        } else {  // The last zone, no new zone
+            //--- notification message timers
+            for(i = 0; i < lock_notif_min.Count();i++)
+            {
+                min = lock_notif_min[i];
+                val = time_till_end - (min*60*1000);
+                if(val > 0)
+                    m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNoZoneMinutes", new Param1<int>( min ), false) );
+            }
+
+            for(i = 0; i < lock_notif_sec.Count();i++)
+            {
+                sec = lock_notif_sec[i];
+                val = time_till_end - (sec*1000);
+                if(val > 0)
+                    m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNoZoneSeconds", new Param1<int>( sec ), false) );
+            }
         }
 
         //end state event
@@ -493,6 +513,28 @@ class BattleRoyaleRound extends BattleRoyaleState
     void NotifyTimeTillNewZoneMinutes(int minutes)
     {
         string message = "A new zone will appear in " + minutes.ToString() + " ";
+        if(minutes > 1)
+            message += "minutes";
+        else
+            message += "minute";
+
+        MessagePlayers(message);
+    }
+
+    void NotifyTimeTillNoZoneSeconds(int seconds)
+    {
+        string message = "The last zone will disappear in " + seconds.ToString() + " ";
+        if(seconds > 1)
+            message += "seconds";
+        else
+            message += "second";
+
+        MessagePlayers(message);
+    }
+
+    void NotifyTimeTillNoZoneMinutes(int minutes)
+    {
+        string message = "The last zone will disappear in " + minutes.ToString() + " ";
         if(minutes > 1)
             message += "minutes";
         else
