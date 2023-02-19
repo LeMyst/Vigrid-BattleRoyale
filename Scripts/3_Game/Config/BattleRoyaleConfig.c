@@ -2,7 +2,7 @@ class BattleRoyaleConfig
 {
     static ref BattleRoyaleConfig m_Instance;
     ref map<string, ref BattleRoyaleDataBase> m_Configs;
-    ref array<string> m_ConfigNames;
+    //ref array<string> m_ConfigNames;
     bool b_HasLoaded;
 
     void BattleRoyaleConfig()
