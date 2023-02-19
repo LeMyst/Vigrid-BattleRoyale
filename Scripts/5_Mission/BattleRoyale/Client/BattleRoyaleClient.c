@@ -67,24 +67,13 @@ class BattleRoyaleClient extends BattleRoyaleBase
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
 
-        if (!m_ZoneCenterMapMarker)
-        {
-            m_ZoneCenterMapMarker = new ExpansionServerMarkerData("ServerMarker_Zone_Center");
-            m_ZoneCenterMapMarker.Set3D(true);
-            m_ZoneCenterMapMarker.SetName("Center");
-            m_ZoneCenterMapMarker.SetIconName("Map Marker");
-            m_ZoneCenterMapMarker.SetColor(ARGB(255, 255, 0, 0));
-            m_ZoneCenterMapMarker.SetVisibility(EXPANSION_MARKER_VIS_WORLD | EXPANSION_MARKER_VIS_MAP);
-            GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
-        }
-
         float distance;
         if(m_FuturePlayArea)
         {
             distance = GetZoneDistance( m_FuturePlayArea );
             gameplay.UpdateZoneDistance( distance ); //update HUD element
 
-            m_ZoneCenterMapMarker.SetPosition( m_FuturePlayArea.GetCenter() );
+            UpdateZoneCenterMaker( m_FuturePlayArea.GetCenter() );
         }
         else
         {
@@ -93,7 +82,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
                 distance = GetZoneDistance( m_CurrentPlayArea );
                 gameplay.UpdateZoneDistance( distance );
 
-                m_ZoneCenterMapMarker.SetPosition( m_CurrentPlayArea.GetCenter() );
+                UpdateZoneCenterMaker( m_CurrentPlayArea.GetCenter() );
             }
         }
 
@@ -108,6 +97,21 @@ class BattleRoyaleClient extends BattleRoyaleBase
                 player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
             }
         }
+    }
+
+    protected void UpdateZoneCenterMaker(vector center) {
+        if (!m_ZoneCenterMapMarker)
+        {
+            m_ZoneCenterMapMarker = new ExpansionServerMarkerData("ServerMarker_Zone_Center");
+            m_ZoneCenterMapMarker.Set3D(true);
+            m_ZoneCenterMapMarker.SetName("Center");
+            m_ZoneCenterMapMarker.SetIconName("Map Marker");
+            m_ZoneCenterMapMarker.SetColor(ARGB(255, 255, 0, 0));
+            m_ZoneCenterMapMarker.SetVisibility(EXPANSION_MARKER_VIS_WORLD | EXPANSION_MARKER_VIS_MAP);
+            GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
+        }
+
+        m_ZoneCenterMapMarker.SetPosition( center );
     }
 
     protected float GetZoneDistance(BattleRoyalePlayArea play_area)
