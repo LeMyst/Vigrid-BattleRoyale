@@ -55,14 +55,17 @@ class BattleRoyaleRound extends BattleRoyaleState
 
         // Update zone timer
         i_RoundTimeInSeconds = m_Zone.GetZoneTimer();
-        Print("Create round with timer " + i_RoundTimeInSeconds);
+        Print("Create round " + GetName());
+        Print("- Duration : " + i_RoundTimeInSeconds);
 
         //dear god i hope i really don't have to keep this, but it should work
         float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
         float num_zones = i_NumZones * 1.0;
+        Print("- Num zone : " + m_Zone.GetZoneNumber() + "/" + i_NumZones);
 
         //scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone #
         f_Damage = f_Damage * ( zone_num / num_zones );
+        Print("- Damage scale : " + f_Damage);
     }
 
     override string GetName()
