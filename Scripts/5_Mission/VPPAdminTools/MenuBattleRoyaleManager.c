@@ -11,8 +11,6 @@ modded class VPPAdminHud
 
 class MenuBattleRoyaleManager extends AdminHudSubMenu
 {
-	private bool m_Init;
-
 	private ButtonWidget nextStateButton;
 	private ButtonWidget startSpectateButton;
 
@@ -34,8 +32,6 @@ class MenuBattleRoyaleManager extends AdminHudSubMenu
 
 		nextStateButton = ButtonWidget.Cast(M_SUB_WIDGET.FindAnyWidget("BtnNextState"));
 		startSpectateButton = ButtonWidget.Cast(M_SUB_WIDGET.FindAnyWidget("BtnStartSpectate"));
-
-		m_Init = true;
 	}
 
 	override void OnUpdate(float timeslice)
