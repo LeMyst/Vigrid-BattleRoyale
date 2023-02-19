@@ -110,16 +110,25 @@ class BattleRoyaleZone
 
             float world_width = temp[0] * 2;
             float world_height = temp[1] * 2;
+            BattleRoyaleUtils.Trace("world_width: " + world_width);
+            BattleRoyaleUtils.Trace("world_height: " + world_height);
 
-            p_Rad = Math.Min(world_height, world_width) / 2;
-            float world_center_x = world_width/2;
-            float world_center_z = world_height/2;
+            //p_Rad = Math.Min(world_height, world_width) / 2;
+            p_Rad = CreatePlayRadius(Math.Min(world_height, world_width) / 2);
+            BattleRoyaleUtils.Trace("max world_center_x: " + (world_width - p_Rad));
+            BattleRoyaleUtils.Trace("max world_center_z: " + (world_height - p_Rad));
+            float world_center_x = Math.RandomFloat(p_Rad, (world_width - p_Rad));
+            float world_center_z = Math.RandomFloat(p_Rad, (world_height - p_Rad));
             float Y = GetGame().SurfaceY(world_center_x, world_center_z);
+            BattleRoyaleUtils.Trace("world_center_x: " + world_center_x);
+            BattleRoyaleUtils.Trace("world_center_z: " + world_center_z);
 
             p_Cen[0] = world_center_x;
             p_Cen[1] = Y;
             p_Cen[2] = world_center_z;
         }
+        BattleRoyaleUtils.Trace("pRad: " + p_Rad);
+        BattleRoyaleUtils.Trace("p_Cen: " + p_Cen);
 
         CreatePlayArea(p_Rad, p_Cen);
     }
