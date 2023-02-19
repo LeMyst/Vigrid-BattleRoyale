@@ -88,7 +88,7 @@ class BattleRoyaleZone
 
     void Init()
     {
-        Print("BattleRoyaleZone Init()");
+        BattleRoyaleUtils.Trace("BattleRoyaleZone Init()");
         float p_Rad;
         vector p_Cen = "0 0 0";
 
@@ -96,13 +96,13 @@ class BattleRoyaleZone
         if(m_ParentZone)
         {
             //this zone has a parent
-            Print("Create Another Zone");
+            BattleRoyaleUtils.Trace("Create Another Zone");
             p_Rad = m_ParentZone.GetArea().GetRadius();
             p_Cen = m_ParentZone.GetArea().GetCenter();
         }
         else
         {
-            Print("Create First Zone");
+            BattleRoyaleUtils.Trace("Create First Zone");
             //This zone is a "full map" zone (ie, the first zone)
             string path = "CfgWorlds " + GetGame().GetWorldName();
             Print(path);

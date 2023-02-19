@@ -271,7 +271,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
     void ProcessPlayers()
     {
-        Print("Starting to process players...");
+        BattleRoyaleUtils.Trace("Starting to process players...");
         int i;
         PlayerBase process_player;
 
@@ -282,7 +282,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             Sleep(100);
         }
-        Print("Players are disabled");
+        BattleRoyaleUtils.Trace("Players are disabled");
 
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
@@ -290,7 +290,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             Sleep(100);
         }
-        Print("Teleported players");
+        BattleRoyaleUtils.Trace("Teleported players");
 
         // plz fix this
         Sleep(1000);
@@ -301,7 +301,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             Sleep(100);
         }
-        Print("Gave starting items");
+        BattleRoyaleUtils.Trace("Gave starting items");
 
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
@@ -309,7 +309,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
             Sleep(100);
         }
-        Print("Healed players");
+        BattleRoyaleUtils.Trace("Healed players");
 
         Deactivate();
     }

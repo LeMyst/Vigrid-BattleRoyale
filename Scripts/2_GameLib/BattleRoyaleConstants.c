@@ -9,6 +9,7 @@ static const string BATTLEROYALE_VERSION = "0.0.1-Myst";
 
 //--- debug settings
 static const int BATTLEROYALE_SOLO_GAME = 0;
+static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
 //--- default web endpoint
 //static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
