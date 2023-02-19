@@ -1,6 +1,7 @@
 class BattleRoyalePrepare extends BattleRoyaleState
 {
     protected ref array<PlayerBase> m_PlayerList;
+    protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
     protected vector world_center;
 
@@ -13,12 +14,14 @@ class BattleRoyalePrepare extends BattleRoyaleState
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
         {
+            a_StartingClothes = m_GameSettings.player_starting_clothes;
             a_StartingItems = m_GameSettings.player_starting_items;
         }
         else
         {
             Error("GameSettings is NULL!");
-            a_StartingItems = {"TrackSuitJacket_Red", "TrackSuitPants_Red", "JoggingShoes_Red"};
+            a_StartingClothes = {"TrackSuitJacket_Red", "TrackSuitPants_Red", "JoggingShoes_Red"};
+            a_StartingItems = {"HuntingKnife", "BandageDressing", "Compass"};
         }
 
         m_PlayerList = new array<PlayerBase>();
@@ -91,15 +94,19 @@ class BattleRoyalePrepare extends BattleRoyaleState
     {
         DeleteAllItems(process_player);
 
-        EntityAI shirt = process_player.GetInventory().CreateAttachment("TrackSuitJacket_Black");
-        EntityAI pants = process_player.GetInventory().CreateAttachment("TrackSuitPants_Black");
-        EntityAI shoes = process_player.GetInventory().CreateAttachment("JoggingShoes_Black");
-
-        pants.GetInventory().CreateEntityInCargo("HuntingKnife");
-        pants.GetInventory().CreateEntityInCargo("BandageDressing");
-        pants.GetInventory().CreateEntityInCargo("Compass");
-        pants.GetInventory().CreateEntityInCargo("Battery9V");
-        pants.GetInventory().CreateEntityInCargo("Battery9V");
+        int cCount = a_StartingClothes.Count();
+        bool item_spawned = false;
+        for (int i = 0; i < cCount; i++) {
+            EntityAI clothes = process_player.GetInventory().CreateAttachment(a_StartingClothes[i]);
+            if(!item_spawned && clothes.GetInventory().GetCargo())
+            {
+                int iCount = a_StartingItems.Count();
+                for (int j = 0; j < iCount; j++) {
+                    clothes.GetInventory().CreateEntityInCargo(a_StartingItems[j]);
+                }
+                item_spawned = true;
+            }
+        }
 
         return true;
     }

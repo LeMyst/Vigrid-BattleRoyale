@@ -16,11 +16,18 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
 
     bool spawn_in_villages = true;
 
-    ref array<string> player_starting_items = {
+    ref array<string> player_starting_clothes = {
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",
-        "JoggingShoes_Red",
-        "MedicalBandage"
+        "JoggingShoes_Red"
+    };
+
+    ref array<string> player_starting_items = {
+        "HuntingKnife",
+        "BandageDressing",
+        "Compass",
+        "Battery9V",
+        "Battery9V"
     };
 
     string mission = "BattleRoyale.ChernarusPlusGloom";
