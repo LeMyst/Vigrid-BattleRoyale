@@ -78,9 +78,9 @@ class BattleRoyaleWin extends BattleRoyaleState
         return super.IsComplete(); //go to restart state when player disconnects
     }
 
-    void HandleWinner(PlayerBase winner)
+    void HandleWinner(PlayerBase player_winner)
     {
-        MessagePlayer(winner, "Congratulations! You won Battle Royale!");
+        MessagePlayer(player_winner, "Congratulations! You won Battle Royale!");
     }
 
     void KickWinner()
