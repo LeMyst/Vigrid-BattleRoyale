@@ -206,6 +206,33 @@ FrameWidgetClass BattleRoyaleHudFrame {
       }
      }
     }
+    MapWidgetClass MiniMap {
+     visible 1
+     ignorepointer 1
+     position 0 0.08
+     size 250 250
+     halign right_ref
+     valign bottom_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 1
+     vexactsize 1
+     {
+      CanvasWidgetClass CanvasMiniMap {
+       visible 1
+       ignorepointer 1
+       position 0 0
+       size 250 250
+       halign center_ref
+       valign center_ref
+       hexactpos 0
+       vexactpos 0
+       hexactsize 1
+       vexactsize 1
+       priority 1000
+      }
+     }
+    }
    }
   }
  }

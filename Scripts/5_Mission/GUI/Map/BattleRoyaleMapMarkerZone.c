@@ -15,6 +15,9 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
     protected int i_Color;
 
     protected CanvasWidget m_BRCanvas;
+#ifdef BR_MINIMAP
+    protected CanvasWidget m_MiniMapCanvas;
+#endif
     protected ZoneType e_ZoneType;
 
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
@@ -36,6 +39,11 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
 
         Class.CastTo( m_BRCanvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
 
+#ifdef BR_MINIMAP
+        Widget m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("DayZBR-Mod/GUI/layouts/hud/br_hud.layout");
+        m_MiniMapCanvas = CanvasWidget.Cast(m_BattleRoyaleHudRootWidget.FindAnyWidget("CanvasMiniMap"));
+#endif
+
         if(!m_BRCanvas)
         {
             Error("[BattleRoyaleMapMarkerZone] marker_canvas not found!");
@@ -45,6 +53,9 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
         m_Name.Show( false ); //--- the marker name is for debugging
 
         m_BRCanvas.Show( true ); //ensure canvas is visible
+#ifdef BR_MINIMAP
+        m_MiniMapCanvas.Show( true );
+#endif
 
         SetColor( ARGB(255,255,255,255) );
         SetSize_A(150);
@@ -137,6 +148,10 @@ class BattleRoyaleMapMarkerZone extends ExpansionMapWidgetBase
             float y2 = cy + (b * Math.Sin((i+1)*Math.DEG2RAD));
 
             m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+
+#ifdef BR_MINIMAP
+            m_MiniMapCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+#endif
         }
     }
 

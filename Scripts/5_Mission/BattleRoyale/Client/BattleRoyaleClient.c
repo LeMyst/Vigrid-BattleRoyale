@@ -97,6 +97,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
                 player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
             }
         }
+
+#ifdef BR_MINIMAP
+        vector camera_pos = GetGame().GetCurrentCameraPosition();
+        gameplay.UpdateMiniMap( camera_pos );
+#endif
     }
 
     protected void UpdateZoneCenterMaker(vector center) {
