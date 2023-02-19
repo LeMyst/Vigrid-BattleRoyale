@@ -160,9 +160,7 @@ class BattleRoyaleZone
 
             //check if new_center is valid (not in water)
             if(IsSafeZoneCenter(newX, newZ))
-            {
                 break;
-            }
         }
 
         m_PlayArea.SetCenter(new_center);
