@@ -53,7 +53,7 @@ FrameWidgetClass rootFrame {
   }
   PanelWidgetClass Header {
    ignorepointer 0
-   size 0.993 0.028
+   size 1 0.3
    halign center_ref
    hexactpos 0
    vexactpos 0
