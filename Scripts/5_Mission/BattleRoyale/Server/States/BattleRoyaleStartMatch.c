@@ -3,6 +3,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     protected int i_TimeToUnlock;
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
+    protected bool b_ShowFirstZone;
 
     protected ref array<PlayerBase> m_PlayerList;
 
@@ -18,6 +19,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
         //seconds until unlock
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
+
+        b_ShowFirstZone = m_GameSettings.show_first_zone_at_start;
 
         b_IsGameplay = false;
 
@@ -45,6 +48,9 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         }
 
         m_UnlockTimer = AddTimer(i_TimeToUnlock, this, "UnlockPlayers", NULL, false);
+
+        if (b_ShowFirstZone)
+            m_UnlockTimer = AddTimer(i_TimeToUnlock, this, "ShowFirstZone", NULL, false);
 
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
@@ -135,7 +141,10 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         // TODO: reenable loot and vehicles system
         //BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
         //BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
+    }
 
+    void ShowFirstZone()
+    {
         // Show first circle
         Print("[BattleRoyaleStartMatch] Show first circle");
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;

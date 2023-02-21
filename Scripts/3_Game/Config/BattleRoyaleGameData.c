@@ -15,6 +15,7 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     bool enable_zone_damage = true;
 
     bool spawn_in_villages = true;
+    bool show_first_zone_at_start = true;
 
     ref array<string> player_starting_clothes = {
         "TrackSuitJacket_Red",
