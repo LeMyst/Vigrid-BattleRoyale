@@ -194,13 +194,82 @@ class BattleRoyalePrepare extends BattleRoyaleState
         return random_village;
     }
 
-    protected void Teleport(PlayerBase process_player)
+    protected bool IsSafeForTeleport(float x, float y, float z)
+    {
+        BattleRoyaleZone m_Zone = new BattleRoyaleZone;
+        m_Zone = m_Zone.GetZone(1);
+
+        //check if random_pos is bad
+        if(GetGame().SurfaceIsSea(x, z))
+            return false;
+
+        if(GetGame().SurfaceIsPond(x, z))
+            return false;
+
+        if(GetGame().SurfaceRoadY(x, z) != y)
+            return false;
+
+        if(m_GameSettings.spawn_in_first_zone && !m_Zone.IsInZone(x, z))
+            return false;
+
+        ref array<string> bad_surface_types = {
+            "nam_seaice",
+            "nam_lakeice_ext"
+        };
+
+        string surface_type;
+        GetGame().SurfaceGetType(x, z, surface_type);
+        if(bad_surface_types.Find(surface_type) != -1)
+            return false;
+
+        vector position;
+        position[0] = x;
+        position[1] = y;
+        position[2] = z;
+
+        vector start = position + Vector( 0, 5, 0 );
+        vector end = position;
+        float radius = 2.0;
+
+        PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
+        Object m_HitObject;
+        vector m_HitPosition;
+        vector m_HitNormal;
+        float m_HitFraction;
+        bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+
+        if(m_Hit)
+            return false;
+
+        return true;
+    }
+
+    protected vector GetRandomVillagePosition(Town village)
+    {
+        float village_x = village.Position[0];
+        float village_z = village.Position[2];
+        float village_pad;
+
+        if (village.Type == TownFlags.CITY)
+            village_pad = 300.0;
+        else if (village.Type == TownFlags.CAPITAL)
+            village_pad = 500.0;
+        else
+            village_pad = 100.0;
+
+        float x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
+        float z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
+        float y = GetGame().SurfaceY(x, z);
+
+        Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ") with a radius of " + village_pad);
+
+        return Vector(x, y, z);
+    }
+
+    protected ref Param2<vector, Town> GetRandomSpawnPosition()
     {
         vector random_pos = "0 0 0";
         Town village;
-
-        BattleRoyaleZone m_Zone = new BattleRoyaleZone;
-        m_Zone = m_Zone.GetZone(1);
 
         int spawn_try = 1;
 
@@ -213,95 +282,76 @@ class BattleRoyalePrepare extends BattleRoyaleState
             float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
             float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
             float y = GetGame().SurfaceY(x, z);
+            random_pos[0] = x;
+            random_pos[1] = y;
+            random_pos[2] = z;
 
+            village = NULL;
             if (m_GameSettings.spawn_in_villages && spawn_try < 100)
             {
                 village = GetRandomVillage();
                 if (village.Name != "")
                 {
-                    float village_x = village.Position[0];
-                    float village_z = village.Position[2];
-
-                    float village_pad;
-
-                    if (village.Type == TownFlags.CITY)
-                        village_pad = 300.0;
-                    else if (village.Type == TownFlags.CAPITAL)
-                        village_pad = 500.0;
-                    else
-                        village_pad = 100.0;
-
-                    x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
-                    z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
-                    y = GetGame().SurfaceY(x, z);
-
-                    Print("Trying to spawn player " + process_player.GetIdentity().GetName() + " to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ") with a radius of " + village_pad);
+                    random_pos = GetRandomVillagePosition(village);
+                    Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ")");
                 } else {
                     Print("Another fucked up village!");
                     continue;
                 }
             }
 
-            random_pos[0] = x;
-            random_pos[1] = y;
-            random_pos[2] = z;
-
-            //check if random_pos is bad
-            if(GetGame().SurfaceIsSea(x, z))
-                continue;
-
-            if(GetGame().SurfaceIsPond(x, z))
-                continue;
-
-            if(GetGame().SurfaceRoadY(x, z) != y)
-                continue;
-
-            if(!m_Zone.IsInZone(x, z))
-                continue;
-
-            ref array<string> bad_surface_types = {
-                "nam_seaice",
-                "nam_lakeice_ext"
-            };
-
-            string surface_type;
-            GetGame().SurfaceGetType(x, z, surface_type);
-            if(bad_surface_types.Find(surface_type) != -1)
-                continue;
-
-            vector start = random_pos + Vector( 0, 5, 0 );
-            vector end = random_pos;
-            float radius = 2.0;
-
-            PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
-            Object m_HitObject;
-            vector m_HitPosition;
-            vector m_HitNormal;
-            float m_HitFraction;
-            bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
-
-            if(m_Hit)
+            if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2]))
                 continue;
 
             break;
         }
 
-        Print("Spawn player " + process_player.GetIdentity().GetName() + " at " + random_pos);
+        return new Param2<vector, Town>(random_pos, village);
+    }
+
+    protected void Teleport(PlayerBase process_player)
+    {
+        ref Param2<vector, Town> random_pos = GetRandomSpawnPosition();
+        vector position = random_pos.param1;
+        Town village = random_pos.param2;
+
+        TeleportPlayer(process_player, position, village);
+    }
+
+    protected void TeleportGroup(ref set<PlayerBase> group)
+    {
+        ref Param2<vector, Town> random_pos = GetRandomSpawnPosition();
+        vector position = random_pos.param1;
+        Town village = random_pos.param2;
+
+        int tmpNbPlayers = group.Count();
+        for(int i = 0; i < tmpNbPlayers; i++)
+        {
+            PlayerBase player = group.Get(i);
+            BattleRoyaleUtils.Trace("Teleport player " + player.GetIdentity().GetName() + " to position " + position);
+
+            TeleportPlayer(player, position + Vector(Math.RandomFloatInclusive(-5.0, 5.0), 0, Math.RandomFloatInclusive(-5.0, 5.0)), village);
+        }
+    }
+
+    protected void TeleportPlayer(PlayerBase player, vector position, Town village = NULL)
+    {
+        BattleRoyaleUtils.Trace("Spawn player " + player.GetIdentity().GetName() + " at " + position);
 
         //set pos
-        process_player.SetPosition(random_pos);
+        player.SetPosition(position);
 
         //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
         //TODO: force stand up
 
         if (village)
         {
-            process_player.SetDirection(vector.Direction(process_player.GetPosition(), village.Position));
+            player.SetDirection(vector.Direction(player.GetPosition(), village.Position));
         } else {
             //random direction
             float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
             vector playerDir = vector.YawToVector(dir);
-            process_player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
+            player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         }
     }
 
@@ -320,12 +370,107 @@ class BattleRoyalePrepare extends BattleRoyaleState
         }
         BattleRoyaleUtils.Trace("Players are disabled");
 
+#ifdef SCHANAMODPARTY
+        BattleRoyaleUtils.Trace("Mod party enabled");
+        ref array<ref set<PlayerBase>> teleport_groups = new array<ref set<PlayerBase>>;
+        ref array<PlayerBase> m_PlayerWaitList = new array<PlayerBase>();
+        m_PlayerWaitList.Copy(m_PlayerList);
+        // Create teleport groups
+
+        // Recuperation des parties
+        // Recuperation de la partie du joueur
+        // Ajout des membres de la partie dans un groupe
+        // Suppression de chaque membre de la liste m_PlayerWaitList
+
+        SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
+        if (manager)
+        {
+            BattleRoyaleUtils.Trace("Manager OK");
+            autoptr map<string, autoptr set<string>> parties = manager.GetParties();
+            if (parties)
+            {
+                BattleRoyaleUtils.Trace("Parties OK");
+                // Create map player id <-> player object
+                auto id_map = new map<string, PlayerBase>();
+                array<Man> players = new array<Man>;
+                GetGame().GetPlayers(players);
+                for (i = 0; i < players.Count(); ++i)
+                {
+                    PlayerBase player = PlayerBase.Cast(players.Get(i));
+                    if (player && player.GetIdentity() && player.IsAlive())
+                    {
+                        BattleRoyaleUtils.Trace("Player: " + player.GetIdentity().GetName());
+                        id_map.Insert(player.GetIdentity().GetId(), player);
+                    }
+                }
+
+                // Iterate over parties
+                ref set<PlayerBase> group;
+                int partyCount = parties.Count();
+                BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
+                for (i = 0; i < partyCount; ++i)
+                {
+                    group = new ref set<PlayerBase>;
+                    PlayerBase plr = PlayerBase.Cast(id_map.Get(parties.GetKey(i)));
+                    BattleRoyaleUtils.Trace("Party leader is " + plr.GetIdentity().GetName());
+                    if(m_PlayerWaitList.Find(plr) != -1)
+                    {
+                        BattleRoyaleUtils.Trace(plr.GetIdentity().GetName() + " is in the wait list");
+                        m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plr));
+                        if (plr && plr.GetIdentity() && plr.IsAlive())
+                        {
+                            BattleRoyaleUtils.Trace("Add leader " + plr.GetIdentity().GetName() + " to the group");
+                            group.Insert(plr);  // Insert guild leader into group
+                            if (parties.GetElement(i))
+                            {
+                                int tmpPlayPartCount = parties.GetElement(i).Count();
+                                BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " members");
+                                for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
+                                {
+                                    PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)))
+                                    BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
+                                    if(m_PlayerWaitList.Find(plrpart) != -1)
+                                    {
+                                        BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
+                                        m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
+                                        group.Insert(plrpart);  // Insert party member into group
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    teleport_groups.Insert(group);  // Insert group into list of groups
+                }
+            }
+        }
+        // Add remaining players
+        ref set<PlayerBase> tmp_player;
+        int pRemCount = m_PlayerWaitList.Count();
+        BattleRoyaleUtils.Trace("Remaining players: " + pRemCount);
+        for (i = 0; i < pRemCount; i++)
+        {
+            BattleRoyaleUtils.Trace("Remaining player: " + m_PlayerWaitList.Get(i).GetName());
+            tmp_player = new set<PlayerBase>;
+            tmp_player.Insert(m_PlayerWaitList.Get(i));
+            teleport_groups.Insert(tmp_player);
+        }
+
+        // Teleport groups
+        int pGroupCount = teleport_groups.Count();
+        BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
+        for (i = 0; i < pGroupCount; i++) {
+            BattleRoyaleUtils.Trace("Teleport group " + i);
+            if (process_player) TeleportGroup(teleport_groups.Get(i));
+            Sleep(100);
+        }
+#else
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player) Teleport(process_player);
 
             Sleep(100);
         }
+#endif
         BattleRoyaleUtils.Trace("Teleported players");
 
         // plz fix this
