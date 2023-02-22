@@ -17,7 +17,7 @@ class BattleRoyaleWin extends BattleRoyaleState
     {
         super.Activate();
 
-        ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
+        //ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
 
         string winner_name = "<NO:WINNER>";
         if(GetPlayers().Count() > 0)
@@ -32,18 +32,18 @@ class BattleRoyaleWin extends BattleRoyaleState
                 Print(identity.GetFullName());
                 Print(identity.GetId());
                 Print(identity.GetPlainId());
-                match_data.CreateWinner( identity.GetPlainId(), winner.GetPosition(), GetGame().GetTime() );
+                //match_data.CreateWinner( identity.GetPlainId(), winner.GetPosition(), GetGame().GetTime() );
             }
             HandleWinner(winner);
         }
 
-        //SetEnd must be called after we create winner
-        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetEnd( GetGame().GetTime() ); //match end time logging
+        // SetEnd must be called after we create winner
+        //BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetEnd( GetGame().GetTime() ); //match end time logging
 
-        //log match end weather
-        float rain_intensity = GetGame().GetWeather().GetRain().GetActual();
-        float fog_intensity = GetGame().GetWeather().GetFog().GetActual();
-        match_data.SetEndWeather( rain_intensity, fog_intensity );
+        // log match end weather
+        //float rain_intensity = GetGame().GetWeather().GetRain().GetActual();
+        //float fog_intensity = GetGame().GetWeather().GetFog().GetActual();
+        //match_data.SetEndWeather( rain_intensity, fog_intensity );
 
         //if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
         //{
