@@ -95,7 +95,7 @@ modded class MainMenu
         return true;
     }
 
-    override void Play()
+    /*override void Play()
     {
         ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
         //if(!b_IsConnected)
@@ -120,7 +120,7 @@ modded class MainMenu
         //GetGame().Connect(this, "127.0.0.1", 2302, "");
         Print("Play()");
         //g_Game.ConnectToBR();
-    }
+    }*/
 
     void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL, string button_text_2 = "",  ref PopupButtonCallback onClickCallback_2 = NULL )
     {
