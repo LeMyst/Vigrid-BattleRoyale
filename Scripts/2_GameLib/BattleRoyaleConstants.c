@@ -11,6 +11,7 @@ static const string BATTLEROYALE_VERSION = "0.0.1-Myst";
 static const int BATTLEROYALE_SOLO_GAME = 0;
 static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
+
 //--- default web endpoint
 //static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
 //static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
@@ -88,7 +89,6 @@ static const string DAYZBR_SM_UNKNOWN_DEBUG_NAME = "Unknown Debug State";
 static const float DAYZBR_MSG_TIME = 7;
 static const string DAYZBR_MSG_IMAGE = "set:expansion_iconset image:icon_info";
 static const string DAYZBR_MSG_TITLE = "DayZ Battle Royale";
-
 static const string DAYZBR_MSG_NEW_ZONE_OUTSIDE = "A new zone has appeared! YOU ARE OUTSIDE THE PLAY AREA!";
 static const string DAYZBR_MSG_NEW_ZONE_INSIDE = "A new zone has appeared! You are in the play area!";
 static const string DAYZBR_MSG_TAKING_DAMAGE = "You are taking zone damage!";
