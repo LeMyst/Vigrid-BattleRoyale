@@ -424,7 +424,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                             if (parties.GetElement(i))
                             {
                                 int tmpPlayPartCount = parties.GetElement(i).Count();
-                                BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " members");
+                                BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
                                 for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
                                 {
                                     PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)))
