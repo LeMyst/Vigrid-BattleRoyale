@@ -161,9 +161,11 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
     void HandleUnlock()
     {
+        BattleRoyaleUtils.Trace("HandleUnlock");
         for(int i = 0; i < m_PlayerList.Count(); i++)
         {
             PlayerBase player = m_PlayerList[i];
+            BattleRoyaleUtils.Trace("Unlock " + player.GetIdentity().GetName());
 
             player.DisableInput(false); //This will re-enable input
         }

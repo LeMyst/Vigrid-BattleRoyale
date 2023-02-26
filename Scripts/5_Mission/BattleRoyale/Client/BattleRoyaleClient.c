@@ -281,6 +281,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
     void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
     {
+        BattleRoyaleUtils.Trace("SetInput");
         Param1<bool> data;
         if( !ctx.Read( data ) )
         {

@@ -48,12 +48,14 @@ modded class PlayerBase
 
     void DisableInput(bool disabled)
     {
-        Print(" Call To Disable Player Input ");
+        Print(" Call To Disable (" + disabled + ") Player Input ");
         HumanInputController controller = GetInputController();
-        controller.OverrideMovementSpeed( disabled, 0 );
+        controller.SetDisabled( disabled );
+        /*controller.OverrideMovementSpeed( disabled, 0 );
+        controller.OverrideMovementAngle( disabled, 0 );
         controller.OverrideMeleeEvade( disabled, false );
         controller.OverrideRaise( disabled, false );
-        controller.OverrideMovementAngle( disabled, 0 );
+        controller.OverrideMovementAngle( disabled, 0 );*/
     }
 
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
