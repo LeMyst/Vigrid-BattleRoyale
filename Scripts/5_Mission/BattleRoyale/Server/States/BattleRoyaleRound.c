@@ -11,6 +11,10 @@ class BattleRoyaleRound extends BattleRoyaleState
     array<int> lock_notif_min;
     array<int> lock_notif_sec;
 
+#ifdef SCHANAMODPARTY
+    int i_MaxPartySize;
+#endif
+
     protected ref array<ref Timer> m_MessageTimers;
     protected ref Timer m_NewZoneLockTimer;
     protected ref Timer m_RoundTimeUpTimer;
@@ -35,6 +39,10 @@ class BattleRoyaleRound extends BattleRoyaleState
         b_DoZoneDamage = m_GameSettings.enable_zone_damage;
 
         m_MessageTimers = new array<ref Timer>;
+
+#ifdef SCHANAMODPARTY
+        i_MaxPartySize = GetSchanaPartyServerSettings().GetMaxPartySize();
+#endif
 
         Init();
     }
@@ -207,15 +215,60 @@ class BattleRoyaleRound extends BattleRoyaleState
     {
         if(!BATTLEROYALE_SOLO_GAME)
         {
-            if(GetPlayers().Count() <= 1 && IsActive())
+            ref array<PlayerBase> players = GetPlayers();
+
+            if(IsActive())
             {
-                Print(GetName() + " IsComplete!");
-                // TODO: toggle to debug game
-                Deactivate();
+#ifdef SCHANAMODPARTY
+                if(i_MaxPartySize < 1 || players.Count() <= i_MaxPartySize)
+                {
+                    set<string> players_id = new set<string>;
+                    foreach(PlayerBase player : players)
+                        players_id.Insert(player.GetIdentity().GetId());
+                    if(players.Count() <= 1 || AllPlayersSameParty(players_id))
+                    {
+                        Print(GetName() + " IsComplete!");
+                        Deactivate();
+                    }
+                }
+#else
+                if(players.Count() <= 1)
+                {
+                    Print(GetName() + " IsComplete!");
+                    // TODO: toggle to debug game
+                    Deactivate();
+                }
+#endif
             }
         }
         return super.IsComplete();
     }
+
+#ifdef SCHANAMODPARTY
+    bool AllPlayersSameParty(set<string> players)
+    {
+        BattleRoyaleUtils.Trace("AllPlayersSameParty");
+        SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
+        autoptr map<string, autoptr set<string>> s_parties = manager.GetParties();
+        set<string> remaining_parties = new set<string>;
+		foreach (auto id, auto party_ids : s_parties) {  // For each party
+		    foreach (string member : party_ids)  // For each member of the party
+		    {
+		        if(players.Find(member) != -1)  // If the member is alive
+		        {
+		            remaining_parties.Insert(id);  // Insert the party inside the remaining parties
+		        }
+		    }
+		}
+
+		Print(remaining_parties);
+
+		if (remaining_parties.Count() == 1)
+		    return true;
+
+		return false;
+    }
+#endif
 
     override bool SkipState(BattleRoyaleState m_PreviousState)
     {
