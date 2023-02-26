@@ -34,6 +34,7 @@ class BattleRoyaleCountReached extends BattleRoyaleDebugState
 
         MessagePlayers("Player count reached! Match is starting in " + i_TimeToStart.ToString() + " " + second + "!");
         m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
     }
     override void Deactivate()
     {
