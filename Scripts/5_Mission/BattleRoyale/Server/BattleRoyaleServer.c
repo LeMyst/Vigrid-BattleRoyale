@@ -188,7 +188,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
     void OnPlayerConnected(PlayerBase player)
     {
         //Teleport player into debug zone
-        Print("Player connected!" + player.GetIdentity().GetName()); //lets find out if respawning players end up here
+        Print("Player " + player.GetIdentity().GetName() + " connected!"); //lets find out if respawning players end up here
 
         //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -269,7 +269,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
         {
             GetCurrentState().RemovePlayer(player);
 
-            BattleRoyaleDebug m_DebugStateObj;
+            /*BattleRoyaleDebug m_DebugStateObj;
             if(!Class.CastTo( m_DebugStateObj, GetCurrentState() ))
             {
                 if(player)
@@ -295,7 +295,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
                         Error("Player disconnected with unknown owner id!");
                     }
                 }
-            }
+            }*/
         }
 
         //if player is in the loot system, remove them
