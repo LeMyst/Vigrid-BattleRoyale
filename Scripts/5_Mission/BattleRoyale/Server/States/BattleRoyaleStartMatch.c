@@ -9,6 +9,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
     protected ref array<ref Timer> m_MessageTimers;
     protected ref Timer m_UnlockTimer;
+    protected ref Timer m_ShowFirstZone;
     protected ref Timer m_ZoneStartTimer;
 
     void BattleRoyaleStartMatch()
@@ -50,7 +51,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         m_UnlockTimer = AddTimer(i_TimeToUnlock, this, "UnlockPlayers", NULL, false);
 
         if (b_ShowFirstZone)
-            m_UnlockTimer = AddTimer(i_TimeToUnlock, this, "ShowFirstZone", NULL, false);
+            m_ShowFirstZone = AddTimer(i_TimeToUnlock, this, "ShowFirstZone", NULL, false);
 
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
