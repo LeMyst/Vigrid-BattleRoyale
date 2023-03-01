@@ -65,7 +65,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
         m_States.Insert(start_match);
 
         int num_states = m_States.Count();
-        for(int i = 0; i < i_NumRounds;i++)
+        for(int i = 0; i < i_NumRounds; i++)
         {
             Print("Add Round " + i);
             int prev_state_ind = i + num_states - 1;
