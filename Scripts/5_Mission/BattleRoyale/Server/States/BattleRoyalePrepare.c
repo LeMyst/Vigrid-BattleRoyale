@@ -8,6 +8,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     private BattleRoyaleGameData m_GameSettings;
 
     private ref array<ref Town> villages;
+    private int villages_index;
 
     void BattleRoyalePrepare()
     {
@@ -28,6 +29,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
         world_center = GetGame().ConfigGetVector(path + " centerPosition");
+
+        villages_index = 0;
     }
 
     override void Activate()
@@ -130,7 +133,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         process_player.DisableInput(true);
     }
 
-    protected Town GetRandomVillage()
+    protected Town GetRandomVillage(BattleRoyalePlayArea area = NULL, bool use_radius = false)
     {
         // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/Town/TownFlags.c
         if(!villages)
@@ -138,12 +141,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
             villages = new array<ref Town>;
 
             //ref array<ref Town> temp_villages = Town.GetMapTowns(TownFlags.CAPITAL | TownFlags.CITY | TownFlags.VILLAGE | TownFlags.CAMP);
-            ref array<ref Town> temp_villages = new array<ref Town>;
 
             string world_name = "";
             GetGame().GetWorldName(world_name);
             string cfg = "CfgWorlds " + world_name + " Names";
-            Print(cfg);
+            BattleRoyaleUtils.Trace(cfg);
             for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++) {
                 string city;
                 GetGame().ConfigGetChildName(cfg, i, city);
@@ -157,48 +159,85 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 if(town_type != "Capital" && town_type != "City" && town_type != "Village")
                     continue;
 
-                Print("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
+                BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
 
                 Town town_entry();
                 town_entry.Entry = city;
                 town_entry.Type = Town.GetTownFlag(GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
                 town_entry.Name = GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city));
                 town_entry.Position = city_position;
-                temp_villages.Insert(town_entry);
+
+                BattleRoyaleUtils.Trace("- " + i + ". " + town_entry.Name + " (" + Town.GetTownTypeString(town_entry.Type) + ")");
+
+                if(town_entry.Name == "" || Town.GetTownTypeString(town_entry.Type) == "") // useless ?
+                    continue;
+
+                if(town_entry.Name == "Kumyrna")  // Ruins
+                    continue;
+
+                if(town_entry.Name == "Skalisty")  // South-east island
+                    continue;
+
+                if(town_entry.Name == "Shkolnik")  // North-east BR lobby
+                    continue;
+
+                if(m_GameSettings.spawn_in_first_zone && area != NULL)
+                {
+                    float village_pad;
+
+                    if(use_radius)
+                    {
+                        if (town_entry.Type == TownFlags.CITY)
+                            village_pad = 300.0;
+                        else if (town_entry.Type == TownFlags.CAPITAL)
+                            village_pad = 500.0;
+                        else
+                            village_pad = 150.0;
+                    }
+                    else
+                        village_pad = 0.0;
+
+                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad)))
+                        continue;
+                }
+
+                int pond = 1;
+                if(town_entry.Type == TownFlags.CAPITAL)
+                    pond = 5;
+                else if(town_entry.Type == TownFlags.CITY)
+                    pond = 3;
+
+                for(int p = 0; p < pond; p++)
+                    villages.Insert(town_entry);
             }
 
-            Print(temp_villages);
-            for(int j = 0; j < temp_villages.Count(); j++)
+            // Add weighting
+
+
+            // Randomize order of villages
+            villages.ShuffleArray();
+
+            BattleRoyaleUtils.Trace("Final village list:");
+            foreach(Town village : villages)
             {
-                ref Town temp_village = temp_villages[j];
-                Print("- " + j + ". " + temp_village.Name + " (" + Town.GetTownTypeString(temp_village.Type) + ")");
-
-                if(temp_village.Name == "" || Town.GetTownTypeString(temp_village.Type) == "") // useless ?
-                    continue;
-
-                if(temp_village.Name == "Kumyrna")  // Ruins
-                    continue;
-
-                if(temp_village.Name == "Skalisty")  // South-east island
-                    continue;
-
-                if(temp_village.Name == "Shkolnik")  // North-east BR lobby
-                    continue;
-
-                villages.Insert(temp_village);
+                BattleRoyaleUtils.Trace("- " + village.Name + " (" + village.Type + ")");
             }
-
-            Print(villages);
         }
-        Town random_village = villages[Math.RandomInt(0, villages.Count())];
-        return random_village;
+
+        if(villages.Count() > 0)
+        {
+            //return villages[Math.RandomInt(0, villages.Count())];
+            if(villages_index > villages.Count()+1)
+                villages_index = 0;
+
+            return villages[villages_index++];
+        }
+        else
+            return NULL;
     }
 
-    protected bool IsSafeForTeleport(float x, float y, float z)
+    protected bool IsSafeForTeleport(float x, float y, float z, bool check_zone = true)
     {
-        BattleRoyaleZone m_Zone = new BattleRoyaleZone;
-        m_Zone = m_Zone.GetZone(1);
-
         //check if random_pos is bad
         if(GetGame().SurfaceIsSea(x, z))
             return false;
@@ -209,8 +248,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
         if(GetGame().SurfaceRoadY(x, z) != y)
             return false;
 
-        if(m_GameSettings.spawn_in_first_zone && !m_Zone.IsInZone(x, z))
-            return false;
+        if(check_zone && m_GameSettings.spawn_in_first_zone)
+        {
+            if(!BattleRoyaleZone.GetZone(1).IsInZone(x, z))
+                return false;
+        }
 
         ref array<string> bad_surface_types = {
             "nam_seaice",
@@ -287,20 +329,28 @@ class BattleRoyalePrepare extends BattleRoyaleState
             random_pos[2] = z;
 
             village = NULL;
-            if (m_GameSettings.spawn_in_villages && spawn_try < 100)
+            bool check_zone = true;
+            if (m_GameSettings.spawn_in_villages && spawn_try <= 50)
             {
-                village = GetRandomVillage();
-                if (village.Name != "")
+                if(m_GameSettings.spawn_in_first_zone)
+                {
+                    BattleRoyaleUtils.Trace("Spawn in village area");
+                    village = GetRandomVillage(BattleRoyaleZone.GetZone(1).GetArea(), true);
+                    check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone
+                }
+                else
+                    village = GetRandomVillage();
+
+                if (village != NULL && village.Name != "")
                 {
                     random_pos = GetRandomVillagePosition(village);
-                    Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ")");
                 } else {
                     Print("Another fucked up village!");
                     continue;
                 }
             }
 
-            if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2]))
+            if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], check_zone))
                 continue;
 
             break;
@@ -330,7 +380,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
             PlayerBase player = group.Get(i);
             BattleRoyaleUtils.Trace("Teleport player " + player.GetIdentity().GetName() + " to position " + position);
 
-            TeleportPlayer(player, position + Vector(Math.RandomFloatInclusive(-5.0, 5.0), 0, Math.RandomFloatInclusive(-5.0, 5.0)), village);
+            float x = position[0] + Math.RandomFloatInclusive(-3.0, 3.0);
+            float z = position[2] + Math.RandomFloatInclusive(-3.0, 3.0);
+            float y = GetGame().SurfaceY(x, z);
+
+            TeleportPlayer(player, Vector(x, y, z), village);
         }
     }
 
@@ -427,7 +481,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                                 BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
                                 for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
                                 {
-                                    PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)))
+                                    PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)));
                                     BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
                                     if(m_PlayerWaitList.Find(plrpart) != -1)
                                     {
@@ -437,9 +491,11 @@ class BattleRoyalePrepare extends BattleRoyaleState
                                     }
                                 }
                             }
+                            teleport_groups.Insert(group);  // Insert group into list of groups
                         }
+                    } else {
+                        BattleRoyaleUtils.Trace("Party leader is not in waiting list, do nothing");
                     }
-                    teleport_groups.Insert(group);  // Insert group into list of groups
                 }
             }
         }

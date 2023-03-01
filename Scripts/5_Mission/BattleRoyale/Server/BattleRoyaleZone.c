@@ -38,10 +38,12 @@ class BattleRoyaleZone
         a_StaticSizes = m_ZoneSettings.static_sizes;
         a_StaticTimers = m_ZoneSettings.static_timers;
 
-        m_PlayArea = new BattleRoyalePlayArea;
+        m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
         Init();
     }
+
+    static ref map<int, ref BattleRoyaleZone> m_Zones;
 
     static ref BattleRoyaleZone GetZone(int x = 1)
     {
@@ -73,8 +75,6 @@ class BattleRoyaleZone
             return m_Zones.Get(z_Index);
         }
     }
-
-    static ref map<int, ref BattleRoyaleZone> m_Zones;
 
     ref BattleRoyalePlayArea GetArea()
     {
@@ -174,7 +174,7 @@ class BattleRoyaleZone
 
         m_PlayArea.SetCenter(new_center);
 
-        Print("Zone Data");
+        BattleRoyaleUtils.Trace("Zone Data");
         Print(m_PlayArea.GetCenter());
         Print(m_PlayArea.GetRadius());
     }
@@ -286,5 +286,39 @@ class BattleRoyaleZone
         Print(radius_pow);
 
         return (d < radius_pow);
+    }
+
+    protected bool HavePOIInside(BattleRoyalePlayArea play_area)
+    {
+        string world_name = "";
+        GetGame().GetWorldName(world_name);
+        string cfg = "CfgWorlds " + world_name + " Names";
+        BattleRoyaleUtils.Trace(cfg);
+        if(!s_POI)
+        {
+            s_POI = new set<ref array<float>>;
+            for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++) {
+                string city;
+                GetGame().ConfigGetChildName(cfg, i, city);
+                TFloatArray float_array = {};
+                GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
+
+                s_POI.Insert(float_array);
+            }
+        }
+
+        foreach(ref array<float> poi : s_POI)
+        {
+            Print(poi);
+            vector area_position = play_area.GetCenter();
+
+            float a = poi[0] - area_position[0];
+            float b = poi[1] - area_position[2];
+            float c = play_area.GetRadius();
+            if((Math.Pow(a, 2) + Math.Pow(b, 2)) < Math.Pow(c, 2))
+                return true;
+        }
+
+        return false;
     }
 }
