@@ -106,8 +106,8 @@ static const float DAYZBR_VS_MIN_SURFACE_FRICTION = 0.94; //todo: config this as
 
 
 //--- zoning subsystem
-static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.3333; //min next zone distance as a percent of maximum distance (1 => 100%)
-static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.6666; //max next zone distance as a percent of maxmimum distance (1 => 100%)
+static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
+static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 1; //max next zone distance as a percent of maxmimum distance (1 => 100%)
 static const float DAYZBR_ZS_MIN_ANGLE = 0; //degrees
 static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
 
