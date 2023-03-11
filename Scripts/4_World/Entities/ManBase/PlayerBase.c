@@ -191,4 +191,88 @@ modded class PlayerBase
         // required for repairing and stuff, so no need to change for godmode
         //player.GetStatSpecialty().Set(100);
     }
+
+	override void ResetPlayer(bool set_max)
+	{
+		if (GetGame().IsServer() || !GetGame().IsMultiplayer())
+		{
+			//server + single
+
+			//clear stomach content
+			GetStomach().ClearContents();
+
+			// bleeding sources
+			if ( m_BleedingManagerServer )
+				m_BleedingManagerServer.RemoveAllSources();
+
+			// Modifiers
+			bool hasAreaExposureModifier, hasMaksModifier;
+			if (GetModifiersManager())
+			{
+				hasAreaExposureModifier = GetModifiersManager().IsModifierActive(eModifiers.MDF_AREAEXPOSURE);
+				hasMaksModifier = GetModifiersManager().IsModifierActive(eModifiers.MDF_MASK);
+				GetModifiersManager().DeactivateAllModifiers();
+
+				if (hasAreaExposureModifier)
+					GetModifiersManager().ActivateModifier(eModifiers.MDF_AREAEXPOSURE);
+
+				if (hasMaksModifier)
+					GetModifiersManager().ActivateModifier(eModifiers.MDF_MASK);
+			}
+
+			// Stats
+			if (GetPlayerStats())
+			{
+				int bloodType = GetStatBloodType().Get();
+				GetPlayerStats().ResetAllStats();
+				GetStatBloodType().Set(bloodType);
+			}
+
+			if (m_StaminaHandler)
+				m_StaminaHandler.SetStamina(GameConstants.STAMINA_MAX);
+
+			// Agents
+			if (m_AgentPool)
+				m_AgentPool.RemoveAllAgents();
+
+			// Damage System
+			DamageZoneMap zones = new DamageZoneMap();
+			DamageSystem.GetDamageZoneMap(this, zones);
+			SetHealth("", "Health", GetMaxHealth("","Health"));
+			SetHealth("", "Shock", GetMaxHealth("","Shock"));
+			SetHealth("", "Blood", GetMaxHealth("","Blood"));
+
+			for (int i = 0; i < zones.Count(); i++)
+			{
+				string zone = zones.GetKey(i);
+				SetHealth(zone, "Health", GetMaxHealth(zone,"Health"));
+				SetHealth(zone, "Shock", GetMaxHealth(zone,"Shock"));
+				SetHealth(zone, "Blood", GetMaxHealth(zone,"Blood"));
+			}
+
+			// uncon
+			if (IsUnconscious())
+				DayZPlayerSyncJunctures.SendPlayerUnconsciousness(this, false);
+
+			// set max
+			if (set_max)
+			{
+				GetStatWater().Set(GetStatWater().GetMax());
+				GetStatEnergy().Set(GetStatEnergy().GetMax());
+			}
+
+
+			// fix up inventory
+			FixAllInventoryItems();
+
+			//remove bloody hands
+			PluginLifespan moduleLifespan = PluginLifespan.Cast(GetPlugin(PluginLifespan));
+			moduleLifespan.UpdateBloodyHandsVisibilityEx(this, eBloodyHandsTypes.CLEAN);
+
+		}
+		else
+		{
+			// multiplayer client only
+		}
+	}
 }
