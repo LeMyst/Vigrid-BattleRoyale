@@ -14,6 +14,8 @@ class BattleRoyaleZone
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
 
+    protected bool b_EndInVillages;
+
     protected int i_RoundDurationMinutes;
 
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
@@ -37,6 +39,7 @@ class BattleRoyaleZone
         f_Exponent = m_ZoneSettings.shrink_exponent;
         a_StaticSizes = m_ZoneSettings.static_sizes;
         a_StaticTimers = m_ZoneSettings.static_timers;
+        b_EndInVillages = m_ZoneSettings.end_in_villages;
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
@@ -89,6 +92,8 @@ class BattleRoyaleZone
     void Init()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleZone Init()");
+
+#ifdef OLD_AREA_SYSTEM
         float p_Rad;
         vector p_Cen = "0 0 0";
 
@@ -131,6 +136,9 @@ class BattleRoyaleZone
         BattleRoyaleUtils.Trace("p_Cen: " + p_Cen);
 
         CreatePlayArea(p_Rad, p_Cen);
+#else
+        m_PlayArea = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
+#endif
     }
 
     void OnActivate(notnull ref array<PlayerBase> players)
@@ -140,6 +148,62 @@ class BattleRoyaleZone
         //we can look at CreatePlayArea / CreatePlayRadius & Init methods for examples of zone size creation
     }
 
+    //returns which # zone this is ( 1 for the first zone )
+    int GetZoneNumber()
+    {
+        int number = 1;
+        ref BattleRoyaleZone parent = m_ParentZone;
+        while(parent)
+        {
+            parent = parent.GetParent();
+            number++;
+        }
+        return number;
+    }
+
+    int GetZoneTimer()
+    {
+        if (i_ShrinkType ==  3)
+        {
+            float x = GetZoneNumber();
+            if(x > a_StaticTimers.Count())
+            {
+                Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
+                return 300;
+            }
+            return a_StaticTimers[i_NumRounds - x];
+        }
+
+        return 60 * i_RoundDurationMinutes;
+    }
+
+    bool IsInZone(float x, float z)
+    {
+        vector center = GetArea().GetCenter();
+
+        float d = (Math.Pow(x - center[0], 2) + Math.Pow(z - center[2], 2));
+        float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
+
+        Print(d);
+        Print(radius_pow);
+
+        return (d < radius_pow);
+    }
+
+    protected bool IsSafeZoneCenter(float X, float Z)
+    {
+        if(GetGame().SurfaceIsSea(X, Z))
+            return false;
+
+        if(GetGame().SurfaceIsPond(X, Z))
+            return false;
+
+        // put any extra checks here
+
+        return true;
+    }
+
+#ifdef OLD_AREA_SYSTEM
     protected void CreatePlayArea(float p_Rad, vector p_Cen)
     {
         float new_radius = CreatePlayRadius(p_Rad);
@@ -150,8 +214,11 @@ class BattleRoyaleZone
         float oldZ = p_Cen[2];
         float max_distance = p_Rad - new_radius; // TODO: Define default size for last zone
 
+        int max_try = 100;
+
         while(true)
         {
+            max_try = max_try - 1;
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
             float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
 
@@ -168,8 +235,10 @@ class BattleRoyaleZone
             new_center[2] = newZ;
 
             //check if new_center is valid (not in water)
-            if(IsSafeZoneCenter(newX, newZ))
-                break;
+            if(!IsSafeZoneCenter(newX, newZ))
+                continue;
+
+            break;
         }
 
         m_PlayArea.SetCenter(new_center);
@@ -218,35 +287,6 @@ class BattleRoyaleZone
         return -1;
     }
 
-    //returns which # zone this is ( 1 for the first zone )
-    int GetZoneNumber()
-    {
-        int number = 1;
-        ref BattleRoyaleZone parent = m_ParentZone;
-        while(parent)
-        {
-            parent = parent.GetParent();
-            number++;
-        }
-        return number;
-    }
-
-    int GetZoneTimer()
-    {
-        if (i_ShrinkType ==  3)
-        {
-            float x = GetZoneNumber();
-            if(x > a_StaticTimers.Count())
-            {
-                Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
-                return 300;
-            }
-            return a_StaticTimers[i_NumRounds - x];
-        }
-
-        return 60 * i_RoundDurationMinutes;
-    }
-
     protected float GetWorldRadius()
     {
         if(BattleRoyaleZone.f_WorldRadius == -1)
@@ -262,37 +302,164 @@ class BattleRoyaleZone
         return BattleRoyaleZone.f_WorldRadius;
     }
 
-    protected bool IsSafeZoneCenter(float X, float Z)
+#else
+
+    static ref array<ref BattleRoyalePlayArea> m_PlayAreas;
+
+    BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)
     {
-        if(GetGame().SurfaceIsSea(X, Z))
-            return false;
+        if(!m_PlayAreas)
+        {
+            m_PlayAreas = new array<ref BattleRoyalePlayArea>();
 
-        if(GetGame().SurfaceIsPond(X, Z))
-            return false;
+            BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+            BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+            Print("CfgWorlds " + GetGame().GetWorldName());
+            vector previous_center;
+            for(int i = 0; i < i_NumRounds; i++)
+            {
+                BattleRoyaleUtils.Trace("Generate Area " + i);
+                if(i > a_StaticSizes.Count())
+                {
+                    Error("Not enough static sizes for static zone sizes! (want " + i + " have " + a_StaticSizes.Count() + ")");
+                }
+                BattleRoyalePlayArea playArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
+                float radius = a_StaticSizes[i];
+                BattleRoyaleUtils.Trace("radius: " + radius);
+                playArea.SetRadius(radius);
+                vector area_center;
 
-        //put any extra checks here
+                if(i == 0)  // First zone
+                {
+                    BattleRoyaleUtils.Trace("Generate first zone");
+                    vector temp = GetGame().ConfigGetVector("CfgWorlds " + GetGame().GetWorldName() + " centerPosition");
 
-        return true;
+                    // Get world size
+                    float world_width = temp[0] * 2;
+                    float world_height = temp[1] * 2;
+                    BattleRoyaleUtils.Trace("world_width: " + world_width);
+                    BattleRoyaleUtils.Trace("world_height: " + world_height);
+
+                    if(b_EndInVillages)
+                    {
+                        area_center = GetRandomPOI();
+                    } else {
+                        area_center = GetValidPositionSquare(radius, world_width, radius, world_height);
+                    }
+                } else {
+                    BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
+                    area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
+                }
+                BattleRoyaleUtils.Trace("area_center x: " + area_center[0]);
+                BattleRoyaleUtils.Trace("area_center z: " + area_center[2]);
+
+                playArea.SetCenter(area_center);
+
+                BattleRoyaleUtils.Trace("Zone Data");
+                Print(playArea.GetCenter());
+                Print(playArea.GetRadius());
+
+                m_PlayAreas.Insert(playArea);
+            }
+        }
+
+        BattleRoyaleUtils.Trace("Return zone number: " + zone_number);
+        return m_PlayAreas[zone_number];
     }
 
-    bool IsInZone(float x, float z)
+    vector GetValidPositionSquare(float min_x, float max_x, float min_z, float max_z)
     {
-        vector center = GetArea().GetCenter();
+        int max_try = 100;
+        vector new_center = "0 0 0";
+        while(true)
+        {
+            max_try = max_try - 1;
 
-        float d = (Math.Pow(x - center[0], 2) + Math.Pow(z - center[2], 2));
-        float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
+            new_center[0] = Math.RandomFloat(min_x, max_x);
+            new_center[2] = Math.RandomFloat(min_z, max_z);
 
-        Print(d);
-        Print(radius_pow);
+            if(!IsSafeZoneCenter(new_center[0], new_center[2]))
+                continue;
 
-        return (d < radius_pow);
+            new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
+
+            break;
+        }
+
+        return new_center;
     }
 
-    protected bool HavePOIInside(BattleRoyalePlayArea play_area)
+    vector GetValidPositionNewCircle(vector circle_center, float old_radius, float new_radius)
     {
-        string world_name = "";
-        GetGame().GetWorldName(world_name);
-        string cfg = "CfgWorlds " + world_name + " Names";
+        float max_distance = new_radius - old_radius;
+        vector new_center = "0 0 0";
+        float oldX = circle_center[0];
+        float oldZ = circle_center[2];
+        int max_try = 500;
+
+        while(true)
+        {
+            max_try = max_try - 1;
+
+            float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
+            float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
+
+            float dX = distance * Math.Sin(moveDir);
+            float dZ = distance * Math.Cos(moveDir);
+
+            new_center[0] = oldX + dX;
+            new_center[2] = oldZ + dZ;
+            new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
+
+            // We check if the (new center+radius) is inside the world
+            vector temp = GetGame().ConfigGetVector("CfgWorlds " + GetGame().GetWorldName() + " centerPosition");
+            float world_width = temp[0] * 2;
+            float world_height = temp[1] * 2;
+            if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_width || (new_center[2] + new_radius) > world_height)
+            {
+                BattleRoyaleUtils.Trace("not inside the world " + new_center[0] + " " + new_center[2] + " " + world_width + " " + world_height + " " + new_radius);
+
+                if(max_try <= 0)
+                {
+                    if(new_center[0] < new_radius)
+                    {
+                        new_center[0] = new_radius;
+                    }
+                    if(new_center[2] < new_radius)
+                    {
+                        new_center[2] = new_radius;
+                    }
+                    if((new_center[0] + new_radius) > world_width)
+                    {
+                        new_center[0] = world_width-new_radius;
+                    }
+                    if((new_center[2] + new_radius) > world_height)
+                    {
+                        new_center[2] = world_height-new_radius;
+                    }
+                    BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
+                    break;
+                }
+
+                continue;
+            }
+
+            if(!IsSafeZoneCenter(new_center[0], new_center[2]))
+            {
+                BattleRoyaleUtils.Trace("not IsSafeZoneCenter");
+                continue;
+            }
+
+            break;
+        }
+
+        return new_center;
+    }
+
+    static ref set<ref array<float>> s_POI;
+
+    vector GetRandomPOI() {
+        string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
         BattleRoyaleUtils.Trace(cfg);
         if(!s_POI)
         {
@@ -302,23 +469,43 @@ class BattleRoyaleZone
                 GetGame().ConfigGetChildName(cfg, i, city);
                 TFloatArray float_array = {};
                 GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
+                string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 
+                ref array<string> avoid_type = {"DeerStand", "FeedShack", "Marine"};
+                ref array<string> avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty", "Ruin_Storozh", "Local_MB_PrisonIsland"};  // , "Local_Drakon", "Local_Otmel"
+
+                if(avoid_type.Find(poi_type) != -1 || avoid_city.Find(city) != -1)
+                    continue;
+
+                BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+float_array+" "+poi_type);
                 s_POI.Insert(float_array);
             }
         }
 
-        foreach(ref array<float> poi : s_POI)
-        {
-            Print(poi);
-            vector area_position = play_area.GetCenter();
+        ref array<float> poi = s_POI.Get(Math.RandomInt(0, s_POI.Count()));
 
-            float a = poi[0] - area_position[0];
-            float b = poi[1] - area_position[2];
-            float c = play_area.GetRadius();
-            if((Math.Pow(a, 2) + Math.Pow(b, 2)) < Math.Pow(c, 2))
-                return true;
+        float radius, theta, x, z;
+        while(true)
+        {
+            radius = 10 * Math.Sqrt( Math.RandomFloat(0, 1) );
+            theta = Math.RandomFloat(0, 1) * Math.PI2;
+            x = poi[0] + radius * Math.Cos(theta);
+            z = poi[1] + radius * Math.Sin(theta);
+
+            if(!IsSafeZoneCenter(x, z))
+                continue;
+
+            break;
         }
 
-        return false;
+        vector poi_position = "0 0 0";
+        poi_position[0] = x;
+        poi_position[2] = z;
+        poi_position[1] = GetGame().SurfaceY(poi_position[0], poi_position[2]);
+
+        Print(poi_position);
+
+        return poi_position;
     }
+#endif
 }
