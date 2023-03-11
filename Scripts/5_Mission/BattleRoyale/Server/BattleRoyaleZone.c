@@ -92,53 +92,7 @@ class BattleRoyaleZone
     void Init()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleZone Init()");
-
-#ifdef OLD_AREA_SYSTEM
-        float p_Rad;
-        vector p_Cen = "0 0 0";
-
-        //figure out what the previous zone was
-        if(m_ParentZone)
-        {
-            //this zone has a parent
-            BattleRoyaleUtils.Trace("Create Another Zone");
-            p_Rad = m_ParentZone.GetArea().GetRadius();
-            p_Cen = m_ParentZone.GetArea().GetCenter();
-        }
-        else
-        {
-            BattleRoyaleUtils.Trace("Create First Zone");
-            //This zone is a "full map" zone (ie, the first zone)
-            string path = "CfgWorlds " + GetGame().GetWorldName();
-            Print(path);
-            vector temp = GetGame().ConfigGetVector(path + " centerPosition");
-
-            float world_width = temp[0] * 2;
-            float world_height = temp[1] * 2;
-            BattleRoyaleUtils.Trace("world_width: " + world_width);
-            BattleRoyaleUtils.Trace("world_height: " + world_height);
-
-            //p_Rad = Math.Min(world_height, world_width) / 2;
-            p_Rad = CreatePlayRadius(Math.Min(world_height, world_width) / 2);
-            BattleRoyaleUtils.Trace("max world_center_x: " + (world_width - p_Rad));
-            BattleRoyaleUtils.Trace("max world_center_z: " + (world_height - p_Rad));
-            float world_center_x = Math.RandomFloat(p_Rad, (world_width - p_Rad));
-            float world_center_z = Math.RandomFloat(p_Rad, (world_height - p_Rad));
-            float Y = GetGame().SurfaceY(world_center_x, world_center_z);
-            BattleRoyaleUtils.Trace("world_center_x: " + world_center_x);
-            BattleRoyaleUtils.Trace("world_center_z: " + world_center_z);
-
-            p_Cen[0] = world_center_x;
-            p_Cen[1] = Y;
-            p_Cen[2] = world_center_z;
-        }
-        BattleRoyaleUtils.Trace("pRad: " + p_Rad);
-        BattleRoyaleUtils.Trace("p_Cen: " + p_Cen);
-
-        CreatePlayArea(p_Rad, p_Cen);
-#else
         m_PlayArea = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
-#endif
     }
 
     void OnActivate(notnull ref array<PlayerBase> players)
@@ -203,107 +157,6 @@ class BattleRoyaleZone
         return true;
     }
 
-#ifdef OLD_AREA_SYSTEM
-    protected void CreatePlayArea(float p_Rad, vector p_Cen)
-    {
-        float new_radius = CreatePlayRadius(p_Rad);
-        m_PlayArea.SetRadius(new_radius);
-
-        vector new_center = "0 0 0";
-        float oldX = p_Cen[0];
-        float oldZ = p_Cen[2];
-        float max_distance = p_Rad - new_radius; // TODO: Define default size for last zone
-
-        int max_try = 100;
-
-        while(true)
-        {
-            max_try = max_try - 1;
-            float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
-            float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
-
-            float dX = distance * Math.Sin(moveDir);
-            float dZ = distance * Math.Cos(moveDir);
-
-            float newX = oldX + dX;
-            float newZ = oldZ + dZ;
-
-            float newY = GetGame().SurfaceY(newX, newZ);
-
-            new_center[0] = newX;
-            new_center[1] = newY;
-            new_center[2] = newZ;
-
-            //check if new_center is valid (not in water)
-            if(!IsSafeZoneCenter(newX, newZ))
-                continue;
-
-            break;
-        }
-
-        m_PlayArea.SetCenter(new_center);
-
-        BattleRoyaleUtils.Trace("Zone Data");
-        Print(m_PlayArea.GetCenter());
-        Print(m_PlayArea.GetRadius());
-    }
-
-    protected float CreatePlayRadius(float p_Rad) //p_Rad is the previous play areas radius
-    {
-        float m = i_NumRounds + 1; //7 total, rounds, 8 is needed for our calculation because X=8 would result in Y=0 and we want to avoid that
-        float x = GetZoneNumber(); //this needs to start at 1 (because x=0 for r=initial play area  == initial play area)
-        float r = GetWorldRadius();
-
-        switch(i_ShrinkType)
-        {
-            case 1: //exponential
-                // code for wolfram alpha: plot (r/-(e^3))*(e^((3/m)*x)+(-(e^3))) from x=0 to 30, r=500, m=30
-                float e = f_Eulers;
-                float exp = f_Exponent;
-
-                float yoffset = -1.0 * Math.Pow(e, exp); // -(e^3)
-                float sizefactor = r / yoffset; // -(r/(e^3))
-                float shrinkexp = (exp / m) * x; // (3/m)*x
-                float shrinkfactor = Math.Pow(e, shrinkexp) + yoffset; //e^((3/m)*x) + (-(e^3))
-
-                return sizefactor * shrinkfactor; //(-(r/(e^3)))*(e^((3/m)*x) + (-(e^3)))
-
-            case 2: //linear
-                // code for wolfram alpha: plot -(r/m)*x+r from x=0 to 30, r=500, m=30
-                float gradient = -1.0 * (r / m);
-                return gradient * x + r;
-
-            case 3: //static sizes (lift from array in config)
-                if(x > a_StaticSizes.Count())
-                {
-                    Error("Not enough static sizes for static zone sizes! (want " + x + " have " + a_StaticSizes.Count());
-                    return 10000;
-                }
-                return a_StaticSizes[i_NumRounds - x];
-            default:
-                return p_Rad * f_ConstantShrink;
-        }
-
-        return -1;
-    }
-
-    protected float GetWorldRadius()
-    {
-        if(BattleRoyaleZone.f_WorldRadius == -1)
-        {
-            string path = "CfgWorlds " + GetGame().GetWorldName();
-            vector temp = GetGame().ConfigGetVector(path + " centerPosition");
-
-            float world_width = temp[0] * 2;
-            float world_height = temp[1] * 2;
-
-            BattleRoyaleZone.f_WorldRadius = Math.Min(world_height, world_width) / 2;
-        }
-        return BattleRoyaleZone.f_WorldRadius;
-    }
-
-#else
-
     static ref array<ref BattleRoyalePlayArea> m_PlayAreas;
 
     BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)
@@ -341,15 +194,14 @@ class BattleRoyaleZone
                     BattleRoyaleUtils.Trace("world_height: " + world_height);
 
                     if(b_EndInVillages)
-                    {
                         area_center = GetRandomPOI();
-                    } else {
+                    else
                         area_center = GetValidPositionSquare(radius, world_width, radius, world_height);
-                    }
                 } else {
                     BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
                     area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
                 }
+
                 BattleRoyaleUtils.Trace("area_center x: " + area_center[0]);
                 BattleRoyaleUtils.Trace("area_center z: " + area_center[2]);
 
@@ -507,5 +359,4 @@ class BattleRoyaleZone
 
         return poi_position;
     }
-#endif
 }
