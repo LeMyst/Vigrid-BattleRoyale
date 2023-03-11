@@ -72,8 +72,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
         {
             distance = GetZoneDistance( m_FuturePlayArea );
             gameplay.UpdateZoneDistance( distance ); //update HUD element
-
-            UpdateZoneCenterMaker( m_FuturePlayArea.GetCenter() );
         }
         else
         {
@@ -81,8 +79,6 @@ class BattleRoyaleClient extends BattleRoyaleBase
             {
                 distance = GetZoneDistance( m_CurrentPlayArea );
                 gameplay.UpdateZoneDistance( distance );
-
-                UpdateZoneCenterMaker( m_CurrentPlayArea.GetCenter() );
             }
         }
 
