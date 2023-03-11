@@ -163,7 +163,7 @@ modded class MissionGameplay
     {
         for(int i = 0; i < 360; i++)
         {
-            Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
+            //Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
             float x1 = cx + (a * Math.Cos(i*Math.DEG2RAD));
             float y1 = cy + (b * Math.Sin(i*Math.DEG2RAD));
 
