@@ -4,6 +4,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
     protected bool b_ShowFirstZone;
+    //protected bool b_ArtillerySound;
 
     protected ref array<PlayerBase> m_PlayerList;
 
@@ -22,6 +23,8 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
 
         b_ShowFirstZone = m_GameSettings.show_first_zone_at_start;
+
+        //b_ArtillerySound = m_GameSettings.artillery_sound;
 
         b_IsGameplay = false;
 
@@ -157,7 +160,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         Print(m_ThisArea.GetRadius());
 
         BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, false ), true);
     }
 
     void HandleUnlock()

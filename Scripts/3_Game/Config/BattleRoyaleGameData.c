@@ -18,6 +18,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     bool spawn_in_first_zone = true;
     bool show_first_zone_at_start = true;
 
+    bool artillery_sound = true;
+
     ref array<string> player_starting_clothes = {
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",

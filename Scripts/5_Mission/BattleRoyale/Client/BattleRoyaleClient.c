@@ -376,7 +376,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
     void UpdateFuturePlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
     {
-        Param1<ref BattleRoyalePlayArea> data;
+        Param2<ref BattleRoyalePlayArea, bool> data;
         if( !ctx.Read( data ) )
         {
             Error("FAILED TO READ UpdateFuturePlayArea RPC");
@@ -385,8 +385,17 @@ class BattleRoyaleClient extends BattleRoyaleBase
         if ( type == CallType.Client )
         {
             m_FuturePlayArea = data.param1;
+            bool b_ArtillerySound = data.param2
             if (m_FuturePlayArea)
+            {
                 UpdateZoneCenterMaker( m_FuturePlayArea.GetCenter() );
+
+                if(b_ArtillerySound)
+                {
+                    ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+                    m_ArtySound.SetAutodestroy(true);
+                }
+            }
         }
     }
 

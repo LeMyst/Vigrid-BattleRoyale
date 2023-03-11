@@ -125,14 +125,14 @@ class BattleRoyaleSpectators
                     //tell the client the current area is now this area
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetZone().GetArea() ), true, identity);
                     //tell the client we don't know the next play area
-                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true, identity);
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false ), true, identity);
                 }
                 else
                 {
                     //-- we are in a round! send zones!
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetPreviousZone().GetArea() ), true, identity);
                     //tell the client the next play area
-                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( br_round.GetZone().GetArea() ), true, identity);
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( br_round.GetZone().GetArea(), false ), true, identity);
                 }
             }
             ref BattleRoyaleLastRound br_last_round;
@@ -143,7 +143,7 @@ class BattleRoyaleSpectators
                     //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
                     GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( br_last_round.GetPreviousZone().GetArea() ), true, identity);
                     //tell the client the future zone is NULL (no future zone)
-                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true, identity);
+                    GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false ), true, identity);
                 }
                 //no else case, if the last round locks, there is no circle
             }

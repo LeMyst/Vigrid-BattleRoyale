@@ -8,6 +8,7 @@ class BattleRoyaleRound extends BattleRoyaleState
     int i_DamageTickTime;
     float f_Damage;
     int i_NumZones;
+    bool b_ArtillerySound;
     array<int> lock_notif_min;
     array<int> lock_notif_sec;
 
@@ -35,6 +36,8 @@ class BattleRoyaleRound extends BattleRoyaleState
         i_DamageTickTime = m_GameSettings.zone_damage_tick_seconds;
         f_Damage = m_GameSettings.zone_damage_delta;
         i_NumZones = m_GameSettings.num_zones;
+
+        b_ArtillerySound = m_GameSettings.artillery_sound;
 
         b_DoZoneDamage = m_GameSettings.enable_zone_damage;
 
@@ -174,8 +177,8 @@ class BattleRoyaleRound extends BattleRoyaleState
         //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
 
-        //tell the client the next play area
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+        //tell the client the next play area and play artillery sound
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, b_ArtillerySound ), true);
 
         //message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
         for(i = 0; i < GetPlayers().Count(); i++)
@@ -521,7 +524,7 @@ class BattleRoyaleRound extends BattleRoyaleState
         //tell the client the current area is now this area
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
         //tell the client we don't know the next play area
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false), true);
         //tell the client how much time until the next zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( seconds ) , true);
     }
