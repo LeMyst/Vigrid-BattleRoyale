@@ -25,6 +25,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
     void Init()
     {
+        BattleRoyaleUtils.Trace("BattleRoyaleServer() Init()");
 #ifdef VPPADMINTOOLS
         GetPermissionManager().AddPermissionType({ "MenuBattleRoyaleManager" });
 #endif
