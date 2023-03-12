@@ -107,7 +107,7 @@ modded class PlayerBase
         }
     }
 
-    override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
+    /*override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
     {
         if(GetGame().IsMultiplayer() && GetGame().IsServer() && source && GetBR())
         {
@@ -132,7 +132,7 @@ modded class PlayerBase
             }
         }
         super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
-    }
+    }*/
 
     //Temp fix for disabling character saving
     override bool Save()
