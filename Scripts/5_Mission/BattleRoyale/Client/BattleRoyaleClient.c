@@ -141,7 +141,10 @@ class BattleRoyaleClient extends BattleRoyaleBase
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         Print("BattleRoyale: FADE IN!");
-        //TODO: create Fade UI
+
+        PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Start();
+        player.SetInventorySoftLock(true);
+        player.SetMasterAttenuation("BurlapSackAttenuation");
     }
 
     protected void FadeOut()
@@ -149,6 +152,10 @@ class BattleRoyaleClient extends BattleRoyaleBase
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         Print("BattleRoyale: FADE OUT!");
+
+        PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Stop();
+        player.SetInventorySoftLock(false);
+        player.SetMasterAttenuation("");
     }
 
     protected void OnSecond()
