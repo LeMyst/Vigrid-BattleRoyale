@@ -3,21 +3,6 @@ modded class MissionServer
     //--- TODO: look at dayzexpansion missionserver
     //TODO: look at dayz missionserver
     //TODO: look at old BR missionserver
-    override void EquipCharacter(MenuDefaultCharacterData char_data)
-    {
-        //TODO: get this from a setting file
-        m_player.GetInventory().CreateInInventory( "TShirt_DBR" );
-        m_player.GetInventory().CreateInInventory( "Jeans_Black" );
-        m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
-
-        for(int i = 1; i < 4; i++)
-        {
-            m_player.GetInventory().CreateInInventory( "dzn_snowball_small" );
-        }
-
-        StartingEquipSetup(m_player, false);
-    }
-
     override void OnInit()
     {
         Print("DayZBR-Mod OnInit()");
@@ -45,6 +30,21 @@ modded class MissionServer
         {
             Error("PLAYER PASSED TO IOC IS NULL");
         }
+    }
+
+    override void EquipCharacter(MenuDefaultCharacterData char_data)
+    {
+        //TODO: get this from a setting file
+        m_player.GetInventory().CreateInInventory( "TShirt_DBR" );
+        m_player.GetInventory().CreateInInventory( "Jeans_Black" );
+        m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
+
+        for(int i = 1; i < 4; i++)
+        {
+            m_player.GetInventory().CreateInInventory( "Apple" );
+        }
+
+        StartingEquipSetup(m_player, true);
     }
 
     override void PlayerDisconnected(PlayerBase player, PlayerIdentity identity, string uid)
@@ -79,14 +79,6 @@ modded class MissionServer
 
         }
         super.HandleBody( player );
-    }
-
-    override void StartingEquipSetup(PlayerBase player, bool clothesChosen)
-    {
-        //TODO: figure out how to set inventory loadout (we'll hard code BR specific starting items here
-        //EntityAI item = m_player.GetInventory().CreateInInventory(topsArray.GetRandomElement());
-
-        //i literally don't know what this is anymore
     }
 
     override void OnClientRespawnEvent(PlayerIdentity identity, PlayerBase player)
