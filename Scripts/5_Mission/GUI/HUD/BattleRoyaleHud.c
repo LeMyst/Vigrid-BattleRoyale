@@ -95,7 +95,7 @@ class BattleRoyaleHud
         }
     }
 
-    void SetCount(int count)
+    void SetCount(int count, int count_group)
     {
         if(!m_CountTextWidget)
         {
@@ -103,7 +103,13 @@ class BattleRoyaleHud
             return;
         }
 
-        m_CountTextWidget.SetText( count.ToString() );
+        string count_text;
+        if(count_group <= 0 || count == count_group)
+            count_text = count.ToString();
+        else
+            count_text = count.ToString() + " (" + count_group.ToString() + " groups)";
+
+        m_CountTextWidget.SetText( count_text );
     }
 
     void SetKillCount(int count)

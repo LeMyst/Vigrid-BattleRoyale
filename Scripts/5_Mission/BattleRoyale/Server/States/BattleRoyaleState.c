@@ -134,7 +134,11 @@ class BattleRoyaleState extends Timeable {
     {
         if(IsActive())
         {
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param1<int>( GetPlayers().Count() ), true);
+#ifdef SCHANAMODPARTY
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( GetPlayers().Count(), GetGroups().Count() ), true);
+#else
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( GetPlayers().Count(), 0 ), true);
+#endif
         }
     }
 
@@ -159,6 +163,105 @@ class BattleRoyaleState extends Timeable {
             }
         }
     }
+
+#ifdef SCHANAMODPARTY
+    ref array<ref set<PlayerBase>> GetGroups()
+    {
+        int i;
+        ref array<ref set<PlayerBase>> teleport_groups = new array<ref set<PlayerBase>>;
+        ref array<PlayerBase> m_PlayerWaitList = new array<PlayerBase>();
+        m_PlayerWaitList.Copy( m_Players );
+        // Create teleport groups
+
+        // Recuperation des parties
+        // Recuperation de la partie du joueur
+        // Ajout des membres de la partie dans un groupe
+        // Suppression de chaque membre de la liste m_PlayerWaitList
+
+        SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
+        if (manager)
+        {
+            BattleRoyaleUtils.Trace("Manager OK");
+            autoptr map<string, autoptr set<string>> parties = manager.GetParties();
+            if (parties)
+            {
+                BattleRoyaleUtils.Trace("Parties OK");
+                // Create map player id <-> player object
+                auto id_map = new map<string, PlayerBase>();
+                array<Man> players = new array<Man>;
+                GetGame().GetPlayers(players);
+                for (i = 0; i < players.Count(); ++i)
+                {
+                    PlayerBase player = PlayerBase.Cast(players.Get(i));
+                    if (player && player.GetIdentity() && player.IsAlive())
+                    {
+                        BattleRoyaleUtils.Trace("Player: " + player.GetIdentity().GetName());
+                        id_map.Insert(player.GetIdentity().GetId(), player);
+                    }
+                }
+
+                // Iterate over parties
+                ref set<PlayerBase> group;
+                int partyCount = parties.Count();
+                BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
+                for (i = 0; i < partyCount; ++i)
+                {
+                    group = new ref set<PlayerBase>;
+                    PlayerBase plr = PlayerBase.Cast(id_map.Get(parties.GetKey(i)));
+                    BattleRoyaleUtils.Trace("Party leader is " + plr.GetIdentity().GetName());
+                    if(m_PlayerWaitList.Find(plr) != -1)
+                    {
+                        BattleRoyaleUtils.Trace(plr.GetIdentity().GetName() + " is in the wait list");
+                        m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plr));
+                        if (plr && plr.GetIdentity() && plr.IsAlive())
+                        {
+                            BattleRoyaleUtils.Trace("Add leader " + plr.GetIdentity().GetName() + " to the group");
+                            group.Insert(plr);  // Insert guild leader into group
+                            if (parties.GetElement(i))
+                            {
+                                int tmpPlayPartCount = parties.GetElement(i).Count();
+                                BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
+                                for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
+                                {
+                                    PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)));
+                                    BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
+                                    if(m_PlayerWaitList.Find(plrpart) != -1)
+                                    {
+                                        BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
+                                        m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
+                                        group.Insert(plrpart);  // Insert party member into group
+                                    }
+                                }
+                            }
+                            teleport_groups.Insert(group);  // Insert group into list of groups
+                        }
+                    } else {
+                        BattleRoyaleUtils.Trace("Party leader is not in waiting list, do nothing");
+                    }
+
+                    if(m_PlayerWaitList.Count() <= 0)
+                    {
+                        BattleRoyaleUtils.Trace("No more players in waiting list, skip the remaining players");
+                        break;
+                    }
+                }
+            }
+        }
+        // Add remaining players
+        ref set<PlayerBase> solo_group;
+        int pRemCount = m_PlayerWaitList.Count();
+        BattleRoyaleUtils.Trace("Remaining players: " + pRemCount);
+        for (i = 0; i < pRemCount; i++)
+        {
+            BattleRoyaleUtils.Trace("Remaining player: " + m_PlayerWaitList.Get(i).GetName());
+            solo_group = new set<PlayerBase>;
+            solo_group.Insert(m_PlayerWaitList.Get(i));
+            teleport_groups.Insert(solo_group);
+        }
+
+        return teleport_groups;
+    }
+#endif
 }
 
 // Base state for the Debug Zone.

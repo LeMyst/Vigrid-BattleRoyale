@@ -129,11 +129,11 @@ class BattleRoyaleClient extends BattleRoyaleBase
         return distance_from_outside;
     }
 
-    protected void PlayerCountChanged(int new_count)
+    protected void PlayerCountChanged(int new_count, int new_count_groups)
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         if (gameplay)
-            gameplay.UpdatePlayerCount( new_count );
+            gameplay.UpdatePlayerCount( new_count, new_count_groups );
     }
 
     protected void FadeIn()
@@ -270,7 +270,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
 
     void SetPlayerCount(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
     {
-        Param1<int> data;
+        Param2<int, int> data;
         if( !ctx.Read( data ) )
         {
             Error("FAILED TO READ SETPLAYERCOUNT RPC");
@@ -278,7 +278,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
         }
         if ( type == CallType.Client )
         {
-            PlayerCountChanged( data.param1 );
+            PlayerCountChanged( data.param1, data.param2 );
         }
     }
 

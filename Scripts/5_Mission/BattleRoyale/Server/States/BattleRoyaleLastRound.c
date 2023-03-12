@@ -103,6 +103,11 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         if(m_PreviousState.GetPlayers().Count() <= 1)
             return true;
 
+#ifdef SCHANAMODPARTY
+        if(m_PreviousState.GetGroups().Count() <= 1)
+            return true;
+#endif
+
         return false;
     }
 
@@ -113,10 +118,18 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
     {
-        if(GetPlayers().Count() <= 1 && IsActive())
+
+        if(IsActive())
         {
-            Deactivate();
+            if(GetPlayers().Count() <= 1)
+                Deactivate();
+
+#ifdef SCHANAMODPARTY
+            if(GetGroups().Count() <= 1)
+                Deactivate();
+#endif
         }
+
         return super.IsComplete();
     }
 
