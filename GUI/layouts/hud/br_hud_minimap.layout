@@ -20,7 +20,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
    {
     PanelWidgetClass MatchInfoIconsPanel {
      ignorepointer 1
-     size 128 131
+     size 202 131
      halign right_ref
      hexactpos 0
      vexactpos 0
@@ -30,7 +30,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
       PanelWidgetClass PlayerCountPanel {
        ignorepointer 1
        position 0 0
-       size 128 32
+       size 202 32
        halign right_ref
        hexactpos 0
        vexactpos 0
@@ -54,7 +54,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         TextWidgetClass CountText {
          ignorepointer 1
          position 32 0
-         size 96 32
+         size 170 32
          halign right_ref
          hexactpos 1
          vexactpos 0
@@ -74,7 +74,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
       PanelWidgetClass ZoneDistancePanel {
        ignorepointer 1
        position 0 33
-       size 128 32
+       size 202 32
        halign right_ref
        hexactpos 0
        vexactpos 1
@@ -99,7 +99,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         TextWidgetClass DistanceText {
          ignorepointer 1
          position 32 0
-         size 96 32
+         size 170 32
          halign right_ref
          hexactpos 1
          vexactpos 0
@@ -118,7 +118,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
        visible 1
        ignorepointer 1
        position 0 66
-       size 128 32
+       size 202 32
        halign right_ref
        hexactpos 0
        vexactpos 1
@@ -142,7 +142,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         TextWidgetClass KillCountText {
          ignorepointer 1
          position 32 0
-         size 96 32
+         size 170 32
          halign right_ref
          hexactpos 1
          vexactpos 0
@@ -161,7 +161,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
        visible 1
        ignorepointer 1
        position 0 99
-       size 128 32
+       size 202 32
        halign right_ref
        hexactpos 0
        vexactpos 1
@@ -189,7 +189,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         TextWidgetClass CountdownText {
          ignorepointer 1
          position 32 -0.01
-         size 96 31
+         size 170 31
          halign right_ref
          hexactpos 1
          vexactpos 0
