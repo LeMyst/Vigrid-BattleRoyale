@@ -7,6 +7,10 @@ class BattleRoyaleDebugData extends BattleRoyaleDataBase
     float ready_up_percent = 0.8;
     int time_to_start_match_seconds = 30;
 
+    ref array<string> allowed_outside_spawn = {
+        "123456789123456789" // Dummy SteamID64
+    };
+
     override string GetPath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "debug_settings.json";

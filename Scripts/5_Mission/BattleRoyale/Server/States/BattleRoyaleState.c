@@ -270,6 +270,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
     protected vector v_Center;
     protected float f_Radius;
     protected int i_HealTickTime;
+    protected ref array<string> a_AllowedOutsideSpawn;
 
     void BattleRoyaleDebugState()
     {
@@ -278,12 +279,14 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
         {
             v_Center = m_DebugSettings.spawn_point;
             f_Radius = m_DebugSettings.radius;
+            a_AllowedOutsideSpawn = m_DebugSettings.allowed_outside_spawn;
         }
         else
         {
             Error("DEBUG SETTINGS IS NULL!");
             v_Center = DAYZBR_DEBUG_CENTER;
             f_Radius = DAYZBR_DEBUG_RADIUS;
+            a_AllowedOutsideSpawn = new array<string>();
         }
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
@@ -345,7 +348,7 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
         vector playerPos = player.GetPosition();
         float distance = vector.Distance(playerPos, spawn_pos);
 
-        if(distance > f_Radius)
+        if(distance > f_Radius && !CanGoOutsideSpawn(player))
         {
             player.SetPosition(spawn_pos);
         }
@@ -356,6 +359,28 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
             player.Heal();
         }
         player.time_until_heal -= timeslice;
+    }
+
+    bool CanGoOutsideSpawn(PlayerBase player)
+    {
+        if(!player)
+        {
+            Error("Null player in CanSpectate");
+            return false;
+        }
+        PlayerIdentity identity = player.GetIdentity();
+
+        if(!identity)
+            return false;
+
+        string steamid = identity.GetPlainId();
+        if(steamid == "")
+        {
+            Error("Blank SteamId from identity!");
+            return false;
+        }
+
+        return (a_AllowedOutsideSpawn.Find(steamid) != -1);
     }
 
     //TODO:
