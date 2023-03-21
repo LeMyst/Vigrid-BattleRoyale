@@ -23,6 +23,13 @@ class BattleRoyaleServer extends BattleRoyaleBase
         Init();
     }
 
+    void ~BattleRoyaleServer()
+    {
+        m_Timer.Stop();
+
+        delete m_Timer;
+    }
+
     void Init()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleServer() Init()");

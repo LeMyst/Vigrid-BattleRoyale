@@ -29,6 +29,13 @@ class BattleRoyaleClient extends BattleRoyaleBase
         Init();
     }
 
+    void ~BattleRoyaleClient()
+    {
+        m_Timer.Stop();
+
+        delete m_Timer;
+    }
+
     void Init()
     {
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
