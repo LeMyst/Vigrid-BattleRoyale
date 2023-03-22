@@ -324,7 +324,7 @@ class BattleRoyaleZone
                 string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 
                 ref array<string> avoid_type = {"DeerStand", "FeedShack", "Marine"};
-                ref array<string> avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty", "Ruin_Storozh", "Local_MB_PrisonIsland"};  // , "Local_Drakon", "Local_Otmel"
+                ref array<string> avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty"};  // , "Local_Drakon", "Local_Otmel", "Ruin_Storozh", "Local_MB_PrisonIsland"
 
                 if(avoid_type.Find(poi_type) != -1 || avoid_city.Find(city) != -1)
                     continue;
