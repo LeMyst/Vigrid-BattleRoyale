@@ -44,6 +44,8 @@ modded class MissionServer
             m_player.GetInventory().CreateInInventory( "Apple" );
         }
 
+        m_player.GetInventory().CreateInInventory( "Zucchini" );
+
         StartingEquipSetup(m_player, true);
     }
 
