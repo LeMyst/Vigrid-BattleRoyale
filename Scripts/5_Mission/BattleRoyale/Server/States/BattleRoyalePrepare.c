@@ -10,6 +10,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
     private ref array<ref Town> villages;
     private int villages_index;
 
+    ref array<string> avoid_city_spawn = {"Camp_Shkolnik", "Settlement_Kumyrna", "Ruin_Voron", "Settlement_Skalisty", "Settlement_Novoselki", "Settlement_Dubovo", "Settlement_Vysotovo"};
+
     void BattleRoyalePrepare()
     {
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
@@ -172,13 +174,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 if(town_entry.Name == "" || Town.GetTownTypeString(town_entry.Type) == "") // useless ?
                     continue;
 
-                if(town_entry.Name == "Kumyrna")  // Ruins
-                    continue;
-
-                if(town_entry.Name == "Skalisty")  // South-east island
-                    continue;
-
-                if(town_entry.Name == "Shkolnik")  // North-east BR lobby
+                // Check if city Entry is not in the avoid spawn list
+                if(avoid_city_spawn.Find(town_entry.Entry) != -1)
                     continue;
 
                 if(m_GameSettings.spawn_in_first_zone && area != NULL)
