@@ -255,25 +255,25 @@ class BattleRoyaleRound extends BattleRoyaleState
         SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
         autoptr map<string, autoptr set<string>> s_parties = manager.GetParties();
         remaining_parties = new set<string>;
-		foreach (auto id, auto party_ids : s_parties) {  // For each party
-		    foreach (string member : party_ids)  // For each member of the party
-		    {
-		        if(players.Find(member) != -1)  // If the member is alive
-		        {
-		            remaining_parties.Insert(id);  // Insert the party inside the remaining parties
+        foreach (auto id, auto party_ids : s_parties) {  // For each party
+            foreach (string member : party_ids)  // For each member of the party
+            {
+                if(players.Find(member) != -1)  // If the member is alive
+                {
+                    remaining_parties.Insert(id);  // Insert the party inside the remaining parties
 
                     if (remaining_parties.Count() > 1)
                         return false;
-		        }
-		    }
-		}
+                }
+            }
+        }
 
-		//Print(remaining_parties);
+        //Print(remaining_parties);
 
-		if (remaining_parties.Count() == 1)
-		    return true;
+        if (remaining_parties.Count() == 1)
+            return true;
 
-		return false;
+        return false;
     }
 #endif
 

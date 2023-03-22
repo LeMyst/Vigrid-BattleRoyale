@@ -16,8 +16,8 @@ class BattleRoyaleServer extends BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
 #ifdef VPPADMINTOOLS
-		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
-		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this, SingleplayerExecutionType.Server);
 #endif
 
         Init();
@@ -118,6 +118,16 @@ class BattleRoyaleServer extends BattleRoyaleBase
         //        }
         //    }
         //}
+
+#ifdef BLUE_ZONE
+        BattleRoyaleUtils.Trace("Instance BlueZone Server");
+        vector blue_zone_pos = "14829.2 73 14572.3";
+        blue_zone_pos[1] = GetGame().SurfaceY(blue_zone_pos[0], blue_zone_pos[2]) + 10;
+
+        Print(blue_zone_pos);
+
+        GetGame().CreateObjectEx( "BlueZone", blue_zone_pos, ECE_NOLIFETIME );
+#endif
     }
 
     override bool IsDebug()
@@ -533,7 +543,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
     void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
-	    Print("BattleRoyaleManager NextState");
+        Print("BattleRoyaleManager NextState");
         if ( IsMissionHost() )
         {
             BattleRoyaleServer m_BrServer;
@@ -551,7 +561,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
     void StartSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
-	    Print("BattleRoyaleManager StartSpectate");
+        Print("BattleRoyaleManager StartSpectate");
         if ( IsMissionHost() )
         {
             PlayerBase pbTarget;
