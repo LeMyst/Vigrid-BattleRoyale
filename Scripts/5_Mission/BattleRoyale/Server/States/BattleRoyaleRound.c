@@ -14,6 +14,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
 #ifdef SCHANAMODPARTY
     int i_MaxPartySize;
+    autoptr set<string> remaining_parties
 #endif
 
     protected ref array<ref Timer> m_MessageTimers;
@@ -250,21 +251,24 @@ class BattleRoyaleRound extends BattleRoyaleState
 #ifdef SCHANAMODPARTY
     bool AllPlayersSameParty(set<string> players)
     {
-        BattleRoyaleUtils.Trace("AllPlayersSameParty");
+        //BattleRoyaleUtils.Trace("AllPlayersSameParty");
         SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
         autoptr map<string, autoptr set<string>> s_parties = manager.GetParties();
-        set<string> remaining_parties = new set<string>;
+        remaining_parties = new set<string>;
 		foreach (auto id, auto party_ids : s_parties) {  // For each party
 		    foreach (string member : party_ids)  // For each member of the party
 		    {
 		        if(players.Find(member) != -1)  // If the member is alive
 		        {
 		            remaining_parties.Insert(id);  // Insert the party inside the remaining parties
+
+                    if (remaining_parties.Count() > 1)
+                        return false;
 		        }
 		    }
 		}
 
-		Print(remaining_parties);
+		//Print(remaining_parties);
 
 		if (remaining_parties.Count() == 1)
 		    return true;
