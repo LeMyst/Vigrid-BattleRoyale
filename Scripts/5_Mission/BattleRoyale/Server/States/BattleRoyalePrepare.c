@@ -62,7 +62,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         Print("Reset date time to random");
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
-        GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(7, 14), 0);
+        GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 13), 0);
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
