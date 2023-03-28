@@ -10,7 +10,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
     private ref array<ref Town> villages;
     private int villages_index;
 
-    ref array<string> avoid_city_spawn = {"Camp_Shkolnik", "Settlement_Kumyrna", "Ruin_Voron", "Settlement_Skalisty", "Settlement_Novoselki", "Settlement_Dubovo", "Settlement_Vysotovo"};
+    ref array<string> avoid_city_spawn;
 
     void BattleRoyalePrepare()
     {
@@ -19,12 +19,14 @@ class BattleRoyalePrepare extends BattleRoyaleState
         {
             a_StartingClothes = m_GameSettings.player_starting_clothes;
             a_StartingItems = m_GameSettings.player_starting_items;
+            avoid_city_spawn = m_GameSettings.avoid_city_spawn;
         }
         else
         {
             Error("GameSettings is NULL!");
             a_StartingClothes = {"TrackSuitJacket_Red", "TrackSuitPants_Red", "JoggingShoes_Red"};
             a_StartingItems = {"HuntingKnife", "BandageDressing", "Compass"};
+            avoid_city_spawn = {"Camp_Shkolnik", "Hill_Zelenayagora", "Settlement_Kumyrna", "Ruin_Voron", "Settlement_Skalisty", "Settlement_Novoselki", "Settlement_Dubovo", "Settlement_Vysotovo"};
         }
 
         m_PlayerList = new array<PlayerBase>();
