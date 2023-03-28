@@ -103,13 +103,16 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         int cCount = a_StartingClothes.Count();
         bool item_spawned = false;
+        EntityAI new_item;
         for (int i = 0; i < cCount; i++) {
             EntityAI clothes = process_player.GetInventory().CreateAttachment(a_StartingClothes[i]);
             if(!item_spawned && clothes.GetInventory().GetCargo())
             {
                 int iCount = a_StartingItems.Count();
                 for (int j = 0; j < iCount; j++) {
-                    clothes.GetInventory().CreateEntityInCargo(a_StartingItems[j]);
+                    new_item = clothes.GetInventory().CreateEntityInCargo(a_StartingItems[j]);
+                    if( a_StartingItems[j] == "HuntingKnife" )
+                        process_player.SetQuickBarEntityShortcut(new_item, 0);
                 }
                 item_spawned = true;
             }
