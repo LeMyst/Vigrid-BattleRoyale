@@ -228,7 +228,10 @@ class BattleRoyaleRound extends BattleRoyaleState
                 {
                     set<string> players_id = new set<string>;
                     foreach(PlayerBase player : players)
-                        players_id.Insert(player.GetIdentity().GetId());
+                    {
+                        if(player && player.GetIdentity())
+                            players_id.Insert(player.GetIdentity().GetId());
+                    }
                     if(players.Count() <= 1 || AllPlayersSameParty(players_id))
                     {
                         Print(GetName() + " IsComplete!");
