@@ -44,7 +44,8 @@ modded class MissionServer
             m_player.GetInventory().CreateInInventory( "Apple" );
         }
 
-        m_player.GetInventory().CreateInInventory( "Zucchini" );
+        EntityAI new_item = m_player.GetInventory().CreateInInventory( "Zucchini" );
+        m_player.SetQuickBarEntityShortcut(new_item, 0);
 
         StartingEquipSetup(m_player, true);
     }
