@@ -285,6 +285,34 @@ class BattleRoyalePrepare extends BattleRoyaleState
         if(m_Hit)
             return false;
 
+        // New Geometry check
+        array<Object> excludedObjects = new array<Object>();
+        array<Object> collidedObjects = new array<Object>();
+        vector box_position;
+        box_position[0] = position[0];
+        box_position[1] = position[1]; // + 1
+        box_position[2] = position[2];
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 2 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        {
+            if( collidedObjects.Count() > 0)
+            {
+                BattleRoyaleUtils.Trace("New IsSafeForTeleport Geometry check is true !");
+                Print( collidedObjects );
+                for (int i = 0; i < collidedObjects.Count(); ++i)
+                {
+                    string objectClass = collidedObjects.Get(i).GetType();
+                    BattleRoyaleUtils.Trace( "objectClass: " + objectClass );
+                }
+
+                string text = "";
+                foreach (Object object: collidedObjects)
+                    text += " | " + Object.GetDebugName(object);
+                Print( text );
+
+                return false;
+            }
+        }
+
         return true;
     }
 
