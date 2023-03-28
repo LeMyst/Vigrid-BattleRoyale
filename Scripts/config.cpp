@@ -4,6 +4,7 @@ class CfgPatches
     {
         requiredAddons[]=
         {
+            "DZ_Data",
             "DF_Scripts",
             "DayZExpansion_Scripts",
             "DZM_VPPAdminToolsScripts"
