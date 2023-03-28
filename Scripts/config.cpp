@@ -19,6 +19,7 @@ class CfgMods
         credits = "Kegan - Modified by Myst";
         creditsJson = "DayZBR-Mod/Data/credits.json";
         type = "mod";
+        inputs = "DayZBR-Mod/Data/Inputs.xml";
         name = "DayZ BattleRoyale";
 
         picture = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";
