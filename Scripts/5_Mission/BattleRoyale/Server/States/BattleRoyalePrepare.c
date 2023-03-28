@@ -350,28 +350,17 @@ class BattleRoyalePrepare extends BattleRoyaleState
         vector random_pos = "0 0 0";
         Town village;
 
-        int spawn_try = 1;
-
-        while(true)
+        if (m_GameSettings.spawn_in_villages)
         {
-            Print("Try " + spawn_try);
-            spawn_try = spawn_try + 1;
-            float edge_pad = 0.1;
-
-            float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-            float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
-            float y = GetGame().SurfaceY(x, z);
-            random_pos[0] = x;
-            random_pos[1] = y;
-            random_pos[2] = z;
-
-            village = NULL;
-            bool check_zone = true;
-            if (m_GameSettings.spawn_in_villages && spawn_try <= 50)
+            vector village_pos = "0 0 0";
+            for(int village_spawn_try = 1; village_spawn_try <= 200; village_spawn_try++)
             {
+                BattleRoyaleUtils.Trace("Try to spawn in village " + village_spawn_try);
+
+                village = NULL;
+                bool check_zone = true;
                 if(m_GameSettings.spawn_in_first_zone)
                 {
-                    BattleRoyaleUtils.Trace("Spawn in village area");
                     village = GetRandomVillage(BattleRoyaleZone.GetZone(1).GetArea(), true);
                     check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone
                 }
@@ -380,17 +369,56 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
                 if (village != NULL && village.Name != "")
                 {
-                    random_pos = GetRandomVillagePosition(village);
+                    BattleRoyaleUtils.Trace("Found village " + village.Entry);
+                    vector search_for_village = "0 0 0";
+                    for(int search_pos = 1; search_pos <= 50; search_pos++)
+                    {
+                        BattleRoyaleUtils.Trace("Try to find a position in village " + search_pos);
+                        search_for_village = GetRandomVillagePosition(village);
+
+                        if(!IsSafeForTeleport(search_for_village[0], search_for_village[1], search_for_village[2], check_zone))
+                            continue;
+
+                        village_pos = search_for_village;
+                        break;
+                    }
+
+                    if( village_pos == "0 0 0" )
+                        continue;
+
+                    BattleRoyaleUtils.Trace("Found village position " + village_pos);
+                    random_pos = village_pos; // Found a valid village position
+                    break;
                 } else {
                     Print("Another fucked up village!");
-                    continue;
                 }
             }
+        }
 
-            if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], check_zone))
-                continue;
+        // If at this step we always have a zero vector, try to find a random one
+        if( random_pos == "0 0 0" )
+        {
+            int random_spawn_try = 1;
+            while(true)
+            {
+                Print("Try to spawn at random position " + random_spawn_try);
+                random_spawn_try++;
+                float edge_pad = 0.1;
 
-            break;
+                float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
+                float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+                float y = GetGame().SurfaceY(x, z);
+                random_pos[0] = x;
+                random_pos[1] = y;
+                random_pos[2] = z;
+
+                if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], check_zone))
+                    continue;
+
+                break;
+            }
+        } else {
+            BattleRoyaleUtils.Trace("Already found a random pos from a village!");
         }
 
         return new Param2<vector, Town>(random_pos, village);
@@ -417,9 +445,21 @@ class BattleRoyalePrepare extends BattleRoyaleState
             PlayerBase player = group.Get(i);
             BattleRoyaleUtils.Trace("Teleport player " + player.GetIdentity().GetName() + " to position " + position);
 
-            float x = position[0] + Math.RandomFloatInclusive(-3.0, 3.0);
-            float z = position[2] + Math.RandomFloatInclusive(-3.0, 3.0);
-            float y = GetGame().SurfaceY(x, z);
+            int spawn_try = 1;
+            while(true)
+            {
+                Print("Try Group " + spawn_try);
+                spawn_try = spawn_try + 1;
+                float x = position[0] + Math.RandomFloatInclusive(-5.0, 5.0);
+                float z = position[2] + Math.RandomFloatInclusive(-5.0, 5.0);
+                float y = GetGame().SurfaceY(x, z);
+
+                if( IsSafeForTeleport(x, y, z, false) )
+                    break;
+
+                if( spawn_try > 50 )
+                    break;
+            }
 
             TeleportPlayer(player, Vector(x, y, z), village);
         }
