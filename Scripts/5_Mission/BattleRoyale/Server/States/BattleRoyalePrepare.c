@@ -329,8 +329,15 @@ class BattleRoyalePrepare extends BattleRoyaleState
         else
             village_pad = 100.0;
 
-        float x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
-        float z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
+        //float x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
+        //float z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
+
+        float radius, theta, x, z;
+        radius = village_pad * Math.Sqrt( Math.RandomFloat(0, 1) );
+        theta = Math.RandomFloat(0, 1) * Math.PI2;
+        x = village_x + radius * Math.Cos(theta);
+        z = village_z + radius * Math.Sin(theta);
+
         float y = GetGame().SurfaceY(x, z);
 
         Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ") with a radius of " + village_pad);
