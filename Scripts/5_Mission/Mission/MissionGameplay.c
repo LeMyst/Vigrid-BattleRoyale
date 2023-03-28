@@ -2,9 +2,14 @@ modded class MissionGameplay
 {
     protected Widget m_BattleRoyaleHudRootWidget;
     protected ref BattleRoyaleHud m_BattleRoyaleHud;
+
 #ifdef BR_MINIMAP
     protected ref MapWidget m_MiniMap;
     protected ref CanvasWidget m_MiniMapCanvas;
+    protected ref ImageWidget m_UserMarkerImageWidget;
+    protected float f_MiniMapScale = 0.1;
+    protected bool b_MiniMapShow = true;
+    protected SchanaPartyManagerClient party_manager;
 #endif
 
     protected bool is_spectator;
@@ -33,7 +38,14 @@ modded class MissionGameplay
             m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("DayZBR-Mod/GUI/layouts/hud/br_hud_minimap.layout");
             m_MiniMap = MapWidget.Cast(m_BattleRoyaleHudRootWidget.FindAnyWidget("MiniMap"));
             m_MiniMapCanvas = CanvasWidget.Cast(m_BattleRoyaleHudRootWidget.FindAnyWidget("CanvasMiniMap"));
-            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "UpdateMiniMap", 150, true );
+            m_UserMarkerImageWidget = ImageWidget.Cast( m_BattleRoyaleHudRootWidget.FindAnyWidget( "UserMarker" ) );
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "UpdateMiniMap", 200, true );
+
+            float canvas_width;
+            float canvas_height;
+            m_MiniMapCanvas.GetSize(canvas_width, canvas_height);
+            Print(canvas_width);
+            Print(canvas_height);
 #else
             m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("DayZBR-Mod/GUI/layouts/hud/br_hud.layout");
 #endif
@@ -43,13 +55,6 @@ modded class MissionGameplay
             Print("HUD Initialized");
         }
     }
-
-#ifdef BR_MINIMAP
-    void UpdateMiniMap()
-    {
-        UpdateMiniMap(GetGame().GetCurrentCameraPosition());
-    }
-#endif
 
     bool IsInSpectator()
     {
@@ -102,8 +107,25 @@ modded class MissionGameplay
     }
 
 #ifdef BR_MINIMAP
+    void UpdateMiniMap()
+    {
+        UpdateMiniMap(GetGame().GetCurrentCameraPosition());
+    }
+
     void UpdateMiniMap(vector pos)
     {
+        //m_BattleRoyaleHudRootWidget.Show( true );
+
+        if( b_MiniMapShow )
+        {
+            m_MiniMap.Show( true )
+        }
+        else
+        {
+            m_MiniMap.Show( false );
+            return;
+        }
+
         if(!m_MiniMap)
             return;
 
@@ -111,13 +133,45 @@ modded class MissionGameplay
         if (!player)
             return;
 
-        m_BattleRoyaleHudRootWidget.Show(true);
-
         m_MiniMap.SetMapPos( Vector(pos[0], 0, pos[2]) );
-        m_MiniMap.SetScale( 0.1 );
+        m_MiniMap.SetScale( f_MiniMapScale );
 
         m_MiniMap.ClearUserMarks();
-        m_MiniMap.AddUserMark(player.GetPosition(), "", ARGB(255,255,255,255), "\\dz\\gear\\navigation\\data\\map_tree_ca.paa");
+        //m_MiniMap.AddUserMark(pos, "", ARGB(192,0,0,255), "\\dz\\gear\\navigation\\data\\map_bush_ca.paa");
+
+        BattleRoyaleClient brc = BattleRoyaleClient.Cast( m_BattleRoyale );
+        if(brc && brc.GetNextArea())
+            m_MiniMap.AddUserMark(brc.GetNextArea().GetCenter(), "", ARGB(255,255,0,0), "\\dz\\gear\\navigation\\data\\map_bush_ca.paa");
+
+        if(m_UserMarkerImageWidget)
+        {
+            //vector rot = player.GetYawPitchRoll();
+            //float angle = Math.Round(rot[0]);
+            //if (angle < 0)
+            //{
+            //    angle = 360 + angle;
+            //}
+            //m_UserMarkerImageWidget.SetRotation(0, 0, angle);
+
+
+            //float camera_angle = GetGame().GetCurrentCameraDirection().VectorToAngles()[0];
+            //camera_angle = Math.NormalizeAngle(camera_angle);
+
+            m_UserMarkerImageWidget.SetRotation( 0, 0, Math.Round( Math.NormalizeAngle( GetGame().GetCurrentCameraDirection().VectorToAngles()[0] ) ), true );
+        }
+
+        if(!party_manager)
+            party_manager = GetSchanaPartyManagerClient();
+
+        ref map<string, vector> positions = party_manager.GetPositions();
+        foreach(string player_id, vector position : positions)
+        {
+            m_MiniMap.AddUserMark(position, "", ARGB(192,0,0,255), "\\dz\\gear\\navigation\\data\\map_bush_ca.paa");
+        }
+
+        // TODO: Temporary placeholders
+        //UpdateMiniMapCanvas();
+    }
 
         if (m_MiniMapCanvas)
         {
@@ -147,6 +201,7 @@ modded class MissionGameplay
 
             RenderOval(center_x, center_y, distance_A, distance_B);
         }
+
         /*float width;
         float height;
         m_MiniMapCanvas.GetSize(width, height);
@@ -163,7 +218,7 @@ modded class MissionGameplay
     {
         for(int i = 0; i < 360; i++)
         {
-            //Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
+            Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
             float x1 = cx + (a * Math.Cos(i*Math.DEG2RAD));
             float y1 = cy + (b * Math.Sin(i*Math.DEG2RAD));
 
@@ -193,6 +248,22 @@ modded class MissionGameplay
         m_BattleRoyale.Update( timeslice ); //send tick to br client
 
         m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
+
+        if (GetUApi() && !m_UIManager.IsMenuOpen(MENU_CHAT_INPUT)) {
+            if (GetUApi().GetInputByID(UADayZBRToggleMiniMap).LocalPress()) {
+                b_MiniMapShow = !b_MiniMapShow;
+            }
+
+            if (GetUApi().GetInputByID(UADayZBRMiniMapZoomPlus).LocalPress()) {
+                if(f_MiniMapScale > 0.1)
+                    f_MiniMapScale = f_MiniMapScale - 0.05;
+            }
+
+            if (GetUApi().GetInputByID(UADayZBRMiniMapZoomMinus).LocalPress()) {
+                if(f_MiniMapScale < 1.0)
+                    f_MiniMapScale = f_MiniMapScale + 0.05;
+            }
+        }
 
         if(is_spectator)
         {
