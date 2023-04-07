@@ -2,18 +2,23 @@
 <modded_inputs>
     <inputs>
         <actions>
+            <input name="UADayZBRReadyUp" loc="BR Ready Up" />
             <input name="UADayZBRToggleMiniMap" loc="BR Mini Map Toggle" />
             <input name="UADayZBRMiniMapZoomPlus" loc="BR Mini Map Increase Zoom" />
             <input name="UADayZBRMiniMapZoomMinus" loc="BR Mini Map Decrease Zoom" />
         </actions>
 
         <sorting name="dayzbr" loc="BATTLE ROYALE">
+            <input name="UADayZBRReadyUp" />
             <input name="UADayZBRToggleMiniMap" />
             <input name="UADayZBRMiniMapZoomPlus" />
             <input name="UADayZBRMiniMapZoomMinus" />
         </sorting>
     </inputs>
     <preset>
+        <input name="UADayZBRReadyUp">
+            <btn name="kF1" />
+        </input>
         <input name="UADayZBRToggleMiniMap">
             <btn name="kB" />
         </input>

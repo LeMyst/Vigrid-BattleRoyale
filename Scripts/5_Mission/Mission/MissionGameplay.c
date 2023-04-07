@@ -230,17 +230,6 @@ modded class MissionGameplay
     }
 #endif
 
-    //TODO: move this into modded keybinds systems
-    override void OnKeyPress(int key)
-    {
-        super.OnKeyPress(key);
-
-        if( key == KeyCode.KC_F1 )
-        {
-            BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
-        }
-    }
-
     override void OnUpdate( float timeslice )
     {
         super.OnUpdate( timeslice ); //no more using fade out because it causes way to much compatibility issues, instead we'll use widgets
@@ -249,7 +238,12 @@ modded class MissionGameplay
 
         m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
 
+
         if (GetUApi() && !m_UIManager.IsMenuOpen(MENU_CHAT_INPUT)) {
+            if (GetUApi().GetInputByID(UADayZBRReadyUp).LocalPress()) {
+                BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
+            }
+#ifdef BR_MINIMAP
             if (GetUApi().GetInputByID(UADayZBRToggleMiniMap).LocalPress()) {
                 b_MiniMapShow = !b_MiniMapShow;
             }
@@ -263,6 +257,7 @@ modded class MissionGameplay
                 if(f_MiniMapScale < 1.0)
                     f_MiniMapScale = f_MiniMapScale + 0.05;
             }
+#endif
         }
 
         if(is_spectator)
