@@ -32,6 +32,7 @@ class BattleRoyaleMapMarkerPlayerArrow : ExpansionMapMarker
         //GetIconWidget().LoadImageFile( 0, EXPANSION_NOTIFICATION_ICON_POSITION );
         //GetIconWidget().LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
         GetIconWidget().LoadImageFile(0, "DayZExpansion\\Core\\GUI\\icons\\misc\\T_Fox_256x256.edds");
+        //GetIconWidget().LoadImageFile(0, "\\dz\\gear\\navigation\\data\\map_viewtower_ca.paa");
         GetDragWidget().SetRotation( 0, 0, GetMapDirection(), true );
     }
 
