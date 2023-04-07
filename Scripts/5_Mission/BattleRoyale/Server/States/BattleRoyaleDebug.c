@@ -93,7 +93,13 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
             {
                 message += "s";
             }
-            message += " are ready! (Press F1 to ready up)";
+            message += " are ready!";
+
+            string key_name = InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD);
+            if(key_name == "")
+                message += " (Define a button in the options to ready up)";
+            else
+                message += " (Press " + key_name + " (default) to ready up)";
         }
         return message;
     }
