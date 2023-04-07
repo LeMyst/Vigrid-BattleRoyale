@@ -287,7 +287,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
             player.time_until_damage = Math.Min(i_DamageTickTime, player.time_until_damage + timeslice);
         }
 
-        if(player.GetIdentity())
+        /*if(player.GetIdentity())
         {
             if(player.time_until_move <= 0)
             {
@@ -308,7 +308,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
                 }
                 float angle = angle_rads * Math.RAD2DEG;
 
-                //BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
+                BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
 
                 player.time_until_move = 5;
             }
@@ -316,7 +316,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
             {
                 player.time_until_move -= timeslice;
             }
-        }
+        }*/
 
         super.OnPlayerTick(player, timeslice);
     }

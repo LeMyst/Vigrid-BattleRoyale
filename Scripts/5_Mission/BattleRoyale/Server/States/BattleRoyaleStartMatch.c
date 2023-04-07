@@ -85,7 +85,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         return super.IsComplete();
     }
 
-    override void OnPlayerTick(PlayerBase player, float timeslice)
+    /*override void OnPlayerTick(PlayerBase player, float timeslice)
     {
         if(b_IsGameplay)
         {
@@ -121,7 +121,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
             }
         }
         super.OnPlayerTick(player, timeslice);
-    }
+    }*/
 
     //TODO: add this to battleroyaleconstants and use string replace to insert seconds_till
     void MessageUnlock(int seconds_till)

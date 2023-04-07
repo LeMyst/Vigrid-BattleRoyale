@@ -454,7 +454,7 @@ class BattleRoyaleRound extends BattleRoyaleState
             }
         }
 
-        if(player.GetIdentity())
+        /*if(player.GetIdentity())
         {
             if(player.time_until_move <= 0)
             {
@@ -483,7 +483,7 @@ class BattleRoyaleRound extends BattleRoyaleState
             {
                 player.time_until_move -= timeslice;
             }
-        }
+        }*/
 
         // Unlimited stamina
         //player.GetStatStamina().Set(CfgGameplayHandler.GetStaminaMax());
