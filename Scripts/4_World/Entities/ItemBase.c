@@ -1,4 +1,4 @@
-modded class ItemBase
+/*modded class ItemBase
 {
     override void OnInventoryEnter(Man player) {
         super.OnInventoryEnter(player);
@@ -53,4 +53,4 @@ modded class ItemBase
             }
         }
     }
-}
+}*/

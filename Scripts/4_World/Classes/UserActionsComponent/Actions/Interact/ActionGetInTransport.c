@@ -1,4 +1,4 @@
-modded class ActionGetInTransport
+/*modded class ActionGetInTransport
 {
     override void OnEndServer( ActionData action_data )
     {
@@ -24,3 +24,4 @@ modded class ActionGetInTransport
         super.OnEndServer( action_data );
     }
 }
+*/

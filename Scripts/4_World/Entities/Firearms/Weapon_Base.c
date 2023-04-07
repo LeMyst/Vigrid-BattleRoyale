@@ -1,4 +1,4 @@
-modded class Weapon_Base
+/*modded class Weapon_Base
 {
     override void EEFired (int muzzleType, int mode, string ammoType)
     {
@@ -19,3 +19,4 @@ modded class Weapon_Base
         super.EEFired(muzzleType, mode, ammoType);
     }
 }
+*/

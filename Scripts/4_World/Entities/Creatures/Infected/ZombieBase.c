@@ -1,4 +1,4 @@
-modded class ZombieBase {
+/*modded class ZombieBase {
     override void EEKilled(Object killer)
     {
         if(killer)
@@ -31,3 +31,4 @@ modded class ZombieBase {
         super.EEKilled(killer);
     }
 }
+*/
