@@ -14,6 +14,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     float zone_damage_delta = 0.1;
     bool enable_zone_damage = true;
 
+    bool hide_players_endgame = false;
+
     bool spawn_in_villages = true;
     bool spawn_in_first_zone = true;
     bool show_first_zone_at_start = true;

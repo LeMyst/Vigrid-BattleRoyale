@@ -88,11 +88,11 @@ modded class MissionGameplay
         m_BattleRoyaleHud.SetCountdown( seconds );
     }
 
-    void UpdatePlayerCount(int count)
+    void UpdatePlayerCount(int nb_players, int nb_groups)
     {
         //BattleRoyaleUtils.Trace(string.Format("UpdatePlayerCount: %1 %2", nb_players, nb_groups));
         m_BattleRoyaleHud.ShowCount( true );
-        m_BattleRoyaleHud.SetCount( count );
+        m_BattleRoyaleHud.SetCount( nb_players, nb_groups );
     }
 
     void UpdateZoneDistance(float distance)

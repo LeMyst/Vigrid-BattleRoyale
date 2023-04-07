@@ -95,7 +95,7 @@ class BattleRoyaleHud
         }
     }
 
-    void SetCount(int count, int count_group)
+    void SetCount(int nb_players, int nb_groups)
     {
         if(!m_CountTextWidget)
         {
@@ -104,13 +104,16 @@ class BattleRoyaleHud
         }
         //BattleRoyaleUtils.Trace(string.Format("SetCount: %1 %2", nb_players, nb_groups));
 
-        string count_text;
-        if(count_group <= 0 || count == count_group)
-            count_text = count.ToString();
-        else
-            count_text = count.ToString() + " (" + count_group.ToString() + " groups)";
+        string pluralize = "";
+        if(nb_groups > 1)
+            pluralize = "s";
 
-        m_CountTextWidget.SetText( count_text );
+        if(nb_groups == -1)
+            m_CountTextWidget.SetText( string.Format("%1 (? group)", nb_players, nb_groups, pluralize) );
+        else if(nb_groups == -2)
+            m_CountTextWidget.SetText( string.Format("%1", nb_players, nb_groups, pluralize) );
+        else
+            m_CountTextWidget.SetText( string.Format("%1 (%2 group%3)", nb_players, nb_groups, pluralize) );
     }
 
     void SetKillCount(int count)

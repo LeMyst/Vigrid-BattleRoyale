@@ -1,6 +1,5 @@
 class BattleRoyaleClient extends BattleRoyaleBase
 {
-
     protected ref BattleRoyalePlayArea m_CurrentPlayArea;
     protected ref BattleRoyalePlayArea m_FuturePlayArea;
     //protected ref ExpansionMarkerData m_ZoneMarker;
@@ -136,11 +135,14 @@ class BattleRoyaleClient extends BattleRoyaleBase
         return distance_from_outside;
     }
 
-    protected void PlayerCountChanged(int new_count, int new_count_groups)
+    protected void PlayerCountChanged(int nb_players, int nb_groups)
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         if (gameplay)
-            gameplay.UpdatePlayerCount( new_count, new_count_groups );
+        {
+            //BattleRoyaleUtils.Trace(string.Format("PlayerCountChanged: %1 %2", nb_players, nb_groups));
+            gameplay.UpdatePlayerCount( nb_players, nb_groups );
+        }
     }
 
     protected void FadeIn()

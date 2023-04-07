@@ -3,6 +3,11 @@ class BattleRoyaleState extends Timeable {
     protected ref array<PlayerBase> m_Players;
     protected bool b_IsActive;
     protected bool b_IsPaused;
+    protected bool b_IsDebug;
+
+#ifdef SCHANAMODPARTY
+    bool hide_players_endgame = false;
+#endif
 
     string GetName()
     {
@@ -15,6 +20,17 @@ class BattleRoyaleState extends Timeable {
 
         b_IsActive = false;
         b_IsPaused = false;
+        b_IsDebug = false;
+
+#ifdef SCHANAMODPARTY
+        // Only really useful when party are enabled
+        AddTimer(5.0, this, "OnPlayerCountChanged", NULL, true);
+        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        if(m_GameSettings)
+        {
+            hide_players_endgame = m_GameSettings.hide_players_endgame;
+        }
+#endif
     }
 
     void Update(float timeslice)
@@ -28,6 +44,7 @@ class BattleRoyaleState extends Timeable {
         //Note: this is called AFTER players are added
         b_IsActive = true;
     }
+
     void Deactivate()
     {
         //Note: this is called BEFORE players are removed
@@ -99,14 +116,7 @@ class BattleRoyaleState extends Timeable {
 
     bool ContainsPlayer(PlayerBase player)
     {
-        if(m_Players.Find(player) >= 0)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return (m_Players.Find(player) >= 0);
     }
 
     void OnPlayerTick(PlayerBase player, float timeslice)
@@ -135,11 +145,20 @@ class BattleRoyaleState extends Timeable {
         //BattleRoyaleUtils.Trace("OnPlayerCountChanged()");
         if(IsActive())
         {
+            int nb_players, nb_groups;
+
+            nb_players = GetPlayers().Count();
 #ifdef SCHANAMODPARTY
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( GetPlayers().Count(), GetGroups().Count() ), true);
+            if(nb_players < 10 && hide_players_endgame && !b_IsDebug)
+                nb_groups = -1;
+            else
+                nb_groups = GetGroups().Count();
 #else
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( GetPlayers().Count(), 0 ), true);
+            nb_groups = -2;
 #endif
+
+            //BattleRoyaleUtils.Trace(string.Format("OnPlayerCountChanged: %1 %2", nb_players, nb_groups));
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( nb_players, nb_groups ), true);
         }
     }
 
@@ -299,6 +318,13 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
             Error("GAME SETTINGS IS NULL");
             i_HealTickTime = DAYZBR_DEBUG_HEAL_TICK;
         }
+    }
+
+    override void Activate()
+    {
+        //Note: this is called AFTER players are added
+        b_IsDebug = true;
+        super.Activate();
     }
 
     override string GetName()
