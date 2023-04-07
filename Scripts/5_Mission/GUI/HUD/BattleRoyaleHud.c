@@ -102,6 +102,7 @@ class BattleRoyaleHud
             Error("Called SetCount but widget is null!");
             return;
         }
+        //BattleRoyaleUtils.Trace(string.Format("SetCount: %1 %2", nb_players, nb_groups));
 
         string count_text;
         if(count_group <= 0 || count == count_group)

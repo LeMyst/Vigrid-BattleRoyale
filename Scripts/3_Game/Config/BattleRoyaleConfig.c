@@ -129,7 +129,7 @@ class BattleRoyaleConfig
     {
         if(!b_HasLoaded)
         {
-            Error("Requesting Config Data from Unloaded Config?");
+            Error("Requesting Config (" + key + ") Data from Unloaded Config?");
             Load();
         }
         return m_Configs.Get(key);

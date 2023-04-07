@@ -132,6 +132,7 @@ class BattleRoyaleState extends Timeable {
     //player count changed event handler
     protected void OnPlayerCountChanged()
     {
+        //BattleRoyaleUtils.Trace("OnPlayerCountChanged()");
         if(IsActive())
         {
 #ifdef SCHANAMODPARTY
@@ -181,11 +182,11 @@ class BattleRoyaleState extends Timeable {
         SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
         if (manager)
         {
-            BattleRoyaleUtils.Trace("Manager OK");
+            //BattleRoyaleUtils.Trace("Manager OK");
             autoptr map<string, autoptr set<string>> parties = manager.GetParties();
             if (parties)
             {
-                BattleRoyaleUtils.Trace("Parties OK");
+                //BattleRoyaleUtils.Trace("Parties OK");
                 // Create map player id <-> player object
                 auto id_map = new map<string, PlayerBase>();
                 array<Man> players = new array<Man>;
@@ -195,7 +196,7 @@ class BattleRoyaleState extends Timeable {
                     PlayerBase player = PlayerBase.Cast(players.Get(i));
                     if (player && player.GetIdentity() && player.IsAlive())
                     {
-                        BattleRoyaleUtils.Trace("Player: " + player.GetIdentity().GetName());
+                        //BattleRoyaleUtils.Trace("Player: " + player.GetIdentity().GetName());
                         id_map.Insert(player.GetIdentity().GetId(), player);
                     }
                 }
@@ -203,7 +204,7 @@ class BattleRoyaleState extends Timeable {
                 // Iterate over parties
                 ref set<PlayerBase> group;
                 int partyCount = parties.Count();
-                BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
+                //BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
                 for (i = 0; i < partyCount; ++i)
                 {
                     group = new ref set<PlayerBase>;
@@ -250,10 +251,10 @@ class BattleRoyaleState extends Timeable {
         // Add remaining players
         ref set<PlayerBase> solo_group;
         int pRemCount = m_PlayerWaitList.Count();
-        BattleRoyaleUtils.Trace("Remaining players: " + pRemCount);
+        //BattleRoyaleUtils.Trace("Remaining players: " + pRemCount);
         for (i = 0; i < pRemCount; i++)
         {
-            BattleRoyaleUtils.Trace("Remaining player: " + m_PlayerWaitList.Get(i).GetName());
+            //BattleRoyaleUtils.Trace("Remaining player: " + m_PlayerWaitList.Get(i).GetName());
             solo_group = new set<PlayerBase>;
             solo_group.Insert(m_PlayerWaitList.Get(i));
             teleport_groups.Insert(solo_group);

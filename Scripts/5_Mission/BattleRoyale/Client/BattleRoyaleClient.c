@@ -285,6 +285,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
         }
         if ( type == CallType.Client )
         {
+            //BattleRoyaleUtils.Trace(string.Format("SetPlayerCount: %1 %2", data.param1, data.param2));
             PlayerCountChanged( data.param1, data.param2 );
         }
     }

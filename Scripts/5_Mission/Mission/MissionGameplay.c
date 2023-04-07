@@ -90,12 +90,7 @@ modded class MissionGameplay
 
     void UpdatePlayerCount(int count)
     {
-        if(count == 0)
-        {
-            m_BattleRoyaleHud.ShowCount( false );
-            return;
-        }
-
+        //BattleRoyaleUtils.Trace(string.Format("UpdatePlayerCount: %1 %2", nb_players, nb_groups));
         m_BattleRoyaleHud.ShowCount( true );
         m_BattleRoyaleHud.SetCount( count );
     }
