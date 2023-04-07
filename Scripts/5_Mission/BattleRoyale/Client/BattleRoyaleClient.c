@@ -409,7 +409,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
                     // Artillery_Distant_SoundSet
                     // Artillery_Fall_SoundSet
                     // Artillery_Close_SoundSet
-                    ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Close_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+                    ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
                     m_ArtySound.SetAutodestroy(true);
                 }
             }
