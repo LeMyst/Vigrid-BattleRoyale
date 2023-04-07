@@ -1,13 +1,13 @@
 class BattleRoyaleSpectators
 {
-    protected ref array<PlayerBase> m_Players;
+    protected ref array<PlayerBase> m_Spectators;
     protected ref Timer m_Timer;
     protected ref array<string> a_AllowedSteamIds;
     protected bool b_AllowAllSpectators;
 
     void BattleRoyaleSpectators()
     {
-        m_Players = new array<PlayerBase>();
+        m_Spectators = new array<PlayerBase>();
         m_Timer = new Timer;
 
         a_AllowedSteamIds = BattleRoyaleConfig.GetConfig().GetGameData().allowed_spectate_steamid64;
@@ -60,12 +60,12 @@ class BattleRoyaleSpectators
 
     bool ContainsPlayer(PlayerBase player)
     {
-        return (m_Players.Find(player) != -1);
+        return (m_Spectators.Find(player) != -1);
     }
 
     void AddPlayer(PlayerBase player)
     {
-        m_Players.Insert(player);
+        m_Spectators.Insert(player);
         //spin up a thread to handle spectator camera initialization
         GetGame().GameScript.Call(this, "InitSpectatorCamera", player);
     }
