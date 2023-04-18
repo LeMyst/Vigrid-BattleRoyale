@@ -157,6 +157,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 string city;
                 GetGame().ConfigGetChildName(cfg, i, city);
                 vector city_position;
+                // TODO: Override city position from config file
                 TFloatArray float_array = {};
                 GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
                 city_position[0] = float_array[0]; city_position[2] = float_array[1];

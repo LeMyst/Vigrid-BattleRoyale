@@ -107,5 +107,14 @@ class CfgWorlds
         };
     };
 };
-	{
-	};
+
+class CfgVehicles
+{
+    class EffectArea;
+    class BREffectArea: EffectArea
+    {};
+    class BlueZone: BREffectArea
+    {
+        scope=2;
+    };
+}

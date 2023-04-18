@@ -188,8 +188,8 @@ class BattleRoyaleState extends Timeable {
     ref array<ref set<PlayerBase>> GetGroups()
     {
         int i;
-        ref array<ref set<PlayerBase>> teleport_groups = new array<ref set<PlayerBase>>;
-        ref array<PlayerBase> m_PlayerWaitList = new array<PlayerBase>();
+        ref array<ref set<PlayerBase>> groups = new array<ref set<PlayerBase>>;
+        ref array<PlayerBase> m_PlayerWaitList = new array<PlayerBase>;
         m_PlayerWaitList.Copy( m_Players );
         // Create teleport groups
 
@@ -228,41 +228,44 @@ class BattleRoyaleState extends Timeable {
                 {
                     group = new ref set<PlayerBase>;
                     PlayerBase plr = PlayerBase.Cast(id_map.Get(parties.GetKey(i)));
-                    BattleRoyaleUtils.Trace("Party leader is " + plr.GetIdentity().GetName());
-                    if(m_PlayerWaitList.Find(plr) != -1)
+                    if(plr && plr.GetIdentity())
                     {
-                        BattleRoyaleUtils.Trace(plr.GetIdentity().GetName() + " is in the wait list");
-                        m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plr));
-                        if (plr && plr.GetIdentity() && plr.IsAlive())
+                        //BattleRoyaleUtils.Trace("Party leader is " + plr.GetIdentity().GetName());
+                        if(m_PlayerWaitList.Find(plr) != -1)
                         {
-                            BattleRoyaleUtils.Trace("Add leader " + plr.GetIdentity().GetName() + " to the group");
-                            group.Insert(plr);  // Insert guild leader into group
-                            if (parties.GetElement(i))
+                            //BattleRoyaleUtils.Trace(plr.GetIdentity().GetName() + " is in the wait list");
+                            m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plr));
+                            if (plr && plr.GetIdentity() && plr.IsAlive())
                             {
-                                int tmpPlayPartCount = parties.GetElement(i).Count();
-                                BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
-                                for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
+                                //BattleRoyaleUtils.Trace("Add leader " + plr.GetIdentity().GetName() + " to the group");
+                                group.Insert(plr);  // Insert guild leader into group
+                                if (parties.GetElement(i))
                                 {
-                                    PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)));
-                                    BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
-                                    if(m_PlayerWaitList.Find(plrpart) != -1)
+                                    int tmpPlayPartCount = parties.GetElement(i).Count();
+                                    //BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
+                                    for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
                                     {
-                                        BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
-                                        m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
-                                        group.Insert(plrpart);  // Insert party member into group
+                                        PlayerBase plrpart = PlayerBase.Cast(id_map.Get(parties.GetElement(i).Get(j)));
+                                        //BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
+                                        if(m_PlayerWaitList.Find(plrpart) != -1)
+                                        {
+                                            //BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
+                                            m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
+                                            group.Insert(plrpart);  // Insert party member into group
+                                        }
                                     }
                                 }
+                                groups.Insert(group);  // Insert group into list of groups
                             }
-                            teleport_groups.Insert(group);  // Insert group into list of groups
+                        } else {
+                            //BattleRoyaleUtils.Trace("Party leader is not in waiting list, do nothing");
                         }
-                    } else {
-                        BattleRoyaleUtils.Trace("Party leader is not in waiting list, do nothing");
-                    }
 
-                    if(m_PlayerWaitList.Count() <= 0)
-                    {
-                        BattleRoyaleUtils.Trace("No more players in waiting list, skip the remaining players");
-                        break;
+                        if(m_PlayerWaitList.Count() <= 0)
+                        {
+                            //BattleRoyaleUtils.Trace("No more players in waiting list, skip the remaining players");
+                            break;
+                        }
                     }
                 }
             }
@@ -276,10 +279,10 @@ class BattleRoyaleState extends Timeable {
             //BattleRoyaleUtils.Trace("Remaining player: " + m_PlayerWaitList.Get(i).GetName());
             solo_group = new set<PlayerBase>;
             solo_group.Insert(m_PlayerWaitList.Get(i));
-            teleport_groups.Insert(solo_group);
+            groups.Insert(solo_group);
         }
 
-        return teleport_groups;
+        return groups;
     }
 #endif
 }
@@ -368,9 +371,9 @@ class BattleRoyaleDebugState extends BattleRoyaleState {
         super.OnPlayerTick(player, timeslice);
 
         vector spawn_pos = "0 0 0";
-        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
+        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 6), (v_Center[0] + 6));
         spawn_pos[1] = GetGame().SurfaceY(v_Center[0], v_Center[2]);
-        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 5), (v_Center[2] + 5));
+        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 6), (v_Center[2] + 6));
 
         vector playerPos = player.GetPosition();
         float distance = vector.Distance(playerPos, spawn_pos);

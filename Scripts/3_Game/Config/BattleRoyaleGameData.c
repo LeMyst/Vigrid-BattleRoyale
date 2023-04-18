@@ -30,6 +30,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "Settlement_Vysotovo"
     };
 
+    ref array<ref BattleRoyaleOverrideSpawnPosition> override_spawn_positions;
+
     bool artillery_sound = true;
 
     ref array<string> player_starting_clothes = {
@@ -73,4 +75,10 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     {
         JsonFileLoader<BattleRoyaleGameData>.JsonLoadFile(GetPath(), this);
     }
+}
+
+class BattleRoyaleOverrideSpawnPosition
+{
+    string CityName;
+    vector NewPosition;
 }

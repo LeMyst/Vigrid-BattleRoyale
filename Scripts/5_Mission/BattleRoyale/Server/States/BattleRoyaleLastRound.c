@@ -262,7 +262,8 @@ class BattleRoyaleLastRound extends BattleRoyaleState
             {
                 //DAMAGE
                 MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
-                GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
+                //GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
+                player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
                 //TODO: determine if this last health tick will kill the player
                 bool b_WillKillThisTick = false;
                 if(b_WillKillThisTick)
