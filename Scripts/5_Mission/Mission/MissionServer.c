@@ -32,6 +32,41 @@ modded class MissionServer
         }
     }
 
+    override void OnEvent(EventType eventTypeId, Param params)
+    {
+        switch (eventTypeId)
+        {
+        case ClientPrepareEventTypeID:
+            BattleRoyaleUtils.Trace("ClientPrepareEventTypeID");
+            break;
+
+        case ClientNewEventTypeID:
+            BattleRoyaleUtils.Trace("ClientNewEventTypeID");
+            break;
+
+        case ClientReadyEventTypeID:
+            BattleRoyaleUtils.Trace("ClientReadyEventTypeID");
+            break;
+
+        case ClientRespawnEventTypeID:
+            BattleRoyaleUtils.Trace("ClientRespawnEventTypeID");
+            break;
+
+        case ClientReconnectEventTypeID:
+            BattleRoyaleUtils.Trace("ClientReconnectEventTypeID");
+            break;
+
+        case ClientDisconnectedEventTypeID:
+            BattleRoyaleUtils.Trace("ClientDisconnectedEventTypeID");
+            break;
+
+        case LogoutCancelEventTypeID:
+            BattleRoyaleUtils.Trace("LogoutCancelEventTypeID");
+            break;
+        }
+        super.OnEvent(eventTypeId, params);
+    }
+
     override void EquipCharacter(MenuDefaultCharacterData char_data)
     {
         //TODO: get this from a setting file
