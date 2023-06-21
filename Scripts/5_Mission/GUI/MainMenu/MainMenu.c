@@ -18,7 +18,6 @@ modded class MainMenu
         //ensure popup message is initialized
         if(!m_PopupMessage)
         {
-
             m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "DayZBR-Mod/GUI/layouts/widgets/popup_message.layout", layoutRoot );
             m_PopupText = RichTextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
             m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
@@ -32,7 +31,11 @@ modded class MainMenu
 
         //m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
 
-        m_ChooseServer.Show( false );
+        m_ChooseServer.Show( false ); // Don't show choose server
+        m_TutorialButton.Show( false ); // Don't show tutorial button
+        m_MessageButton.Show( false ); // Don't show credits button
+        m_ModdedWarning.SetText("");
+        m_ModdedWarning.Show( false ); // Hide modded message
 
         string version;
         GetGame().GetVersion( version );
@@ -57,7 +60,7 @@ modded class MainMenu
             Error("Something Went Wrong! BR Failed To Start?!");
         }
 
-        m_LastPlayedTooltip.Show(false);// ensure last played is not shown
+        m_LastPlayedTooltip.Show( false );// ensure last played is not shown
 
         return layoutRoot;
     }
