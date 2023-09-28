@@ -34,8 +34,17 @@ modded class MainMenu
         m_ChooseServer.Show( false ); // Don't show choose server
         m_TutorialButton.Show( false ); // Don't show tutorial button
         m_MessageButton.Show( false ); // Don't show credits button
-        m_ModdedWarning.SetText("");
-        m_ModdedWarning.Show( false ); // Hide modded message
+        ref array<string> funny_strings = {
+            "Bro, it's DayZ but with Battle Royale stuff!",
+            "Thou whom read this message, S1Q",
+            "Next time, try to aim better...",
+            "Just so you know, you're allergic to bullets",
+            "You Miss 100% Of The Shots You Don't Take.",
+            "I should have improved the mod instead of writing this sentence",
+            "This is the rare phrase that only appears at the same frequency as the others"
+        };
+        m_ModdedWarning.SetText(funny_strings.GetRandomElement());
+        //m_ModdedWarning.Show( false ); // Hide modded message
 
         string version;
         GetGame().GetVersion( version );
@@ -218,7 +227,7 @@ modded class MainMenu
         super.LoadMods(); //initialize like normal
 
         //our goal here is to only show BR as a simplemod entry
-        ref array<ref ModInfo> modArray = new array<ref ModInfo>;
+        /*ref array<ref ModInfo> modArray = new array<ref ModInfo>;
         GetGame().GetModInfos( modArray );
         for(int i = 0; i < modArray.Count(); i++)
         {
@@ -227,7 +236,7 @@ modded class MainMenu
                 LoadBRModEntry(modArray[i]);
                 return;
             }
-        }
+        }*/
 
         //No BR mod found? ya just delete the lists....
         if( m_ModsSimple )
