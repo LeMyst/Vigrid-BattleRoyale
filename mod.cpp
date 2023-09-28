@@ -6,4 +6,4 @@ logoOver = "DayZBR-Mod/GUI/textures/Mod_Logo.paa";      // on mouse hover over l
 tooltip = "DayZ Battle Royale";                         // tooltip on mouse hover
 overview = "DayZ Battle Royale Mod";                    // overview
 author = "From mod.cpp";                                // author
-version = "0.0.4-Myst";                                 // version
+version = "0.0.5-Myst";                                 // version
