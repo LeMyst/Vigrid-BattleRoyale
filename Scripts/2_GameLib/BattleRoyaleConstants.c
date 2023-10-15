@@ -8,7 +8,7 @@
 static const string BATTLEROYALE_VERSION = "0.0.5-Myst";
 
 //--- debug settings
-static const int BATTLEROYALE_SOLO_GAME = 0;
+static const int BATTLEROYALE_SOLO_GAME = 1;
 static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
 
@@ -19,9 +19,6 @@ static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
 //--- settings files
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:DayZBR-Mod\\";
-static const string BATTLEROYALE_VEHICLES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Vehicles\\";
-static const string BATTLEROYALE_LOOT_ENTRIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Entries\\";
-static const string BATTLEROYALE_LOOT_CATEGORIES_FOLDER = BATTLEROYALE_SETTINGS_FOLDER + "\\Loot\\Categories\\";
 
 
 //--- RPC namespaces
@@ -62,16 +59,6 @@ static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from ba
 static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 5; //multiplier from base game values on blood regen speed
 
 
-//TODO: figure out which mission is loaded in realtime (or use a server-specific setting)
-//static const string BATTLEROYALE_LOOT_XML_PATH = "$CurrentDir:mpmissions\\BattleRoyale.ChernarusPlusGloom\\mapgroupproto.xml";
-
-//TODO: move these into loot settings config file
-static const string BATTLEROYALE_LOOT_MAGAZINES_CATEGORY = "magazines";
-static const string BATTLEROYALE_LOOT_AMMO_CATEGORY = "ammo";
-static const string BATTLEROYALE_LOOT_ATTACHMENTS_CATEGORY = "attachments";
-static const string BATTLEROYALE_LOOT_BROKEN_STYLE_ITEM_CLASSNAME = "Zucchini"; //This item spawns whenever an entry has no styles defined
-
-
 //--- state machine | state names
 static const string DAYZBR_SM_COUNT_REACHED_NAME = "Player Count Reached State";
 static const string DAYZBR_SM_DEBUG_ZONE_NAME = "Debug Zone State";
@@ -101,24 +88,12 @@ static const float DAYZBR_DEBUG_RADIUS = 100;
 static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 
-//--- vehicle subsystem
-static const float DAYZBR_VS_MIN_SURFACE_FRICTION = 0.94; //todo: config this as a setting
-
-
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
 static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 1; //max next zone distance as a percent of maxmimum distance (1 => 100%)
 static const float DAYZBR_ZS_MIN_ANGLE = 0; //degrees
 static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
 
-
-//--- popup text
-static const string DAYZBR_CONNECTING_TO_NETWORK_MSG = "Connecting to the Battle Royale Network...";
-static const string DAYZBR_MATCHMAKING_MSG = "Matchmaking...";
-static const string DAYZBR_CONNECTING_TO_SERVER_MSG = "Connecting to match. Please be patient, this could take a while...";
-static const string DAYZBR_FAILED_TO_CONNECT_MSG = "Error! ";
-static const string DAYZBR_TIMEOUT_MSG = "Failed to connect! Timed out!";
-static const string DAYZBR_NULL_RESPONSE_MSG = "Error! NULL Response!";
 
 //TODO: move this to the web API
 static const string BATTLEROYALE_SERVER_PASSWORD = "DayZBR_Beta";

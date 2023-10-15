@@ -6,10 +6,6 @@ enum BattleRoyaleCOTStateMachineRPC
     Next,
     Pause,
     Resume,
-    Start_Loot,
-    Stop_Loot,
-    Start_Vehicles,
-    Stop_Vehicles,
     TestSpectator,
 
     //TODO: insert more actions here

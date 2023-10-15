@@ -76,8 +76,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         if(GetPreviousZone())
             m_PreviousArea = GetPreviousZone().GetArea();
 
-        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(Vector(0, 0, 0), 0, GetGame().GetTime()); //final zone temp data
-
         //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
 
@@ -135,8 +133,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     void OnPlayerKilled(PlayerBase player, Object killer)
     {
-        ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
-
         if(ContainsPlayer( player ))
         {
             RemovePlayer( player );
@@ -181,51 +177,7 @@ class BattleRoyaleLastRound extends BattleRoyaleState
                         }
 
                         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
-
-                        if(!match_data.ContainsDeath(player_steamid))
-                        {
-                            if(!is_vehicle)
-                            {
-                                EntityAI itemInHands = pbKiller.GetHumanInventory().GetEntityInHands();
-                                killed_with = itemInHands.GetType();
-                            }
-                            else
-                            {
-                                killed_with = killer_entity.GetType();
-                            }
-                            string killer_steamid = "";
-                            if(pbKiller.GetIdentity())
-                            {
-                                killer_steamid = pbKiller.GetIdentity().GetPlainId();
-                            }
-                            match_data.CreateDeath( player_steamid, player_position, time, killer_steamid, killed_with, killer_position );
-                        }
                     }
-                    else
-                    {
-                        //killer is an entity, but not a player
-                        if(!match_data.ContainsDeath(player_steamid))
-                        {
-                            killed_with = killer_entity.GetType();
-                            match_data.CreateDeath( player_steamid, player_position, time, "", killed_with, killer_position );
-                        }
-                    }
-                }
-                else
-                {
-                    //Unhandled killer case (not an entity?)
-                    if(!match_data.ContainsDeath(player_steamid))
-                    {
-                        match_data.CreateDeath( player_steamid, player_position, time, "", "Environment", killer_position );
-                    }
-                }
-            }
-            else
-            {
-                //null killer
-                if(!match_data.ContainsDeath(player_steamid))
-                {
-                    match_data.CreateDeath( player_steamid, player_position, time, "", "Environment", Vector(0,0,0) );
                 }
             }
         }
@@ -264,20 +216,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
                 MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
                 //GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
-                //TODO: determine if this last health tick will kill the player
-                bool b_WillKillThisTick = false;
-                if(b_WillKillThisTick)
-                {
-                    string player_steamid = player.GetIdentity().GetPlainId();
-                    vector player_position = player.GetPosition();
-                    int time = GetGame().GetTime();
-                    ref MatchData match_data = BattleRoyaleServer.Cast( GetBR() ).GetMatchData();
-                    //--- this ensures the leaderboard logs this player's death as zone damage
-                    if(!match_data.ContainsDeath(player_steamid))
-                    {
-                        match_data.CreateDeath( player_steamid, player_position, time, "", "Zone", Vector(0,0,0) );
-                    }
-                }
                 player.DecreaseHealthCoef( f_Damage );
                 player.time_until_damage = i_DamageTickTime; //reset timer
             }
@@ -287,37 +225,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         {
             player.time_until_damage = Math.Min(i_DamageTickTime, player.time_until_damage + timeslice);
         }
-
-        /*if(player.GetIdentity())
-        {
-            if(player.time_until_move <= 0)
-            {
-                //send movement update
-                string steamid = player.GetIdentity().GetPlainId();
-                vector dirvector = player.GetDirection();
-                dirvector[1] = 0;
-                dirvector = dirvector.Normalized(); //renormalize
-                float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
-                //clamp range (-pi, pi]
-                if (angle_rads > Math.PI)
-                {
-                    angle_rads -= 2 * Math.PI;
-                }
-                else if (angle_rads <= -Math.PI)
-                {
-                    angle_rads += 2 * Math.PI;
-                }
-                float angle = angle_rads * Math.RAD2DEG;
-
-                BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
-
-                player.time_until_move = 5;
-            }
-            else
-            {
-                player.time_until_move -= timeslice;
-            }
-        }*/
 
         super.OnPlayerTick(player, timeslice);
     }
@@ -329,7 +236,6 @@ class BattleRoyaleLastRound extends BattleRoyaleState
 
     void LockFinalZone()
     {
-        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().LockZone(Vector(0, 0, 0), 0, GetGame().GetTime()); //final zone temp data
         //TODO: this doesn't fucking work | if zone is null, no damage occurs
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
         b_IsZoneLocked = true;

@@ -1,22 +1,12 @@
-/*modded class Weapon_Base
+modded class Weapon_Base
 {
-    override void EEFired (int muzzleType, int mode, string ammoType)
-    {
-        if(GetGame().IsMultiplayer() && GetGame().IsServer() && GetBR())
-        {
-            //! server - log zombie kill event!
-            if(!GetBR().IsDebug())
-            {
+	override void EEInit()
+	{
+		super.EEInit();
 
-                PlayerBase shooter = PlayerBase.Cast( this.GetHierarchyRootPlayer() );
-                if(shooter && shooter.GetIdentity())
-                {
-                    string playerid = shooter.GetIdentity().GetPlainId();
-                    GetBR().GetMatchData().Shoot( playerid, shooter.GetPosition(), GetGame().GetTime() );
-                }
-            }
-        }
-        super.EEFired(muzzleType, mode, ammoType);
-    }
+		if (GetGame().IsServer())
+		{
+            SpawnAmmo( "", WeaponWithAmmoFlags.CHAMBER | WeaponWithAmmoFlags.MAX_CAPACITY_MAG );
+		}
+	}
 }
-*/

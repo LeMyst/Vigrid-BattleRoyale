@@ -37,21 +37,6 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
         button = UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
 
-        /*wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
-        UIActionManager.CreateText( wrapper, "Loot System" );
-        button = UIActionManager.CreateButton( wrapper, "Start", this, "LootSystem_Start" );
-        button = UIActionManager.CreateButton( wrapper, "Stop", this, "LootSystem_Stop" );
-
-        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
-        UIActionManager.CreateText( wrapper, "Vehicle System" );
-        button = UIActionManager.CreateButton( wrapper, "Start", this, "VehicleSystem_Start" );
-        button = UIActionManager.CreateButton( wrapper, "Stop", this, "VehicleSystem_Stop" );
-
-        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
-        UIActionManager.CreateText( wrapper, "Vote Start" );
-        button = UIActionManager.CreateButton( wrapper, "Enable", this, "VehicleSystem_Start" );
-        button = UIActionManager.CreateButton( wrapper, "Disable", this, "VehicleSystem_Stop" );*/
-
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
         UIActionManager.CreateText( wrapper, "Test Spectating" );
         button = UIActionManager.CreateButton( wrapper, "Test!", this, "TestSpectating" );
@@ -77,38 +62,6 @@ class BRMasterControlsForm extends JMFormBase
     void StateMachine_Resume(UIEvent eid, ref UIActionBase action)
     {
         m_Module.StateMachine_Resume();
-    }
-
-    void LootSystem_Start(UIEvent eid, ref UIActionBase action)
-    {
-        m_Module.Loot_Start();
-    }
-
-    void LootSystem_Stop(UIEvent eid, ref UIActionBase action)
-    {
-        m_Module.Loot_Stop();
-    }
-
-    void VehicleSystem_Start(UIEvent eid, ref UIActionBase action)
-    {
-        m_Module.Vehicles_Start();
-    }
-
-    void VehicleSystem_Stop(UIEvent eid, ref UIActionBase action)
-    {
-        m_Module.Vehicles_Stop();
-    }
-
-    void VoteStart_Enable(UIEvent eid, ref UIActionBase action)
-    {
-        Print("TODO!");
-        //m_Module.Vehicles_Start();
-    }
-
-    void VoteStart_Disable(UIEvent eid, ref UIActionBase action)
-    {
-        Print("TODO!");
-        //m_Module.Vehicles_Stop();
     }
 
     void TestSpectating(UIEvent eid, ref UIActionBase action)

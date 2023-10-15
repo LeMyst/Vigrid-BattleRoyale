@@ -85,44 +85,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         return super.IsComplete();
     }
 
-    /*override void OnPlayerTick(PlayerBase player, float timeslice)
-    {
-        if(b_IsGameplay)
-        {
-            if(player.GetIdentity())
-            {
-                if(player.time_until_move <= 0)
-                {
-                    //send movement update
-                    string steamid = player.GetIdentity().GetPlainId();
-                    vector dirvector = player.GetDirection();
-                    dirvector[1] = 0;
-                    dirvector = dirvector.Normalized(); //renormalize
-                    float angle_rads = Math.Atan2(dirvector[0], dirvector[2]);
-                    //clamp range (-pi, pi]
-                    if (angle_rads > Math.PI)
-                    {
-                        angle_rads -= 2 * Math.PI;
-                    }
-                    else if (angle_rads <= -Math.PI)
-                    {
-                        angle_rads += 2 * Math.PI;
-                    }
-                    float angle = angle_rads * Math.RAD2DEG;
-
-                    BattleRoyaleServer.Cast( GetBR() ).GetMatchData().Movement(steamid, player.GetPosition(), angle, GetGame().GetTime() );
-
-                    player.time_until_move = 5;
-                }
-                else
-                {
-                    player.time_until_move -= timeslice;
-                }
-            }
-        }
-        super.OnPlayerTick(player, timeslice);
-    }*/
-
     //TODO: add this to battleroyaleconstants and use string replace to insert seconds_till
     void MessageUnlock(int seconds_till)
     {
@@ -141,10 +103,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
 
         GetGame().GameScript.Call(this, "HandleUnlock", NULL); //spin up unlocking thread
-
-        // TODO: reenable loot and vehicles system
-        //BattleRoyaleServer.Cast(GetBR()).GetLootSystem().Start(); //start the loot system
-        //BattleRoyaleServer.Cast(GetBR()).GetVehicleSystem().Start();  //start spawning vehicles
     }
 
     void ShowFirstZone()
@@ -159,7 +117,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         Print(m_ThisArea.GetCenter());
         Print(m_ThisArea.GetRadius());
 
-        BattleRoyaleServer.Cast( GetBR() ).GetMatchData().ShowZone(m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), GetGame().GetTime());
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, false ), true);
     }
 
@@ -176,7 +133,6 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
 
         MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
 
-        //BattleRoyaleServer.Cast( GetBR() ).GetMatchData().SetStart( GetGame().GetTime() ); //match start time logging
         b_IsGameplay = true;
     }
 

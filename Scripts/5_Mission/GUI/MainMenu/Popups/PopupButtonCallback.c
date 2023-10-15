@@ -1,4 +1,0 @@
-class PopupButtonCallback {
-    void OnButtonClick()
-    {}
-}

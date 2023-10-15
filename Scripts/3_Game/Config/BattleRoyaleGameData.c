@@ -56,10 +56,6 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "123456789123456789" // Dummy SteamID64
     };
 
-    int num_vehicles = 1000; // TODO: Move this to world config
-    int vehicle_ticktime_ms = 1000;
-    float vehicle_spawn_radius = 500.0;
-
     //--- do not modify
     override string GetPath()
     {

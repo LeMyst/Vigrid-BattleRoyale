@@ -64,7 +64,7 @@ modded class LoadingScreen
 
 		f_LoadingTime = 0;
 
-		LoadingScreenBackground backgrounds = m_Backgrounds[0];
+		LoadingScreenBackground backgrounds = m_Backgrounds[1]; // TODO: override default map
 
 		if (backgrounds)
 			m_ImageBackground.LoadImageFile(0, backgrounds.GetRandomPath());

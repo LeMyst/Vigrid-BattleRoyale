@@ -107,33 +107,6 @@ modded class PlayerBase
         }
     }
 
-    /*override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
-    {
-        if(GetGame().IsMultiplayer() && GetGame().IsServer() && source && GetBR())
-        {
-            //! server - hit event!
-            Man killer = source.GetHierarchyRootPlayer();
-            if(killer)
-            {
-                if(!GetBR().IsDebug())
-                {
-
-                    PlayerBase shooter = PlayerBase.Cast( killer );
-                    if(shooter && shooter.GetIdentity() && this.GetIdentity())
-                    {
-                        string shooterid = shooter.GetIdentity().GetPlainId();
-                        string playerid = this.GetIdentity().GetPlainId();
-                        if (playerid != shooterid)
-                        {
-                            GetBR().GetMatchData().Hit( playerid, shooterid, this.GetPosition(), GetGame().GetTime() );
-                        }
-                    }
-                }
-            }
-        }
-        super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
-    }*/
-
     //Temp fix for disabling character saving
     override bool Save()
     {

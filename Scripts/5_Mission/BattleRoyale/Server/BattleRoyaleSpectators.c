@@ -91,20 +91,6 @@ class BattleRoyaleSpectators
             //This is a very hacky way to get the players previous death position, we'll obviously need to find a better way to do so
             string steam_id = identity.GetPlainId();
             BattleRoyaleServer server = BattleRoyaleServer.Cast( GetBR() );
-            MatchData match_data = server.GetMatchData();
-            if(match_data.results)
-            {
-                for(int i = 0; i < match_data.results.Count(); i++)
-                {
-                    if(match_data.results[i])
-                    {
-                        if(match_data.results[i].steamid == steam_id)
-                        {
-                            position = match_data.results[i].pos;
-                        }
-                    }
-                }
-            }
 
             GetGame().ObjectDelete( player ); // this is for network bubble fix
 
