@@ -23,7 +23,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
     void ~BattleRoyaleServer()
     {
         m_Timer.Stop();
-
         delete m_Timer;
     }
 
@@ -72,42 +71,20 @@ class BattleRoyaleServer extends BattleRoyaleBase
             m_States.Insert(round);
         }
 
+        // LAST ROUND
         BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
         m_States.Insert(last_round);
 
+        // WINNING PLAYER/TEAM
         m_States.Insert(new BattleRoyaleWin);
+
+        // RESTART SERVER
         m_States.Insert(new BattleRoyaleRestart);
 
         i_CurrentStateIndex = 0;
         GetCurrentState().Activate();
 
-        string worldName = "empty";
-        GetGame().GetWorldName( worldName );
-        worldName.ToLower();
-        if ( worldName != "namalsk" )
-            RandomizeServerEnvironment();
-
-        //--- this will halt the server until we successfully register is as unlocked in the DB
-        //if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
-        //{
-        //    Print("Requesting Server Startup...")
-        //    ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
-        //    while(!m_ServerData || m_ServerData.locked != 0)
-        //    {
-        //        if(!m_ServerData)
-        //        {
-        //            Print("Failed to start server...");
-        //            m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request startup failed (maybe API was offline when this happened?)
-        //        }
-        //        else
-        //        {
-        //            //startup succesfull but locked! need to unlock
-        //            Print("Invalid Server State on Startup...");
-        //            BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
-        //            m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
-        //        }
-        //    }
-        //}
+        RandomizeServerEnvironment();
 
 #ifdef BLUE_ZONE
         BattleRoyaleUtils.Trace("Instance BlueZone Server");
