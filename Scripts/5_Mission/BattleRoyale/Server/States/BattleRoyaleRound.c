@@ -62,7 +62,7 @@ class BattleRoyaleRound extends BattleRoyaleState
             int previous_zone_number = Math.Floor(GetPreviousZone().GetZoneNumber());
             m_Zone = m_Zone.GetZone(previous_zone_number + 1);
         } else {
-            m_Zone = m_Zone.GetZone(1);
+            m_Zone = m_Zone.GetZone(1); // Can't add dynamic num zone stuff here
         }
 
         // Update zone timer
@@ -74,6 +74,9 @@ class BattleRoyaleRound extends BattleRoyaleState
         float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
         float num_zones = i_NumZones * 1.0;
         Print("- Num zone : " + m_Zone.GetZoneNumber() + "/" + i_NumZones);
+
+        int min_players = m_Zone.GetZoneMinPlayers();
+        Print("- Min players : " + min_players);
 
         //scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone #
         f_Damage = f_Damage * ( zone_num / num_zones );
@@ -280,6 +283,9 @@ class BattleRoyaleRound extends BattleRoyaleState
 
     override bool SkipState(BattleRoyaleState m_PreviousState)
     {
+        if(m_PreviousState.i_StartingZone > m_Zone.GetZoneNumber())
+        return true;
+
         if(BATTLEROYALE_SOLO_GAME)
             return false;
 

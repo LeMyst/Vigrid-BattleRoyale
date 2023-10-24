@@ -54,6 +54,34 @@ class BattleRoyalePrepare extends BattleRoyaleState
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 13), 0);
 
+#ifdef DYNAMIC_NUM_ZONES
+        // Found the first zone based on number of registered players
+        int pCount = m_PlayerList.Count();
+        int last_try_zone = 1;
+        Print("Number of players registered: " + pCount);
+        BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
+        for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
+        {
+            Print("Try zone: " + i_zone);
+            last_try_zone = i_zone;
+            Print("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
+            if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < pCount)
+            {
+                Print("It's a match! " + i_zone);
+                break;
+            }
+            if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
+            {
+                Print("Reach the minimum! " + i_zone);
+                break;
+            }
+            Print("No chance, we continue...");
+        }
+        i_StartingZone = last_try_zone;
+#endif
+
+        Print("Starting zone will be " + i_StartingZone);
+
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
 
@@ -241,7 +269,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         if(check_zone && m_GameSettings.spawn_in_first_zone)
         {
-            if(!BattleRoyaleZone.GetZone(1).IsInZone(x, z))
+            if(!BattleRoyaleZone.GetZone(i_StartingZone).IsInZone(x, z))
                 return false;
         }
 
@@ -342,6 +370,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
         if (m_GameSettings.spawn_in_villages)
         {
             vector village_pos = "0 0 0";
+            BattleRoyaleUtils.Trace("Spawn in zone " + i_StartingZone);
+            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_StartingZone).GetArea();
             for(int village_spawn_try = 1; village_spawn_try <= 200; village_spawn_try++)
             {
                 BattleRoyaleUtils.Trace("Try to spawn in village " + village_spawn_try);
@@ -350,7 +380,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 bool check_zone = true;
                 if(m_GameSettings.spawn_in_first_zone)
                 {
-                    village = GetRandomVillage(BattleRoyaleZone.GetZone(1).GetArea(), true);
+
+                    village = GetRandomVillage(spawn_area, true);
                     check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone
                 }
                 else

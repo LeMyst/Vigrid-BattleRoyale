@@ -4,6 +4,7 @@ class BattleRoyaleState extends Timeable {
     protected bool b_IsActive;
     protected bool b_IsPaused;
     protected bool b_IsDebug;
+    static int i_StartingZone = 1; // Default zone is the biggest one
 
 #ifdef SCHANAMODPARTY
     bool hide_players_endgame = false;

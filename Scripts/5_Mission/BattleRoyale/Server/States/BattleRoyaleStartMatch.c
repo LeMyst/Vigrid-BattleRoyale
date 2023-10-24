@@ -110,7 +110,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
         // Show first circle
         Print("[BattleRoyaleStartMatch] Show first circle");
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;
-        m_Zone = m_Zone.GetZone(1);
+        m_Zone = m_Zone.GetZone(BattleRoyalePrepare.i_StartingZone);
         m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
         ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
 
