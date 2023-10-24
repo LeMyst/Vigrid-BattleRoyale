@@ -108,9 +108,9 @@ class BattleRoyaleHud
         if(nb_groups > 1)
             pluralize = "s";
 
-        if(nb_groups == -1)
+        if(nb_groups == -1) // Less than 10 players
             m_CountTextWidget.SetText( string.Format("%1 (? group)", nb_players, nb_groups, pluralize) );
-        else if(nb_groups == -2)
+        else if(nb_groups == -2) // No Party Mod
             m_CountTextWidget.SetText( string.Format("%1", nb_players, nb_groups, pluralize) );
         else
             m_CountTextWidget.SetText( string.Format("%1 (%2 group%3)", nb_players, nb_groups, pluralize) );

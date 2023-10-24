@@ -2,10 +2,10 @@ class BattleRoyaleZoneData extends BattleRoyaleDataBase
 {
     int shrink_type = 3; // Exp/Lin/Static/Const
 
-    //constant
+    // constant
     float constant_scale = 0.65;
 
-    //exponential
+    // exponential
     float shrink_base = 2.718281828459; // ~ e
     float shrink_exponent = 3.0;
     bool end_in_villages = true;

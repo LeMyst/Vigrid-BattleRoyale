@@ -13,6 +13,7 @@ class BattleRoyaleWin extends BattleRoyaleState
     }
 
     //TODO: state functionality for winners!
+    //TODO: Add party support
     override void Activate()
     {
         super.Activate();
