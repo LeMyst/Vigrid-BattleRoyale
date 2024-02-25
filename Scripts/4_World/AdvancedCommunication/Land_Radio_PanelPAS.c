@@ -1,8 +1,8 @@
-modded class Land_Radio_PanelPAS
-{
-    override void EEInit()
-    {
-        super.EEInit();
-        GetInventory().CreateInInventory( "CarBattery" );
-    }
-}
+//modded class Land_Radio_PanelPAS
+//{
+//    override void EEInit()
+//    {
+//        super.EEInit();
+//        GetInventory().CreateInInventory( "CarBattery" );
+//    }
+//}
