@@ -2,6 +2,9 @@ class CfgPatches
 {
 	class BattleRoyale_Data
 	{
-		requiredAddons[]={};
+		units[] = {};
+		weapons[] = {};
+		requiredVersion = 0.1;
+		requiredAddons[] = {};
 	};
 };
