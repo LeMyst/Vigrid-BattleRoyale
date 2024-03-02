@@ -1,0 +1,13 @@
+# DayZ SA
+*.biprivatekey
+user.cfg
+
+.vscode/
+.vs/
+
+*.bak
+*.pbo
+*.bisign
+Workbench/*.cfg.bat
+Workbench/*.cfg.*.bat
+Workbench/Logs/
