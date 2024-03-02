@@ -1,0 +1,17 @@
+[
+    {
+        "m_Headline": "Hide or show 3D marker!",
+        "m_ImagePath": "",
+        "m_Description": "Press 'K' to hide or show the 3D marker!"
+    },
+    {
+        "m_Headline": "Use the auto-run!",
+        "m_ImagePath": "",
+        "m_Description": "Press 'Z' while running to enable the auto-run!"
+    },
+    {
+        "m_Headline": "Reduce the sound!",
+        "m_ImagePath": "",
+        "m_Description": "Press 'P' to reduce ambient noise!"
+    }
+]
