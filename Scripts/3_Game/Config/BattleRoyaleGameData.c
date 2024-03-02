@@ -30,6 +30,8 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "Settlement_Vysotovo"
     };
 
+    ref array<ref BattleRoyaleOverrideSpawnPosition> override_spawn_positions;
+
     bool artillery_sound = true;
 
     ref array<string> player_starting_clothes = {
@@ -54,10 +56,6 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
         "123456789123456789" // Dummy SteamID64
     };
 
-    int num_vehicles = 1000; // TODO: Move this to world config
-    int vehicle_ticktime_ms = 1000;
-    float vehicle_spawn_radius = 500.0;
-
     //--- do not modify
     override string GetPath()
     {
@@ -73,4 +71,10 @@ class BattleRoyaleGameData extends BattleRoyaleDataBase
     {
         JsonFileLoader<BattleRoyaleGameData>.JsonLoadFile(GetPath(), this);
     }
+}
+
+class BattleRoyaleOverrideSpawnPosition
+{
+    string CityName;
+    vector NewPosition;
 }

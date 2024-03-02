@@ -41,18 +41,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
     {
         super.Activate();
 
-        //if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
-        //{
-        //    //this is still like not working properly or something
-        //    ServerData m_ServerData = BattleRoyaleAPI.GetAPI().GetCurrentServer();
-        //    while(!m_ServerData || m_ServerData.locked == 0)
-        //    {
-        //        Print("Attempting to lock the server!");
-        //        BattleRoyaleAPI.GetAPI().ServerSetLock(true); //Lock the server
-        //        m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
-        //    }
-        //}
-
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
@@ -65,6 +53,34 @@ class BattleRoyalePrepare extends BattleRoyaleState
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 13), 0);
+
+#ifdef DYNAMIC_NUM_ZONES
+        // Found the first zone based on number of registered players
+        int pCount = m_PlayerList.Count();
+        int last_try_zone = 1;
+        Print("Number of players registered: " + pCount);
+        BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
+        for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
+        {
+            Print("Try zone: " + i_zone);
+            last_try_zone = i_zone;
+            Print("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
+            if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < pCount)
+            {
+                Print("It's a match! " + i_zone);
+                break;
+            }
+            if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
+            {
+                Print("Reach the minimum! " + i_zone);
+                break;
+            }
+            Print("No chance, we continue...");
+        }
+        i_StartingZone = last_try_zone;
+#endif
+
+        Print("Starting zone will be " + i_StartingZone);
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
@@ -157,6 +173,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 string city;
                 GetGame().ConfigGetChildName(cfg, i, city);
                 vector city_position;
+                // TODO: Override city position from config file
                 TFloatArray float_array = {};
                 GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
                 city_position[0] = float_array[0]; city_position[2] = float_array[1];
@@ -252,7 +269,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
 
         if(check_zone && m_GameSettings.spawn_in_first_zone)
         {
-            if(!BattleRoyaleZone.GetZone(1).IsInZone(x, z))
+            if(!BattleRoyaleZone.GetZone(i_StartingZone).IsInZone(x, z))
                 return false;
         }
 
@@ -353,6 +370,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
         if (m_GameSettings.spawn_in_villages)
         {
             vector village_pos = "0 0 0";
+            BattleRoyaleUtils.Trace("Spawn in zone " + i_StartingZone);
+            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_StartingZone).GetArea();
             for(int village_spawn_try = 1; village_spawn_try <= 200; village_spawn_try++)
             {
                 BattleRoyaleUtils.Trace("Try to spawn in village " + village_spawn_try);
@@ -361,7 +380,8 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 bool check_zone = true;
                 if(m_GameSettings.spawn_in_first_zone)
                 {
-                    village = GetRandomVillage(BattleRoyaleZone.GetZone(1).GetArea(), true);
+
+                    village = GetRandomVillage(spawn_area, true);
                     check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone
                 }
                 else

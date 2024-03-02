@@ -1,20 +1,41 @@
 [
-    {
-        "MapName": "default",
-        "Path":
-        [
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_1.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_2.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_3.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_4.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_5.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_6.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_7.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_8.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_9.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_10.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_11.edds",
-            "DayZBR-Mod/GUI/textures/loading_screens/br_loading_12.edds"
-        ]
-    }
+  {
+    "MapName": "default",
+    "Path": [
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_1.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_2.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_3.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_4.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_5.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_6.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_7.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_8.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_9.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_10.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_11.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_12.edds"
+    ]
+  },
+  {
+    "MapName": "chernarus",
+    "Path": [
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_1.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_2.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_3.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_4.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_5.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_6.edds"
+    ]
+  },
+  {
+    "MapName": "namalsk",
+    "Path": [
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_7.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_8.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_9.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_10.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_11.edds",
+      "DayZBR-Mod/GUI/textures/loading_screens/br_loading_12.edds"
+    ]
+  }
 ]

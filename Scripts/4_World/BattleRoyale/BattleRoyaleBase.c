@@ -10,11 +10,6 @@ class BattleRoyaleBase
     void Update(float delta)
     {}
 
-    ref MatchData GetMatchData()
-    {
-        return NULL;
-    }
-
     bool IsDebug()
     {
         return true;

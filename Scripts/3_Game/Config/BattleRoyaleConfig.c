@@ -51,19 +51,6 @@ class BattleRoyaleConfig
             m_Configs.Insert("ServerData", p_ServerData);
         else
             Error("BattleRoyaleServerData Setting Constructor Returned NULL");
-
-        //--- paste it here
-        /*BattleRoyaleLootSettings p_LootData = new BattleRoyaleLootSettings;
-        if(p_LootData)
-            m_Configs.Insert("LootData", p_LootData);
-        else
-            Error("BattleRoyaleLootSettings Setting Constructor Returned NULL");
-
-        BattleRoyaleVehicleData p_VehicleData = new BattleRoyaleVehicleData;
-        if(p_VehicleData)
-            m_Configs.Insert("VehicleData", p_VehicleData);
-        else
-            Error("BattleRoyaleVehicleData Setting Constructor Returned NULL");*/
     }
 
     void Load()
@@ -107,7 +94,7 @@ class BattleRoyaleConfig
                             Print("Saving Config: " + path);
                             if(BATTLEROYALE_SOLO_GAME)
                             {
-                                //config.Save();
+                                config.Save();
                             }
                         }
                     }

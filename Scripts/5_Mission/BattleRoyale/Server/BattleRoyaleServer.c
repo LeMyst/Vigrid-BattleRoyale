@@ -1,14 +1,11 @@
 class BattleRoyaleServer extends BattleRoyaleBase
 {
     protected ref BattleRoyaleSpectators m_SpectatorSystem;
-    //protected ref BattleRoyaleVehicles m_VehicleSystem;
-    //protected ref BattleRoyaleLoot m_LootSystem;
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
 
     int i_NumRounds;
 
-    protected ref MatchData match_data;
     protected ref Timer m_Timer;
 
     void BattleRoyaleServer()
@@ -26,7 +23,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
     void ~BattleRoyaleServer()
     {
         m_Timer.Stop();
-
         delete m_Timer;
     }
 
@@ -39,14 +35,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
         m_Timer = new Timer;
 
-        //TODO: this needs to be dynamically aquired (probably via configs)
-        match_data = new MatchData("HC FPP Namalsk - Chicago #1", "Namalsk", "Solos");
-
-        //m_LootSystem = new BattleRoyaleLoot; //--- construct loot system
-        //m_VehicleSystem = new BattleRoyaleVehicles;
         m_SpectatorSystem = new BattleRoyaleSpectators;
-
-        //m_VehicleSystem.Preinit();
 
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -82,42 +71,20 @@ class BattleRoyaleServer extends BattleRoyaleBase
             m_States.Insert(round);
         }
 
+        // LAST ROUND
         BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
         m_States.Insert(last_round);
 
+        // WINNING PLAYER/TEAM
         m_States.Insert(new BattleRoyaleWin);
+
+        // RESTART SERVER
         m_States.Insert(new BattleRoyaleRestart);
 
         i_CurrentStateIndex = 0;
         GetCurrentState().Activate();
 
-        string worldName = "empty";
-        GetGame().GetWorldName( worldName );
-        worldName.ToLower();
-        if ( worldName != "namalsk" )
-            RandomizeServerEnvironment();
-
-        //--- this will halt the server until we successfully register is as unlocked in the DB
-        //if(BattleRoyaleAPI.GetAPI().ShouldUseApi())
-        //{
-        //    Print("Requesting Server Startup...")
-        //    ServerData m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request server start
-        //    while(!m_ServerData || m_ServerData.locked != 0)
-        //    {
-        //        if(!m_ServerData)
-        //        {
-        //            Print("Failed to start server...");
-        //            m_ServerData = BattleRoyaleAPI.GetAPI().RequestServerStart(); //request startup failed (maybe API was offline when this happened?)
-        //        }
-        //        else
-        //        {
-        //            //startup succesfull but locked! need to unlock
-        //            Print("Invalid Server State on Startup...");
-        //            BattleRoyaleAPI.GetAPI().ServerSetLock(false); //report this server as ready to go!
-        //            m_ServerData = BattleRoyaleAPI.GetAPI().GetServer(m_ServerData._id);
-        //        }
-        //    }
-        //}
+        RandomizeServerEnvironment();
 
 #ifdef BLUE_ZONE
         BattleRoyaleUtils.Trace("Instance BlueZone Server");
@@ -155,8 +122,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
     {
         float timeslice = delta; //Legacy
 
-        //m_LootSystem.Update(timeslice); // TODO: Reenable when correct
-        //m_VehicleSystem.Update(timeslice); // TODO: Reenable when correct
         m_SpectatorSystem.Update(timeslice);
 
         foreach(BattleRoyaleState state : m_States)
@@ -273,7 +238,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
             player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
         GetCurrentState().AddPlayer(player);
-        //m_LootSystem.AddPlayer( player ); // TODO: Reenable when correct
     }
 
     void Disconnect(PlayerIdentity identity)
@@ -286,38 +250,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
         if(GetCurrentState().ContainsPlayer(player))
         {
             GetCurrentState().RemovePlayer(player);
-
-            /*BattleRoyaleDebug m_DebugStateObj;
-            if(!Class.CastTo( m_DebugStateObj, GetCurrentState() ))
-            {
-                if(player)
-                {
-                    string player_steamid = player.owner_id; //on connect, the player object gets a reference to the steamid64
-                    if(identity) //this is null if the player crashes out (so we use the cached version)
-                    {
-                        player_steamid = identity.GetPlainId();
-                    }
-                    if(player_steamid != "")
-                    {
-                        //--- this ensures the leaderboard logs this player's death as zone damage
-                        if(!GetMatchData().ContainsDeath(player_steamid))
-                        {
-                            vector player_position = player.GetPosition();
-                            int time = GetGame().GetTime();
-                            //no killer, killed with disconnected, killer at 0,0,0
-                            GetMatchData().CreateDeath( player_steamid, player_position, time, "", "disconnected", Vector(0,0,0) );
-                        }
-                    }
-                    else
-                    {
-                        Error("Player disconnected with unknown owner id!");
-                    }
-                }
-            }*/
         }
-
-        //if player is in the loot system, remove them
-        //m_LootSystem.RemovePlayer( player ); // TODO: Reenable when correct
     }
 
     override void OnPlayerKilled(PlayerBase killed, Object killer)
@@ -431,24 +364,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
         return -1;
     }
 
-    /*ref BattleRoyaleVehicles GetVehicleSystem()
-    {
-        return m_VehicleSystem;
-    }
-
-    ref BattleRoyaleLoot GetLootSystem()
-    {
-        return m_LootSystem;
-    }*/
-
     ref BattleRoyaleSpectators GetSpectatorSystem()
     {
         return m_SpectatorSystem;
-    }
-
-    override ref MatchData GetMatchData()
-    {
-        return match_data;
     }
 
     void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
@@ -462,7 +380,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
             pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") );
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
         }
-
     }
 
     void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
@@ -511,8 +428,6 @@ class BattleRoyaleServer extends BattleRoyaleBase
         int hour = Math.RandomIntInclusive(8,17); //7am to 5pm
         int minute = 0;
         GetGame().GetWorld().SetDate(year, month, day, hour, minute);
-
-        GetMatchData().SetStartTime( hour, minute );
 
         //Set Random Weather
         Weather weather = GetGame().GetWeather();

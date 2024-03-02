@@ -10,6 +10,9 @@ modded class MissionGameplay
     protected float f_MiniMapScale = 0.1;
     protected bool b_MiniMapShow = true;
     protected SchanaPartyManagerClient party_manager;
+
+    vector spawn_point;
+    float radius;
 #endif
 
     protected bool is_spectator;
@@ -40,6 +43,10 @@ modded class MissionGameplay
             m_MiniMapCanvas = CanvasWidget.Cast(m_BattleRoyaleHudRootWidget.FindAnyWidget("CanvasMiniMap"));
             m_UserMarkerImageWidget = ImageWidget.Cast( m_BattleRoyaleHudRootWidget.FindAnyWidget( "UserMarker" ) );
             GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "UpdateMiniMap", 200, true );
+
+            BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+            spawn_point = m_DebugSettings.spawn_point;
+            radius = m_DebugSettings.radius;
 
             float canvas_width;
             float canvas_height;
@@ -165,25 +172,25 @@ modded class MissionGameplay
         }
 
         // TODO: Temporary placeholders
-        //UpdateMiniMapCanvas();
+        UpdateMiniMapCanvas();
     }
 
-        if (m_MiniMapCanvas)
+    void UpdateMiniMapCanvas()
+    {
+        if (m_MiniMapCanvas && spawn_point && radius)
         {
             Print("Update MiniMap Canvas!");
-            vector spawn_point = "14829.2 0 14572.3";
-
             m_MiniMapCanvas.Clear();
 
             vector m_edgePos_A = spawn_point;
-            m_edgePos_A[0] = m_edgePos_A[0] + 50;
+            m_edgePos_A[0] = m_edgePos_A[0] + radius;
 
             vector m_edgePos_B = spawn_point;
-            m_edgePos_B[2] = m_edgePos_B[2] + 50;
+            m_edgePos_B[2] = m_edgePos_B[2] + radius;
 
             vector mapPos_edge_A = m_MiniMap.MapToScreen(m_edgePos_A);
             vector mapPos_edge_B = m_MiniMap.MapToScreen(m_edgePos_B);
-            vector mapPos_center = m_MiniMap.MapToScreen(player.GetPosition());
+            vector mapPos_center = m_MiniMap.MapToScreen(spawn_point);
 
             float distance_A = vector.Distance(mapPos_center, mapPos_edge_A);
             float distance_B = vector.Distance(mapPos_center, mapPos_edge_B);
@@ -194,7 +201,7 @@ modded class MissionGameplay
             float center_x = canvas_width / 2.0;
             float center_y = canvas_height / 2.0;
 
-            RenderOval(center_x, center_y, distance_A, distance_B);
+            RenderOval(mapPos_center[0], mapPos_center[1], distance_A, distance_B);
         }
 
         /*float width;
@@ -211,9 +218,9 @@ modded class MissionGameplay
     //TODO: temporary place
     void RenderOval(float cx, float cy, float a, float b)
     {
+        Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
         for(int i = 0; i < 360; i++)
         {
-            Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
             float x1 = cx + (a * Math.Cos(i*Math.DEG2RAD));
             float y1 = cy + (b * Math.Sin(i*Math.DEG2RAD));
 

@@ -13,10 +13,13 @@ class BattleRoyaleZone
     protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
+    protected ref array<int> a_MinPlayers;
 
     protected bool b_EndInVillages;
 
     protected int i_RoundDurationMinutes;
+
+    static ref map<int, ref BattleRoyaleZone> m_Zones;
 
     void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
     {
@@ -39,14 +42,13 @@ class BattleRoyaleZone
         f_Exponent = m_ZoneSettings.shrink_exponent;
         a_StaticSizes = m_ZoneSettings.static_sizes;
         a_StaticTimers = m_ZoneSettings.static_timers;
+        a_MinPlayers = m_ZoneSettings.min_players;
         b_EndInVillages = m_ZoneSettings.end_in_villages;
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
         Init();
     }
-
-    static ref map<int, ref BattleRoyaleZone> m_Zones;
 
     static ref BattleRoyaleZone GetZone(int x = 1)
     {
@@ -129,6 +131,11 @@ class BattleRoyaleZone
         }
 
         return 60 * i_RoundDurationMinutes;
+    }
+
+    int GetZoneMinPlayers()
+    {
+        return a_MinPlayers[i_NumRounds - GetZoneNumber()];
     }
 
     bool IsInZone(float x, float z)

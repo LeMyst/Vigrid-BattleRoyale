@@ -1,4 +1,3 @@
-
 class BattleRoyaleSpectatorMapEntityData
 {
     vector position;

@@ -118,6 +118,7 @@ class BattleRoyaleClient extends BattleRoyaleBase
             GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
         }
 
+        // TODO: Mettre le marker a +10m du niveau du sol
         m_ZoneCenterMapMarker.SetPosition( center );
     }
 
