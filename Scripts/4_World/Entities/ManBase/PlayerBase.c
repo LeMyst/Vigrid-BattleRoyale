@@ -124,7 +124,9 @@ modded class PlayerBase
 
         // GetStatStomachVolume + GetStatStomachWater > 1000 == STUFFED!
 
-        SetBleedingBits(0);
+        //SetBleedingBits(0);
+        if ( m_BleedingManagerServer )
+            m_BleedingManagerServer.RemoveAllSources();
 
         //--- legacy function (need to access m_PlayerStomach [PlayerStomach] and try from there)
         //GetStatStomachVolume().Set(250);
