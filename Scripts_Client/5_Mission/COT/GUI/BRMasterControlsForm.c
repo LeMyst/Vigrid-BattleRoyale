@@ -33,16 +33,16 @@ class BRMasterControlsForm: JMFormBase
         //create button widgets dynamically
         Widget wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
         UIActionManager.CreateText( wrapper, "State Machine" );
-        UIActionButton button = UIActionManager.CreateButton( wrapper, "Next State", this, "StateMachine_Next" );
+        UIActionButton button;
+        button = UIActionManager.CreateButton( wrapper, "Next State", this, "StateMachine_Next" );
         button = UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
         button = UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
 
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
-        UIActionManager.CreateText( wrapper, "Test Spectating" );
-        button = UIActionManager.CreateButton( wrapper, "Test!", this, "TestSpectating" );
+        UIActionManager.CreateText( wrapper, "Spectating Camera" );
+        button = UIActionManager.CreateButton( wrapper, "Spectate", this, "ToggleSpectating" );
 
         m_sclr_MainActions.UpdateScroller();
-
     }
 
     override void OnHide()
@@ -64,7 +64,7 @@ class BRMasterControlsForm: JMFormBase
         m_Module.StateMachine_Resume();
     }
 
-    void TestSpectating(UIEvent eid, ref UIActionBase action)
+    void ToggleSpectating(UIEvent eid, ref UIActionBase action)
     {
         m_Module.TestSpectator();
     }

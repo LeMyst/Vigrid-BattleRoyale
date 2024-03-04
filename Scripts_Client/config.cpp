@@ -14,7 +14,7 @@ class CfgPatches
 
 class CfgMods
 {
-    class DZ_BattleRoyale
+    class DZ_BattleRoyale_Client
     {
         dir = "Vigrid-BattleRoyale";
         credits = "Kegan - Modified by Myst";
@@ -39,9 +39,9 @@ class CfgMods
 		{
 			"DAYZ_BATTLEROYALE",
             "DYNAMIC_NUM_ZONES",
-			"MOVING_ZONE"
-            //"BR_MINIMAP",
-            //"BLUE_ZONE"
+			"MOVING_ZONE",
+            "BR_MINIMAP",
+            "BLUE_ZONE"
 		};
 
         class defs

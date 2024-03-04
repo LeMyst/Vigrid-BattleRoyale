@@ -11,6 +11,7 @@ modded class IngameHud
     void BR_HIDE()
     {
         Show( false );
+        
         b_BrVisibilityOverride = true;
     }
 

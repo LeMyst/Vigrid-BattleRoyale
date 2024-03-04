@@ -120,7 +120,7 @@ class BREffectArea: EffectArea
                         // Place emitter at vector end ( coord )
                         props.Insert(ParticleProperties(partPos, ParticlePropertiesFlags.PLAY_ON_CREATION, null, GetGame().GetSurfaceOrientation( partPos[0], partPos[2] ), this));
 
-                        ++partCounter;
+                        partCounter++;
                     }
 
                     // Increase accumulated angle

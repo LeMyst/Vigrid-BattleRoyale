@@ -80,13 +80,10 @@ class BattleRoyaleClient: BattleRoyaleBase
             distance = GetZoneDistance( m_FuturePlayArea );
             gameplay.UpdateZoneDistance( distance ); //update HUD element
         }
-        else
+        else if(m_CurrentPlayArea)
         {
-            if(m_CurrentPlayArea)
-            {
-                distance = GetZoneDistance( m_CurrentPlayArea );
-                gameplay.UpdateZoneDistance( distance );
-            }
+            distance = GetZoneDistance( m_CurrentPlayArea );
+            gameplay.UpdateZoneDistance( distance );
         }
 
         if(m_CurrentPlayArea)
@@ -107,7 +104,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 #endif
     }
 
-    protected void UpdateZoneCenterMaker(vector center) {
+    protected void UpdateZoneCenterMaker(vector center)
+    {
         if (!m_ZoneCenterMapMarker)
         {
             m_ZoneCenterMapMarker = new ExpansionServerMarkerData("ServerMarker_Zone_Center");
@@ -119,8 +117,7 @@ class BattleRoyaleClient: BattleRoyaleBase
             GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
         }
 
-        // TODO: Mettre le marker a +10m du niveau du sol
-        m_ZoneCenterMapMarker.SetPosition( center );
+        m_ZoneCenterMapMarker.SetPosition( center + "0 10 0" );
     }
 
     protected float GetZoneDistance(BattleRoyalePlayArea play_area)

@@ -11,7 +11,7 @@ class CfgPatches
 
 class CfgMods
 {
-    class DZ_BattleRoyale
+    class DZ_BattleRoyale_Server
     {
         dir  = "Vigrid-BattleRoyale";
         name = "DayZ BattleRoyale SERVER";

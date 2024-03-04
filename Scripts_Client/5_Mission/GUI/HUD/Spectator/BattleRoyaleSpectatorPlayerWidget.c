@@ -177,9 +177,9 @@ class BattleRoyaleSpectatorPlayerWidget
             SetKillsText( display_text );
         }
     }
+    
     bool UpdatePosition()
     {
-
         vector position = m_Player.GetBonePositionWS( m_Player.GetBoneIndexByName( "Head" ) );
         position = position + Vector(0, 1, 0);//shift hud above head a bit
 

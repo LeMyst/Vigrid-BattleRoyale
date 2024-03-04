@@ -43,6 +43,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState {
         {
             Deactivate();
         }
+        
         return super.IsComplete();
     }
 
@@ -52,11 +53,6 @@ class BattleRoyaleDebug: BattleRoyaleDebugState {
         AddTimer(i_TimeBetweenMessages, this, "MessageWaiting", NULL, true);
         AddTimer(2.0, this, "CheckReadyState", NULL, true);
         super.Activate();
-    }
-
-    override void Deactivate()
-    {
-        super.Deactivate();
     }
 
     void CheckReadyState()

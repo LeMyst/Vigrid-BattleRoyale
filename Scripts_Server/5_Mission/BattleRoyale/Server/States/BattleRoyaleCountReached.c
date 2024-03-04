@@ -17,6 +17,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
             i_TimeToStart = 30;
         }
     }
+
     override string GetName()
     {
         return DAYZBR_SM_COUNT_REACHED_NAME;
@@ -40,11 +41,6 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
     {
         m_StartTimer.Stop();
         super.Deactivate();
-    }
-
-    override bool IsComplete()
-    {
-        return super.IsComplete();
     }
 
     void DoStart()

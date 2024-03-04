@@ -86,14 +86,8 @@ class BattleRoyaleHud
             Error("Called SetDistance but widget is null!");
             return;
         }
-        if(value <= 0)
-        {
-            m_DistanceTextWidget.SetText( "safe" );
-        }
-        else
-        {
-            m_DistanceTextWidget.SetText( Math.Round(value).ToString() + "m");//2000m for example
-        }
+
+        m_DistanceTextWidget.SetText( Math.Round(value).ToString() + "m");
     }
 
     void SetCount(int nb_players, int nb_groups)
@@ -134,22 +128,18 @@ class BattleRoyaleHud
             Error("Called SetCountdown but widget is null!");
             return;
         }
-        int seconds = (value % 60);
-        int minutes = (value / 60); //int conversion should auto floor this
 
-        string minute_string = minutes.ToString();
+        int seconds = (value % 60);
         string second_string = seconds.ToString();
         if(seconds < 10)
-        {
             second_string = "0" + second_string;
-        }
 
-        //don't display 0 minutes
-        string display_str = second_string;
-        if(minutes > 0)
-        {
-            display_str = minute_string + ":" + display_str;
-        }
+        int minutes = (value / 60);
+        string minute_string = minutes.ToString();
+        if(minutes < 10)
+            minute_string = "0" + minute_string;
+
+        string display_str = minute_string + ":" + second_string;
 
         m_CountdownTextWidget.SetText( display_str );
     }
@@ -173,7 +163,6 @@ class BattleRoyaleHud
                 if(index == m_SpectatorWidgets.Count())
                 {
                     //not enough spectator widgets! create one!
-                    Print("Spectator: Creating Player Info Widget");
                     m_SpectatorWidgets.Insert( CreatePlayerWidget( players[i] ) );
                 }
                 else
@@ -190,7 +179,6 @@ class BattleRoyaleHud
             //2. iterate over excess spectator widgets and disable (delete) them.
             for(i = players.Count(); i < m_SpectatorWidgets.Count(); i++)
             {
-                Print("Spectator: Deleting Player Info Widget");
                 m_SpectatorWidgets[i].Delete();
             }
         }
@@ -198,7 +186,6 @@ class BattleRoyaleHud
 
     void InitSpectator()
     {
-        Print("Showing Spectator Hud");
         show_spectator = true;
     }
 

@@ -40,8 +40,8 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
         Class.CastTo( m_BRCanvas, layoutRoot.FindAnyWidget( "marker_canvas" ) );
 
 #ifdef BR_MINIMAP
-        //Widget m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/br_hud.layout");
-        //m_MiniMapCanvas = CanvasWidget.Cast(m_BattleRoyaleHudRootWidget.FindAnyWidget("CanvasMiniMap"));
+        Widget m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/br_hud.layout");
+        m_MiniMapCanvas = CanvasWidget.Cast(m_BattleRoyaleHudRootWidget.FindAnyWidget("CanvasMiniMap"));
 #endif
 
         if(!m_BRCanvas)
@@ -54,7 +54,7 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
 
         m_BRCanvas.Show( true ); //ensure canvas is visible
 #ifdef BR_MINIMAP
-        //m_MiniMapCanvas.Show( true );
+        m_MiniMapCanvas.Show( true );
 #endif
 
         SetColor( ARGB(255,255,255,255) );
@@ -150,7 +150,7 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
             m_BRCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
 
 #ifdef BR_MINIMAP
-            //m_MiniMapCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
+            m_MiniMapCanvas.DrawLine(x1, y1, x2, y2, f_Thickness, i_Color);
 #endif
         }
     }

@@ -1,5 +1,5 @@
-class BattleRoyaleState: Timeable {
-
+class BattleRoyaleState: Timeable
+{
     protected ref array<PlayerBase> m_Players;
     protected bool b_IsActive;
     protected bool b_IsPaused;
@@ -290,7 +290,8 @@ class BattleRoyaleState: Timeable {
 
 // Base state for the Debug Zone.
 // This handles healing / godmode / and teleporting
-class BattleRoyaleDebugState: BattleRoyaleState {
+class BattleRoyaleDebugState: BattleRoyaleState
+{
     protected vector v_Center;
     protected float f_Radius;
     protected int i_HealTickTime;

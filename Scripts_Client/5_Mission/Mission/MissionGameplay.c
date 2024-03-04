@@ -10,7 +10,6 @@ modded class MissionGameplay
     protected ref ImageWidget m_UserMarkerImageWidget;
     protected float f_MiniMapScale = 0.1;
     protected bool b_MiniMapShow = true;
-    protected SchanaPartyManagerClient party_manager;
 
     vector spawn_point;
     float radius;
@@ -45,10 +44,6 @@ modded class MissionGameplay
             m_UserMarkerImageWidget = ImageWidget.Cast( m_BattleRoyaleHudRootWidget.FindAnyWidget( "UserMarker" ) );
             GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "UpdateMiniMap", 200, true );
 
-            BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
-            spawn_point = m_DebugSettings.spawn_point;
-            radius = m_DebugSettings.radius;
-
             float canvas_width;
             float canvas_height;
             m_MiniMapCanvas.GetSize(canvas_width, canvas_height);
@@ -81,7 +76,7 @@ modded class MissionGameplay
 
     void UpdateKillCount(int count)
     {
-        m_BattleRoyaleHud.ShowKillCount( true );
+        m_BattleRoyaleHud.ShowKillCount( count > 0 );
         m_BattleRoyaleHud.SetKillCount( count );
     }
 
@@ -105,7 +100,7 @@ modded class MissionGameplay
 
     void UpdateZoneDistance(float distance)
     {
-        m_BattleRoyaleHud.ShowDistance( true );
+        m_BattleRoyaleHud.ShowDistance( distance > 0 );
         m_BattleRoyaleHud.SetDistance( distance );
     }
 
@@ -163,14 +158,15 @@ modded class MissionGameplay
             m_UserMarkerImageWidget.SetRotation( 0, 0, Math.Round( Math.NormalizeAngle( GetGame().GetCurrentCameraDirection().VectorToAngles()[0] ) ), true );
         }
 
-        if(!party_manager)
-            party_manager = GetSchanaPartyManagerClient();
+        //! TODO: Display Party stuff here
 
+        /*
         ref map<string, vector> positions = party_manager.GetPositions();
         foreach(string player_id, vector position: positions)
         {
             m_MiniMap.AddUserMark(position, "", ARGB(192,0,0,255), "\\dz\\gear\\navigation\\data\\map_bush_ca.paa");
         }
+        */
 
         // TODO: Temporary placeholders
         UpdateMiniMapCanvas();

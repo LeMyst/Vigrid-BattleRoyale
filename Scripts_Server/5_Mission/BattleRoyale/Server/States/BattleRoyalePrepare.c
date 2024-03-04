@@ -120,12 +120,14 @@ class BattleRoyalePrepare: BattleRoyaleState
         int cCount = a_StartingClothes.Count();
         bool item_spawned = false;
         EntityAI new_item;
-        for (int i = 0; i < cCount; i++) {
+        for (int i = 0; i < cCount; i++)
+        {
             EntityAI clothes = process_player.GetInventory().CreateAttachment(a_StartingClothes[i]);
             if(!item_spawned && clothes.GetInventory().GetCargo())
             {
                 int iCount = a_StartingItems.Count();
-                for (int j = 0; j < iCount; j++) {
+                for (int j = 0; j < iCount; j++)
+                {
                     new_item = clothes.GetInventory().CreateEntityInCargo(a_StartingItems[j]);
                     if( a_StartingItems[j] == "HuntingKnife" )
                         process_player.SetQuickBarEntityShortcut(new_item, 0);
@@ -309,7 +311,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         box_position[0] = position[0];
         box_position[1] = position[1]; // + 1
         box_position[2] = position[2];
-        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 2 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "2.5 5 2.5", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
         {
             if( collidedObjects.Count() > 0)
             {
@@ -324,7 +326,6 @@ class BattleRoyalePrepare: BattleRoyaleState
                 string text = "";
                 foreach (Object object: collidedObjects)
                     text += " | " + Object.GetDebugName(object);
-                Print( text );
 
                 return false;
             }
@@ -468,7 +469,6 @@ class BattleRoyalePrepare: BattleRoyaleState
             int spawn_try = 1;
             while(true)
             {
-                Print("Try Group " + spawn_try);
                 spawn_try = spawn_try + 1;
                 float x = position[0] + Math.RandomFloatInclusive(-5.0, 5.0);
                 float z = position[2] + Math.RandomFloatInclusive(-5.0, 5.0);

@@ -116,7 +116,6 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
     {
-
         if(IsActive())
         {
             if(GetPlayers().Count() <= 1)

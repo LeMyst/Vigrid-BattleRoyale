@@ -1,7 +1,5 @@
 class BattleRoyaleZone
 {
-    static float f_WorldRadius = -1;
-
     protected ref BattleRoyaleZone m_ParentZone;
     protected ref BattleRoyalePlayArea m_PlayArea;
 
@@ -61,7 +59,8 @@ class BattleRoyaleZone
 
         int z_Index = x - 1;
 
-        if(!m_Zones.Contains(z_Index)) {
+        if(!m_Zones.Contains(z_Index))
+        {
             Print("[BattleRoyaleZone] Create zone " + z_Index);
             if(z_Index > 0)
             {

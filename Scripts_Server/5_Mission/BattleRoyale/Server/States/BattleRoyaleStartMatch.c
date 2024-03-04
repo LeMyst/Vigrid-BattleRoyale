@@ -4,7 +4,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     protected bool b_IsGameplay;
     protected int i_FirstRoundDelay;
     protected bool b_ShowFirstZone;
-    //protected bool b_ArtillerySound;
+    protected bool b_ArtillerySound;
 
     protected ref array<PlayerBase> m_PlayerList;
 
@@ -24,7 +24,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
         b_ShowFirstZone = m_GameSettings.show_first_zone_at_start;
 
-        //b_ArtillerySound = m_GameSettings.artillery_sound;
+        b_ArtillerySound = m_GameSettings.artillery_sound;
 
         b_IsGameplay = false;
 
@@ -148,10 +148,10 @@ class BattleRoyaleStartMatch: BattleRoyaleState
             Error("Player killed before gameplay!");
             return;
         }
+
         if(ContainsPlayer(player))
-        {
             RemovePlayer(player);
-        }
+        
         /*
         if(player.GetIdentity())
             GetGame().DisconnectPlayer(player.GetIdentity()); //TODO: delay this disconnect (perhaps do it through the BattleRoyaleServer object's call queue)

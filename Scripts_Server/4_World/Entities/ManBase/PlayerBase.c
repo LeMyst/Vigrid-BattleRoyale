@@ -1,64 +1,16 @@
 modded class PlayerBase
 {
-    //credit to wardog for the quick fix for client localplayers grabbing
-    private static autoptr array<PlayerBase> s_LocalPlayers = new array<PlayerBase>();
-
-#ifndef SERVER
-    void PlayerBase()
-    {
-        if (s_LocalPlayers)
-        {
-            s_LocalPlayers.Insert(this);
-        }
-    }
-
-    void ~PlayerBase()
-    {
-        if (s_LocalPlayers)
-        {
-            int localIndex = s_LocalPlayers.Find(this);
-            if (localIndex >= 0)
-            {
-                s_LocalPlayers.Remove(localIndex);
-            }
-        }
-    }
-#endif
-
-    static void GetLocalPlayers(out array<PlayerBase> players)
-    {
-#ifndef SERVER
-        players = new array<PlayerBase>();
-        players.Copy(s_LocalPlayers);
-#endif
-    }
-
     float time_until_heal = 0;
     float time_until_damage = 0;
     float time_until_move = 0;
 
     bool allow_fade = false;
 
-    float health_percent = -1;
-    float blood_percent = -1;
-
     float time_between_net_sync = 1000;
     float time_since_last_net_sync = 0;
     bool force_result = true;
 
     string owner_id = "";
-
-    void DisableInput(bool disabled)
-    {
-        Print(" Call To Disable (" + disabled + ") Player Input ");
-        HumanInputController controller = GetInputController();
-        controller.SetDisabled( disabled );
-        /*controller.OverrideMovementSpeed( disabled, 0 );
-        controller.OverrideMovementAngle( disabled, 0 );
-        controller.OverrideMeleeEvade( disabled, false );
-        controller.OverrideRaise( disabled, false );
-        controller.OverrideMovementAngle( disabled, 0 );*/
-    }
 
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
     {
@@ -76,15 +28,6 @@ modded class PlayerBase
             force_result = force_result || UpdateHealthStats(hp, blood); //if we ever get a "true" in this update system, we need to store it for the next sync tick
             return false;
         }
-    }
-
-    bool UpdateHealthStats(float hp, float blood)
-    {
-        //Print("Updating player health stats");
-        bool changed = (health_percent != hp) || (blood_percent != blood);
-        health_percent = hp;
-        blood_percent = hp;
-        return changed;
     }
 
     override void OnScheduledTick(float deltaTime)
