@@ -5,8 +5,8 @@ Huge thanks to InclementDab for providing the base code for this camera system
 // make option Q and E go up and down no matter orientation
 class BattleRoyaleCamera: Camera
 {
-    static float CAMERA_SPEED = 60;
-    static float CAMERA_BOOST_MULT = 6.5;
+    static float CAMERA_SPEED = 40;
+    static float CAMERA_BOOST_MULT = 8;
     static float CAMERA_VELDRAG = 0.05;
     static float CAMERA_MSENS = 35.0;
 
@@ -47,17 +47,16 @@ class BattleRoyaleCamera: Camera
 
     void OnTargetSelected( Object target )
     {
-        Print("OnTargetSelected");
+
     }
 
     void OnTargetDeselected(Object target)
     {
-        Print("OnTargetDeselected");
+
     }
 
     void SelectTarget(Object target)
     {
-        Print("ActiveCamera::SelectTarget");
         if (target != SelectedTarget && target != null)
         {
             TargetPosition = target.GetPosition();
@@ -89,7 +88,7 @@ class BattleRoyaleCamera: Camera
 
         Input input = GetGame().GetInput();
 
-        if (!input.LocalValue("UAWalkRunTemp"))
+        //if (!input.LocalValue("UAWalkRunTemp"))
         {
             float forward = input.LocalValue("UAMoveForward") - input.LocalValue("UAMoveBack");
             float strafe = input.LocalValue("UAMoveRight") - input.LocalValue("UAMoveLeft");
@@ -109,10 +108,8 @@ class BattleRoyaleCamera: Camera
         if (zoomAmt != 0)
             speedInc = 0;
 
-        bool shouldRoll = false; //input.LocalValue("UALookAround");
         bool decreaseSpeeds = input.LocalValue("UALookAround");
         bool increaseSpeeds = input.LocalValue("UATurbo");
-
 
         if (MoveEnabled)
         {
@@ -123,20 +120,14 @@ class BattleRoyaleCamera: Camera
                 CAMERA_SPEED += Math.Clamp( timeSlice * 40.0 * CAMERA_SPEED * speedInc / CAMERA_BOOST_MULT, -CAMERA_BOOST_MULT, CAMERA_BOOST_MULT );
 
                 if ( CAMERA_SPEED < 0.001 )
-                {
                     CAMERA_SPEED = 0.001;
-                }
 
-                cam_speed = CAMERA_SPEED;// + Math.Clamp(current_altitude - 50, -10, 250);
+                cam_speed = CAMERA_SPEED + Math.Clamp(current_altitude - 50, -10, 20);
                 if (decreaseSpeeds)
-                {
                     cam_speed = cam_speed * 0.1;
-                }
 
                 if (increaseSpeeds)
-                {
-                    cam_speed = (cam_speed * CAMERA_BOOST_MULT) * (0.2 + (transform[3][1])/600) ;
-                }
+                    cam_speed = (cam_speed * CAMERA_BOOST_MULT) * (0.2 + (transform[3][1])/600);
             }
 
             linearVelocity = linearVelocity * CAMERA_VELDRAG;
@@ -148,7 +139,7 @@ class BattleRoyaleCamera: Camera
             transform[3] = transform[3] + ( linearVelocity * timeSlice );
         }
 
-        vector terrainpos = ExpansionStatic.GetSurfacePosition(transform[3]);
+        vector terrainpos = ExpansionStatic.GetSurfacePosition(transform[3]) + "0 0.15 0";
         if ( terrainpos[1] > transform[3][1] )
             transform[3][1] = terrainpos[1];
 
@@ -161,11 +152,6 @@ class BattleRoyaleCamera: Camera
             angularVelocity = vector.Zero;
             angularVelocity[0] = angularVelocity[0] + ( yawDiff * CAMERA_MSENS * 10 );
             angularVelocity[1] = angularVelocity[1] + ( pitchDiff * CAMERA_MSENS * 10);
-
-            if (shouldRoll)
-            {
-                angularVelocity[2] = angularVelocity[2] + ( speedInc * CAMERA_MSENS * 10);
-            }
 
             orientation[0] = orientation[0] - ( angularVelocity[0] * timeSlice );
             orientation[1] = orientation[1] - ( angularVelocity[1] * timeSlice );
