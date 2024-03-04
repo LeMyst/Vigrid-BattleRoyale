@@ -1,6 +1,11 @@
 #ifdef JM_COT
 class BRMasterControlsModule: JMRenderableModuleBase
 {
+    private Class m_EventManager;
+
+    autoptr array<string> Events = new array<string>();
+    int MaxEventCount;
+
     void BRMasterControlsModule()
     {
         GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.View" );
@@ -39,16 +44,24 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
     override int GetRPCMin()
     {
-        return BattleRoyaleCOTStateMachineRPC.GET;
+        return BattleRoyaleCOTStateMachineRPC.INVALID;
     }
 
     override int GetRPCMax()
     {
-        return BattleRoyaleCOTStateMachineRPC.ERROR;
+        return BattleRoyaleCOTStateMachineRPC.COUNT;
     }
 
+#ifdef CF_BUGFIX_REF
+    override void OnRPC( PlayerIdentity sender, Object target, int rpc_type, ParamsReadContext ctx )
+#else
     override void OnRPC( PlayerIdentity sender, Object target, int rpc_type, ref ParamsReadContext ctx )
+#endif
     {
+        JMPlayerInstance instance;
+
+        string evt;
+
         switch ( rpc_type )
         {
         case BattleRoyaleCOTStateMachineRPC.Next:
