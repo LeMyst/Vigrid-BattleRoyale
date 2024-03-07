@@ -95,14 +95,14 @@ class BattleRoyaleLastRound extends BattleRoyaleState
         super.Deactivate();
     }
 
-    override bool SkipState(BattleRoyaleState m_PreviousState)
+    override bool SkipState(BattleRoyaleState previous_state)
     {
         //only one (or less) players remaining, must skip to win state
-        if(m_PreviousState.GetPlayers().Count() <= 1)
+        if( previous_state.GetPlayers().Count() <= 1 )
             return true;
 
 #ifdef SCHANAMODPARTY
-        if(m_PreviousState.GetGroups().Count() <= 1)
+        if( previous_state.GetGroups().Count() <= 1 )
             return true;
 #endif
 

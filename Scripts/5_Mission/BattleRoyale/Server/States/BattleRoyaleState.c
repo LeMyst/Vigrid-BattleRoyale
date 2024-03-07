@@ -84,7 +84,7 @@ class BattleRoyaleState extends Timeable {
         return !IsActive();
     }
 
-    bool SkipState(BattleRoyaleState m_PreviousState)  //if true, we will skip activating/deactivating this state entirely
+    bool SkipState(BattleRoyaleState previous_state)  //if true, we will skip activating/deactivating this state entirely
     {
         return false;
     }
