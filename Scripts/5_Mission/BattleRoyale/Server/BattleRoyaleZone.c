@@ -293,6 +293,8 @@ class BattleRoyaleZone
                         new_center[2] = world_size - new_radius;
                     }
                     BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
+                    // TODO: crash the server if no good zone found?
+                    //GetGame().RequestExit(0);
                     break;
                 }
 
