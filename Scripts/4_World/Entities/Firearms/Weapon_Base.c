@@ -1,3 +1,4 @@
+#ifdef CHAMBER_WEAPON
 modded class Weapon_Base
 {
 	override void EEInit()
@@ -6,7 +7,8 @@ modded class Weapon_Base
 
 		if (GetGame().IsServer())
 		{
-            SpawnAmmo( "", WeaponWithAmmoFlags.CHAMBER | WeaponWithAmmoFlags.MAX_CAPACITY_MAG );
+		    FillChamber( "", WeaponWithAmmoFlags.CHAMBER );
 		}
 	}
 }
+#endif
