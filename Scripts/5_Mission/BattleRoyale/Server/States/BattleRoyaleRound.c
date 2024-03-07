@@ -62,12 +62,15 @@ class BattleRoyaleRound extends BattleRoyaleState
             int previous_zone_number = Math.Floor(GetPreviousZone().GetZoneNumber());
             m_Zone = m_Zone.GetZone(previous_zone_number + 1);
         } else {
+            Print("No previous zone, default to 1")
             m_Zone = m_Zone.GetZone(1); // Can't add dynamic num zone stuff here
         }
 
         // Update zone timer
         i_RoundTimeInSeconds = m_Zone.GetZoneTimer();
         Print("Create round " + GetName());
+        if( GetPreviousZone() )
+            Print("- Previous zone number: " + Math.Floor(GetPreviousZone().GetZoneNumber()))
         Print("- Duration : " + i_RoundTimeInSeconds);
 
         //dear god i hope i really don't have to keep this, but it should work
@@ -85,7 +88,7 @@ class BattleRoyaleRound extends BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_GAMEPLAY_NAME;
+        return DAYZBR_SM_GAMEPLAY_NAME + " (" + zone_num + ")";
     }
 
     override void Activate()
@@ -411,6 +414,12 @@ class BattleRoyaleRound extends BattleRoyaleState
         if( Class.CastTo(prev_round, m_PreviousState) )
         {
             return prev_round.GetZone();
+//            if( m_Zone.GetZoneNumber() > m_PreviousState.i_StartingZone )
+//                return prev_round.GetZone();
+//            else
+//                Print(m_Zone.GetZoneNumber() + " <= " + m_PreviousState.i_StartingZone);
+        } else {
+            Print("Can't cast m_PreviousState to BattleRoyaleRound!");
         }
 
         return NULL;
