@@ -315,7 +315,7 @@ class BattleRoyaleRound: BattleRoyaleState
         return false;
     }
 
-    void OnPlayerKilled(PlayerBase player, Object killer)
+    override void OnPlayerKilled(PlayerBase player, Object killer)
     {
         if(ContainsPlayer(player))
         {

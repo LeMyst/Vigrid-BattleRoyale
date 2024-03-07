@@ -257,17 +257,9 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         if(GetCurrentState().ContainsPlayer(killed))
         {
-            //if we are in a round, then we need to call the onkilled event
-            BattleRoyaleRound p_Round;
-            if(Class.CastTo(p_Round, GetCurrentState()))
-            {
-                p_Round.OnPlayerKilled(killed, killer); //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
-            }
-            BattleRoyaleLastRound p_LastRound;
-            if(Class.CastTo(p_LastRound, GetCurrentState()))
-            {
-                p_LastRound.OnPlayerKilled(killed, killer); //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
-            }
+            //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
+            if(i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2 )
+                GetCurrentState().OnPlayerKilled(killed, killer);
 
             //remove player from the state (this would take place in on-disconnect, but some players would choose not to disconnect)
             GetCurrentState().RemovePlayer(killed);
@@ -284,7 +276,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         if(GetCurrentState().ContainsPlayer(player))
         {
-            GetCurrentState().OnPlayerTick(player,timeslice);
+            GetCurrentState().OnPlayerTick(player, timeslice);
 
             //--- check if they have entered an invalid position
             vector pos = player.GetPosition();
@@ -295,9 +287,10 @@ class BattleRoyaleServer: BattleRoyaleBase
                 if(temp_disconnecting.Find(player) == -1)
                 {
                     temp_disconnecting.Insert(player);
-                    GetGame().DisconnectPlayer( player.GetIdentity() );
-                    Print(pos);
-                    Error("PLAYER FOUND IN INVALID POSITION!");
+                    //GetGame().DisconnectPlayer( player.GetIdentity() );
+                    GetGame().SendLogoutTime(player, 0);
+                    //Print(pos);
+                    //Error("PLAYER FOUND IN INVALID POSITION!");
                 }
             }
         }
@@ -321,8 +314,9 @@ class BattleRoyaleServer: BattleRoyaleBase
                             if(temp_disconnecting.Find(player) == -1)
                             {
                                 temp_disconnecting.Insert(player);
-                                GetGame().DisconnectPlayer( player.GetIdentity() );
-                                Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+		                        GetGame().SendLogoutTime(player, 0);
+                                //GetGame().DisconnectPlayer( player.GetIdentity() );
+                                //Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
                             }
                         }
                     }

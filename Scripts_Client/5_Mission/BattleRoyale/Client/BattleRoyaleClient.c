@@ -127,7 +127,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         vector playerdir = vector.Direction(center, playerpos);
 		angle = GetGame().GetCurrentCameraDirection().VectorToAngles()[0] - playerdir.VectorToAngles()[0];
 
-        return distance_from_outside < 0
+        return distance_from_outside < 0;
     }
 
     protected void PlayerCountChanged(int nb_players, int nb_groups)

@@ -286,7 +286,9 @@ class BattleRoyaleState: Timeable
 
         return groups;
     }
+    
 #endif
+    void OnPlayerKilled(PlayerBase player, Object killer) {}
 }
 
 // Base state for the Debug Zone.

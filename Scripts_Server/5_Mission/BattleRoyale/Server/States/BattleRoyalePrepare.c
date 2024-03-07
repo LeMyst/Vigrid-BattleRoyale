@@ -104,7 +104,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected bool DeleteAllItems(PlayerBase process_player)
     {
-        if ( !process_player )
+        if ( process_player == NULL )
             return false;
         
         if (process_player.GetInventory().CountInventory() > 0)

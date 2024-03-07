@@ -131,7 +131,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
         return super.IsComplete();
     }
 
-    void OnPlayerKilled(PlayerBase player, Object killer)
+    override void OnPlayerKilled(PlayerBase player, Object killer)
     {
         if(ContainsPlayer( player ))
         {
