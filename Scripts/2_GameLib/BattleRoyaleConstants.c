@@ -8,7 +8,7 @@
 static const string BATTLEROYALE_VERSION = "0.0.5-Myst";
 
 //--- debug settings
-static const int BATTLEROYALE_SOLO_GAME = 1;
+static const int BATTLEROYALE_SOLO_GAME = 0;
 static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
 
