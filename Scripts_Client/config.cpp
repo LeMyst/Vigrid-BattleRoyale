@@ -6,8 +6,7 @@ class CfgPatches
         {
             "DZ_Data",
             "DF_Scripts",
-            "DayZExpansion_Scripts",
-            "DZM_VPPAdminToolsScripts"
+            "DayZExpansion_Scripts"
         };
     };
 };

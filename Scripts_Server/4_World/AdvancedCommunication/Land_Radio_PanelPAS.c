@@ -5,7 +5,7 @@ modded class Land_Radio_PanelPAS
     {
         super.EEInit();
         
-        GetInventory().CreateInInventory("CarBattery");
+        //GetInventory().CreateInInventory("CarBattery");
     }
 };
 #endif

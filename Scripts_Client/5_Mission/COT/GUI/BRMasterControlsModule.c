@@ -1,6 +1,11 @@
 #ifdef JM_COT
 class BRMasterControlsModule: JMRenderableModuleBase
 {
+    private Class m_EventManager;
+
+    autoptr array<string> Events = new array<string>();
+    int MaxEventCount;
+
     void BRMasterControlsModule()
     {
         GetPermissionsManager().RegisterPermission( "BattleRoyale.StateMachine.View" );
@@ -39,12 +44,12 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
     override int GetRPCMin()
     {
-        return BattleRoyaleCOTStateMachineRPC.GET;
+        return BattleRoyaleCOTStateMachineRPC.INVALID;
     }
 
     override int GetRPCMax()
     {
-        return BattleRoyaleCOTStateMachineRPC.ERROR;
+        return BattleRoyaleCOTStateMachineRPC.COUNT;
     }
 
     //client side functionality (these get called)
