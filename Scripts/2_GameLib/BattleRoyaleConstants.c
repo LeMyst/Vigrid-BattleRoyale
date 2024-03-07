@@ -90,7 +90,7 @@ static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
-static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 1; //max next zone distance as a percent of maxmimum distance (1 => 100%)
+static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.75; //max next zone distance as a percent of maxmimum distance (1 => 100%)
 static const float DAYZBR_ZS_MIN_ANGLE = 0; //degrees
 static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
 
