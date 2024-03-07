@@ -12,6 +12,8 @@ class BattleRoyaleHud
     protected TextWidget m_DistanceTextWidget;
     protected TextWidget m_KillTextWidget;
     protected TextWidget m_CountdownTextWidget;
+    
+    protected ImageWidget m_DistanceZoneArrow;
 
     protected ref array<ref BattleRoyaleSpectatorPlayerWidget> m_SpectatorWidgets;
     protected bool show_spectator;
@@ -39,6 +41,8 @@ class BattleRoyaleHud
         m_DistanceTextWidget = TextWidget.Cast( m_ZoneDistancePanel.FindAnyWidget( "DistanceText" ) );
         m_KillTextWidget = TextWidget.Cast( m_KillCountPanel.FindAnyWidget( "KillCountText" ) );
         m_CountdownTextWidget = TextWidget.Cast( m_CountdownPanel.FindAnyWidget( "CountdownText" ) );
+        
+        m_DistanceZoneArrow = ImageWidget.Cast( m_Root.FindAnyWidget( "ZoneIcon" ) );
 
         m_PlayerCountPanel.Show( false );
         m_ZoneDistancePanel.Show( false );
@@ -79,7 +83,7 @@ class BattleRoyaleHud
     }
 
     //value control
-    void SetDistance(float value)
+    void SetDistance(float value, vector direction)
     {
         if(!m_DistanceTextWidget)
         {
@@ -87,6 +91,8 @@ class BattleRoyaleHud
             return;
         }
 
+        float angle = direction.VectorToAngles()[0];
+        m_DistanceZoneArrow.SetRotation( 0, 0, angle );
         m_DistanceTextWidget.SetText( Math.Round(value).ToString() + "m");
     }
 

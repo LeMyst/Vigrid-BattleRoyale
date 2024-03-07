@@ -73,23 +73,15 @@ class BattleRoyaleClient: BattleRoyaleBase
     override void Update(float delta)
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-
-        float distance;
-        if(m_FuturePlayArea)
-        {
-            distance = GetZoneDistance( m_FuturePlayArea );
-            gameplay.UpdateZoneDistance( distance ); //update HUD element
-        }
-        else if(m_CurrentPlayArea)
-        {
-            distance = GetZoneDistance( m_CurrentPlayArea );
-            gameplay.UpdateZoneDistance( distance );
-        }
-
         if(m_CurrentPlayArea)
         {
+            float distance;
+            vector direction;
+            GetZoneDistance( m_CurrentPlayArea, distance, direction );
+
+            gameplay.UpdateZoneDistance( distance, direction );
+
             PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-            distance = GetZoneDistance( m_CurrentPlayArea );
             if (distance > 0)
             {
                 player.QueueAddGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
@@ -120,7 +112,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         m_ZoneCenterMapMarker.SetPosition( center + "0 10 0" );
     }
 
-    protected float GetZoneDistance(BattleRoyalePlayArea play_area)
+    protected void GetZoneDistance(BattleRoyalePlayArea play_area, out float distance, out vector direction)
     {
         vector center = play_area.GetCenter();
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
@@ -131,7 +123,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         playerpos[1] = 0;
         float distance_from_center = vector.Distance(center, playerpos);
         float distance_from_outside = distance_from_center - play_area.GetRadius();
-        return distance_from_outside;
+        distance = distance_from_outside;
+        direction = vector.Direction(GetGame().GetCurrentCameraPosition(), center);
     }
 
     protected void PlayerCountChanged(int nb_players, int nb_groups)

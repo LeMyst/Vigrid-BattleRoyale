@@ -18,7 +18,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
    hexactsize 0
    vexactsize 0
    {
-    PanelWidgetClass MatchInfoIconsPanel {
+    GridSpacerWidgetClass MatchInfoIconsPanel {
      ignorepointer 1
      size 202 131
      halign right_ref
@@ -26,181 +26,209 @@ FrameWidgetClass BattleRoyaleHudFrame {
      vexactpos 0
      hexactsize 1
      vexactsize 1
+     Columns 1
+     Rows 2
      {
-      PanelWidgetClass PlayerCountPanel {
+      GridSpacerWidgetClass PeoplePanel {
        ignorepointer 1
-       position 0 0
-       size 202 32
-       halign right_ref
-       hexactpos 0
-       vexactpos 0
-       hexactsize 1
-       vexactsize 1
-       {
-        ImageWidgetClass PlayerIcon {
-         ignorepointer 1
-         position 0 0
-         size 32 32
-         halign right_ref
-         hexactpos 0
-         vexactpos 0
-         hexactsize 1
-         vexactsize 1
-         fixaspect fixwidth
-         image0 "set:dayz_gui image:notification_friend"
-         mode blend
-         "src alpha" 1
-        }
-        TextWidgetClass CountText {
-         ignorepointer 1
-         position 32 0
-         size 170 32
-         halign right_ref
-         hexactpos 1
-         vexactpos 0
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text "99"
-         font "gui/fonts/etelkatextpro"
-         "exact text" 0
-         "size to text h" 0
-         "size to text v" 0
-         "text halign" right
-         "text valign" center
-        }
-       }
-      }
-      PanelWidgetClass ZoneDistancePanel {
-       ignorepointer 1
-       position 0 33
-       size 202 32
-       halign right_ref
-       hexactpos 0
+       position 10 10
+       size 48 48
+       hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
+       Columns 1
+       Rows 2
        {
-        ImageWidgetClass ZoneIcon {
+        PanelWidgetClass PlayerCountPanel {
          ignorepointer 1
          position 0 0
-         size 32 32
+         size 202 32
          halign right_ref
          hexactpos 0
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         fixaspect fixwidth
-         image0 "set:dayz_gui image:icon_circle"
-         mode blend
-         "src alpha" 1
-         stretch 0
+         {
+          ImageWidgetClass PlayerIcon {
+           ignorepointer 1
+           position 0 0
+           size 32 32
+           halign right_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           imageTexture "DayZExpansion\\Core\\GUI\\icons\\misc\\T_Bandit_256x256.edds"
+           mode blend
+           "src alpha" 1
+           "no wrap" 1
+           stretch 1
+          }
+          TextWidgetClass CountText {
+           ignorepointer 1
+           position 42 0
+           size 160 32
+           halign right_ref
+           hexactpos 1
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           style Bold
+           text "99"
+           font "gui/fonts/etelkatextpro"
+           "exact text" 0
+           "size to text h" 0
+           "size to text v" 0
+           "text halign" right
+           "text valign" center
+          }
+         }
         }
-        TextWidgetClass DistanceText {
+        PanelWidgetClass KillCountPanel {
+         visible 1
          ignorepointer 1
-         position 32 0
-         size 170 32
+         position 0 99
+         size 202 32
          halign right_ref
-         hexactpos 1
-         vexactpos 0
+         hexactpos 0
+         vexactpos 1
          hexactsize 1
          vexactsize 1
-         style Bold
-         text "safe"
-         font "gui/fonts/etelkatextpro"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
+         {
+          ImageWidgetClass KillIcon {
+           ignorepointer 1
+           position 0 0
+           size 32 32
+           halign right_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\skull_1_64x64.edds"
+           mode blend
+           "src alpha" 1
+           "no wrap" 1
+           stretch 1
+          }
+          TextWidgetClass KillCountText {
+           ignorepointer 1
+           position 42 0
+           size 160 32
+           halign right_ref
+           hexactpos 1
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           style Bold
+           text "99"
+           font "gui/fonts/etelkatextpro"
+           "exact text" 0
+           "text halign" right
+           "text valign" center
+          }
+         }
         }
        }
       }
-      PanelWidgetClass CountdownPanel {
-       visible 1
+      GridSpacerWidgetClass ZonePanel {
        ignorepointer 1
-       position 0 66
-       size 202 32
-       halign right_ref
-       hexactpos 0
+       position 10 10
+       size 48 97.08791
+       hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
+       Columns 1
+       Rows 2
        {
-        ImageWidgetClass CountdownIcon {
+        PanelWidgetClass CountdownPanel {
+         visible 1
          ignorepointer 1
-         position 0 0
-         size 32 32
+         position 0 66
+         size 202 32
          halign right_ref
          hexactpos 0
-         vexactpos 0
+         vexactpos 1
          hexactsize 1
          vexactsize 1
-         scaled 1
-         fixaspect fixwidth
-         image0 "set:expansion_iconset image:clock_blank"
-         mode blend
-         "src alpha" 1
-         "no wrap" 0
-         stretch 0
-         filter 1
+         {
+          ImageWidgetClass CountdownIcon {
+           ignorepointer 1
+           position 0 0
+           size 32 32
+           halign right_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           scaled 1
+           image0 "set:expansion_iconset image:clock_blank"
+           mode blend
+           "src alpha" 1
+           "no wrap" 1
+           stretch 1
+          }
+          TextWidgetClass CountdownText {
+           ignorepointer 1
+           position 42 -0.01
+           size 160 31
+           halign right_ref
+           hexactpos 1
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           style Bold
+           text "10:58"
+           font "gui/fonts/etelkatextpro"
+           "exact text" 0
+           "text halign" right
+           "text valign" center
+          }
+         }
         }
-        TextWidgetClass CountdownText {
+        PanelWidgetClass ZoneDistancePanel {
          ignorepointer 1
-         position 32 -0.01
-         size 170 31
-         halign right_ref
-         hexactpos 1
-         vexactpos 0
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text "10:58"
-         font "gui/fonts/etelkatextpro"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-       }
-      }
-      PanelWidgetClass KillCountPanel {
-       visible 1
-       ignorepointer 1
-       position 0 99
-       size 202 32
-       halign right_ref
-       hexactpos 0
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       {
-        ImageWidgetClass KillIcon {
-         ignorepointer 1
-         position 0 0
-         size 32 32
+         position 0 33
+         size 202 32
          halign right_ref
          hexactpos 0
-         vexactpos 0
+         vexactpos 1
          hexactsize 1
          vexactsize 1
-         fixaspect fixwidth
-         image0 "set:ccgui_enforce image:Icon40Attack"
-         mode blend
-         "src alpha" 1
-        }
-        TextWidgetClass KillCountText {
-         ignorepointer 1
-         position 32 0
-         size 170 32
-         halign right_ref
-         hexactpos 1
-         vexactpos 0
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text "99"
-         font "gui/fonts/etelkatextpro"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
+         {
+          ImageWidgetClass ZoneIcon {
+           ignorepointer 1
+           position 0 0
+           size 32 32
+           halign right_ref
+           hexactpos 0
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\arrow_64x64.edds"
+           mode blend
+           "src alpha" 1
+           "no wrap" 1
+           stretch 1
+          }
+          TextWidgetClass DistanceText {
+           ignorepointer 1
+           position 42 0
+           size 160 32
+           halign right_ref
+           hexactpos 1
+           vexactpos 0
+           hexactsize 1
+           vexactsize 1
+           style Bold
+           text "safe"
+           font "gui/fonts/etelkatextpro"
+           "exact text" 0
+           "text halign" right
+           "text valign" center
+          }
+         }
         }
        }
       }
