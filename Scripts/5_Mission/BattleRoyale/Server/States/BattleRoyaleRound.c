@@ -169,6 +169,8 @@ class BattleRoyaleRound extends BattleRoyaleState
 
         //send play area to clients
         ref BattleRoyalePlayArea m_PreviousArea = NULL;
+
+        // TODO: Skip m_PreviousArea if zones was skipped
         if(GetPreviousZone())
             m_PreviousArea = GetPreviousZone().GetArea();
 
