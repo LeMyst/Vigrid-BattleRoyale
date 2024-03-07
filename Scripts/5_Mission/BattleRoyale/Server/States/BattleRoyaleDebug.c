@@ -75,20 +75,28 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
     string GetWaitingMessage()
     {
         int waiting_on_count = i_MinPlayers - GetPlayers().Count();
+        string message = "";
 
-        //TODO: add this to battleroyaleconstants & use string replace for count & plural
-        string message = "Waiting for " + waiting_on_count.ToString() + " more ";
-        if(waiting_on_count > 1)
-            message += "players";
-        else
-            message += "player";
+        if( waiting_on_count > 0)
+        {
+            //TODO: add this to battleroyaleconstants & use string replace for count & plural
+            message = "Waiting for " + waiting_on_count.ToString() + " more ";
+            if(waiting_on_count > 1)
+                message += "players";
+            else
+                message += "player";
 
-        message += " to connect";
+            message += " to connect.";
+        }
 
         if(b_UseVoteSystem)
         {
             int ready_count = GetReadyCount();
-            message += ". " + ready_count.ToString() + " player";
+
+            if( message != "" )
+                message += " "
+
+            message += ready_count.ToString() + " player";
             if(ready_count > 1)
             {
                 message += "s";
