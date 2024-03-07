@@ -1,6 +1,6 @@
 class BattleRoyaleRound extends BattleRoyaleState
 {
-    ref BattleRoyaleState m_PreviousSate;
+    ref BattleRoyaleState m_PreviousState;
     ref BattleRoyaleZone m_Zone;
     int i_RoundTimeInSeconds;
     bool b_ZoneLocked;
@@ -25,7 +25,7 @@ class BattleRoyaleRound extends BattleRoyaleState
     //a battle royale round represents a playing state with a play area
     void BattleRoyaleRound(ref BattleRoyaleState previous_state)
     {
-        m_PreviousSate = previous_state;
+        m_PreviousState = previous_state;
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
