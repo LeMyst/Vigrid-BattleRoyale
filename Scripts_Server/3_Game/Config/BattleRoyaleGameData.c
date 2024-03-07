@@ -49,7 +49,7 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
         "Battery9V"
     };
 
-    string mission = "BattleRoyale.ChernarusPlusGloom";
+    string mission = "BattleRoyale.ChernarusPlus";
 
     bool use_spectate_whitelist = true;
     bool auto_spectate_mode = true;

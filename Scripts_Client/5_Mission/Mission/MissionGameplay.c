@@ -98,10 +98,11 @@ modded class MissionGameplay
         m_BattleRoyaleHud.SetCount( nb_players, nb_groups );
     }
 
-    void UpdateZoneDistance(float distance, vector direction)
+    void UpdateZoneDistance(bool isInsideZone, float distance, float angle)
     {
-        m_BattleRoyaleHud.ShowDistance( distance > 0 );
-        m_BattleRoyaleHud.SetDistance( distance, direction );
+        m_BattleRoyaleHud.ShowDistance(true);
+        //m_BattleRoyaleHud.ShowDistance( distance > 0 );
+        m_BattleRoyaleHud.SetDistance(isInsideZone, distance, angle );
     }
 
 #ifdef BR_MINIMAP

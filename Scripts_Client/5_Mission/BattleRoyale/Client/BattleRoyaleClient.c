@@ -76,10 +76,10 @@ class BattleRoyaleClient: BattleRoyaleBase
         if(m_CurrentPlayArea)
         {
             float distance;
-            vector direction;
-            GetZoneDistance( m_CurrentPlayArea, distance, direction );
+            float angle;
+            bool isInsideZone = GetZoneDistance( m_CurrentPlayArea, distance, angle );
 
-            gameplay.UpdateZoneDistance( distance, direction );
+            gameplay.UpdateZoneDistance( isInsideZone, distance, angle );
 
             PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
             if (distance > 0)
@@ -112,7 +112,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         m_ZoneCenterMapMarker.SetPosition( center + "0 5 0" );
     }
 
-    protected void GetZoneDistance(BattleRoyalePlayArea play_area, out float distance, out vector direction)
+    protected bool GetZoneDistance(BattleRoyalePlayArea play_area, out float distance, out float angle)
     {
         vector center = play_area.GetCenter();
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
@@ -123,9 +123,11 @@ class BattleRoyaleClient: BattleRoyaleBase
         playerpos[1] = 0;
         float distance_from_center = vector.Distance(center, playerpos);
         float distance_from_outside = distance_from_center - play_area.GetRadius();
-        distance = distance_from_outside;
-        vector playerdir = vector.Direction(GetGame().GetCurrentCameraPosition(), center);
-        direction = GetGame().GetCurrentCameraDirection() - playerdir;
+        distance = Math.AbsFloat(distance_from_center);
+        vector playerdir = vector.Direction(center, playerpos);
+		angle = GetGame().GetCurrentCameraDirection().VectorToAngles()[0] - playerdir.VectorToAngles()[0];
+
+        return distance_from_outside < 0
     }
 
     protected void PlayerCountChanged(int nb_players, int nb_groups)

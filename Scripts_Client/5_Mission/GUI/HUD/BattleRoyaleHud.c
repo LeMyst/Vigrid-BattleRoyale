@@ -14,11 +14,14 @@ class BattleRoyaleHud
     protected TextWidget m_CountdownTextWidget;
     
     protected ImageWidget m_DistanceZoneArrow;
+    protected ImageWidget m_ImageClock;
 
     protected ref array<ref BattleRoyaleSpectatorPlayerWidget> m_SpectatorWidgets;
     protected bool show_spectator;
 
     protected bool is_shown;
+
+    protected int timeRemaining;
 
     void BattleRoyaleHud( Widget root )
     {
@@ -43,6 +46,7 @@ class BattleRoyaleHud
         m_CountdownTextWidget = TextWidget.Cast( m_CountdownPanel.FindAnyWidget( "CountdownText" ) );
         
         m_DistanceZoneArrow = ImageWidget.Cast( m_Root.FindAnyWidget( "ZoneIcon" ) );
+        m_ImageClock = ImageWidget.Cast( m_Root.FindAnyWidget( "CountdownIcon" ) );
 
         m_PlayerCountPanel.Show( false );
         m_ZoneDistancePanel.Show( false );
@@ -83,7 +87,7 @@ class BattleRoyaleHud
     }
 
     //value control
-    void SetDistance(float value, vector direction)
+    void SetDistance(bool isInsideZone, float value, float angle)
     {
         if(!m_DistanceTextWidget)
         {
@@ -91,7 +95,30 @@ class BattleRoyaleHud
             return;
         }
 
-        float angle = direction.VectorToAngles()[0];
+        if ( isInsideZone )
+        {
+            m_DistanceZoneArrow.SetColor(ARGB(255, 255, 255, 255));
+            m_DistanceTextWidget.SetColor(ARGB(255, 255, 255, 255));
+            m_CountdownTextWidget.SetColor(ARGB(255, 255, 255, 255));
+            m_ImageClock.SetColor(ARGB(255, 255, 255, 255));
+        }
+        else
+        {
+            m_DistanceZoneArrow.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+            m_DistanceTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+
+            if ( timeRemaining < (value / 5) )
+            {
+                m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+                m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+            }
+            else if ( timeRemaining < (value / 6) )
+            {
+                m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+                m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+            }
+        }
+
         m_DistanceZoneArrow.SetRotation( 0, 0, angle );
         m_DistanceTextWidget.SetText( Math.Round(value).ToString() + "m");
     }
@@ -134,6 +161,8 @@ class BattleRoyaleHud
             Error("Called SetCountdown but widget is null!");
             return;
         }
+
+        timeRemaining = value;
 
         int seconds = (value % 60);
         string second_string = seconds.ToString();
