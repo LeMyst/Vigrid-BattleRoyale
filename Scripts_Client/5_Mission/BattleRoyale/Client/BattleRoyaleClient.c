@@ -84,9 +84,9 @@ class BattleRoyaleClient: BattleRoyaleBase
             PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
             if (distance > 0)
             {
-                player.QueueAddGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
+                player.QueueAddGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
             } else {
-                player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
+                player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
             }
         }
 
@@ -109,7 +109,7 @@ class BattleRoyaleClient: BattleRoyaleBase
             GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
         }
 
-        m_ZoneCenterMapMarker.SetPosition( center + "0 10 0" );
+        m_ZoneCenterMapMarker.SetPosition( center + "0 5 0" );
     }
 
     protected void GetZoneDistance(BattleRoyalePlayArea play_area, out float distance, out vector direction)
@@ -124,7 +124,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         float distance_from_center = vector.Distance(center, playerpos);
         float distance_from_outside = distance_from_center - play_area.GetRadius();
         distance = distance_from_outside;
-        direction = vector.Direction(GetGame().GetCurrentCameraPosition(), center);
+        vector playerdir = vector.Direction(GetGame().GetCurrentCameraPosition(), center);
+        direction = GetGame().GetCurrentCameraDirection() - playerdir;
     }
 
     protected void PlayerCountChanged(int nb_players, int nb_groups)

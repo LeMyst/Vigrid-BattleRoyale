@@ -47,15 +47,15 @@ class BattleRoyaleWin: BattleRoyaleState
     override void Deactivate()
     {
         m_KickTimer.Stop();
+        
         super.Deactivate();
     }
 
     override bool IsComplete()
     {
         if(GetPlayers().Count() == 0 && IsActive())
-        {
             Deactivate();
-        }
+        
         return super.IsComplete(); //go to restart state when player disconnects
     }
 

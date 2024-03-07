@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleLastRound: BattleRoyaleState
 {
-    ref BattleRoyaleState m_PreviousSate;
+    ref BattleRoyaleState m_PreviousState;
 
     int i_RoundTimeInSeconds;
     bool b_DoZoneDamage;
@@ -18,7 +18,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     void BattleRoyaleLastRound(ref BattleRoyaleState previous_state)
     {
-        m_PreviousSate = previous_state;
+        m_PreviousState = previous_state;
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
@@ -96,18 +96,18 @@ class BattleRoyaleLastRound: BattleRoyaleState
         super.Deactivate();
     }
 
-    override bool SkipState(BattleRoyaleState m_PreviousState)
+    override bool SkipState(BattleRoyaleState _previousState)
     {
         //only one (or less) players remaining, must skip to win state
-        if(m_PreviousState.GetPlayers().Count() <= 1)
-            return true;
+        if(_previousState.GetPlayers().Count() > 1)
+            return false;
 
 #ifdef SCHANAMODPARTY
-        if(m_PreviousState.GetGroups().Count() <= 1)
-            return true;
+        if(_previousState.GetGroups().Count() > 1)
+            return false;
 #endif
 
-        return false;
+        return true;
     }
 
     override string GetName()
@@ -119,11 +119,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
     {
         if(IsActive())
         {
-            if(GetPlayers().Count() <= 1)
+            if(GetPlayers().Count() < 2)
                 Deactivate();
 
 #ifdef SCHANAMODPARTY
-            if(GetGroups().Count() <= 1)
+            if(GetGroups().Count() < 2)
                 Deactivate();
 #endif
         }
@@ -244,7 +244,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
     BattleRoyaleZone GetPreviousZone()
     {
         BattleRoyaleRound prev_round;
-        if(Class.CastTo(prev_round, m_PreviousSate))
+        if(Class.CastTo(prev_round, m_PreviousState))
         {
             return prev_round.GetZone();
         }

@@ -5,10 +5,10 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.0.5-Myst";
+static const string BATTLEROYALE_VERSION = "0.0.6-Myst";
 
 //--- debug settings
-static const int BATTLEROYALE_SOLO_GAME = 1;
+static const int BATTLEROYALE_SOLO_GAME = 0;
 static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
 
@@ -90,7 +90,7 @@ static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
-static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 1; //max next zone distance as a percent of maxmimum distance (1 => 100%)
+static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.75; //max next zone distance as a percent of maxmimum distance (1 => 100%)
 static const float DAYZBR_ZS_MIN_ANGLE = 0; //degrees
 static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
 

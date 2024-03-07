@@ -41,6 +41,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
     override void Deactivate()
     {
         m_StartTimer.Stop();
+        
         super.Deactivate();
     }
 

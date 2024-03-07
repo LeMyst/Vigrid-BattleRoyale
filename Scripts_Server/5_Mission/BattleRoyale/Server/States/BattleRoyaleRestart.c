@@ -2,9 +2,11 @@
 class BattleRoyaleRestart: BattleRoyaleState
 {
     protected ref Timer m_ShutdownTimer;
+
     override void Activate()
     {
         super.Activate();
+
         Print("[Restart State] Restarting!");
 
         m_ShutdownTimer = AddTimer(10.0, this, "Shutdown", NULL, false);
@@ -19,6 +21,7 @@ class BattleRoyaleRestart: BattleRoyaleState
     {
         Error("RESTART STATE WAS DEACTIVATED!");
         m_ShutdownTimer.Stop();
+        
         super.Deactivate();
     }
 
@@ -32,3 +35,4 @@ class BattleRoyaleRestart: BattleRoyaleState
         GetGame().RequestExit(0);
     }
 }
+#endif

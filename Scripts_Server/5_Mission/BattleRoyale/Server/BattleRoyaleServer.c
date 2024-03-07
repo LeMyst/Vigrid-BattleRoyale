@@ -143,9 +143,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                 Print("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
                 if(GetCurrentState().IsActive())
-                {
                     GetCurrentState().Deactivate(); //deactivate old state
-                }
+
                 ref array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
                 for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
                 {
@@ -193,10 +192,10 @@ class BattleRoyaleServer: BattleRoyaleBase
                     Print("Spectator connected, inserting into spectator system");
 
                     //it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
-                    //note that 15 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
-                    m_Timer.Run( 15.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
+                    //note that 20 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
+                    m_Timer.Run( 20.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
 
-                    string message = "You will be given spectator in ~15 seconds...";
+                    string message = "You will be given spectator in ~20 seconds...";
                     string title = DAYZBR_MSG_TITLE;
                     string icon = DAYZBR_MSG_IMAGE;
                     int color = COLOR_EXPANSION_NOTIFICATION_INFO;
@@ -224,7 +223,7 @@ class BattleRoyaleServer: BattleRoyaleBase
                 //NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
 
                 Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
-                m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
+                m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
             }
 
             //TODO: Create a *spectator* system that handles players connecting during non-debug zone states
@@ -353,12 +352,14 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(m_States.Count() <= (i_CurrentStateIndex + 1))
             return -1;
 
-        for(int i = i_CurrentStateIndex + 1; i < m_States.Count();i++)
+        for(int i = i_CurrentStateIndex + 1; i < m_States.Count(); i++)
         {
             BattleRoyaleState state = m_States[i];
-            if(!state.SkipState(GetState(i_CurrentStateIndex)))
+            if( !state.SkipState(GetState(i_CurrentStateIndex)) )
             {
                 return i;
+            } else {
+                Print("[State Machine] Skipping State `" + state.GetName() + "`");
             }
         }
 

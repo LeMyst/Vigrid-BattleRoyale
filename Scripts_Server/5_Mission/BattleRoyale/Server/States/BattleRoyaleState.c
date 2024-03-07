@@ -85,7 +85,7 @@ class BattleRoyaleState: Timeable
         return !IsActive();
     }
 
-    bool SkipState(BattleRoyaleState m_PreviousState)  //if true, we will skip activating/deactivating this state entirely
+    bool SkipState(BattleRoyaleState _previousState)  //if true, we will skip activating/deactivating this state entirely
     {
         return false;
     }
@@ -374,9 +374,9 @@ class BattleRoyaleDebugState: BattleRoyaleState
         super.OnPlayerTick(player, timeslice);
 
         vector spawn_pos = "0 0 0";
-        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 6), (v_Center[0] + 6));
+        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 10), (v_Center[0] + 10));
         spawn_pos[1] = GetGame().SurfaceY(v_Center[0], v_Center[2]);
-        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 6), (v_Center[2] + 6));
+        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 10), (v_Center[2] + 10));
 
         vector playerPos = player.GetPosition();
         float distance = vector.Distance(playerPos, spawn_pos);

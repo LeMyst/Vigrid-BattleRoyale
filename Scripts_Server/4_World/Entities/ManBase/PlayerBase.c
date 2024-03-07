@@ -92,7 +92,7 @@ modded class PlayerBase
 
         // BURNING_TRESHOLD = 199 -> 100 should be fine
         //GetStatHeatComfort().Set(100); //no temperature flashing
-        GetStatHeatBuffer().Set(25); //give players a + by default
+        //GetStatHeatBuffer().Set(25); //give players a + by default
 
         // seems unused
         // player.GetStatHeatIsolation().Set(100);

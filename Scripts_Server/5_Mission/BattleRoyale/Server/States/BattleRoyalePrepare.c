@@ -4,7 +4,6 @@ class BattleRoyalePrepare: BattleRoyaleState
     protected ref array<PlayerBase> m_PlayerList;
     protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
-    protected vector world_center;
 
     private BattleRoyaleGameData m_GameSettings;
 
@@ -33,7 +32,6 @@ class BattleRoyalePrepare: BattleRoyaleState
         m_PlayerList = new array<PlayerBase>();
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
-        world_center = GetGame().ConfigGetVector(path + " centerPosition");
 
         villages_index = 0;
     }
@@ -106,6 +104,9 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected bool DeleteAllItems(PlayerBase process_player)
     {
+        if ( !process_player )
+            return false;
+        
         if (process_player.GetInventory().CountInventory() > 0)
         {
             process_player.RemoveAllItems();
@@ -312,7 +313,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         box_position[0] = position[0];
         box_position[1] = position[1]; // + 1
         box_position[2] = position[2];
-        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "2.5 5 2.5", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 5 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
         {
             if( collidedObjects.Count() > 0)
             {
@@ -348,14 +349,11 @@ class BattleRoyalePrepare: BattleRoyaleState
         else
             village_pad = 100.0;
 
-        //float x = Math.RandomFloatInclusive((village_x - village_pad), (village_x + village_pad));
-        //float z = Math.RandomFloatInclusive((village_z - village_pad), (village_z + village_pad));
-
-        float radius, theta, x, z;
+        float radius, angle, x, z;
         radius = village_pad * Math.Sqrt( Math.RandomFloat(0, 1) );
-        theta = Math.RandomFloat(0, 1) * Math.PI2;
-        x = village_x + radius * Math.Cos(theta);
-        z = village_z + radius * Math.Sin(theta);
+        angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+        x = village_x + ( radius * Math.Cos(angle) );
+        z = village_z + ( radius * Math.Sin(angle) );
 
         float y = GetGame().SurfaceY(x, z);
 
@@ -427,14 +425,17 @@ class BattleRoyalePrepare: BattleRoyaleState
                 random_spawn_try++;
                 float edge_pad = 0.1;
 
-                float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-                float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+                int world_size = GetGame().GetWorld().GetWorldSize();
+
+                float x = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
+                float z = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
                 float y = GetGame().SurfaceY(x, z);
+
                 random_pos[0] = x;
                 random_pos[1] = y;
                 random_pos[2] = z;
 
-                if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], check_zone))
+                if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], true))
                     continue;
 
                 break;
@@ -465,24 +466,28 @@ class BattleRoyalePrepare: BattleRoyaleState
         for(int i = 0; i < tmpNbPlayers; i++)
         {
             PlayerBase player = group.Get(i);
-            BattleRoyaleUtils.Trace("Teleport player " + player.GetIdentity().GetName() + " to position " + position);
-
-            int spawn_try = 1;
-            while(true)
+            if(player)
             {
-                spawn_try = spawn_try + 1;
-                float x = position[0] + Math.RandomFloatInclusive(-5.0, 5.0);
-                float z = position[2] + Math.RandomFloatInclusive(-5.0, 5.0);
-                float y = GetGame().SurfaceY(x, z);
+                BattleRoyaleUtils.Trace("Teleport player " + player.GetIdentity().GetName() + " to position " + position);
 
-                if( IsSafeForTeleport(x, y, z, false) )
-                    break;
+                int spawn_try = 1;
+                while(true)
+                {
+                    Print("Try Group " + spawn_try);
+                    spawn_try = spawn_try + 1;
+                    float x = position[0] + Math.RandomFloatInclusive(-5.0, 5.0);
+                    float z = position[2] + Math.RandomFloatInclusive(-5.0, 5.0);
+                    float y = GetGame().SurfaceY(x, z);
 
-                if( spawn_try > 50 )
-                    break;
+                    if( IsSafeForTeleport(x, y, z, false) )
+                        break;
+
+                    if( spawn_try > 50 )
+                        break;
+                }
+
+                TeleportPlayer(player, Vector(x, y, z), village);
             }
-
-            TeleportPlayer(player, Vector(x, y, z), village);
         }
     }
 
@@ -501,7 +506,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             player.SetDirection(vector.Direction(player.GetPosition(), village.Position));
         } else {
             //random direction
-            float dir = Math.RandomFloat(0,360); //non-inclusive, 360==0
+            float dir = Math.RandomFloat(0, 360); //non-inclusive, 360==0
             vector playerDir = vector.YawToVector(dir);
             player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         }
@@ -525,6 +530,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 #ifdef SCHANAMODPARTY
         BattleRoyaleUtils.Trace("Mod party enabled");
 
+        // ref array ref set, what in the seven fucks is this ?
         ref array<ref set<PlayerBase>> teleport_groups = GetGroups();
 
         // Teleport groups
@@ -532,38 +538,46 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
         for (i = 0; i < pGroupCount; i++) {
             BattleRoyaleUtils.Trace("Teleport group " + i);
-            if (process_player) TeleportGroup(teleport_groups.Get(i));
-            Sleep(100);
+            ref set<PlayerBase> group = teleport_groups.Get(i);
+            if ( group.Count() > 1 )
+            {
+                TeleportGroup( group );
+            } else {
+                process_player = group.Get(0);
+                if (process_player) Teleport(process_player);
+            }
+            Sleep(50);
         }
 #else
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player) Teleport(process_player);
 
-            Sleep(100);
+            Sleep(50);
         }
 #endif
         BattleRoyaleUtils.Trace("Teleported players");
 
         // plz fix this
-        Sleep(1000);
+        Sleep(500);
 
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player) GiveStartingItems(process_player);
 
-            Sleep(100);
+            Sleep(50);
         }
+        
         BattleRoyaleUtils.Trace("Gave starting items");
 
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player) process_player.ResetPlayer(true);
 
-            Sleep(100);
+            Sleep(50);
         }
-        BattleRoyaleUtils.Trace("Healed players");
 
+        BattleRoyaleUtils.Trace("Healed players");
         Deactivate();
     }
 
@@ -576,6 +590,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             player.time_until_heal = 5;
             player.Heal();
         }
+
         player.time_until_heal -= timeslice;
     }
 
@@ -586,6 +601,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             player.SetAllowDamage(false); //all players in this state are god mode
             player.Heal();
         }
+
         super.AddPlayer(player);
     }
 
@@ -597,6 +613,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             player.SetAllowDamage(true); //leaving debug state = disable god mode
             player.Heal();
         }
+
         return players;
     }
 
@@ -607,6 +624,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             player.SetAllowDamage(true); //leaving debug state = disable god mode
             player.Heal();
         }
+
         super.RemovePlayer(player);
     }
 }

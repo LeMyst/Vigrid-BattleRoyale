@@ -1,13 +1,14 @@
 #ifdef SERVER
 class BattleRoyaleRound: BattleRoyaleState
 {
-    ref BattleRoyaleState m_PreviousSate;
+    ref BattleRoyaleState m_PreviousState;
     ref BattleRoyaleZone m_Zone;
     int i_RoundTimeInSeconds;
     bool b_ZoneLocked;
     bool b_DoZoneDamage;
     int i_DamageTickTime;
     float f_Damage;
+    float zone_num;
     int i_NumZones;
     bool b_ArtillerySound;
     array<int> lock_notif_min;
@@ -26,7 +27,7 @@ class BattleRoyaleRound: BattleRoyaleState
     //a battle royale round represents a playing state with a play area
     void BattleRoyaleRound(ref BattleRoyaleState previous_state)
     {
-        m_PreviousSate = previous_state;
+        m_PreviousState = previous_state;
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
@@ -63,16 +64,21 @@ class BattleRoyaleRound: BattleRoyaleState
             int previous_zone_number = Math.Floor(GetPreviousZone().GetZoneNumber());
             m_Zone = m_Zone.GetZone(previous_zone_number + 1);
         } else {
+            Print("No previous zone, default to 1");
             m_Zone = m_Zone.GetZone(1); // Can't add dynamic num zone stuff here
         }
 
         // Update zone timer
         i_RoundTimeInSeconds = m_Zone.GetZoneTimer();
         Print("Create round " + GetName());
+
+        if( GetPreviousZone() )
+            Print("- Previous zone number: " + Math.Floor(GetPreviousZone().GetZoneNumber()));
+
         Print("- Duration: " + i_RoundTimeInSeconds);
 
         //dear god i hope i really don't have to keep this, but it should work
-        float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
+        zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
         float num_zones = i_NumZones * 1.0;
         Print("- Num zone: " + m_Zone.GetZoneNumber() + "/" + i_NumZones);
 
@@ -86,7 +92,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_GAMEPLAY_NAME;
+        return DAYZBR_SM_GAMEPLAY_NAME + " (" + zone_num + ")";
     }
 
     override void Activate()
@@ -167,6 +173,8 @@ class BattleRoyaleRound: BattleRoyaleState
 
         //send play area to clients
         ref BattleRoyalePlayArea m_PreviousArea = NULL;
+        
+        // TODO: Skip m_PreviousArea if zones was skipped
         if(GetPreviousZone())
             m_PreviousArea = GetPreviousZone().GetArea();
 
@@ -213,6 +221,7 @@ class BattleRoyaleRound: BattleRoyaleState
         m_RoundTimeUpTimer.Stop();
         for(int i = 0; i < m_MessageTimers.Count(); i++)
             m_MessageTimers[i].Stop();
+        
         //we just deactivated this round (players not yet transfered from previous state)
         super.Deactivate();
     }
@@ -282,21 +291,24 @@ class BattleRoyaleRound: BattleRoyaleState
     }
 #endif
 
-    override bool SkipState(BattleRoyaleState m_PreviousState)
+    override bool SkipState(BattleRoyaleState _previousState)
     {
-        if(m_PreviousState.i_StartingZone > m_Zone.GetZoneNumber())
-        return true;
+        if( _previousState.i_StartingZone > zone_num )
+        {
+            Print("[State Machine] Skipping State `" + _previousState.i_StartingZone + "` > `" + zone_num + "`");
+            return true;
+        }
 
-        if(BATTLEROYALE_SOLO_GAME)
+        if( BATTLEROYALE_SOLO_GAME )
             return false;
 
         //only one (or less) players remaining, must skip to win state
         // TODO: toggle to debug game
-        if(m_PreviousState.GetPlayers().Count() <= 1)
+        if(_previousState.GetPlayers().Count() <= 1)
             return true;
 
 #ifdef SCHANAMODPARTY
-        if(m_PreviousState.GetGroups().Count() <= 1)
+        if(_previousState.GetGroups().Count() <= 1)
             return true;
 #endif
 
@@ -406,9 +418,15 @@ class BattleRoyaleRound: BattleRoyaleState
     BattleRoyaleZone GetPreviousZone()
     {
         BattleRoyaleRound prev_round;
-        if(Class.CastTo(prev_round, m_PreviousSate))
+        if(Class.CastTo(prev_round, m_PreviousState))
         {
             return prev_round.GetZone();
+//            if( m_Zone.GetZoneNumber() > m_PreviousState.i_StartingZone )
+//                return prev_round.GetZone();
+//            else
+//                Print(m_Zone.GetZoneNumber() + " <= " + m_PreviousState.i_StartingZone);
+        } else {
+            Print("Can't cast m_PreviousState to BattleRoyaleRound!");
         }
 
         return NULL;

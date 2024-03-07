@@ -40,7 +40,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //returns true when this state is complete
     override bool IsComplete()
     {
-        if(GetPlayers().Count() >= i_MinPlayers && IsActive())
+        if( !b_UseVoteSystem && i_MinPlayers < GetPlayers().Count() && IsActive() )
         {
             Deactivate();
         }
@@ -58,10 +58,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void CheckReadyState()
     {
-        if(IsVoteReady())
-        {
+        if( IsVoteReady() )
             Deactivate();
-        }
     }
 
     void MessageWaiting()
@@ -72,24 +70,31 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     string GetWaitingMessage()
     {
         int waiting_on_count = i_MinPlayers - GetPlayers().Count();
+        string message = "";
 
-        //TODO: add this to battleroyaleconstants & use string replace for count & plural
-        string message = "Waiting for " + waiting_on_count.ToString() + " more ";
-        if(waiting_on_count > 1)
-            message += "players";
-        else
-            message += "player";
+        if( waiting_on_count > 0)
+        {
+            //TODO: add this to battleroyaleconstants & use string replace for count & plural
+            message = "Waiting for " + waiting_on_count.ToString() + " more ";
+            if(waiting_on_count > 1)
+                message += "players";
+            else
+                message += "player";
 
-        message += " to connect";
+            message += " to connect.";
+        }
 
         if(b_UseVoteSystem)
         {
             int ready_count = GetReadyCount();
-            message += ". " + ready_count.ToString() + " player";
+
+            if( message != "" )
+                message += " ";
+
+            message += ready_count.ToString() + " player";
             if(ready_count > 1)
-            {
                 message += "s";
-            }
+
             message += " are ready!";
 
             string key_name = InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD);
@@ -109,6 +114,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             if(m_ReadyList[a])
                 ready_count++;
         }
+
         return ready_count;
     }
 
@@ -120,8 +126,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         int ready_count = GetReadyCount();
         int player_count = GetPlayers().Count();
 
-        if(player_count <= 1 ) //need more than 1 player to start
-            return false;
+        if( !BATTLEROYALE_SOLO_GAME )
+        {
+            if( player_count <= 1 ) // need more than 1 player
+                return false;
+
+            if( player_count <= i_MinPlayers ) // need more than the minimum player
+                return false;
+        }
 
         float percent = (ready_count / player_count);
         return (percent >= f_VoteThreshold);
@@ -129,7 +141,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void ReadyUp(PlayerBase player)
     {
-        if(m_ReadyList.Find(player) != -1) {
+        if(m_ReadyList.Find(player) != -1)
+        {
             MessagePlayer(player, "You have already readied up...");
             return;
         }
@@ -147,6 +160,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     override void RemovePlayer(PlayerBase player)
     {
         super.RemovePlayer( player );
+        
         m_ReadyList.RemoveItem( player );
     }
 
