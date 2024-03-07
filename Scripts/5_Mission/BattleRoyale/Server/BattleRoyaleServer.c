@@ -193,9 +193,9 @@ class BattleRoyaleServer extends BattleRoyaleBase
 
                     //it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
                     //note that 15 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
-                    m_Timer.Run( 15.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
+                    m_Timer.Run( 20.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
 
-                    string message = "You will be given spectator in ~15 seconds...";
+                    string message = "You will be given spectator in ~20 seconds...";
                     string title = DAYZBR_MSG_TITLE;
                     string icon = DAYZBR_MSG_IMAGE;
                     int color = COLOR_EXPANSION_NOTIFICATION_INFO;
