@@ -309,7 +309,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
         box_position[0] = position[0];
         box_position[1] = position[1]; // + 1
         box_position[2] = position[2];
-        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 2 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 5 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
         {
             if( collidedObjects.Count() > 0)
             {
