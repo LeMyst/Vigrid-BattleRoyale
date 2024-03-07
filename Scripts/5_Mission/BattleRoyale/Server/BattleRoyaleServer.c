@@ -223,7 +223,7 @@ class BattleRoyaleServer extends BattleRoyaleBase
                 //NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
 
                 Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
-                m_Timer.Run( 15.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
+                m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
             }
 
             //TODO: Create a *spectator* system that handles players connecting during non-debug zone states
