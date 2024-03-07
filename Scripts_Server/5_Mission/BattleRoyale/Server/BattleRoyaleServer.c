@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleServer: BattleRoyaleBase
 {
     protected ref BattleRoyaleSpectators m_SpectatorSystem;

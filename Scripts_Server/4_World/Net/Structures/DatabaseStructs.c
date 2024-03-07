@@ -1,3 +1,4 @@
+#ifdef SERVER
 class ServerData
 {
     string _id;

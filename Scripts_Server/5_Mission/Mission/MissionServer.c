@@ -1,3 +1,4 @@
+#ifdef SERVER
 modded class MissionServer
 {
     //--- TODO: look at dayzexpansion missionserver
@@ -160,3 +161,4 @@ modded class MissionServer
         }
     }
 }
+#endif

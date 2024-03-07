@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleZone
 {
     protected ref BattleRoyaleZone m_ParentZone;

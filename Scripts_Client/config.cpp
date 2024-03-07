@@ -39,9 +39,9 @@ class CfgMods
 		{
 			"DAYZ_BATTLEROYALE",
             "DYNAMIC_NUM_ZONES",
-			"MOVING_ZONE",
-            "BR_MINIMAP",
-            "BLUE_ZONE"
+			"MOVING_ZONE"
+            //"BR_MINIMAP",
+            //"BLUE_ZONE"
 		};
 
         class defs

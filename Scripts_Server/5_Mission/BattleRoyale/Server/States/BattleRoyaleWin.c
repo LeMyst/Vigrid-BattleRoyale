@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleWin: BattleRoyaleState
 {
     int i_SecondsTillKick;

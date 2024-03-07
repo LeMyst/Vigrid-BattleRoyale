@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleDebugData: BattleRoyaleDataBase
 {
     vector spawn_point = "14829.2 0 14572.3";
@@ -24,6 +25,6 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
     override void Load()
     {
         JsonFileLoader<BattleRoyaleDebugData>.JsonLoadFile(GetPath(), this);
-
     }
-}
+};
+#endif

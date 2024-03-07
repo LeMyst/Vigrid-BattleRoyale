@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleConfig
 {
     static ref BattleRoyaleConfig m_Instance;
@@ -19,6 +20,7 @@ class BattleRoyaleConfig
             m_Instance = new BattleRoyaleConfig;
             m_Instance.Load();
         }
+        
         return m_Instance;
     }
 
@@ -55,7 +57,6 @@ class BattleRoyaleConfig
 
     void Load()
     {
-#ifdef SERVER
         if ( !b_HasLoaded )
         {
             b_HasLoaded = true;
@@ -71,6 +72,7 @@ class BattleRoyaleConfig
                 Error("FAILED TO LOAD CONFIG DATA");
                 return;
             }
+
             //iterate over internal data in the dictionary
             for(int i = 0; i < m_Configs.Count(); i++)
             {
@@ -85,6 +87,7 @@ class BattleRoyaleConfig
                         {
                             Print("Loading Config: " + path);
                             config.Load();
+
                             if(BATTLEROYALE_SOLO_GAME)
                             {
                                 //config.Save(); //re-save (if there are new config values that need added to the json file)
@@ -110,7 +113,6 @@ class BattleRoyaleConfig
                 }
             }
         }
-#endif
     }
 
     //if a 3rd party needs to get config by string, it can do so here
@@ -121,30 +123,36 @@ class BattleRoyaleConfig
             Error("Requesting Config (" + key + ") Data from Unloaded Config?");
             Load();
         }
+
         return m_Configs.Get(key);
     }
 
     BattleRoyaleServerData GetServerData()
     {
         Print("Accessing Server Data Config...");
+
         return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
     }
 
     BattleRoyaleGameData GetGameData()
     {
         Print("Accessing Game Data Config...");
+
         return BattleRoyaleGameData.Cast( GetConfig("GameData") );
     }
 
     BattleRoyaleDebugData GetDebugData()
     {
         Print("Accessing Debug Data Config...");
+
         return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
     }
 
     BattleRoyaleZoneData GetZoneData()
     {
         Print("Accessing Zone Data Config...");
+
         return BattleRoyaleZoneData.Cast( GetConfig("ZoneData") );
     }
-}
+};
+#endif

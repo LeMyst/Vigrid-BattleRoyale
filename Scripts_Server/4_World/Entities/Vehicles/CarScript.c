@@ -1,3 +1,4 @@
+#ifdef SERVER
 modded class CarScript
 {
     override void EEOnCECreate()
@@ -7,4 +8,5 @@ modded class CarScript
         Fill( CarFluid.COOLANT, GetFluidCapacity( CarFluid.COOLANT ) );
         Fill( CarFluid.OIL, GetFluidCapacity( CarFluid.OIL ) );
     }
-}
+};
+#endif

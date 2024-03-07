@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleRound: BattleRoyaleState
 {
     ref BattleRoyaleState m_PreviousSate;

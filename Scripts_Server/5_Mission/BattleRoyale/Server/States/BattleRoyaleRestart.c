@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleRestart: BattleRoyaleState
 {
     protected ref Timer m_ShutdownTimer;

@@ -1,3 +1,4 @@
+#ifdef SERVER
 #ifdef JM_COT
 modded class BRMasterControlsModule
 {
@@ -106,3 +107,4 @@ modded class BRMasterControlsModule
     }
 }
 #endif // JM_COT
+#endif

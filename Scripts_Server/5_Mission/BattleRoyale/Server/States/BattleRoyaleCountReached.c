@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleCountReached: BattleRoyaleDebugState
 {
     protected int i_TimeToStart;

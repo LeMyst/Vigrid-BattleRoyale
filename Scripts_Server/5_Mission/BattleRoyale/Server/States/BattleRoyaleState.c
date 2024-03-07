@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleState: Timeable
 {
     protected ref array<PlayerBase> m_Players;

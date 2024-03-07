@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleDataBase
 {
     string GetPath()
@@ -5,13 +6,7 @@ class BattleRoyaleDataBase
         return "";
     }
 
-    void Save()
-    {
-        return;
-    }
-
-    void Load()
-    {
-        return;
-    }
-}
+    void Save() {}
+    void Load() {}
+};
+#endif

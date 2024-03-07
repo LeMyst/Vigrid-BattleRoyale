@@ -1,5 +1,6 @@
-class BattleRoyaleDebug: BattleRoyaleDebugState {
-
+#ifdef SERVER
+class BattleRoyaleDebug: BattleRoyaleDebugState
+{
     protected ref array<PlayerBase> m_ReadyList;
 
     protected bool b_UseVoteSystem;

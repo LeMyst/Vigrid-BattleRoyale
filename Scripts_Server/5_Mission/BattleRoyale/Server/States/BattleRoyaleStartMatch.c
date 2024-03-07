@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleStartMatch: BattleRoyaleState
 {
     protected int i_TimeToUnlock;

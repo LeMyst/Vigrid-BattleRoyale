@@ -5,7 +5,7 @@ modded class Weapon_Base
 	{
 		super.EEInit();
 
-		SpawnAmmo( "", WeaponWithAmmoFlags.CHAMBER | WeaponWithAmmoFlags.MAX_CAPACITY_MAG );
+		//SpawnAmmo( "", WeaponWithAmmoFlags.CHAMBER | WeaponWithAmmoFlags.MAX_CAPACITY_MAG );
 	}
 }
 #endif

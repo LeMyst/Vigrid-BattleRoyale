@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
     int shrink_type = 3; // Exp/Lin/Static/Const
@@ -32,4 +33,5 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     {
         JsonFileLoader<BattleRoyaleZoneData>.JsonLoadFile(GetPath(), this);
     }
-}
+};
+#endif

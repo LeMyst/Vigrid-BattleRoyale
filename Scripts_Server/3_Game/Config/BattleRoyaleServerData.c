@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
     int port = 2302;
@@ -22,4 +23,5 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
             Save();
         }
     }
-}
+};
+#endif

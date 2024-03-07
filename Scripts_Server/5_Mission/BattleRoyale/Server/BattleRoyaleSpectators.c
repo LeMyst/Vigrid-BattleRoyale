@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleSpectators
 {
     protected ref array<PlayerBase> m_Spectators;

@@ -1,3 +1,4 @@
+#ifdef SERVER
 modded class PlayerBase
 {
     float time_until_heal = 0;
@@ -18,14 +19,18 @@ modded class PlayerBase
         if(time_since_last_net_sync > time_between_net_sync)
         {
             time_since_last_net_sync = 0;
-            bool result = UpdateHealthStats(hp, blood);
-            bool return_me = force_result || result; //we'll need to flip force_result back to false, so we need a temp variable to store this value in
+            bool return_me; //we'll need to flip force_result back to false, so we need a temp variable to store this value in
+            if ( force_result || UpdateHealthStats(hp, blood) )
+                return_me = true;
             force_result = false;
             return return_me;
         }
         else
         {
-            force_result = force_result || UpdateHealthStats(hp, blood); //if we ever get a "true" in this update system, we need to store it for the next sync tick
+            //if we ever get a "true" in this update system, we need to store it for the next sync tick
+            if ( UpdateHealthStats(hp, blood) )
+                force_result = true;
+            
             return false;
         }
     }
@@ -36,9 +41,7 @@ modded class PlayerBase
 
         BattleRoyaleBase m_BR = GetBR();
         if(m_BR)
-        {
             m_BR.OnPlayerTick(this, deltaTime);
-        }
     }
 
     override void EEKilled( Object killer )
@@ -47,9 +50,7 @@ modded class PlayerBase
 
         BattleRoyaleBase m_BR = GetBR();
         if(m_BR)
-        {
             m_BR.OnPlayerKilled(this, killer);
-        }
     }
 
     //Temp fix for disabling character saving
@@ -180,7 +181,6 @@ modded class PlayerBase
             GetStatEnergy().Set(GetStatEnergy().GetMax());
         }
 
-
         // fix up inventory
         FixAllInventoryItems();
 
@@ -189,4 +189,5 @@ modded class PlayerBase
         moduleLifespan.UpdateBloodyHandsVisibilityEx(this, eBloodyHandsTypes.CLEAN);
 #endif
     }
-}
+};
+#endif

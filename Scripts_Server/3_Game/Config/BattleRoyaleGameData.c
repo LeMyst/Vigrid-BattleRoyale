@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyaleGameData: BattleRoyaleDataBase
 {
     int num_zones = 6;
@@ -71,10 +72,11 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     {
         JsonFileLoader<BattleRoyaleGameData>.JsonLoadFile(GetPath(), this);
     }
-}
+};
 
 class BattleRoyaleOverrideSpawnPosition
 {
     string CityName;
     vector NewPosition;
-}
+};
+#endif

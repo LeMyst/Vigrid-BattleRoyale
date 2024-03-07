@@ -1,3 +1,4 @@
+#ifdef SERVER
 class Timeable
 {
     protected ref array<ref Timer> m_Timers;
@@ -18,10 +19,10 @@ class Timeable
     {
         ref Timer m_Timer = new Timer;
         m_Timer.Run( duration, obj, fn_name, params, loop );
+        
         if(loop)
-        {
             m_Timers.Insert( m_Timer );
-        }
+
         return m_Timer;
     }
 
@@ -43,4 +44,5 @@ class Timeable
                 m_Timers[i].Stop();
         }
     }
-}
+};
+#endif

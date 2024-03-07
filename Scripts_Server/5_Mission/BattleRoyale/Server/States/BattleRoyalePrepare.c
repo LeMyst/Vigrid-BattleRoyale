@@ -1,3 +1,4 @@
+#ifdef SERVER
 class BattleRoyalePrepare: BattleRoyaleState
 {
     protected ref array<PlayerBase> m_PlayerList;
