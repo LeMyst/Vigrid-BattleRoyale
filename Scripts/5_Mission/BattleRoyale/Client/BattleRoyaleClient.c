@@ -94,9 +94,9 @@ class BattleRoyaleClient extends BattleRoyaleBase
             distance = GetZoneDistance( m_CurrentPlayArea );
             if (distance > 0)
             {
-                player.QueueAddGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
+                player.QueueAddGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
             } else {
-                player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_GLASSESSPORTBLUE);
+                player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
             }
         }
 
