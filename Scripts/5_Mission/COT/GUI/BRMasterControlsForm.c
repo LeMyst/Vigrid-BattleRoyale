@@ -42,7 +42,6 @@ class BRMasterControlsForm extends JMFormBase
         button = UIActionManager.CreateButton( wrapper, "Test!", this, "TestSpectating" );
 
         m_sclr_MainActions.UpdateScroller();
-
     }
 
     override void OnHide()

@@ -61,7 +61,7 @@ class BattleRoyaleDebug extends BattleRoyaleDebugState {
 
     void CheckReadyState()
     {
-        if(IsVoteReady())
+        if( IsVoteReady() )
         {
             Deactivate();
         }

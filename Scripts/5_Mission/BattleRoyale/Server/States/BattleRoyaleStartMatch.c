@@ -148,6 +148,7 @@ class BattleRoyaleStartMatch extends BattleRoyaleState
             Error("Player killed before gameplay!");
             return;
         }
+
         if(ContainsPlayer(player))
         {
             RemovePlayer(player);

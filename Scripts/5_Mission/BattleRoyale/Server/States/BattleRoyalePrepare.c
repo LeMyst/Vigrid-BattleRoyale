@@ -428,11 +428,12 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
                 float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
                 float y = GetGame().SurfaceY(x, z);
+
                 random_pos[0] = x;
                 random_pos[1] = y;
                 random_pos[2] = z;
 
-                if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], check_zone))
+                if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], true))
                     continue;
 
                 break;

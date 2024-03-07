@@ -286,7 +286,7 @@ class BattleRoyaleRound extends BattleRoyaleState
         if(m_PreviousState.i_StartingZone > m_Zone.GetZoneNumber())
         return true;
 
-        if(BATTLEROYALE_SOLO_GAME)
+        if( BATTLEROYALE_SOLO_GAME )
             return false;
 
         //only one (or less) players remaining, must skip to win state
@@ -405,7 +405,7 @@ class BattleRoyaleRound extends BattleRoyaleState
     BattleRoyaleZone GetPreviousZone()
     {
         BattleRoyaleRound prev_round;
-        if(Class.CastTo(prev_round, m_PreviousSate))
+        if( Class.CastTo(prev_round, m_PreviousState) )
         {
             return prev_round.GetZone();
         }

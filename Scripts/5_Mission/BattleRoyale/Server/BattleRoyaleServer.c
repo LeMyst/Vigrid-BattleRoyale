@@ -352,12 +352,14 @@ class BattleRoyaleServer extends BattleRoyaleBase
         if(m_States.Count() <= (i_CurrentStateIndex + 1))
             return -1;
 
-        for(int i = i_CurrentStateIndex + 1; i < m_States.Count();i++)
+        for(int i = i_CurrentStateIndex + 1; i < m_States.Count(); i++)
         {
             BattleRoyaleState state = m_States[i];
-            if(!state.SkipState(GetState(i_CurrentStateIndex)))
+            if( !state.SkipState(GetState(i_CurrentStateIndex)) )
             {
                 return i;
+            } else {
+                Print("[State Machine] Skipping State `" + state.GetName() + "`");
             }
         }
 
