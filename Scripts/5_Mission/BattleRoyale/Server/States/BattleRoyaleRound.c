@@ -7,6 +7,7 @@ class BattleRoyaleRound extends BattleRoyaleState
     bool b_DoZoneDamage;
     int i_DamageTickTime;
     float f_Damage;
+    float zone_num;
     int i_NumZones;
     bool b_ArtillerySound;
     array<int> lock_notif_min;
@@ -74,7 +75,7 @@ class BattleRoyaleRound extends BattleRoyaleState
         Print("- Duration : " + i_RoundTimeInSeconds);
 
         //dear god i hope i really don't have to keep this, but it should work
-        float zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
+        zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
         float num_zones = i_NumZones * 1.0;
         Print("- Num zone : " + m_Zone.GetZoneNumber() + "/" + i_NumZones);
 
