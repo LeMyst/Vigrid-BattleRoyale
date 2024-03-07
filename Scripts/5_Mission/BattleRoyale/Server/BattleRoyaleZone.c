@@ -192,18 +192,15 @@ class BattleRoyaleZone
                 if(i == 0)  // First zone
                 {
                     BattleRoyaleUtils.Trace("Generate first zone");
-                    vector temp = GetGame().ConfigGetVector("CfgWorlds " + GetGame().GetWorldName() + " centerPosition");
 
                     // Get world size
-                    float world_width = temp[0] * 2;
-                    float world_height = temp[1] * 2;
-                    BattleRoyaleUtils.Trace("world_width: " + world_width);
-                    BattleRoyaleUtils.Trace("world_height: " + world_height);
+                    int world_size = GetGame().GetWorld().GetWorldSize();
+                    BattleRoyaleUtils.Trace("world_size: " + world_size);
 
                     if(b_EndInVillages)
                         area_center = GetRandomPOI();
                     else
-                        area_center = GetValidPositionSquare(radius, world_width, radius, world_height);
+                        area_center = GetValidPositionSquare(radius, world_size - radius, radius, world_size - radius);
                 } else {
                     BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
                     area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
@@ -271,12 +268,11 @@ class BattleRoyaleZone
             new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
 
             // We check if the (new center+radius) is inside the world
-            vector temp = GetGame().ConfigGetVector("CfgWorlds " + GetGame().GetWorldName() + " centerPosition");
-            float world_width = temp[0] * 2;
-            float world_height = temp[1] * 2;
-            if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_width || (new_center[2] + new_radius) > world_height)
+            int world_size = GetGame().GetWorld().GetWorldSize();
+
+            if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_size || (new_center[2] + new_radius) > world_size)
             {
-                BattleRoyaleUtils.Trace("not inside the world " + new_center[0] + " " + new_center[2] + " " + world_width + " " + world_height + " " + new_radius);
+                BattleRoyaleUtils.Trace("not inside the world " + new_center[0] + " " + new_center[2] + " " + world_size + " " + new_radius);
 
                 if(max_try <= 0)
                 {
@@ -288,13 +284,13 @@ class BattleRoyaleZone
                     {
                         new_center[2] = new_radius;
                     }
-                    if((new_center[0] + new_radius) > world_width)
+                    if((new_center[0] + new_radius) > world_size)
                     {
-                        new_center[0] = world_width-new_radius;
+                        new_center[0] = world_size - new_radius;
                     }
-                    if((new_center[2] + new_radius) > world_height)
+                    if((new_center[2] + new_radius) > world_size)
                     {
-                        new_center[2] = world_height-new_radius;
+                        new_center[2] = world_size - new_radius;
                     }
                     BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
                     break;

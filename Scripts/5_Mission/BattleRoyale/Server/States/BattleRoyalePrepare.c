@@ -3,7 +3,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
     protected ref array<PlayerBase> m_PlayerList;
     protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
-    protected vector world_center;
 
     private BattleRoyaleGameData m_GameSettings;
 
@@ -32,7 +31,6 @@ class BattleRoyalePrepare extends BattleRoyaleState
         m_PlayerList = new array<PlayerBase>();
 
         string path = "CfgWorlds " + GetGame().GetWorldName();
-        world_center = GetGame().ConfigGetVector(path + " centerPosition");
 
         villages_index = 0;
     }
@@ -425,8 +423,10 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 random_spawn_try++;
                 float edge_pad = 0.1;
 
-                float x = Math.RandomFloatInclusive((world_center[0] * edge_pad), (world_center[0] * 2) - (world_center[0] * edge_pad));
-                float z = Math.RandomFloatInclusive((world_center[1] * edge_pad), (world_center[1] * 2) - (world_center[1] * edge_pad));
+                int world_size = GetGame().GetWorld().GetWorldSize();
+
+                float x = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
+                float z = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
                 float y = GetGame().SurfaceY(x, z);
 
                 random_pos[0] = x;
