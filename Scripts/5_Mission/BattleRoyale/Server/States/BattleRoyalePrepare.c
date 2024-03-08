@@ -550,26 +550,26 @@ class BattleRoyalePrepare extends BattleRoyaleState
                 process_player = group.Get(0);
                 if (process_player) Teleport(process_player);
             }
-            Sleep(50);
+            Sleep(100);
         }
 #else
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player) Teleport(process_player);
 
-            Sleep(50);
+            Sleep(100);
         }
 #endif
         BattleRoyaleUtils.Trace("Teleported players");
 
         // plz fix this
-        Sleep(500);
+        Sleep(1000);
 
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player) GiveStartingItems(process_player);
 
-            Sleep(50);
+            Sleep(100);
         }
         BattleRoyaleUtils.Trace("Gave starting items");
 
@@ -577,7 +577,7 @@ class BattleRoyalePrepare extends BattleRoyaleState
             process_player = m_PlayerList[i];
             if (process_player) process_player.ResetPlayer(true);
 
-            Sleep(50);
+            Sleep(100);
         }
         BattleRoyaleUtils.Trace("Healed players");
 
