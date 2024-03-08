@@ -527,6 +527,8 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
         BattleRoyaleUtils.Trace("Players are disabled");
 
+        m_PlayerList.ShuffleArray();
+
 #ifdef SCHANAMODPARTY
         BattleRoyaleUtils.Trace("Mod party enabled");
 
@@ -535,6 +537,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         // Teleport groups
         int pGroupCount = teleport_groups.Count();
+        teleport_groups.ShuffleArray();
         BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
         for (i = 0; i < pGroupCount; i++) {
             BattleRoyaleUtils.Trace("Teleport group " + i);
