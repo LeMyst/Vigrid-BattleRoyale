@@ -258,6 +258,11 @@ class BattleRoyaleServer extends BattleRoyaleBase
         if(GetCurrentState().ContainsPlayer(killed))
         {
             //if we are in a round, then we need to call the onkilled event
+            BattleRoyaleStartMatch p_StartRound;
+            if(Class.CastTo(p_StartRound, GetCurrentState()))
+            {
+                p_StartRound.OnPlayerKilled(killed, killer); //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
+            }
             BattleRoyaleRound p_Round;
             if(Class.CastTo(p_Round, GetCurrentState()))
             {
