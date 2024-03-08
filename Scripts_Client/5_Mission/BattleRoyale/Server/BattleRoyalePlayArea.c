@@ -29,11 +29,11 @@ class BattleRoyalePlayArea
         return v_Center;
     }
 
-    bool IsAreaOverlap(BattleRoyalePlayArea other)
+    bool IsAreaOverlap(BattleRoyalePlayArea other, int extra_radius)
     {
         float x1 = this.GetCenter()[0];
         float z1 = this.GetCenter()[2];
-        float r1 = this.GetRadius();
+        float r1 = this.GetRadius() + extra_radius;
 
         float x2 = other.GetCenter()[0];
         float z2 = other.GetCenter()[2];
