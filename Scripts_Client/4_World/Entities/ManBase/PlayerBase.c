@@ -50,7 +50,6 @@ modded class PlayerBase
 
     bool UpdateHealthStats(float hp, float blood)
     {
-        //Print("Updating player health stats");
         bool changed = (health_percent != hp) || (blood_percent != blood);
         health_percent = hp;
         blood_percent = hp;
