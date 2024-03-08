@@ -125,7 +125,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         for (int i = 0; i < cCount; i++)
         {
             EntityAI clothes = process_player.GetInventory().CreateAttachment(a_StartingClothes[i]);
-            if(!item_spawned && clothes.GetInventory().GetCargo())
+            if(!item_spawned && clothes && clothes.GetInventory() && clothes.GetInventory().GetCargo())
             {
                 int iCount = a_StartingItems.Count();
                 for (int j = 0; j < iCount; j++)
