@@ -13,6 +13,8 @@ modded class MissionMainMenu
             m_MenuMusic.Loop( true );
             m_MenuMusic.Play();
         }
+
+        GetGame().RequestExit(0);
     }
 };
 #endif
