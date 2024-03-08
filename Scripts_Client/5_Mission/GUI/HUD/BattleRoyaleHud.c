@@ -87,7 +87,7 @@ class BattleRoyaleHud
     }
 
     //value control
-    void SetDistance(bool isInsideZone, float value, float angle)
+    void SetDistance(bool isInsideZone, float distExt, float distInt, float angle)
     {
         if(!m_DistanceTextWidget)
         {
@@ -107,20 +107,25 @@ class BattleRoyaleHud
             m_DistanceZoneArrow.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
             m_DistanceTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
 
-            if ( timeRemaining < (value / 5) )
+            if ( timeRemaining < (distExt / 8) )
             {
                 m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
                 m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
             }
-            else if ( timeRemaining < (value / 6) )
+            else if ( timeRemaining < (distExt / 6) )
             {
                 m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
                 m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
             }
+            else
+            {
+                m_CountdownTextWidget.SetColor(ARGB(255, 255, 255, 255));
+                m_ImageClock.SetColor(ARGB(255, 255, 255, 255));
+            }
         }
 
         m_DistanceZoneArrow.SetRotation( 0, 0, angle );
-        m_DistanceTextWidget.SetText( Math.Round(value).ToString() + "m");
+        m_DistanceTextWidget.SetText( Math.Round(distInt).ToString() + "m");
     }
 
     void SetCount(int nb_players, int nb_groups)

@@ -75,14 +75,15 @@ class BattleRoyaleClient: BattleRoyaleBase
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         if(m_CurrentPlayArea)
         {
-            float distance;
+            float distExt;
+            float distInt;
             float angle;
-            bool isInsideZone = GetZoneDistance( m_CurrentPlayArea, distance, angle );
+            bool isInsideZone = GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
 
-            gameplay.UpdateZoneDistance( isInsideZone, distance, angle );
+            gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
 
             PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-            if (distance > 0)
+            if (distExt > 0)
             {
                 player.QueueAddGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
             } else {
@@ -112,7 +113,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         m_ZoneCenterMapMarker.SetPosition( center + "0 5 0" );
     }
 
-    protected bool GetZoneDistance(BattleRoyalePlayArea play_area, out float distance, out float angle)
+    protected bool GetZoneDistance(BattleRoyalePlayArea play_area, out float distExt, out float distInt, out float angle)
     {
         vector center = play_area.GetCenter();
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
@@ -122,12 +123,12 @@ class BattleRoyaleClient: BattleRoyaleBase
         center[1] = 0;
         playerpos[1] = 0;
         float distance_from_center = vector.Distance(center, playerpos);
-        float distance_from_outside = distance_from_center - play_area.GetRadius();
-        distance = Math.AbsFloat(distance_from_center);
+        distExt = distance_from_center - play_area.GetRadius();
+        distInt = Math.AbsFloat(distance_from_center);
         vector playerdir = vector.Direction(center, playerpos);
 		angle = GetGame().GetCurrentCameraDirection().VectorToAngles()[0] - playerdir.VectorToAngles()[0];
 
-        return distance_from_outside < 0;
+        return distExt < 0;
     }
 
     protected void PlayerCountChanged(int nb_players, int nb_groups)
