@@ -4,7 +4,7 @@ ImageSetClass {
  Textures {
   ImageSetTextureClass {
    mpix 1
-   path "{366BF851C84A584F}DayZBR-Mod/GUI/imagesets/dayzbr_gui.edds"
+   path "{366BF851C84A584F}Vigrid-BattleRoyale/GUI/imagesets/dayzbr_gui.edds"
   }
  }
  Images {
