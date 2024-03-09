@@ -12,6 +12,7 @@ class BattleRoyaleZone
     protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
+    protected float f_durationOffset;
     protected ref array<int> a_MinPlayers;
 
     protected bool b_EndInVillages;
@@ -127,7 +128,7 @@ class BattleRoyaleZone
                 Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
                 return 300;
             }
-            return a_StaticTimers[i_NumRounds - x];
+            return a_StaticTimers[i_NumRounds - x] + f_durationOffset;
         }
 
         return 60 * i_RoundDurationMinutes;
@@ -319,9 +320,20 @@ class BattleRoyaleZone
                 // We pick the closest location to the center of the previous center
                 float distance_A = Math.AbsFloat(vector.Distance(circle_center, potentialpos));
                 float distance_B = Math.AbsFloat(vector.Distance(circle_center, new_center));
+                float dist;
 
                 if ( distance_A > distance_B )
+                {
                     new_center = potentialpos;
+                    dist = distance_A;
+                }
+                else
+                {
+                    dist = distance_B;
+                }
+
+                if ( dist > 1500 )
+                    f_durationOffset = dist / 6;
 
                 break;
             }
