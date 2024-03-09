@@ -1250,7 +1250,7 @@ FrameWidgetClass main_menu_root {
      vexactsize 0
      scaled 1
      fixaspect fixwidth
-     text "<h2>SERVER LOCKED</h2>A match is being played, wait for the match to finish to join the server.<br/><h2>WHEN ?</h2>If the server is empty or just restarted you can try your luck !<br/><h2>WHY I AM IN THE MAIN MENU ?</h2>You tried to join a locked server, died ingame and got ejected or won the match. Close your game and use the Launcher you to play again."
+     text "<h2>SERVER LOCKED</h2>A match is being played, wait for the match to finish to join the server.<br/><h2>WHEN ?</h2>If the server is empty or just restarted you can try your luck !<br/><h2>WHY I AM IN THE MAIN MENU ?</h2>You tried to join a locked server, died ingame and got ejected or won the match. Close your game, start your dayz Launcher and join a server."
      wrap 1
     }
    }
