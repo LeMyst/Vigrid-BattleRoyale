@@ -340,6 +340,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         return DAYZBR_SM_UNKNOWN_DEBUG_NAME;
     }
 
+    /*
     override void AddPlayer(PlayerBase player)
     {
         if(player)
@@ -347,10 +348,11 @@ class BattleRoyaleDebugState: BattleRoyaleState
             player.SetAllowDamage(false); //all players in this state are god mode
             player.Heal();
         }
+
         super.AddPlayer(player);
     }
 
-    /*override ref array<PlayerBase> RemoveAllPlayers()
+    override ref array<PlayerBase> RemoveAllPlayers()
     {
         ref array<PlayerBase> players = super.RemoveAllPlayers();
         foreach(PlayerBase player: players)
