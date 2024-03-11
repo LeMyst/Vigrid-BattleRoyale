@@ -1,17 +1,16 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal
 
-CALL SetupLaunch.bat
+CALL "%~dp0SetupLaunch.bat"
 
-set mods=%ModName%
-
-if "%AdditionalMPMods%"=="" (
+if not defined AdditionalMPMods (
     echo AdditionalMPMods parameter was not set in the project.cfg, ignoring.
 ) else (
-    set mods=%AdditionalMPMods%;%mods%
+    set mods=%mods%;%AdditionalMPMods%
 )
 
-CALL SetupModList.bat
+CALL "%~dp0SetupModList.bat"
 
-@echo on
-start /D "%gameDirectory%" %clientEXE% %clientLaunchParams% "-mod=%modList%" "-name=%playerName%"
+call "%~dp0ClearLogs.bat" "%ClientProfileDirectory%"
+
+call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%ClientProfileDirectory%" "-name=%playerName%" %password% "-mod=%modList%"
