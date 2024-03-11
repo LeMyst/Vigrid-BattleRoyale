@@ -153,6 +153,11 @@ class BattleRoyaleZone
 
     protected bool IsSafeZoneCenter(float X, float Z)
     {
+		// we try to avoid border locations but dont disallow it
+		int world_size = GetGame().GetWorld().GetWorldSize() * 0.85;
+		if ( X > world_size || Z > world_size )d
+			return Math.RandomBool();
+
         if(GetGame().SurfaceIsSea(X, Z))
             return false;
 
