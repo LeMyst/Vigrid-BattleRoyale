@@ -17,7 +17,7 @@ modded class MainMenu
 
         m_ChooseServer.Show( false ); // Don't show choose server
         m_TutorialButton.Show( false ); // Don't show tutorial button
-        m_MessageButton.Show( false ); // Don't show credits button
+        //m_MessageButton.Show( false ); // Don't show credits button
         ref array<string> funny_strings = {
             "Bro, it's DayZ but with Battle Royale stuff!",
             "Thou whom read this message, S1Q",
