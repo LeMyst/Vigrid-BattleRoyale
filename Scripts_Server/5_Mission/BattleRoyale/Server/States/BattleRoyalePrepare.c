@@ -220,7 +220,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                     else
                         village_pad = 0.0;
 
-                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad)))
+                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_GameSettings.extra_spawn_radius))
                         continue;
                 }
 
