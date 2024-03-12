@@ -73,14 +73,28 @@ class BattleRoyaleClient: BattleRoyaleBase
     override void Update(float delta)
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-        if(m_CurrentPlayArea)
-        {
-            float distExt;
-            float distInt;
-            float angle;
-            bool isInsideZone = GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
+		float distExt;
+		float distInt;
+		float angle;
+		bool isInsideZone;
 
+		// Show distance when we have a white zone
+		if( m_FuturePlayArea )
+		{
+            isInsideZone = GetZoneDistance( m_FuturePlayArea, distExt, distInt, angle );
             gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
+		}
+		// otherwise, show distance to the blue zone
+		else if( m_CurrentPlayArea )
+		{
+            isInsideZone = GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
+            gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
+		}
+
+		// If we have a blue zone, show visual effect when outside of zone
+        if( m_CurrentPlayArea )
+        {
+            GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
 
             PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
             if (distExt > 0)
