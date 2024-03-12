@@ -10,6 +10,8 @@ class BattleRoyalePrepare: BattleRoyaleState
     private ref array<ref Town> villages;
     private int villages_index;
 
+    private string last_village_spawn = "";
+
     ref array<string> avoid_city_spawn;
 
     void BattleRoyalePrepare()
@@ -380,7 +382,6 @@ class BattleRoyalePrepare: BattleRoyaleState
                 bool check_zone = true;
                 if(m_GameSettings.spawn_in_first_zone)
                 {
-
                     village = GetRandomVillage(spawn_area, true);
                     check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone
                 }
@@ -391,6 +392,10 @@ class BattleRoyalePrepare: BattleRoyaleState
                 {
                     BattleRoyaleUtils.Trace("Found village " + village.Entry);
                     vector search_for_village = "0 0 0";
+
+                    if( village.Entry == last_village_spawn )
+                    	continue;
+
                     for(int search_pos = 1; search_pos <= 50; search_pos++)
                     {
                         BattleRoyaleUtils.Trace("Try to find a position in village " + search_pos);
@@ -408,6 +413,8 @@ class BattleRoyalePrepare: BattleRoyaleState
 
                     BattleRoyaleUtils.Trace("Found village position " + village_pos);
                     random_pos = village_pos; // Found a valid village position
+                    if( village.Type == TownFlags.CAPITAL || village.Type == TownFlags.CITY )
+                    	last_village_spawn = village.Entry; // Save last village spawn to avoid it next time
                     break;
                 } else {
                     Print("Another fucked up village!");
