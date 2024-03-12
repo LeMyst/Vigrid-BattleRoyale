@@ -125,8 +125,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         float distance_from_center = vector.Distance(center, playerpos);
         distExt = distance_from_center - play_area.GetRadius();
         distInt = Math.AbsFloat(distance_from_center);
-        vector playerdir = vector.Direction(center, playerpos);
-		angle = GetGame().GetCurrentCameraDirection().VectorToAngles()[0] - playerdir.VectorToAngles()[0];
+        vector playerdir = vector.Direction(playerpos, center);
+		angle = Math.NormalizeAngle(360 - ( GetGame().GetCurrentCameraDirection().VectorToAngles()[0] - playerdir.VectorToAngles()[0] ) );
 
         return distExt < 0;
     }
