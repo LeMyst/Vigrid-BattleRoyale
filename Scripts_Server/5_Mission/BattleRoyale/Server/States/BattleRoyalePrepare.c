@@ -510,6 +510,8 @@ class BattleRoyalePrepare: BattleRoyaleState
             vector playerDir = vector.YawToVector(dir);
             player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         }
+
+        player.SetSynchDirty();
     }
 
     void ProcessPlayers()
