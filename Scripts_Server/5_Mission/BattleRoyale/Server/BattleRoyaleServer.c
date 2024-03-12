@@ -421,7 +421,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         int year = 2018;
         int month = 12;
         int day = 24;
-        int hour = Math.RandomIntInclusive(8,17); //7am to 5pm
+        int hour = Math.RandomIntInclusive(8,16); //7am to 4pm
         int minute = 0;
         GetGame().GetWorld().SetDate(year, month, day, hour, minute);
 
