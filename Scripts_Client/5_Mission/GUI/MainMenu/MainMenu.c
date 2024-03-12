@@ -19,13 +19,22 @@ modded class MainMenu
         m_TutorialButton.Show( false ); // Don't show tutorial button
         //m_MessageButton.Show( false ); // Don't show credits button
         ref array<string> funny_strings = {
-            "Bro, it's DayZ but with Battle Royale stuff!",
-            "Thou whom read this message, S1Q",
-            "Next time, try to aim better...",
-            "Just so you know, you're allergic to bullets",
-            "You Miss 100% Of The Shots You Don't Take.",
-            "I should have improved the mod instead of writing this sentence",
-            "This is the rare phrase that only appears at the same frequency as the others"
+			"Bro, it's DayZ but with Battle Royale stuff!",
+			"Welcome to the wild world of DayZ Battle Royale, where the only certainty is uncertainty.",
+			"Thou whom read this message, S1Q.",
+			"Next time, try to aim better...",
+			"Just so you know, you're allergic to bullets.",
+			"You Miss 100% Of The Shots You Don't Take.",
+			"I should have improved the mod instead of writing this sentence.",
+			"Remember, bushes aren't bulletproof.",
+			"If at first, you don't succeed, respawn and try again.",
+			"Pro tip: Running in a straight line isn't the best strategy.",
+			"Warning: May cause sudden addiction to adrenaline and respawn buttons.",
+			"Just a friendly reminder: camping in this game is for tents, not players.",
+			"Remember, it's not about how many kills you get, but how stylishly you avoid death.",
+			"Embrace the chaos, but don't forget to reload.",
+			"Just when you thought it was safe to loot...",
+			"In this game, karma has a faster firing rate than any weapon."
         };
         m_ModdedWarning.SetText(funny_strings.GetRandomElement());
         //m_ModdedWarning.Show( false ); // Hide modded message
