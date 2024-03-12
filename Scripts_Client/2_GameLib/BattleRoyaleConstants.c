@@ -56,7 +56,8 @@ static const string BATTLEROYALE_LOADING_SCREENS_PATH = "Vigrid-BattleRoyale/GUI
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
-static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 5; //multiplier from base game values on blood regen speed
+static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 10; //multiplier from base game values on blood regen speed
+static const float BATTLEROYALE_UNCONSCIOUS_MODIFIER = 0.8; //multiplier from base game values on unconscious and conscious threshold
 
 
 //--- state machine | state names
