@@ -178,7 +178,13 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
         vector debug_pos = m_Debug.GetCenter();
-        player.SetPosition(debug_pos);
+
+        vector spawn_pos = "0 0 0";
+        spawn_pos[0] = Math.RandomFloatInclusive((debug_pos[0] - 10), (debug_pos[0] + 10));
+        spawn_pos[2] = Math.RandomFloatInclusive((debug_pos[2] - 10), (debug_pos[2] + 10));
+        spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
+
+        player.SetPosition(spawn_pos);
 
         bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
 
