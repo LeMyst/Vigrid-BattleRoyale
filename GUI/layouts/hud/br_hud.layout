@@ -68,7 +68,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
           TextWidgetClass CountText {
            ignorepointer 1
            position 42 0
-           size 160 32
+           size 170 32
            halign right_ref
            hexactpos 1
            vexactpos 0
