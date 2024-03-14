@@ -6,6 +6,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     protected ref array<string> a_StartingItems;
 
     private BattleRoyaleGameData m_GameSettings;
+    private BattleRoyaleSpawnsData m_SpawnsSettings;
 
     private ref array<ref Town> villages;
     private int villages_index;
@@ -17,11 +18,12 @@ class BattleRoyalePrepare: BattleRoyaleState
     void BattleRoyalePrepare()
     {
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
         if(m_GameSettings)
         {
             a_StartingClothes = m_GameSettings.player_starting_clothes;
             a_StartingItems = m_GameSettings.player_starting_items;
-            avoid_city_spawn = m_GameSettings.avoid_city_spawn;
+            avoid_city_spawn = m_SpawnsSettings.avoid_city_spawn;
         }
         else
         {
@@ -206,7 +208,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                 if(avoid_city_spawn.Find(town_entry.Entry) != -1)
                     continue;
 
-                if(m_GameSettings.spawn_in_first_zone && area != NULL)
+                if(m_SpawnsSettings.spawn_in_first_zone && area != NULL)
                 {
                     float village_pad;
 
@@ -222,7 +224,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                     else
                         village_pad = 0.0;
 
-                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_GameSettings.extra_spawn_radius))
+                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_SpawnsSettings.extra_spawn_radius))
                         continue;
                 }
 
@@ -273,7 +275,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         if(GetGame().SurfaceRoadY(x, z) != y)
             return false;
 
-        if(check_zone && m_GameSettings.spawn_in_first_zone)
+        if(check_zone && m_SpawnsSettings.spawn_in_first_zone)
         {
             if(!BattleRoyaleZone.GetZone(i_StartingZone).IsInZone(x, z))
                 return false;
@@ -369,7 +371,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         vector random_pos = "0 0 0";
         Town village;
 
-        if (m_GameSettings.spawn_in_villages)
+        if (m_SpawnsSettings.spawn_in_villages)
         {
             vector village_pos = "0 0 0";
             BattleRoyaleUtils.Trace("Spawn in zone " + i_StartingZone);
@@ -380,7 +382,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
                 village = NULL;
                 bool check_zone = true;
-                if(m_GameSettings.spawn_in_first_zone)
+                if(m_SpawnsSettings.spawn_in_first_zone)
                 {
                     village = GetRandomVillage(spawn_area, true);
                     check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone

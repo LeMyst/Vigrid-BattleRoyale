@@ -29,17 +29,29 @@ class BattleRoyaleConfig
     {
         Print("Initializing Settings...");
 
+        BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
+        if(p_DebugData)
+            m_Configs.Insert("DebugData", p_DebugData);
+        else
+            Error("BattleRoyaleDebugData Setting Constructor Returned NULL");
+
         BattleRoyaleGameData p_GameData = new BattleRoyaleGameData;
         if(p_GameData)
             m_Configs.Insert("GameData",p_GameData);
         else
             Error("BattleRoyaleGameData Setting Constructor Returned NULL");
 
-        BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
-        if(p_DebugData)
-            m_Configs.Insert("DebugData", p_DebugData);
+        BattleRoyaleServerData p_ServerData = new BattleRoyaleServerData;
+        if(p_ServerData)
+            m_Configs.Insert("ServerData", p_ServerData);
         else
-            Error("BattleRoyaleDebugData Setting Constructor Returned NULL");
+            Error("BattleRoyaleServerData Setting Constructor Returned NULL");
+
+        BattleRoyaleSpawnsData p_SpawnsData = new BattleRoyaleSpawnsData;
+        if(p_SpawnsData)
+            m_Configs.Insert("SpawnsData", p_SpawnsData);
+        else
+            Error("BattleRoyaleSpawnsData Setting Constructor Returned NULL");
 
         BattleRoyaleZoneData p_ZoneData = new BattleRoyaleZoneData;
         if(p_ZoneData)
@@ -48,11 +60,6 @@ class BattleRoyaleConfig
             Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
 
         //--- adding a new config? copy below
-        BattleRoyaleServerData p_ServerData = new BattleRoyaleServerData;
-        if(p_ServerData)
-            m_Configs.Insert("ServerData", p_ServerData);
-        else
-            Error("BattleRoyaleServerData Setting Constructor Returned NULL");
     }
 
     void Load()
@@ -127,11 +134,11 @@ class BattleRoyaleConfig
         return m_Configs.Get(key);
     }
 
-    BattleRoyaleServerData GetServerData()
+    BattleRoyaleDebugData GetDebugData()
     {
-        Print("Accessing Server Data Config...");
+        Print("Accessing Debug Data Config...");
 
-        return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
+        return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
     }
 
     BattleRoyaleGameData GetGameData()
@@ -141,11 +148,18 @@ class BattleRoyaleConfig
         return BattleRoyaleGameData.Cast( GetConfig("GameData") );
     }
 
-    BattleRoyaleDebugData GetDebugData()
+    BattleRoyaleServerData GetServerData()
     {
-        Print("Accessing Debug Data Config...");
+        Print("Accessing Server Data Config...");
 
-        return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
+        return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
+    }
+
+    BattleRoyaleSpawnsData GetSpawnsData()
+    {
+        Print("Accessing Spawns Data Config...");
+
+        return BattleRoyaleSpawnsData.Cast( GetConfig("SpawnsData") );
     }
 
     BattleRoyaleZoneData GetZoneData()
