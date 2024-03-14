@@ -517,8 +517,6 @@ class BattleRoyalePrepare: BattleRoyaleState
             vector playerDir = vector.YawToVector(dir);
             player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         }
-
-        player.SetSynchDirty();
     }
 
     void ProcessPlayers()
@@ -590,6 +588,16 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
 
         BattleRoyaleUtils.Trace("Healed players");
+
+        for (i = 0; i < pCount; i++) {
+            process_player = m_PlayerList[i];
+            if (process_player) process_player.SetSynchDirty();
+
+            Sleep(100);
+        }
+
+        BattleRoyaleUtils.Trace("Synced players");
+
         Deactivate();
     }
 
