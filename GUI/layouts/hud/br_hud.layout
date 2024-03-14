@@ -20,7 +20,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
    {
     GridSpacerWidgetClass MatchInfoIconsPanel {
      ignorepointer 1
-     size 202 131
+     size 232 131
      halign right_ref
      hexactpos 0
      vexactpos 0
@@ -43,7 +43,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         PanelWidgetClass PlayerCountPanel {
          ignorepointer 1
          position 0 0
-         size 202 32
+         size 232 32
          halign right_ref
          hexactpos 0
          vexactpos 0
@@ -68,14 +68,14 @@ FrameWidgetClass BattleRoyaleHudFrame {
           TextWidgetClass CountText {
            ignorepointer 1
            position 42 0
-           size 170 32
+           size 180 32
            halign right_ref
            hexactpos 1
            vexactpos 0
            hexactsize 1
            vexactsize 1
            style Bold
-           text "99"
+           text "99 (99 groups)"
            font "gui/fonts/etelkatextpro"
            "exact text" 0
            "size to text h" 0
@@ -114,7 +114,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
           TextWidgetClass KillCountText {
            ignorepointer 1
            position 42 0
-           size 160 32
+           size 180 32
            halign right_ref
            hexactpos 1
            vexactpos 0
@@ -146,7 +146,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          visible 1
          ignorepointer 1
          position 0 66
-         size 202 32
+         size 232 32
          halign right_ref
          hexactpos 0
          vexactpos 1
@@ -172,7 +172,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
           TextWidgetClass CountdownText {
            ignorepointer 1
            position 42 -0.01
-           size 160 31
+           size 180 31
            halign right_ref
            hexactpos 1
            vexactpos 0
@@ -190,7 +190,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
         PanelWidgetClass ZoneDistancePanel {
          ignorepointer 1
          position 0 33
-         size 202 32
+         size 232 32
          halign right_ref
          hexactpos 0
          vexactpos 1
@@ -215,7 +215,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
           TextWidgetClass DistanceText {
            ignorepointer 1
            position 42 0
-           size 160 32
+           size 180 32
            halign right_ref
            hexactpos 1
            vexactpos 0
