@@ -7,9 +7,12 @@ enum BattleRoyaleCOTStateMachineRPC
     Pause,
     Resume,
     TestSpectator,
-
-    //TODO: insert more actions here
+    AddFakePlayer,
+    AddFakeGroup,
+    SpawnAirdrop,
+    SpawnHorde,
+    SpawnChemicals,
 
     COUNT //Do not move this
 }
-//#endif //JM_COT
+//#endif

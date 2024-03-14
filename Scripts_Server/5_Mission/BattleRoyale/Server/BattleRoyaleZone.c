@@ -12,6 +12,7 @@ class BattleRoyaleZone
     protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
+    protected float f_durationOffset;
     protected ref array<int> a_MinPlayers;
 
     protected bool b_EndInVillages;
@@ -127,7 +128,7 @@ class BattleRoyaleZone
                 Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
                 return 300;
             }
-            return a_StaticTimers[i_NumRounds - x];
+            return a_StaticTimers[i_NumRounds - x] + f_durationOffset;
         }
 
         return 60 * i_RoundDurationMinutes;
@@ -158,8 +159,11 @@ class BattleRoyaleZone
 
         if(GetGame().SurfaceIsPond(X, Z))
             return false;
-
-        // put any extra checks here
+        
+        // we try to avoid border locations but dont disallow it
+        int world_size = GetGame().GetWorld().GetWorldSize() * 0.85;
+        if ( X > world_size || Z > world_size )
+            return Math.RandomBool();
 
         return true;
     }
@@ -192,7 +196,6 @@ class BattleRoyaleZone
                 if(i == 0)  // First zone
                 {
                     BattleRoyaleUtils.Trace("Generate first zone");
-                    vector temp = GetGame().ConfigGetVector("CfgWorlds " + GetGame().GetWorldName() + " centerPosition");
 
                     // Get world size
                     int world_size = GetGame().GetWorld().GetWorldSize();
@@ -250,13 +253,14 @@ class BattleRoyaleZone
     {
         float max_distance = new_radius - old_radius;
         vector new_center = "0 0 0";
+        vector potentialpos = "0 0 0";
         float oldX = circle_center[0];
         float oldZ = circle_center[2];
         int max_try = 500;
 
         while(true)
         {
-            max_try = max_try - 1;
+            max_try--;
 
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
             float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
@@ -277,22 +281,21 @@ class BattleRoyaleZone
 
                 if(max_try <= 0)
                 {
+                    if ( potentialpos != "0 0 0" )
+                        return potentialpos;
+
                     if(new_center[0] < new_radius)
-                    {
                         new_center[0] = new_radius;
-                    }
+
                     if(new_center[2] < new_radius)
-                    {
                         new_center[2] = new_radius;
-                    }
+
                     if((new_center[0] + new_radius) > world_size)
-                    {
                         new_center[0] = world_size - new_radius;
-                    }
+
                     if((new_center[2] + new_radius) > world_size)
-                    {
                         new_center[2] = world_size - new_radius;
-                    }
+
                     BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
                     // TODO: crash the server if no good zone found?
                     //GetGame().RequestExit(0);
@@ -307,8 +310,33 @@ class BattleRoyaleZone
                 BattleRoyaleUtils.Trace("not IsSafeZoneCenter");
                 continue;
             }
+            
+            if ( potentialpos == "0 0 0" )
+            {
+                potentialpos = new_center;
+            }
+            else
+            {
+                // We pick the closest location to the center of the previous center
+                float distance_A = Math.AbsFloat(vector.Distance(circle_center, potentialpos));
+                float distance_B = Math.AbsFloat(vector.Distance(circle_center, new_center));
+                float dist;
 
-            break;
+                if ( distance_A > distance_B )
+                {
+                    new_center = potentialpos;
+                    dist = distance_A;
+                }
+                else
+                {
+                    dist = distance_B;
+                }
+
+                if ( dist > 1500 )
+                    f_durationOffset = dist / 6;
+
+                break;
+            }
         }
 
         return new_center;
@@ -316,15 +344,18 @@ class BattleRoyaleZone
 
     static ref set<ref array<float>> s_POI;
 
-    vector GetRandomPOI() {
+    vector GetRandomPOI()
+    {
         string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
         BattleRoyaleUtils.Trace(cfg);
         if(!s_POI)
         {
             s_POI = new set<ref array<float>>;
-            for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++) {
+            for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++)
+            {
                 string city;
                 GetGame().ConfigGetChildName(cfg, i, city);
+
                 TFloatArray float_array = {};
                 GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
                 string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));

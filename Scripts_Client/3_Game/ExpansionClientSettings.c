@@ -34,7 +34,7 @@ modded class ExpansionClientSettings
 		super.OnSave(ctx);
     }
 
-	private bool OnRead( ParamsReadContext ctx, int version, out bool settingsRepaired = false )
+	override private bool OnRead( ParamsReadContext ctx, int version, out bool settingsRepaired = false )
 	{
 		if ( !super.OnRead(ctx, version, settingsRepaired) )
 			return false;

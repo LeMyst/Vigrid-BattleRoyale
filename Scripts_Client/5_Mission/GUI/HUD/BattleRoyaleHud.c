@@ -4,11 +4,13 @@ class BattleRoyaleHud
     protected Widget m_Root;
 
     protected Widget m_PlayerCountPanel;
+    protected Widget m_GroupCountPanel;
     protected Widget m_ZoneDistancePanel;
     protected Widget m_KillCountPanel;
     protected Widget m_CountdownPanel;
 
-    protected TextWidget m_CountTextWidget;
+    protected TextWidget m_PlayerTextWidget;
+    protected TextWidget m_GroupTextWidget;
     protected TextWidget m_DistanceTextWidget;
     protected TextWidget m_KillTextWidget;
     protected TextWidget m_CountdownTextWidget;
@@ -36,11 +38,13 @@ class BattleRoyaleHud
         m_SpectatorWidgets = new array<ref BattleRoyaleSpectatorPlayerWidget>();
 
         m_PlayerCountPanel = Widget.Cast( m_Root.FindAnyWidget( "PlayerCountPanel" ) );
+        m_GroupCountPanel = Widget.Cast( m_Root.FindAnyWidget( "GroupsCountPanel" ) );
         m_ZoneDistancePanel = Widget.Cast( m_Root.FindAnyWidget( "ZoneDistancePanel" ) );
         m_KillCountPanel = Widget.Cast( m_Root.FindAnyWidget( "KillCountPanel" ) );
         m_CountdownPanel = Widget.Cast( m_Root.FindAnyWidget( "CountdownPanel" ) );
 
-        m_CountTextWidget = TextWidget.Cast( m_PlayerCountPanel.FindAnyWidget( "CountText" ) );
+        m_PlayerTextWidget = TextWidget.Cast( m_PlayerCountPanel.FindAnyWidget( "PlayerText" ) );
+        m_GroupTextWidget = TextWidget.Cast( m_GroupCountPanel.FindAnyWidget( "GroupText" ) );
         m_DistanceTextWidget = TextWidget.Cast( m_ZoneDistancePanel.FindAnyWidget( "DistanceText" ) );
         m_KillTextWidget = TextWidget.Cast( m_KillCountPanel.FindAnyWidget( "KillCountText" ) );
         m_CountdownTextWidget = TextWidget.Cast( m_CountdownPanel.FindAnyWidget( "CountdownText" ) );
@@ -49,6 +53,7 @@ class BattleRoyaleHud
         m_ImageClock = ImageWidget.Cast( m_Root.FindAnyWidget( "CountdownIcon" ) );
 
         m_PlayerCountPanel.Show( false );
+        m_GroupCountPanel.Show( false );
         m_ZoneDistancePanel.Show( false );
         m_KillCountPanel.Show( false );
         m_CountdownPanel.Show( false );
@@ -133,23 +138,26 @@ class BattleRoyaleHud
 
     void SetCount(int nb_players, int nb_groups)
     {
-        if(!m_CountTextWidget)
+        if(!m_GroupTextWidget || !m_GroupTextWidget)
         {
             Error("Called SetCount but widget is null!");
             return;
         }
+
         //BattleRoyaleUtils.Trace(string.Format("SetCount: %1 %2", nb_players, nb_groups));
+        
+        m_PlayerTextWidget.SetText("9" + nb_players.ToString());
 
-        string pluralize = "";
-        if(nb_groups > 1)
-            pluralize = "s";
-
-        if(nb_groups == -1) // Less than 10 players
-            m_CountTextWidget.SetText( string.Format("%1 (? group)", nb_players, nb_groups, pluralize) );
-        else if(nb_groups == -2) // No Party Mod
-            m_CountTextWidget.SetText( string.Format("%1", nb_players, nb_groups, pluralize) );
+        if ( nb_groups == -1 )
+        {
+            m_GroupTextWidget.SetText("???");
+        }
         else
-            m_CountTextWidget.SetText( string.Format("%1 (%2 group%3)", nb_players, nb_groups, pluralize) );
+        {
+            m_GroupTextWidget.SetText("9" + nb_groups.ToString());
+            m_GroupCountPanel.Show(true);
+            //m_GroupCountPanel.Show(nb_groups > 0);
+        }
     }
 
     void SetKillCount(int count)

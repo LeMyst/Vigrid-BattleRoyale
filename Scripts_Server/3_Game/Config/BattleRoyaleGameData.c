@@ -26,6 +26,7 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
         "Hill_Zelenayagora",
         "Settlement_Kumyrna",
         "Ruin_Voron",
+        "Local_Drakon",
         "Settlement_Skalisty",
         "Settlement_Novoselki",
         "Settlement_Dubovo",

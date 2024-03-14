@@ -362,6 +362,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         }
         return players;
     }
+    
     override void RemovePlayer(PlayerBase player)
     {
         if(player)
@@ -370,7 +371,8 @@ class BattleRoyaleDebugState: BattleRoyaleState
             player.Heal();
         }
         super.RemovePlayer(player);
-    }*/
+    }
+    */
 
     //--- debug states must lock players into the debug zone & heal them
     override void OnPlayerTick(PlayerBase player, float timeslice)
