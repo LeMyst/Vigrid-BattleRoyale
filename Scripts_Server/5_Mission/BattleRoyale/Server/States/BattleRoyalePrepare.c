@@ -53,7 +53,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         Print("Reset date time to random");
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
-        GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 13), 0);
+        GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
 
 #ifdef DYNAMIC_NUM_ZONES
         // Found the first zone based on number of registered players
