@@ -130,7 +130,10 @@ class BattleRoyaleHud
         }
 
         m_DistanceZoneArrow.SetRotation( 0, 0, angle );
-        m_DistanceTextWidget.SetText( Math.Round(distInt).ToString() + "m");
+        if ( isInsideZone )
+        	m_DistanceTextWidget.SetText( "safe" );
+        else
+        	m_DistanceTextWidget.SetText( Math.Ceil(distExt).ToString() + "m");
     }
 
     void SetCount(int nb_players, int nb_groups)

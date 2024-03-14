@@ -1,12 +1,20 @@
 {
   "Departments": [
     {
-      "DepartmentName": "DayZ Battle Royale",
+      "DepartmentName": "Vigrid Battle Royale",
       "Sections": [
         {
           "SectionName": "Project Lead",
           "SectionLines": [
             "Myst (Bender B. Rodriguez)"
+          ]
+        },
+        {
+          "SectionName": "Developers",
+          "SectionLines": [
+            "LieutenantMaster",
+            "Myst",
+            "And original mod developers"
           ]
         },
         {
@@ -26,17 +34,18 @@
           "SectionName": "Alpha Testers",
           "SectionLines": [
             "Pastou33",
-            "Pow-Lette"
+            "Pow-Lette",
+            "La Tanière"
           ]
         },
         {
-          "SectionName": "Legacy Project Lead",
+          "SectionName": "Legacy Project Lead (DayZ Battle Royale)",
           "SectionLines": [
             "Kegan Hollern (Lystic)"
           ]
         },
         {
-          "SectionName": "Legacy Contributors",
+          "SectionName": "Legacy Contributors (DayZ Battle Royale)",
           "SectionLines": [
             "B.A.D.",
             "BigBen",
@@ -54,7 +63,7 @@
           ]
         },
         {
-          "SectionName": "Thanks to",
+          "SectionName": "Thanks to (DayZ Battle Royale)",
           "SectionLines": [
             "GravityWolf",
             "Wardog",
@@ -63,7 +72,7 @@
           ]
         },
         {
-          "SectionName": "Legacy Alpha Testers",
+          "SectionName": "Legacy Alpha Testers (DayZ Battle Royale)",
           "SectionLines": [
             "Bender_Rodriguez",
             "FreakingHoudini",

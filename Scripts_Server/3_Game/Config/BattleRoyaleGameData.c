@@ -20,6 +20,7 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     bool spawn_in_villages = true;
     bool spawn_in_first_zone = true;
     bool show_first_zone_at_start = true;
+    int extra_spawn_radius = 250;
     ref array<string> avoid_city_spawn = {
         "Camp_Shkolnik",
         "Hill_Zelenayagora",

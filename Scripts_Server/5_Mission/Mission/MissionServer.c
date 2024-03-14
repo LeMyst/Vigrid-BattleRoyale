@@ -114,9 +114,8 @@ modded class MissionServer
                     return;
                 }
             }
-
-
         }
+
         super.HandleBody( player );
     }
 

@@ -10,6 +10,8 @@ class BattleRoyalePrepare: BattleRoyaleState
     private ref array<ref Town> villages;
     private int villages_index;
 
+    private string last_village_spawn = "";
+
     ref array<string> avoid_city_spawn;
 
     void BattleRoyalePrepare()
@@ -220,7 +222,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                     else
                         village_pad = 0.0;
 
-                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad)))
+                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_GameSettings.extra_spawn_radius))
                         continue;
                 }
 
@@ -313,7 +315,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         box_position[0] = position[0];
         box_position[1] = position[1]; // + 1
         box_position[2] = position[2];
-        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 5 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 6 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
         {
             if( collidedObjects.Count() > 0)
             {
@@ -380,7 +382,6 @@ class BattleRoyalePrepare: BattleRoyaleState
                 bool check_zone = true;
                 if(m_GameSettings.spawn_in_first_zone)
                 {
-
                     village = GetRandomVillage(spawn_area, true);
                     check_zone = false;  // We got a village in zone, don't need to check if the player will spawn in zone
                 }
@@ -391,6 +392,10 @@ class BattleRoyalePrepare: BattleRoyaleState
                 {
                     BattleRoyaleUtils.Trace("Found village " + village.Entry);
                     vector search_for_village = "0 0 0";
+
+                    if( village.Entry == last_village_spawn )
+                    	continue;
+
                     for(int search_pos = 1; search_pos <= 50; search_pos++)
                     {
                         BattleRoyaleUtils.Trace("Try to find a position in village " + search_pos);
@@ -408,6 +413,8 @@ class BattleRoyalePrepare: BattleRoyaleState
 
                     BattleRoyaleUtils.Trace("Found village position " + village_pos);
                     random_pos = village_pos; // Found a valid village position
+                    if( village.Type == TownFlags.CAPITAL || village.Type == TownFlags.CITY )
+                    	last_village_spawn = village.Entry; // Save last village spawn to avoid it next time
                     break;
                 } else {
                     Print("Another fucked up village!");
@@ -510,6 +517,8 @@ class BattleRoyalePrepare: BattleRoyaleState
             vector playerDir = vector.YawToVector(dir);
             player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
         }
+
+        player.SetSynchDirty();
     }
 
     void ProcessPlayers()
@@ -527,6 +536,8 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
         BattleRoyaleUtils.Trace("Players are disabled");
 
+        m_PlayerList.ShuffleArray();
+
 #ifdef SCHANAMODPARTY
         BattleRoyaleUtils.Trace("Mod party enabled");
 
@@ -535,6 +546,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         // Teleport groups
         int pGroupCount = teleport_groups.Count();
+        teleport_groups.ShuffleArray();
         BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
         for (i = 0; i < pGroupCount; i++) {
             BattleRoyaleUtils.Trace("Teleport group " + i);
