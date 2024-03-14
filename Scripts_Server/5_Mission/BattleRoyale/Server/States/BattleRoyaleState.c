@@ -378,8 +378,8 @@ class BattleRoyaleDebugState: BattleRoyaleState
         super.OnPlayerTick(player, timeslice);
 
         vector spawn_pos = "0 0 0";
-        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 10), (v_Center[0] + 10));
-        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 10), (v_Center[2] + 10));
+        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
+        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 5), (v_Center[2] + 5));
         spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
 
         vector playerPos = player.GetPosition();

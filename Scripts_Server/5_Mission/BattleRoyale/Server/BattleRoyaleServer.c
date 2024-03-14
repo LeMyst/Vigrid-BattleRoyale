@@ -180,8 +180,8 @@ class BattleRoyaleServer: BattleRoyaleBase
         vector debug_pos = m_Debug.GetCenter();
 
         vector spawn_pos = "0 0 0";
-        spawn_pos[0] = Math.RandomFloatInclusive((debug_pos[0] - 10), (debug_pos[0] + 10));
-        spawn_pos[2] = Math.RandomFloatInclusive((debug_pos[2] - 10), (debug_pos[2] + 10));
+        spawn_pos[0] = Math.RandomFloatInclusive((debug_pos[0] - 5), (debug_pos[0] + 5));
+        spawn_pos[2] = Math.RandomFloatInclusive((debug_pos[2] - 5), (debug_pos[2] + 5));
         spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
 
         player.SetPosition(spawn_pos);
