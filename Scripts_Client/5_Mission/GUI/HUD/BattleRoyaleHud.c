@@ -146,9 +146,18 @@ class BattleRoyaleHud
 
         //BattleRoyaleUtils.Trace(string.Format("SetCount: %1 %2", nb_players, nb_groups));
         
-        m_PlayerTextWidget.SetText(nb_players.ToString());
-        m_GroupTextWidget.SetText(nb_groups.ToString());
-        //m_GroupTextWidget.Show(nb_groups != 0);
+        m_PlayerTextWidget.SetText("9" + nb_players.ToString());
+
+        if ( nb_groups == -1 )
+        {
+            m_GroupTextWidget.SetText("???");
+        }
+        else
+        {
+            m_GroupTextWidget.SetText("9" + nb_groups.ToString());
+            m_GroupCountPanel.Show(true);
+            //m_GroupCountPanel.Show(nb_groups > 0);
+        }
     }
 
     void SetKillCount(int count)

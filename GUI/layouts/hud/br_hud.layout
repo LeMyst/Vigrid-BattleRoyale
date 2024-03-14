@@ -42,12 +42,15 @@ FrameWidgetClass BattleRoyaleHudFrame {
        {
         GridSpacerWidgetClass PlayersPanel {
          ignorepointer 1
-         position 10 10
+         clipchildren 1
          size 48 48
+         halign right_ref
          hexactpos 1
          vexactpos 1
          hexactsize 1
          vexactsize 1
+         "Ignore invisible" 0
+         content_halign right
          Columns 2
          Rows 1
          {
@@ -70,10 +73,11 @@ FrameWidgetClass BattleRoyaleHudFrame {
              vexactpos 0
              hexactsize 1
              vexactsize 1
-             fixaspect fixwidth
-             imageTexture "DayZExpansion\\Core\\GUI\\icons\\misc\\T_Bandit_256x256.edds"
+             imageTexture "DayZExpansion\\Core\\GUI\\icons\\misc\\T_Soldier_256x256.edds"
              mode blend
              "src alpha" 1
+             "no wrap" 1
+             stretch 1
             }
             TextWidgetClass GroupText {
              ignorepointer 1
@@ -112,10 +116,11 @@ FrameWidgetClass BattleRoyaleHudFrame {
              vexactpos 0
              hexactsize 1
              vexactsize 1
-             fixaspect fixwidth
-             imageTexture "DayZExpansion\\Core\\GUI\\icons\\misc\\T_Bandit_256x256.edds"
+             imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\persona_64x64.edds"
              mode blend
              "src alpha" 1
+             "no wrap" 1
+             stretch 1
             }
             TextWidgetClass PlayerText {
              ignorepointer 1
@@ -208,7 +213,6 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactsize 1
          {
           ImageWidgetClass CountdownIcon {
-           ignorepointer 1
            position 0 0
            size 32 32
            halign right_ref
@@ -216,12 +220,11 @@ FrameWidgetClass BattleRoyaleHudFrame {
            vexactpos 0
            hexactsize 1
            vexactsize 1
-           scaled 1
-           fixaspect fixwidth
            image0 "set:expansion_iconset image:clock_blank"
            mode blend
            "src alpha" 1
-           filter 1
+           "no wrap" 1
+           stretch 1
           }
           TextWidgetClass CountdownText {
            ignorepointer 1
@@ -260,10 +263,11 @@ FrameWidgetClass BattleRoyaleHudFrame {
            vexactpos 0
            hexactsize 1
            vexactsize 1
-           fixaspect fixwidth
            imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\arrow_64x64.edds"
            mode blend
            "src alpha" 1
+           "no wrap" 1
+           stretch 1
           }
           TextWidgetClass DistanceText {
            ignorepointer 1

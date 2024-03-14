@@ -5,21 +5,12 @@ class BRMasterControlsForm: JMFormBase
     private Widget m_ActionsWrapper;
     private BRMasterControlsModule m_Module;
 
-    void BRMasterControlsForm()
-    {
-        //map lists
-    }
-
-    void ~BRMasterControlsForm()
-    {
-        //Delete any mapped lists
-    }
-
     protected override bool SetModule( JMRenderableModuleBase mdl )
     {
         return Class.CastTo( m_Module, mdl );
     }
 
+#ifndef SERVER
     override void OnInit()
     {
         m_sclr_MainActions = UIActionManager.CreateScroller( layoutRoot.FindAnyWidget( "panel" ) );
@@ -32,15 +23,27 @@ class BRMasterControlsForm: JMFormBase
     {
         //create button widgets dynamically
         Widget wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
-        UIActionManager.CreateText( wrapper, "State Machine" );
-        UIActionButton button;
-        button = UIActionManager.CreateButton( wrapper, "Next State", this, "StateMachine_Next" );
-        button = UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
-        button = UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
+            UIActionManager.CreateText( wrapper, "State Machine" );
+            UIActionManager.CreateButton( wrapper, "Next State", this, "StateMachine_Next" );
+            UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
+            UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
 
-        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
-        UIActionManager.CreateText( wrapper, "Spectating Camera" );
-        button = UIActionManager.CreateButton( wrapper, "Spectate", this, "ToggleSpectating" );
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
+            UIActionManager.CreateText( wrapper, "Event Manager" );
+            UIActionManager.CreateButton( wrapper, "Spawn Airdrop", this, "SpawnAirdrop" );
+            UIActionManager.CreateButton( wrapper, "Spawn Horde", this, "SpawnHorde" );
+            UIActionManager.CreateButton( wrapper, "Spawn Chemicals", this, "SpawnChemicals" );
+
+#ifdef DIAG
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
+            UIActionManager.CreateText( wrapper, "DIAG DEBUG" );
+            UIActionManager.CreateButton( wrapper, "Add Player", this, "AddFakePlayer" );
+            UIActionManager.CreateButton( wrapper, "Add Group", this, "AddFakeGroup" );
+
+        //wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
+        //    UIActionManager.CreateText( wrapper, "Spectating Camera" );
+            UIActionManager.CreateButton( wrapper, "Spectate", this, "ToggleSpectating" );
+#endif
 
         m_sclr_MainActions.UpdateScroller();
     }
@@ -64,9 +67,35 @@ class BRMasterControlsForm: JMFormBase
         m_Module.StateMachine_Resume();
     }
 
+    void AddFakePlayer(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.AddFakePlayer();
+    }
+
+    void AddFakeGroup(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.AddFakeGroup();
+    }
+
     void ToggleSpectating(UIEvent eid, ref UIActionBase action)
     {
         m_Module.TestSpectator();
     }
+
+    void SpawnAirdrop(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.SpawnAirdrop();
+    }
+
+    void SpawnHorde(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.SpawnHorde();
+    }
+
+    void SpawnChemicals(UIEvent eid, ref UIActionBase action)
+    {
+        m_Module.SpawnChemicals();
+    }
+#endif
 }
 #endif
