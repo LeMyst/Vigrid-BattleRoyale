@@ -61,7 +61,6 @@ modded class PlayerBase
 
     void Heal()
     {
-#ifdef SERVER
         //TODO: stop player from bleeding!
         //NOTE: this heal function was done by legodev, not sure it's performance, we'll have to see
 
@@ -112,12 +111,10 @@ modded class PlayerBase
 
         // required for repairing and stuff, so no need to change for godmode
         //player.GetStatSpecialty().Set(100);
-#endif
     }
 
     override void ResetPlayer(bool set_max)
     {
-#ifdef SERVER
         //clear stomach content
         GetStomach().ClearContents();
 
@@ -187,7 +184,5 @@ modded class PlayerBase
         //remove bloody hands
         PluginLifespan moduleLifespan = PluginLifespan.Cast(GetPlugin(PluginLifespan));
         moduleLifespan.UpdateBloodyHandsVisibilityEx(this, eBloodyHandsTypes.CLEAN);
-#endif
     }
 };
-#endif
