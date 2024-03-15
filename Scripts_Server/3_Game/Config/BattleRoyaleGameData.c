@@ -17,23 +17,7 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 
     bool hide_players_endgame = false;
 
-    bool spawn_in_villages = true;
-    bool spawn_in_first_zone = true;
     bool show_first_zone_at_start = true;
-    int extra_spawn_radius = 250;
-    ref array<string> avoid_city_spawn = {
-        "Camp_Shkolnik",
-        "Hill_Zelenayagora",
-        "Settlement_Kumyrna",
-        "Ruin_Voron",
-        "Local_Drakon",
-        "Settlement_Skalisty",
-        "Settlement_Novoselki",
-        "Settlement_Dubovo",
-        "Settlement_Vysotovo"
-    };
-
-    ref array<ref BattleRoyaleOverrideSpawnPosition> override_spawn_positions;
 
     bool artillery_sound = true;
 
@@ -74,11 +58,5 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     {
         JsonFileLoader<BattleRoyaleGameData>.JsonLoadFile(GetPath(), this);
     }
-};
-
-class BattleRoyaleOverrideSpawnPosition
-{
-    string CityName;
-    vector NewPosition;
 };
 #endif
