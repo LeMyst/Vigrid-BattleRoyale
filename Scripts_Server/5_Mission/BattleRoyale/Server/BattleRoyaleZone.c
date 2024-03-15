@@ -17,6 +17,9 @@ class BattleRoyaleZone
 
     protected bool b_EndInVillages;
 
+    protected ref array<string> a_avoidType;
+    protected ref array<string> avoid_city;
+
     protected int i_RoundDurationMinutes;
 
     static ref map<int, ref BattleRoyaleZone> m_Zones;
@@ -44,6 +47,8 @@ class BattleRoyaleZone
         a_StaticTimers = m_ZoneSettings.static_timers;
         a_MinPlayers = m_ZoneSettings.min_players;
         b_EndInVillages = m_ZoneSettings.end_in_villages;
+        a_avoidType = m_ZoneSettings.end_avoid_type;
+        a_avoidCity = m_ZoneSettings.end_avoid_city;
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
@@ -360,10 +365,7 @@ class BattleRoyaleZone
                 GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
                 string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 
-                ref array<string> avoid_type = {"DeerStand", "FeedShack", "Marine"};
-                ref array<string> avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty"};  // , "Local_Drakon", "Local_Otmel", "Ruin_Storozh", "Local_MB_PrisonIsland"
-
-                if(avoid_type.Find(poi_type) != -1 || avoid_city.Find(city) != -1)
+                if(a_avoidType.Find(poi_type) != -1 || a_avoidCity.Find(city) != -1)
                     continue;
 
                 BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+float_array+" "+poi_type);

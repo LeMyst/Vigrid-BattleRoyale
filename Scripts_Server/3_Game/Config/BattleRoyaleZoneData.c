@@ -19,6 +19,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     ref array<int> static_timers = { 155, 260, 307, 495, 495, 495, 495 };
     ref array<int> min_players = { 10, 10, 10, 11, 22, 33, 44 };
 
+    ref array<string> end_avoid_type = {"DeerStand", "FeedShack", "Marine"};
+    ref array<string> end_avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty"};  // , "Local_Drakon", "Local_Otmel", "Ruin_Storozh", "Local_MB_PrisonIsland"
+
     override string GetPath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "zone_settings.json";
