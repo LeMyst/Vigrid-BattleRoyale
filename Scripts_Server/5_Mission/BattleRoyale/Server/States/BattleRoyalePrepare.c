@@ -15,6 +15,8 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     ref array<string> avoid_city_spawn;
 
+    ref map<string, vector> m_OverrideSpawnPositions;
+
     void BattleRoyalePrepare()
     {
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
@@ -166,6 +168,22 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected Town GetRandomVillage(BattleRoyalePlayArea area = NULL, bool use_radius = false)
     {
+		BattleRoyaleUtils.Trace("GetRandomVillage()");
+		if( !m_OverrideSpawnPositions )
+		{
+			m_OverrideSpawnPositions = new map<string, vector>();
+
+			foreach(BattleRoyaleOverrideSpawnPosition position: m_SpawnsSettings.override_spawn_positions)
+			{
+				BattleRoyaleUtils.Trace(position.city_name + " " + position.new_position);
+				vector temp_pos;
+				temp_pos[0] = position.new_position[0];
+				temp_pos[2] = position.new_position[1];
+				temp_pos[1] = GetGame().SurfaceY( temp_pos[0], temp_pos[2] );
+				m_OverrideSpawnPositions.Set( position.city_name, temp_pos );
+			}
+		}
+
         // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/Town/TownFlags.c
         if(!villages)
         {
@@ -178,77 +196,86 @@ class BattleRoyalePrepare: BattleRoyaleState
             string cfg = "CfgWorlds " + world_name + " Names";
             BattleRoyaleUtils.Trace(cfg);
             for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++) {
-                string city;
-                GetGame().ConfigGetChildName(cfg, i, city);
-                vector city_position;
-                // TODO: Override city position from config file
-                TFloatArray float_array = {};
-                GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
-                city_position[0] = float_array[0]; city_position[2] = float_array[1];
-                city_position[1] = GetGame().SurfaceY(city_position[0], city_position[2]);
+				string city;
+				GetGame().ConfigGetChildName(cfg, i, city);
+				vector city_position;
+				// TODO: Override city position from config file
 
-                string town_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
-                if(town_type != "Capital" && town_type != "City" && town_type != "Village")
-                    continue;
+				if( m_OverrideSpawnPositions.Contains(city) )
+				{
+					city_position = m_OverrideSpawnPositions.Get( city );
+					BattleRoyaleUtils.Trace("Override " + city + " position!");
+				}
+				else
+				{
+					TFloatArray float_array = {};
+					GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
+					city_position[0] = float_array[0]; city_position[2] = float_array[1];
+					city_position[1] = GetGame().SurfaceY(city_position[0], city_position[2]);
+				}
 
-                BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
+				string town_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
+				if(town_type != "Capital" && town_type != "City" && town_type != "Village")
+					continue;
 
-                Town town_entry();
-                town_entry.Entry = city;
-                town_entry.Type = Town.GetTownFlag(GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
-                town_entry.Name = GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city));
-                town_entry.Position = city_position;
+				BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
 
-                BattleRoyaleUtils.Trace("- " + i + ". " + town_entry.Name + " (" + Town.GetTownTypeString(town_entry.Type) + ")");
+				Town town_entry();
+				town_entry.Entry = city;
+				town_entry.Type = Town.GetTownFlag(GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
+				town_entry.Name = GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city));
+				town_entry.Position = city_position;
 
-                if(town_entry.Name == "" || Town.GetTownTypeString(town_entry.Type) == "") // useless ?
-                    continue;
+				BattleRoyaleUtils.Trace("- " + i + ". " + town_entry.Name + " (" + Town.GetTownTypeString(town_entry.Type) + ")");
 
-                // Check if city Entry is not in the avoid spawn list
-                if(avoid_city_spawn.Find(town_entry.Entry) != -1)
-                    continue;
+				if(town_entry.Name == "" || Town.GetTownTypeString(town_entry.Type) == "") // useless ?
+					continue;
 
-                if(m_SpawnsSettings.spawn_in_first_zone && area != NULL)
-                {
-                    float village_pad;
+				// Check if city Entry is not in the avoid spawn list
+				if(avoid_city_spawn.Find(town_entry.Entry) != -1)
+					continue;
 
-                    if(use_radius)
-                    {
-                        if (town_entry.Type == TownFlags.CITY)
-                            village_pad = 300.0;
-                        else if (town_entry.Type == TownFlags.CAPITAL)
-                            village_pad = 500.0;
-                        else
-                            village_pad = 150.0;
-                    }
-                    else
-                        village_pad = 0.0;
+				if(m_SpawnsSettings.spawn_in_first_zone && area != NULL)
+				{
+					float village_pad;
 
-                    if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_SpawnsSettings.extra_spawn_radius))
-                        continue;
-                }
+					if(use_radius)
+					{
+						if (town_entry.Type == TownFlags.CITY)
+							village_pad = 300.0;
+						else if (town_entry.Type == TownFlags.CAPITAL)
+							village_pad = 500.0;
+						else
+							village_pad = 150.0;
+					}
+					else
+						village_pad = 0.0;
 
-                int pond = 1;
-                if(town_entry.Type == TownFlags.CAPITAL)
-                    pond = 5;
-                else if(town_entry.Type == TownFlags.CITY)
-                    pond = 3;
+					if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_SpawnsSettings.extra_spawn_radius))
+						continue;
+				}
 
-                for(int p = 0; p < pond; p++)
-                    villages.Insert(town_entry);
-            }
+				int pond = 1;
+				if(town_entry.Type == TownFlags.CAPITAL)
+					pond = 5;
+				else if(town_entry.Type == TownFlags.CITY)
+					pond = 3;
 
-            // Add weighting
+				for(int p = 0; p < pond; p++)
+					villages.Insert(town_entry);
+			}
+
+			// Add weighting
 
 
-            // Randomize order of villages
-            villages.ShuffleArray();
+			// Randomize order of villages
+			villages.ShuffleArray();
 
-            BattleRoyaleUtils.Trace("Final village list:");
-            foreach(Town village: villages)
-            {
-                BattleRoyaleUtils.Trace("- " + village.Name + " (" + village.Type + ")");
-            }
+			BattleRoyaleUtils.Trace("Final village list:");
+			foreach(Town village: villages)
+			{
+				BattleRoyaleUtils.Trace("- " + village.Name + " (" + village.Type + ")");
+			}
         }
 
         if(villages.Count() > 0)

@@ -37,6 +37,6 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 class BattleRoyaleOverrideSpawnPosition
 {
     string city_name;
-    vector new_position;
+    array<int> new_position;
 };
 #endif
