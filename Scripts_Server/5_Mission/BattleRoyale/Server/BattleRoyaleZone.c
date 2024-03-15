@@ -18,7 +18,7 @@ class BattleRoyaleZone
     protected bool b_EndInVillages;
 
     protected ref array<string> a_avoidType;
-    protected ref array<string> avoid_city;
+    protected ref array<string> a_avoidCity;
 
     protected int i_RoundDurationMinutes;
 
