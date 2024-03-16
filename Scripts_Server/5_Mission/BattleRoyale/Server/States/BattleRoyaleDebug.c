@@ -3,11 +3,11 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 {
     protected ref array<PlayerBase> m_ReadyList;
 
-    protected bool b_UseVoteSystem;
-    protected float f_VoteThreshold;
-
     protected int i_MinPlayers;
     protected int i_TimeBetweenMessages;
+    protected bool b_UseVoteSystem;
+    protected float f_VoteThreshold;
+    protected float f_MinWaitingTime;
 
     void BattleRoyaleDebug()
     {
@@ -15,21 +15,11 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
         BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
 
-        if(m_DebugSettings)
-        {
-            i_MinPlayers = m_DebugSettings.minimum_players;
-            i_TimeBetweenMessages = 45;
-            b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
-            f_VoteThreshold = m_DebugSettings.ready_up_percent;
-        }
-        else
-        {
-            Error("DEBUG SETTINGS IS NULL!");
-            i_MinPlayers = 10;
-            i_TimeBetweenMessages = 120;
-            b_UseVoteSystem = true;
-            f_VoteThreshold = 0.8;
-        }
+		i_MinPlayers = m_DebugSettings.minimum_players;
+		i_TimeBetweenMessages = 45;
+		b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
+		f_VoteThreshold = m_DebugSettings.ready_up_percent;
+		f_MinWaitingTime = m_DebugSettings.min_waiting_time;
     }
 
     override string GetName()
@@ -40,7 +30,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //returns true when this state is complete
     override bool IsComplete()
     {
-        if( !b_UseVoteSystem && i_MinPlayers < GetPlayers().Count() && IsActive() )
+        if( IsActive() && !b_UseVoteSystem && i_MinPlayers < GetPlayers().Count() && GetGame().GetTickTime() >= f_MinWaitingTime )
         {
             Deactivate();
         }
@@ -52,13 +42,16 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         //these loop & will be automatically cleaned up on Deactivation
         AddTimer(i_TimeBetweenMessages, this, "MessageWaiting", NULL, true);
-        AddTimer(2.0, this, "CheckReadyState", NULL, true);
+
+        if( b_UseVoteSystem )
+        	AddTimer(2.0, this, "CheckReadyState", NULL, true);
+
         super.Activate();
     }
 
     void CheckReadyState()
     {
-        if( IsVoteReady() )
+        if( IsActive() && IsVoteReady() && GetGame().GetTickTime() >= f_MinWaitingTime )
             Deactivate();
     }
 
@@ -84,7 +77,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             message += " to connect.";
         }
 
-        if(b_UseVoteSystem)
+        if( b_UseVoteSystem )
         {
             int ready_count = GetReadyCount();
 
@@ -102,6 +95,18 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
                 message += " (Define a button in the options to ready up)";
             else
                 message += " (Press " + key_name + " (default) to ready up)";
+
+			if( GetGame().GetTickTime() < f_MinWaitingTime )
+			{
+				message += ". ";
+
+				int seconds_left = Math.Ceil( f_MinWaitingTime - GetGame().GetTickTime() );
+
+				if( !IsVoteReady() )
+					message += "The game cannot start before " + seconds_left + " seconds.";
+				else
+					message += "The game will automatically start in " + seconds_left + " seconds.";
+			}
         }
         return message;
     }

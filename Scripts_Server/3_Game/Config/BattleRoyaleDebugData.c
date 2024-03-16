@@ -6,6 +6,7 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
     int minimum_players = 10;
     int use_ready_up = 1;
     float ready_up_percent = 0.8;
+    float min_waiting_time = 300.0;
     int time_to_start_match_seconds = 30;
 
     ref array<string> allowed_outside_spawn = {
