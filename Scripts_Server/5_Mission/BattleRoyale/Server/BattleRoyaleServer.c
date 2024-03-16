@@ -34,15 +34,18 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetPermissionManager().AddPermissionType({ "MenuBattleRoyaleManager" });
 #endif
 
-        LockServerWebhook serverWebhook = new LockServerWebhook("server_id", "server_secret");
-        serverWebhook.LockServer( false );
+        BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleServerData m_ServerData = config_data.GetServerData();
+        string s_WebhookServerId = m_ServerData.webhook_server_id;
+        string s_WebhookServerSecret = m_ServerData.webhook_server_secret;
+        LockServerWebhook serverWebhook = new LockServerWebhook(s_WebhookServerId, s_WebhookServerSecret);
+        serverWebhook.UnlockServer();
 
         m_Timer = new Timer;
 
         m_SpectatorSystem = new BattleRoyaleSpectators;
 
         //load config (this may error because GetBattleRoyale would return false)
-        BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
         i_NumRounds = m_GameData.num_zones;
 

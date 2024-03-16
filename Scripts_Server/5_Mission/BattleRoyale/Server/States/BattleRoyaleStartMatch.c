@@ -14,11 +14,18 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     protected ref Timer m_ShowFirstZone;
     protected ref Timer m_ZoneStartTimer;
 
+    private string s_WebhookServerId;
+    private string s_WebhookServerSecret;
+
     void BattleRoyaleStartMatch()
     {
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
         i_FirstRoundDelay = (60 * m_GameSettings.round_duration_minutes) / 2;
+
+        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
+        s_WebhookServerId = m_ServerData.webhook_server_id;
+        s_WebhookServerSecret = m_ServerData.webhook_server_secret;
 
         //seconds until unlock
         #ifdef DIAG
@@ -66,8 +73,8 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         //timer before first zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true);
 
-        LockServerWebhook serverWebhook = new LockServerWebhook("server_id", "server_secret");
-        serverWebhook.LockServer( true );
+        LockServerWebhook serverWebhook = new LockServerWebhook( s_WebhookServerId, s_WebhookServerSecret );
+        serverWebhook.LockServer();
     }
 
     override void Deactivate()

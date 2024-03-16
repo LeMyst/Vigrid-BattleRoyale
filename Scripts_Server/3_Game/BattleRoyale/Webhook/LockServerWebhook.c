@@ -12,21 +12,32 @@ class LockServerWebhook: WebApiBase
 		m_RestContext.SetHeader("application/json");
 	}
 
-	void LockServer(bool lock_server)
+	void LockServer()
+	{
+		Send( true );
+	}
+
+	void UnlockServer()
+	{
+		Send( false );
+	}
+
+	void Send(bool lock_server)
 	{
 		Print("LockServerWebhook().Send()");
 
+		string action;
+		if ( lock_server )
+			action = "lock";
+		else
+			action = "unlock";
+
 		HttpArguments arguments = {
-			new HttpArgument("id", s_ServerID),
-			new HttpArgument("secret", s_ServerSecret),
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
-		Print(arguments.ToQuery("lockserver"));
+		Print( arguments.ToQuery(string.Format("/servers/%1/%2/%3", s_ServerID, s_ServerSecret, action)) );
 
-		if ( lock_server )
-			m_RestContext.GET(new RestCallbackBase(), arguments.ToQuery("lockserver.php"));
-		else
-			m_RestContext.GET(new RestCallbackBase(), arguments.ToQuery("unlockserver.php"));
+		m_RestContext.POST( new RestCallbackBase(), arguments.ToQuery(string.Format("/servers/%1/%2/%3", s_ServerID, s_ServerSecret, action)), "" );
 	}
 
 	string GetServerId()
@@ -41,6 +52,6 @@ class LockServerWebhook: WebApiBase
 
 	override string GetBaseUrl()
 	{
-		return "https://api.vigrid.ovh/";
+		return "https://api.vigrid.ovh";
 	}
 }
