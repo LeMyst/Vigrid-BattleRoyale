@@ -62,6 +62,23 @@ class BattleRoyaleWin: BattleRoyaleState
     void HandleWinner(PlayerBase player_winner)
     {
         MessagePlayer(player_winner, "Congratulations! You won Battle Royale!");
+
+		ref array<string> chickens = {"Animal_GallusGallusDomesticus", "Animal_GallusGallusDomesticusF_Brown", "Animal_GallusGallusDomesticusF_Spotted", "Animal_GallusGallusDomesticusF_White"}
+
+		for (int j = 0; j < 10; j++)
+		{
+			vector position;
+
+			vector player_position = player_winner.GetPosition();
+			float radius = Math.RandomFloat(1, 5);
+			float angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+			position[0] = player_position[0] + ( radius * Math.Cos(angle) );
+			position[2] = player_position[2] + ( radius * Math.Sin(angle) );
+			position[1] = GetGame().SurfaceY(position[0], position[2]);
+
+			EntityAI chicken = EntityAI.Cast(GetGame().CreateObject( chickens.GetRandomElement(), position, false, true ));
+			chicken.SetOrientation( vector.YawToVector( Math.RandomFloat(0, 360) ) );
+		}
     }
 
     void KickWinner()
