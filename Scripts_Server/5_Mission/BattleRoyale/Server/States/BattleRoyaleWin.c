@@ -15,29 +15,32 @@ class BattleRoyaleWin: BattleRoyaleState
 
     //TODO: state functionality for winners!
     //TODO: Add party support
-    override void Activate()
-    {
-        super.Activate();
+	override void Activate()
+	{
+		super.Activate();
+	
+		string winner_name = "<NO:WINNER>";
+		if(GetPlayers().Count() > 0)
+		{
+			for ( int k = 0; k < GetPlayers().Count(); k++ )
+			{
+				winner = GetPlayers()[k];
+				PlayerIdentity identity = winner.GetIdentity();
+				if(identity)
+				{
+					winner_name = identity.GetName();
+					Print("[Win State] Winner!");
+					Print(identity.GetName());
+					Print(identity.GetFullName());
+					Print(identity.GetId());
+					Print(identity.GetPlainId());
+				}
+				HandleWinner(winner);
+			}
+		}
 
-        string winner_name = "<NO:WINNER>";
-        if(GetPlayers().Count() > 0)
-        {
-            winner = GetPlayers()[0];
-            PlayerIdentity identity = winner.GetIdentity();
-            if(identity)
-            {
-                winner_name = identity.GetName();
-                Print("[Win State] Winner!");
-                Print(identity.GetName());
-                Print(identity.GetFullName());
-                Print(identity.GetId());
-                Print(identity.GetPlainId());
-            }
-            HandleWinner(winner);
-        }
-
-        m_KickTimer = AddTimer(i_SecondsTillKick, this, "KickWinner", NULL, false);
-    }
+		m_KickTimer = AddTimer(i_SecondsTillKick, this, "KickWinner", NULL, false);
+	}
 
     override string GetName()
     {
