@@ -108,6 +108,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 					message += "The game will automatically start in " + seconds_left + " seconds.";
 			}
         }
+
         return message;
     }
 

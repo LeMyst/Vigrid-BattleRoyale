@@ -8,6 +8,7 @@ modded class MissionServer
 	{
 		Print("Vigrid-BattleRoyale OnInit()");
 		super.OnInit();
+
 		// br things
 		m_BattleRoyale = new BattleRoyaleServer;
 	}
