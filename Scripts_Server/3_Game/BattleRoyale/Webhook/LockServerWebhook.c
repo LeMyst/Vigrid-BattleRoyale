@@ -12,17 +12,21 @@ class LockServerWebhook: WebApiBase
 		m_RestContext.SetHeader("application/json");
 	}
 
-	void Send()
+	void LockServer(bool lock_server)
 	{
 		Print("LockServerWebhook().Send()");
 
 		HttpArguments arguments = {
 			new HttpArgument("id", s_ServerID),
-			new HttpArgument("secret", s_ServerSecret)
+			new HttpArgument("secret", s_ServerSecret),
+			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 		Print(arguments.ToQuery("lockserver"));
 
-		m_RestContext.GET(new RestCallbackBase(), arguments.ToQuery("lockserver.php"));
+		if ( lock_server )
+			m_RestContext.GET(new RestCallbackBase(), arguments.ToQuery("lockserver.php"));
+		else
+			m_RestContext.GET(new RestCallbackBase(), arguments.ToQuery("unlockserver.php"));
 	}
 
 	string GetServerId()

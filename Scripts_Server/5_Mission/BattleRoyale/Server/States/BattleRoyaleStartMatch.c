@@ -67,7 +67,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true);
 
         LockServerWebhook serverWebhook = new LockServerWebhook("server_id", "server_secret");
-        serverWebhook.Send();
+        serverWebhook.LockServer( true );
     }
 
     override void Deactivate()

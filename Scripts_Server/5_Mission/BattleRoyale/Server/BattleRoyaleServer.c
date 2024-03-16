@@ -34,6 +34,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetPermissionManager().AddPermissionType({ "MenuBattleRoyaleManager" });
 #endif
 
+        LockServerWebhook serverWebhook = new LockServerWebhook("server_id", "server_secret");
+        serverWebhook.LockServer( false );
+
         m_Timer = new Timer;
 
         m_SpectatorSystem = new BattleRoyaleSpectators;
