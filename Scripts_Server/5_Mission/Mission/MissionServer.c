@@ -1,6 +1,12 @@
 #ifdef SERVER
 modded class MissionServer
 {
+	void MissionServer()
+	{
+        Print("MissionServer()");
+		GetRPCManager().AddRPC( "RPC_MissionServer", "GetDataFromServer", this, SingeplayerExecutionType.Server );
+	}
+
 	//--- TODO: look at dayzexpansion missionserver
 	//TODO: look at dayz missionserver
 	//TODO: look at old BR missionserver
@@ -157,5 +163,24 @@ modded class MissionServer
 			}
 		}
 	}
+
+	void GetDataFromServer(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+    {
+        Print("GetDataFromServer()");
+        Param2<PlayerBase, int> data;
+        if ( !ctx.Read( data ) ) return;
+        if (type == CallType.Server)
+        {
+            if (data.param1 != NULL)
+            {
+                string playerName = data.param1.GetIdentity().GetName();
+
+				Print("Found playername: " + playerName);
+
+                ref Param2<string, int> m_Data = new Param2<string, int>(playerName, data.param2);
+                GetRPCManager().SendRPC( "RPC_MissionGameplay", "InitESPBox", m_Data, true, sender);
+            }
+        }
+    }
 }
 #endif
