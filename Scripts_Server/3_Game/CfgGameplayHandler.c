@@ -1,7 +1,7 @@
 #ifdef SERVER
 modded class CfgGameplayHandler
 {
-	static float GetHoldBreathStaminaModifier()
+	override static float GetHoldBreathStaminaModifier()
 	{
 		return 0.5;
 	}
