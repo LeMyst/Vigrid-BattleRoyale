@@ -1,4 +1,31 @@
 #ifndef SERVER
+
+class LocalPlayer
+{
+	private Object m_PlayerVehicle;
+	private int m_UniqueID;
+
+	void LocalPlayer(ref Object playerVeh, int PID) {
+		m_PlayerVehicle = playerVeh;
+		m_UniqueID      = PID;
+	}
+
+	void ~LocalPlayer() {
+	}
+
+	int GetUniqueID() {
+		return m_UniqueID;
+	}
+
+	ref Object GetPlayerVehicle() {
+		return m_PlayerVehicle;
+	}
+
+	void SetPlayerVehicle(ref Object vehObj) {
+		m_PlayerVehicle = vehObj;
+	}
+}
+
 modded class MissionGameplay
 {
     protected Widget m_BattleRoyaleHudRootWidget;
@@ -17,10 +44,14 @@ modded class MissionGameplay
 
     protected bool is_spectator;
 
+	private ref array<ref LocalPlayer> m_LocalPlayers;
+
     void MissionGameplay()
     {
         m_BattleRoyaleHudRootWidget = null;
         is_spectator = false;
+
+		GetRPCManager().AddRPC( "RPC_MissionGameplay", "InitESPBox", this );
     }
 
     override void OnInit()
@@ -30,6 +61,11 @@ modded class MissionGameplay
         m_BattleRoyale = new BattleRoyaleClient;
 
         InitBRhud();
+
+        Print("OnInit()");
+        GetGame().Chat( "ESP ON!", "colorImportant" );
+		UpdateESP();
+		GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(this.UpdateESP, 3700, true);
     }
 
     void InitBRhud()
@@ -238,7 +274,6 @@ modded class MissionGameplay
 
         m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
 
-
         if (GetUApi() && !m_UIManager.IsMenuOpen(MENU_CHAT_INPUT)) {
             if (GetUApi().GetInputByID(UADayZBRReadyUp).LocalPress()) {
                 BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
@@ -274,5 +309,62 @@ modded class MissionGameplay
             hud.BR_HIDE();
         }
     }
+
+    void UpdateESP()
+	{
+        Print("UpdateESP()");
+		GetGame().Chat( "UpdateESP()", "colorImportant" );
+		m_LocalPlayers = new array<ref LocalPlayer>;
+		ref array<Object> objects = new array<Object>;
+		GetGame().GetObjectsAtPosition3D(GetGame().GetPlayer().GetPosition(), 1100, objects, NULL);
+		for (int i = 0; i < objects.Count(); ++i)
+		{
+			Object obj;
+			PlayerBase playerFound;
+			obj = Object.Cast( objects.Get(i) );
+
+			if (GetGame().ObjectIsKindOf(obj, "SurvivorBase"))
+			{
+				if (Class.CastTo(playerFound, obj))
+				{
+					if (obj != GetGame().GetPlayer() && obj.IsAlive())
+					{
+						int PID = Math.RandomIntInclusive(0, 99999999999);
+						ref LocalPlayer m_PlayerCache = new LocalPlayer(obj, PID);
+						m_LocalPlayers.Insert(m_PlayerCache);
+
+						ref Param2<PlayerBase, int> param = new Param2<PlayerBase, int>(playerFound, PID);
+						GetGame().Chat( "send GetDataFromServer()", "colorImportant" );
+       					GetRPCManager().SendRPC( "RPC_MissionServer", "GetDataFromServer", param, true);
+					}
+				}
+			}
+		}
+	}
+
+	void InitESPBox( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
+	{
+        Print("InitESPBox()");
+		GetGame().Chat( "InitESPBox()", "colorImportant" );
+		Param2<string, int> data;
+        if ( !ctx.Read( data ) ) return;
+
+        if (type == CallType.Client)
+        {
+			if (m_LocalPlayers != NULL)
+			{
+				for (int i = 0; i < m_LocalPlayers.Count(); ++i)
+				{
+					ref LocalPlayer m_Player = m_LocalPlayers.Get(i);
+					if (m_Player.GetUniqueID() == data.param2)
+					{
+        				Print("Create new ESPBox for :" + data.param1);
+        				GetGame().Chat( "Create new ESPBox for :" + data.param1, "colorImportant" );
+						ref ESPBox DisplayBox = new ESPBox(m_Player.GetPlayerVehicle(), data.param1);
+					}
+				}
+			}
+        }
+	}
 }
 #endif
