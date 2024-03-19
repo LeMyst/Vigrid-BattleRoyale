@@ -30,7 +30,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //returns true when this state is complete
     override bool IsComplete()
     {
-        if( IsActive() && !b_UseVoteSystem && i_MinPlayers < GetPlayers().Count() && GetGame().GetTickTime() >= f_MinWaitingTime )
+        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGroups().Count() > 1 && GetGame().GetTickTime() >= f_MinWaitingTime )
         {
             Deactivate();
         }
@@ -139,6 +139,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
             if( player_count <= i_MinPlayers ) // need more than the minimum player
                 return false;
+
+            if( GetGroups().Count() <= 1 ) // need more than one group
+            	return false;
         }
 
         float percent = (ready_count / player_count);
