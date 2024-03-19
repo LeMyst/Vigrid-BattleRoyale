@@ -10,6 +10,8 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     float shrink_base = 2.718281828459; // ~ e
     float shrink_exponent = 3.0;
     bool end_in_villages = true;
+
+    bool use_dynamic_zones = true;
     int min_zone_num = 4;
 
     //ref array<float> static_sizes = { 6000, 5000, 4000, 3000, 2000, 1000, 100 }; //note, this needs as many entries as Num_Rounds in GameSettings

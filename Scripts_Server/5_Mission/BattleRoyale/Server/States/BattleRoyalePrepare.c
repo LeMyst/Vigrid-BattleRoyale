@@ -59,31 +59,32 @@ class BattleRoyalePrepare: BattleRoyaleState
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
 
-#ifdef DYNAMIC_NUM_ZONES
-        // Found the first zone based on number of registered players
-        int pCount = m_PlayerList.Count();
-        int last_try_zone = 1;
-        Print("Number of players registered: " + pCount);
         BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
-        for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
-        {
-            Print("Try zone: " + i_zone);
-            last_try_zone = i_zone;
-            Print("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
-            if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < pCount)
-            {
-                Print("It's a match! " + i_zone);
-                break;
-            }
-            if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
-            {
-                Print("Reach the minimum! " + i_zone);
-                break;
-            }
-            Print("No chance, we continue...");
+		if ( m_ZoneSettings.use_dynamic_zones )
+		{
+			// Found the first zone based on number of registered players
+			int pCount = m_PlayerList.Count();
+			int last_try_zone = 1;
+			Print("Number of players registered: " + pCount);
+			for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
+			{
+				Print("Try zone: " + i_zone);
+				last_try_zone = i_zone;
+				Print("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
+				if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < pCount)
+				{
+					Print("It's a match! " + i_zone);
+					break;
+				}
+				if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
+				{
+					Print("Reach the minimum! " + i_zone);
+					break;
+				}
+				Print("No chance, we continue...");
+			}
+			i_StartingZone = last_try_zone;
         }
-        i_StartingZone = last_try_zone;
-#endif
 
         Print("Starting zone will be " + i_StartingZone);
 
