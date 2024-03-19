@@ -274,5 +274,25 @@ modded class MissionGameplay
             hud.BR_HIDE();
         }
     }
+
+	override void Expansion_OnUpdate(float timeslice, PlayerBase player, bool isAliveConscious, Input input, bool inputIsFocused, UIScriptedMenu menu, ExpansionScriptViewMenuBase viewMenu)
+	{
+		super.Expansion_OnUpdate(timeslice, player, isAliveConscious, input, inputIsFocused, menu, viewMenu);
+
+		auto generalSettings = GetExpansionSettings().GetGeneral(false);
+
+		if (isAliveConscious)
+		{
+			if (!menu && !inputIsFocused)
+			{
+				//! Toggle Earplugs
+				if (input.LocalPress( "UADayZBRToggleEarplugsLegacy", false )  && !viewMenu)
+				{
+					if (generalSettings.EnableEarPlugs)
+						m_Hud.ToggleEarplugs();
+				}
+			}
+		}
+	}
 }
 #endif
