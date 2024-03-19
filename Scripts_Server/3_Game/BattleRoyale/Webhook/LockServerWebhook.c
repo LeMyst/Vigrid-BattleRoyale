@@ -1,5 +1,5 @@
 #ifdef SERVER
-class LockServerWebhook: WebApiBase
+class LockServerWebhook
 {
 	protected string s_ServerID, s_ServerSecret;
 	protected int i_TryLeft = 5;
@@ -7,10 +7,9 @@ class LockServerWebhook: WebApiBase
 	void LockServerWebhook(string server_id, string server_secret)
 	{
 		Print("LockServerWebhook()");
+
 		s_ServerID = server_id;
 		s_ServerSecret = server_secret;
-
-		m_RestContext.SetHeader("application/json");
 	};
 
 	void LockServer()
@@ -45,31 +44,18 @@ class LockServerWebhook: WebApiBase
 
 		i_TryLeft = i_TryLeft - 1;
 
-		m_RestContext.POST( new LockServerCallback( s_ServerID, s_ServerSecret, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("/servers/%1/%2/%3", s_ServerID, s_ServerSecret, action)), "" );
-	};
-
-	string GetServerId()
-	{
-		return s_ServerID;
-	};
-
-	string GetServerSecret()
-	{
-		return s_ServerSecret;
+		RestApi restApi = GetRestApi();
+		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+        ctx.POST(new LockServerCallback( s_ServerID, s_ServerSecret, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1/%2/%3", s_ServerID, s_ServerSecret, action)), "");
 	};
 
 	void SetTryLeft(bool try_left)
 	{
 		i_TryLeft = try_left;
 	};
-
-	override string GetBaseUrl()
-	{
-		return "https://api.vigrid.ovh";
-	};
 };
 
-class LockServerCallback: RestCallbackBase
+class LockServerCallback: RestCallback
 {
 	protected string s_ServerID, s_ServerSecret;
 	protected bool b_LockServer;
@@ -87,33 +73,26 @@ class LockServerCallback: RestCallbackBase
 
 	override void OnError( int errorCode )
 	{
-		// override this with your implementation
 		Print(" !!! OnError(): " + errorCode);
-        LockServerWebhook serverWebhook = new LockServerWebhook(s_ServerID, s_ServerSecret);
-        serverWebhook.SetTryLeft( i_TryLeft );
-        serverWebhook.Send( b_LockServer );
+
+		LockServerWebhook serverWebhook = new LockServerWebhook(s_ServerID, s_ServerSecret);
+		serverWebhook.SetTryLeft( i_TryLeft );
+		serverWebhook.Send( b_LockServer );
 	};
 
-	/**
-	\brief Called in case request timed out or handled improperly (no error, no success, no data)
-	*/
 	override void OnTimeout()
 	{
-		// override this with your implementation
 		Print(" !!! OnTimeout() ");
-        LockServerWebhook serverWebhook = new LockServerWebhook(s_ServerID, s_ServerSecret);
-        serverWebhook.SetTryLeft( i_TryLeft );
-        serverWebhook.Send( b_LockServer );
+
+		LockServerWebhook serverWebhook = new LockServerWebhook(s_ServerID, s_ServerSecret);
+		serverWebhook.SetTryLeft( i_TryLeft );
+		serverWebhook.Send( b_LockServer );
 	};
 
-	/**
-	\brief Called when data arrived and/ or response processed successfully
-	*/
 	override void OnSuccess( string data, int dataSize )
 	{
-		// override this with your implementation
 		Print(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data); // !!! NOTE: Print() will not output string longer than 1024b, check your dataSize !!!
+			Print(data);
 	};
 };
