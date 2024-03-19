@@ -46,6 +46,11 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         super.Activate();
 
+        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
+        LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_server_id, m_ServerData.webhook_server_secret );
+        serverWebhook.LockServer();
+
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
