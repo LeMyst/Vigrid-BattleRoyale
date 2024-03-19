@@ -1,26 +1,27 @@
 #ifndef SERVER
+
 class LocalPlayer
 {
 	private Object m_PlayerVehicle;
 	private int m_UniqueID;
 
-	void LocalPlayer(ref Object playerVeh, int PID){
+	void LocalPlayer(ref Object playerVeh, int PID) {
 		m_PlayerVehicle = playerVeh;
 		m_UniqueID      = PID;
 	}
 
-	void ~LocalPlayer(){
+	void ~LocalPlayer() {
 	}
 
-	int GetUniqueID(){
+	int GetUniqueID() {
 		return m_UniqueID;
 	}
 
-	ref Object GetPlayerVehicle(){
+	ref Object GetPlayerVehicle() {
 		return m_PlayerVehicle;
 	}
 
-	void SetPlayerVehicle(ref Object vehObj){
+	void SetPlayerVehicle(ref Object vehObj) {
 		m_PlayerVehicle = vehObj;
 	}
 }
@@ -50,7 +51,7 @@ modded class MissionGameplay
         m_BattleRoyaleHudRootWidget = null;
         is_spectator = false;
 
-		GetRPCManager().AddRPC( "RPC_MissionGameplay", "InitESPBox", this, SingeplayerExecutionType.Server );
+		GetRPCManager().AddRPC( "RPC_MissionGameplay", "InitESPBox", this );
     }
 
     override void OnInit()
@@ -312,6 +313,7 @@ modded class MissionGameplay
     void UpdateESP()
 	{
         Print("UpdateESP()");
+		GetGame().Chat( "UpdateESP()", "colorImportant" );
 		m_LocalPlayers = new array<ref LocalPlayer>;
 		ref array<Object> objects = new array<Object>;
 		GetGame().GetObjectsAtPosition3D(GetGame().GetPlayer().GetPosition(), 1100, objects, NULL);
@@ -332,6 +334,7 @@ modded class MissionGameplay
 						m_LocalPlayers.Insert(m_PlayerCache);
 
 						ref Param2<PlayerBase, int> param = new Param2<PlayerBase, int>(playerFound, PID);
+						GetGame().Chat( "send GetDataFromServer()", "colorImportant" );
        					GetRPCManager().SendRPC( "RPC_MissionServer", "GetDataFromServer", param, true);
 					}
 				}
@@ -342,6 +345,7 @@ modded class MissionGameplay
 	void InitESPBox( CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target )
 	{
         Print("InitESPBox()");
+		GetGame().Chat( "InitESPBox()", "colorImportant" );
 		Param2<string, int> data;
         if ( !ctx.Read( data ) ) return;
 

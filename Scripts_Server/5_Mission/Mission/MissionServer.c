@@ -10,6 +10,12 @@ modded class MissionServer
 	//--- TODO: look at dayzexpansion missionserver
 	//TODO: look at dayz missionserver
 	//TODO: look at old BR missionserver
+
+	void MissionServer()
+	{
+		GetRPCManager().AddRPC( "RPC_MissionServer", "GetDataFromServer", this );
+	}
+
 	override void OnInit()
 	{
 		Print("Vigrid-BattleRoyale OnInit()");
@@ -176,7 +182,6 @@ modded class MissionServer
                 string playerName = data.param1.GetIdentity().GetName();
 
 				Print("Found playername: " + playerName);
-
                 ref Param2<string, int> m_Data = new Param2<string, int>(playerName, data.param2);
                 GetRPCManager().SendRPC( "RPC_MissionGameplay", "InitESPBox", m_Data, true, sender);
             }
