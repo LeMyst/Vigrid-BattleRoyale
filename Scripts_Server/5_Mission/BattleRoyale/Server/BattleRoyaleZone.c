@@ -353,6 +353,10 @@ class BattleRoyaleZone
     {
         string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
         BattleRoyaleUtils.Trace(cfg);
+
+        BattleRoyaleUtils.Trace("Avoid Type Count: " + a_avoidType.Count());
+        BattleRoyaleUtils.Trace("Avoid City Count: " + a_avoidCity.Count());
+
         if(!s_POI)
         {
             s_POI = new set<ref array<float>>;
@@ -365,8 +369,11 @@ class BattleRoyaleZone
                 GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
                 string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 
-                if(a_avoidType.Find(poi_type) != -1 || a_avoidCity.Find(city) != -1)
-                    continue;
+				if(a_avoidType.Find(poi_type) != -1 || a_avoidCity.Find(city) != -1)
+				{
+					BattleRoyaleUtils.Trace("Avoiding "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+float_array+" "+poi_type);
+					continue;
+				}
 
                 BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+float_array+" "+poi_type);
                 s_POI.Insert(float_array);
