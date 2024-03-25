@@ -80,7 +80,10 @@ class BattleRoyaleWin: BattleRoyaleState
 			position[1] = GetGame().SurfaceY(position[0], position[2]);
 
 			EntityAI chicken = EntityAI.Cast(GetGame().CreateObject( chickens.GetRandomElement(), position, false, true ));
-			chicken.SetOrientation( vector.YawToVector( Math.RandomFloat(0, 360) ) );
+
+			float dir = Math.RandomFloat(0, 360);
+			vector chickenDir = vector.YawToVector(dir);
+			chicken.SetDirection( Vector(chickenDir[0], 0, chickenDir[1]) );
 		}
     }
 

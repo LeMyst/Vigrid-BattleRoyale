@@ -379,17 +379,20 @@ class BattleRoyaleDebugState: BattleRoyaleState
     {
         super.OnPlayerTick(player, timeslice);
 
-        vector spawn_pos = "0 0 0";
-        spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
-        spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 5), (v_Center[2] + 5));
-        spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
-
-        vector playerPos = player.GetPosition();
-        float distance = vector.Distance(playerPos, spawn_pos);
+        float distance = vector.Distance(player.GetPosition(), v_Center);
 
         if(distance > f_Radius && !CanGoOutsideSpawn(player))
         {
+			vector spawn_pos = "0 0 0";
+			spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
+			spawn_pos[2] = Math.RandomFloatInclusive((v_Center[2] - 5), (v_Center[2] + 5));
+			spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
+
             player.SetPosition(spawn_pos);
+
+			float dir = Math.RandomFloat(0, 360);
+			vector playerDir = vector.YawToVector(dir);
+			player.SetDirection( Vector(playerDir[0], 0, playerDir[1]) );
         }
 
         if(player.time_until_heal <= 0)

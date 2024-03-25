@@ -190,7 +190,11 @@ class BattleRoyaleServer: BattleRoyaleBase
         spawn_pos[2] = Math.RandomFloatInclusive((debug_pos[2] - 5), (debug_pos[2] + 5));
         spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
 
-        player.SetPosition(spawn_pos);
+        player.SetPosition( spawn_pos );
+
+		float dir = Math.RandomFloat(0, 360);
+		vector playerDir = vector.YawToVector(dir);
+		player.SetDirection( Vector(playerDir[0], 0, playerDir[1]) );
 
         bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
 
