@@ -214,8 +214,8 @@ class BattleRoyaleRound: BattleRoyaleState
         }
 
         // Spawn airdrop
-        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "SpawnAirdrop", 10000, false );
-        // SpawnAirdrop();
+        if( m_Zone.GetZoneNumber() <= (i_NumZones - 3) ) // Don't have airdrop in the last three zone
+        	SpawnAirdrop();
 
         super.Activate();
     }
@@ -494,6 +494,11 @@ class BattleRoyaleRound: BattleRoyaleState
 		airdrop_position[1] = GetGame().SurfaceY(airdrop_position[0], airdrop_position[2]);
 
     	ExpansionMissionModule.s_Instance.CallAirdrop( airdrop_position );
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "SpawnAirdropMessage", 15000, false );
+    }
+
+    void SpawnAirdropMessage()
+    {
         MessagePlayers("An Airdrop is being deployed in the area!");
     }
 
