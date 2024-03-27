@@ -20,7 +20,7 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 
     override string GetPath()
     {
-        return BATTLEROYALE_SETTINGS_FOLDER + "spawns_settings.json";
+        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "spawns_settings.json";
     }
 
     override void Save()

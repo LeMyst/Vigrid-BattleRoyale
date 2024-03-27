@@ -26,7 +26,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
     override string GetPath()
     {
-        return BATTLEROYALE_SETTINGS_FOLDER + "zone_settings.json";
+        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "zone_settings.json";
     }
 
     override void Save()
