@@ -36,9 +36,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = config_data.GetServerData();
-        string s_WebhookServerId = m_ServerData.webhook_server_id;
-        string s_WebhookServerSecret = m_ServerData.webhook_server_secret;
-        LockServerWebhook serverWebhook = new LockServerWebhook(s_WebhookServerId, s_WebhookServerSecret);
+
+        LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
         serverWebhook.UnlockServer();
 
         m_Timer = new Timer;
