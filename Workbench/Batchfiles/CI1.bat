@@ -335,6 +335,9 @@ if %skipPboCleanup% NEQ 1 (
 )
 
 :END
+
+call "%~dp0CI0_CopyExtraPBO.bat" "%modBuildDirectory%%modName%"
+
 call "%~dp0CI_MakeLowercase.bat" "%modBuildDirectory%%modName%"
 
 echo %time% > "%~dp0..\Logs\Build.success"
