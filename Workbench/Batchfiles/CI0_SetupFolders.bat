@@ -59,8 +59,8 @@ IF NOT exist "%workDrive%Temp\%modName%\addons\" (
 	mkdir "%workDrive%Temp\%modName%\addons\"
 )
 
-echo Copying over "%keyDirectory%%keyName%.bikey" to "%modBuildDirectory%%modName%\keys\"
-copy "%keyDirectory%%keyName%.bikey" "%modBuildDirectory%%modName%\keys\"
+REM echo Copying over "%keyDirectory%%keyName%.bikey" to "%modBuildDirectory%%modName%\keys\"
+REM copy "%keyDirectory%%keyName%.bikey" "%modBuildDirectory%%modName%\keys\"
 
 echo CI0_SetupFolders done
 
