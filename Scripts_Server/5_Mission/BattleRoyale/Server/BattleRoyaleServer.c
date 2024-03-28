@@ -324,16 +324,14 @@ class BattleRoyaleServer: BattleRoyaleBase
                     }
                     else
                     {
-                        if( !m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
+                        if( temp_disconnecting.Find(player) == -1 && !m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
                         {
                             //this ensures we only call disconnect on this player once
-                            if(temp_disconnecting.Find(player) == -1)
-                            {
-                                temp_disconnecting.Insert(player);
-		                        GetGame().SendLogoutTime(player, 0);
-                                //GetGame().DisconnectPlayer( player.GetIdentity() );
-                                //Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
-                            }
+							temp_disconnecting.Insert(player);
+
+							GetGame().SendLogoutTime(player, 0);
+							//GetGame().DisconnectPlayer( player.GetIdentity() );
+							//Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
                         }
                     }
                 }

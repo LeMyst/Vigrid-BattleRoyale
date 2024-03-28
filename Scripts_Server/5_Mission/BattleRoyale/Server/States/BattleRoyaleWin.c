@@ -2,7 +2,6 @@
 class BattleRoyaleWin: BattleRoyaleState
 {
     int i_SecondsTillKick;
-    PlayerBase winner;
     bool complete;
 
     protected ref Timer m_KickTimer;
@@ -24,7 +23,7 @@ class BattleRoyaleWin: BattleRoyaleState
 		{
 			for ( int k = 0; k < GetPlayers().Count(); k++ )
 			{
-				winner = GetPlayers()[k];
+				PlayerBase winner = GetPlayers()[k];
 				PlayerIdentity identity = winner.GetIdentity();
 				if(identity)
 				{
@@ -89,11 +88,19 @@ class BattleRoyaleWin: BattleRoyaleState
 
     void KickWinner()
     {
-        if(winner && winner.GetIdentity() )
-        {
-            RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
-            GetGame().DisconnectPlayer( winner.GetIdentity() );
-        }
+		if(GetPlayers().Count() > 0)
+		{
+			for ( int k = 0; k < GetPlayers().Count(); k++ )
+			{
+				PlayerBase winner = GetPlayers()[k];
+				if(winner && winner.GetIdentity() )
+				{
+					RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
+					GetGame().DisconnectPlayer( winner.GetIdentity() );
+				}
+
+			}
+		}
 
         Deactivate();
     }
