@@ -28,7 +28,11 @@ class LoadingScreenBackgrounds
 	static array<ref LoadingScreenBackground> Get()
 	{
 		if (!s_Backgrounds.Count())
-			JsonFileLoader<array<ref LoadingScreenBackground>>.JsonLoadFile( "Vigrid-BattleRoyale/Data/LoadingScreens.json", s_Backgrounds );
+		{
+    		string errorMessage;
+			if (!JsonFileLoader<array<ref LoadingScreenBackground>>.LoadFile( "Vigrid-BattleRoyale/Data/LoadingScreens.json", s_Backgrounds, errorMessage))
+				ErrorEx(errorMessage);
+		}
 
 		return s_Backgrounds;
 	}

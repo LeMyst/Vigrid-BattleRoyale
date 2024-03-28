@@ -31,12 +31,16 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleZoneData>.JsonSaveFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleZoneData>.SaveFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleZoneData>.JsonLoadFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 };
 #endif

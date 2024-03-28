@@ -12,19 +12,19 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "server_settings.json";
     }
+
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleServerData>.JsonSaveFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleServerData>.SaveFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
+
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleServerData>.JsonLoadFile(GetPath(), this);
-        //--- first time launch, assign default (updates existing servers in place)
-        if(port == 0)
-        {
-            port = 2302;
-            Save();
-        }
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleServerData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 };
 #endif

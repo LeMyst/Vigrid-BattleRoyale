@@ -51,12 +51,16 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleGameData>.JsonSaveFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleGameData>.SaveFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleGameData>.JsonLoadFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleGameData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 };
 #endif

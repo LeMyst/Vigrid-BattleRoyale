@@ -20,12 +20,16 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
 
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleDebugData>.JsonSaveFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleDebugData>.SaveFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleDebugData>.JsonLoadFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleDebugData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 };
 #endif

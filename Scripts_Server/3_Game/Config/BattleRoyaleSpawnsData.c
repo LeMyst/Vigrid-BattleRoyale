@@ -25,12 +25,16 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 
     override void Save()
     {
-        JsonFileLoader<BattleRoyaleSpawnsData>.JsonSaveFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleSpawnsData>.SaveFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 
     override void Load()
     {
-        JsonFileLoader<BattleRoyaleSpawnsData>.JsonLoadFile(GetPath(), this);
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleSpawnsData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
     }
 };
 
