@@ -11,16 +11,6 @@ class LockServerWebhook
 		s_ServerToken = server_token;
 	};
 
-	void LockServer()
-	{
-		Send( true );
-	};
-
-	void UnlockServer()
-	{
-		Send( false );
-	};
-
 	void Send(bool lock_server)
 	{
 		Print("LockServerWebhook().Send()");
@@ -41,32 +31,48 @@ class LockServerWebhook
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 
+		JSONAuthToken jsonAuthToken = new JSONAuthToken( s_ServerToken );
+
+		string jatString;
+		string jatError;
+		JsonFileLoader<JSONAuthToken>.MakeData(jsonAuthToken, jatString, jatError);
+
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
 		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
-        ctx.POST(new LockServerCallback( s_ServerToken, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1", action)), "");
+        ctx.POST(new LockServerCallback( s_ServerToken, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1", action)), jatString);
 	};
 
 	void SetTryLeft(bool try_left)
 	{
 		i_TryLeft = try_left;
 	};
+
+	void LockServer()
+	{
+		Send( true );
+	};
+
+	void UnlockServer()
+	{
+		Send( false );
+	};
 };
 
 class LockServerCallback: RestCallback
 {
 	protected string s_ServerToken;
-	protected bool b_LockServer;
 	protected int i_TryLeft;
+	protected bool b_LockServer;
 
 	void LockServerCallback(string server_token, bool lock_server, int try_left)
 	{
         Print("LockServerCallback() " + try_left);
 
 		s_ServerToken = server_token;
-		b_LockServer = lock_server;
 		i_TryLeft = try_left;
+		b_LockServer = lock_server;
 	}
 
 	override void OnError( int errorCode )

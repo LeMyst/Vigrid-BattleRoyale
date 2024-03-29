@@ -46,17 +46,17 @@ class WinWebhook
 
 class WinCallback: RestCallback
 {
-	protected string s_PlayerSteamID;
 	protected string s_ServerToken;
 	protected int i_TryLeft;
+	protected string s_PlayerSteamID;
 
 	void WinCallback(string server_token, string player_steamid, int try_left)
 	{
         Print("WinCallback() " + try_left);
 
-		s_PlayerSteamID = player_steamid;
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
+		s_PlayerSteamID = player_steamid;
 	}
 
 	override void OnError( int errorCode )
