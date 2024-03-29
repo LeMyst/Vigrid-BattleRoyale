@@ -48,7 +48,8 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
-        LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_server_id, m_ServerData.webhook_server_secret );
+
+        LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
         serverWebhook.LockServer();
 
         //TODO: spawn & setup drop plane

@@ -1,0 +1,96 @@
+#ifdef SERVER
+class LockServerWebhook
+{
+	protected string s_ServerToken;
+	protected int i_TryLeft = 5;
+
+	void LockServerWebhook(string server_token)
+	{
+		Print("LockServerWebhook()");
+
+		s_ServerToken = server_token;
+	};
+
+	void LockServer()
+	{
+		Send( true );
+	};
+
+	void UnlockServer()
+	{
+		Send( false );
+	};
+
+	void Send(bool lock_server)
+	{
+		Print("LockServerWebhook().Send()");
+
+		if( i_TryLeft <= 0 )
+		{
+			BattleRoyaleUtils.Trace("LockServerWebhook: Too much try, giving up.");
+			return;
+		}
+
+		string action;
+		if ( lock_server )
+			action = "lock";
+		else
+			action = "unlock";
+
+		HttpArguments arguments = {
+			new HttpArgument("tick", GetGame().GetTickTime().ToString())
+		};
+
+		i_TryLeft = i_TryLeft - 1;
+
+		RestApi restApi = GetRestApi();
+		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+        ctx.POST(new LockServerCallback( s_ServerToken, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1", action)), "");
+	};
+
+	void SetTryLeft(bool try_left)
+	{
+		i_TryLeft = try_left;
+	};
+};
+
+class LockServerCallback: RestCallback
+{
+	protected string s_ServerToken;
+	protected bool b_LockServer;
+	protected int i_TryLeft;
+
+	void LockServerCallback(string server_token, bool lock_server, int try_left)
+	{
+        Print("LockServerCallback() " + try_left);
+
+		s_ServerToken = server_token;
+		b_LockServer = lock_server;
+		i_TryLeft = try_left;
+	}
+
+	override void OnError( int errorCode )
+	{
+		Print(" !!! OnError(): " + errorCode);
+
+		LockServerWebhook serverWebhook = new LockServerWebhook( s_ServerToken );
+		serverWebhook.SetTryLeft( i_TryLeft );
+		serverWebhook.Send( b_LockServer );
+	};
+
+	override void OnTimeout()
+	{
+		Print(" !!! OnTimeout() ");
+
+		LockServerWebhook serverWebhook = new LockServerWebhook( s_ServerToken );
+		serverWebhook.SetTryLeft( i_TryLeft );
+		serverWebhook.Send( b_LockServer );
+	};
+
+	override void OnSuccess( string data, int dataSize )
+	{
+		Print(" !!! OnSuccess() size=" + dataSize );
+		if( dataSize > 0 )
+			Print(data);
+	};
+};

@@ -66,6 +66,14 @@ class BattleRoyaleWin: BattleRoyaleState
     {
         MessagePlayer(player_winner, "Congratulations! You won Battle Royale!");
 
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, player_winner.GetIdentity() );
+
+        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
+
+		WinWebhook winWebhook = new WinWebhook( m_ServerData.webhook_jwt_token );
+		winWebhook.Send( player_winner.GetIdentity().GetPlainId() );
+
 		ref array<string> chickens = {"Animal_GallusGallusDomesticus", "Animal_GallusGallusDomesticusF_Brown", "Animal_GallusGallusDomesticusF_Spotted", "Animal_GallusGallusDomesticusF_White"}
 
 		for (int j = 0; j < 10; j++)
