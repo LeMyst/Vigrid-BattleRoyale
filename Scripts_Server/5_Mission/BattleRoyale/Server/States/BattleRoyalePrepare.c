@@ -299,22 +299,26 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected bool IsSafeForTeleport(float x, float y, float z, bool check_zone = true)
     {
-        //check if random_pos is bad
-        if(GetGame().SurfaceIsSea(x, z))
-            return false;
-
-        if(GetGame().SurfaceIsPond(x, z))
-            return false;
-
-        if(GetGame().SurfaceRoadY(x, z) != y)
-            return false;
-
+    	// Check if in zone (if needed)
         if(check_zone && m_SpawnsSettings.spawn_in_first_zone)
         {
             if(!BattleRoyaleZone.GetZone(i_StartingZone).IsInZone(x, z))
                 return false;
         }
 
+        // Avoid the sea
+        if(GetGame().SurfaceIsSea(x, z))
+            return false;
+
+		// Avoid the ponds
+        if(GetGame().SurfaceIsPond(x, z))
+            return false;
+
+		// Avoid the roads
+//        if(GetGame().SurfaceRoadY(x, z) != y)
+//            return false;
+
+		// Avoid namalsk ice (and others)
         ref array<string> bad_surface_types = {
             "nam_seaice",
             "nam_lakeice_ext"
@@ -325,6 +329,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         if(bad_surface_types.Find(surface_type) != -1)
             return false;
 
+		// Avoid objects
         vector position;
         position[0] = x;
         position[1] = y;
@@ -366,9 +371,9 @@ class BattleRoyalePrepare: BattleRoyaleState
                 string text = "";
                 foreach (Object object: collidedObjects)
                     text += " | " + Object.GetDebugName(object);
-
-                return false;
             }
+
+			return false;
         }
 
         return true;
