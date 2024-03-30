@@ -50,6 +50,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", this );
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", this );
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", this );
+        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
+        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
 
         m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
     }
@@ -450,6 +452,27 @@ class BattleRoyaleClient: BattleRoyaleBase
             }
         }
     }
+
+	void SetTopPosition(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SetTopPosition RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			DayZPlayerImplement player = DayZPlayerImplement.Cast( GetGame().GetPlayer() );
+			player.position_top = data.param1;
+		}
+	}
+
+	void ShowWinScreen(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Widget win_screen_hud = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
+		win_screen_hud.Show( true );
+	}
 
     override void OnPlayerTick(PlayerBase player, float timeslice)
     {

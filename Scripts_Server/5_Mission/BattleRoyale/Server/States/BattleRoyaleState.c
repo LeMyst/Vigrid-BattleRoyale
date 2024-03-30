@@ -155,13 +155,24 @@ class BattleRoyaleState: Timeable
                 nb_groups = -1;
             else
                 nb_groups = GetGroups().Count();
+            UpdateTopPosition( GetGroups().Count() );
 #else
             nb_groups = -2;
+            UpdateTopPosition( nb_players );
 #endif
 
             //BattleRoyaleUtils.Trace(string.Format("OnPlayerCountChanged: %1 %2", nb_players, nb_groups));
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( nb_players, nb_groups ), true);
         }
+    }
+
+    void UpdateTopPosition( int position )
+    {
+		for(int i = 0; i < GetPlayers().Count(); i++)
+		{
+			PlayerBase player = GetPlayers()[i];
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", new Param1<int>( position ), true, player.GetIdentity() );
+		}
     }
 
     //CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
