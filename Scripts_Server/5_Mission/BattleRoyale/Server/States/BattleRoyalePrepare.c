@@ -335,9 +335,9 @@ class BattleRoyalePrepare: BattleRoyaleState
         position[1] = y;
         position[2] = z;
 
-        vector start = position + Vector( 0, 5, 0 );
+        vector start = position + Vector( 0, 10, 0 );
         vector end = position;
-        float radius = 2.0;
+        float radius = 2.5;
 
         PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
         Object m_HitObject;
@@ -354,9 +354,9 @@ class BattleRoyalePrepare: BattleRoyaleState
         array<Object> collidedObjects = new array<Object>();
         vector box_position;
         box_position[0] = position[0];
-        box_position[1] = position[1]; // + 1
+        box_position[1] = position[1];
         box_position[2] = position[2];
-        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "1 6 1", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "2 10 2", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
         {
             if( collidedObjects.Count() > 0)
             {
