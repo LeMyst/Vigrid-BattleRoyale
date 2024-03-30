@@ -71,7 +71,10 @@ set keyName=
 if exist "..\project.cfg.bat" del "..\project.cfg.bat"
 
 for /f "usebackq delims=" %%a in ( ../project.cfg ) do (
-	echo set %%a>>"..\project.cfg.bat"
+    echo %%a | findstr "^#" >nul
+    if errorlevel 1 (
+		echo set %%a>>"..\project.cfg.bat"
+	)
 )
 
 call "..\project.cfg.bat"
@@ -79,7 +82,10 @@ call "..\project.cfg.bat"
 if exist "..\user.cfg.bat" del "..\user.cfg.bat"
 
 for /f "usebackq delims=" %%a in ( ../user.cfg ) do (
-	echo set %%a>>"..\user.cfg.bat"
+    echo %%a | findstr "^#" >nul
+    if errorlevel 1 (
+		echo set %%a>>"..\user.cfg.bat"
+	)
 )
 
 call "..\user.cfg.bat"
