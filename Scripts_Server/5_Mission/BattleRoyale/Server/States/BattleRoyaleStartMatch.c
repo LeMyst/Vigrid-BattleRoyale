@@ -136,6 +136,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
             BattleRoyaleUtils.Trace("Unlock " + player.GetIdentity().GetName());
 
             player.DisableInput(false); //This will re-enable input
+			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );
         }
 
         MessagePlayers( DAYZBR_MSG_MATCH_STARTED );

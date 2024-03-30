@@ -53,6 +53,31 @@ modded class PlayerBase
             m_BR.OnPlayerKilled(this, killer);
     }
 
+	override void OnSyncJuncture( int pJunctureID, ParamsReadContext pCtx )
+	{
+		super.OnSyncJuncture( pJunctureID, pCtx );
+
+		switch( pJunctureID )
+		{
+			case 88:
+				vector position, direction;
+				pCtx.Read( position );
+				pCtx.Read( direction );
+				if ( position )
+				{
+					SetDynamicPhysicsLifeTime( 0.001 );
+					dBodyActive( this, ActiveState.INACTIVE );
+					SetPosition( position );
+					dBodyActive( this, ActiveState.ACTIVE );
+				}
+				if ( direction )
+				{
+					SetDirection( direction );
+				}
+				break;
+		}
+	}
+
     //Temp fix for disabling character saving
     override bool Save()
     {

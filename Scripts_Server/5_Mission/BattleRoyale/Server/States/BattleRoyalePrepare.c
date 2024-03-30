@@ -543,23 +543,25 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         BattleRoyaleUtils.Trace("Spawn player " + player.GetIdentity().GetName() + " at " + position);
 
-        //set pos
-        player.SetPosition(position);
-
         //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
         //TODO: force stand up
 
+		vector direction;
+
         if (village)
         {
-            player.SetDirection(vector.Direction(player.GetPosition(), village.Position));
+            direction = vector.Direction(player.GetPosition(), village.Position);
         } else {
             //random direction
             float dir = Math.RandomFloat(0, 360); //non-inclusive, 360==0
             vector playerDir = vector.YawToVector(dir);
-            player.SetDirection(Vector(playerDir[0], 0, playerDir[1]));
+            direction = Vector(playerDir[0], 0, playerDir[1]);
         }
 
-        player.SetSynchDirty();
+		ScriptJunctureData pCtx = new ScriptJunctureData;
+		pCtx.Write( position );
+		pCtx.Write( direction );
+		player.SendSyncJuncture( 88, pCtx );
     }
 
     void ProcessPlayers()
@@ -571,7 +573,9 @@ class BattleRoyalePrepare: BattleRoyaleState
         int pCount = m_PlayerList.Count();
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
-            if (process_player) DisableInput(process_player);
+            if (process_player)
+            	//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( process_player, true );
+            	DisableInput(process_player);
 
             Sleep(100);
         }
