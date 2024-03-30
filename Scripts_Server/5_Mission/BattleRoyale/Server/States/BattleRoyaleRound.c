@@ -212,6 +212,11 @@ class BattleRoyaleRound: BattleRoyaleState
                 }
             }
         }
+
+        // Spawn airdrop
+        if( m_Zone.GetZoneNumber() <= (i_NumZones - 3) ) // Don't have airdrop in the last three zone
+        	SpawnAirdrop();
+
         super.Activate();
     }
 
@@ -469,6 +474,32 @@ class BattleRoyaleRound: BattleRoyaleState
     void OnRoundTimeUp()
     {
         Deactivate();
+    }
+
+    void SpawnAirdrop()
+    {
+    	BattleRoyalePlayArea future_play_area = GetZone().GetArea();
+		vector future_play_area_center = future_play_area.GetCenter();
+    	float future_play_area_radius = future_play_area.GetRadius();
+
+		float distance = Math.RandomFloatInclusive(future_play_area_radius * 0.1, future_play_area_radius * 0.9);
+		float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+
+		float dX = distance * Math.Sin(moveDir);
+		float dZ = distance * Math.Cos(moveDir);
+
+        vector airdrop_position;
+		airdrop_position[0] = future_play_area_center[0] + dX;
+		airdrop_position[2] = future_play_area_center[2] + dZ;
+		airdrop_position[1] = GetGame().SurfaceY(airdrop_position[0], airdrop_position[2]);
+
+    	ExpansionMissionModule.s_Instance.CallAirdrop( airdrop_position );
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "SpawnAirdropMessage", 15000, false );
+    }
+
+    void SpawnAirdropMessage()
+    {
+        MessagePlayers("An Airdrop is being deployed in the area!");
     }
 
     // Round messaging

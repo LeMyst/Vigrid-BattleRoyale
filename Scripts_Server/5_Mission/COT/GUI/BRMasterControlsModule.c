@@ -22,6 +22,9 @@ modded class BRMasterControlsModule
             case BattleRoyaleCOTStateMachineRPC.TestSpectator:
                 RPC_TestSpectator( ctx, sender, target );
             break;
+            case BattleRoyaleCOTStateMachineRPC.SpawnAirdrop:
+                RPC_SpawnAirdrop( ctx, sender, target );
+            break;
         }
     }
 
@@ -51,6 +54,12 @@ modded class BRMasterControlsModule
         {
             Error("Failed to cast TestSpectator target object to playerbase");
         }
+    }
+
+    private void RPC_SpawnAirdrop( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    {
+		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "Airdrop sent." ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
+		ExpansionMissionModule.s_Instance.CallAirdrop(senderRPC.GetPlayer().GetPosition());
     }
 
     //server-side functionality
