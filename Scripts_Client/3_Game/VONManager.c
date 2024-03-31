@@ -35,26 +35,11 @@ modded class VONManagerImplementation
 			GetGame().SetVoiceLevel(newLevel);
 			UpdateVoiceIcon();
 		}
-	}
 
-	override void OnEvent(EventType eventTypeId, Param params)
-	{
-		switch (eventTypeId)
+		if ( GetGame().GetVoiceLevel() > max_voice_level )
 		{
-			case VONStateEventTypeID:
-			{
-				if ( !voice_enabled )
-				{
-					break;
-				}
-
-				super.OnEvent( eventTypeId, params )
-				break;
-			}
-			default:
-			{
-				super.OnEvent( eventTypeId, params );
-			}
+			GetGame().SetVoiceLevel( max_voice_level ); // Force level to whisper
+			UpdateVoiceIcon();
 		}
 	}
 
