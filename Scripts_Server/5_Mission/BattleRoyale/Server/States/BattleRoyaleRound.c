@@ -113,21 +113,24 @@ class BattleRoyaleRound: BattleRoyaleState
         int sec;
         int val;
 
-        //--- notification message timers
-        for(i = 0; i < lock_notif_min.Count();i++)
-        {
-            min = lock_notif_min[i];
-            val = time_till_lock - (min*60*1000);
-            if(val > 0)
-                m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockMinutes", new Param1<int>( min ), false) );
-        }
+		if( m_PreviousState.i_StartingZone < zone_num )
+		{
+			//--- notification message timers
+			for(i = 0; i < lock_notif_min.Count();i++)
+			{
+				min = lock_notif_min[i];
+				val = time_till_lock - (min*60*1000);
+				if(val > 0)
+					m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockMinutes", new Param1<int>( min ), false) );
+			}
 
-        for(i = 0; i < lock_notif_sec.Count();i++)
-        {
-            sec = lock_notif_sec[i];
-            val = time_till_lock - (sec*1000);
-            if(val > 0)
-                m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockSeconds", new Param1<int>( sec ), false) );
+			for(i = 0; i < lock_notif_sec.Count();i++)
+			{
+				sec = lock_notif_sec[i];
+				val = time_till_lock - (sec*1000);
+				if(val > 0)
+					m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockSeconds", new Param1<int>( sec ), false) );
+			}
         }
 
         //timer before zone locks
@@ -171,17 +174,14 @@ class BattleRoyaleRound: BattleRoyaleState
                 if(val > 0)
                     m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNoZoneSeconds", new Param1<int>( sec ), false) );
             }
-        }
 
-        //end state event
-        m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
-
-        //send play area to clients
-        ref BattleRoyalePlayArea m_PreviousArea = NULL;
-        
-        // TODO: Skip m_PreviousArea if zones was skipped
-        if(GetPreviousZone())
+			//send play area to clients
+			ref BattleRoyalePlayArea m_PreviousArea = NULL;
             m_PreviousArea = GetPreviousZone().GetArea();
+
+			//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+        }
 
         ref BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
@@ -190,11 +190,11 @@ class BattleRoyaleRound: BattleRoyaleState
             m_ThisArea = GetZone().GetArea();
         }
 
-        //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
-
         //tell the client the next play area and play artillery sound
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, b_ArtillerySound ), true);
+
+        //end state event
+        m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
 
         //message players saying the new zone has appeared & notify them if they're outside the play area (hopefully this won't lag the server)
         for(i = 0; i < GetPlayers().Count(); i++)
