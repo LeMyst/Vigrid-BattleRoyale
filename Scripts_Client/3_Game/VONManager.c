@@ -2,13 +2,11 @@
 modded class VONManagerBase
 {
 	void SetMaxVolume(int max_level);
-	void EnableVoice(bool enabled);
 }
 
 modded class VONManagerImplementation
 {
 	protected int max_voice_level = VoiceLevelWhisper;
-	protected int voice_enabled = false;
 
 	override void HandleInput(Input inp)
 	{
@@ -63,10 +61,5 @@ modded class VONManagerImplementation
 	void SetMaxVolume(int max_level)
 	{
 		max_voice_level = max_level;
-	}
-
-	void EnableVoice(bool enabled)
-	{
-		voice_enabled = enabled;
 	}
 }

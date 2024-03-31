@@ -207,7 +207,7 @@ class BattleRoyaleClient: BattleRoyaleBase
             Error("Match started already but received another RPC?");
         }
         VONManager.GetInstance().SetMaxVolume( VoiceLevelShout );
-        VONManager.GetInstance().EnableVoice( true );
+        //VONManager.GetInstance().EnableVoice( true );
         b_MatchStarted = true;
     }
 
