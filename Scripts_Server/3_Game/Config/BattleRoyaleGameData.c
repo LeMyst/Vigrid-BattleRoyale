@@ -21,6 +21,9 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 
     bool artillery_sound = true;
 
+    bool airdrop_enabled = true;
+    int airdrop_ignore_last_zones = 3;
+
     ref array<string> player_starting_clothes = {
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",

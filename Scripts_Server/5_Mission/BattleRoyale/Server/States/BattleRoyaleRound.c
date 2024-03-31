@@ -13,6 +13,8 @@ class BattleRoyaleRound: BattleRoyaleState
     bool b_ArtillerySound;
     array<int> lock_notif_min;
     array<int> lock_notif_sec;
+    bool b_AirdropEnabled;
+    int i_AirdropIgnoreLastZones;
 
 #ifdef SCHANAMODPARTY
     int i_MaxPartySize;
@@ -45,6 +47,9 @@ class BattleRoyaleRound: BattleRoyaleState
         b_DoZoneDamage = m_GameSettings.enable_zone_damage;
 
         m_MessageTimers = new array<ref Timer>;
+
+        b_AirdropEnabled = m_GameSettings.airdrop_enabled;
+        i_AirdropIgnoreLastZones = m_GameSettings.airdrop_ignore_last_zones;
 
 #ifdef SCHANAMODPARTY
         i_MaxPartySize = GetSchanaPartyServerSettings().GetMaxPartySize();
@@ -214,7 +219,7 @@ class BattleRoyaleRound: BattleRoyaleState
         }
 
         // Spawn airdrop
-        if( m_Zone.GetZoneNumber() <= (i_NumZones - 3) ) // Don't have airdrop in the last three zone
+        if( b_AirdropEnabled && m_Zone.GetZoneNumber() <= (i_NumZones - i_AirdropIgnoreLastZones) ) // Don't have airdrop in the last X zones
         	SpawnAirdrop();
 
         super.Activate();
@@ -478,6 +483,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     void SpawnAirdrop()
     {
+#ifdef EXPANSIONMODMISSIONS
     	BattleRoyalePlayArea future_play_area = GetZone().GetArea();
 		vector future_play_area_center = future_play_area.GetCenter();
     	float future_play_area_radius = future_play_area.GetRadius();
@@ -492,9 +498,9 @@ class BattleRoyaleRound: BattleRoyaleState
 		airdrop_position[0] = future_play_area_center[0] + dX;
 		airdrop_position[2] = future_play_area_center[2] + dZ;
 		airdrop_position[1] = GetGame().SurfaceY(airdrop_position[0], airdrop_position[2]);
-
     	ExpansionMissionModule.s_Instance.CallAirdrop( airdrop_position );
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "SpawnAirdropMessage", 15000, false );
+#endif
     }
 
     void SpawnAirdropMessage()

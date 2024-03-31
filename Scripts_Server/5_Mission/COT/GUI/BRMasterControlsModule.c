@@ -58,8 +58,10 @@ modded class BRMasterControlsModule
 
     private void RPC_SpawnAirdrop( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
+#ifdef EXPANSIONMODMISSIONS
 		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "Airdrop sent." ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
 		ExpansionMissionModule.s_Instance.CallAirdrop(senderRPC.GetPlayer().GetPosition());
+#endif
     }
 
     //server-side functionality
