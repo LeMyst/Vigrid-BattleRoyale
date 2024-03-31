@@ -53,7 +53,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
 
-        m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
+        //m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
+		GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLaterByName( this, "OnSecond", 1000, true );
     }
 
     ref map<string, ref BattleRoyaleSpectatorMapEntityData> GetSpectatorMapEntityData()
