@@ -14,7 +14,7 @@ modded class IngameHud
 			}
 			else
 			{
-				m_PlayerTagText.SetColor(COLOR_EXPANSION_ITEM_NORMAL_TEXT);
+				m_PlayerTagText.SetColor( COLOR_EXPANSION_NOTIFICATION_INFO );
 			}
 		}
 
