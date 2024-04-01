@@ -7,6 +7,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     int i_NumRounds;
 
+    string match_uuid;
+
     protected ref Timer m_Timer;
 
     void BattleRoyaleServer()
@@ -39,6 +41,16 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
         serverWebhook.UnlockServer();
+
+        CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token );
+        match_uuid = createMatchWebhook.getMatchUUID();
+
+        if ( match_uuid.Length() != 36 )
+        {
+        	BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+        	GetGame().RequestExit(0);
+        }
+        BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
 
         m_Timer = new Timer;
 
