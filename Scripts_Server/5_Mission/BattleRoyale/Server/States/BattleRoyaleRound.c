@@ -247,23 +247,16 @@ class BattleRoyaleRound: BattleRoyaleState
 #ifdef SCHANAMODPARTY
                 if(i_MaxPartySize < 1 || players.Count() <= i_MaxPartySize)
                 {
-                    set<string> players_id = new set<string>;
-                    foreach(PlayerBase player: players)
-                    {
-                        if(player && player.GetIdentity())
-                            players_id.Insert(player.GetIdentity().GetId());
-                    }
-                    if(players.Count() <= 1 || AllPlayersSameParty(players_id))
-                    {
-                        Print(GetName() + " IsComplete!");
-                        Deactivate();
-                    }
+					if( GetGroups().Count() <= 1 )
+					{
+						Print(GetName() + " IsComplete (Groups)!");
+						Deactivate();
+					}
                 }
 #else
                 if(players.Count() <= 1)
                 {
-                    Print(GetName() + " IsComplete!");
-                    // TODO: toggle to debug game
+                    Print(GetName() + " IsComplete (Players)!");
                     Deactivate();
                 }
 #endif
