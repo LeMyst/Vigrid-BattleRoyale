@@ -603,11 +603,38 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         // Teleport groups
         int pGroupCount = teleport_groups.Count();
+        ref set<PlayerBase> group;
+
+        // Send parties list to API server
+        array<ref set<string>> parties_list = new array<ref set<string>>();
+        for (i = 0; i < pGroupCount; i++) {
+            group = teleport_groups.Get(i);
+			Print( group );
+            set<string> party = new set<string>();
+			int tmpNbPlayers = group.Count();
+			for(int j = 0; j < tmpNbPlayers; j++)
+			{
+            	process_player = group.Get(j);
+				Print( process_player );
+				if ( process_player && process_player.GetIdentity() )
+				{
+					Print( process_player.GetIdentity().GetPlainId() );
+					party.Insert( process_player.GetIdentity().GetPlainId() );
+				}
+			}
+			Print( party );
+			parties_list.Insert( party );
+        }
+		Print( parties_list );
+        PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
+        partiesWebhook.postParties( br_instance.match_uuid, parties_list );
+        BattleRoyaleUtils.Trace("Parties list sent");
+
         teleport_groups.ShuffleArray();
         BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
         for (i = 0; i < pGroupCount; i++) {
             BattleRoyaleUtils.Trace("Teleport group " + i);
-            ref set<PlayerBase> group = teleport_groups.Get(i);
+            group = teleport_groups.Get(i);
             if ( group.Count() > 1 )
             {
                 TeleportGroup( group );

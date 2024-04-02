@@ -50,8 +50,16 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         if ( match_uuid.Length() != 36 )
         {
-        	BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
-        	GetGame().RequestExit(0);
+        	if( m_ServerData.force_match_uuid )
+        	{
+				BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+				GetGame().RequestExit(0);
+        	}
+        	else
+        	{
+				match_uuid = "";
+				BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
+			}
         }
         BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
 
@@ -269,10 +277,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
 
         // only add player if they connect during debug (otherwise they're a spectator)
-        if(player.GetIdentity())
+        if( player.GetIdentity() )
             player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
         GetCurrentState().AddPlayer(player);
+
+        if( match_uuid == "" )
+        	GetCurrentState().MessagePlayer( player, "Error while registering the match. The online scores will not be saved.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
     }
 
     void Disconnect(PlayerIdentity identity)

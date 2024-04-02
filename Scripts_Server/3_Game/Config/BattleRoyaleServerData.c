@@ -6,6 +6,7 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
     string ip_address = "127.0.0.1"; //--- leave this default and it'll default to the box ip address
 
     string webhook_jwt_token = "dummy";
+    bool force_match_uuid = false;
 
     override string GetPath()
     {
