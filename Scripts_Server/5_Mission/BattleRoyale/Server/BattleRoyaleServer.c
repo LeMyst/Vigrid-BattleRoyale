@@ -1,6 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleServer: BattleRoyaleBase
 {
+	protected static BattleRoyaleServer m_Instance;
     protected ref BattleRoyaleSpectators m_SpectatorSystem;
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
@@ -31,6 +32,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void Init()
     {
+		m_Instance = this;
+
         BattleRoyaleUtils.Trace("BattleRoyaleServer() Init()");
 #ifdef VPPADMINTOOLS
         GetPermissionManager().AddPermissionType({ "MenuBattleRoyaleManager" });
@@ -114,6 +117,11 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetGame().CreateObjectEx( "BlueZone", blue_zone_pos, ECE_NOLIFETIME );
 #endif
     }
+
+	static BattleRoyaleServer GetInstance()
+	{
+		return m_Instance;
+	}
 
     override bool IsDebug()
     {

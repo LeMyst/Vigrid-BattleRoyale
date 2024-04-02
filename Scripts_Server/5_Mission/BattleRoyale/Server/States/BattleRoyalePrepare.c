@@ -5,8 +5,10 @@ class BattleRoyalePrepare: BattleRoyaleState
     protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
 
+	private BattleRoyaleConfig m_Config;
     private BattleRoyaleGameData m_GameSettings;
     private BattleRoyaleSpawnsData m_SpawnsSettings;
+    private BattleRoyaleServerData m_ServerData;
 
     private ref array<ref Town> villages;
     private int villages_index;
@@ -21,6 +23,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
+        m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
         if(m_GameSettings)
         {
             a_StartingClothes = m_GameSettings.player_starting_clothes;
@@ -45,9 +48,6 @@ class BattleRoyalePrepare: BattleRoyaleState
     override void Activate()
     {
         super.Activate();
-
-        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
 
         LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
         serverWebhook.LockServer();
@@ -580,6 +580,18 @@ class BattleRoyalePrepare: BattleRoyaleState
             Sleep(100);
         }
         BattleRoyaleUtils.Trace("Players are disabled");
+
+        // Send players list to API server
+        map<string, string> players_list_steamid = new map<string, string>();
+        for (i = 0; i < pCount; i++) {
+            process_player = m_PlayerList[i];
+            if ( process_player && process_player.GetIdentity() )
+            	players_list_steamid.Insert( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() )
+        }
+        BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+        PlayersWebhook playersWebhook = new PlayersWebhook( m_ServerData.webhook_jwt_token );
+        playersWebhook.postPlayers( br_instance.match_uuid, players_list_steamid );
+        BattleRoyaleUtils.Trace("Players list sent");
 
         m_PlayerList.ShuffleArray();
 
