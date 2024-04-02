@@ -1,11 +1,14 @@
 #ifdef SERVER
 class BattleRoyaleServer: BattleRoyaleBase
 {
+	protected static BattleRoyaleServer m_Instance;
     protected ref BattleRoyaleSpectators m_SpectatorSystem;
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
 
     int i_NumRounds;
+
+    string match_uuid;
 
     protected ref Timer m_Timer;
 
@@ -29,6 +32,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void Init()
     {
+		m_Instance = this;
+
         BattleRoyaleUtils.Trace("BattleRoyaleServer() Init()");
 #ifdef VPPADMINTOOLS
         GetPermissionManager().AddPermissionType({ "MenuBattleRoyaleManager" });
@@ -39,6 +44,24 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
         serverWebhook.UnlockServer();
+
+        CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token );
+        match_uuid = createMatchWebhook.getMatchUUID();
+
+        if ( match_uuid.Length() != 36 )
+        {
+        	if( m_ServerData.force_match_uuid )
+        	{
+				BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+				GetGame().RequestExit(0);
+        	}
+        	else
+        	{
+				match_uuid = "";
+				BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
+			}
+        }
+        BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
 
         m_Timer = new Timer;
 
@@ -102,6 +125,11 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetGame().CreateObjectEx( "BlueZone", blue_zone_pos, ECE_NOLIFETIME );
 #endif
     }
+
+	static BattleRoyaleServer GetInstance()
+	{
+		return m_Instance;
+	}
 
     override bool IsDebug()
     {
@@ -249,10 +277,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
 
         // only add player if they connect during debug (otherwise they're a spectator)
-        if(player.GetIdentity())
+        if( player.GetIdentity() )
             player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
         GetCurrentState().AddPlayer(player);
+
+        if( match_uuid == "" )
+        	GetCurrentState().MessagePlayer( player, "Error while registering the match. The online scores will not be saved.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
     }
 
     void Disconnect(PlayerIdentity identity)

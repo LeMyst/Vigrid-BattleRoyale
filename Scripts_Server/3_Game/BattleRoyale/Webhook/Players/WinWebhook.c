@@ -11,7 +11,7 @@ class WinWebhook
 		s_ServerToken = server_token;
 	};
 
-	void Send(string player_steamid)
+	void Send(string match_uuid, string player_steamid)
 	{
 		Print("WinWebhook().Send()");
 
@@ -35,7 +35,7 @@ class WinWebhook
 
 		RestApi restApi = GetRestApi();
 		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
-        ctx.POST(new WinCallback( s_ServerToken, player_steamid, i_TryLeft ) , arguments.ToQuery(string.Format("players/%1/wins/add", player_steamid)), jatString);
+        ctx.POST(new WinCallback( s_ServerToken, match_uuid, player_steamid, i_TryLeft ) , arguments.ToQuery(string.Format("players/%1/wins/%2/add", player_steamid, match_uuid )), jatString);
 	};
 
 	void SetTryLeft(bool try_left)
@@ -48,14 +48,16 @@ class WinCallback: RestCallback
 {
 	protected string s_ServerToken;
 	protected int i_TryLeft;
+	protected string s_MatchUUID;
 	protected string s_PlayerSteamID;
 
-	void WinCallback(string server_token, string player_steamid, int try_left)
+	void WinCallback(string server_token, string match_uuid, string player_steamid, int try_left)
 	{
         Print("WinCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
+		s_MatchUUID = match_uuid;
 		s_PlayerSteamID = player_steamid;
 	}
 
@@ -65,7 +67,7 @@ class WinCallback: RestCallback
 
 		WinWebhook serverWebhook = new WinWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
-		serverWebhook.Send( s_PlayerSteamID );
+		serverWebhook.Send( s_MatchUUID, s_PlayerSteamID );
 	};
 
 	override void OnTimeout()
@@ -74,7 +76,7 @@ class WinCallback: RestCallback
 
 		WinWebhook serverWebhook = new WinWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
-		serverWebhook.Send( s_PlayerSteamID );
+		serverWebhook.Send( s_MatchUUID, s_PlayerSteamID );
 	};
 
 	override void OnSuccess( string data, int dataSize )
