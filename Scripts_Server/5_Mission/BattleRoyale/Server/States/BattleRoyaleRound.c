@@ -363,7 +363,7 @@ class BattleRoyaleRound: BattleRoyaleState
                         }
                     }
 
-                    if(pbKiller && pbKiller.GetIdentity())
+                    if(pbKiller && player != pbKiller && pbKiller.GetIdentity())
                     {
                         if(!ContainsPlayer( pbKiller ))
                         {
