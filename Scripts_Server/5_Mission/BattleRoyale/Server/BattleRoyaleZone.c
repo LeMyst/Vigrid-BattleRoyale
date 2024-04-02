@@ -387,6 +387,13 @@ class BattleRoyaleZone
 					continue;
 				}
 
+				vector override_position = BattleRoyaleConfig.GetConfig().GetPOIsData().GetOverrodePosition( city );
+				if( override_position != "0 0 0" )
+				{
+					city_position = {override_position[0], 0, override_position[2]};
+					BattleRoyaleUtils.Trace("Override " + city + " position!");
+				}
+
                 BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
                 s_POI.Insert(city_position);
             }

@@ -16,8 +16,6 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
         "Settlement_Vysotovo"
     };
 
-    ref array<ref BattleRoyaleOverrideSpawnPosition> override_spawn_positions;
-
     override string GetPath()
     {
         return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "spawns_settings.json";
@@ -36,11 +34,5 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
         if (!JsonFileLoader<BattleRoyaleSpawnsData>.LoadFile(GetPath(), this, errorMessage))
 			ErrorEx(errorMessage);
     }
-};
-
-class BattleRoyaleOverrideSpawnPosition
-{
-    string city_name;
-    array<int> new_position;
 };
 #endif

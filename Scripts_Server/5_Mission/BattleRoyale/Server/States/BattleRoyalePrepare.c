@@ -9,6 +9,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     private BattleRoyaleGameData m_GameSettings;
     private BattleRoyaleSpawnsData m_SpawnsSettings;
     private BattleRoyaleServerData m_ServerData;
+    private BattleRoyalePOIsData m_POIsSettings;
 
     private ref array<ref NamedLocation> villages;
     private int villages_index;
@@ -24,6 +25,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
         m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+        m_POIsSettings = BattleRoyaleConfig.GetConfig().GetPOIsData();
         if(m_GameSettings)
         {
             a_StartingClothes = m_GameSettings.player_starting_clothes;
@@ -176,20 +178,6 @@ class BattleRoyalePrepare: BattleRoyaleState
     protected NamedLocation GetRandomVillage(BattleRoyalePlayArea area = NULL, bool use_radius = false)
     {
 		BattleRoyaleUtils.Trace("GetRandomVillage()");
-		if( !m_OverrideSpawnPositions )
-		{
-			m_OverrideSpawnPositions = new map<string, vector>();
-
-			foreach(BattleRoyaleOverrideSpawnPosition position: m_SpawnsSettings.override_spawn_positions)
-			{
-				BattleRoyaleUtils.Trace(position.city_name + " " + position.new_position);
-				vector temp_pos;
-				temp_pos[0] = position.new_position[0];
-				temp_pos[2] = position.new_position[1];
-				temp_pos[1] = GetGame().SurfaceY( temp_pos[0], temp_pos[2] );
-				m_OverrideSpawnPositions.Set( position.city_name, temp_pos );
-			}
-		}
 
         // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/!Core/NamedLocation.c
         if(!villages)
@@ -208,9 +196,11 @@ class BattleRoyalePrepare: BattleRoyaleState
 //				vector city_position;
 				// TODO: Override city position from config file
 
-//				if( m_OverrideSpawnPositions.Contains(city) )
+//				vector override_position = m_POIsSettings.GetOverrodePosition( city );
+//
+//				if( override_position != "0 0 0" )
 //				{
-//					city_position = m_OverrideSpawnPositions.Get( city );
+//					city_position = override_position;
 //					BattleRoyaleUtils.Trace("Override " + city + " position!");
 //				}
 //				else
@@ -220,7 +210,6 @@ class BattleRoyalePrepare: BattleRoyaleState
 //					city_position[0] = float_array[0]; city_position[2] = float_array[1];
 //					city_position[1] = GetGame().SurfaceY(city_position[0], city_position[2]);
 //				}
-
 
 				string town_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 				if(town_type != "Capital" && town_type != "City" && town_type != "Village")

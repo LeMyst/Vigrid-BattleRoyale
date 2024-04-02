@@ -22,7 +22,7 @@ static const string BATTLEROYALE_API_ENDPOINT = "https://api.vigrid.ovh/";
 
 //--- settings files
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:Vigrid-BattleRoyale\\";
-static const string BATTLEROYALE_SETTINGS_MISSION_FOLDER = "$mission:Vigrid-BattleRoyale\\"
+static const string BATTLEROYALE_SETTINGS_MISSION_FOLDER = "$mission:Vigrid-BattleRoyale\\";
 
 
 //--- RPC namespaces

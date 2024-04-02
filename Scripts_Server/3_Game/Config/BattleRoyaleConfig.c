@@ -53,6 +53,12 @@ class BattleRoyaleConfig
         else
             Error("BattleRoyaleSpawnsData Setting Constructor Returned NULL");
 
+        BattleRoyalePOIsData p_POIsData = new BattleRoyalePOIsData;
+        if(p_POIsData)
+            m_Configs.Insert("POIsData", p_POIsData);
+        else
+            Error("BattleRoyalePOIsData Setting Constructor Returned NULL");
+
         BattleRoyaleZoneData p_ZoneData = new BattleRoyaleZoneData;
         if(p_ZoneData)
             m_Configs.Insert("ZoneData", p_ZoneData);
@@ -160,6 +166,13 @@ class BattleRoyaleConfig
         BattleRoyaleUtils.Trace("Accessing Spawns Data Config...");
 
         return BattleRoyaleSpawnsData.Cast( GetConfig("SpawnsData") );
+    }
+
+    BattleRoyalePOIsData GetPOIsData()
+    {
+        Print("Accessing POIs Data Config...");
+
+        return BattleRoyalePOIsData.Cast( GetConfig("POIsData") );
     }
 
     BattleRoyaleZoneData GetZoneData()
