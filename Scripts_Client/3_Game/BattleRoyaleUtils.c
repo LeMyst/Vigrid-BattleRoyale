@@ -20,6 +20,11 @@ class BattleRoyaleUtils: Managed
         }
     }
 
+    static void Error(string message)
+    {
+        LogServerMessage(NONE, message);
+    }
+
     static void Warn(string message)
     {
         LogServerMessage(WARN, message);
