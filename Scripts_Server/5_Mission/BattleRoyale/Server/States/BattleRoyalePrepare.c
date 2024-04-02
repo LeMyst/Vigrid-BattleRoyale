@@ -569,12 +569,11 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Starting to process players...");
         int i;
         PlayerBase process_player;
-
         int pCount = m_PlayerList.Count();
+
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player)
-            	//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( process_player, true );
             	DisableInput(process_player);
 
             Sleep(100);
@@ -582,6 +581,14 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Players are disabled");
 
         m_PlayerList.ShuffleArray();
+
+        for (i = 0; i < pCount; i++) {
+            process_player = m_PlayerList[i];
+            if (process_player) GiveStartingItems(process_player);
+
+            Sleep(100);
+        }
+        BattleRoyaleUtils.Trace("Gave starting items");
 
 #ifdef SCHANAMODPARTY
         BattleRoyaleUtils.Trace("Mod party enabled");
@@ -620,21 +627,12 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
-            if (process_player) GiveStartingItems(process_player);
-
-            Sleep(100);
-        }
-        
-        BattleRoyaleUtils.Trace("Gave starting items");
-
-        for (i = 0; i < pCount; i++) {
-            process_player = m_PlayerList[i];
             if (process_player) process_player.ResetPlayer(true);
 
             Sleep(100);
         }
-
         BattleRoyaleUtils.Trace("Healed players");
+
         Deactivate();
     }
 
