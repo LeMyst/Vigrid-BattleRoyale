@@ -580,18 +580,6 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
         BattleRoyaleUtils.Trace("Players are disabled");
 
-        // Send players list to API server
-        map<string, string> players_list_steamid = new map<string, string>();
-        for (i = 0; i < pCount; i++) {
-            process_player = m_PlayerList[i];
-            if ( process_player && process_player.GetIdentity() )
-            	players_list_steamid.Insert( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() )
-        }
-        BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-        PlayersWebhook playersWebhook = new PlayersWebhook( m_ServerData.webhook_jwt_token );
-        playersWebhook.postPlayers( br_instance.match_uuid, players_list_steamid );
-        BattleRoyaleUtils.Trace("Players list sent");
-
         m_PlayerList.ShuffleArray();
 
         for (i = 0; i < pCount; i++) {
@@ -602,6 +590,8 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
         BattleRoyaleUtils.Trace("Gave starting items");
 
+        BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+        array<ref map<string, string>> parties_list = new array<ref map<string, string>> ();
 #ifdef SCHANAMODPARTY
         BattleRoyaleUtils.Trace("Mod party enabled");
 
@@ -613,11 +603,10 @@ class BattleRoyalePrepare: BattleRoyaleState
         ref set<PlayerBase> group;
 
         // Send parties list to API server
-        array<ref set<string>> parties_list = new array<ref set<string>>();
         for (i = 0; i < pGroupCount; i++) {
             group = teleport_groups.Get(i);
 			Print( group );
-            set<string> party = new set<string>();
+            map<string, string> party = new map<string, string>();
 			int tmpNbPlayers = group.Count();
 			for(int j = 0; j < tmpNbPlayers; j++)
 			{
@@ -626,15 +615,12 @@ class BattleRoyalePrepare: BattleRoyaleState
 				if ( process_player && process_player.GetIdentity() )
 				{
 					Print( process_player.GetIdentity().GetPlainId() );
-					party.Insert( process_player.GetIdentity().GetPlainId() );
+            		party.Insert( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() )
 				}
 			}
 			Print( party );
 			parties_list.Insert( party );
         }
-		Print( parties_list );
-        PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
-        partiesWebhook.postParties( br_instance.match_uuid, parties_list );
         BattleRoyaleUtils.Trace("Parties list sent");
 
         teleport_groups.ShuffleArray();
@@ -656,10 +642,20 @@ class BattleRoyalePrepare: BattleRoyaleState
             process_player = m_PlayerList[i];
             if (process_player) Teleport(process_player);
 
+            map<string, string> party = new map<string, string>();
+			party.Insert( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() )
+			Print( party );
+			parties_list.Insert( party );
+
             Sleep(100);
         }
 #endif
         BattleRoyaleUtils.Trace("Teleported players");
+
+		Print( parties_list );
+        PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
+        partiesWebhook.postParties( br_instance.match_uuid, parties_list );
+        BattleRoyaleUtils.Trace("Parties list sent");
 
         // plz fix this
         Sleep(1000);

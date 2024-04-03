@@ -11,7 +11,7 @@ class PartiesWebhook
 		s_ServerToken = server_token;
 	};
 
-	void postParties(string match_uuid, array<ref set<string>> parties)
+	void postParties(string match_uuid, array<ref map<string, string>> parties)
 	{
 		Print("PartiesWebhook().postParties()");
 		Print( parties );
@@ -50,9 +50,9 @@ class PartiesCallback: RestCallback
 	protected string s_ServerToken;
 	protected int i_TryLeft;
 	protected string s_MatchUUID;
-	protected array<ref set<string>> a_Parties;
+	protected array<ref map<string, string>> a_Parties;
 
-	void PartiesCallback(string server_token, string match_uuid, array<ref set<string>> parties, int try_left)
+	void PartiesCallback(string server_token, string match_uuid, array<ref map<string, string>> parties, int try_left)
 	{
         Print("PartiesCallback() " + try_left);
 
