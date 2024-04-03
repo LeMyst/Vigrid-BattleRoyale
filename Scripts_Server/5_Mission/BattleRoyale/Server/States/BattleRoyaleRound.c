@@ -434,19 +434,49 @@ class BattleRoyaleRound: BattleRoyaleState
 		vector future_play_area_center = future_play_area.GetCenter();
     	float future_play_area_radius = future_play_area.GetRadius();
 
-		float distance = Math.RandomFloatInclusive(future_play_area_radius * 0.1, future_play_area_radius * 0.9);
-		float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+		for(int airdrop_try = 1; airdrop_try <= 200; airdrop_try++)
+		{
+			float distance = Math.RandomFloatInclusive(future_play_area_radius * 0.1, future_play_area_radius * 0.9);
+			float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
 
-		float dX = distance * Math.Sin(moveDir);
-		float dZ = distance * Math.Cos(moveDir);
+			float dX = distance * Math.Sin(moveDir);
+			float dZ = distance * Math.Cos(moveDir);
 
-        vector airdrop_position;
-		airdrop_position[0] = future_play_area_center[0] + dX;
-		airdrop_position[2] = future_play_area_center[2] + dZ;
-		airdrop_position[1] = GetGame().SurfaceY(airdrop_position[0], airdrop_position[2]);
+			vector airdrop_position;
+			airdrop_position[0] = future_play_area_center[0] + dX;
+			airdrop_position[2] = future_play_area_center[2] + dZ;
+
+			if( IsSafeForAirdrop( airdrop_position[0], airdrop_position[2] ) )
+				break;
+		}
+		airdrop_position[1] = GetGame().SurfaceY( airdrop_position[0], airdrop_position[2] );
     	ExpansionMissionModule.s_Instance.CallAirdrop( airdrop_position );
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName( this, "SpawnAirdropMessage", 15000, false );
 #endif
+    }
+
+    protected bool IsSafeForAirdrop(float x, float z)
+    {
+        // Avoid the sea
+        if(GetGame().SurfaceIsSea(x, z))
+            return false;
+
+		// Avoid the ponds
+        if(GetGame().SurfaceIsPond(x, z))
+            return false;
+
+		// Avoid namalsk ice (and others)
+        ref array<string> bad_surface_types = {
+            "nam_seaice",
+            "nam_lakeice_ext"
+        };
+
+        string surface_type;
+        GetGame().SurfaceGetType(x, z, surface_type);
+        if(bad_surface_types.Find(surface_type) != -1)
+            return false;
+
+        return true;
     }
 
     void SpawnAirdropMessage()
