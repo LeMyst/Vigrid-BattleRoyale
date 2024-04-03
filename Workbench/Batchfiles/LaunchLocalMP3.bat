@@ -15,19 +15,19 @@ call "%~dp0ClearLogs.bat" "%serverProfileDirectory%"
 
 call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" -port=%port% "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
 
-TIMEOUT /T 1 /NOBREAK
+PING 127.0.0.1 -n 2 > nul
 
 call "%~dp0ClearLogs.bat" "%ClientProfileDirectory%"
 
 call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%ClientProfileDirectory%" "-name=%playerName%" %password% "-mod=%modList%"
 
-TIMEOUT /T 1 /NOBREAK
+PING 127.0.0.1 -n 2 > nul
 
 call "%~dp0ClearLogs.bat" "%ClientBProfileDirectory%"
 
 call "%~dp0LaunchSteamClient.bat" %PlayerBSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%ClientBProfileDirectory%" "-name=%playerBName%" %password% "-mod=%modList%"
 
-TIMEOUT /T 1 /NOBREAK
+PING 127.0.0.1 -n 2 > nul
 
 call "%~dp0ClearLogs.bat" "%ClientCProfileDirectory%"
 
