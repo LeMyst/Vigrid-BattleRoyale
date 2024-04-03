@@ -133,54 +133,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     override void OnPlayerKilled(PlayerBase player, Object killer)
     {
-        if(ContainsPlayer( player ))
-        {
-            RemovePlayer( player );
-        }
-        else
-        {
-            Error("Unknown player killed! Not in current state?");
-        }
-
-        if(player.GetIdentity())
-        {
-            string player_steamid = player.GetIdentity().GetPlainId();
-            vector player_position = player.GetPosition();
-            int time = GetGame().GetTime(); //MS since mission start (we'll calculate UNIX timestamp on the webserver)
-
-            if(killer)
-            {
-                EntityAI killer_entity;
-                if(Class.CastTo(killer_entity, killer))
-                {
-                    string killed_with = "Unknown";
-                    vector killer_position = killer_entity.GetPosition();
-
-                    bool is_vehicle = false;
-
-                    PlayerBase pbKiller;
-                    if(!Class.CastTo(pbKiller, killer_entity))
-                    {
-                        Man root_player = killer_entity.GetHierarchyRootPlayer();
-                        if(root_player)
-                        {
-                            pbKiller = PlayerBase.Cast( root_player );
-                            is_vehicle = true;
-                        }
-                    }
-
-                    if(pbKiller && pbKiller.GetIdentity())
-                    {
-                        if(!ContainsPlayer( pbKiller ))
-                        {
-                            Error("Killer does not exist in the current game state!");
-                        }
-
-                        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
-                    }
-                }
-            }
-        }
+        super.OnPlayerKilled( player, killer );
     }
 
     override void OnPlayerTick(PlayerBase player, float timeslice)
