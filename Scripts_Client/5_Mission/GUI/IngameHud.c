@@ -1,4 +1,5 @@
 #ifndef SERVER
+#ifdef EXPANSIONMODNAMETAGS
 modded class IngameHud
 {
 	override protected bool HandleCurrentTaggedPlayer(float timeslice)
@@ -21,4 +22,5 @@ modded class IngameHud
 		return result;
 	}
 }
+#endif
 #endif
