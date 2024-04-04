@@ -15,6 +15,7 @@ class CreateMatchWebhook
 		Print("CreateMatchWebhook().getMatchUUID()");
 
 		HttpArguments arguments = {
+			new HttpArgument("version", "1"),
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 
