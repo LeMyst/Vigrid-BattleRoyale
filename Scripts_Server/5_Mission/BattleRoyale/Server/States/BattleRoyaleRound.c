@@ -502,7 +502,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     void NotifyTimeTillNoZoneSeconds(int seconds)
     {
-        string message = "The last zone will disappear in " + seconds.ToString() + " ";
+        string message = "The last zone will appear in " + seconds.ToString() + " ";
         if(seconds > 1)
             message += "seconds";
         else
@@ -513,7 +513,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     void NotifyTimeTillNoZoneMinutes(int minutes)
     {
-        string message = "The last zone will disappear in " + minutes.ToString() + " ";
+        string message = "The last zone will appear in " + minutes.ToString() + " ";
         if(minutes > 1)
             message += "minutes";
         else

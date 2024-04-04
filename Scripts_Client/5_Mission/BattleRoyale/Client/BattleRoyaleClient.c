@@ -90,8 +90,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 		// otherwise, show distance to the blue zone
 		else if( m_CurrentPlayArea )
 		{
-            isInsideZone = GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
-            gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
+			isInsideZone = GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
+			gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
+		// otherwise, hide distance
+		} else {
+			gameplay.HideDistance();
 		}
 
 		// If we have a blue zone, show visual effect when outside of zone

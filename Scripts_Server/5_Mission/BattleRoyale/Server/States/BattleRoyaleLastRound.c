@@ -191,6 +191,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
     {
         //TODO: this doesn't fucking work | if zone is null, no damage occurs
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false ), true);
         b_IsZoneLocked = true;
     }
 
