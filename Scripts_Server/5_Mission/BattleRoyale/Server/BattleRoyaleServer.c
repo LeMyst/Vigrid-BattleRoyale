@@ -281,6 +281,14 @@ class BattleRoyaleServer: BattleRoyaleBase
             player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
         GetCurrentState().AddPlayer(player);
+//
+//		int uuid[4];
+//		uuid[0] = Math.RandomInt(0, 4294967296);
+//		uuid[1] = Math.RandomInt(0, 4294967296);
+//		uuid[2] = (Math.RandomInt(0, 4294967296) & 0x0fff) | 0x4000;
+//		uuid[3] = (Math.RandomInt(0, 4294967296) & 0x3fff) | 0x8000;
+//
+//		GetCurrentState().MessagePlayer( player, UUIDApi.FormatString( uuid ), DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
 
         if( match_uuid == "" )
         	GetCurrentState().MessagePlayer( player, "Error while registering the match. The online scores will not be saved.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
