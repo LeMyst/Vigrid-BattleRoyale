@@ -8,6 +8,8 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
     float ready_up_percent = 0.8;
     float min_waiting_time = 300.0;
     int time_to_start_match_seconds = 30;
+    float autostart_players = 40.0;
+    float autostart_delay = 90.0;
 
     ref array<string> allowed_outside_spawn = {
         "123456789123456789" // Dummy SteamID64

@@ -8,6 +8,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected bool b_UseVoteSystem;
     protected float f_VoteThreshold;
     protected float f_MinWaitingTime;
+    protected float f_AutoStartPlayers;
+    protected float f_AutoStartDelay;
+    protected ref Timer t_AutoStartTimer;
 
     void BattleRoyaleDebug()
     {
@@ -20,6 +23,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
 		f_VoteThreshold = m_DebugSettings.ready_up_percent;
 		f_MinWaitingTime = m_DebugSettings.min_waiting_time;
+		f_AutoStartPlayers = m_DebugSettings.autostart_players;
+		f_AutoStartDelay = m_DebugSettings.autostart_delay;
     }
 
     override string GetName()
@@ -57,6 +62,12 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         if( IsActive() && IsVoteReady() && GetGame().GetTickTime() >= f_MinWaitingTime )
             Deactivate();
+
+        if( !t_AutoStartTimer && GetReadyCount() >= f_AutoStartPlayers)
+        {
+        	t_AutoStartTimer = AddTimer( f_AutoStartDelay, this, "Deactivate", NULL, false );
+        	MessagePlayers("The game will automatically start in " + Math.Ceil( f_AutoStartDelay ) + " seconds.");
+        }
     }
 
     void MessageWaiting()
@@ -94,11 +105,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
             message += " are ready!";
 
-            string key_name = InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD);
-            if(key_name == "")
-                message += " (Define a button in the options to ready up)";
-            else
-                message += " (Press " + key_name + " (default) to ready up)";
+			// TODO: Move that to client side
+			string key_name = InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD);
+            message += " (Press " + key_name + " (default) to ready up)";
 
 			if( GetGame().GetTickTime() < f_MinWaitingTime )
 			{
@@ -110,6 +119,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 					message += "The game cannot start before " + seconds_left + " seconds.";
 				else
 					message += "The game will automatically start in " + seconds_left + " seconds.";
+			} else if( t_AutoStartTimer ) {
+					message += ". The game will automatically start in " + Math.Ceil( t_AutoStartTimer.GetRemaining() ) + " seconds.";
 			}
         }
 
