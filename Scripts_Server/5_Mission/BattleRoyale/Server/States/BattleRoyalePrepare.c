@@ -615,11 +615,10 @@ class BattleRoyalePrepare: BattleRoyaleState
 				if ( process_player && process_player.GetIdentity() )
 				{
 					Print( process_player.GetIdentity().GetPlainId() );
-//					CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
-//					CF_Base64Stream base64_stream = CF_Base64Stream();
-//					string_stream.CopyTo( base64_stream );
-//					party.Insert( process_player.GetIdentity().GetPlainId(), base64_stream.Encode() )
-					party.Insert( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() )
+					CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
+					CF_Base16Stream base16_stream = CF_Base16Stream();
+					string_stream.CopyTo( base16_stream );
+					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() )
 				}
 			}
 			Print( party );
@@ -647,11 +646,10 @@ class BattleRoyalePrepare: BattleRoyaleState
             if (process_player) Teleport(process_player);
 
             map<string, string> party = new map<string, string>();
-//			CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
-//			CF_Base64Stream base64_stream = CF_Base64Stream();
-//			string_stream.CopyTo( base64_stream );
-//			party.Insert( process_player.GetIdentity().GetPlainId(), base64_stream.Encode() )
-			party.Insert( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() )
+			CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
+			CF_Base16Stream base16_stream = CF_Base16Stream();
+			string_stream.CopyTo( base16_stream );
+			party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() )
 			Print( party );
 			parties_list.Insert( party );
 
