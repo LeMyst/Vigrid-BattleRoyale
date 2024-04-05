@@ -105,6 +105,11 @@ modded class MissionGameplay
         m_BattleRoyaleHud.SetDistance( isInsideZone, distExt, distInt, angle );
     }
 
+    void HideDistance()
+    {
+        m_BattleRoyaleHud.ShowDistance( false );
+    }
+
 #ifdef BR_MINIMAP
     void UpdateMiniMap()
     {
