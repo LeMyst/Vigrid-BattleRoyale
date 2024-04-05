@@ -74,6 +74,10 @@ class BattleRoyaleWin: BattleRoyaleState
 		WinWebhook winWebhook = new WinWebhook( m_ServerData.webhook_jwt_token );
 		winWebhook.Send( br_instance.match_uuid, player_winner.GetIdentity().GetPlainId() );
 
+		BattleRoyaleUtils.Trace("ScoreWebhook: Sending winner score");
+		ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+		scoreWebhook.Send( br_instance.match_uuid, player_winner.GetIdentity().GetPlainId(), player_winner.GetBRPosition() );
+
 		ref array<string> chickens = {"Animal_GallusGallusDomesticus", "Animal_GallusGallusDomesticusF_Brown", "Animal_GallusGallusDomesticusF_Spotted", "Animal_GallusGallusDomesticusF_White"}
 
 		for (int j = 0; j < 10; j++)

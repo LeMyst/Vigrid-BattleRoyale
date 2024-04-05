@@ -295,6 +295,10 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         if(GetCurrentState().ContainsPlayer(player))
         {
+            //if we are in a round, then we need to call OnPlayerDisconnected (since it's not a state based function we must cast)
+            if(i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2 )
+                GetCurrentState().OnPlayerDisconnected(player);
+
             GetCurrentState().RemovePlayer(player);
         }
     }

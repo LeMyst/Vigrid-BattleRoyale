@@ -171,6 +171,7 @@ class BattleRoyaleState: Timeable
 		for(int i = 0; i < GetPlayers().Count(); i++)
 		{
 			PlayerBase player = GetPlayers()[i];
+			player.SetBRPosition( position );
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", new Param1<int>( position ), true, player.GetIdentity() );
 		}
     }
@@ -297,8 +298,26 @@ class BattleRoyaleState: Timeable
 
         return groups;
     }
-    
 #endif
+
+	void OnPlayerDisconnected(PlayerBase player)
+	{
+		if(ContainsPlayer( player ))
+		{
+			RemovePlayer( player );
+		}
+		else
+		{
+			Error("Unknown player disconnected! Not in current state?");
+		}
+
+		BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
+		BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+		BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+		ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+		scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
+	}
+
 	void OnPlayerKilled(PlayerBase player, Object killer)
 	{
 		if(ContainsPlayer( player ))
@@ -315,6 +334,12 @@ class BattleRoyaleState: Timeable
 			string player_steamid = player.GetIdentity().GetPlainId();
 			vector player_position = player.GetPosition();
 			int time = GetGame().GetTime(); //MS since mission start (we'll calculate UNIX timestamp on the webserver)
+
+			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
+			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+			scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
 
 			if(killer)
 			{
