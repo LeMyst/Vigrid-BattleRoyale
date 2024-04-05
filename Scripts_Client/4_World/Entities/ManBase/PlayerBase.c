@@ -77,4 +77,18 @@ modded class PlayerBase
 			}
 		}
 	}
+
+#ifdef SERVER
+	int br_position = -1;
+
+	void SetBRPosition( int position )
+	{
+		br_position = position;
+	}
+
+	int GetBRPosition()
+	{
+		return br_position;
+	}
+#endif
 }
