@@ -80,6 +80,7 @@ modded class PlayerBase
 
 #ifdef SERVER
 	int br_position = -1;
+	string player_steamid = "";
 
 	void SetBRPosition( int position )
 	{

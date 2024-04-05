@@ -206,6 +206,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         //Teleport player into debug zone
         Print("Player " + player.GetIdentity().GetName() + " connected!"); //lets find out if respawning players end up here
 
+        //Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
+        player.player_steamid = player.GetIdentity().GetPlainId();
+
         //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
 

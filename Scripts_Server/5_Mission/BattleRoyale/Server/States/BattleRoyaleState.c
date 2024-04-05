@@ -315,7 +315,7 @@ class BattleRoyaleState: Timeable
 		BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
 		BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
 		ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-		scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
+		scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
 	}
 
 	void OnPlayerKilled(PlayerBase player, Object killer)
