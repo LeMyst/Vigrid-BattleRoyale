@@ -234,12 +234,9 @@ class BattleRoyaleZone
 
     vector GetValidPositionSquare(float min_x, float max_x, float min_z, float max_z)
     {
-        int max_try = 100;
         vector new_center = "0 0 0";
         while(true)
         {
-            max_try = max_try - 1;
-
             new_center[0] = Math.RandomFloat(min_x, max_x);
             new_center[2] = Math.RandomFloat(min_z, max_z);
 
@@ -275,7 +272,6 @@ class BattleRoyaleZone
 
             new_center[0] = oldX + dX;
             new_center[2] = oldZ + dZ;
-            new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
 
             // We check if the (new center+radius) is inside the world
             int world_size = GetGame().GetWorld().GetWorldSize();
@@ -300,6 +296,19 @@ class BattleRoyaleZone
 
                     if((new_center[2] + new_radius) > world_size)
                         new_center[2] = world_size - new_radius;
+
+					if ( (new_radius - old_radius) < vector.Distance( Vector( new_center[0], 0, new_center[2] ), Vector( circle_center[0], 0, circle_center[2] ) ) )
+					{
+						BattleRoyaleUtils.Trace("try to find the maximum distance we can use to have circle inside one another");
+						distance = new_radius - old_radius; // We take the maximum distance we should have
+						moveDir = Math.Atan2( (world_size / 2) - circle_center[0], (world_size / 2) - circle_center[2] ); // We got the direction to the center of the map, we can improve this
+
+						dX = distance * Math.Sin(moveDir);
+						dZ = distance * Math.Cos(moveDir);
+
+						new_center[0] = oldX + dX;
+						new_center[2] = oldZ + dZ;
+					}
 
                     BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
                     // TODO: crash the server if no good zone found?
@@ -343,6 +352,8 @@ class BattleRoyaleZone
                 break;
             }
         }
+
+		new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
 
         return new_center;
     }
