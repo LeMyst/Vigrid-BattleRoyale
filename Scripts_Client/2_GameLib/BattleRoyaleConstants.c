@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.0.22-Vigrid";
+static const string BATTLEROYALE_VERSION = "0.0.23-Vigrid";
 
 //--- debug settings
 static const int BATTLEROYALE_SOLO_GAME = 0;
