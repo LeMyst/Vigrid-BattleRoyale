@@ -465,7 +465,9 @@ class BattleRoyaleDebugState: BattleRoyaleState
     {
         super.OnPlayerTick(player, timeslice);
 
-        float distance = vector.Distance(player.GetPosition(), v_Center);
+		// Try to do only a 2D distance between points and not 3D (to avoid the teleport bug on Takistan)
+        vector player_position = player.GetPosition();
+        float distance = vector.Distance( Vector( player_position[0], 0, player_position[2] ), Vector( v_Center[0], 0, v_Center[2] ) );
 
         if(distance > f_Radius && !CanGoOutsideSpawn(player))
         {
