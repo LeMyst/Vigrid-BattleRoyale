@@ -8,9 +8,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected bool b_UseVoteSystem;
     protected float f_VoteThreshold;
     protected float f_MinWaitingTime;
-    protected float f_AutoStartPlayers;
     protected float f_AutoStartDelay;
-    protected ref Timer t_AutoStartTimer;
+    protected bool b_AutoStartGame;
+    protected int i_FirstPlayerTick;
 
     void BattleRoyaleDebug()
     {
@@ -23,7 +23,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
 		f_VoteThreshold = m_DebugSettings.ready_up_percent;
 		f_MinWaitingTime = m_DebugSettings.min_waiting_time;
-		f_AutoStartPlayers = m_DebugSettings.autostart_players;
+		b_AutoStartGame = m_DebugSettings.autostart_enabled;
 		f_AutoStartDelay = m_DebugSettings.autostart_delay;
     }
 
@@ -47,6 +47,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         return super.IsComplete();
     }
 
+    override void AddPlayer(PlayerBase player)
+    {
+        super.AddPlayer( player );
+
+        if( GetPlayers().Count() == 1 )
+        	i_FirstPlayerTick = GetGame().GetTickTime();
+    }
+
     override void Activate()
     {
         //these loop & will be automatically cleaned up on Deactivation
@@ -60,14 +68,15 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void CheckReadyState()
     {
-        if( IsActive() && IsVoteReady() && GetGame().GetTickTime() >= f_MinWaitingTime )
-            Deactivate();
+		if( GetGame().GetTickTime() >= f_MinWaitingTime && GetPlayers().Count() > 1 )
+		{
+			if( IsActive() && IsVoteReady() )
+				Deactivate();
 
-        if( !t_AutoStartTimer && GetReadyCount() >= f_AutoStartPlayers)
-        {
-        	t_AutoStartTimer = AddTimer( f_AutoStartDelay, this, "Deactivate", NULL, false );
-        	MessagePlayers("The game will automatically start in " + Math.Ceil( f_AutoStartDelay ) + " seconds.");
-        }
+			int t_MaxPlayers = GetGame().ServerConfigGetInt( "maxPlayers" );
+			if( b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) ) )
+				Deactivate();
+		}
     }
 
     void MessageWaiting()
@@ -119,8 +128,6 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 					message += "The game cannot start before " + seconds_left + " seconds.";
 				else
 					message += "The game will automatically start in " + seconds_left + " seconds.";
-			} else if( t_AutoStartTimer ) {
-					message += ". The game will automatically start in " + Math.Ceil( t_AutoStartTimer.GetRemaining() ) + " seconds.";
 			}
         }
 
