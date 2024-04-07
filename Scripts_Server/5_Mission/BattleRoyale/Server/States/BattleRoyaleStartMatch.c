@@ -149,6 +149,42 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         Deactivate();
     }
 
+    void DeferredUnstuck( PlayerBase player )
+	{
+		MessagePlayer( player, "You will be randomly teleported in a few seconds." );
+		Print( player.GetIdentity().GetName() + " asked for an unstuck teleportation." );
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
+	}
+
+	void Unstuck( PlayerBase player )
+	{
+		for(int search_pos = 1; search_pos <= 50; search_pos++)
+		{
+			float radius, angle, x, z, y;
+			vector player_position, playerDir, direction;
+
+			radius = 10.0;
+			angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+			player_position = player.GetPosition();
+			x = player_position[0] + ( radius * Math.Cos(angle) );
+			z = player_position[2] + ( radius * Math.Sin(angle) );
+			y = GetGame().SurfaceY(x, z);
+
+			if( IsSafeForTeleport(x, y, z, false) )
+			{
+				playerDir = vector.YawToVector( Math.RandomFloat(0, 360) );
+				direction = Vector(playerDir[0], 0, playerDir[1]);
+
+				ScriptJunctureData pCtx = new ScriptJunctureData;
+				pCtx.Write( Vector(x, y, z) );
+				pCtx.Write( direction );
+				player.SendSyncJuncture( 88, pCtx );
+				player.SetSynchDirty();
+				break;
+			}
+		}
+	}
+
     override void OnPlayerKilled(PlayerBase player, Object killer)
     {
         if(!b_IsGameplay)

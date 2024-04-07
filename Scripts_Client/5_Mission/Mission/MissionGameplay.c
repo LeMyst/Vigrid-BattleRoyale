@@ -243,10 +243,12 @@ modded class MissionGameplay
 
         m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
 
-
         if (GetUApi() && !m_UIManager.IsMenuOpen(MENU_CHAT_INPUT)) {
             if (GetUApi().GetInputByID(UADayZBRReadyUp).LocalPress()) {
                 BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
+            }
+            if (GetUApi().GetInputByID(UADayZBRUnstuck).LocalPress()) {
+                BattleRoyaleClient.Cast( m_BattleRoyale ).Unstuck();
             }
 #ifdef BR_MINIMAP
             if (GetUApi().GetInputByID(UADayZBRToggleMiniMap).LocalPress()) {

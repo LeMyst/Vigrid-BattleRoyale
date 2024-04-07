@@ -198,6 +198,89 @@ class BattleRoyaleState: Timeable
         }
     }
 
+    protected bool IsSafeForTeleport(float x, float y, float z, bool check_zone = true)
+    {
+        BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
+    	// Check if in zone (if needed)
+        if(check_zone && m_SpawnsSettings.spawn_in_first_zone)
+        {
+            if(!BattleRoyaleZone.GetZone(i_StartingZone).IsInZone(x, z))
+                return false;
+        }
+
+        // Avoid the sea
+        if(GetGame().SurfaceIsSea(x, z))
+            return false;
+
+		// Avoid the ponds
+        if(GetGame().SurfaceIsPond(x, z))
+            return false;
+
+		// Avoid the roads
+//        if(GetGame().SurfaceRoadY(x, z) != y)
+//            return false;
+
+		// Avoid namalsk ice (and others)
+        ref array<string> bad_surface_types = {
+            "nam_seaice",
+            "nam_lakeice_ext"
+        };
+
+        string surface_type;
+        GetGame().SurfaceGetType(x, z, surface_type);
+        if(bad_surface_types.Find(surface_type) != -1)
+            return false;
+
+		// Avoid objects
+        vector position;
+        position[0] = x;
+        position[1] = y;
+        position[2] = z;
+
+        vector start = position + Vector( 0, 10, 0 );
+        vector end = position;
+        float radius = 2.5;
+
+        PhxInteractionLayers collisionLayerMask = PhxInteractionLayers.VEHICLE|PhxInteractionLayers.BUILDING|PhxInteractionLayers.DOOR|PhxInteractionLayers.ITEM_LARGE|PhxInteractionLayers.FENCE;
+        Object m_HitObject;
+        vector m_HitPosition;
+        vector m_HitNormal;
+        float m_HitFraction;
+        bool m_Hit = DayZPhysics.SphereCastBullet( start, end, radius, collisionLayerMask, NULL, m_HitObject, m_HitPosition, m_HitNormal, m_HitFraction );
+
+        if(m_Hit)
+            return false;
+
+        // New Geometry check
+        array<Object> excludedObjects = new array<Object>();
+        array<Object> collidedObjects = new array<Object>();
+        vector box_position;
+        box_position[0] = position[0];
+        box_position[1] = position[1];
+        box_position[2] = position[2];
+        if( GetGame().IsBoxCollidingGeometry(box_position, "0 0 0", "2 10 2", ObjIntersectFire, ObjIntersectGeom, excludedObjects, collidedObjects) )
+        {
+            if( collidedObjects.Count() > 0)
+            {
+                BattleRoyaleUtils.Trace("New IsSafeForTeleport Geometry check is true !");
+                Print( collidedObjects );
+                for (int i = 0; i < collidedObjects.Count(); ++i)
+                {
+                    string objectClass = collidedObjects.Get(i).GetType();
+                    BattleRoyaleUtils.Trace( "objectClass: " + objectClass );
+                }
+
+                string text = "";
+                foreach (Object object: collidedObjects)
+                    text += " | " + Object.GetDebugName(object);
+            }
+
+			return false;
+        }
+
+        return true;
+    }
+
 #ifdef SCHANAMODPARTY
     ref array<ref set<PlayerBase>> GetGroups()
     {
