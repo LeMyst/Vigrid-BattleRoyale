@@ -318,9 +318,9 @@ class BattleRoyaleRound: BattleRoyaleState
         return false;
     }
 
-    override void OnPlayerKilled(PlayerBase player, Object killer)
+    override void OnPlayerKilled(PlayerBase player, Object source)
     {
-        super.OnPlayerKilled( player, killer );
+        super.OnPlayerKilled( player, source );
     }
 
     override void OnPlayerTick(PlayerBase player, float timeslice)

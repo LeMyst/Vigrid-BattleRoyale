@@ -318,9 +318,9 @@ class BattleRoyaleState: Timeable
 		scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
 	}
 
-	void OnPlayerKilled(PlayerBase player, Object killer)
+	void OnPlayerKilled( PlayerBase player, Object source )
 	{
-		if(ContainsPlayer( player ))
+		if( ContainsPlayer( player ) )
 		{
 			RemovePlayer( player );
 		}
@@ -329,11 +329,18 @@ class BattleRoyaleState: Timeable
 			Error("Unknown player killed! Not in current state?");
 		}
 
-		if(player.GetIdentity())
+		if (!player || !source)
 		{
-			string player_steamid = player.GetIdentity().GetPlainId();
-			vector player_position = player.GetPosition();
-			int time = GetGame().GetTime(); //MS since mission start (we'll calculate UNIX timestamp on the webserver)
+	        Print("DEBUG: PlayerKilled() player/source does not exist");
+	        return;
+    	}
+
+		if( player.GetIdentity() )
+		{
+			map<string, string> json_data = new map<string, string>();
+			json_data.Insert( "victim", player.GetIdentity().GetPlainId() )
+			json_data.Insert( "victim_position", player.GetPosition().ToString() )
+			vector killer_position = "0 0 0";
 
 			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
 			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
@@ -341,38 +348,55 @@ class BattleRoyaleState: Timeable
 			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
 			scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
 
-			if(killer)
+			// Does the source is a carrier and the carrier a Player?
+			PlayerBase playerSource = PlayerBase.Cast( EntityAI.Cast( source ).GetHierarchyParent() );
+			if (!playerSource)
 			{
-				EntityAI killer_entity;
-				if(Class.CastTo(killer_entity, killer))
+				// If not, does the source is a Player?
+				playerSource = PlayerBase.Cast( source );
+			}
+
+			if (player == source)	// deaths not caused by another object (starvation, dehydration)
+			{
+				// Killed by environmental causes but the the player directly
+				json_data.Insert( "killer", "environment" )
+			}
+			else if ( source.IsInherited(Grenade_Base) || source.IsInherited(LandMineTrap) )
+			{
+				string killer = "";
+				EnScript.GetClassVar(source, "m_ActivatorId", -1, killer);
+				json_data.Insert( "killer", killer );
+				json_data.Insert( "weapon", source.GetType() );
+			}
+			else {
+				json_data.Insert( "killer_position", source.GetPosition().ToString() );
+
+				if (source.IsWeapon() || source.IsMeleeWeapon())
 				{
-					string killed_with = "Unknown";
-					vector killer_position = killer_entity.GetPosition();
-
-					bool is_vehicle = false;
-
-					PlayerBase pbKiller;
-					if(!Class.CastTo(pbKiller, killer_entity))
+					json_data.Insert( "killer", playerSource.GetIdentity().GetPlainId() );
+					json_data.Insert( "weapon", source.GetType() )
+					if ( !source.IsMeleeWeapon() )
 					{
-						Man root_player = killer_entity.GetHierarchyRootPlayer();
-						if(root_player)
-						{
-							pbKiller = PlayerBase.Cast( root_player );
-							is_vehicle = true;
-						}
+						json_data.Insert( "distance", vector.Distance( player.GetPosition(), playerSource.GetPosition() ).ToString() );
 					}
-
-					if(pbKiller && player != pbKiller && pbKiller.GetIdentity())
+				}
+				else
+				{
+					if (playerSource)
 					{
-						if(!ContainsPlayer( pbKiller ))
-						{
-							Error("Killer does not exist in the current game state!");
-						}
-
-						GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, pbKiller.GetIdentity(),pbKiller);
+						json_data.Insert( "killer", playerSource.GetIdentity().GetPlainId() );
+						json_data.Insert( "weapon", "fist" );
+					}
+					else
+					{
+						//rest, Animals, Zombies
+						json_data.Insert( "killer", source.GetType() );
 					}
 				}
 			}
+
+			EventWebhook eventWebhook = new EventWebhook( m_ServerData.webhook_jwt_token );
+			eventWebhook.Send( br_instance.match_uuid, "player.kill", JsonFileLoader<map<string, string>>.JsonMakeData( json_data ) );
 		}
 	}
 }
