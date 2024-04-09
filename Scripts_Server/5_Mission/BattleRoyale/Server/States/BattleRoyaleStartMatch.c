@@ -193,6 +193,6 @@ class BattleRoyaleStartMatch: BattleRoyaleState
             return;
         }
 
-        super.OnPlayerKilled( player, killer );
+        super.OnPlayerKilled( player, source );
     }
 }
