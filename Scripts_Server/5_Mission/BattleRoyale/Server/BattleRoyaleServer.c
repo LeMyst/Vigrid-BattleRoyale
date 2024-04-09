@@ -15,6 +15,7 @@ class BattleRoyaleServer: BattleRoyaleBase
     void BattleRoyaleServer()
     {
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
@@ -462,6 +463,30 @@ class BattleRoyaleServer: BattleRoyaleBase
             }
 
         }
+    }
+
+    void PlayerUnstuck(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+    {
+		if(!target) return;
+
+		PlayerBase targetBase = PlayerBase.Cast(target);
+
+		if(!targetBase) return;
+
+		if(type == CallType.Server)
+		{
+			BattleRoyaleStartMatch m_StartMatchStateObj;
+			if(!Class.CastTo(m_StartMatchStateObj, GetCurrentState()))
+				return;
+
+            if(!m_StartMatchStateObj.ContainsPlayer(targetBase))
+            {
+                Error("StartMatch state does not contain player requesting unstuck!");
+                return;
+            }
+
+			m_StartMatchStateObj.DeferredUnstuck( targetBase );
+		}
     }
 
     //TODO: This will need a rework!

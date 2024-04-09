@@ -228,6 +228,13 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     }
 
+    void Unstuck()
+    {
+        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", NULL, true , NULL, player);
+
+    }
+
     void StartMatch(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
     {
         if ( type == CallType.Client )
