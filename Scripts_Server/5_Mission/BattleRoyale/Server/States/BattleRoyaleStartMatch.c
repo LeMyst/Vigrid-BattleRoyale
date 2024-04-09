@@ -151,9 +151,17 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
     void DeferredUnstuck( PlayerBase player )
 	{
-		MessagePlayer( player, "You will be randomly teleported in a few seconds." );
-		Print( player.GetIdentity().GetName() + " asked for an unstuck teleportation." );
-		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
+		if( !player.wait_unstuck )
+		{
+			player.wait_unstuck = true;
+			MessagePlayer( player, "You will be randomly teleported in a few seconds." );
+			Print( player.GetIdentity().GetName() + " asked for an unstuck teleportation." );
+			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
+		}
+		else
+		{
+			MessagePlayer( player, "You have already requested an unstuck teleportation. Please wait." );
+		}
 	}
 
 	void Unstuck( PlayerBase player )
@@ -180,6 +188,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 				pCtx.Write( direction );
 				player.SendSyncJuncture( 88, pCtx );
 				player.SetSynchDirty();
+				player.wait_unstuck = false;
 				break;
 			}
 		}

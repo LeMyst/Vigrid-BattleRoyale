@@ -11,6 +11,8 @@ modded class PlayerBase
     float time_since_last_net_sync = 0;
     bool force_result = true;
 
+    bool wait_unstuck = false;
+
     string owner_id = "";
 
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
