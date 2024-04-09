@@ -454,27 +454,27 @@ class BattleRoyaleState: Timeable
 			else {
 				json_data.Insert( "killer_position", source.GetPosition().ToString() );
 
-				if (source.IsWeapon() || source.IsMeleeWeapon())
+				if (playerSource)
 				{
 					json_data.Insert( "killer", playerSource.GetIdentity().GetPlainId() );
-					json_data.Insert( "weapon", source.GetType() )
-					if ( !source.IsMeleeWeapon() )
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, playerSource.GetIdentity(), playerSource);
+					if (source.IsWeapon() || source.IsMeleeWeapon())
 					{
-						json_data.Insert( "distance", vector.Distance( player.GetPosition(), playerSource.GetPosition() ).ToString() );
+						json_data.Insert( "weapon", source.GetType() )
+						if ( !source.IsMeleeWeapon() )
+						{
+							json_data.Insert( "distance", vector.Distance( player.GetPosition(), playerSource.GetPosition() ).ToString() );
+						}
+					}
+					else
+					{
+						json_data.Insert( "weapon", "fist" );
 					}
 				}
 				else
 				{
-					if (playerSource)
-					{
-						json_data.Insert( "killer", playerSource.GetIdentity().GetPlainId() );
-						json_data.Insert( "weapon", "fist" );
-					}
-					else
-					{
-						//rest, Animals, Zombies
-						json_data.Insert( "killer", source.GetType() );
-					}
+					//rest, Animals, Zombies
+					json_data.Insert( "killer", source.GetType() );
 				}
 			}
 
