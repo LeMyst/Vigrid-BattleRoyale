@@ -436,7 +436,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
 		for(int airdrop_try = 1; airdrop_try <= 200; airdrop_try++)
 		{
-			float distance = Math.RandomFloatInclusive(future_play_area_radius * 0.1, future_play_area_radius * 0.9);
+			float distance = Math.RandomFloatInclusive(future_play_area_radius * 0.4, future_play_area_radius * 0.8);
 			float moveDir = Math.RandomFloat(0, 360) * Math.DEG2RAD;
 
 			float dX = distance * Math.Sin(moveDir);
