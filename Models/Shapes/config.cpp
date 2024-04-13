@@ -11,3 +11,12 @@ class CfgPatches
 		};
 	};
 };
+
+class CfgVehicles
+{
+	class HouseNoDestruct;
+	class the_zone: HouseNoDestruct
+	{
+		model="\BattleRoyale_Models_Shapes\zone.p3d";
+	};
+};

@@ -237,6 +237,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false , NULL, player);
 
+		the_zone m_WH_Keyhole = the_zone.Cast ( GetGame().CreateObjectEx( "the_zone", player.GetPosition() , ECE_LOCAL ) );
+		m_WH_Keyhole.SetScale( 0.65 );
     }
 
     void Unstuck()
