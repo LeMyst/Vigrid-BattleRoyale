@@ -104,7 +104,7 @@ class BattleRoyaleRound: BattleRoyaleState
     {
         //we just activated this round (players not yet transfered from previous state)
         int time_till_end = i_RoundTimeInSeconds * 1000;
-        int time_till_lock = time_till_end * 0.75;
+        int time_till_lock = time_till_end * 0.80; // Time before lock, changed from 0.75 to 0.80
         int time_between_lock_and_end = time_till_end - time_till_lock;
         Print(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds with a lock at " + time_till_lock / 1000 + " seconds (so " + time_between_lock_and_end / 1000 + " seconds after lock before end) !");
 
