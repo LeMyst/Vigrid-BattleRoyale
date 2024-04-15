@@ -486,6 +486,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             }
 
 			m_StartMatchStateObj.DeferredUnstuck( targetBase );
+			targetBase.SetSynchDirty();
 		}
     }
 
