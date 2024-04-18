@@ -10,7 +10,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     private BattleRoyaleSpawnsData m_SpawnsSettings;
     private BattleRoyaleServerData m_ServerData;
 
-    private ref array<ref Town> villages;
+    private ref array<ref NamedLocation> villages;
     private int villages_index;
 
     private string last_village_spawn = "";
@@ -119,7 +119,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         if ( process_player == NULL )
             return false;
-        
+
         if (process_player.GetInventory().CountInventory() > 0)
         {
             process_player.RemoveAllItems();
@@ -173,7 +173,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         process_player.DisableInput(true);
     }
 
-    protected Town GetRandomVillage(BattleRoyalePlayArea area = NULL, bool use_radius = false)
+    protected NamedLocation GetRandomVillage(BattleRoyalePlayArea area = NULL, bool use_radius = false)
     {
 		BattleRoyaleUtils.Trace("GetRandomVillage()");
 		if( !m_OverrideSpawnPositions )
@@ -191,12 +191,12 @@ class BattleRoyalePrepare: BattleRoyaleState
 			}
 		}
 
-        // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/Town/TownFlags.c
+        // https://github.com/InclementDab/DayZ-Dabs-Framework/blob/production/DabsFramework/Scripts/3_Game/DabsFramework/!Core/NamedLocation.c
         if(!villages)
         {
-            villages = new array<ref Town>;
+            villages = new array<ref NamedLocation>;
 
-            //ref array<ref Town> temp_villages = Town.GetMapTowns(TownFlags.CAPITAL | TownFlags.CITY | TownFlags.VILLAGE | TownFlags.CAMP);
+            //ref array<ref NamedLocation> temp_villages = NamedLocation.GetMapTowns(TownFlags.CAPITAL | TownFlags.CITY | TownFlags.VILLAGE | TownFlags.CAMP);
 
             string world_name = "";
             GetGame().GetWorldName(world_name);
@@ -227,19 +227,19 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 				BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
 
-				Town town_entry();
-				town_entry.Entry = city;
-				town_entry.Type = Town.GetTownFlag(GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
-				town_entry.Name = GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city));
-				town_entry.Position = city_position;
+				NamedLocation town_entry = new NamedLocation(string.Format("%1 %2", cfg, city));
+//				town_entry.Entry = city;
+//				town_entry.Type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
+//				town_entry.Name = GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city));
+//				town_entry.Position = city_position;
 
-				BattleRoyaleUtils.Trace("- " + i + ". " + town_entry.Name + " (" + Town.GetTownTypeString(town_entry.Type) + ")");
+				BattleRoyaleUtils.Trace("- " + i + ". " + town_entry.Name + " (" + town_entry.Type + ")");
 
-				if(town_entry.Name == "" || Town.GetTownTypeString(town_entry.Type) == "") // useless ?
+				if(town_entry.Name == "" || town_entry.Type == "") // useless ?
 					continue;
 
 				// Check if city Entry is not in the avoid spawn list
-				if(avoid_city_spawn.Find(town_entry.Entry) != -1)
+				if(avoid_city_spawn.Find(town_entry.Name) != -1)
 					continue;
 
 				if(m_SpawnsSettings.spawn_in_first_zone && area != NULL)
@@ -248,9 +248,9 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 					if(use_radius)
 					{
-						if (town_entry.Type == TownFlags.CITY)
+						if (town_entry.Type == NamedLocation.CITY)
 							village_pad = 300.0;
-						else if (town_entry.Type == TownFlags.CAPITAL)
+						else if (town_entry.Type == NamedLocation.CAPITAL)
 							village_pad = 500.0;
 						else
 							village_pad = 150.0;
@@ -263,9 +263,9 @@ class BattleRoyalePrepare: BattleRoyaleState
 				}
 
 				int pond = 1;
-				if(town_entry.Type == TownFlags.CAPITAL)
+				if(town_entry.Type == NamedLocation.CAPITAL)
 					pond = 5;
-				else if(town_entry.Type == TownFlags.CITY)
+				else if(town_entry.Type == NamedLocation.CITY)
 					pond = 3;
 
 				for(int p = 0; p < pond; p++)
@@ -279,7 +279,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 			villages.ShuffleArray();
 
 			BattleRoyaleUtils.Trace("Final village list:");
-			foreach(Town village: villages)
+			foreach(NamedLocation village: villages)
 			{
 				BattleRoyaleUtils.Trace("- " + village.Name + " (" + village.Type + ")");
 			}
@@ -297,15 +297,15 @@ class BattleRoyalePrepare: BattleRoyaleState
             return NULL;
     }
 
-    protected vector GetRandomVillagePosition(Town village)
+    protected vector GetRandomVillagePosition(NamedLocation village)
     {
         float village_x = village.Position[0];
         float village_z = village.Position[2];
         float village_pad;
 
-        if (village.Type == TownFlags.CITY)
+        if (village.Type == NamedLocation.CITY)
             village_pad = 300.0;
-        else if (village.Type == TownFlags.CAPITAL)
+        else if (village.Type == NamedLocation.CAPITAL)
             village_pad = 500.0;
         else
             village_pad = 100.0;
@@ -317,15 +317,15 @@ class BattleRoyalePrepare: BattleRoyaleState
         z = village_z + ( radius * Math.Sin(angle) );
         y = GetGame().SurfaceY(x, z);
 
-        Print("Trying to spawn player to " + village.Name + " (" + Town.GetTownTypeString(village.Type) + ") with a radius of " + village_pad);
+        Print("Trying to spawn player to " + village.Name + " (" + village.Type + ") with a radius of " + village_pad);
 
         return Vector(x, y, z);
     }
 
-    protected ref Param2<vector, Town> GetRandomSpawnPosition()
+    protected ref Param2<vector, NamedLocation> GetRandomSpawnPosition()
     {
         vector random_pos = "0 0 0";
-        Town village;
+        NamedLocation village;
 
         if (m_SpawnsSettings.spawn_in_villages)
         {
@@ -348,10 +348,10 @@ class BattleRoyalePrepare: BattleRoyaleState
 
                 if (village != NULL && village.Name != "")
                 {
-                    BattleRoyaleUtils.Trace("Found village " + village.Entry);
+                    BattleRoyaleUtils.Trace("Found village " + village.Name);
                     vector search_for_village = "0 0 0";
 
-                    if( village.Entry == last_village_spawn )
+                    if( village.Name == last_village_spawn )
                     	continue;
 
                     for(int search_pos = 1; search_pos <= 50; search_pos++)
@@ -371,8 +371,8 @@ class BattleRoyalePrepare: BattleRoyaleState
 
                     BattleRoyaleUtils.Trace("Found village position " + village_pos);
                     random_pos = village_pos; // Found a valid village position
-                    if( village.Type == TownFlags.CAPITAL || village.Type == TownFlags.CITY )
-                    	last_village_spawn = village.Entry; // Save last village spawn to avoid it next time
+                    if( village.Type == NamedLocation.CAPITAL || village.Type == NamedLocation.CITY )
+                    	last_village_spawn = village.Name; // Save last village spawn to avoid it next time
                     break;
                 } else {
                     Print("Another fucked up village!");
@@ -409,23 +409,23 @@ class BattleRoyalePrepare: BattleRoyaleState
             BattleRoyaleUtils.Trace("Already found a random pos from a village!");
         }
 
-        return new Param2<vector, Town>(random_pos, village);
+        return new Param2<vector, NamedLocation>(random_pos, village);
     }
 
     protected void Teleport(PlayerBase process_player)
     {
-        ref Param2<vector, Town> random_pos = GetRandomSpawnPosition();
+        ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
         vector position = random_pos.param1;
-        Town village = random_pos.param2;
+        NamedLocation village = random_pos.param2;
 
         TeleportPlayer(process_player, position, village);
     }
 
     protected void TeleportGroup(ref set<PlayerBase> group)
     {
-        ref Param2<vector, Town> random_pos = GetRandomSpawnPosition();
+        ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
         vector position = random_pos.param1;
-        Town village = random_pos.param2;
+        NamedLocation village = random_pos.param2;
 
         int tmpNbPlayers = group.Count();
         for(int i = 0; i < tmpNbPlayers; i++)
@@ -456,7 +456,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
     }
 
-    protected void TeleportPlayer(PlayerBase player, vector position, Town village = NULL)
+    protected void TeleportPlayer(PlayerBase player, vector position, NamedLocation village = NULL)
     {
         BattleRoyaleUtils.Trace("Spawn player " + player.GetIdentity().GetName() + " at " + position);
 
