@@ -391,11 +391,11 @@ class BattleRoyaleZone
             }
         }
 
-        ref array<float> poi = s_POI.Get(Math.RandomInt(0, s_POI.Count()));
-
         float radius, theta, x, z;
         while(true)
         {
+        	ref array<float> poi = s_POI.Get(Math.RandomInt(0, s_POI.Count()));
+
             radius = 10 * Math.Sqrt( Math.RandomFloat(0, 1) );
             theta = Math.RandomFloat(0, 1) * Math.PI2;
             x = poi[0] + radius * Math.Cos(theta);
