@@ -140,6 +140,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         }
 
         MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
+        MessagePlayers( "If you are stuck in a building, press F2 (default key) to be randomly teleported. Any abuse will result in a permanent ban.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, 90 );
 
         b_IsGameplay = true;
     }
