@@ -296,7 +296,7 @@ modded class MissionGameplay
 				if (input.LocalPress( "UADayZBRToggleEarplugsLegacy", false )  && !viewMenu)
 				{
 					if (generalSettings.EnableEarPlugs)
-						m_Hud.ToggleEarplugs();
+						m_Hud.Expansion_ToggleEarplugs();
 				}
 			}
 		}
