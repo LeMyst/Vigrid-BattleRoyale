@@ -245,7 +245,7 @@ class BattleRoyaleRound: BattleRoyaleState
             if(IsActive())
             {
 #ifdef SCHANAMODPARTY
-                if(i_MaxPartySize < 1 || players.Count() <= i_MaxPartySize)
+                if(i_MaxPartySize < 1 || players.Count() < i_MaxPartySize)
                 {
 					if( GetGroups().Count() <= 1 )
 					{
