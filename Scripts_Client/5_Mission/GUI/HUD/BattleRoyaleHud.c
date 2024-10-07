@@ -18,8 +18,10 @@ class BattleRoyaleHud
     protected ImageWidget m_DistanceZoneArrow;
     protected ImageWidget m_ImageClock;
 
+#ifdef SPECTATOR
     protected ref array<ref BattleRoyaleSpectatorPlayerWidget> m_SpectatorWidgets;
     protected bool show_spectator;
+#endif
 
     protected bool is_shown;
 
@@ -35,7 +37,9 @@ class BattleRoyaleHud
 
     protected void Init()
     {
+#ifdef SPECTATOR
         m_SpectatorWidgets = new array<ref BattleRoyaleSpectatorPlayerWidget>();
+#endif
 
         m_PlayerCountPanel = Widget.Cast( m_Root.FindAnyWidget( "PlayerCountPanel" ) );
         m_GroupCountPanel = Widget.Cast( m_Root.FindAnyWidget( "GroupsCountPanel" ) );
@@ -200,6 +204,7 @@ class BattleRoyaleHud
         m_CountdownTextWidget.SetText( display_str );
     }
 
+#ifdef SPECTATOR
     void Update(float timeslice)
     {
         if(show_spectator)
@@ -251,5 +256,6 @@ class BattleRoyaleHud
         ref BattleRoyaleSpectatorPlayerWidget player_widget = new BattleRoyaleSpectatorPlayerWidget(m_Root, player);
         return player_widget;
     }
+#endif
 }
 #endif

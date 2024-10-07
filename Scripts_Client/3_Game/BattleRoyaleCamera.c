@@ -1,3 +1,4 @@
+#ifdef SPECTATOR
 /*
 Huge thanks to InclementDab for providing the base code for this camera system
 */
@@ -191,3 +192,4 @@ class BattleRoyaleCamera: Camera
         d[0] = dir[0] * sin;
     }
 }
+#endif

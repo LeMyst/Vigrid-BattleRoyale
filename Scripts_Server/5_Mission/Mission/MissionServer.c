@@ -122,12 +122,12 @@ modded class MissionServer
 		super.OnClientRespawnEvent(identity, player);
 
 		//this should never happen, but maybe it could if in the debug zone so lets handle that case
-		if(player)
+		if( player )
 		{
 			//if player is inside the debug zone, delete the body (to prevent debug body spam)
 			BattleRoyaleDebug m_Debug;
 			BattleRoyaleState m_CurrentState = BattleRoyaleServer.Cast( m_BattleRoyale ).GetCurrentState();
-			if(Class.CastTo(m_Debug, m_CurrentState))
+			if( Class.CastTo( m_Debug, m_CurrentState ) )
 			{
 				//we are currently in the debug state
 				vector playerPos = player.GetPosition();
@@ -140,21 +140,31 @@ modded class MissionServer
 			else
 			{
 				//can't cast current state to debug? Kick
-				if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
+#ifdef SPECTATOR
+				if( !BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ) )
 				{
+#endif
 					Print("Kicking player (Not in debug state | Not a spectator)");
 					GetGame().DisconnectPlayer( identity );
+					// TODO: Replace with RPC call to ask the player to disconnect
+#ifdef SPECTATOR
 				}
+#endif
 			}
 		}
 		else
 		{
 			//Really no idea what this could be... maybe dead? Kick
+#ifdef SPECTATOR
 			if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
 			{
+#endif
 				Print("Kicking player (Not a valid player object | Not a spectator)");
 				GetGame().DisconnectPlayer( identity );
+				// TODO: Replace with RPC call to ask the player to disconnect
+#ifdef SPECTATOR
 			}
+#endif
 		}
 	}
 }

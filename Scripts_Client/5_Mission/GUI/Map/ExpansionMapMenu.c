@@ -5,7 +5,9 @@ modded class ExpansionMapMenu
     protected ref BattleRoyaleMapMarkerZone m_CurrentZone;
     protected ref BattleRoyaleMapMarkerZone m_NextZone;
 
+#ifdef SPECTATOR
     protected ref array<ref BattleRoyaleMapMarkerPlayerArrow> m_SpectatorPlayerMarkers;
+#endif
     protected ref map<string, ref BattleRoyaleMapMarkerPlayerArrow> m_NetworkPlayerMarkers;
 
     override Widget Init()
@@ -68,6 +70,7 @@ modded class ExpansionMapMenu
 
     ref array<vector> GetPlayerPositions
 
+#ifdef SPECTATOR
     //this updates players within the network bubble
     void UpdatePlayers()
     {
@@ -123,7 +126,6 @@ modded class ExpansionMapMenu
             m_Markers.RemoveItem( m_SpectatorPlayerMarkers[i] ); //remove from render list
         }
 
-
         if(!m_NetworkPlayerMarkers)
         {
             m_NetworkPlayerMarkers = new map<string, ref BattleRoyaleMapMarkerPlayerArrow>();
@@ -140,7 +142,7 @@ modded class ExpansionMapMenu
             {
                 //RENDER!
                 //create
-                if(!m_NetworkPlayerMarkers.Contains( Id ))
+                if ( !m_NetworkPlayerMarkers.Contains( Id ) )
                 {
                     m_NetworkPlayerMarkers.Insert( Id, new BattleRoyaleMapMarkerPlayerArrow( layoutRoot, m_MapWidget ) );
                 }
@@ -151,7 +153,7 @@ modded class ExpansionMapMenu
                 m_NetworkPlayerMarkers[Id].SetEntityDirection( data.direction );
 
                 //insert
-                if(m_Markers.Find(m_NetworkPlayerMarkers[Id]) == -1)
+                if ( m_Markers.Find(m_NetworkPlayerMarkers[Id]) == -1 )
                 {
                     m_Markers.Insert( m_NetworkPlayerMarkers[Id] );
                 }
@@ -159,13 +161,14 @@ modded class ExpansionMapMenu
             else
             {
                 //UNRENDER!
-                if(m_NetworkPlayerMarkers.Contains( Id ))
+                if ( m_NetworkPlayerMarkers.Contains( Id ) )
                 {
                     m_Markers.RemoveItem( m_NetworkPlayerMarkers[Id] );
                 }
             }
         }
     }
+#endif
 
     //ensure BR markers are rendering correct
     override void Update( float timeslice )
@@ -173,18 +176,20 @@ modded class ExpansionMapMenu
         //Print("Updating Zones...");
         UpdateZones();
 
+#ifdef SPECTATOR
         //spectator markers
-        if(GetGame() && GetGame().GetMission())
+        if ( GetGame() && GetGame().GetMission() )
         {
             MissionGameplay gameplay;
-            if(Class.CastTo(gameplay, GetGame().GetMission()))
+            if ( Class.CastTo(gameplay, GetGame().GetMission()) )
             {
-                if(gameplay.IsInSpectator())
+                if ( gameplay.IsInSpectator() )
                 {
                     UpdatePlayers();
                 }
             }
         }
+#endif
 
         super.Update( timeslice );
     }

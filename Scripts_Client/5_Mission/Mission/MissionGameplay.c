@@ -64,6 +64,7 @@ modded class MissionGameplay
         return is_spectator;
     }
 
+#ifdef SPECTATOR
     void InitSpectator()
     {
         Print("Initializing Spectator HUD");
@@ -73,6 +74,7 @@ modded class MissionGameplay
 
         HideHud();
     }
+#endif
 
     void UpdateKillCount(int count)
     {
@@ -241,7 +243,10 @@ modded class MissionGameplay
 
         m_BattleRoyale.Update( timeslice ); //send tick to br client
 
-        m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
+#ifdef SPECTATOR
+		if ( is_spectator )
+        	m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
+#endif
 
         if (GetUApi() && !m_UIManager.IsMenuOpen(MENU_CHAT_INPUT)) {
             if (GetUApi().GetInputByID(UADayZBRReadyUp).LocalPress()) {
@@ -267,7 +272,7 @@ modded class MissionGameplay
 #endif
         }
 
-        if(is_spectator)
+        if ( is_spectator )
         {
             HideHud();
         }

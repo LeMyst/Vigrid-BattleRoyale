@@ -1,12 +1,9 @@
 modded class PlayerBase
 {
+#ifndef SERVER
     //credit to wardog for the quick fix for client localplayers grabbing
     private static autoptr array<PlayerBase> s_LocalPlayers = new array<PlayerBase>();
 
-    float health_percent = -1;
-    float blood_percent = -1;
-
-#ifndef SERVER
     void PlayerBase()
     {
         if (s_LocalPlayers)
@@ -26,15 +23,11 @@ modded class PlayerBase
             }
         }
     }
-#endif
 
     static void GetLocalPlayers(out array<PlayerBase> players)
     {
-#ifndef SERVER
         players = new array<PlayerBase>();
         players.Copy(s_LocalPlayers);
-#endif
-    }
 
     void DisableInput(bool disabled)
     {
@@ -48,12 +41,6 @@ modded class PlayerBase
         controller.OverrideMovementAngle( disabled, 0 );
     }
 
-    bool UpdateHealthStats(float hp, float blood)
-    {
-        bool changed = (health_percent != hp) || (blood_percent != blood);
-        health_percent = hp;
-        blood_percent = hp;
-        return changed;
     }
 
 	override void CheckLiftWeapon()
@@ -78,18 +65,17 @@ modded class PlayerBase
 		}
 	}
 
-#ifdef SERVER
-	int br_position = -1;
-	string player_steamid = "";
+#ifdef SPECTATOR
+    float health_percent = -1;
+    float blood_percent = -1;
 
-	void SetBRPosition( int position )
-	{
-		br_position = position;
-	}
-
-	int GetBRPosition()
-	{
-		return br_position;
-	}
+    bool UpdateHealthStats(float hp, float blood)
+    {
+        bool changed = (health_percent != hp) || (blood_percent != blood);
+        health_percent = hp;
+        blood_percent = hp;
+        return changed;
+    }
+#endif
 #endif
 }

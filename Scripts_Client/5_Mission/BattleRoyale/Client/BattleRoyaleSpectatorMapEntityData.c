@@ -1,4 +1,5 @@
 #ifndef SERVER
+#ifdef SPECTATOR
 class BattleRoyaleSpectatorMapEntityData
 {
     vector position;
@@ -12,4 +13,3 @@ class BattleRoyaleSpectatorMapEntityData
         direction = dir;
     }
 }
-#endif

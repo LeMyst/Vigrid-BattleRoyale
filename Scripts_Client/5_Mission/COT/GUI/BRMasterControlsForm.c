@@ -77,10 +77,12 @@ class BRMasterControlsForm: JMFormBase
         m_Module.AddFakeGroup();
     }
 
+#ifdef SPECTATOR
     void ToggleSpectating(UIEvent eid, ref UIActionBase action)
     {
         m_Module.TestSpectator();
     }
+#endif
 
     void SpawnAirdrop(UIEvent eid, ref UIActionBase action)
     {

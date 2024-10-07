@@ -2,7 +2,9 @@
 class BattleRoyaleServer: BattleRoyaleBase
 {
 	protected static BattleRoyaleServer m_Instance;
+#ifdef SPECTATOR
     protected ref BattleRoyaleSpectators m_SpectatorSystem;
+#endif
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
 
@@ -19,7 +21,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
+#ifdef SPECTATOR
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this, SingleplayerExecutionType.Server);
+#endif
 #endif
 
         Init();
@@ -66,7 +70,9 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         m_Timer = new Timer;
 
+#ifdef SPECTATOR
         m_SpectatorSystem = new BattleRoyaleSpectators;
+#endif
 
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
@@ -157,7 +163,9 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         float timeslice = delta; //Legacy
 
+#ifdef SPECTATOR
         m_SpectatorSystem.Update(timeslice);
+#endif
 
         foreach(BattleRoyaleState state: m_States)
         {
@@ -230,8 +238,10 @@ class BattleRoyaleServer: BattleRoyaleBase
         bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
 
         BattleRoyaleDebugState m_DebugStateObj;
+        // if we are not in the debug state, then we need to check if the player can spectate
         if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
         {
+#ifdef SPECTATOR
             if(m_SpectatorSystem.CanSpectate( player ))
             {
                 if (b_AutoSpectateMode)
@@ -263,6 +273,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             }
             else
             {
+#endif
                 //BAD VERY BAD!
                 //This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
                 //Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
@@ -271,7 +282,9 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                 Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
                 m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
+#ifdef SPECTATOR
             }
+#endif
 
             //TODO: Create a *spectator* system that handles players connecting during non-debug zone states
             //Note: the spectator system will also handle client respawn events too.
@@ -356,22 +369,33 @@ class BattleRoyaleServer: BattleRoyaleBase
             {
                 if(player && player.GetIdentity())
                 {
+#ifdef SPECTATOR
                     if(m_SpectatorSystem.ContainsPlayer( player ))
                     {
                         m_SpectatorSystem.OnPlayerTick( player, timeslice );
                     }
                     else
                     {
-                        if( temp_disconnecting.Find(player) == -1 && !m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
+#endif
+                        if ( temp_disconnecting.Find(player) == -1 )
                         {
-                            //this ensures we only call disconnect on this player once
-							temp_disconnecting.Insert(player);
+#ifdef SPECTATOR
+							if ( m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
+							{
+#endif
+								//this ensures we only call disconnect on this player once
+								temp_disconnecting.Insert(player);
 
-							GetGame().SendLogoutTime(player, 0);
-							//GetGame().DisconnectPlayer( player.GetIdentity() );
-							//Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+								GetGame().SendLogoutTime(player, 0);
+								//GetGame().DisconnectPlayer( player.GetIdentity() );
+								//Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+#ifdef SPECTATOR
+							}
+#endif
                         }
+#ifdef SPECTATOR
                     }
+#endif
                 }
 
             }
@@ -412,6 +436,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         return -1;
     }
 
+#ifdef SPECTATOR
     ref BattleRoyaleSpectators GetSpectatorSystem()
     {
         return m_SpectatorSystem;
@@ -429,6 +454,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
         }
     }
+#endif
 
     void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
     {
@@ -522,12 +548,14 @@ class BattleRoyaleServer: BattleRoyaleBase
         weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
     }
 
+#ifdef SPECTATOR
     //--- Admin tool functions only
     void TestSpectator(PlayerBase player)
     {
         OnPlayerKilled(player, NULL); //1. simulate player killed ()
         GetSpectatorSystem().AddPlayer( player ); //2. insert them into spectator system (like simulating joining during a non-debug state)
     }
+#endif
 
     void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
@@ -546,10 +574,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 #endif
     }
 
+#ifdef SPECTATOR
     void StartSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         Print("BattleRoyaleManager StartSpectate");
-#ifdef SERVER
         PlayerBase pbTarget;
         if(Class.CastTo( pbTarget, target ))
         {
@@ -568,8 +596,6 @@ class BattleRoyaleServer: BattleRoyaleBase
         {
             Error("Failed to cast TestSpectator target object to playerbase");
         }
-#else
-        Error("Server called StartSpectate()");
-#endif
     }
+#endif
 }

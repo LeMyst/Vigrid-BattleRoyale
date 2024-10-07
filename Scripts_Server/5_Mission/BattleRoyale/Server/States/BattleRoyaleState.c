@@ -123,6 +123,7 @@ class BattleRoyaleState: Timeable
 
     void OnPlayerTick(PlayerBase player, float timeslice)
     {
+#ifdef SPECTATOR
         if(player)
         {
             if(player.UpdateHealthStatsServer( player.GetHealth01("", "Health"), player.GetHealth01("", "Blood"), timeslice ))
@@ -139,6 +140,7 @@ class BattleRoyaleState: Timeable
                 GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", new Param4<string, string, vector, vector>( player.GetIdentity().GetId(), player.GetIdentityName(), player.GetPosition(), player.GetDirection() ), true);
             }
         }
+#endif
     }
 
     //player count changed event handler

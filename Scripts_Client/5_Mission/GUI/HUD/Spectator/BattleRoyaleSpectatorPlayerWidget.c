@@ -1,3 +1,5 @@
+#ifndef SERVER
+#ifdef SPECTATOR
 class BattleRoyaleSpectatorPlayerWidget
 {
     protected PlayerBase m_Player;

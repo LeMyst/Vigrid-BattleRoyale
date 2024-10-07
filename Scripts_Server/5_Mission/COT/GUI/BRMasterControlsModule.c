@@ -19,9 +19,11 @@ modded class BRMasterControlsModule
             case BattleRoyaleCOTStateMachineRPC.Resume:
                 RPC_Resume( ctx, sender, target );
             break;
+#ifdef SPECTATOR
             case BattleRoyaleCOTStateMachineRPC.TestSpectator:
                 RPC_TestSpectator( ctx, sender, target );
             break;
+#endif
             case BattleRoyaleCOTStateMachineRPC.SpawnAirdrop:
                 RPC_SpawnAirdrop( ctx, sender, target );
             break;
@@ -43,6 +45,7 @@ modded class BRMasterControlsModule
         Server_Resume(); //Server received next command
     }
 
+#ifdef SPECTATOR
     private void RPC_TestSpectator( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         PlayerBase pbTarget;
@@ -55,6 +58,7 @@ modded class BRMasterControlsModule
             Error("Failed to cast TestSpectator target object to playerbase");
         }
     }
+#endif
 
     private void RPC_SpawnAirdrop( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
@@ -107,6 +111,7 @@ modded class BRMasterControlsModule
         }
     }
 
+#ifdef SPECTATOR
     private void Server_TestSpectator(PlayerBase player)
     {
         BattleRoyaleServer m_BrServer;
@@ -120,6 +125,7 @@ modded class BRMasterControlsModule
             Error("Failed to cast GetBR() to BattleRoyaleServer");
         }
     }
+#endif
 }
 #endif // JM_COT
 #endif

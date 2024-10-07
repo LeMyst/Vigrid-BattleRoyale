@@ -15,6 +15,7 @@ modded class PlayerBase
 
     string owner_id = "";
 
+#ifdef SPECTATOR
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
     {
         time_since_last_net_sync += delta;
@@ -36,6 +37,7 @@ modded class PlayerBase
             return false;
         }
     }
+#endif
 
     override void OnScheduledTick(float deltaTime)
     {

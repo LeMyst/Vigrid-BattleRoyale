@@ -72,11 +72,13 @@ class BRMasterControlsModule: JMRenderableModuleBase
         rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Resume, true, NULL );
     }
 
+#ifdef SPECTATOR
     void TestSpectator()
     {
         ScriptRPC rpc = new ScriptRPC();
         rpc.Send( GetGame().GetPlayer(), BattleRoyaleCOTStateMachineRPC.TestSpectator, true, NULL );
     }
+#endif
 
     void AddFakePlayer()
     {
