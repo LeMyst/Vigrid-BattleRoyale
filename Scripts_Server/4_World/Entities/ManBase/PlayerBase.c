@@ -15,6 +15,9 @@ modded class PlayerBase
 
     string owner_id = "";
 
+	int br_position = -1;
+	string player_steamid = "";
+
 #ifdef SPECTATOR
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
     {
@@ -38,6 +41,16 @@ modded class PlayerBase
         }
     }
 #endif
+
+	void SetBRPosition( int position )
+	{
+		br_position = position;
+	}
+
+	int GetBRPosition()
+	{
+		return br_position;
+	}
 
     override void OnScheduledTick(float deltaTime)
     {
