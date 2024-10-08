@@ -43,7 +43,7 @@ modded class VONManagerImplementation
 		}
 	}
 
-	void SetMaxVolume(int max_level)
+	override void SetMaxVolume(int max_level)
 	{
 		max_voice_level = max_level;
 	}

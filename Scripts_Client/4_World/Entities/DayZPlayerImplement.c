@@ -3,7 +3,7 @@ modded class DayZPlayerImplement
 {
 	int position_top = -1;
 
-	void ShowDeadScreen(bool show, float duration)
+	override void ShowDeadScreen(bool show, float duration)
 	{
         array<string> funny_strings = {
 			"Next time, try to aim better...",
@@ -25,7 +25,7 @@ modded class DayZPlayerImplement
 			string message = "";
 			if (!GetGame().GetMission().IsPlayerRespawning())
 			{
-				string funny_string = funny_strings.GetRandomElement()
+				string funny_string = funny_strings.GetRandomElement();
 				message = "You failed in position #" + position_top + "!\r\n" + funny_string;
 			}
 
