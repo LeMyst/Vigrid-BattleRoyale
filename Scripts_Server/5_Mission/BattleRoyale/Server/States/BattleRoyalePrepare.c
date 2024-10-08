@@ -168,7 +168,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         AddStartItems(process_player);
     }
 
-    protected void DisableInput(PlayerBase process_player)
+    protected void DisablePlayerInput(PlayerBase process_player)
     {
         process_player.DisableInput(true);
     }
@@ -491,7 +491,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         for (i = 0; i < pCount; i++) {
             process_player = m_PlayerList[i];
             if (process_player)
-            	DisableInput(process_player);
+            	DisablePlayerInput(process_player);
 
             Sleep(100);
         }
