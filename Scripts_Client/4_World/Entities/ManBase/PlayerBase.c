@@ -28,19 +28,6 @@ modded class PlayerBase
     {
         players = new array<PlayerBase>();
         players.Copy(s_LocalPlayers);
-
-    void DisableInput(bool disabled)
-    {
-        Print(" Call To Disable (" + disabled + ") Player Input ");
-        HumanInputController controller = GetInputController();
-
-        controller.OverrideMovementSpeed( disabled, 0 );
-        controller.OverrideMovementAngle( disabled, 0 );
-        controller.OverrideMeleeEvade( disabled, false );
-        controller.OverrideRaise( disabled, false );
-        controller.OverrideMovementAngle( disabled, 0 );
-    }
-
     }
 
 	override void CheckLiftWeapon()
@@ -78,4 +65,32 @@ modded class PlayerBase
     }
 #endif
 #endif
+
+    void DisableInput(bool disabled)
+    {
+    	if ( disabled )
+        	Print( "Call To Disable Player Input" );
+		else
+			Print( "Call To Enable Player Input" );
+
+		HumanInputControllerOverrideType override_type = HumanInputControllerOverrideType.DISABLED;
+		if ( disabled )
+		{
+			// disabled means we want to enable the override
+			override_type = HumanInputControllerOverrideType.ENABLED;
+		}
+
+        SetSynchDirty();
+
+        HumanInputController hic = GetInputController();
+        if ( hic )
+		{
+			hic.OverrideMovementSpeed( override_type, 0 );
+			hic.OverrideMovementAngle( override_type, 0 );
+			hic.OverrideMeleeEvade( override_type, false );
+			hic.OverrideRaise( override_type, false );
+			hic.OverrideFreeLook( override_type, false );
+			hic.SetDisabled( disabled );
+		}
+    }
 }
