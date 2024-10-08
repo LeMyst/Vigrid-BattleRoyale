@@ -423,8 +423,8 @@ class BattleRoyaleState: Timeable
 		if( player.GetIdentity() )
 		{
 			map<string, string> json_data = new map<string, string>();
-			json_data.Insert( "victim", player.GetIdentity().GetPlainId() )
-			json_data.Insert( "victim_position", player.GetPosition().ToString() )
+			json_data.Insert( "victim", player.GetIdentity().GetPlainId() );
+			json_data.Insert( "victim_position", player.GetPosition().ToString() );
 			vector killer_position = "0 0 0";
 
 			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
@@ -444,7 +444,7 @@ class BattleRoyaleState: Timeable
 			if (player == source)	// deaths not caused by another object (starvation, dehydration)
 			{
 				// Killed by environmental causes but the the player directly
-				json_data.Insert( "killer", "environment" )
+				json_data.Insert( "killer", "environment" );
 			}
 			else if ( source.IsInherited(Grenade_Base) || source.IsInherited(LandMineTrap) )
 			{
@@ -462,7 +462,7 @@ class BattleRoyaleState: Timeable
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, playerSource.GetIdentity(), playerSource);
 					if (source.IsWeapon() || source.IsMeleeWeapon())
 					{
-						json_data.Insert( "weapon", source.GetType() )
+						json_data.Insert( "weapon", source.GetType() );
 						if ( !source.IsMeleeWeapon() )
 						{
 							json_data.Insert( "distance", vector.Distance( player.GetPosition(), playerSource.GetPosition() ).ToString() );
