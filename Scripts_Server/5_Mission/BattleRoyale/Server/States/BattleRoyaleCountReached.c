@@ -38,6 +38,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
         m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
     }
+
     override void Deactivate()
     {
         m_StartTimer.Stop();

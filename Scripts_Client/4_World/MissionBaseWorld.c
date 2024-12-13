@@ -11,9 +11,11 @@ modded class MissionBaseWorld
 BattleRoyaleBase GetBR()
 {
     MissionBaseWorld world = MissionBaseWorld.Cast( GetGame().GetMission() );
-    if(!world)
+
+    if (!world)
     {
         Error("GetBR() => FAILED TO GET MISSION");
     }
+
     return world.GetBattleRoyale();
 }

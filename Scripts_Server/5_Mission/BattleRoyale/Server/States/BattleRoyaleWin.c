@@ -63,21 +63,26 @@ class BattleRoyaleWin: BattleRoyaleState
 
     void HandleWinner(PlayerBase player_winner)
     {
+        // Send notification
         MessagePlayer(player_winner, "Congratulations! You won Battle Royale!");
 
+        // Show win screen
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, player_winner.GetIdentity() );
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
 
+        // Send win webhook
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
 		WinWebhook winWebhook = new WinWebhook( m_ServerData.webhook_jwt_token );
 		winWebhook.Send( br_instance.match_uuid, player_winner.GetIdentity().GetPlainId() );
 
+        // Send score webhook
 		BattleRoyaleUtils.Trace("ScoreWebhook: Sending winner score");
 		ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
 		scoreWebhook.Send( br_instance.match_uuid, player_winner.GetIdentity().GetPlainId(), player_winner.GetBRPosition() );
 
+        // Spawn chickens
 		ref array<string> chickens = {"Animal_GallusGallusDomesticus", "Animal_GallusGallusDomesticusF_Brown", "Animal_GallusGallusDomesticusF_Spotted", "Animal_GallusGallusDomesticusF_White"};
 
 		for (int j = 0; j < 10; j++)
