@@ -20,7 +20,10 @@ class BattleRoyaleRestart: BattleRoyaleState
     override void Deactivate()
     {
         Error("RESTART STATE WAS DEACTIVATED!");
-        m_ShutdownTimer.Stop();
+        if ( m_ShutdownTimer && m_ShutdownTimer.IsRunning() )
+        {
+            m_ShutdownTimer.Stop();
+        }
         
         super.Deactivate();
     }

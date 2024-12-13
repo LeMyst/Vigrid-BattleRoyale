@@ -48,7 +48,8 @@ class BattleRoyaleWin: BattleRoyaleState
 
     override void Deactivate()
     {
-        m_KickTimer.Stop();
+        if ( m_KickTimer && m_KickTimer.IsRunning() )
+            m_KickTimer.Stop();
         
         super.Deactivate();
     }

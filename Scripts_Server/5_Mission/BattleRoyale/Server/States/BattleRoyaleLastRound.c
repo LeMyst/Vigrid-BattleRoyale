@@ -88,9 +88,18 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     override void Deactivate()
     {
-        m_FinalZoneLockTimer.Stop();
+        if ( m_FinalZoneLockTimer && m_FinalZoneLockTimer.IsRunning() )
+        {
+            m_FinalZoneLockTimer.Stop();
+        }
+
         for(int i = 0; i < m_MessageTimers.Count(); i++)
-            m_MessageTimers[i].Stop();
+        {
+            if ( m_MessageTimers[i] && m_MessageTimers[i].IsRunning() )
+            {
+                m_MessageTimers[i].Stop();
+            }
+        }
 
         //we just deactivated this round (players not yet transfered from previous state)
         super.Deactivate();

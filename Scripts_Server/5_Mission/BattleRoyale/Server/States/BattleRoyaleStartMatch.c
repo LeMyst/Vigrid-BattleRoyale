@@ -71,10 +71,17 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     override void Deactivate()
     {
         //deactivate all one-time timers
-        m_UnlockTimer.Stop();
-        m_ZoneStartTimer.Stop();
+        if ( m_UnlockTimer && m_UnlockTimer.IsRunning() )
+            m_UnlockTimer.Stop();
+
+        if ( m_ZoneStartTimer && m_ZoneStartTimer.IsRunning() )
+            m_ZoneStartTimer.Stop();
+
         for(int i = 0; i < m_MessageTimers.Count(); i++)
-            m_MessageTimers[i].Stop();
+        {
+            if ( m_MessageTimers[i] && m_MessageTimers[i].IsRunning() )
+                m_MessageTimers[i].Stop();
+        }
 
         super.Deactivate();
     }

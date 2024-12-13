@@ -31,7 +31,11 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void ~BattleRoyaleServer()
     {
-        m_Timer.Stop();
+        if ( m_Timer && m_Timer.IsRunning() )
+        {
+            m_Timer.Stop();
+        }
+
         delete m_Timer;
     }
 

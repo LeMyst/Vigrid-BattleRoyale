@@ -28,9 +28,9 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
     {
         super.Activate();
 
-        string second = "second";
-        if(i_TimeToStart != 1)
-            second = "seconds";
+        string second = "seconds";
+        if ( i_TimeToStart == 1 )
+            second = "second";
 
         //TODO: use string replace and make this string a constant in BattleRoyaleConstants (perhaps a setting eventually)
 
@@ -41,7 +41,10 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 
     override void Deactivate()
     {
-        m_StartTimer.Stop();
+        if ( m_StartTimer && m_StartTimer.IsRunning() )
+        {
+            m_StartTimer.Stop();
+        }
         
         super.Deactivate();
     }
