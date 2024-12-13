@@ -92,7 +92,7 @@ start "%%a" CI_Build.bat skipEnumPaths exitCmd %*
 echo Waiting 1 seconds
 ping -n 2 127.0.0.1 >NUL
 set running=0
-if exist %~dp0..\Logs\Build.tmp (
+if exist "%~dp0..\Logs\Build.tmp" (
 	set /a running+=1
 	echo CI_Build.bat is running
 )
@@ -100,16 +100,17 @@ if %running%==0 goto end
 goto loop
 
 :end
-if exist %~dp0..\Logs\Build.failure (
+if exist "%~dp0..\Logs\Build.failure" (
 	set success=0
 )
-if "!success!" NEQ "1" (
+if exist "%~dp0..\Logs\Build.failure" (
+    echo %success%
 	echo /////////////////////////////////////////////////////////////>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
 	echo %date% %time% Something went wrong, check logs. Failed builds:>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
 	if exist Build.failure echo %%a>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
 	echo /////////////////////////////////////////////////////////////>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
 ) else (
-	if not exist %~dp0..\Logs\Build.success (
+	if not exist "%~dp0..\Logs\Build.success" (
 		set success=0
 		echo %date% %time% ERROR: Building Mod did not finish successfully.>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
 	)
