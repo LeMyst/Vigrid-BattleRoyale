@@ -30,10 +30,18 @@ modded class DayZPlayerImplement
 			}
 
 			GetGame().GetUIManager().ScreenFadeIn(duration, message, FadeColors.BLACK, FadeColors.WHITE);
+
+			// Call disconnect after 30 seconds
+			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Disconnect", 30000, false);
 		}
 		else
 		{
 			super.ShowDeadScreen(show, duration);
 		}
 	}
+
+	void Disconnect()
+    {
+        GetGame().GetMission().AbortMission();
+    }
 }
