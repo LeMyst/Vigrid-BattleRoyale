@@ -11,3 +11,4 @@ user.cfg
 Workbench/*.cfg.bat
 Workbench/*.cfg.*.bat
 Workbench/Logs/
+/.idea/
