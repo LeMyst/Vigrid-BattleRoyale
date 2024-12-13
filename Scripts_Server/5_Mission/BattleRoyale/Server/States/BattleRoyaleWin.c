@@ -64,14 +64,14 @@ class BattleRoyaleWin: BattleRoyaleState
 
     void HandleWinner(PlayerBase player_winner)
     {
+        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
+
         // Send notification
         MessagePlayer(player_winner, "Congratulations! You won Battle Royale!");
 
         // Show win screen
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, player_winner.GetIdentity() );
-
-        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
 
         // Send win webhook
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
