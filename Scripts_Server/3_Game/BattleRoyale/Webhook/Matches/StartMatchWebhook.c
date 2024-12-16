@@ -1,20 +1,19 @@
 #ifdef SERVER
 class StartMatchWebhook
 {
-	protected string s_ServerID, s_ServerSecret;
+	protected string s_ServerToken;
 	protected int i_TryLeft = 5;
 
-	void StartMatchWebhook(string server_id, string server_secret)
+	void StartMatchWebhook(string server_token)
 	{
 		BattleRoyaleUtils.Trace("StartMatchWebhook()");
 
-		s_ServerID = server_id;
-		s_ServerSecret = server_secret;
+		s_ServerToken = server_token;
 	};
 
-	void Send(bool lock_server)
+	void startMatch( string match_uuid )
 	{
-		BattleRoyaleUtils.Trace("StartMatchWebhook().Send()");
+		BattleRoyaleUtils.Trace("StartMatchWebhook().startMatch()");
 
 		if( i_TryLeft <= 0 )
 		{
@@ -22,22 +21,22 @@ class StartMatchWebhook
 			return;
 		}
 
-		string action;
-		if ( lock_server )
-			action = "lock";
-		else
-			action = "unlock";
-
 		HttpArguments arguments = {
-			new HttpArgument("version", "1"),
+			new HttpArgument("version", "2"),
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
+
+		JSONAuthToken jsonAuthToken = new JSONAuthToken( s_ServerToken );
+
+		string jatString;
+		string jatError;
+		JsonFileLoader<JSONAuthToken>.MakeData(jsonAuthToken, jatString, jatError);
 
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
 		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
-        ctx.POST(new StartMatchCallback( s_ServerID, s_ServerSecret, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1/%2/%3", s_ServerID, s_ServerSecret, action)), "");
+        ctx.POST(new StartMatchCallback( s_ServerToken, match_uuid, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/start", match_uuid)), jatString);
 	};
 
 	void SetTryLeft(bool try_left)
@@ -48,36 +47,35 @@ class StartMatchWebhook
 
 class StartMatchCallback: RestCallback
 {
-	protected string s_ServerID, s_ServerSecret;
-	protected bool b_LockServer;
+	protected string s_ServerToken;
 	protected int i_TryLeft;
+	protected string s_MatchUUID;
 
-	void StartMatchCallback(string server_id, string server_secret, bool lock_server, int try_left)
+	void StartMatchCallback(string server_token, string match_uuid, int try_left)
 	{
         BattleRoyaleUtils.Trace("StartMatchCallback() " + try_left);
 
-		s_ServerID = server_id;
-		s_ServerSecret = server_secret;
-		b_LockServer = lock_server;
+		s_ServerToken = server_token;
 		i_TryLeft = try_left;
+		s_MatchUUID = match_uuid;
 	}
 
 	override void OnError( int errorCode )
 	{
 		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
-		StartMatchWebhook serverWebhook = new StartMatchWebhook(s_ServerID, s_ServerSecret);
+		StartMatchWebhook serverWebhook = new StartMatchWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
-		serverWebhook.Send( b_LockServer );
+		serverWebhook.startMatch( s_MatchUUID );
 	};
 
 	override void OnTimeout()
 	{
 		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
-		StartMatchWebhook serverWebhook = new StartMatchWebhook(s_ServerID, s_ServerSecret);
+		StartMatchWebhook serverWebhook = new StartMatchWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
-		serverWebhook.Send( b_LockServer );
+		serverWebhook.startMatch( s_MatchUUID );
 	};
 
 	override void OnSuccess( string data, int dataSize )

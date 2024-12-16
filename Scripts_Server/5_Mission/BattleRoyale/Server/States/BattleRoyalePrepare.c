@@ -59,6 +59,10 @@ class BattleRoyalePrepare: BattleRoyaleState
 			serverWebhook.LockServer();
 		}
 
+        StartMatchWebhook matchWebhook = new StartMatchWebhook( m_ServerData.webhook_jwt_token );
+        BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+        matchWebhook.startMatch( br_instance.match_uuid );
+
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
