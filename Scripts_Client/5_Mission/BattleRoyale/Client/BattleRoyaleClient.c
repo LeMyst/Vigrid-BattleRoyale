@@ -20,6 +20,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void BattleRoyaleClient()
     {
+        Print("BattleRoyaleClient::BattleRoyaleClient");
+
         b_IsReady = false;
         b_MatchStarted = false;
         i_Kills = 0;
@@ -45,6 +47,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void Init()
     {
+        Print("BattleRoyaleClient::Init");
+
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
@@ -64,6 +68,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         //m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLaterByName( this, "OnSecond", 1000, true );
+
+		Print("BattleRoyaleClient::Init - Done");
     }
 
 #ifdef SPECTATOR
