@@ -1,27 +1,29 @@
 #ifndef SERVER
 modded class IngameHud
 {
-    protected bool b_BrVisibilityOverride;
+	protected bool b_BrVisibilityOverride;
 
-    void IngameHud()
-    {
-        b_BrVisibilityOverride = false;
-    }
+	void IngameHud()
+	{
+		b_BrVisibilityOverride = false;
+	}
 
-    void BR_HIDE()
-    {
-        Show( false );
+#ifdef SPECTATOR
+	void BR_HIDE()
+	{
+		Show( false );
 
-        b_BrVisibilityOverride = true;
-    }
+		b_BrVisibilityOverride = true;
+	}
+#endif
 
-    override void Show( bool show )
-    {
-        if(b_BrVisibilityOverride)
-            return;
+	override void Show( bool show )
+	{
+		if(b_BrVisibilityOverride)
+			return;
 
-        super.Show( show );
-    }
+		super.Show( show );
+	}
 
 #ifdef EXPANSIONMODNAMETAGS
 	override protected bool HandleCurrentTaggedPlayer(float timeslice)
