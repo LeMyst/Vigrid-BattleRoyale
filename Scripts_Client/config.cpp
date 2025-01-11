@@ -37,9 +37,10 @@ class CfgMods
 		defines[]=
 		{
 			"DAYZ_BATTLEROYALE",
-			"MOVING_ZONE"
-            //"BR_MINIMAP",
-            //"BLUE_ZONE"
+			//"MOVING_ZONE"
+			//"BR_MINIMAP",
+			//"BLUE_ZONE",
+			//"SPECTATOR"
 		};
 
         class defs
