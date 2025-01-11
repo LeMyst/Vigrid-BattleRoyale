@@ -1,7 +1,13 @@
 #ifdef SERVER
 class BattleRoyalePOIsData: BattleRoyaleDataBase
 {
-	ref array<ref BattleRoyaleOverridePOIPosition> override_poi_positions;
+	int version = 1;  // Config version
+
+	// Allow to override the position of the POIs
+	ref array<ref BattleRoyaleOverridePOIPosition> override_poi_positions = {
+		new BattleRoyaleOverridePOIPosition("POI1", { 100, 200 }),
+		new BattleRoyaleOverridePOIPosition("POI2", { 300, 400 })
+	};
 
 	[NonSerialized()]
 	ref map<string, vector> m_OverrideSpawnPositions;
@@ -11,17 +17,17 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 		return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "pois_settings.json";
 	}
 
-	override void Save()
-	{
-		string errorMessage;
-		if (!JsonFileLoader<BattleRoyalePOIsData>.SaveFile(GetPath(), this, errorMessage))
-			ErrorEx(errorMessage);
-	}
-
 	override void Load()
 	{
 		string errorMessage;
 		if (!JsonFileLoader<BattleRoyalePOIsData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
+	}
+
+	override void Save()
+	{
+		string errorMessage;
+		if (!JsonFileLoader<BattleRoyalePOIsData>.SaveFile(GetPath(), this, errorMessage))
 			ErrorEx(errorMessage);
 	}
 
@@ -59,5 +65,11 @@ class BattleRoyaleOverridePOIPosition
 {
     string poi_name;
     array<int> new_position;
+
+    void BattleRoyaleOverridePOIPosition(string poi_name, array<int> new_position)
+	{
+		this.poi_name = poi_name;
+		this.new_position = new_position;
+	}
 };
 #endif
