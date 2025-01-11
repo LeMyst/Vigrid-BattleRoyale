@@ -332,6 +332,7 @@ for /F "usebackq delims=" %%D in ("%workDrive%Temp\%modName%-configpaths.list") 
 	if exist "%%~dpD..\CHANGES" copy /Y "%%~dpD..\CHANGES" "%modBuildDirectory%%modName%\CHANGES"
 	if exist "%%~dpD..\LICENSE" copy /Y "%%~dpD..\LICENSE" "%modBuildDirectory%%modName%\LICENSE"
 	if exist "%%~dpD..\NOTICE.txt" copy /Y "%%~dpD..\NOTICE.txt" "%modBuildDirectory%%modName%\NOTICE.txt"
+	if exist "%%~dpD..\mod.cpp" copy /Y "%%~dpD..\mod.cpp" "%modBuildDirectory%%modName%\mod.cpp"
 
 )
 
