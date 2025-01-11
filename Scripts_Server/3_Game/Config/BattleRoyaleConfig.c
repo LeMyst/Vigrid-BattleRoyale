@@ -73,12 +73,19 @@ class BattleRoyaleConfig
         if ( !b_HasLoaded )
         {
             b_HasLoaded = true;
+
             //load JSON data (or create it)
-            if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER))
+            if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER) )
             {
                 BattleRoyaleUtils.Trace("Creating BattleRoyale Settings Folder");
                 MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
             }
+
+            if( !FileExist(BATTLEROYALE_SETTINGS_MISSION_FOLDER) )
+			{
+				Print("Creating BattleRoyale Mission Settings Folder");
+				MakeDirectory(BATTLEROYALE_SETTINGS_MISSION_FOLDER);
+			}
 
             if(!m_Configs)
             {
@@ -100,19 +107,12 @@ class BattleRoyaleConfig
                         {
                             BattleRoyaleUtils.Trace("Loading Config: " + path);
                             config.Load();
-
-                            if( BATTLEROYALE_SOLO_GAME )
-                            {
-                                //config.Save(); //re-save (if there are new config values that need added to the json file)
-                            }
+							config.Save(); //re-save (if there are new config values that need added to the json file)
                         }
                         else
                         {
-                            BattleRoyaleUtils.Trace("Saving Config: " + path);
-                            if( BATTLEROYALE_SOLO_GAME )
-                            {
-                                config.Save();
-                            }
+                            BattleRoyaleUtils.Trace("Creating Config: " + path);
+							config.Save();
                         }
                     }
                     else
