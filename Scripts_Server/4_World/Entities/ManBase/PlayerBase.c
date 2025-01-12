@@ -18,6 +18,8 @@ modded class PlayerBase
 	int br_position = -1;
 	string player_steamid = "";
 
+	PlayerBase last_unconscious_source;
+
 #ifdef SPECTATOR
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
     {
@@ -69,6 +71,37 @@ modded class PlayerBase
         if(m_BR)
             m_BR.OnPlayerKilled(this, killer);
     }
+
+    override void EEHitBy(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
+	{
+		super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
+
+		PlayerBase playerSource;
+
+		if ( source.IsPlayer() )  // Fists
+			playerSource = PlayerBase.Cast( source );
+		else
+			playerSource = PlayerBase.Cast( source.GetHierarchyParent() );
+
+		// Test if the source is a player
+		if ( playerSource )
+		{
+			last_unconscious_source = playerSource;
+		} else {
+			last_unconscious_source = NULL;
+			BattleRoyaleUtils.Error("Player " + GetIdentity().GetName() + " was hit by an unknown source.");
+		}
+	}
+
+	override void OnUnconsciousStop(int pCurrentCommandID)
+	{
+		super.OnUnconsciousStop(pCurrentCommandID);
+
+		if (last_unconscious_source)
+		{
+			last_unconscious_source = NULL;
+		}
+	}
 
 	override void OnSyncJuncture( int pJunctureID, ParamsReadContext pCtx )
 	{

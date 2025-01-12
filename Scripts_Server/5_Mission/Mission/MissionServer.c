@@ -167,5 +167,15 @@ modded class MissionServer
 #endif
 		}
 	}
+
+	override void OnClientDisconnectedEvent(PlayerIdentity identity, PlayerBase player, int logoutTime, bool authFailed)
+	{
+		if(player)
+		{
+			BattleRoyaleServer.Cast( m_BattleRoyale ).OnPlayerDisconnect(player, identity);
+		}
+
+		super.OnClientDisconnectedEvent(identity, player, logoutTime, authFailed);
+	}
 }
 #endif
