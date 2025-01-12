@@ -12,9 +12,6 @@ modded class InGameMenu
 
         SetServerInfoVisibility( false ); //Don't ever show what server you're on for DayZBR
 
-        //this does not work :)
-        ButtonSetText(m_RestartButton, "Spectate");
-
         return result;
     }
 
@@ -37,5 +34,11 @@ modded class InGameMenu
         }
     }
 
+	override protected void UpdateGUI()
+	{
+		super.UpdateGUI();
+		m_RespawnButton.Show( false );  // Hide the respawn button
+		m_RestartButton.Show( false );  // Hide the restart button
+	}
 }
 #endif
