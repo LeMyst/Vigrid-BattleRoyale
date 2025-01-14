@@ -4,6 +4,8 @@ class CfgPatches
     {
         requiredAddons[]=
         {
+            "DZ_Data",
+            "DF_Scripts",
             "BattleRoyale_Scripts_Client"
         };
     };
