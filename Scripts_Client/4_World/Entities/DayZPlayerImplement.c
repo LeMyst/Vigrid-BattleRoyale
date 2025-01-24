@@ -1,4 +1,5 @@
 #ifndef SERVER
+#ifndef NO_GUI
 modded class DayZPlayerImplement
 {
 	int position_top = -1;
@@ -29,11 +30,22 @@ modded class DayZPlayerImplement
 				message = "You failed in position #" + position_top + "!\r\n" + funny_string;
 			}
 
-			GetGame().GetUIManager().ScreenFadeIn(duration, message, FadeColors.BLACK, FadeColors.WHITE);
+			GetGame().GetUIManager().ScreenFadeIn(duration, message, FadeColors.DARK_RED, FadeColors.WHITE);
 		}
 		else
 		{
 			super.ShowDeadScreen(show, duration);
 		}
+
+		// 15s timer before leaving server
+		if (show)
+		{
+			GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(LeaveServer, 15000, false);
+		}
+	}
+
+	void LeaveServer()
+	{
+		GetGame().GetMission().AbortMission();
 	}
 }
