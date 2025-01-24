@@ -15,7 +15,7 @@ call "%~dp0ClearLogs.bat" "%serverProfileDirectory%"
 
 call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" -port=%port% "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
 
-PING 127.0.0.1 -n 2 > nul
+PING 127.0.0.1 -n 5 > nul
 
 call "%~dp0ClearLogs.bat" "%ClientProfileDirectory%"
 
