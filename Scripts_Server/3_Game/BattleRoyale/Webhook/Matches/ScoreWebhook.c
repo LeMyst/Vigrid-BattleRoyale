@@ -35,7 +35,7 @@ class ScoreWebhook
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         ctx.POST(new ScoreCallback( s_ServerToken, match_uuid, player_steamid, position, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/players/%2/score/%3", match_uuid, player_steamid, position )), jatString);
 	};
 

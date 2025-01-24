@@ -41,7 +41,7 @@ class LockServerWebhook
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         ctx.POST(new LockServerCallback( s_ServerToken, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1", action)), jatString);
 	};
 

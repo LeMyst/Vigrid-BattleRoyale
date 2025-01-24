@@ -305,6 +305,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         if( match_uuid == "" )
         	GetCurrentState().MessagePlayer( player, "Error while registering the match. The online scores will not be saved.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
+        	// TODO: Replace with RPC (for client side translation) ?
     }
 
     void Disconnect(PlayerIdentity identity)

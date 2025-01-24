@@ -176,6 +176,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
             {
                 //DAMAGE
                 MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
+				// TODO: Replace with RPC (for client side translation)
                 //GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
                 player.DecreaseHealthCoef( f_Damage );
@@ -225,6 +226,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
             message += "minute";
 
         MessagePlayers(message);
+		// TODO: Replace with RPC (for client side translation)
     }
 
     void NotifyTimeToEndSeconds(int seconds)
@@ -236,5 +238,6 @@ class BattleRoyaleLastRound: BattleRoyaleState
             message += "second";
 
         MessagePlayers(message);
+		// TODO: Replace with RPC (for client side translation)
     }
 }

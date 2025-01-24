@@ -210,10 +210,12 @@ class BattleRoyaleRound: BattleRoyaleState
                 if(dist > m_ThisArea.GetRadius())
                 {
                     MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_OUTSIDE);
+                    // TODO: Replace with RPC (for client side translation)
                 }
                 else if (m_Zone.GetZoneNumber() != 1)
                 {
                     MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_INSIDE);
+                    // TODO: Replace with RPC (for client side translation)
                 }
             }
         }
@@ -350,6 +352,7 @@ class BattleRoyaleRound: BattleRoyaleState
                 {
                     //DAMAGE
                     MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
+                    // TODO: Replace with RPC (for client side translation)
                     //GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
 				    player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_LIGHT);
                     //TODO: determine if this last health tick will kill the player

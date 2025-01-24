@@ -177,16 +177,19 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         if(m_ReadyList.Find(player) != -1)
         {
             MessagePlayer(player, "You have already readied up...");
+			// TODO: Replace with RPC (for client side translation)
             return;
         }
 
         MessagePlayer(player, "You have readied up!");
+		// TODO: Replace with RPC (for client side translation)
         m_ReadyList.Insert( player );
 
         //this is here because we don't want someone mass spamming all players by spamming F1
         int count = GetReadyCount();
         int max = GetPlayers().Count();
         MessagePlayers("Player readied up. (" + count.ToString() + "/" + max.ToString() + " players)");
+		// TODO: Replace with RPC (for client side translation)
 
     }
 
