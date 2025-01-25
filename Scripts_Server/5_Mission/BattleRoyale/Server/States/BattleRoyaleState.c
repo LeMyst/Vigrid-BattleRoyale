@@ -495,7 +495,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
     protected vector v_Center;
     protected float f_Radius;
     protected int i_HealTickTime;
-    protected ref array<string> a_AllowedOutsideSpawn;
+    protected ref array<string> a_AllowedOutsideLobby;
 
     void BattleRoyaleDebugState()
     {
@@ -504,7 +504,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         {
             v_Center = m_SpawnsSettings.spawn_point;
             f_Radius = m_SpawnsSettings.radius;
-            a_AllowedOutsideSpawn = m_SpawnsSettings.allowed_outside_spawn;
+            a_AllowedOutsideLobby = m_SpawnsSettings.allowed_outside_lobby;
         }
         else
         {
@@ -578,7 +578,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         vector player_position = player.GetPosition();
         float distance = vector.Distance( Vector( player_position[0], 0, player_position[2] ), Vector( v_Center[0], 0, v_Center[2] ) );
 
-        if(distance > f_Radius && !CanGoOutsideSpawn(player))
+        if(distance > f_Radius && !CanGoOutsideLobby(player))
         {
 			vector spawn_pos = "0 0 0";
 			spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
@@ -600,7 +600,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         player.time_until_heal -= timeslice;
     }
 
-    bool CanGoOutsideSpawn(PlayerBase player)
+    bool CanGoOutsideLobby(PlayerBase player)
     {
         if(!player)
         {
@@ -619,7 +619,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
             return false;
         }
 
-        return (a_AllowedOutsideSpawn.Find(steamid) != -1);
+        return (a_AllowedOutsideLobby.Find(steamid) != -1);
     }
 
     //TODO:

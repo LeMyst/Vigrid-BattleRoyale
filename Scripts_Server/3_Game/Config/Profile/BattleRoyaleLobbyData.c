@@ -1,5 +1,5 @@
 #ifdef SERVER
-class BattleRoyaleDebugData: BattleRoyaleDataBase
+class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
 	int version = 1;  // Config version
 
@@ -19,7 +19,7 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
     bool autostart_enabled = true;  // Enable autostart
     float autostart_delay = 750.0;  // Delay before autostart
 
-    ref array<string> allowed_outside_spawn = {
+    ref array<string> allowed_outside_lobby = {
         "123456789123456789" // Dummy SteamID64
     };
 
@@ -31,14 +31,14 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
     override void Save()
     {
     	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleDebugData>.SaveFile(GetPath(), this, errorMessage))
+        if (!JsonFileLoader<BattleRoyaleLobbyData>.SaveFile(GetPath(), this, errorMessage))
 			ErrorEx(errorMessage);
     }
 
     override void Load()
     {
     	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleDebugData>.LoadFile(GetPath(), this, errorMessage))
+        if (!JsonFileLoader<BattleRoyaleLobbyData>.LoadFile(GetPath(), this, errorMessage))
 			ErrorEx(errorMessage);
     }
 };

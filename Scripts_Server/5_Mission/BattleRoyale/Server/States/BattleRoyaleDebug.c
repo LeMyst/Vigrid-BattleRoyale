@@ -16,7 +16,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         m_ReadyList = new array<PlayerBase>();
 
-        BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+        BattleRoyaleLobbyData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
 
 		i_MinPlayers = m_DebugSettings.minimum_players;
 		i_TimeBetweenMessages = 45;

@@ -29,11 +29,11 @@ class BattleRoyaleConfig
     {
         BattleRoyaleUtils.Trace("Initializing Settings...");
 
-        BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
+        BattleRoyaleLobbyData p_DebugData = new BattleRoyaleLobbyData;
         if(p_DebugData)
             m_Configs.Insert("DebugData", p_DebugData);
         else
-            Error("BattleRoyaleDebugData Setting Constructor Returned NULL");
+            Error("BattleRoyaleLobbyData Setting Constructor Returned NULL");
 
         BattleRoyaleGameData p_GameData = new BattleRoyaleGameData;
         if(p_GameData)
@@ -140,11 +140,11 @@ class BattleRoyaleConfig
         return m_Configs.Get(key);
     }
 
-    BattleRoyaleDebugData GetDebugData()
+    BattleRoyaleLobbyData GetDebugData()
     {
         BattleRoyaleUtils.Trace("Accessing Debug Data Config...");
 
-        return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
+        return BattleRoyaleLobbyData.Cast( GetConfig("DebugData") );
     }
 
     BattleRoyaleGameData GetGameData()
