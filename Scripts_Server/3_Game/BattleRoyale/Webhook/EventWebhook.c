@@ -37,7 +37,7 @@ class EventWebhook
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         ctx.POST(new EventCallback( s_ServerToken, match_uuid, event_name, json_data, i_TryLeft ) , arguments.ToQuery(string.Format("events/%1", match_uuid)), jatString);
 	};
 

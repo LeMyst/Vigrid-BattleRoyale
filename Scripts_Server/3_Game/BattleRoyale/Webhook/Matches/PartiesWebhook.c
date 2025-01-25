@@ -36,7 +36,7 @@ class PartiesWebhook
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         ctx.POST(new PartiesCallback( s_ServerToken, match_uuid, parties, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/parties", match_uuid)), jatString);
 	};
 

@@ -12,9 +12,8 @@ static const int BATTLEROYALE_SOLO_GAME = 0;
 static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
 
 
-//--- default web endpoint
-//static const string BATTLEROYALE_WEB_CLIENT_ENDPOINT = "https://dayzbr.dev";
-//static const string BATTLEROYALE_WEBSITE = "https://dayzbr.dev";
+//--- API endpoint
+static const string BATTLEROYALE_API_ENDPOINT = "https://api.vigrid.ovh/";
 
 
 //--- settings files
@@ -23,41 +22,23 @@ static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:Vigrid-BattleRoyale
 
 //--- RPC namespaces
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR"; //BattleRoyaleClient.c RPC calls
-static const string RPC_DAYZBRBASE_NAMESPACE = "RPC-DayZBR-Base"; //BattleRoyaleBase.c RPC calls
 static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRoyaleServer.c RPC calls
 
 
 //--- constant strings
 static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";
 static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not normal DayZ.";
-//static const string BATTLEROYALE_VISIT_WEBSITE_MESSAGE = "Visit DayZBR.Dev";
-
-
-//--- dummy mission
-//--- perhaps this could be pulled from the mod config? (or dynamically generated? randomized?)
-static const string BATTLEROYALE_DUMMY_MISSION_WORLD = "ChernarusPlus"; //ChernarusPlus
-
-
-//--- net manager constants
-static const string DAYZBR_NETWORK_ERRORCODE_TIMEOUT = "request timed out";
-static const string DAYZBR_NETWORK_ERRORCODE_JSON_PARSE_FAIL = "failed to parse json";
-static const string DAYZBR_NETWORK_ERRORCODE_WEBPLAYER_NULL = "webplayer is null";
-static const string DAYZBR_NETWORK_ERRORCODE_FILE = "file transfered? wierd error";
-
-
-//--- error codes
-static const int DAYZBR_NETWORK_ERRORCODE_NULL_PLAYER_DATA = 1900; //player json object in API is NULL
 
 
 // Textures
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
-static const string BATTLEROYALE_LOADING_SCREENS_PATH = "Vigrid-BattleRoyale/GUI/textures/loading_screens/";
 
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
 static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 10; //multiplier from base game values on blood regen speed
 static const float BATTLEROYALE_UNCONSCIOUS_MODIFIER = 0.8; //multiplier from base game values on unconscious and conscious threshold
+static const float BATTLEROYALE_SHOCK_REFILL_SPEED = 5; //multiplier from base game values on shock refill unconscious speed
 
 
 //--- state machine | state names
@@ -94,10 +75,6 @@ static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distan
 static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.75; //max next zone distance as a percent of maximum distance (1 => 100%)
 static const float DAYZBR_ZS_MIN_ANGLE = 0; //degrees
 static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
-
-
-//TODO: move this to the web API
-static const string BATTLEROYALE_SERVER_PASSWORD = "DayZBR_Beta";
 
 
 //---- DayZ Expansion Loading Screens

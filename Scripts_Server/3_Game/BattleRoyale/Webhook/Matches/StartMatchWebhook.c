@@ -36,7 +36,7 @@ class StartMatchWebhook
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         ctx.POST(new StartMatchCallback( s_ServerID, s_ServerSecret, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1/%2/%3", s_ServerID, s_ServerSecret, action)), "");
 	};
 

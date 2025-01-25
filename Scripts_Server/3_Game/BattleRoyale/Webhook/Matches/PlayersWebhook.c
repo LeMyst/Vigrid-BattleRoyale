@@ -36,7 +36,7 @@ class PlayersWebhook
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         ctx.POST(new PlayersCallback( s_ServerToken, match_uuid, players, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/players", match_uuid)), jatString);
 	};
 
