@@ -313,6 +313,41 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetGame().DisconnectPlayer( identity ); //can't directly call disconnectplayer with timer, so we use this method
     }
 
+    void OnPlayerDisconnect(PlayerBase player, PlayerIdentity identity)
+    {
+    	// If the game is currently running, and the player is not a spectator, we kill the player
+#ifdef SPECTATOR
+		if ( GetCurrentState().ContainsPlayer(player) && !m_SpectatorSystem.ContainsPlayer(player) )
+#else
+		if ( GetCurrentState().ContainsPlayer(player) )
+#endif
+		{
+		    if ( player.IsUnconscious() )
+            {
+                // We add a kill to the last damage source
+                if ( player.last_unconscious_source )
+                {
+                    if ( player.last_unconscious_source.IsInherited( PlayerBase ) )
+                    {
+                        BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, adding kill to last damage source.");
+
+                        PlayerBase killer = PlayerBase.Cast( player.last_unconscious_source );
+                        GetCurrentState().OnPlayerKilled( player, killer );
+                    } else {
+                        BattleRoyaleUtils.Error("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but the last damage source is not a player.");
+                    }
+                } else {
+                    BattleRoyaleUtils.Error("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but there is no last damage source.");
+                }
+
+                // If the player is alive, we kill him
+                BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, killing him.");
+                player.SetHealth("GlobalHealth", "Health", 0);
+                player.SetHealth("GlobalHealth", "Blood", 0);
+            }
+		}
+    }
+
     void OnPlayerDisconnected(PlayerBase player, PlayerIdentity identity)
     {
         if(GetCurrentState().ContainsPlayer(player))
