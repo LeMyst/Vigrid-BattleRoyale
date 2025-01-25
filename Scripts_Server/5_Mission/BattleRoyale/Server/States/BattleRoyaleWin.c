@@ -28,11 +28,11 @@ class BattleRoyaleWin: BattleRoyaleState
 				if(identity)
 				{
 					winner_name = identity.GetName();
-					Print("[Win State] Winner!");
-					Print(identity.GetName());
-					Print(identity.GetFullName());
-					Print(identity.GetId());
-					Print(identity.GetPlainId());
+					BattleRoyaleUtils.Trace("[Win State] Winner!");
+					BattleRoyaleUtils.Trace(identity.GetName());
+					BattleRoyaleUtils.Trace(identity.GetFullName());
+					BattleRoyaleUtils.Trace(identity.GetId());
+					BattleRoyaleUtils.Trace(identity.GetPlainId());
 				}
 				HandleWinner(winner);
 			}

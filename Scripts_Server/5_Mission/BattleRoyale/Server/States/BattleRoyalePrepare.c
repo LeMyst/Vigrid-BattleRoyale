@@ -60,7 +60,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
-        Print("Reset date time to random");
+        BattleRoyaleUtils.Trace("Reset date time to random");
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
@@ -71,28 +71,28 @@ class BattleRoyalePrepare: BattleRoyaleState
 			// Found the first zone based on number of registered players
 			int pCount = m_PlayerList.Count();
 			int last_try_zone = 1;
-			Print("Number of players registered: " + pCount);
+			BattleRoyaleUtils.Trace("Number of players registered: " + pCount);
 			for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
 			{
-				Print("Try zone: " + i_zone);
+				BattleRoyaleUtils.Trace("Try zone: " + i_zone);
 				last_try_zone = i_zone;
-				Print("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
+				BattleRoyaleUtils.Trace("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
 				if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < pCount)
 				{
-					Print("It's a match! " + i_zone);
+					BattleRoyaleUtils.Trace("It's a match! " + i_zone);
 					break;
 				}
 				if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
 				{
-					Print("Reach the minimum! " + i_zone);
+					BattleRoyaleUtils.Trace("Reach the minimum! " + i_zone);
 					break;
 				}
-				Print("No chance, we continue...");
+				BattleRoyaleUtils.Trace("No chance, we continue...");
 			}
 			i_StartingZone = last_try_zone;
         }
 
-        Print("Starting zone will be " + i_StartingZone);
+        BattleRoyaleUtils.Trace("Starting zone will be " + i_StartingZone);
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
@@ -106,7 +106,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     override bool IsComplete()
     {
-        //Print(GetName() + " IsComplete!");
+        //BattleRoyaleUtils.Trace(GetName() + " IsComplete!");
         return super.IsComplete();
     }
 
@@ -317,7 +317,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         z = village_z + ( radius * Math.Sin(angle) );
         y = GetGame().SurfaceY(x, z);
 
-        Print("Trying to spawn player to " + village.Name + " (" + village.Type + ") with a radius of " + village_pad);
+        BattleRoyaleUtils.Trace("Trying to spawn player to " + village.Name + " (" + village.Type + ") with a radius of " + village_pad);
 
         return Vector(x, y, z);
     }
@@ -375,7 +375,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                     	last_village_spawn = village.Name; // Save last village spawn to avoid it next time
                     break;
                 } else {
-                    Print("Another fucked up village!");
+                    BattleRoyaleUtils.Trace("Another fucked up village!");
                 }
             }
         }
@@ -386,7 +386,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             int random_spawn_try = 1;
             while(true)
             {
-                Print("Try to spawn at random position " + random_spawn_try);
+                BattleRoyaleUtils.Trace("Try to spawn at random position " + random_spawn_try);
                 random_spawn_try++;
                 float edge_pad = 0.1;
 
@@ -438,7 +438,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                 int spawn_try = 1;
                 while(true)
                 {
-                    Print("Try Group " + spawn_try);
+                    BattleRoyaleUtils.Trace("Try Group " + spawn_try);
                     spawn_try = spawn_try + 1;
                     float x = position[0] + Math.RandomFloatInclusive(-5.0, 5.0);
                     float z = position[2] + Math.RandomFloatInclusive(-5.0, 5.0);
@@ -522,23 +522,29 @@ class BattleRoyalePrepare: BattleRoyaleState
         // Send parties list to API server
         for (i = 0; i < pGroupCount; i++) {
             group = teleport_groups.Get(i);
+#ifdef BR_TRACE_ENABLED
 			Print( group );
+#endif
             map<string, string> party = new map<string, string>();
 			int tmpNbPlayers = group.Count();
 			for(int j = 0; j < tmpNbPlayers; j++)
 			{
             	process_player = group.Get(j);
+#ifdef BR_TRACE_ENABLED
 				Print( process_player );
+#endif
 				if ( process_player && process_player.GetIdentity() )
 				{
-					Print( process_player.GetIdentity().GetPlainId() );
+					BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
 					CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
 					CF_Base16Stream base16_stream = CF_Base16Stream();
 					string_stream.CopyTo( base16_stream );
 					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
 				}
 			}
+#ifdef BR_TRACE_ENABLED
 			Print( party );
+#endif
 			parties_list.Insert( party );
         }
         BattleRoyaleUtils.Trace("Parties list sent");
@@ -567,7 +573,9 @@ class BattleRoyalePrepare: BattleRoyaleState
 			CF_Base16Stream base16_stream = CF_Base16Stream();
 			string_stream.CopyTo( base16_stream );
 			party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() )
+#ifdef BR_TRACE_ENABLED
 			Print( party );
+#endif
 			parties_list.Insert( party );
 
             Sleep(100);
@@ -575,7 +583,9 @@ class BattleRoyalePrepare: BattleRoyaleState
 #endif
         BattleRoyaleUtils.Trace("Teleported players");
 
+#ifdef BR_TRACE_ENABLED
 		Print( parties_list );
+#endif
         PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
         partiesWebhook.postParties( br_instance.match_uuid, parties_list );
         BattleRoyaleUtils.Trace("Parties list sent");

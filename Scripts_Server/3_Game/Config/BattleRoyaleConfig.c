@@ -27,7 +27,7 @@ class BattleRoyaleConfig
     //if you want to add more battle royale configs, do so here.
     void Init()
     {
-        Print("Initializing Settings...");
+        BattleRoyaleUtils.Trace("Initializing Settings...");
 
         BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
         if(p_DebugData)
@@ -70,7 +70,7 @@ class BattleRoyaleConfig
             //load JSON data (or create it)
             if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER))
             {
-                Print("Creating BattleRoyale Settings Folder");
+                BattleRoyaleUtils.Trace("Creating BattleRoyale Settings Folder");
                 MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
             }
 
@@ -92,7 +92,7 @@ class BattleRoyaleConfig
                     {
                         if(FileExist( path ))
                         {
-                            Print("Loading Config: " + path);
+                            BattleRoyaleUtils.Trace("Loading Config: " + path);
                             config.Load();
 
                             if( BATTLEROYALE_SOLO_GAME )
@@ -102,7 +102,7 @@ class BattleRoyaleConfig
                         }
                         else
                         {
-                            Print("Saving Config: " + path);
+                            BattleRoyaleUtils.Trace("Saving Config: " + path);
                             if( BATTLEROYALE_SOLO_GAME )
                             {
                                 config.Save();
@@ -136,35 +136,35 @@ class BattleRoyaleConfig
 
     BattleRoyaleDebugData GetDebugData()
     {
-        Print("Accessing Debug Data Config...");
+        BattleRoyaleUtils.Trace("Accessing Debug Data Config...");
 
         return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
     }
 
     BattleRoyaleGameData GetGameData()
     {
-        Print("Accessing Game Data Config...");
+        BattleRoyaleUtils.Trace("Accessing Game Data Config...");
 
         return BattleRoyaleGameData.Cast( GetConfig("GameData") );
     }
 
     BattleRoyaleServerData GetServerData()
     {
-        Print("Accessing Server Data Config...");
+        BattleRoyaleUtils.Trace("Accessing Server Data Config...");
 
         return BattleRoyaleServerData.Cast( GetConfig("ServerData") );
     }
 
     BattleRoyaleSpawnsData GetSpawnsData()
     {
-        Print("Accessing Spawns Data Config...");
+        BattleRoyaleUtils.Trace("Accessing Spawns Data Config...");
 
         return BattleRoyaleSpawnsData.Cast( GetConfig("SpawnsData") );
     }
 
     BattleRoyaleZoneData GetZoneData()
     {
-        Print("Accessing Zone Data Config...");
+        BattleRoyaleUtils.Trace("Accessing Zone Data Config...");
 
         return BattleRoyaleZoneData.Cast( GetConfig("ZoneData") );
     }

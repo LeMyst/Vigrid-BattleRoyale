@@ -68,7 +68,7 @@ class BattleRoyaleZone
 
         if(!m_Zones.Contains(z_Index))
         {
-            Print("[BattleRoyaleZone] Create zone " + z_Index);
+            BattleRoyaleUtils.Trace("[BattleRoyaleZone] Create zone " + z_Index);
             if(z_Index > 0)
             {
                 //m_Zones[z_Index] = new BattleRoyaleZone(m_Zones[z_Index - 1]);
@@ -151,8 +151,10 @@ class BattleRoyaleZone
         float d = (Math.Pow(x - center[0], 2) + Math.Pow(z - center[2], 2));
         float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
 
+#ifdef BR_TRACE_ENABLED
         Print(d);
         Print(radius_pow);
+#endif
 
         return (d < radius_pow);
     }
@@ -183,7 +185,7 @@ class BattleRoyaleZone
 
             BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
             BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
-            Print("CfgWorlds " + GetGame().GetWorldName());
+            BattleRoyaleUtils.Trace("CfgWorlds " + GetGame().GetWorldName());
             vector previous_center;
             for(int i = 0; i < i_NumRounds; i++)
             {
@@ -221,8 +223,8 @@ class BattleRoyaleZone
                 playArea.SetCenter(area_center);
 
                 BattleRoyaleUtils.Trace("Zone Data");
-                Print(playArea.GetCenter());
-                Print(playArea.GetRadius());
+                BattleRoyaleUtils.Trace(playArea.GetCenter());
+                BattleRoyaleUtils.Trace(playArea.GetRadius());
 
                 m_PlayAreas.Insert(playArea);
             }
@@ -412,7 +414,7 @@ class BattleRoyaleZone
         poi_position[2] = z;
         poi_position[1] = GetGame().SurfaceY(poi_position[0], poi_position[2]);
 
-        Print(poi_position);
+        BattleRoyaleUtils.Trace(poi_position);
 
         return poi_position;
     }

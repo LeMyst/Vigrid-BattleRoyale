@@ -156,7 +156,7 @@ class BattleRoyaleSpectatorPlayerWidget
             {
                 m_Player.UpdateHealthStats(1, 1);
                 //request these stats from the server
-                Print("Unknown player stats! Requesting stats from the server!");
+                BattleRoyaleUtils.Trace("Unknown player stats! Requesting stats from the server!");
                 GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", new Param1<int>( 1 ), true, NULL, m_Player);
             }
             float health = m_Player.health_percent * 100; //0-100 for HP
@@ -185,13 +185,13 @@ class BattleRoyaleSpectatorPlayerWidget
         vector position = m_Player.GetBonePositionWS( m_Player.GetBoneIndexByName( "Head" ) );
         position = position + Vector(0, 1, 0);//shift hud above head a bit
 
-        Print("Player Pos");
-        Print(position);
+        BattleRoyaleUtils.Trace("Player Pos");
+        BattleRoyaleUtils.Trace(position);
 
         vector screen_pos = GetGame().GetScreenPos( position );
 
-        Print("Screen Pos Player");
-        Print(screen_pos);
+        BattleRoyaleUtils.Trace("Screen Pos Player");
+        BattleRoyaleUtils.Trace(screen_pos);
 
         float x = screen_pos[0];
         float y = screen_pos[1];

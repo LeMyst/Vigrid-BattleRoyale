@@ -6,14 +6,14 @@ class LockServerWebhook
 
 	void LockServerWebhook(string server_token)
 	{
-		Print("LockServerWebhook()");
+		BattleRoyaleUtils.Trace("LockServerWebhook()");
 
 		s_ServerToken = server_token;
 	};
 
 	void Send(bool lock_server)
 	{
-		Print("LockServerWebhook().Send()");
+		BattleRoyaleUtils.Trace("LockServerWebhook().Send()");
 
 		if( i_TryLeft <= 0 )
 		{
@@ -69,7 +69,7 @@ class LockServerCallback: RestCallback
 
 	void LockServerCallback(string server_token, bool lock_server, int try_left)
 	{
-        Print("LockServerCallback() " + try_left);
+        BattleRoyaleUtils.Trace("LockServerCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
@@ -78,7 +78,7 @@ class LockServerCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		LockServerWebhook serverWebhook = new LockServerWebhook( s_ServerToken );
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -87,7 +87,7 @@ class LockServerCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		LockServerWebhook serverWebhook = new LockServerWebhook( s_ServerToken );
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -96,8 +96,8 @@ class LockServerCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };

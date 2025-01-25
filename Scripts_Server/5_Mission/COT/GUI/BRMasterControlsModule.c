@@ -74,7 +74,7 @@ modded class BRMasterControlsModule
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            Print("[DayZBR COT] State Machine Resuming!");
+            BattleRoyaleUtils.Trace("[DayZBR COT] State Machine Resuming!");
             m_BrServer.GetCurrentState().Resume();// allow super.IsComplete() to return TRUE again
         }
         else
@@ -88,7 +88,7 @@ modded class BRMasterControlsModule
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            Print("[DayZBR COT] State Machine Pausing!");
+            BattleRoyaleUtils.Trace("[DayZBR COT] State Machine Pausing!");
             m_BrServer.GetCurrentState().Pause(); // super.IsComplete() will return FALSE until Resume is called
         }
         else
@@ -102,7 +102,7 @@ modded class BRMasterControlsModule
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            Print("[DayZBR COT] State Machine Skipping!");
+            BattleRoyaleUtils.Trace("[DayZBR COT] State Machine Skipping!");
             m_BrServer.GetCurrentState().Deactivate();// super.IsComplete() will return TRUE when this is run
         }
         else
@@ -117,7 +117,7 @@ modded class BRMasterControlsModule
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            Print("[DayZBR COT] Testing Spectating!");
+            BattleRoyaleUtils.Trace("[DayZBR COT] Testing Spectating!");
             m_BrServer.TestSpectator(player);
         }
         else

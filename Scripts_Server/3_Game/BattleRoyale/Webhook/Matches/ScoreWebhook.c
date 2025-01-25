@@ -6,14 +6,14 @@ class ScoreWebhook
 
 	void ScoreWebhook(string server_token)
 	{
-		Print("ScoreWebhook()");
+		BattleRoyaleUtils.Trace("ScoreWebhook()");
 
 		s_ServerToken = server_token;
 	};
 
 	void Send(string match_uuid, string player_steamid, int position)
 	{
-		Print("ScoreWebhook().Send()");
+		BattleRoyaleUtils.Trace("ScoreWebhook().Send()");
 
 		if( i_TryLeft <= 0 )
 		{
@@ -55,7 +55,7 @@ class ScoreCallback: RestCallback
 
 	void ScoreCallback(string server_token, string match_uuid, string player_steamid, int position, int try_left)
 	{
-        Print("ScoreCallback() " + try_left);
+        BattleRoyaleUtils.Trace("ScoreCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
@@ -66,7 +66,7 @@ class ScoreCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		ScoreWebhook serverWebhook = new ScoreWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -75,7 +75,7 @@ class ScoreCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		ScoreWebhook serverWebhook = new ScoreWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -84,8 +84,8 @@ class ScoreCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };

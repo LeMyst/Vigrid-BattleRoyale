@@ -6,7 +6,7 @@ class StartMatchWebhook
 
 	void StartMatchWebhook(string server_id, string server_secret)
 	{
-		Print("StartMatchWebhook()");
+		BattleRoyaleUtils.Trace("StartMatchWebhook()");
 
 		s_ServerID = server_id;
 		s_ServerSecret = server_secret;
@@ -14,7 +14,7 @@ class StartMatchWebhook
 
 	void Send(bool lock_server)
 	{
-		Print("StartMatchWebhook().Send()");
+		BattleRoyaleUtils.Trace("StartMatchWebhook().Send()");
 
 		if( i_TryLeft <= 0 )
 		{
@@ -54,7 +54,7 @@ class StartMatchCallback: RestCallback
 
 	void StartMatchCallback(string server_id, string server_secret, bool lock_server, int try_left)
 	{
-        Print("StartMatchCallback() " + try_left);
+        BattleRoyaleUtils.Trace("StartMatchCallback() " + try_left);
 
 		s_ServerID = server_id;
 		s_ServerSecret = server_secret;
@@ -64,7 +64,7 @@ class StartMatchCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		StartMatchWebhook serverWebhook = new StartMatchWebhook(s_ServerID, s_ServerSecret);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -73,7 +73,7 @@ class StartMatchCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		StartMatchWebhook serverWebhook = new StartMatchWebhook(s_ServerID, s_ServerSecret);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -82,8 +82,8 @@ class StartMatchCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };

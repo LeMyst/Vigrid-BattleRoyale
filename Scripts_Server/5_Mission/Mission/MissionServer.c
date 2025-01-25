@@ -6,7 +6,7 @@ modded class MissionServer
 	//TODO: look at old BR missionserver
 	override void OnInit()
 	{
-		Print("Vigrid-BattleRoyale OnInit()");
+		BattleRoyaleUtils.Trace("Vigrid-BattleRoyale OnInit()");
 		super.OnInit();
 
 		// br things
@@ -21,7 +21,7 @@ modded class MissionServer
 
 	override void InvokeOnConnect( PlayerBase player, PlayerIdentity identity )
 	{
-		Print("InvokeOnConnect()");
+		BattleRoyaleUtils.Trace("InvokeOnConnect()");
 		super.InvokeOnConnect(player, identity);
 
 		if(player)
@@ -144,7 +144,7 @@ modded class MissionServer
 				if( !BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ) )
 				{
 #endif
-					Print("Kicking player (Not in debug state | Not a spectator)");
+					BattleRoyaleUtils.Trace("Kicking player (Not in debug state | Not a spectator)");
 					GetGame().DisconnectPlayer( identity );
 					// TODO: Replace with RPC call to ask the player to disconnect
 #ifdef SPECTATOR
@@ -159,7 +159,7 @@ modded class MissionServer
 			if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
 			{
 #endif
-				Print("Kicking player (Not a valid player object | Not a spectator)");
+				BattleRoyaleUtils.Trace("Kicking player (Not a valid player object | Not a spectator)");
 				GetGame().DisconnectPlayer( identity );
 				// TODO: Replace with RPC call to ask the player to disconnect
 #ifdef SPECTATOR

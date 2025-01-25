@@ -9,14 +9,14 @@ class BattleRoyaleUtils: Managed
 
     static void LogMessage(string message)
     {
-        Print("[DayZ-BattleRoyale] " + message);
+        BattleRoyaleUtils.Trace("[DayZ-BattleRoyale] " + message);
     }
 
     static void LogServerMessage(int level, string message)
     {
         if(CheckLogLevel(level))
         {
-            Print("[DayZ-BattleRoyale][" + level + "] " + message);
+            BattleRoyaleUtils.Trace("[DayZ-BattleRoyale][" + level + "] " + message);
         }
     }
 
@@ -45,8 +45,19 @@ class BattleRoyaleUtils: Managed
         LogServerMessage(TRACE, message);
     }
 
+    static void Trace(vector v)
+	{
+		LogServerMessage(TRACE, v.ToString());
+	}
+
+	static void Trace(float f)
+	{
+		LogServerMessage(TRACE, f.ToString());
+	}
+
     static bool CheckLogLevel(int level)
     {
+    	// TODO: Add get log level from config file (if exists)
         return BATTLEROYALE_LOG_LEVEL >= level;
     }
 

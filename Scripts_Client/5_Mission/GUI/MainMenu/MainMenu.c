@@ -5,7 +5,7 @@ modded class MainMenu
 
     override Widget Init()
     {
-        Print("INITIALIZING BR IN ONLINE MODE");
+        BattleRoyaleUtils.Trace("INITIALIZING BR IN ONLINE MODE");
 
         super.Init(); // this calls dayz expansion init
 
@@ -55,7 +55,7 @@ modded class MainMenu
 
         if(OnStart())
         {
-            Print("You are running a developer build of DayZBR");
+            BattleRoyaleUtils.Trace("You are running a developer build of DayZBR");
         }
         else
         {
@@ -69,7 +69,7 @@ modded class MainMenu
 
     bool OnStart(bool force_restart = false)
     {
-        Print("DAYZ BATTLE ROYALE INIT");
+        BattleRoyaleUtils.Trace("DAYZ BATTLE ROYALE INIT");
         BiosUserManager p_UserManager = GetGame().GetUserManager();
         if(!p_UserManager)
         {

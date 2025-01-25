@@ -6,14 +6,14 @@ class PlayersWebhook
 
 	void PlayersWebhook(string server_token)
 	{
-		Print("PlayersWebhook()");
+		BattleRoyaleUtils.Trace("PlayersWebhook()");
 
 		s_ServerToken = server_token;
 	};
 
 	void postPlayers(string match_uuid, map<string, string> players)
 	{
-		Print("PlayersWebhook().postPlayers()");
+		BattleRoyaleUtils.Trace("PlayersWebhook().postPlayers()");
 		Print( players );
 
 		if( i_TryLeft <= 0 )
@@ -55,7 +55,7 @@ class PlayersCallback: RestCallback
 
 	void PlayersCallback(string server_token, string match_uuid, map<string, string> players, int try_left)
 	{
-        Print("PlayersCallback() " + try_left);
+        BattleRoyaleUtils.Trace("PlayersCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
@@ -65,7 +65,7 @@ class PlayersCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		PlayersWebhook serverWebhook = new PlayersWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -74,7 +74,7 @@ class PlayersCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		PlayersWebhook serverWebhook = new PlayersWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -83,8 +83,8 @@ class PlayersCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };
