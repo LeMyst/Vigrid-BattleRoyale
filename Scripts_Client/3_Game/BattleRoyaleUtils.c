@@ -16,7 +16,11 @@ class BattleRoyaleUtils: Managed
     {
         if(CheckLogLevel(level))
         {
-            BattleRoyaleUtils.Trace("[DayZ-BattleRoyale][" + level + "] " + message);
+        	if (level == NONE) {
+        		Error("[DayZ-BattleRoyale] " + message);
+        	} else {
+            	Print("[DayZ-BattleRoyale][" + level + "] " + message);
+            }
         }
     }
 
