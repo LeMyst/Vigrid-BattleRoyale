@@ -4,7 +4,7 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	int version = 1;  // Config version
 
 	// JWT Token for the Vigrid API webhook
-    string webhook_jwt_token = "dummy";
+    string webhook_jwt_token = "changeme";
 
     // Force getting a match UUID from the webhook, otherwise restart the server
     bool force_match_uuid = false;

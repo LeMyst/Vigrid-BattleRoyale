@@ -3,8 +3,6 @@ class BattleRoyaleDebugData: BattleRoyaleDataBase
 {
 	int version = 1;  // Config version
 
-    vector spawn_point = "14829.2 0 14572.3";  // Lobby spawn point
-    float radius = 50;  // Lobby spawn point radius
     int minimum_players = 10;  // Minimum players to start the match
     int use_ready_up = 1;  // Use ready up system (F2 by default)
     float ready_up_percent = 0.8;  // Percentage of players needed to ready up to automatically start the match

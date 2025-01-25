@@ -3,6 +3,9 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 {
 	int version = 1;  // Config version
 
+    vector spawn_point = "14829.2 0 14572.3";  // Lobby spawn point
+    float radius = 50;  // Lobby spawn point radius
+
     bool spawn_in_villages = true;  // Spawn players and groups in villages
     bool spawn_in_first_zone = true;  // Spawn players and groups in the first zone, otherwise they will spawn all around the map
     int extra_spawn_radius = 250;  // Extra radius around the first zone for spawning

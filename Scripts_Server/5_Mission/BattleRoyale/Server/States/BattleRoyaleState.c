@@ -499,19 +499,17 @@ class BattleRoyaleDebugState: BattleRoyaleState
 
     void BattleRoyaleDebugState()
     {
-        BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
-        if(m_DebugSettings)
+        BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
+        if(m_SpawnsSettings)
         {
-            v_Center = m_DebugSettings.spawn_point;
-            f_Radius = m_DebugSettings.radius;
-            a_AllowedOutsideSpawn = m_DebugSettings.allowed_outside_spawn;
+            v_Center = m_SpawnsSettings.spawn_point;
+            f_Radius = m_SpawnsSettings.radius;
+            a_AllowedOutsideSpawn = m_SpawnsSettings.allowed_outside_spawn;
         }
         else
         {
             Error("DEBUG SETTINGS IS NULL!");
-            v_Center = DAYZBR_DEBUG_CENTER;
-            f_Radius = DAYZBR_DEBUG_RADIUS;
-            a_AllowedOutsideSpawn = new array<string>();
+            GetGame().RequestExit(0);  // Exit the game
         }
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)

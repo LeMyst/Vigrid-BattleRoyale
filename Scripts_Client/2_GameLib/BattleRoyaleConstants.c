@@ -70,8 +70,6 @@ static const string DAYZBR_MSG_MATCH_STARTED = "The match has started!";
 
 
 //--- broken debug zone values
-static const vector DAYZBR_DEBUG_CENTER = "3954.45 5.67608 10243.8";
-static const float DAYZBR_DEBUG_RADIUS = 100;
 static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 
