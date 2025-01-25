@@ -20,7 +20,7 @@ modded class ExpansionMapMenu
 
         super.Init();
 
-        Print("Map Init! Updating Zones...");
+        BattleRoyaleUtils.Trace("Map Init! Updating Zones...");
         UpdateZones();
 
         return layoutRoot;
@@ -39,7 +39,7 @@ modded class ExpansionMapMenu
                 m_CurrentZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
                 m_CurrentZone.SetThickness(2);
                 m_CurrentZone.SetColor(ARGB(255, 0, 0, 255));
-                Print("Creating Current Zone Map Marker!");
+                BattleRoyaleUtils.Trace("Creating Current Zone Map Marker!");
                 m_Markers.Insert( m_CurrentZone );
             }
             center = current_playarea.GetCenter();
@@ -57,7 +57,7 @@ modded class ExpansionMapMenu
                 m_NextZone = new BattleRoyaleMapMarkerZone( layoutRoot, m_MapWidget );
                 m_NextZone.SetColor(ARGB(255, 255, 255, 255));
                 m_NextZone.SetThickness(2);
-                Print("Creating Next Zone Map Marker!");
+                BattleRoyaleUtils.Trace("Creating Next Zone Map Marker!");
                 m_Markers.Insert( m_NextZone );
             }
             center = next_playarea.GetCenter();
@@ -102,7 +102,7 @@ modded class ExpansionMapMenu
 
             if(index == m_SpectatorPlayerMarkers.Count())
             {
-                Print("Spectator Map: Inserting new local player marker");
+                BattleRoyaleUtils.Trace("Spectator Map: Inserting new local player marker");
                 m_SpectatorPlayerMarkers.Insert( new BattleRoyaleMapMarkerPlayerArrow( layoutRoot, m_MapWidget ) );
             }
 
@@ -121,7 +121,7 @@ modded class ExpansionMapMenu
         //delete old markers if unnecessary
         for(i = players.Count(); i < m_SpectatorPlayerMarkers.Count(); i++)
         {
-            Print("Spectator Map: Deleting local player marker");
+            BattleRoyaleUtils.Trace("Spectator Map: Deleting local player marker");
             m_SpectatorPlayerMarkers[i].SetPlayer(null); //null out player
             m_Markers.RemoveItem( m_SpectatorPlayerMarkers[i] ); //remove from render list
         }
@@ -173,7 +173,7 @@ modded class ExpansionMapMenu
     //ensure BR markers are rendering correct
     override void Update( float timeslice )
     {
-        //Print("Updating Zones...");
+        //BattleRoyaleUtils.Trace("Updating Zones...");
         UpdateZones();
 
 #ifdef SPECTATOR

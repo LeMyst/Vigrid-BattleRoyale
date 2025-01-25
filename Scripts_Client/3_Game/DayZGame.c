@@ -11,107 +11,107 @@ modded class DayZGame
         {
             case StartupEventTypeID:
             {
-                Print("DayZGame::OnEvent StartupEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent StartupEventTypeID");
                 break;
             }
             case MPSessionStartEventTypeID:
             {
-                Print("DayZGame::OnEvent MPSessionStartEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent MPSessionStartEventTypeID");
                 break;
             }
             case MPSessionEndEventTypeID:
             {
-                Print("DayZGame::OnEvent MPSessionEndEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent MPSessionEndEventTypeID");
                 break;
             }
             case MPSessionFailEventTypeID:
             {
-                Print("DayZGame::OnEvent MPSessionFailEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent MPSessionFailEventTypeID");
                 break;
             }
             case MPSessionPlayerReadyEventTypeID:
             {
-                Print("DayZGame::OnEvent MPSessionPlayerReadyEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent MPSessionPlayerReadyEventTypeID");
                 break;
             }
             case MPConnectionLostEventTypeID:
             {
-                Print("DayZGame::OnEvent MPConnectionLostEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent MPConnectionLostEventTypeID");
                 break;
             }
             case WorldCleaupEventTypeID:
             {
-                Print("DayZGame::OnEvent WorldCleaupEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent WorldCleaupEventTypeID");
                 break;
             }
             case DialogQueuedEventTypeID:
             {
-                Print("DayZGame::OnEvent DialogQueuedEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent DialogQueuedEventTypeID");
                 break;
             }
             case ChatMessageEventTypeID:
             {
-                Print("DayZGame::OnEvent ChatMessageEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent ChatMessageEventTypeID");
                 break;
             }
             case ProgressEventTypeID:
             {
-                Print("DayZGame::OnEvent ProgressEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent ProgressEventTypeID");
                 break;
             }
             case LoginTimeEventTypeID:
             {
-                Print("DayZGame::OnEvent LoginTimeEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent LoginTimeEventTypeID");
                 break;
             }
             case RespawnEventTypeID:
             {
-                Print("DayZGame::OnEvent RespawnEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent RespawnEventTypeID");
                 break;
             }
             case PreloadEventTypeID:
             {
-                Print("DayZGame::OnEvent PreloadEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent PreloadEventTypeID");
                 break;
             }
             case LogoutEventTypeID:
             {
-                Print("DayZGame::OnEvent LogoutEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent LogoutEventTypeID");
                 break;
             }
             case SelectedUserChangedEventTypeID:
             {
-                Print("DayZGame::OnEvent SelectedUserChangedEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent SelectedUserChangedEventTypeID");
                 break;
             }
             case LoginStatusEventTypeID:
             {
-                Print("DayZGame::OnEvent LoginStatusEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent LoginStatusEventTypeID");
                 break;
             }
             case ConnectingStartEventTypeID:
             {
-                Print("DayZGame::OnEvent ConnectingStartEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent ConnectingStartEventTypeID");
                 break;
             }
             case ConnectingAbortEventTypeID:
             {
-                Print("DayZGame::OnEvent ConnectingAbortEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent ConnectingAbortEventTypeID");
                 break;
             }
             case DLCOwnerShipFailedEventTypeID:
             {
-                Print("DayZGame::OnEvent DLCOwnerShipFailedEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent DLCOwnerShipFailedEventTypeID");
                 break;
             }
             case ConnectivityStatsUpdatedEventTypeID:
             {
-                Print("DayZGame::OnEvent ConnectivityStatsUpdatedEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent ConnectivityStatsUpdatedEventTypeID");
                 break;
             }
             case ServerFpsStatsUpdatedEventTypeID:
             {
-                Print("DayZGame::OnEvent ServerFpsStatsUpdatedEventTypeID");
+                BattleRoyaleUtils.Trace("DayZGame::OnEvent ServerFpsStatsUpdatedEventTypeID");
                 break;
             }
         }

@@ -9,7 +9,11 @@ static const string BATTLEROYALE_VERSION = "0.0.31-Vigrid";
 
 //--- debug settings
 static const int BATTLEROYALE_SOLO_GAME = 0;
-static const int BATTLEROYALE_LOG_LEVEL = 4; // Default TRACE
+#ifdef BR_TRACE_ENABLED
+	static const int BATTLEROYALE_LOG_LEVEL = 4; // Trace
+#else
+	static const int BATTLEROYALE_LOG_LEVEL = 0; // Error
+#endif
 
 
 //--- API endpoint

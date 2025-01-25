@@ -128,7 +128,7 @@ class BattleRoyaleState: Timeable
         {
             if(player.UpdateHealthStatsServer( player.GetHealth01("", "Health"), player.GetHealth01("", "Blood"), timeslice ))
             {
-                //Print("Player Health Changed! Syncing Network...");
+                //BattleRoyaleUtils.Trace("Player Health Changed! Syncing Network...");
                 //the player's stats changed (sync it over the network)
                 GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float, float>( player.health_percent, player.blood_percent ), true, NULL, player);
             }
@@ -265,7 +265,9 @@ class BattleRoyaleState: Timeable
             if( collidedObjects.Count() > 0)
             {
                 BattleRoyaleUtils.Trace("New IsSafeForTeleport Geometry check is true !");
+#ifdef BR_TRACE_ENABLED
                 Print( collidedObjects );
+#endif
                 for (int i = 0; i < collidedObjects.Count(); ++i)
                 {
                     string objectClass = collidedObjects.Get(i).GetType();
@@ -416,7 +418,7 @@ class BattleRoyaleState: Timeable
 
 		if (!player || !source)
 		{
-	        Print("DEBUG: PlayerKilled() player/source does not exist");
+	        BattleRoyaleUtils.Trace("DEBUG: PlayerKilled() player/source does not exist");
 	        return;
     	}
 

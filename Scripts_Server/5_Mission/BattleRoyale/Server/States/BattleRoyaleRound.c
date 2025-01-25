@@ -60,7 +60,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     void Init()
     {
-        Print(GetName() + " Init!");
+        BattleRoyaleUtils.Trace(GetName() + " Init!");
         b_ZoneLocked = false;
         m_Zone = new BattleRoyaleZone;
 
@@ -69,30 +69,30 @@ class BattleRoyaleRound: BattleRoyaleState
             int previous_zone_number = Math.Floor(GetPreviousZone().GetZoneNumber());
             m_Zone = m_Zone.GetZone(previous_zone_number + 1);
         } else {
-            Print("No previous zone, default to 1");
+            BattleRoyaleUtils.Trace("No previous zone, default to 1");
             m_Zone = m_Zone.GetZone(1); // Can't add dynamic num zone stuff here
         }
 
         // Update zone timer
         i_RoundTimeInSeconds = m_Zone.GetZoneTimer();
-        Print("Create round " + GetName());
+        BattleRoyaleUtils.Trace("Create round " + GetName());
 
         if( GetPreviousZone() )
-            Print("- Previous zone number: " + Math.Floor(GetPreviousZone().GetZoneNumber()));
+            BattleRoyaleUtils.Trace("- Previous zone number: " + Math.Floor(GetPreviousZone().GetZoneNumber()));
 
-        Print("- Duration: " + i_RoundTimeInSeconds);
+        BattleRoyaleUtils.Trace("- Duration: " + i_RoundTimeInSeconds);
 
         //dear god i hope i really don't have to keep this, but it should work
         zone_num = m_Zone.GetZoneNumber() * 1.0; //returns 1-max (inclusive)
         float num_zones = i_NumZones * 1.0;
-        Print("- Num zone: " + m_Zone.GetZoneNumber() + "/" + i_NumZones);
+        BattleRoyaleUtils.Trace("- Num zone: " + m_Zone.GetZoneNumber() + "/" + i_NumZones);
 
         int min_players = m_Zone.GetZoneMinPlayers();
-        Print("- Min players: " + min_players);
+        BattleRoyaleUtils.Trace("- Min players: " + min_players);
 
         //scale zone damage so it is FULL power in the final zone, and linearly decreases as we decrease zone #
         f_Damage = f_Damage * ( zone_num / num_zones );
-        Print("- Damage scale: " + f_Damage);
+        BattleRoyaleUtils.Trace("- Damage scale: " + f_Damage);
     }
 
     override string GetName()
@@ -106,7 +106,7 @@ class BattleRoyaleRound: BattleRoyaleState
         int time_till_end = i_RoundTimeInSeconds * 1000;
         int time_till_lock = time_till_end * 0.80; // Time before lock, changed from 0.75 to 0.80
         int time_between_lock_and_end = time_till_end - time_till_lock;
-        Print(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds with a lock at " + time_till_lock / 1000 + " seconds (so " + time_between_lock_and_end / 1000 + " seconds after lock before end) !");
+        BattleRoyaleUtils.Trace(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds with a lock at " + time_till_lock / 1000 + " seconds (so " + time_between_lock_and_end / 1000 + " seconds after lock before end) !");
 
         int i;
         int min;
@@ -258,14 +258,14 @@ class BattleRoyaleRound: BattleRoyaleState
                 {
 					if( GetGroups().Count() <= 1 )
 					{
-						Print(GetName() + " IsComplete (Groups)!");
+						BattleRoyaleUtils.Trace(GetName() + " IsComplete (Groups)!");
 						Deactivate();
 					}
                 }
 #else
                 if(players.Count() <= 1)
                 {
-                    Print(GetName() + " IsComplete (Players)!");
+                    BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
                     Deactivate();
                 }
 #endif
@@ -294,7 +294,7 @@ class BattleRoyaleRound: BattleRoyaleState
             }
         }
 
-        //Print(remaining_parties);
+        //BattleRoyaleUtils.Trace(remaining_parties);
 
         if (remaining_parties.Count() == 1)
             return true;
@@ -307,7 +307,7 @@ class BattleRoyaleRound: BattleRoyaleState
     {
         if( _previousState.i_StartingZone > zone_num )
         {
-            Print("[State Machine] Skipping State `" + _previousState.i_StartingZone + "` > `" + zone_num + "`");
+            BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + _previousState.i_StartingZone + "` > `" + zone_num + "`");
             return true;
         }
 
@@ -390,9 +390,9 @@ class BattleRoyaleRound: BattleRoyaleState
 //            if( m_Zone.GetZoneNumber() > m_PreviousState.i_StartingZone )
 //                return prev_round.GetZone();
 //            else
-//                Print(m_Zone.GetZoneNumber() + " <= " + m_PreviousState.i_StartingZone);
+//                BattleRoyaleUtils.Trace(m_Zone.GetZoneNumber() + " <= " + m_PreviousState.i_StartingZone);
         } else {
-            Print("Can't cast m_PreviousState to BattleRoyaleRound!");
+            BattleRoyaleUtils.Trace("Can't cast m_PreviousState to BattleRoyaleRound!");
         }
 
         return NULL;

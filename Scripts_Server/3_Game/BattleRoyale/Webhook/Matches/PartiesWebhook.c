@@ -6,14 +6,14 @@ class PartiesWebhook
 
 	void PartiesWebhook(string server_token)
 	{
-		Print("PartiesWebhook()");
+		BattleRoyaleUtils.Trace("PartiesWebhook()");
 
 		s_ServerToken = server_token;
 	};
 
 	void postParties(string match_uuid, array<ref map<string, string>> parties)
 	{
-		Print("PartiesWebhook().postParties()");
+		BattleRoyaleUtils.Trace("PartiesWebhook().postParties()");
 		Print( parties );
 
 		if( i_TryLeft <= 0 )
@@ -55,7 +55,7 @@ class PartiesCallback: RestCallback
 
 	void PartiesCallback(string server_token, string match_uuid, array<ref map<string, string>> parties, int try_left)
 	{
-        Print("PartiesCallback() " + try_left);
+        BattleRoyaleUtils.Trace("PartiesCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
@@ -65,7 +65,7 @@ class PartiesCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		PartiesWebhook serverWebhook = new PartiesWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -74,7 +74,7 @@ class PartiesCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		PartiesWebhook serverWebhook = new PartiesWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -83,8 +83,8 @@ class PartiesCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };

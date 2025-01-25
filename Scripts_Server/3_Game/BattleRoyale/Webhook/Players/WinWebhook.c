@@ -6,14 +6,14 @@ class WinWebhook
 
 	void WinWebhook(string server_token)
 	{
-		Print("WinWebhook()");
+		BattleRoyaleUtils.Trace("WinWebhook()");
 
 		s_ServerToken = server_token;
 	};
 
 	void Send(string match_uuid, string player_steamid)
 	{
-		Print("WinWebhook().Send()");
+		BattleRoyaleUtils.Trace("WinWebhook().Send()");
 
 		if( i_TryLeft <= 0 )
 		{
@@ -54,7 +54,7 @@ class WinCallback: RestCallback
 
 	void WinCallback(string server_token, string match_uuid, string player_steamid, int try_left)
 	{
-        Print("WinCallback() " + try_left);
+        BattleRoyaleUtils.Trace("WinCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
@@ -64,7 +64,7 @@ class WinCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		WinWebhook serverWebhook = new WinWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -73,7 +73,7 @@ class WinCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		WinWebhook serverWebhook = new WinWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -82,8 +82,8 @@ class WinCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };

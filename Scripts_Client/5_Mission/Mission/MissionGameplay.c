@@ -44,12 +44,12 @@ modded class MissionGameplay
 
 		InitBRhud();
 
-		Print("MissionGameplay::OnInit");
+		BattleRoyaleUtils.Trace("MissionGameplay::OnInit");
 	}
 
 	void InitBRhud()
 	{
-		Print("Initializing BattleRoyale HUD");
+		BattleRoyaleUtils.Trace("Initializing BattleRoyale HUD");
 		if(!m_BattleRoyaleHudRootWidget)
 		{
 #ifdef BR_MINIMAP
@@ -62,15 +62,15 @@ modded class MissionGameplay
 			float canvas_width;
 			float canvas_height;
 			m_MiniMapCanvas.GetSize(canvas_width, canvas_height);
-			Print(canvas_width);
-			Print(canvas_height);
+			BattleRoyaleUtils.Trace(canvas_width);
+			BattleRoyaleUtils.Trace(canvas_height);
 #else
 			m_BattleRoyaleHudRootWidget = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/br_hud.layout");
 #endif
 
 			m_BattleRoyaleHud = new BattleRoyaleHud( m_BattleRoyaleHudRootWidget );
 			m_BattleRoyaleHud.ShowHud( true );
-			Print("HUD Initialized");
+			BattleRoyaleUtils.Trace("HUD Initialized");
 		}
 	}
 
@@ -82,7 +82,7 @@ modded class MissionGameplay
 
 	void InitSpectator()
 	{
-		Print("Initializing Spectator HUD");
+		BattleRoyaleUtils.Trace("Initializing Spectator HUD");
 		m_BattleRoyaleHud.InitSpectator();
 
 		is_spectator = true;
@@ -199,7 +199,7 @@ modded class MissionGameplay
 	{
 		if (m_MiniMapCanvas && spawn_point && radius)
 		{
-			Print("Update MiniMap Canvas!");
+			BattleRoyaleUtils.Trace("Update MiniMap Canvas!");
 			m_MiniMapCanvas.Clear();
 
 			vector m_edgePos_A = spawn_point;
@@ -238,7 +238,7 @@ modded class MissionGameplay
 	//TODO: temporary place
 	void RenderOval(float cx, float cy, float a, float b)
 	{
-		Print("RenderOval "+cx+" "+cy+" "+a+" "+b);
+		BattleRoyaleUtils.Trace("RenderOval "+cx+" "+cy+" "+a+" "+b);
 		for(int i = 0; i < 360; i++)
 		{
 			float x1 = cx + (a * Math.Cos(i*Math.DEG2RAD));

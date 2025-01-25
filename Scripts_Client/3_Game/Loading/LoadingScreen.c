@@ -6,7 +6,7 @@ modded class LoadingScreen
 
     void LoadingScreen(DayZGame game)
     {
-        Print("Loading screens DayZ-BR");
+        BattleRoyaleUtils.Trace("Loading screens DayZ-BR");
 
 		m_Backgrounds = LoadingScreenBackgrounds.Get();
 

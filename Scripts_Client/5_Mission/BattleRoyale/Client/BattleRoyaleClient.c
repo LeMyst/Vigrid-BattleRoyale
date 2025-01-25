@@ -20,7 +20,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void BattleRoyaleClient()
     {
-        Print("BattleRoyaleClient::BattleRoyaleClient");
+        BattleRoyaleUtils.Trace("BattleRoyaleClient::BattleRoyaleClient");
 
         b_IsReady = false;
         b_MatchStarted = false;
@@ -47,7 +47,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void Init()
     {
-        Print("BattleRoyaleClient::Init");
+        BattleRoyaleUtils.Trace("BattleRoyaleClient::Init");
 
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
         GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
@@ -69,7 +69,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         //m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLaterByName( this, "OnSecond", 1000, true );
 
-		Print("BattleRoyaleClient::Init - Done");
+		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
 
 #ifdef SPECTATOR
@@ -182,7 +182,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-        Print("BattleRoyale: FADE IN!");
+        BattleRoyaleUtils.Trace("BattleRoyale: FADE IN!");
 
         PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Start();
         player.SetInventorySoftLock(true);
@@ -193,7 +193,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-        Print("BattleRoyale: FADE OUT!");
+        BattleRoyaleUtils.Trace("BattleRoyale: FADE OUT!");
 
         PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Stop();
         player.SetInventorySoftLock(false);
@@ -393,7 +393,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void ActivateSpectatorCamera(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
     {
-        Print("Activating Spectator Camera");
+        BattleRoyaleUtils.Trace("Activating Spectator Camera");
         BattleRoyaleCamera br_Camera;
         if ( Class.CastTo( br_Camera, Camera.GetCurrentCamera() ) )
         {
@@ -408,7 +408,7 @@ class BattleRoyaleClient: BattleRoyaleBase
             MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
             if ( mission )
             {
-                Print("Initializing Spectator in Mission");
+                BattleRoyaleUtils.Trace("Initializing Spectator in Mission");
                 //Enable spectator HUD elements
                 mission.InitSpectator();
             }

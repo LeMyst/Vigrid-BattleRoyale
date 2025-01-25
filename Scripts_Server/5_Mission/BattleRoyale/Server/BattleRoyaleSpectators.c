@@ -37,7 +37,7 @@ class BattleRoyaleSpectators
 
         if(!result)
         {
-            Print("DEBUG: Player with id '" + steamid  + "' is not whitelisted as a spectator!");
+            BattleRoyaleUtils.Trace("DEBUG: Player with id '" + steamid  + "' is not whitelisted as a spectator!");
         }
         return result;
     }

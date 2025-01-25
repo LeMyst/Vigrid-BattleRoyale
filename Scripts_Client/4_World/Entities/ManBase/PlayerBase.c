@@ -69,9 +69,9 @@ modded class PlayerBase
     void DisableInput(bool disabled)
     {
     	if ( disabled )
-        	Print( "Call To Disable Player Input" );
+        	BattleRoyaleUtils.Trace( "Call To Disable Player Input" );
 		else
-			Print( "Call To Enable Player Input" );
+			BattleRoyaleUtils.Trace( "Call To Enable Player Input" );
 
 		HumanInputControllerOverrideType override_type = HumanInputControllerOverrideType.DISABLED;
 		if ( disabled )

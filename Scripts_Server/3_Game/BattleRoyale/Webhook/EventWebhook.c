@@ -6,16 +6,16 @@ class EventWebhook
 
 	void EventWebhook(string server_token)
 	{
-		Print("EventWebhook()");
+		BattleRoyaleUtils.Trace("EventWebhook()");
 
 		s_ServerToken = server_token;
 	};
 
 	void Send(string match_uuid, string event_name, string json_data)
 	{
-		Print("EventWebhook().Send()");
-		Print( event_name );
-		Print( json_data );
+		BattleRoyaleUtils.Trace("EventWebhook().Send()");
+		BattleRoyaleUtils.Trace( event_name );
+		BattleRoyaleUtils.Trace( json_data );
 
 		if( i_TryLeft <= 0 )
 		{
@@ -57,7 +57,7 @@ class EventCallback: RestCallback
 
 	void EventCallback(string server_token, string match_uuid, string event_name, string json_data, int try_left)
 	{
-        Print("EventCallback() " + try_left);
+        BattleRoyaleUtils.Trace("EventCallback() " + try_left);
 
 		s_ServerToken = server_token;
 		i_TryLeft = try_left;
@@ -68,7 +68,7 @@ class EventCallback: RestCallback
 
 	override void OnError( int errorCode )
 	{
-		Print(" !!! OnError(): " + errorCode);
+		BattleRoyaleUtils.Trace(" !!! OnError(): " + errorCode);
 
 		EventWebhook serverWebhook = new EventWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -77,7 +77,7 @@ class EventCallback: RestCallback
 
 	override void OnTimeout()
 	{
-		Print(" !!! OnTimeout() ");
+		BattleRoyaleUtils.Trace(" !!! OnTimeout() ");
 
 		EventWebhook serverWebhook = new EventWebhook(s_ServerToken);
 		serverWebhook.SetTryLeft( i_TryLeft );
@@ -86,8 +86,8 @@ class EventCallback: RestCallback
 
 	override void OnSuccess( string data, int dataSize )
 	{
-		Print(" !!! OnSuccess() size=" + dataSize );
+		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
-			Print(data);
+			BattleRoyaleUtils.Trace(data);
 	};
 };

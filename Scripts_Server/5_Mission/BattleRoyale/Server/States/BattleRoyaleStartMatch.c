@@ -90,7 +90,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     {
         if(GetPlayers().Count() <= 1 && IsActive() && !BATTLEROYALE_SOLO_GAME)
         {
-            Print(GetName() + " IsComplete!");
+            BattleRoyaleUtils.Trace(GetName() + " IsComplete!");
             // TODO: clean call queue?
             // TODO: toggle to debug game
             Deactivate();
@@ -122,14 +122,14 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     void ShowFirstZone()
     {
         // Show first circle
-        Print("[BattleRoyaleStartMatch] Show first circle");
+        BattleRoyaleUtils.Trace("[BattleRoyaleStartMatch] Show first circle");
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;
         m_Zone = m_Zone.GetZone(BattleRoyalePrepare.i_StartingZone);
         m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
         ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
 
-        Print(m_ThisArea.GetCenter());
-        Print(m_ThisArea.GetRadius());
+        BattleRoyaleUtils.Trace(m_ThisArea.GetCenter());
+        BattleRoyaleUtils.Trace(m_ThisArea.GetRadius());
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, false ), true);
     }
@@ -164,7 +164,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 			player.wait_unstuck = true;
 			MessagePlayer( player, "You will be randomly teleported in a few seconds." );
 			// TODO: Replace with RPC (for client side translation)
-			Print( player.GetIdentity().GetName() + " asked for an unstuck teleportation." );
+			BattleRoyaleUtils.Trace( player.GetIdentity().GetName() + " asked for an unstuck teleportation." );
 			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
 		}
 		else

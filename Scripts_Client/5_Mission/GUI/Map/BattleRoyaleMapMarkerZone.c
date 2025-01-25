@@ -22,7 +22,7 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
 
     void BattleRoyaleMapMarkerZone( Widget parent, MapWidget mapWidget, bool autoInit = true )
     {
-        Print("BattleRoyaleMapMarkerZone::Constructor()");
+        BattleRoyaleUtils.Trace("BattleRoyaleMapMarkerZone::Constructor()");
         SetIgnorePointer(true);
         //! Do NOT show by default, otherwise it'll pop up on the load screen in the top left corner at the end of the loading progress
         Hide();
@@ -30,7 +30,7 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
 
     void ~BattleRoyaleMapMarkerZone()
     {
-        Print("BattleRoyaleMapMarkerZone::Deconstructor()");
+        BattleRoyaleUtils.Trace("BattleRoyaleMapMarkerZone::Deconstructor()");
     }
 
     protected override void OnInit( Widget layoutRoot )
@@ -103,6 +103,7 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
 
             m_BRCanvas.SetSize(new_size,new_size);
 
+#ifdef BR_TRACE_ENABLED
             Print("Resize Marker");
             Print(canvas_width);
             Print(canvas_height);
@@ -115,6 +116,7 @@ class BattleRoyaleMapMarkerZone: ExpansionMapWidgetBase
             Print(center_y);
             Print(distance_A);
             Print(distance_B);
+#endif
         }
 
         if(f_Thickness <= 0)

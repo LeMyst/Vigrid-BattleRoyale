@@ -131,7 +131,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         vector blue_zone_pos = "14829.2 73 14572.3";
         blue_zone_pos[1] = GetGame().SurfaceY(blue_zone_pos[0], blue_zone_pos[2]) + 10;
 
-        Print(blue_zone_pos);
+        BattleRoyaleUtils.Trace(blue_zone_pos);
 
         GetGame().CreateObjectEx( "BlueZone", blue_zone_pos, ECE_NOLIFETIME );
 #endif
@@ -187,7 +187,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             {
                 BattleRoyaleState next_state = GetState(next_index);
 
-                Print("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
+                BattleRoyaleUtils.Trace("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
                 if(GetCurrentState().IsActive())
                     GetCurrentState().Deactivate(); //deactivate old state
 
@@ -204,7 +204,7 @@ class BattleRoyaleServer: BattleRoyaleBase
                     }
                 }
                 i_CurrentStateIndex = next_index;//move us to the next state
-                Print("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
+                BattleRoyaleUtils.Trace("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
                 GetCurrentState().Activate(); //activate new state
             }
             else
@@ -217,7 +217,7 @@ class BattleRoyaleServer: BattleRoyaleBase
     void OnPlayerConnected(PlayerBase player)
     {
         //Teleport player into debug zone
-        Print("Player " + player.GetIdentity().GetName() + " connected!"); //lets find out if respawning players end up here
+        BattleRoyaleUtils.Trace("Player " + player.GetIdentity().GetName() + " connected!"); //lets find out if respawning players end up here
 
         //Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
         player.player_steamid = player.GetIdentity().GetPlainId();
@@ -250,7 +250,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             {
                 if (b_AutoSpectateMode)
                 {
-                    Print("Spectator connected, inserting into spectator system");
+                    BattleRoyaleUtils.Trace("Spectator connected, inserting into spectator system");
 
                     //it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
                     //note that 20 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
@@ -361,7 +361,7 @@ class BattleRoyaleServer: BattleRoyaleBase
                     temp_disconnecting.Insert(player);
                     //GetGame().DisconnectPlayer( player.GetIdentity() );
                     GetGame().SendLogoutTime(player, 0);
-                    //Print(pos);
+                    //BattleRoyaleUtils.Trace(pos);
                     //Error("PLAYER FOUND IN INVALID POSITION!");
                 }
             }
@@ -434,7 +434,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             {
                 return i;
             } else {
-                Print("[State Machine] Skipping State `" + state.GetName() + "`");
+                BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + state.GetName() + "`");
             }
         }
 
@@ -452,7 +452,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         PlayerBase pbTarget;
         //--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
-        Print("Spectator client requested status update for target");
+        BattleRoyaleUtils.Trace("Spectator client requested status update for target");
         if(Class.CastTo( pbTarget, target ))
         {
             pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") );
@@ -524,7 +524,7 @@ class BattleRoyaleServer: BattleRoyaleBase
     //TODO: This will need a rework!
     void RandomizeServerEnvironment()
     {
-        Print("BattleRoyale: Randomizing Environment!");
+        BattleRoyaleUtils.Trace("BattleRoyale: Randomizing Environment!");
         //NOTE: this is all legacy, we should find a better way to do this
         int year = 2018;
         int month = 12;
@@ -564,12 +564,12 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
-        Print("BattleRoyaleManager NextState");
+        BattleRoyaleUtils.Trace("BattleRoyaleManager NextState");
 #ifdef SERVER
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {
-            Print("[DayZBR COT] State Machine Skipping!");
+            BattleRoyaleUtils.Trace("[DayZBR COT] State Machine Skipping!");
             m_BrServer.GetCurrentState().Deactivate();// super.IsComplete() will return TRUE when this is run
         }
         else
@@ -582,14 +582,14 @@ class BattleRoyaleServer: BattleRoyaleBase
 #ifdef SPECTATOR
     void StartSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
-        Print("BattleRoyaleManager StartSpectate");
+        BattleRoyaleUtils.Trace("BattleRoyaleManager StartSpectate");
         PlayerBase pbTarget;
         if(Class.CastTo( pbTarget, target ))
         {
             BattleRoyaleServer m_BrServer;
             if(Class.CastTo( m_BrServer, GetBR()))
             {
-                Print("[DayZBR COT] Testing Spectating!");
+                BattleRoyaleUtils.Trace("[DayZBR COT] Testing Spectating!");
                 m_BrServer.TestSpectator(pbTarget);
             }
             else
