@@ -398,11 +398,16 @@ class BattleRoyaleState: Timeable
 			Error("Unknown player disconnected! Not in current state?");
 		}
 
-		BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
-		BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
 		BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
-		ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-		scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
+
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
+			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+			scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
+		}
 	}
 
 	void OnPlayerKilled( PlayerBase player, Object source )
@@ -429,11 +434,14 @@ class BattleRoyaleState: Timeable
 			json_data.Insert( "victim_position", player.GetPosition().ToString() );
 			vector killer_position = "0 0 0";
 
-			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
-			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
-			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-			scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
+			if ( m_ServerData.enable_vigrid_api )
+			{
+				BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
+				BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+				BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+				ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+				scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
+			}
 
 			// Does the source is a carrier and the carrier a Player?
 			PlayerBase playerSource = PlayerBase.Cast( EntityAI.Cast( source ).GetHierarchyParent() );
@@ -495,23 +503,21 @@ class BattleRoyaleDebugState: BattleRoyaleState
     protected vector v_Center;
     protected float f_Radius;
     protected int i_HealTickTime;
-    protected ref array<string> a_AllowedOutsideSpawn;
+    protected ref array<string> a_AllowedOutsideLobby;
 
     void BattleRoyaleDebugState()
     {
-        BattleRoyaleDebugData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
-        if(m_DebugSettings)
+        BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
+        if(m_SpawnsSettings)
         {
-            v_Center = m_DebugSettings.spawn_point;
-            f_Radius = m_DebugSettings.radius;
-            a_AllowedOutsideSpawn = m_DebugSettings.allowed_outside_spawn;
+            v_Center = m_SpawnsSettings.spawn_point;
+            f_Radius = m_SpawnsSettings.radius;
+            a_AllowedOutsideLobby = m_SpawnsSettings.allowed_outside_lobby;
         }
         else
         {
             Error("DEBUG SETTINGS IS NULL!");
-            v_Center = DAYZBR_DEBUG_CENTER;
-            f_Radius = DAYZBR_DEBUG_RADIUS;
-            a_AllowedOutsideSpawn = new array<string>();
+            GetGame().RequestExit(0);  // Exit the game
         }
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
@@ -580,7 +586,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         vector player_position = player.GetPosition();
         float distance = vector.Distance( Vector( player_position[0], 0, player_position[2] ), Vector( v_Center[0], 0, v_Center[2] ) );
 
-        if(distance > f_Radius && !CanGoOutsideSpawn(player))
+        if(distance > f_Radius && !CanGoOutsideLobby(player))
         {
 			vector spawn_pos = "0 0 0";
 			spawn_pos[0] = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
@@ -602,7 +608,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         player.time_until_heal -= timeslice;
     }
 
-    bool CanGoOutsideSpawn(PlayerBase player)
+    bool CanGoOutsideLobby(PlayerBase player)
     {
         if(!player)
         {
@@ -621,7 +627,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
             return false;
         }
 
-        return (a_AllowedOutsideSpawn.Find(steamid) != -1);
+        return (a_AllowedOutsideLobby.Find(steamid) != -1);
     }
 
     //TODO:

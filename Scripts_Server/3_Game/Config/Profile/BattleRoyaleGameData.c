@@ -1,0 +1,72 @@
+#ifdef SERVER
+class BattleRoyaleGameData: BattleRoyaleDataBase
+{
+	int version = 1;  // Config version
+
+    int num_zones = 6;  // number of zones
+    int round_duration_minutes = 5;  // round length in minutes
+
+    int time_until_teleport_unlock = 10;  // seconds before unlock after teleporting & preparing
+
+    ref array<int> zone_notification_minutes = { 1, 2 };  // minutes when notification about the zone shrinking will be displayed
+    ref array<int> zone_notification_seconds = { 30, 10 };  // seconds when notification about the zone shrinking will be displayed, when under the minute
+
+    int debug_heal_tick_seconds = 5;  // seconds between debug (lobby) heal ticks
+
+    // Zone damage settings
+    int zone_damage_tick_seconds = 5;  // seconds between zone damage ticks
+    float zone_damage_delta = 0.1;  // damage per tick
+    bool enable_zone_damage = true;  // enable zone damage
+
+    bool hide_players_endgame = false;  // Hide the number of players left in the endgame
+
+    bool show_first_zone_at_start = true;  // Show the first zone at the start of the game
+
+    bool artillery_sound = true;  // Play the artillery sound when the zone shrinks
+
+	// Airdrop settings
+    bool airdrop_enabled = true;  // Enable airdrops
+    int airdrop_ignore_last_zones = 3;  // Number of last zones to ignore for airdrops
+
+    ref array<string> player_starting_clothes = {
+        "TrackSuitJacket_Red",
+        "TrackSuitPants_Red",
+        "JoggingShoes_Red"
+    };
+
+    ref array<string> player_starting_items = {
+        "HuntingKnife",
+        "BandageDressing",
+        "Compass",
+        "Battery9V",
+        "Battery9V"
+    };
+
+	// Spectate settings
+    bool use_spectate_whitelist = true;  // Use the spectate whitelist, otherwise everyone can spectate
+    bool auto_spectate_mode = true;  // Automatically start spectating when dead
+    ref array<string> allowed_spectate_steamid64 = {
+        "123456789123456789" // Dummy SteamID64
+    };
+
+    //--- do not modify
+    override string GetPath()
+    {
+        return BATTLEROYALE_SETTINGS_FOLDER + "general_settings.json";
+    }
+
+    override void Load()
+    {
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleGameData>.LoadFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
+    }
+
+    override void Save()
+    {
+    	string errorMessage;
+        if (!JsonFileLoader<BattleRoyaleGameData>.SaveFile(GetPath(), this, errorMessage))
+			ErrorEx(errorMessage);
+    }
+};
+#endif

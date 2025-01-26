@@ -29,11 +29,11 @@ class BattleRoyaleConfig
     {
         BattleRoyaleUtils.Trace("Initializing Settings...");
 
-        BattleRoyaleDebugData p_DebugData = new BattleRoyaleDebugData;
+        BattleRoyaleLobbyData p_DebugData = new BattleRoyaleLobbyData;
         if(p_DebugData)
             m_Configs.Insert("DebugData", p_DebugData);
         else
-            Error("BattleRoyaleDebugData Setting Constructor Returned NULL");
+            Error("BattleRoyaleLobbyData Setting Constructor Returned NULL");
 
         BattleRoyaleGameData p_GameData = new BattleRoyaleGameData;
         if(p_GameData)
@@ -53,6 +53,12 @@ class BattleRoyaleConfig
         else
             Error("BattleRoyaleSpawnsData Setting Constructor Returned NULL");
 
+        BattleRoyalePOIsData p_POIsData = new BattleRoyalePOIsData;
+        if(p_POIsData)
+            m_Configs.Insert("POIsData", p_POIsData);
+        else
+            Error("BattleRoyalePOIsData Setting Constructor Returned NULL");
+
         BattleRoyaleZoneData p_ZoneData = new BattleRoyaleZoneData;
         if(p_ZoneData)
             m_Configs.Insert("ZoneData", p_ZoneData);
@@ -67,12 +73,19 @@ class BattleRoyaleConfig
         if ( !b_HasLoaded )
         {
             b_HasLoaded = true;
+
             //load JSON data (or create it)
-            if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER))
+            if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER) )
             {
                 BattleRoyaleUtils.Trace("Creating BattleRoyale Settings Folder");
                 MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
             }
+
+            if( !FileExist(BATTLEROYALE_SETTINGS_MISSION_FOLDER) )
+			{
+				Print("Creating BattleRoyale Mission Settings Folder");
+				MakeDirectory(BATTLEROYALE_SETTINGS_MISSION_FOLDER);
+			}
 
             if(!m_Configs)
             {
@@ -94,19 +107,12 @@ class BattleRoyaleConfig
                         {
                             BattleRoyaleUtils.Trace("Loading Config: " + path);
                             config.Load();
-
-                            if( BATTLEROYALE_SOLO_GAME )
-                            {
-                                //config.Save(); //re-save (if there are new config values that need added to the json file)
-                            }
+							config.Save(); //re-save (if there are new config values that need added to the json file)
                         }
                         else
                         {
-                            BattleRoyaleUtils.Trace("Saving Config: " + path);
-                            if( BATTLEROYALE_SOLO_GAME )
-                            {
-                                config.Save();
-                            }
+                            BattleRoyaleUtils.Trace("Creating Config: " + path);
+							config.Save();
                         }
                     }
                     else
@@ -134,11 +140,11 @@ class BattleRoyaleConfig
         return m_Configs.Get(key);
     }
 
-    BattleRoyaleDebugData GetDebugData()
+    BattleRoyaleLobbyData GetDebugData()
     {
         BattleRoyaleUtils.Trace("Accessing Debug Data Config...");
 
-        return BattleRoyaleDebugData.Cast( GetConfig("DebugData") );
+        return BattleRoyaleLobbyData.Cast( GetConfig("DebugData") );
     }
 
     BattleRoyaleGameData GetGameData()
@@ -160,6 +166,13 @@ class BattleRoyaleConfig
         BattleRoyaleUtils.Trace("Accessing Spawns Data Config...");
 
         return BattleRoyaleSpawnsData.Cast( GetConfig("SpawnsData") );
+    }
+
+    BattleRoyalePOIsData GetPOIsData()
+    {
+        Print("Accessing POIs Data Config...");
+
+        return BattleRoyalePOIsData.Cast( GetConfig("POIsData") );
     }
 
     BattleRoyaleZoneData GetZoneData()
