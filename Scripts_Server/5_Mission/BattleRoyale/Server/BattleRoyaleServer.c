@@ -51,26 +51,34 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = config_data.GetServerData();
 
-        LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
-        serverWebhook.UnlockServer();
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
+			serverWebhook.UnlockServer();
+		}
 
-        CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token );
-        match_uuid = createMatchWebhook.getMatchUUID();
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token );
+			match_uuid = createMatchWebhook.getMatchUUID();
 
-        if ( match_uuid.Length() != 36 )
-        {
-        	if( m_ServerData.force_match_uuid )
-        	{
-				BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
-				GetGame().RequestExit(0);
-        	}
-        	else
-        	{
-				match_uuid = "";
-				BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
+			if ( match_uuid.Length() != 36 )
+			{
+				if( m_ServerData.force_match_uuid )
+				{
+					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+					GetGame().RequestExit(0);
+				}
+				else
+				{
+					match_uuid = "";
+					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
+				}
 			}
+			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
+        } else {
+        	match_uuid = "disabled";
         }
-        BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
 
         m_Timer = new Timer;
 

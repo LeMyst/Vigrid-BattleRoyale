@@ -51,8 +51,13 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         super.Activate();
 
-        LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
-        serverWebhook.LockServer();
+        BattleRoyaleServerData m_ServerData = config_data.GetServerData();
+
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
+			serverWebhook.LockServer();
+		}
 
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
@@ -575,9 +580,12 @@ class BattleRoyalePrepare: BattleRoyaleState
 #ifdef BR_TRACE_ENABLED
 		Print( parties_list );
 #endif
-        PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
-        partiesWebhook.postParties( br_instance.match_uuid, parties_list );
-        BattleRoyaleUtils.Trace("Parties list sent");
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
+			partiesWebhook.postParties( br_instance.match_uuid, parties_list );
+			BattleRoyaleUtils.Trace("Parties list sent");
+		}
 
         // plz fix this
         Sleep(1000);

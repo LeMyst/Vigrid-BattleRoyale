@@ -398,11 +398,16 @@ class BattleRoyaleState: Timeable
 			Error("Unknown player disconnected! Not in current state?");
 		}
 
-		BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
-		BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
 		BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
-		ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-		scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
+
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
+			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+			scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
+		}
 	}
 
 	void OnPlayerKilled( PlayerBase player, Object source )
@@ -429,11 +434,14 @@ class BattleRoyaleState: Timeable
 			json_data.Insert( "victim_position", player.GetPosition().ToString() );
 			vector killer_position = "0 0 0";
 
-			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
-			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
-			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-			scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
+			if ( m_ServerData.enable_vigrid_api )
+			{
+				BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
+				BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+				BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+				ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+				scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
+			}
 
 			// Does the source is a carrier and the carrier a Player?
 			PlayerBase playerSource = PlayerBase.Cast( EntityAI.Cast( source ).GetHierarchyParent() );
