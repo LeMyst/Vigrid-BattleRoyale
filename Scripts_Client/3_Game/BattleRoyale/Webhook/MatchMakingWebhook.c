@@ -3,12 +3,12 @@ class MatchMakingWebhook
 {
 	void MatchMakingWebhook()
 	{
-		Print("MatchMakingWebhook()");
+		BattleRoyaleUtils.Trace("MatchMakingWebhook()");
 	};
 
 	array<string> searchGame( array<ref ModInfo> mod_list )
 	{
-		Print("MatchMakingWebhook().searchGame()");
+		BattleRoyaleUtils.Trace("MatchMakingWebhook().searchGame()");
 
         array<string> a_Result = new array<string>;
 
@@ -24,9 +24,9 @@ class MatchMakingWebhook
 		JsonFileLoader<MM_PlayerInfo>.MakeData(playerInfo, mmString, mmError);
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
         string result = ctx.POST_now( arguments.ToQuery("matches/matchmaking"), mmString );
-        Print("MatchMakingWebhook().searchGame() result: " + result);
+        BattleRoyaleUtils.Trace("MatchMakingWebhook().searchGame() result: " + result);
 
         // Split the result into an array
         if( result.Length() > 0 )
@@ -40,6 +40,23 @@ class MatchMakingWebhook
         // [2] = "password"
 
         return a_Result;
+	};
+
+	bool isMatchMakingAvailable( string ip, string port )
+	{
+		BattleRoyaleUtils.Trace("MatchMakingWebhook().isMatchMakingAvailable()");
+
+		HttpArguments arguments = {
+			new HttpArgument("version", "2"),
+			new HttpArgument("tick", GetGame().GetTickTime().ToString())
+		};
+
+		RestApi restApi = GetRestApi();
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
+		string result = ctx.GET_now( arguments.ToQuery(string.Format("matches/matchmaking/%1:%2", ip, port)) );
+		BattleRoyaleUtils.Trace("MatchMakingWebhook().isMatchMakingAvailable() result: " + result);
+
+		return result == "true";
 	};
 };
 

@@ -3,12 +3,15 @@ modded class MainMenu
 {
 	protected ImageWidget m_Logo;
 	protected ref array<ref ModInfo> modList = new array<ref ModInfo>();
+	protected TextWidget m_PlayButtonLabel;
+	protected bool b_MatchMakingAvailable;
 
 	override Widget Init()
 	{
 		layoutRoot = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/MainMenu/main_menu.layout");
 
 		m_Play						= layoutRoot.FindAnyWidget("play");
+		m_PlayButtonLabel			= TextWidget.Cast(m_Play.FindAnyWidget("play_label"));
 		m_ChooseServer				= layoutRoot.FindAnyWidget("choose_server");
 		m_CustomizeCharacter		= layoutRoot.FindAnyWidget("customize_character");
 		m_PlayVideo					= layoutRoot.FindAnyWidget("play_video");
@@ -125,6 +128,8 @@ modded class MainMenu
 
 		BR_OverrideUI();
 
+		CheckMatchMakingAvailability();
+
 		return layoutRoot;
 	}
 
@@ -137,6 +142,32 @@ modded class MainMenu
 
 		if (m_DisplayedDlcHandler)
 			m_DisplayedDlcHandler.ShowInfoPanel(false);
+	}
+
+	void CheckMatchMakingAvailability()
+	{
+		// Change the play button text
+		m_PlayButtonLabel.SetText("LOGIN...");
+
+		// MatchMaking Webhook
+		MatchMakingWebhook matchMakingWebhook = new MatchMakingWebhook();
+		// Check if the matchmaking is available by checking if the IP and port is part of Vigrid hive
+		// Get server host and port from CLI arguments
+		string m_ConnectAddress;
+		string m_ConnectPort;
+		GetCLIParam("connect", m_ConnectAddress);
+		GetCLIParam("port", m_ConnectPort);
+		b_MatchMakingAvailable = matchMakingWebhook.isMatchMakingAvailable( m_ConnectAddress, m_ConnectPort );
+		BattleRoyaleUtils.Trace("MatchMaking Available: " + b_MatchMakingAvailable);
+
+		if( !b_MatchMakingAvailable )
+		{
+			m_PlayButtonLabel.SetText("#main_menu_play")
+		}
+		else
+		{
+			m_PlayButtonLabel.SetText("MATCHMAKING");
+		}
 	}
 
 	override void FilterDlcs(inout array<ref ModInfo> modArray)
@@ -202,10 +233,24 @@ modded class MainMenu
 		{
 			if (w == m_Play)
 			{
-				m_LastFocusedButton = m_Play;
-				StartMatchMaking();
+				if ( b_MatchMakingAvailable )
+				{
+					m_LastFocusedButton = m_Play;
+					StartMatchMaking();
 
-				return true;
+					return true;
+				} else {
+					string m_ConnectAddress;
+					string m_ConnectPort;
+					string m_ConnectPassword;
+					GetCLIParam("connect", m_ConnectAddress);
+					GetCLIParam("port", m_ConnectPort);
+					GetCLIParam("password", m_ConnectPassword);
+
+					g_Game.ConnectFromServerBrowser( m_ConnectAddress, m_ConnectPort.ToInt(), m_ConnectPassword );
+
+					return true;
+				}
 			}
 		}
 

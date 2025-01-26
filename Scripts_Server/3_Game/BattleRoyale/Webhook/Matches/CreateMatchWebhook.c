@@ -36,7 +36,7 @@ class CreateMatchWebhook
 		JsonFileLoader<JATMods>.MakeData(jatMods, jatString, jatError);
 
 		RestApi restApi = GetRestApi();
-		RestContext ctx = restApi.GetRestContext("https://api.vigrid.ovh/");
+		RestContext ctx = restApi.GetRestContext(BATTLEROYALE_API_ENDPOINT);
 		string result = ctx.POST_now( arguments.ToQuery("matches"), jatString);
 		BattleRoyaleUtils.Trace("CreateMatchWebhook().getMatchUUID() result: " + result);
 
