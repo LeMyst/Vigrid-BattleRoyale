@@ -3,6 +3,9 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 {
 	int version = 1;  // Config version
 
+	// Enable Vigrid API support
+	bool enable_vigrid_api = false;
+
 	// JWT Token for the Vigrid API webhook
     string webhook_jwt_token = "changeme";
 

@@ -3,6 +3,8 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
 	int version = 1;  // Config version
 
+	// Lobby spawn location are in the spawns settings located in the mission folder.
+
     int minimum_players = 10;  // Minimum players to start the match
     int use_ready_up = 1;  // Use ready up system (F2 by default)
     float ready_up_percent = 0.8;  // Percentage of players needed to ready up to automatically start the match
@@ -25,7 +27,7 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 
     override string GetPath()
     {
-        return BATTLEROYALE_SETTINGS_FOLDER + "debug_settings.json";
+        return BATTLEROYALE_SETTINGS_FOLDER + "lobby_settings.json";
     }
 
     override void Save()
