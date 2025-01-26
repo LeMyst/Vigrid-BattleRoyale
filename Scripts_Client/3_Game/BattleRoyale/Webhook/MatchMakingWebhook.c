@@ -13,7 +13,7 @@ class MatchMakingWebhook
         array<string> a_Result = new array<string>;
 
 		HttpArguments arguments = {
-			new HttpArgument("version", "2"),
+			new HttpArgument("version", "1"),
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 
@@ -47,7 +47,7 @@ class MatchMakingWebhook
 		BattleRoyaleUtils.Trace("MatchMakingWebhook().isMatchMakingAvailable()");
 
 		HttpArguments arguments = {
-			new HttpArgument("version", "2"),
+			new HttpArgument("version", "1"),
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 
