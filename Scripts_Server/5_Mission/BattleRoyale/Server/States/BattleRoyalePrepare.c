@@ -205,27 +205,28 @@ class BattleRoyalePrepare: BattleRoyaleState
             for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++) {
 				string city;
 				GetGame().ConfigGetChildName(cfg, i, city);
-				vector city_position;
+//				vector city_position;
 				// TODO: Override city position from config file
 
-				if( m_OverrideSpawnPositions.Contains(city) )
-				{
-					city_position = m_OverrideSpawnPositions.Get( city );
-					BattleRoyaleUtils.Trace("Override " + city + " position!");
-				}
-				else
-				{
-					TFloatArray float_array = {};
-					GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
-					city_position[0] = float_array[0]; city_position[2] = float_array[1];
-					city_position[1] = GetGame().SurfaceY(city_position[0], city_position[2]);
-				}
+//				if( m_OverrideSpawnPositions.Contains(city) )
+//				{
+//					city_position = m_OverrideSpawnPositions.Get( city );
+//					BattleRoyaleUtils.Trace("Override " + city + " position!");
+//				}
+//				else
+//				{
+//					TFloatArray float_array = {};
+//					GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
+//					city_position[0] = float_array[0]; city_position[2] = float_array[1];
+//					city_position[1] = GetGame().SurfaceY(city_position[0], city_position[2]);
+//				}
+
 
 				string town_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 				if(town_type != "Capital" && town_type != "City" && town_type != "Village")
 					continue;
 
-				BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
+				BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city)));
 
 				NamedLocation town_entry = new NamedLocation(string.Format("%1 %2", cfg, city));
 //				town_entry.Entry = city;
@@ -547,7 +548,6 @@ class BattleRoyalePrepare: BattleRoyaleState
 #endif
 			parties_list.Insert( party );
         }
-        BattleRoyaleUtils.Trace("Parties list sent");
 
         teleport_groups.ShuffleArray();
         BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
