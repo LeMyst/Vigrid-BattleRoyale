@@ -151,10 +151,8 @@ class BattleRoyaleZone
         float d = (Math.Pow(x - center[0], 2) + Math.Pow(z - center[2], 2));
         float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
 
-#ifdef BR_TRACE_ENABLED
-        Print(d);
-        Print(radius_pow);
-#endif
+        BattleRoyaleUtils.Trace(d);
+        BattleRoyaleUtils.Trace(radius_pow);
 
         return (d < radius_pow);
     }
@@ -179,6 +177,7 @@ class BattleRoyaleZone
 
     BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)
     {
+    	// If we don't have the play areas, we generate them
         if(!m_PlayAreas)
         {
             m_PlayAreas = new array<ref BattleRoyalePlayArea>();
@@ -212,7 +211,7 @@ class BattleRoyaleZone
                         area_center = GetRandomPOI();
                     else
                         area_center = GetValidPositionSquare(radius, world_size - radius, radius, world_size - radius);
-                } else {
+                } else {  // Next zones
                     BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
                     area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
                 }
@@ -378,18 +377,18 @@ class BattleRoyaleZone
                 string city;
                 GetGame().ConfigGetChildName(cfg, i, city);
 
-                TFloatArray float_array = {};
-                GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), float_array);
+                TFloatArray city_position = {};
+                GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), city_position);
                 string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
 
 				if(a_avoidType.Find(poi_type) != -1 || a_avoidCity.Find(city) != -1)
 				{
-					BattleRoyaleUtils.Trace("Avoiding "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+float_array+" "+poi_type);
+					BattleRoyaleUtils.Trace("Avoiding "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
 					continue;
 				}
 
-                BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+float_array+" "+poi_type);
-                s_POI.Insert(float_array);
+                BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
+                s_POI.Insert(city_position);
             }
         }
 
