@@ -249,6 +249,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 					if(use_radius)
 					{
+						// TODO: Move this to configuration file
 						if (town_entry.Type == NamedLocation.CITY)
 							village_pad = 300.0;
 						else if (town_entry.Type == NamedLocation.CAPITAL)
@@ -259,6 +260,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 					else
 						village_pad = 0.0;
 
+					// Check if city area is in the area, otherwise skip it
 					if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_SpawnsSettings.extra_spawn_radius))
 						continue;
 				}
