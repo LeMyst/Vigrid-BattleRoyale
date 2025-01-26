@@ -22,7 +22,7 @@ class StartMatchWebhook
 		}
 
 		HttpArguments arguments = {
-			new HttpArgument("version", "2"),
+			new HttpArgument("version", "1"),
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 
