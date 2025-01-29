@@ -22,10 +22,11 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     void BattleRoyalePrepare()
     {
-        m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
-        m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
-        m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
-        m_POIsSettings = BattleRoyaleConfig.GetConfig().GetPOIsData();
+    	m_Config = BattleRoyaleConfig.GetConfig();
+        m_GameSettings = m_Config.GetGameData();
+        m_SpawnsSettings = m_Config.GetSpawnsData();
+        m_ServerData = m_Config.GetServerData();
+        m_POIsSettings = m_Config.GetPOIsData();
         if(m_GameSettings)
         {
             a_StartingClothes = m_GameSettings.player_starting_clothes;
@@ -51,8 +52,6 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         super.Activate();
 
-        BattleRoyaleServerData m_ServerData = config_data.GetServerData();
-
 		if ( m_ServerData.enable_vigrid_api )
 		{
 			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
@@ -76,7 +75,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
 
-        BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
+        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
 		if ( m_ZoneSettings.use_dynamic_zones )
 		{
 			// Found the first zone based on number of registered players

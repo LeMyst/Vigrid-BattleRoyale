@@ -6,6 +6,10 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	// Enable Vigrid API support
 	bool enable_vigrid_api = false;
 
+	// Server password (to pass it to the Vigrid API)
+	// Must be the same as the one in the serverDZ.cfg
+	string server_password = "changeme";
+
 	// JWT Token for the Vigrid API webhook
     string webhook_jwt_token = "changeme";
 

@@ -6,6 +6,17 @@ modded class MainMenu
 	protected TextWidget m_PlayButtonLabel;
 	protected bool b_MatchMakingAvailable;
 
+	protected Widget m_PopupMessage;
+	protected RichTextWidget m_PopupText;
+	protected ButtonWidget m_PopupButton;
+	protected ButtonWidget m_PopupButton_2;
+	protected ref PopupButtonCallback popup_onClick;
+	protected ref PopupButtonCallback popup_onClick2;
+
+	protected BattleRoyaleMatchMakingState m_MatchMakingState;
+
+	protected int m_MatchMakingTryCount;
+
 	override Widget Init()
 	{
 		layoutRoot = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/MainMenu/main_menu.layout");
@@ -126,9 +137,29 @@ modded class MainMenu
 			Error("Something Went Wrong! BR Failed To Start?!");
 		}
 
+		//ensure popup message is initialized
+		if(!m_PopupMessage)
+		{
+			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "Vigrid-BattleRoyale/GUI/widgets/popup_message.layout", layoutRoot );
+			m_PopupText = RichTextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
+			m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
+			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
+		}
+		ClosePopup(); //if init is called twice, close any popup that exists
+
 		BR_OverrideUI();
 
-		CheckMatchMakingAvailability();
+		m_MatchMakingState = BattleRoyaleMatchMakingState.None;
+		m_MatchMakingTryCount = 0;
+
+		if (IsMatchMakingAvailable())
+		{
+			m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_MATCHMAKING");
+		}
+		else
+		{
+			m_PlayButtonLabel.SetText("#main_menu_play");
+		}
 
 		return layoutRoot;
 	}
@@ -144,7 +175,7 @@ modded class MainMenu
 			m_DisplayedDlcHandler.ShowInfoPanel(false);
 	}
 
-	void CheckMatchMakingAvailability()
+	private bool IsMatchMakingAvailable()
 	{
 		// Change the play button text
 		m_PlayButtonLabel.SetText("LOGIN...");
@@ -160,14 +191,7 @@ modded class MainMenu
 		b_MatchMakingAvailable = matchMakingWebhook.isMatchMakingAvailable( m_ConnectAddress, m_ConnectPort );
 		BattleRoyaleUtils.Trace("MatchMaking Available: " + b_MatchMakingAvailable);
 
-		if( !b_MatchMakingAvailable )
-		{
-			m_PlayButtonLabel.SetText("#main_menu_play")
-		}
-		else
-		{
-			m_PlayButtonLabel.SetText("MATCHMAKING");
-		}
+		return b_MatchMakingAvailable;
 	}
 
 	override void FilterDlcs(inout array<ref ModInfo> modArray)
@@ -227,6 +251,64 @@ modded class MainMenu
 			delete m_ModsDetailed;
 	}
 
+	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL, string button_text_2 = "", ref PopupButtonCallback onClickCallback_2 = NULL )
+	{
+		m_PopupText.SetText(message);
+		popup_onClick = onClickCallback;
+		popup_onClick2 = onClickCallback_2;
+		if(button_text != "")
+		{
+			//Show button
+			m_PopupButton.SetText(button_text);
+			m_PopupButton.Show(true);
+		}
+		else
+		{
+			//hide button
+			m_PopupButton.Show(false);
+		}
+		if(button_text_2 != "")
+		{
+			//Show button #2
+			m_PopupButton_2.SetText(button_text_2);
+			m_PopupButton_2.Show(true);
+		}
+		else
+		{
+			//hide button
+			m_PopupButton_2.Show(false);
+		}
+
+		m_PopupMessage.Show(true);
+	}
+
+	void ClosePopup()
+	{
+		m_PopupMessage.Show(false);
+	}
+
+	void PopupActionClicked(int button_num)
+	{
+		if(button_num == 1)
+		{
+			if(!popup_onClick)
+			{
+				Error("POPUP BUTTON CALLBACK NULL!");
+				return;
+			}
+			popup_onClick.OnButtonClick();
+		}
+		else
+		{
+			if(!popup_onClick2)
+			{
+				Error("POPUP BUTTON 2 CALLBACK NULL!");
+				return;
+			}
+			popup_onClick2.OnButtonClick();
+		}
+	}
+
 	override bool OnClick(Widget w, int x, int y, int button)
 	{
 		if (button == MouseState.LEFT)
@@ -236,6 +318,8 @@ modded class MainMenu
 				if ( b_MatchMakingAvailable )
 				{
 					m_LastFocusedButton = m_Play;
+//					ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
+//					CreatePopup("Currently match making", "Close", closecallback, "", NULL);
 					StartMatchMaking();
 
 					return true;
@@ -251,6 +335,18 @@ modded class MainMenu
 
 					return true;
 				}
+			}
+			if(w == m_PopupButton)
+			{
+				Print("POPUP BUTTON CLICKED");
+				PopupActionClicked(1);
+				return true;
+			}
+			if(w == m_PopupButton_2)
+			{
+				Print("POPUP BUTTON 2 CLICKED");
+				PopupActionClicked(2);
+				return true;
 			}
 		}
 
@@ -274,15 +370,110 @@ modded class MainMenu
 
 	void StartMatchMaking()
 	{
+		m_MatchMakingTryCount = m_MatchMakingTryCount + 1;
+
+		// Change the play button text
+		m_MatchMakingState = BattleRoyaleMatchMakingState.Searching;
+		m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_SEARCHING");
+		m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
+		ColorDisable(m_Play);
+
 		// MatchMaking Webhook
 		MatchMakingWebhook matchMakingWebhook = new MatchMakingWebhook();
 		array<string> server_info = matchMakingWebhook.searchGame( modList );
 
+		// TODO: Enable when find a way to re-enable the button
+//		m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
+//		ColorDisable(m_Play);
+
 		// Connect to the server
-		if( server_info.Count() > 0 )
+		if( server_info.Count() == 3 )
 		{
+			// Disable the button state
+			m_MatchMakingState = BattleRoyaleMatchMakingState.Connecting;
+			m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
+			ColorDisable(m_Play);
+
 			// Format : [IP, Port, Password]
-			g_Game.ConnectFromServerBrowser( server_info[0], server_info[1].ToInt(), server_info[2] );
+			string ip = server_info[0];
+			int port = server_info[1].ToInt();
+			string password = server_info[2];
+
+			// If password is null, set it to empty
+			if ( password == "null" )
+			{
+				password = "";
+			}
+
+			g_Game.ConnectFromServerBrowser( ip, port, password );
+
+			// Reset the button state
+			m_MatchMakingState = BattleRoyaleMatchMakingState.None;
+			m_Play.ClearFlags(WidgetFlags.IGNOREPOINTER);
+			ColorNormal(m_Play);
+
+			if (IsMatchMakingAvailable())
+			{
+				m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_MATCHMAKING");
+			}
+			else
+			{
+				m_PlayButtonLabel.SetText("#main_menu_play");
+			}
 		}
+		else if ( server_info.Count() == 1 )
+		{
+			int sleep = server_info[0].ToInt();
+			if( sleep < 1000 )
+				sleep = 10000;  // If the sleep is anomalously low, set it to 10 seconds
+
+			// Sleep before retrying
+			BattleRoyaleUtils.Trace("Sleeping for " + sleep + " milliseconds before retrying");
+			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "StartMatchMaking", sleep, false);
+		}
+	}
+
+	override void Update(float timeslice)
+	{
+		super.Update(timeslice);
+
+		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
+		{
+			m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_SEARCHING " + m_MatchMakingTryCount);
+		}
+		else if (m_MatchMakingState == BattleRoyaleMatchMakingState.Connecting)
+		{
+			m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_CONNECTING");
+		}
+	}
+
+	void ColorDisable(Widget w)
+	{
+		#ifdef PLATFORM_WINDOWS
+		SetFocus(null);
+		#endif
+
+		if (w)
+		{
+			ButtonWidget button = ButtonWidget.Cast(w);
+			if (button)
+			{
+				button.SetTextColor(ColorManager.COLOR_DISABLED_TEXT);
+			}
+		}
+	}
+
+	void ColorNormal(Widget w)
+	{
+		if (!w)
+			return;
+
+		int color_pnl = ARGB(0, 0, 0, 0);
+		int color_lbl = ARGB(255, 255, 255, 255);
+		int color_img = ARGB(255, 255, 255, 255);
+
+		ButtonSetColor(w, color_pnl);
+		ButtonSetTextColor(w, color_lbl);
+		ImagenSetColor(w, color_img);
 	}
 };

@@ -2,12 +2,14 @@
 class CreateMatchWebhook
 {
 	protected string s_ServerToken;
+	protected string s_ServerPassword;
 
-	void CreateMatchWebhook(string server_token)
+	void CreateMatchWebhook(string server_token, string server_password)
 	{
 		BattleRoyaleUtils.Trace("CreateMatchWebhook()");
 
 		s_ServerToken = server_token;
+		s_ServerPassword = server_password;
 	};
 
 	string getMatchUUID()
@@ -29,7 +31,7 @@ class CreateMatchWebhook
 			mods.Insert(modInfo.GetName(), modInfo.GetVersion());
 		}
 
-		JATMods jatMods = new JATMods( s_ServerToken, mods );
+		JATMods jatMods = new JATMods( s_ServerToken, s_ServerPassword, mods );
 
 		string jatString;
 		string jatError;

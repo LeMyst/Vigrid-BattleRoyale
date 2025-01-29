@@ -31,7 +31,17 @@ class MatchMakingWebhook
         // Split the result into an array
         if( result.Length() > 0 )
         {
-            result.Split(";", a_Result);
+        	// Check if the result contains a semicolon
+        	if( result.Contains(";") )
+        	{
+        		// We received a server IP, port and password
+            	result.Split(";", a_Result);
+			}
+			else
+			{
+				// Otherwise, we received the waiting duration before retrying
+				a_Result = { result };
+			}
         }
 
         // At this point, we should have an array with the following format:

@@ -66,10 +66,10 @@ class BattleRoyaleOverridePOIPosition
     string poi_name;
     array<int> new_position;
 
-    void BattleRoyaleOverridePOIPosition(string poi_name, array<int> new_position)
+    void BattleRoyaleOverridePOIPosition(string in_poi_name, array<int> in_new_position)
 	{
-		this.poi_name = poi_name;
-		this.new_position = new_position;
+		this.poi_name = in_poi_name;
+		this.new_position = in_new_position;
 	}
 };
 #endif
