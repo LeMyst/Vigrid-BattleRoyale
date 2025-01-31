@@ -4,6 +4,8 @@ Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/Battl
 
 <!-- ToC generator: https://luciopaiva.com/markdown-toc/ -->
 
+- [LICENSE](#license)
+- [Development](#development)
 - [Configuration files](#configuration-files)
     - [Mission files](#mission-files)
     - [Profile files](#profile-files)
@@ -13,6 +15,11 @@ Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/Battl
 This work is licensed under the [DAYZ STANDALONE PUBLIC LICENSE SHARE ALIKE (DSPL-SA)](LICENSE).  
 Additionally, you may not use this mod or any mod derived from this mod on a commercial server, such as a server with paid priority queue or paid access.  
 And you may not share or package this mod or any mod derived from this mod in an obfuscated or encrypted manner.
+
+# Development
+
+You can help develop this mod by creating issues and pull requests.
+There is a minimalistic Discord server for this mod: https://discord.gg/egJWhJAf8b
 
 # Configuration files
 
