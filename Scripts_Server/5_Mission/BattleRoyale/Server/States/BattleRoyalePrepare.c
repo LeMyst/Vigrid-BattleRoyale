@@ -51,8 +51,6 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         super.Activate();
 
-        BattleRoyaleServerData m_ServerData = config_data.GetServerData();
-
 		if ( m_ServerData.enable_vigrid_api )
 		{
 			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );

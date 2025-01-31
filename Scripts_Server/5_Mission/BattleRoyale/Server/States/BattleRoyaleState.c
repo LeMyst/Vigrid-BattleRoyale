@@ -404,7 +404,6 @@ class BattleRoyaleState: Timeable
 		{
 			BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
 			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
 			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
 			scoreWebhook.Send( br_instance.match_uuid, player.player_steamid, player.GetBRPosition() );
 		}
@@ -434,11 +433,12 @@ class BattleRoyaleState: Timeable
 			json_data.Insert( "victim_position", player.GetPosition().ToString() );
 			vector killer_position = "0 0 0";
 
+			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+
 			if ( m_ServerData.enable_vigrid_api )
 			{
 				BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
 				BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-				BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
 				ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
 				scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
 			}
@@ -508,18 +508,22 @@ class BattleRoyaleDebugState: BattleRoyaleState
     void BattleRoyaleDebugState()
     {
         BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
-        if(m_SpawnsSettings)
+        BattleRoyaleLobbyData mLobbySettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+
+        if(m_SpawnsSettings && mLobbySettings)
         {
             v_Center = m_SpawnsSettings.spawn_point;
             f_Radius = m_SpawnsSettings.radius;
-            a_AllowedOutsideLobby = m_SpawnsSettings.allowed_outside_lobby;
+            a_AllowedOutsideLobby = mLobbySettings.allowed_outside_lobby;
         }
         else
         {
             Error("DEBUG SETTINGS IS NULL!");
             GetGame().RequestExit(0);  // Exit the game
         }
+
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+
         if(m_GameSettings)
         {
             i_HealTickTime = m_GameSettings.debug_heal_tick_seconds;
