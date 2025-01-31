@@ -7,6 +7,7 @@ Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/Battl
 - [Configuration files](#configuration-files)
     - [Mission files](#mission-files)
     - [Profile files](#profile-files)
+- [Matchmaking and Vigrid Network](#matchmaking-and-vigrid-network)
 
 # Configuration files
 
@@ -28,4 +29,12 @@ They are stored in the profile folder, eg: `profiles/Vigrid-BattleRoyale`.
 
 `lobby_settings.json`: Lobby configuration.  
 `general_settings.json`: Notification, zone damage, airdrop, etc.  
-`server_settings.json`: Vigrid API configuration (non-mandatory).  
+`server_settings.json`: Vigrid API configuration (non-mandatory).
+
+# Matchmaking and Vigrid Network
+
+The Vigrid Network is a matchmaking service for this mod.  
+It's a **non-mandatory feature** that allows players to join a match from the main menu, without having to search for a server in the server browser.  
+If you are hosting your own server, when a player join your server, the client detects that it's not a Vigrid server and fallback to the default behavior.  
+If the player join a Vigrid server from the server browser, the client will connect to the Vigrid API to get the match information.
+At this date, the matchmaking service is limited to the Vigrid Network.
