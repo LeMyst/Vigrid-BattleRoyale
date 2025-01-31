@@ -29,7 +29,7 @@ FrameWidgetClass main_menu_root {
    content_valign bottom
    {
     WrapSpacerWidgetClass bottom {
-     visible 0
+     visible 1
      color 0 0 0 0.549
      position 0 0
      size 1 90
@@ -51,7 +51,6 @@ FrameWidgetClass main_menu_root {
      "Size To Content V" 1
      {
       ButtonWidgetClass play {
-       visible 1
        color 0 0 0 0
        position 0 0
        size 1 90
@@ -101,7 +100,7 @@ FrameWidgetClass main_menu_root {
      }
     }
     PanelWidgetClass play_panel_separator {
-     visible 0
+     visible 1
      ignorepointer 1
      color 0.7843 0 0 1
      position 10 10

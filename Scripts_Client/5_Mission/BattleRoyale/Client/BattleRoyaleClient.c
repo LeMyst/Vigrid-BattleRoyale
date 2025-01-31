@@ -72,6 +72,17 @@ class BattleRoyaleClient: BattleRoyaleBase
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
 
+    private static ref BattleRoyaleClient m_Instance;
+    static BattleRoyaleClient GetInstance()
+	{
+		if (m_Instance == NULL)
+		{
+			m_Instance = new BattleRoyaleClient();
+		}
+
+		return m_Instance;
+	}
+
 #ifdef SPECTATOR
     ref map<string, ref BattleRoyaleSpectatorMapEntityData> GetSpectatorMapEntityData()
     {

@@ -40,7 +40,7 @@ modded class MissionGameplay
 	{
 		super.OnInit();
 
-		m_BattleRoyale = new BattleRoyaleClient;
+		m_BattleRoyale = BattleRoyaleClient.GetInstance();
 
 		InitBRhud();
 

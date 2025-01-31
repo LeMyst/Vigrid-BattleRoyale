@@ -75,7 +75,7 @@ modded class MainMenu
 
 	void BR_OverrideUI()
 	{
-		m_Play.Show(false);
+		//m_Play.Show(false);
 		m_ChooseServer.Show(false);
 		m_TutorialButton.Show(false);
 		m_DlcFrame.Show(false);
@@ -94,10 +94,10 @@ modded class MainMenu
 		super.ShowDlcFrame(false);
 	}
 
-	override void Play()
-	{
-
-	}
+//	override void Play()
+//	{
+//
+//	}
 	
 	override void OpenMenuServerBrowser()
 	{
