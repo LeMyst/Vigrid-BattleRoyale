@@ -8,6 +8,12 @@ Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/Battl
     - [Mission files](#mission-files)
     - [Profile files](#profile-files)
 
+# LICENSE
+
+This work is licensed under the [DAYZ STANDALONE PUBLIC LICENSE SHARE ALIKE (DSPL-SA)](LICENSE).  
+Additionally, you may not use this mod or any mod derived from this mod on a commercial server, such as a server with paid priority queue or paid access.  
+And you may not share or package this mod or any mod derived from this mod in an obfuscated or encrypted manner.
+
 # Configuration files
 
 Configuration files are separated in two categories: `mission` and `profile`.
