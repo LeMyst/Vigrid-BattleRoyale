@@ -15,15 +15,19 @@ modded class MissionGameplay
 	float radius;
 #endif
 
+#ifdef SPECTATOR
 	protected bool is_spectator;
+#endif
 
 	void MissionGameplay()
 	{
+		Print("MissionGameplay::MissionGameplay");
 		m_BattleRoyaleHudRootWidget = null;
-		is_spectator = false;
 		m_BattleRoyale = null;
 
-		Print("MissionGameplay::MissionGameplay");
+#ifdef SPECTATOR
+		is_spectator = false;
+#endif
 	}
 
 	void ~MissionGameplay()
@@ -38,13 +42,12 @@ modded class MissionGameplay
 
 	override void OnInit()
 	{
+		BattleRoyaleUtils.Trace("MissionGameplay::OnInit");
 		super.OnInit();
 
 		m_BattleRoyale = new BattleRoyaleClient;
 
 		InitBRhud();
-
-		BattleRoyaleUtils.Trace("MissionGameplay::OnInit");
 	}
 
 	void InitBRhud()

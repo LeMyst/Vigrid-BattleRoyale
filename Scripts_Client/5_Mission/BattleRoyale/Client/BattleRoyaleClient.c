@@ -3,7 +3,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 {
     protected ref BattleRoyalePlayArea m_CurrentPlayArea;
     protected ref BattleRoyalePlayArea m_FuturePlayArea;
-    //protected ref ExpansionMarkerData m_ZoneMarker;
     protected ref Timer m_Timer;
 
     protected int i_Kills; //TODO: this needs to be done differently (most likely)
@@ -37,6 +36,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void ~BattleRoyaleClient()
     {
+    	BattleRoyaleUtils.Trace("BattleRoyaleClient::~BattleRoyaleClient");
         if ( m_Timer && m_Timer.IsRunning() )
         {
             m_Timer.Stop();

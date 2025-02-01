@@ -15,7 +15,7 @@ FrameWidgetClass main_menu_root {
    visible 1
    ignorepointer 1
    position 0.057 0.12
-   size 400 400
+   size 460 400
    halign right_ref
    valign bottom_ref
    hexactpos 0
@@ -29,7 +29,7 @@ FrameWidgetClass main_menu_root {
    content_valign bottom
    {
     WrapSpacerWidgetClass bottom {
-     visible 0
+     visible 1
      color 0 0 0 0.549
      position 0 0
      size 1 90
@@ -51,7 +51,6 @@ FrameWidgetClass main_menu_root {
      "Size To Content V" 1
      {
       ButtonWidgetClass play {
-       visible 1
        color 0 0 0 0
        position 0 0
        size 1 90
@@ -101,7 +100,6 @@ FrameWidgetClass main_menu_root {
      }
     }
     PanelWidgetClass play_panel_separator {
-     visible 0
      ignorepointer 1
      color 0.7843 0 0 1
      position 10 10
@@ -113,7 +111,6 @@ FrameWidgetClass main_menu_root {
      style rover_sim_colorable
     }
     WrapSpacerWidgetClass top {
-     visible 1
      ignorepointer 1
      color 0 0 0 0.549
      position 0 0
@@ -377,7 +374,6 @@ FrameWidgetClass main_menu_root {
        }
       }
       ButtonWidgetClass choose_server {
-       visible 0
        color 0 0 0 1
        position 0 0
        size 1 40
@@ -1196,64 +1192,6 @@ FrameWidgetClass main_menu_root {
    draggable 0
    scriptclass ""
    style DayZDefaultPanel
-  }
-  PanelWidgetClass BR_Frame {
-   visible 1
-   disabled 0
-   clipchildren 0
-   color 0 0 0 0
-   position 0.0589 0.165
-   size 444 548.31
-   valign bottom_ref
-   hexactpos 0
-   vexactpos 0
-   hexactsize 1
-   vexactsize 1
-   scaled 1
-   priority 5
-   draggable 0
-   scriptclass ""
-   style DayZDefaultPanel
-   "no focus" 1
-   {
-    TextWidgetClass BR_Title {
-     ignorepointer 1
-     size 0.8 0.145
-     halign center_ref
-     hexactpos 0
-     vexactpos 0
-     hexactsize 0
-     vexactsize 0
-     scaled 1
-     draggable 0
-     style Bold
-     text "HOW TO PLAY"
-     "exact text" 1
-     "size to text h" 0
-     "size to text v" 0
-     "text halign" center
-     "text valign" center
-    }
-    RichTextWidgetClass BR_Description {
-     disabled 1
-     clipchildren 1
-     inheritalpha 0
-     ignorepointer 1
-     ignoregloballv 0
-     keepsafezone 0
-     size 0.8 0.85
-     halign center_ref
-     valign bottom_ref
-     hexactpos 0
-     vexactpos 0
-     hexactsize 0
-     vexactsize 0
-     scaled 1
-     fixaspect fixwidth
-     text "<h2>SERVER LOCKED</h2>A match is being played, wait for the match to finish to join the server.<br/><h2>WHEN?</h2>If the server is empty or just restarted you can try your luck!<br/><h2>WHY I AM IN THE MAIN MENU?</h2>You tried to join a locked server, died ingame and got ejected or won the match. Close your game, start your dayz Launcher and join a server."
-     wrap 1
-    }
-   }
   }
  }
 }

@@ -5,6 +5,18 @@ modded class DayZGame
         return BATTLEROYALE_VERSION;
     }
 
+    override void ConnectFromCLI()
+    {
+        // Avoid connecting to the server from the CLI
+        // TODO: Allow if it's not a VIGRID server
+    }
+
+    override void ConnectLaunch()
+    {
+        // Avoid connecting to the server from the launcher
+        MainMenuLaunch();
+	}
+
     override void OnEvent(EventType eventTypeId, Param params)
     {
         switch (eventTypeId)
