@@ -50,6 +50,16 @@ modded class MissionGameplay
 		InitBRhud();
 	}
 
+	BattleRoyaleClient GetBattleRoyale()
+	{
+		if ( !m_BattleRoyale )
+		{
+			m_BattleRoyale = new BattleRoyaleClient;
+		}
+
+		return m_BattleRoyale;
+	}
+
 	void InitBRhud()
 	{
 		BattleRoyaleUtils.Trace("Initializing BattleRoyale HUD");

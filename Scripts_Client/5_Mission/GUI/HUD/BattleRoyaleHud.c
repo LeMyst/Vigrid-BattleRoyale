@@ -116,15 +116,16 @@ class BattleRoyaleHud
             m_DistanceZoneArrow.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
             m_DistanceTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
 
-            if ( timeRemaining < (distExt / 8) )
+ 			if ( timeRemaining < (distExt / 6) )
             {
-                m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
-                m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
-            }
-            else if ( timeRemaining < (distExt / 6) )
-            {
-                m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
-                m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+            	 if ( timeRemaining < (distExt / 8) )
+				{
+					m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+					m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+				} else {
+					m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+					m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+                }
             }
             else
             {

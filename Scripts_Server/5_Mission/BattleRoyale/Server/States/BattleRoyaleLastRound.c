@@ -78,10 +78,10 @@ class BattleRoyaleLastRound: BattleRoyaleState
             m_PreviousArea = GetPreviousZone().GetArea();
 
         //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
 
         //tell the client the future zone is NULL (no future zone)
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( "0 0 0", 0.0, false ), true);
 
         super.Activate();
     }
@@ -177,7 +177,6 @@ class BattleRoyaleLastRound: BattleRoyaleState
                 //DAMAGE
                 MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
 				// TODO: Replace with RPC (for client side translation)
-                //GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
                 player.DecreaseHealthCoef( f_Damage );
                 player.time_until_damage = i_DamageTickTime; //reset timer
@@ -200,8 +199,8 @@ class BattleRoyaleLastRound: BattleRoyaleState
     void LockFinalZone()
     {
         //TODO: this doesn't fucking work | if zone is null, no damage occurs
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( NULL ), true);
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( "0 0 0", 0.0 ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( "0 0 0", 0.0, false ), true);
         b_IsZoneLocked = true;
     }
 

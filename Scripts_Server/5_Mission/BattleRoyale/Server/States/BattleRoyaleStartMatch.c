@@ -131,7 +131,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         BattleRoyaleUtils.Trace(m_ThisArea.GetCenter());
         BattleRoyaleUtils.Trace(m_ThisArea.GetRadius());
 
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, false ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), false ), true);
     }
 
     void HandleUnlock()
