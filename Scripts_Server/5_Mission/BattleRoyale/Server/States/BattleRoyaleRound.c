@@ -180,7 +180,7 @@ class BattleRoyaleRound: BattleRoyaleState
             m_PreviousArea = GetPreviousZone().GetArea();
 
 			//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_PreviousArea ), true);
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
         }
 
         ref BattleRoyalePlayArea m_ThisArea = NULL;
@@ -191,7 +191,7 @@ class BattleRoyaleRound: BattleRoyaleState
         }
 
         //tell the client the next play area and play artillery sound
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( m_ThisArea, b_ArtillerySound ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
 
         //end state event
         m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
@@ -353,7 +353,6 @@ class BattleRoyaleRound: BattleRoyaleState
                     //DAMAGE
                     MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
                     // TODO: Replace with RPC (for client side translation)
-                    //GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", new Param1<bool>(true), true, player.GetIdentity());
 				    player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_LIGHT);
                     //TODO: determine if this last health tick will kill the player
                     player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
@@ -425,9 +424,9 @@ class BattleRoyaleRound: BattleRoyaleState
             m_ThisArea = GetZone().GetArea();
 
         //tell the client the current area is now this area
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param1<ref BattleRoyalePlayArea>( m_ThisArea ), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() ), true);
         //tell the client we don't know the next play area
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param2<ref BattleRoyalePlayArea, bool>( NULL, false), true);
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
         //tell the client how much time until the next zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( seconds ) , true);
     }

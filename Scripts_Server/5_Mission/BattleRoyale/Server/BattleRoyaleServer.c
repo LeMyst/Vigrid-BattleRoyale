@@ -59,7 +59,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
-			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token );
+			BattleRoyaleUtils.Trace("Server password: " + m_ServerData.server_password);
+			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token, m_ServerData.server_password );
 			match_uuid = createMatchWebhook.getMatchUUID();
 
 			if ( match_uuid.Length() != 36 )
@@ -77,7 +78,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 			}
 			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
         } else {
-        	match_uuid = "disabled";
+        	match_uuid = "disabled";  // Set a string to disable the ingame error message if no uuid is set
         }
 
         m_Timer = new Timer;

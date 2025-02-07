@@ -3,8 +3,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 {
     protected ref BattleRoyalePlayArea m_CurrentPlayArea;
     protected ref BattleRoyalePlayArea m_FuturePlayArea;
-    //protected ref ExpansionMarkerData m_ZoneMarker;
-    protected ref Timer m_Timer;
 
     protected int i_Kills; //TODO: this needs to be done differently (most likely)
     protected bool b_MatchStarted;
@@ -26,7 +24,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         b_MatchStarted = false;
         i_Kills = 0;
         i_SecondsRemaining = 0;
-        m_Timer = new Timer;
 
 #ifdef SPECTATOR
         m_SpectatorMapEntityData = new map<string, ref BattleRoyaleSpectatorMapEntityData>();
@@ -37,37 +34,17 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void ~BattleRoyaleClient()
     {
-        if ( m_Timer && m_Timer.IsRunning() )
-        {
-            m_Timer.Stop();
-        }
-
-        delete m_Timer;
+    	BattleRoyaleUtils.Trace("BattleRoyaleClient::~BattleRoyaleClient");
     }
 
     void Init()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleClient::Init");
 
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
-#ifdef SPECTATOR
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ActivateSpectatorCamera", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", this );
-#endif
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "TakeZoneDamage", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
-        GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
-
-        //m_Timer.Run(1.0, this, "OnSecond", NULL, true); //Call every second
 		GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLaterByName( this, "OnSecond", 1000, true );
+
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+		br_rpc.Reset();
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -90,9 +67,18 @@ class BattleRoyaleClient: BattleRoyaleBase
         return m_FuturePlayArea;
     }
 
+	// To track changes
+    bool br_previous_fade_state = false;
+    bool br_previous_input_state = false;
+    vector br_previous_future_play_area_center;
+    float br_previous_future_play_area_radius;
+    bool br_previous_win_screen = false;
+    int br_previous_countdown = 0;
+
     override void Update(float delta)
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		float distExt;
 		float distInt;
 		float angle;
@@ -119,7 +105,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         {
             GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
 
-            PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
             if (distExt > 0)
             {
                 player.QueueAddGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
@@ -132,6 +117,82 @@ class BattleRoyaleClient: BattleRoyaleBase
         vector camera_pos = GetGame().GetCurrentCameraPosition();
         gameplay.UpdateMiniMap( camera_pos );
 #endif
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+
+		// Update player and group remaining count
+		PlayerCountChanged( br_rpc.nb_players, br_rpc.nb_groups );
+
+		// Fade in/out effect
+		if( br_previous_fade_state != br_rpc.fade_state )
+		{
+			if( br_rpc.fade_state )
+			{
+				FadeIn();
+			}
+			else
+			{
+				FadeOut();
+			}
+			br_previous_fade_state = br_rpc.fade_state;
+		}
+
+		// Input enable/disable
+		if( br_previous_input_state != br_rpc.input_state )
+		{
+			player.DisableInput( br_rpc.input_state );
+			br_previous_input_state = br_rpc.input_state;
+		}
+
+		// Update player kill count
+		gameplay.UpdateKillCount( br_rpc.player_kills );
+
+		// Update match start state
+		if( br_rpc.match_started && !b_MatchStarted )
+		{
+			OnMatchStarted();
+		}
+
+		// Update countdown timer and zone distance
+		if ( br_previous_countdown != br_rpc.countdown_seconds )
+		{
+			i_SecondsRemaining = br_rpc.countdown_seconds;
+			gameplay.UpdateCountdownTimer( i_SecondsRemaining );
+			br_previous_countdown = br_rpc.countdown_seconds;
+		}
+
+		// Update current play area
+		if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
+			m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
+
+		// Update future play area
+		if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
+		{
+			if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
+			{
+				m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
+
+				UpdateZoneCenterMaker( br_rpc.future_play_area_center );
+
+				if ( br_rpc.b_ArtillerySound )
+				{
+					ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+					m_ArtySound.SetAutodestroy(true);
+				}
+			}
+			br_previous_future_play_area_center = br_rpc.future_play_area_center;
+			br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
+		}
+
+		// Set top position
+		player.position_top = br_rpc.top_position;
+
+		// Show the winner screen
+		if( br_rpc.winner_screen && !br_previous_win_screen )
+		{
+			Widget win_screen_hud = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
+			win_screen_hud.Show( true );
+			br_previous_win_screen = true;
+		}
     }
 
     protected void UpdateZoneCenterMaker(vector center)
@@ -259,252 +320,6 @@ class BattleRoyaleClient: BattleRoyaleBase
             OnMatchStarted();
         }
     }
-
-    void AddPlayerKill(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        if ( type == CallType.Client )
-        {
-            AddPlayerKilled(1); //TODO: maybe we'll eventually store kills on the server & just send that across. Idk we'll figure it out
-        }
-    }
-
-    void SetCountdownSeconds(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        Param1<int> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ SetCountdownSeconds RPC");
-            return;
-        }
-        if ( type == CallType.Client )
-        {
-            i_SecondsRemaining =  data.param1;
-        }
-    }
-
-    void SetPlayerCount(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        Param2<int, int> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ SETPLAYERCOUNT RPC");
-            return;
-        }
-        if ( type == CallType.Client )
-        {
-            //BattleRoyaleUtils.Trace(string.Format("SetPlayerCount: %1 %2", data.param1, data.param2));
-            PlayerCountChanged( data.param1, data.param2 );
-        }
-    }
-
-    void SetInput(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        BattleRoyaleUtils.Trace("SetInput");
-        Param1<bool> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ SETINPUT RPC");
-            return;
-        }
-        if ( type == CallType.Client )
-        {
-            PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-            player.DisableInput( data.param1 );
-        }
-    }
-
-    void SetFade(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        Param1<bool> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ SETFADE RPC");
-            return;
-        }
-        if ( type == CallType.Client )
-        {
-            if( data.param1 )
-                FadeIn();
-            else
-                FadeOut();
-        }
-    }
-
-#ifdef SPECTATOR
-    /*
-    ADD: Send [Id, Name, Position, Direction]
-    UPDATE: Send [Id, Name, Position, Direction]
-    DELETE: Send [ID, "", (0,0,0), (0,0,0)]
-    */
-    void UpdateMapEntityData(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        if ( type == CallType.Client )
-        {
-            Param4<string, string, vector, vector> data;
-            if( !ctx.Read( data ) )
-            {
-                Error("FAILED TO READ UpdateMapEntityData RPC");
-                return;
-            }
-
-            if(m_SpectatorMapEntityData.Contains(data.param1))
-            {
-                if(data.param3 == Vector(0, 0, 0))
-                {
-                    m_SpectatorMapEntityData.Remove(data.param1);
-                }
-                else
-                {
-                    m_SpectatorMapEntityData[data.param1].name = data.param2;
-                    m_SpectatorMapEntityData[data.param1].position = data.param3;
-                    m_SpectatorMapEntityData[data.param1].direction = data.param4;
-                }
-            }
-            else
-            {
-                m_SpectatorMapEntityData.Insert(data.param1, new BattleRoyaleSpectatorMapEntityData( data.param2, data.param3, data.param4 ));
-            }
-
-        }
-    }
-
-    void UpdateEntityHealth(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        PlayerBase pbTarget;
-        if ( type == CallType.Client )
-        {
-            Param2<float, float> data;
-            if( !ctx.Read( data ) )
-            {
-                Error("FAILED TO READ UpdateEntityHealth RPC");
-                return;
-            }
-
-            if(Class.CastTo( pbTarget, target ))
-            {
-                pbTarget.UpdateHealthStats( data.param1, data.param2 );
-            }
-        }
-        else
-        {
-            Error("This is deprecated functionality and shouldn't be called");
-        }
-    }
-
-    void ActivateSpectatorCamera(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        BattleRoyaleUtils.Trace("Activating Spectator Camera");
-        BattleRoyaleCamera br_Camera;
-        if ( Class.CastTo( br_Camera, Camera.GetCurrentCamera() ) )
-        {
-            br_Camera.SetActive( true );
-
-            if ( GetGame().GetPlayer() )
-            {
-                GetGame().GetPlayer().GetInputController().SetDisabled( true );
-            }
-
-            //Gameplay changes
-            MissionGameplay mission = MissionGameplay.Cast( GetGame().GetMission() );
-            if ( mission )
-            {
-                BattleRoyaleUtils.Trace("Initializing Spectator in Mission");
-                //Enable spectator HUD elements
-                mission.InitSpectator();
-            }
-        }
-        else
-        {
-            Error("Failed to cast camera to BattleRoyaleCamera");
-        }
-    }
-#endif
-
-    void UpdateCurrentPlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        Param1<ref BattleRoyalePlayArea> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ UpdateCurrentPlayArea RPC");
-            return;
-        }
-
-        if ( type == CallType.Client )
-        {
-            m_CurrentPlayArea = data.param1;
-        }
-    }
-
-    void UpdateFuturePlayArea(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        Param2<ref BattleRoyalePlayArea, bool> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ UpdateFuturePlayArea RPC");
-            return;
-        }
-        if ( type == CallType.Client )
-        {
-            m_FuturePlayArea = data.param1;
-            bool b_ArtillerySound = data.param2;
-            if (m_FuturePlayArea)
-            {
-                UpdateZoneCenterMaker( m_FuturePlayArea.GetCenter() );
-
-                if(b_ArtillerySound)
-                {
-                    // Artillery_Distant_SoundSet
-                    // Artillery_Fall_SoundSet
-                    // Artillery_Close_SoundSet
-                    ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
-                    m_ArtySound.SetAutodestroy(true);
-                }
-            }
-        }
-    }
-
-    void TakeZoneDamage(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-    {
-        Param1<bool> data;
-        if( !ctx.Read( data ) )
-        {
-            Error("FAILED TO READ TakeZoneDamage RPC");
-            return;
-        }
-        if ( type == CallType.Client )
-        {
-            if( data.param1 )
-            {
-                PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-                CachedObjectsParams.PARAM2_FLOAT_FLOAT.param1 = 32;
-                CachedObjectsParams.PARAM2_FLOAT_FLOAT.param2 = 0.3;
-                player.SpawnDamageDealtEffect2(CachedObjectsParams.PARAM2_FLOAT_FLOAT);
-                float shake_strength = Math.InverseLerp(0, 500, Math.RandomIntInclusive(125, 250));
-                player.GetCurrentCamera().SpawnCameraShake(shake_strength);
-            }
-        }
-    }
-
-	void SetTopPosition(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-	{
-		Param1<bool> data;
-		if( !ctx.Read( data ) )
-		{
-			Error("FAILED TO READ SetTopPosition RPC");
-			return;
-		}
-		if ( type == CallType.Client )
-		{
-			DayZPlayerImplement player = DayZPlayerImplement.Cast( GetGame().GetPlayer() );
-			player.position_top = data.param1;
-		}
-	}
-
-	void ShowWinScreen(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
-	{
-		Widget win_screen_hud = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
-		win_screen_hud.Show( true );
-	}
 
     override void OnPlayerTick(PlayerBase player, float timeslice)
     {
