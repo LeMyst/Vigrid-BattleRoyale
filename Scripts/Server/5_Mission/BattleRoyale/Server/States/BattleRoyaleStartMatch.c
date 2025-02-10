@@ -204,8 +204,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 		}
 	}
 
-    override void OnPlayerKilled(PlayerBase player, Object killer)
+    override void OnPlayerKilled(PlayerBase player, Object source)
     {
+    	BattleRoyaleUtils.Trace("BattleRoyaleStartMatch::OnPlayerKilled");
         if(!b_IsGameplay)
         {
             Error("Player killed before gameplay!");
@@ -213,5 +214,19 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         }
 
         super.OnPlayerKilled( player, source );
+
+        // Start the spectate system
+        PlayerBase target = PlayerBase.Cast( EntityAI.Cast( source ).GetHierarchyParent() );
+		if (!target)
+		{
+			// If not, does the source is a Player?
+			target = PlayerBase.Cast( source );
+		}
+
+        if ( player && target )
+		{
+			GetGame().ObjectDelete( player );
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(target), true, player.GetIdentity() );
+		}
     }
 }

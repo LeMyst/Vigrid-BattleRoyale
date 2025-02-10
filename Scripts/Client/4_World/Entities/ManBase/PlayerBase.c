@@ -83,4 +83,20 @@ modded class PlayerBase
 			hic.SetDisabled( disabled );
 		}
     }
+
+	float GetAimingAngleLR()
+	{
+		HumanCommandWeapons hcw = GetCommandModifier_Weapons();
+		if (hcw != null)
+			return hcw.GetBaseAimingAngleLR();
+		return 0.0;
+	}
+
+	float GetAimingAngleUD()
+	{
+		HumanCommandWeapons hcw = GetCommandModifier_Weapons();
+		if (hcw != null)
+			return hcw.GetBaseAimingAngleUD();
+		return 0.0;
+	}
 }

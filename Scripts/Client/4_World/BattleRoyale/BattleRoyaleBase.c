@@ -4,7 +4,7 @@ class BattleRoyaleBase
 
     void OnPlayerTick(PlayerBase player, float timeslice) {}
     
-    void OnPlayerKilled(PlayerBase killed, Object killer) {}
+    void OnPlayerKilled(PlayerBase killed, Object source) {}
 
     void Update(float delta) {}
 
