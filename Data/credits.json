@@ -25,6 +25,13 @@
           ]
         },
         {
+          "SectionName": "Spectate module (from VPPAdmin Tools)",
+          "SectionLines": [
+            "DaOne",
+            "VPPAdmin Tools contributors"
+          ]
+        },
+        {
           "SectionName": "Contributors",
           "SectionLines": [
             "ikoneec"
