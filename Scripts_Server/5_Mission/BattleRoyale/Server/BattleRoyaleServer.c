@@ -577,24 +577,31 @@ class BattleRoyaleServer: BattleRoyaleBase
         int minute = 0;
         GetGame().GetWorld().SetDate(year, month, day, hour, minute);
 
-        //Set Random Weather
-        Weather weather = GetGame().GetWeather();
+		string world_name = "";
+		GetGame().GetWorldName(world_name);
+		world_name.ToLower();
 
-        weather.GetOvercast().SetLimits( 0.0 , 1.0 );
-        weather.GetRain().SetLimits( 0.0 , 1.0 );
-        weather.GetFog().SetLimits( 0.0 , 0.25 );
+		if (world_name != "takistanplus")
+		{
+			//Set Random Weather
+			Weather weather = GetGame().GetWeather();
 
-        weather.GetOvercast().SetForecastChangeLimits( 0.5, 0.8 );
-        weather.GetRain().SetForecastChangeLimits( 0.1, 0.3 );
-        weather.GetFog().SetForecastChangeLimits( 0.05, 0.10 );
+			weather.GetOvercast().SetLimits( 0.0 , 1.0 );
+			weather.GetRain().SetLimits( 0.0 , 1.0 );
+			weather.GetFog().SetLimits( 0.0 , 0.25 );
 
-        weather.GetOvercast().SetForecastTimeLimits( 3600 , 3600 );
-        weather.GetRain().SetForecastTimeLimits( 300 , 300 );
-        weather.GetFog().SetForecastTimeLimits( 3600 , 3600 );
+			weather.GetOvercast().SetForecastChangeLimits( 0.5, 0.8 );
+			weather.GetRain().SetForecastChangeLimits( 0.1, 0.3 );
+			weather.GetFog().SetForecastChangeLimits( 0.05, 0.10 );
 
-        weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
-        weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
-        weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
+			weather.GetOvercast().SetForecastTimeLimits( 3600 , 3600 );
+			weather.GetRain().SetForecastTimeLimits( 300 , 300 );
+			weather.GetFog().SetForecastTimeLimits( 3600 , 3600 );
+
+			weather.GetOvercast().Set( Math.RandomFloatInclusive(0.0, 0.3), 0, 0);
+			weather.GetRain().Set( Math.RandomFloatInclusive(0.0, 0.2), 0, 0);
+			weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
+        }
     }
 
 #ifdef SPECTATOR
