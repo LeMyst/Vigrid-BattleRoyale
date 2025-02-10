@@ -315,7 +315,26 @@ class BattleRoyaleServer: BattleRoyaleBase
         if( match_uuid == "" )
         	GetCurrentState().MessagePlayer( player, "Error while registering the match. The online scores will not be saved.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
         	// TODO: Replace with RPC (for client side translation) ?
+
+        if ( GetCurrentState().GetPlayers().Count() > 1 )
+        {
+        	PlayerBase spectateTarget = GetCurrentState().GetPlayers().Get(0);
+
+        	if ( spectateTarget )
+			{
+				GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "StartSpectate", 10000, false, new Param2<PlayerBase, PlayerBase>(player, spectateTarget));
+			}
+        }
     }
+
+    void StartSpectate( PlayerBase player, PlayerBase target )
+	{
+		if ( player && target )
+		{
+			GetGame().ObjectDelete( player );
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(target), true, player.GetIdentity() );
+		}
+	}
 
     void Disconnect(PlayerIdentity identity)
     {
