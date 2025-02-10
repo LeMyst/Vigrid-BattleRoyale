@@ -38,8 +38,41 @@ class BattleRoyaleClient: BattleRoyaleBase
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 		br_rpc.Reset();
 
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", this );
+
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
+
+	void InitSpectate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<Object> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ INIT_SPECTATE RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("InitSpectate");
+			if ( data.param1 != null )
+			{
+				if (GetGame().GetPlayer() != null)
+				{
+					GetGame().ObjectDelete(GetGame().GetPlayer());
+					GetGame().SelectPlayer(null, null);
+				}
+
+				VPPSpectateCam cam = VPPSpectateCam.Cast(GetGame().CreateObject( "VPPSpectateCam", data.param1.GetPosition(), true ));
+				cam.SetTargetObj( PlayerBase.Cast(data.param1) );
+				cam.SetActive(true);
+
+				// TODO: Fix the player position for the distance to the zone
+				// TODO: Fix the HUD to remove unconscious filter
+				// TODO: Hide HUD interface like health
+				// TODO: Prevent player to go into the inventory
+			}
+		}
+	}
 
     //--- note: these return NULL of there is no area referenced for next or current area
     BattleRoyalePlayArea GetPlayArea()

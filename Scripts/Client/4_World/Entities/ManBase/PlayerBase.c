@@ -70,4 +70,22 @@ modded class PlayerBase
 			hic.SetDisabled( disabled );
 		}
     }
+
+	// From VPP Admin Tools
+	float GetAimingAngleLR()
+	{
+		HumanCommandWeapons hcw = GetCommandModifier_Weapons();
+		if (hcw != null)
+			return hcw.GetBaseAimingAngleLR();
+		return 0.0;
+	}
+
+	// From VPP Admin Tools
+	float GetAimingAngleUD()
+	{
+		HumanCommandWeapons hcw = GetCommandModifier_Weapons();
+		if (hcw != null)
+			return hcw.GetBaseAimingAngleUD();
+		return 0.0;
+	}
 }
