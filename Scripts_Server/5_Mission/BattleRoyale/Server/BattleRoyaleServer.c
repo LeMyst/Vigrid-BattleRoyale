@@ -571,7 +571,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleUtils.Trace("BattleRoyale: Randomizing Environment!");
         //NOTE: this is all legacy, we should find a better way to do this
         int year = 2018;
-        int month = 12;
+        int month = Math.RandomIntInclusive(3, 9); //march to september
         int day = 24;
         int hour = Math.RandomIntInclusive(8,16); //7am to 4pm
         int minute = 0;
