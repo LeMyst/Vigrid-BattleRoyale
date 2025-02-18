@@ -5,7 +5,7 @@ class CfgPatches
         requiredAddons[]=
         {
             "DZ_Data",
-            "DF_Scripts",
+            "DZ_Scripts",
             "DayZExpansion_Scripts"
         };
     };

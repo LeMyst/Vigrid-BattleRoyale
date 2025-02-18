@@ -5,7 +5,7 @@ class CfgPatches
         requiredAddons[]=
         {
             "DZ_Data",
-            "DF_Scripts",
+            "DZ_Scripts",
             "BattleRoyale_Scripts_Client"
         };
     };
@@ -27,14 +27,6 @@ class CfgMods
 
         class defs
         {
-            class gameLibScriptModule
-            {
-                value = "";
-                files[] =
-                {
-                    "Vigrid-BattleRoyale/Scripts_Server/2_GameLib"
-                };
-            };
             class gameScriptModule
             {
                 value = "";
