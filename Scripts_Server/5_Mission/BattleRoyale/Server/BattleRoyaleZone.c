@@ -372,6 +372,7 @@ class BattleRoyaleZone
         if(!s_POI)
         {
             s_POI = new set<ref array<float>>;
+            BattleRoyaleUtils.Trace(string.Format("Loading %1 POIs", GetGame().ConfigGetChildrenCount(cfg)));
             for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++)
             {
                 string city;
