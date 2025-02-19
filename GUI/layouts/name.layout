@@ -1,0 +1,60 @@
+FrameWidgetClass rootFrame {
+ visible 1
+ ignorepointer 1
+ position 0 0
+ size 1249.67993 137.002
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ scaled 1
+ {
+  GridSpacerWidgetClass SpacerGrid {
+   visible 1
+   ignorepointer 1
+   color 0 0 0 0.6078
+   position 0 0.0039
+   size 813.51099 -15.135
+   hexactpos 0
+   vexactpos 0
+   hexactsize 1
+   vexactsize 1
+   style Colorable
+   Padding 1
+   "Size To Content H" 1
+   "Size To Content V" 1
+   content_valign center
+   Columns 2
+   Rows 7
+   {
+    TextWidgetClass Name {
+     position 0 0
+     size 0 13
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "Name:"
+     "size to text h" 1
+     "size to text v" 1
+     "text halign" center
+     "text valign" center
+    }
+    TextWidgetClass NameInput {
+     position 0 0
+     size 0 13
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "Dumb Twat"
+     "size to text h" 1
+     "size to text v" 1
+     "text valign" center
+    }
+   }
+  }
+ }
+}
