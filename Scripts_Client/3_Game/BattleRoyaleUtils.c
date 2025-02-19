@@ -16,11 +16,37 @@ class BattleRoyaleUtils: Managed
     {
         if(CheckLogLevel(level))
         {
+        	int hour;
+        	int minute;
+        	int second;
+
+        	GetHourMinuteSecond(hour, minute, second);
+
+			string msg;
         	if (level == NONE) {
-        		Error("[DayZ-BattleRoyale] " + message);
+        		msg = hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2) + " [DayZ-BattleRoyale] " + message;
+        		Error(msg);
         	} else {
-            	Print("[DayZ-BattleRoyale][" + level + "] " + message);
+        		msg = hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2) + " [DayZ-BattleRoyale][" + level + "] " + message;
+	        	Print(msg);
             }
+
+			string chat_color = "default";
+			if (level == WARN) {
+				chat_color = "colorFriendly";
+			} else if (level == INFO) {
+				chat_color = "colorStatusChannel";
+			} else if (level == DEBUG) {
+				chat_color = "colorAction";
+			} else if (level == TRACE) {
+				chat_color = "colorImportant";
+			}
+
+#ifdef SERVER
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", new Param2<string, string>(msg, chat_color), true);
+#else
+			GetGame().Chat("C:" + msg, chat_color);
+#endif
         }
     }
 
