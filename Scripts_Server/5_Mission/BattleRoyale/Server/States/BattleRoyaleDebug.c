@@ -154,19 +154,16 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         int ready_count = GetReadyCount();
         int player_count = GetPlayers().Count();
 
-        if( !BATTLEROYALE_SOLO_GAME )
-        {
-            if( player_count <= 1 ) // need more than 1 player
-                return false;
+		if( player_count <= 1 ) // need more than 1 player
+			return false;
 
-            if( player_count <= i_MinPlayers ) // need more than the minimum player
-                return false;
+		if( player_count <= i_MinPlayers ) // need more than the minimum player
+			return false;
 
 #ifdef SCHANAMODPARTY
-            if( GetGroups().Count() <= 1 ) // need more than one group
-            	return false;
+		if( GetGroups().Count() <= 1 ) // need more than one group
+			return false;
 #endif
-        }
 
         float percent = (ready_count / player_count);
         return (percent >= f_VoteThreshold);

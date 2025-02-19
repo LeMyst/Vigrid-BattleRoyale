@@ -88,7 +88,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
     override bool IsComplete()
     {
-        if(GetPlayers().Count() <= 1 && IsActive() && !BATTLEROYALE_SOLO_GAME)
+        if(GetPlayers().Count() <= 1 && IsActive())
         {
             BattleRoyaleUtils.Trace(GetName() + " IsComplete!");
             // TODO: clean call queue?

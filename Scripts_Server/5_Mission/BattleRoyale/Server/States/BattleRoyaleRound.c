@@ -247,8 +247,6 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
     {
-        if(!BATTLEROYALE_SOLO_GAME)
-        {
             ref array<PlayerBase> players = GetPlayers();
 
             if(IsActive())
@@ -269,7 +267,6 @@ class BattleRoyaleRound: BattleRoyaleState
                     Deactivate();
                 }
 #endif
-            }
         }
         return super.IsComplete();
     }
@@ -310,9 +307,6 @@ class BattleRoyaleRound: BattleRoyaleState
             BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + _previousState.i_StartingZone + "` > `" + zone_num + "`");
             return true;
         }
-
-        if( BATTLEROYALE_SOLO_GAME )
-            return false;
 
         //only one (or less) players remaining, must skip to win state
         // TODO: toggle to debug game
