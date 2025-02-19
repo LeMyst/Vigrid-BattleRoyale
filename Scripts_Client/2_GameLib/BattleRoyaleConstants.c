@@ -8,7 +8,6 @@
 static const string BATTLEROYALE_VERSION = "0.1.0-Vigrid";
 
 //--- debug settings
-static const int BATTLEROYALE_SOLO_GAME = 0;
 #ifdef BR_TRACE_ENABLED
 	static const int BATTLEROYALE_LOG_LEVEL = 4; // Trace
 #else
