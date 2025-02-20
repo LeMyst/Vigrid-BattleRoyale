@@ -20,6 +20,7 @@ class BattleRoyaleRPC
 //#endif
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", this );
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
@@ -249,6 +250,22 @@ class BattleRoyaleRPC
 		{
 			BattleRoyaleUtils.Trace("ShowWinScreen");
 			winner_screen = true;
+		}
+	}
+
+	void ChatLog(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param2<string, string> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ CHATLOG RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			Print("[ChatLog] " + data.param1);
+
+			GetGame().Chat("S:" + data.param1, data.param2);
 		}
 	}
 }

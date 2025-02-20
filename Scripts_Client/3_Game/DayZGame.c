@@ -63,7 +63,8 @@ modded class DayZGame
             }
             case ChatMessageEventTypeID:
             {
-                BattleRoyaleUtils.Trace("DayZGame::OnEvent ChatMessageEventTypeID");
+            	// Avoid infinite loop
+                //BattleRoyaleUtils.Trace("DayZGame::OnEvent ChatMessageEventTypeID");
                 break;
             }
             case ProgressEventTypeID:
@@ -118,12 +119,19 @@ modded class DayZGame
             }
             case ConnectivityStatsUpdatedEventTypeID:
             {
-                BattleRoyaleUtils.Trace("DayZGame::OnEvent ConnectivityStatsUpdatedEventTypeID");
+            	// Manage the ping stats of the players
+                //BattleRoyaleUtils.Trace("DayZGame::OnEvent ConnectivityStatsUpdatedEventTypeID");
                 break;
             }
             case ServerFpsStatsUpdatedEventTypeID:
             {
                 BattleRoyaleUtils.Trace("DayZGame::OnEvent ServerFpsStatsUpdatedEventTypeID");
+				ServerFpsStatsUpdatedEventParams serverFpsStatsParams;
+				if (Class.CastTo(serverFpsStatsParams, params))
+				{
+					float fps = serverFpsStatsParams.param1;
+					BattleRoyaleUtils.Trace("Server FPS: " + fps);
+				}
                 break;
             }
         }
