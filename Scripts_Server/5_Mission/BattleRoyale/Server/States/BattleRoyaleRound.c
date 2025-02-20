@@ -247,25 +247,25 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
     {
-            ref array<PlayerBase> players = GetPlayers();
+		int nb_players = GetPlayers().Count();
 
-            if(IsActive())
-            {
+		if(IsActive())
+		{
 #ifdef SCHANAMODPARTY
-                if(i_MaxPartySize < 1 || players.Count() < i_MaxPartySize)
-                {
-					if( GetGroups().Count() <= 1 )
-					{
-						BattleRoyaleUtils.Trace(GetName() + " IsComplete (Groups)!");
-						Deactivate();
-					}
-                }
+			if(i_MaxPartySize < 1 || nb_players <= i_MaxPartySize)
+			{
+				if( nb_players <= 1 || GetGroups().Count() <= 1 )
+				{
+					BattleRoyaleUtils.Trace(GetName() + " IsComplete (Groups)!");
+					Deactivate();
+				}
+			}
 #else
-                if(players.Count() <= 1)
-                {
-                    BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
-                    Deactivate();
-                }
+			if( nb_players <= 1 )
+			{
+				BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
+				Deactivate();
+			}
 #endif
         }
         return super.IsComplete();
