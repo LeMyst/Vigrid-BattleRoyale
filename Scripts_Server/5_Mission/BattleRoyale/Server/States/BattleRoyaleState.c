@@ -434,11 +434,11 @@ class BattleRoyaleState: Timeable
 			vector killer_position = "0 0 0";
 
 			BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
+			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
 
 			if ( m_ServerData.enable_vigrid_api )
 			{
 				BattleRoyaleUtils.Trace("ScoreWebhook: Sending player score");
-				BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
 				ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
 				scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
 			}
