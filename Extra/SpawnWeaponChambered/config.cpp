@@ -13,7 +13,6 @@ class CfgMods
 {
     class vigrid_spawn_weapon_chambered
     {
-        dir  = "SpawnWeaponChambered";
         name = "Vigrid Spawn Weapon Chambered";
         type = "mod";
         dependencies[]=
@@ -28,7 +27,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/SpawnWeaponChambered/Scripts/4_World"
+                    "Vigrid-BattleRoyale/Extra/SpawnWeaponChambered/Scripts/4_World"
                 };
             };
         };

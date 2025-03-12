@@ -15,7 +15,6 @@ class CfgMods
 {
     class DZ_BattleRoyale_Client
     {
-        dir = "Vigrid-BattleRoyale";
         credits = "Kegan - Modified by Myst";
         creditsJson = "Vigrid-BattleRoyale/Data/credits.json";
         type = "mod";
@@ -58,7 +57,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Client/2_GameLib"
+                    "Vigrid-BattleRoyale/Scripts/Client/2_GameLib"
                 };
             };
             class gameScriptModule
@@ -66,7 +65,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Client/3_Game"
+                    "Vigrid-BattleRoyale/Scripts/Client/3_Game"
                 };
             };
             class worldScriptModule
@@ -74,7 +73,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Client/4_World"
+                    "Vigrid-BattleRoyale/Scripts/Client/4_World"
                 };
             };
             class missionScriptModule
@@ -82,7 +81,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Client/5_Mission"
+                    "Vigrid-BattleRoyale/Scripts/Client/5_Mission"
                 };
             };
         };

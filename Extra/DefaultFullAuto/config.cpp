@@ -13,7 +13,6 @@ class CfgMods
 {
     class vigrid_default_full_auto
     {
-        dir  = "DefaultFullAuto";
         name = "Vigrid Default Full Auto";
         type = "mod";
         dependencies[]=
@@ -28,7 +27,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/DefaultFullAuto/Scripts/4_World"
+                    "Vigrid-BattleRoyale/Extra/DefaultFullAuto/Scripts/4_World"
                 };
             };
         };
