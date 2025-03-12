@@ -15,7 +15,6 @@ class CfgMods
 {
     class DZ_BattleRoyale_Server
     {
-        dir  = "Vigrid-BattleRoyale";
         name = "DayZ BattleRoyale SERVER";
         type = "mod";
         dependencies[]=
@@ -32,7 +31,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Server/3_Game"
+                    "Vigrid-BattleRoyale/Scripts/Server/3_Game"
                 };
             };
             class worldScriptModule
@@ -40,7 +39,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Server/4_World"
+                    "Vigrid-BattleRoyale/Scripts/Server/4_World"
                 };
             };
             class missionScriptModule
@@ -48,7 +47,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "Vigrid-BattleRoyale/Scripts_Server/5_Mission"
+                    "Vigrid-BattleRoyale/Scripts/Server/5_Mission"
                 };
             };
         };
