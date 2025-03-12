@@ -5,7 +5,7 @@ modded class Weapon_Base
 	{
 		super.EEInit();
 
+		// Chamber the weapon with a random bullet by default
 		FillChamber( "", WeaponWithAmmoFlags.CHAMBER );
 	}
 }
-#endif
