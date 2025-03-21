@@ -13,6 +13,8 @@ CALL "%~dp0SetupModList.bat"
 
 call "%~dp0ClearLogs.bat" "%serverProfileDirectory%"
 
+call "%~dp0ClearStorage.bat"
+
 call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" -port=%port% "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
 
 PING 127.0.0.1 -n 5 > nul
