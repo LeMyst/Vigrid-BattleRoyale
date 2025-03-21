@@ -51,6 +51,18 @@ modded class PlayerBase
 		else
 			BattleRoyaleUtils.Trace( "Call To Enable Player Input" );
 
+		// Disable Voice over Network
+		if ( disabled )
+		{
+			GetGame().MuteAllPlayers( GetIdentity().GetPlainId() , true );
+			GetGame().EnableVoN(this, false);
+		}
+		else
+		{
+			GetGame().EnableVoN(this, true);
+			GetGame().MuteAllPlayers( GetIdentity().GetPlainId() , false );
+		}
+
 		HumanInputControllerOverrideType override_type = HumanInputControllerOverrideType.DISABLED;
 		if ( disabled )
 		{
