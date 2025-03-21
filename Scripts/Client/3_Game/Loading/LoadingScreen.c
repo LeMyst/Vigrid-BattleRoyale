@@ -10,18 +10,18 @@ modded class LoadingScreen
 
 		m_Backgrounds = LoadingScreenBackgrounds.Get();
 
-        m_ImageLogoMid.Show( false );
-        m_ImageLogoCorner.Show( false );
-        m_ModdedWarning.Show( false );
+        m_ImageLogoMid.Show( false );  // Hide the DayZ logo
+        m_ImageLogoCorner.Show( false );  // Hide the Bohemia Interactive logo
+        m_ModdedWarning.Show( false );  // Hide the modded warning
     }
 
     override void Show()
     {
         super.Show();
 
-        m_ImageBackground.LoadMaskTexture("");
-        m_ImageLogoMid.Show( false );
-        m_ImageLogoCorner.Show( false );
+        m_ImageBackground.LoadMaskTexture("");  // Hide the mask texture
+        m_ImageLogoMid.Show( false );  // Hide the DayZ logo
+        m_ImageLogoCorner.Show( false );  // Hide the Bohemia Interactive logo
         
 	    UpdateLoadingBackground();
     }
@@ -58,6 +58,7 @@ modded class LoadingScreen
     {
         super.OnUpdate(timeslice);
 
+		// Switch to another background image
         if (IsLoading())
             UpdateLoadingBackground();
     }
