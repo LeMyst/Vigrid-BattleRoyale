@@ -1,3 +1,4 @@
+#ifdef SERVER
 modded class BrokenLegsMdfr
 {
     override void OnActivate(PlayerBase player) {}
