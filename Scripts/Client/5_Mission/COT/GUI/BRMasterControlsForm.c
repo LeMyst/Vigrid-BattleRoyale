@@ -16,11 +16,6 @@ class BRMasterControlsForm: JMFormBase
         m_sclr_MainActions = UIActionManager.CreateScroller( layoutRoot.FindAnyWidget( "panel" ) );
         m_ActionsWrapper = m_sclr_MainActions.GetContentWidget();
 
-        m_sclr_MainActions.UpdateScroller();
-    }
-
-    override void OnShow()
-    {
         //create button widgets dynamically
         Widget wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
             UIActionManager.CreateText( wrapper, "State Machine" );
@@ -46,6 +41,10 @@ class BRMasterControlsForm: JMFormBase
 #endif
 
         m_sclr_MainActions.UpdateScroller();
+    }
+
+    override void OnShow()
+    {
     }
 
     override void OnHide()
