@@ -58,14 +58,10 @@ static const string DAYZBR_SM_WIN_NAME = "Win State";
 static const string DAYZBR_SM_UNKNOWN_DEBUG_NAME = "Unknown Debug State";
 
 
-//--- messages
+//--- notification messages
 static const float DAYZBR_MSG_TIME = 7;
 static const string DAYZBR_MSG_IMAGE = "set:expansion_iconset image:icon_info";
 static const string DAYZBR_MSG_TITLE = "DayZ Battle Royale";
-static const string DAYZBR_MSG_NEW_ZONE_OUTSIDE = "A new zone has appeared! YOU ARE OUTSIDE THE PLAY AREA!";
-static const string DAYZBR_MSG_NEW_ZONE_INSIDE = "A new zone has appeared! You are in the play area!";
-static const string DAYZBR_MSG_TAKING_DAMAGE = "You are taking zone damage!";
-static const string DAYZBR_MSG_MATCH_STARTED = "The match has started!";
 
 
 //--- broken debug zone values

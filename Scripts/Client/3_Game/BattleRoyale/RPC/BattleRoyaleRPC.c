@@ -22,6 +22,8 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", this );
 
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
+
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
 
@@ -266,6 +268,22 @@ class BattleRoyaleRPC
 			Print("[ChatLog] " + data.param1);
 
 			GetGame().Chat("S:" + data.param1, data.param2);
+		}
+	}
+
+	void NotificationMessage(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param7<string, float, string, string, string, string, string> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ NOTIFICATIONMESSAGE RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("NotificationMessage: %1 %2 %3 %4 %5 %6 %7", data.param1, data.param2, data.param3, data.param4, data.param5, data.param6, data.param7));
+			StringLocaliser message = new StringLocaliser(data.param1, data.param3, data.param4, data.param5, data.param6, data.param7);
+			ExpansionNotification(DAYZBR_MSG_TITLE, message, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, data.param2).Create();
 		}
 	}
 }

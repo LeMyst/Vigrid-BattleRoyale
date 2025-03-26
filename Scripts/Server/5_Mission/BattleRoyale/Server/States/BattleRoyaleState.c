@@ -179,26 +179,59 @@ class BattleRoyaleState: Timeable
     }
 
     //CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
-    void MessagePlayers(string message, string title = DAYZBR_MSG_TITLE, string icon = DAYZBR_MSG_IMAGE, int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = DAYZBR_MSG_TIME)
+    void MessagePlayers(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
     {
-        StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
         StringLocaliser text = new StringLocaliser( message );
-        ExpansionNotification(title_sl, text, icon, color, time).Create();
+        ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create();
     }
 
-    void MessagePlayer(PlayerBase player, string message, string title = DAYZBR_MSG_TITLE, string icon = DAYZBR_MSG_IMAGE, int color = COLOR_EXPANSION_NOTIFICATION_INFO, float time = DAYZBR_MSG_TIME)
+    void MessagePlayer(PlayerBase player, string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
     {
         if(player)
         {
             PlayerIdentity identity = player.GetIdentity();
             if(identity)
             {
-                StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
                 StringLocaliser text = new StringLocaliser( message );
-                ExpansionNotification(title_sl, text, icon, color, time).Create(identity);
+                ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create(identity);
             }
         }
     }
+
+	/*
+	 * Send a message to all players, with standard time
+	 * @param message The message to send
+	 * @param param1 Optional parameter 1
+	 * @param param2 Optional parameter 2
+	 * @param param3 Optional parameter 3
+	 * @param param4 Optional parameter 4
+	 * @param param5 Optional parameter 5
+	 */
+    void MessagePlayersUntranslated(string message, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
+	{
+		MessagePlayersUntranslatedTimed(message, DAYZBR_MSG_TIME, param1, param2, param3, param4, param5);
+	}
+
+	void MessagePlayersUntranslatedTimed(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
+	{
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( message, time, param1, param2, param3, param4, param5 ), true);
+	}
+
+	void MessagePlayerUntranslated(PlayerBase player, string message, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
+	{
+		MessagePlayerUntranslatedTimed(player, message, DAYZBR_MSG_TIME, param1, param2, param3, param4, param5);
+	}
+
+	void MessagePlayerUntranslatedTimed(PlayerBase player, string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
+	{
+	    if(player)
+	    {
+	    	if(player.GetIdentity())
+	    	{
+	    		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( message, time, param1, param2, param3, param4, param5 ), true, player.GetIdentity());
+	    	}
+	    }
+	}
 
     protected bool IsSafeForTeleport(float x, float y, float z, bool check_zone = true)
     {
