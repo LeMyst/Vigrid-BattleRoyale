@@ -4,7 +4,6 @@ modded class ItemBase
 	// Thanks to @incinatus for this
 	override void EEOnCECreate()
 	{
-		Print("ItemBase::EEOnCECreate");
 		super.EEOnCECreate();
 
 		if( IsWeapon() )
