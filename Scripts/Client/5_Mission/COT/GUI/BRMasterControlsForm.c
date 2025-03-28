@@ -30,9 +30,9 @@ class BRMasterControlsForm: JMFormBase
 
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
             UIActionManager.CreateText( wrapper, "Event Manager" );
+#ifdef EXPANSIONMODMISSIONS
             UIActionManager.CreateButton( wrapper, "Spawn Airdrop", this, "SpawnAirdrop" );
-            UIActionManager.CreateButton( wrapper, "Spawn Horde", this, "SpawnHorde" );
-            UIActionManager.CreateButton( wrapper, "Spawn Chemicals", this, "SpawnChemicals" );
+#endif
 
 #ifdef DIAG
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
