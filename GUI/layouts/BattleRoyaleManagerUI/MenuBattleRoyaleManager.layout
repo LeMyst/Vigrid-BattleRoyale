@@ -34,7 +34,7 @@ FrameWidgetClass rootFrame {
      hexactsize 0
      vexactsize 0
      style Editor
-     text "#STR_BATTLEROYAL_COT_NEXTSTATE"
+     text "#STR_BR_COT_NEXTSTATE"
      font "gui/fonts/metronlight"
     }
     ButtonWidgetClass BtnStartSpectate {
@@ -46,7 +46,7 @@ FrameWidgetClass rootFrame {
      hexactsize 0
      vexactsize 0
      style Editor
-     text "#STR_BATTLEROYAL_COT_SPECTATE"
+     text "#STR_BR_COT_SPECTATE"
      font "gui/fonts/metronlight"
     }
    }
@@ -86,7 +86,7 @@ FrameWidgetClass rootFrame {
      hexactsize 0
      vexactsize 0
      style Bold
-     text "#STR_BATTLEROYAL_COT_NAME"
+     text "#STR_BR_COT_NAME"
      font "gui/fonts/sdf_metronlight24"
      "exact text" 0
      "size to text h" 1

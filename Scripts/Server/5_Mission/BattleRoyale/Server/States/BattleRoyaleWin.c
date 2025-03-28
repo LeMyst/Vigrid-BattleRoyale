@@ -68,8 +68,7 @@ class BattleRoyaleWin: BattleRoyaleState
         BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
 
         // Send notification
-        MessagePlayer(player_winner, "Congratulations! You won Battle Royale!");
-        // TODO: Replace with RPC (for client side translation)
+        MessagePlayerUntranslated(player_winner, "STR_BR_ANNOUNCEMENT_WINNER");
 
         // Show win screen
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, player_winner.GetIdentity() );

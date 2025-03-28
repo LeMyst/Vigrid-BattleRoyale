@@ -209,13 +209,11 @@ class BattleRoyaleRound: BattleRoyaleState
                 float dist = vector.Distance(playerPos, next_pos);
                 if(dist > m_ThisArea.GetRadius())
                 {
-                    MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_OUTSIDE);
-                    // TODO: Replace with RPC (for client side translation)
+                    MessagePlayerUntranslated(player, "STR_BR_NEW_ZONE_OUTSIDE");
                 }
                 else if (m_Zone.GetZoneNumber() != 1)
                 {
-                    MessagePlayer(player, DAYZBR_MSG_NEW_ZONE_INSIDE);
-                    // TODO: Replace with RPC (for client side translation)
+                    MessagePlayerUntranslated(player, "STR_BR_NEW_ZONE_INSIDE");
                 }
             }
         }
@@ -345,8 +343,7 @@ class BattleRoyaleRound: BattleRoyaleState
                 if(player.time_until_damage <= 0)
                 {
                     //DAMAGE
-                    MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
-                    // TODO: Replace with RPC (for client side translation)
+                	MessagePlayerUntranslated(player, "STR_BR_TAKING_DAMAGE");
 				    player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_LIGHT);
                     //TODO: determine if this last health tick will kill the player
                     player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)

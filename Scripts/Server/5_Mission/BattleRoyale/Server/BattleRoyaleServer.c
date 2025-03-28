@@ -261,26 +261,18 @@ class BattleRoyaleServer: BattleRoyaleBase
                 {
                     BattleRoyaleUtils.Trace("Spectator connected, inserting into spectator system");
 
+                    float time_until_spectate = 20.0;
+
                     //it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
                     //note that 20 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
-                    m_Timer.Run( 20.0, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
+                    m_Timer.Run( time_until_spectate, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
 
-                    string message = "You will be given spectator in ~20 seconds...";
-                    string title = DAYZBR_MSG_TITLE;
-                    string icon = DAYZBR_MSG_IMAGE;
-                    int color = COLOR_EXPANSION_NOTIFICATION_INFO;
-                    float time = DAYZBR_MSG_TIME;
+                    string message = string.Format("You will be given spectator in ~%1 seconds...", time_until_spectate);
 
                     //m_SpectatorSystem.AddPlayer( player );
                     if(player)
                     {
-                        PlayerIdentity playerIdentity = player.GetIdentity();
-                        if(playerIdentity)
-                        {
-                            StringLocaliser title_sl = new StringLocaliser( title ); //This comes form CommunityFramework (if Translatestring fails, we get default text value here)
-                            StringLocaliser text = new StringLocaliser( message );
-                            ExpansionNotification(title_sl, text, icon, color, time).Create(playerIdentity);
-                        }
+						MessagePlayer( player, message, DAYZBR_MSG_TIME, time_until_spectate );
                     }
                 }
             }
@@ -313,8 +305,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetCurrentState().AddPlayer(player);
 
         if( match_uuid == "" )
-        	GetCurrentState().MessagePlayer( player, "Error while registering the match. The online scores will not be saved.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_ERROR, 300.0 );
-        	// TODO: Replace with RPC (for client side translation) ?
+        	GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
     }
 
     void Disconnect(PlayerIdentity identity)

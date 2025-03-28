@@ -154,7 +154,7 @@ modded class MainMenu
 
 		if (IsMatchMakingAvailable())
 		{
-			m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_MATCHMAKING");
+			m_PlayButtonLabel.SetText("#STR_BR_MM_MATCHMAKING");
 		}
 		else
 		{
@@ -374,7 +374,7 @@ modded class MainMenu
 
 		// Change the play button text
 		m_MatchMakingState = BattleRoyaleMatchMakingState.Searching;
-		m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_SEARCHING");
+		m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING");
 		m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
 		ColorDisable(m_Play);
 
@@ -414,7 +414,7 @@ modded class MainMenu
 
 			if (IsMatchMakingAvailable())
 			{
-				m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_MATCHMAKING");
+				m_PlayButtonLabel.SetText("#STR_BR_MM_MATCHMAKING");
 			}
 			else
 			{
@@ -439,11 +439,11 @@ modded class MainMenu
 
 		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
 		{
-			m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_SEARCHING " + m_MatchMakingTryCount);
+			m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING " + m_MatchMakingTryCount);
 		}
 		else if (m_MatchMakingState == BattleRoyaleMatchMakingState.Connecting)
 		{
-			m_PlayButtonLabel.SetText("#STR_BATTLEROYAL_MM_CONNECTING");
+			m_PlayButtonLabel.SetText("#STR_BR_MM_CONNECTING");
 		}
 	}
 

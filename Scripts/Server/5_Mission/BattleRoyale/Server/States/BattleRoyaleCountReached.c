@@ -32,9 +32,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
         if ( i_TimeToStart == 1 )
             second = "second";
 
-        //TODO: use string replace and make this string a constant in BattleRoyaleConstants (perhaps a setting eventually)
-
-        MessagePlayers("Player count reached! Match is starting in " + i_TimeToStart.ToString() + " " + second + "!");
+        MessagePlayersUntranslated("STR_BR_ANNOUNCEMENT_PLAYERCOUNTREACHED", i_TimeToStart.ToString(), second);
         m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
     }

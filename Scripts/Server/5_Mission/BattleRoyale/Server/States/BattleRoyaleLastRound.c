@@ -175,8 +175,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
             if(player.time_until_damage <= 0)
             {
                 //DAMAGE
-                MessagePlayer(player, DAYZBR_MSG_TAKING_DAMAGE);
-				// TODO: Replace with RPC (for client side translation)
+                MessagePlayerUntranslated(player, "STR_BR_TAKING_DAMAGE");
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
                 player.DecreaseHealthCoef( f_Damage );
                 player.time_until_damage = i_DamageTickTime; //reset timer
@@ -218,25 +217,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
     //TODO: both of these need added to battleroyaleconstants & use string replace to append minutes.ToString()
     void NotifyTimeToEndMinutes(int minutes)
     {
-        string message = "The zone will disappear in " + minutes.ToString() + " ";
-        if(minutes > 1)
-            message += "minutes";
-        else
-            message += "minute";
-
-        MessagePlayers(message);
-		// TODO: Replace with RPC (for client side translation)
+		MessagePlayersUntranslated("STR_BR_ZONE_WILL_DISAPPEAR_MINUTE", minutes.ToString());
     }
 
     void NotifyTimeToEndSeconds(int seconds)
     {
-        string message = "The zone will disappear in " + seconds.ToString() + " ";
-        if(seconds > 1)
-            message += "seconds";
-        else
-            message += "second";
-
-        MessagePlayers(message);
-		// TODO: Replace with RPC (for client side translation)
+		MessagePlayersUntranslated("STR_BR_ZONE_WILL_DISAPPEAR_SECOND", seconds.ToString());
     }
 }
