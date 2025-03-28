@@ -45,7 +45,8 @@ class BattleRoyaleUtils: Managed
 #ifdef SERVER
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", new Param2<string, string>(msg, chat_color), true);
 #else
-			GetGame().Chat("C:" + msg, chat_color);
+			if ( GetGame() )
+				GetGame().Chat("C:" + msg, chat_color);
 #endif
         }
     }
