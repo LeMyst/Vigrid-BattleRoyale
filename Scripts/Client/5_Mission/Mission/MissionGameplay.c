@@ -277,6 +277,53 @@ modded class MissionGameplay
 	}
 #endif
 
+#ifndef SERVER
+	override void OnKeyPress(int key)
+	{
+		super.OnKeyPress(key);
+
+		// test if a menu is open
+		if( IsInputExcludeActive("menu") )
+			return;
+
+		// test if menu is open, return if it is
+		if( m_UIManager.FindMenu(MENU_CHAT_INPUT) )
+			return;
+
+		if (key == KeyCode.KC_B)
+		{
+				GetGame().Chat("Pressing Test Key", "colorFriendly");
+				PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+
+				Basic_Zone zone = Basic_Zone.Cast( GetGame().CreateObjectEx( "Basic_Zone", player.GetPosition(), ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
+
+				if ( zone )
+				{
+					float scale = Math.RandomFloatInclusive( 0.5, 10.0 );
+					BattleRoyaleUtils.Trace("Zone created '" + zone.GetZoneName() + "' on position " + player.GetPosition() + " with scale " + scale);
+					zone.SetScale( scale );
+					zone.Update();
+				}
+
+//				GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "CreateZone", new Param1< vector >( player.GetPosition() ), true, player.GetIdentity() );
+
+//				GetGame().Chat("Current open menu: " + GetUIManager().GetMenu(), "colorFriendly");
+//				if(!GetUIManager().IsMenuOpen(MENU_SPAWN_SELECTION)) {
+//					UIScriptedMenu menu = GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, GetUIManager().GetMenu());
+//					GetGame().GetMission().AddActiveInputExcludes({"map"});
+//					GetGame().GetMission().AddActiveInputRestriction(EInputRestrictors.MAP);
+//					if (menu) {
+//						GetGame().Chat("Menu opened", "colorFriendly");
+//					} else {
+//						GetGame().Chat("Menu not opened", "colorFriendly");
+//					}
+//				} else {
+//					GetGame().Chat("Menu already open", "colorFriendly");
+//				}
+		}
+	}
+#endif
+
 	override void OnUpdate( float timeslice )
 	{
 		super.OnUpdate( timeslice ); //no more using fade out because it causes way to much compatibility issues, instead we'll use widgets
