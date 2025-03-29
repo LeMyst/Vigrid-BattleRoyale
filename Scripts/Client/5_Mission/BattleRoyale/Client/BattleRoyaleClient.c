@@ -10,6 +10,9 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected bool b_IsReady;
 
+    protected Basic_Zone m_BlueZone;
+    protected Basic_Zone m_DebugZone;
+
 #ifdef SPECTATOR
     protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
 #endif
@@ -164,9 +167,30 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 			// Update current play area
 			if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
-				m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
+			{
+			m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
 
-			// Update future play area
+			// TODO: Create multiple p3d objects for different zone sizes
+
+			// Create blue zone if it doesn't exist
+			if ( !m_BlueZone )
+			{
+				m_BlueZone = Basic_Zone.Cast( GetGame().CreateObjectEx( "Basic_Zone", br_rpc.current_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
+			}
+
+			// Update blue zone scale and position
+			if ( m_BlueZone )
+			{
+				// The default scale is 10 meters radius
+				BattleRoyaleUtils.Trace("Blue zone scale: " + br_rpc.current_play_area_radius / 10);
+				m_BlueZone.SetScale( br_rpc.current_play_area_radius / 10 );
+				BattleRoyaleUtils.Trace("Blue zone position: " + br_rpc.current_play_area_center);
+				m_BlueZone.SetPosition( br_rpc.current_play_area_center );
+				m_BlueZone.Update();
+			}
+		}
+
+		// Update future play area (only if it has changed)
 			if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
 			{
 				if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
@@ -175,21 +199,35 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 					UpdateZoneCenterMaker( br_rpc.future_play_area_center );
 
-					if ( br_rpc.b_ArtillerySound )
-					{
-						ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
-						m_ArtySound.SetAutodestroy(true);
-					}
+				if ( br_rpc.b_ArtillerySound )
+				{
+					ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+					m_ArtySound.SetAutodestroy(true);
 				}
-				br_previous_future_play_area_center = br_rpc.future_play_area_center;
-				br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
+			}
+			br_previous_future_play_area_center = br_rpc.future_play_area_center;
+			br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
+
+			if ( !m_DebugZone )
+			{
+				m_DebugZone = Basic_Zone.Cast( GetGame().CreateObjectEx( "Basic_Zone", br_rpc.current_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
 			}
 
-			// Set top position
-			if ( player )
+			// Update blue zone scale and position
+			if ( m_DebugZone )
 			{
-				player.position_top = br_rpc.top_position;
+				// The default scale is 10 meters radius
+				BattleRoyaleUtils.Trace("Debug zone scale: " + br_rpc.future_play_area_radius / 10);
+				m_DebugZone.SetScale( br_rpc.future_play_area_radius / 10 );
+				BattleRoyaleUtils.Trace("Debug zone position: " + br_rpc.future_play_area_center);
+				m_DebugZone.SetPosition( br_rpc.future_play_area_center );
+				m_DebugZone.Update();
 			}
+		}
+
+		// Set top position
+		if ( player )
+			player.position_top = br_rpc.top_position;
 
 			// Show the winner screen
 			if( br_rpc.winner_screen && !br_previous_win_screen )
