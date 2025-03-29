@@ -89,7 +89,7 @@ modded class PlayerBase
 			last_unconscious_source = playerSource;
 		} else {
 			last_unconscious_source = NULL;
-			BattleRoyaleUtils.Error("Player " + GetIdentity().GetName() + " was hit by an unknown source.");
+			//BattleRoyaleUtils.Error("Player " + GetIdentity().GetName() + " was hit by an unknown source.");
 		}
 	}
 
