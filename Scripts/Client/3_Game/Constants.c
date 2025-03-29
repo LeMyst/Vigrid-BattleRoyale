@@ -1,0 +1,1 @@
+const int MENU_SPAWN_SELECTION = 75;
