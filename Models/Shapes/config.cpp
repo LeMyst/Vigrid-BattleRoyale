@@ -11,3 +11,17 @@ class CfgPatches
 		};
 	};
 };
+class CfgVehicles
+{
+	class HouseNoDestruct;
+	class BR_Zone: HouseNoDestruct
+	{
+		scope = 2;
+		model = "\Vigrid-BattleRoyale\Models\Shapes\zone.p3d";
+	};
+	class Basic_Zone: HouseNoDestruct
+	{
+		scope = 2;
+		model = "\Vigrid-BattleRoyale\Models\Shapes\basic_zone.p3d";
+	};
+};
