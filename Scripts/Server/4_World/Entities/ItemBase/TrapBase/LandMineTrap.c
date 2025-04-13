@@ -3,7 +3,7 @@ modded class LandMineTrap
 {
 	protected string m_ActivatorId = "";
 
-	string GetActivator()
+	string GetActivatorId()
 	{
 		return m_ActivatorId;
 	}
