@@ -25,26 +25,22 @@ modded class IngameHud
 		super.Show( show );
 	}
 
-#ifdef EXPANSIONMODNAMETAGS
-	override protected bool HandleCurrentTaggedPlayer(float timeslice)
+	override void Update( float timeslice )
 	{
-		bool result = super.HandleCurrentTaggedPlayer(timeslice);
+		super.Update( timeslice );
 
-		DayZPlayerImplement localPlayer = DayZPlayerImplement.Cast(GetGame().GetPlayer());
-		if ( localPlayer.Expansion_IsInSafeZone() )
+		// Show player tags only if the match is not started
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+		if( !br_rpc.match_started )
 		{
-			if (m_IsFriendly || m_IsMember)
+			RefreshPlayerTags();
+			ShowPlayerTag(timeslice);
+			if ( m_CurrentTaggedPlayer && m_CurrentTaggedPlayer.GetIdentity() )
 			{
-				m_PlayerTagText.SetColor(ARGB( 255, 0, 190, 255 ));
-			}
-			else
-			{
-				m_PlayerTagText.SetColor( COLOR_EXPANSION_NOTIFICATION_INFO );
+				Widget m_TagFrame = m_PlayerTag.FindAnyWidget( "TagFrame" );
+				m_TagFrame.SetSize( 300, 25 );
 			}
 		}
-
-		return result;
 	}
-#endif
 }
 #endif
