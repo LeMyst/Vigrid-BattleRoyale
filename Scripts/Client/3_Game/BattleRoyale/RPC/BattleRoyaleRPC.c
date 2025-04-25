@@ -283,12 +283,15 @@ class BattleRoyaleRPC
 			StringLocaliser message = new StringLocaliser(data.param1, data.param3, data.param4, data.param5, data.param6, data.param7);
 			string translated_message = message.Format();
 
-			// Special case for ready key
+			// Special case
 			// Finish the translation client side to get the correct key
 			if (translated_message.Contains("READY_KEY"))
 			{
-				string key_name = InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD);
-				translated_message.Replace("READY_KEY", key_name);
+				translated_message.Replace("READY_KEY", InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD));
+			}
+			if (translated_message.Contains("UNSTUCK_KEY"))
+			{
+				translated_message.Replace("UNSTUCK_KEY", InputUtils.GetButtonNameFromInput("UADayZBRUnstuck", EInputDeviceType.MOUSE_AND_KEYBOARD));
 			}
 
 			ExpansionNotification(DAYZBR_MSG_TITLE, translated_message, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, data.param2).Create();
