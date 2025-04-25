@@ -199,29 +199,40 @@ class BattleRoyaleState: Timeable
     }
 
 	/*
-	 * Send a message to all players, with standard time
+	 * Send a message to all players, with standard message duration
 	 * @param message The message to send
-	 * @param param1 Optional parameter 1
-	 * @param param2 Optional parameter 2
-	 * @param param3 Optional parameter 3
-	 * @param param4 Optional parameter 4
-	 * @param param5 Optional parameter 5
 	 */
     void MessagePlayersUntranslated(string message, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
 	{
 		MessagePlayersUntranslatedTimed(message, DAYZBR_MSG_TIME, param1, param2, param3, param4, param5);
 	}
 
+	/*
+	 * Send a message to all players, with custom message duration
+	 * @param message The message to send
+	 * @param time The time to display the message for
+	 */
 	void MessagePlayersUntranslatedTimed(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
 	{
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( message, time, param1, param2, param3, param4, param5 ), true);
 	}
 
+    /*
+	 * Send a message to a specific player, with standard message duration
+	 * @param player The player to send the message to
+	 * @param message The message to send
+	 */
 	void MessagePlayerUntranslated(PlayerBase player, string message, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
 	{
 		MessagePlayerUntranslatedTimed(player, message, DAYZBR_MSG_TIME, param1, param2, param3, param4, param5);
 	}
 
+	/*
+	 * Send a message to a specific player, with custom message duration
+	 * @param player The player to send the message to
+	 * @param message The message to send
+	 * @param time The time to display the message for
+	 */
 	void MessagePlayerUntranslatedTimed(PlayerBase player, string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
 	{
 	    if(player)
