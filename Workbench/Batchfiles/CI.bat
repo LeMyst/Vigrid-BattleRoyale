@@ -41,6 +41,11 @@ cd /D "%~dp0"
 
 set success=1
 
+if not exist "P:\" (
+	echo P: drive is not mounted, exiting.
+	exit /b 1
+)
+
 if exist "..\project.cfg.bat" del "..\project.cfg.bat"
 
 for /f "usebackq delims=" %%a in ( ../project.cfg ) do (

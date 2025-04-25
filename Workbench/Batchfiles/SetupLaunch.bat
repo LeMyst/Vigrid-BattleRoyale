@@ -12,6 +12,11 @@ if exist "%~dp0..\user.cfg" (
 	exit /b 1
 )
 
+if not exist "P:\" (
+	echo P: drive is not mounted, exiting.
+	exit /b 1
+)
+
 set failed=0
 
 if exist "%~dp0..\project.cfg.%~n0.bat" del "%~dp0..\project.cfg.%~n0.bat"
