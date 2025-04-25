@@ -146,8 +146,8 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );
         }
 
-        MessagePlayers( DAYZBR_MSG_MATCH_STARTED );
-        MessagePlayers( "If you are stuck in a building, press F2 (default key) to be randomly teleported. Any abuse will result in a permanent ban.", DAYZBR_MSG_TITLE, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, 90 );
+        MessagePlayersUntranslated( "STR_BR_MATCH_STARTED" );
+        MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", 90 );
 
         b_IsGameplay = true;
     }
@@ -162,15 +162,13 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 		if( !player.wait_unstuck )
 		{
 			player.wait_unstuck = true;
-			MessagePlayer( player, "You will be randomly teleported in a few seconds." );
-			// TODO: Replace with RPC (for client side translation)
+			MessagePlayerUntranslated( player, "STR_BR_UNSTUCK_TELEPORTATION" );
 			BattleRoyaleUtils.Trace( player.GetIdentity().GetName() + " asked for an unstuck teleportation." );
 			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
 		}
 		else
 		{
-			MessagePlayer( player, "You have already requested an unstuck teleportation. Please wait." );
-			// TODO: Replace with RPC (for client side translation)
+			MessagePlayerUntranslated( player, "STR_BR_ALREADY_REQUESTED_UNSTUCK" );
 		}
 	}
 

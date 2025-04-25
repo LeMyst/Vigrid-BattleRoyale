@@ -81,57 +81,35 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void MessageWaiting()
     {
-        MessagePlayers(GetWaitingMessage());
-    }
+		int waiting_on_count = i_MinPlayers - GetPlayers().Count();
 
-    string GetWaitingMessage()
-    {
-        int waiting_on_count = i_MinPlayers - GetPlayers().Count();
-        string message = "";
+		if( waiting_on_count > 0)
+		{
+			if( waiting_on_count == 1 )
+				MessagePlayersUntranslated("STR_BR_WAITING_FOR_PLAYER");
+			else
+				MessagePlayersUntranslated("STR_BR_WAITING_FOR_PLAYERS", waiting_on_count.ToString());
+		}
 
-        if( waiting_on_count > 0)
-        {
-            //TODO: add this to battleroyaleconstants & use string replace for count & plural
-            message = "Waiting for " + waiting_on_count.ToString() + " more ";
-            if(waiting_on_count > 1)
-                message += "players";
-            else
-                message += "player";
-
-            message += " to connect.";
-        }
-
-        if( b_UseVoteSystem )
-        {
-            int ready_count = GetReadyCount();
-
-            if( message != "" )
-                message += " ";
-
-            message += ready_count.ToString() + " player";
-            if(ready_count > 1)
-                message += "s";
-
-            message += " are ready!";
-
+		if( b_UseVoteSystem )
+		{
 			// TODO: Move that to client side
-			string key_name = InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD);
-            message += " (Press " + key_name + " (default) to ready up)";
+			int ready_count = GetReadyCount();
+			if( ready_count == 1 )
+				MessagePlayersUntranslated("STR_BR_PLAYER_READY_UP");
+			else
+				MessagePlayersUntranslated("STR_BR_PLAYERS_READY_UP", ready_count.ToString());
 
 			if( GetGame().GetTickTime() < f_MinWaitingTime )
 			{
-				message += ". ";
-
 				int seconds_left = Math.Ceil( f_MinWaitingTime - GetGame().GetTickTime() );
 
 				if( !IsVoteReady() )
-					message += "The game cannot start before " + seconds_left + " seconds.";
+					MessagePlayersUntranslated("STR_BR_CANNOT_START_BEFORE_SECOND", seconds_left.ToString());
 				else
-					message += "The game will automatically start in " + seconds_left + " seconds.";
+					MessagePlayersUntranslated("STR_BR_GAME_WILL_AUTO_START_IN", seconds_left.ToString());
 			}
-        }
-
-        return message;
+		}
     }
 
     int GetReadyCount()
@@ -173,21 +151,17 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         if(m_ReadyList.Find(player) != -1)
         {
-            MessagePlayer(player, "You have already readied up...");
-			// TODO: Replace with RPC (for client side translation)
+            MessagePlayerUntranslated(player, "STR_BR_YOU_ALREADY_READIED_UP");
             return;
         }
 
-        MessagePlayer(player, "You have readied up!");
-		// TODO: Replace with RPC (for client side translation)
+        MessagePlayerUntranslated(player, "STR_BR_YOU_READIED_UP");
         m_ReadyList.Insert( player );
 
         //this is here because we don't want someone mass spamming all players by spamming F1
         int count = GetReadyCount();
         int max = GetPlayers().Count();
-        MessagePlayers("Player readied up. (" + count.ToString() + "/" + max.ToString() + " players)");
-		// TODO: Replace with RPC (for client side translation)
-
+        MessagePlayersUntranslated("STR_BR_PLAYER_READIED_UP", count.ToString(), max.ToString());
     }
 
     override void RemovePlayer(PlayerBase player)

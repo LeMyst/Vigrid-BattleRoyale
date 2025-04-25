@@ -116,15 +116,20 @@ class BattleRoyaleHud
             m_DistanceZoneArrow.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
             m_DistanceTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
 
+            // timeRemaining 300
+            // distExt 100
+            // 300 < (100 / 6) = 16.666666666666668 -> ORANGE or RED
+            // 300 < (100 / 8) = 12.5 -> ORANGE
+
  			if ( timeRemaining < (distExt / 6) )
             {
             	 if ( timeRemaining < (distExt / 8) )
 				{
-					m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
-					m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+					m_CountdownTextWidget.SetColor( COLOR_EXPANSION_NOTIFICATION_ERROR );
+					m_ImageClock.SetColor( COLOR_EXPANSION_NOTIFICATION_ERROR );
 				} else {
-					m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
-					m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+					m_CountdownTextWidget.SetColor( COLOR_EXPANSION_NOTIFICATION_ORANGE );
+					m_ImageClock.SetColor( COLOR_EXPANSION_NOTIFICATION_ORANGE );
                 }
             }
             else
@@ -136,7 +141,7 @@ class BattleRoyaleHud
 
         m_DistanceZoneArrow.SetRotation( 0, 0, angle );
         if ( isInsideZone )
-        	m_DistanceTextWidget.SetText( "safe" );
+        	m_DistanceTextWidget.SetText( "#STR_BR_SAFE" );
         else
         	m_DistanceTextWidget.SetText( Math.Ceil(distExt).ToString() + "m");
     }
