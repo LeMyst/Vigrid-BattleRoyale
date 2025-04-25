@@ -29,10 +29,10 @@ modded class IngameHud
 	{
 		super.Update( timeslice );
 
-		// Show player tags in the lobby
-//        BattleRoyaleDebugState m_DebugStateObj;
-//        if(Class.CastTo(m_DebugStateObj, GetCurrentState()))
-//        {
+		// Show player tags only if the match is not started
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+		if( !br_rpc.match_started )
+		{
 			RefreshPlayerTags();
 			ShowPlayerTag(timeslice);
 			if ( m_CurrentTaggedPlayer && m_CurrentTaggedPlayer.GetIdentity() )
@@ -40,7 +40,7 @@ modded class IngameHud
 				Widget m_TagFrame = m_PlayerTag.FindAnyWidget( "TagFrame" );
 				m_TagFrame.SetSize( 300, 25 );
 			}
-//		}
+		}
 	}
 }
 #endif
