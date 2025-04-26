@@ -36,7 +36,7 @@ class CfgMods
 		defines[]=
 		{
 			"DAYZ_BATTLEROYALE",
-			"BR_TRACE_ENABLED",
+			//"BR_TRACE_ENABLED",
 			//"MOVING_ZONE"
 			//"BR_MINIMAP",
 			//"BLUE_ZONE",
