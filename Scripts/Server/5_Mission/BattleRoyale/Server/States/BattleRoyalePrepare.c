@@ -311,11 +311,17 @@ class BattleRoyalePrepare: BattleRoyaleState
             village_pad = 100.0;
 
         float radius, angle, x, z, y;
-        radius = village_pad * Math.Sqrt( Math.RandomFloat(0, 1) );
-        angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+        // Use Math.Pow with power > 1 to concentrate points toward the center
+        // Higher values (2, 3, 4) will concentrate points more heavily near center
+        radius = village_pad * Math.Pow(Math.RandomFloat(0, 1), 2); // Using power of 2
+		angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
         x = village_x + ( radius * Math.Cos(angle) );
         z = village_z + ( radius * Math.Sin(angle) );
         y = GetGame().SurfaceY(x, z);
+
+        // Get the distance between the center of the village and the random point
+        float distance = Math.Sqrt(Math.Pow(x - village_x, 2) + Math.Pow(z - village_z, 2));
+        BattleRoyaleUtils.Trace("Distance from village center: " + distance + " (from an initial radius of " + village_pad + ")");
 
         BattleRoyaleUtils.Trace("Trying to spawn player to " + village.Name + " (" + village.Type + ") with a radius of " + village_pad);
 
@@ -352,7 +358,19 @@ class BattleRoyalePrepare: BattleRoyaleState
                     vector search_for_village = "0 0 0";
 
                     if( village.Name == last_village_spawn )
+                    {
+                    	BattleRoyaleUtils.Trace("Same village as last spawn, we skip it");
                     	continue;
+					}
+
+					// Override village position from config file using the technical name (e.g. "Settlement_Novoselki")
+					vector override_position = BattleRoyaleConfig.GetConfig().GetPOIsData().GetOverrodePosition( village.GetName() );
+					if( override_position != "0 0 0" )
+					{
+						BattleRoyaleUtils.Trace("Override position " + override_position);
+						village.Position[0] = override_position[0];
+						village.Position[2] = override_position[2];
+					}
 
                     for(int search_pos = 1; search_pos <= 50; search_pos++)
                     {
@@ -383,6 +401,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         // If at this step we always have a zero vector, try to find a random one
         if( random_pos == "0 0 0" )
         {
+        	BattleRoyaleUtils.Trace("Trying to spawn at a random position");
             int random_spawn_try = 1;
             while(true)
             {
@@ -405,8 +424,6 @@ class BattleRoyalePrepare: BattleRoyaleState
 
                 break;
             }
-        } else {
-            BattleRoyaleUtils.Trace("Already found a random pos from a village!");
         }
 
         return new Param2<vector, NamedLocation>(random_pos, village);
