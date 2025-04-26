@@ -5,8 +5,8 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 
 	// Allow to override the position of the POIs
 	ref array<ref BattleRoyaleOverridePOIPosition> override_poi_positions = {
-		new BattleRoyaleOverridePOIPosition("POI1", { 100, 200 }),
-		new BattleRoyaleOverridePOIPosition("POI2", { 300, 400 })
+		new BattleRoyaleOverridePOIPosition("Settlement_Chernogorsk", { 100, 200 }),
+		new BattleRoyaleOverridePOIPosition("Settlement_Novodmitrovsk", { 300, 400 })
 	};
 
 	[NonSerialized()]

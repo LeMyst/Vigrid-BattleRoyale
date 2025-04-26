@@ -170,7 +170,7 @@ class BattleRoyaleConfig
 
     BattleRoyalePOIsData GetPOIsData()
     {
-        Print("Accessing POIs Data Config...");
+        BattleRoyaleUtils.Trace("Accessing POIs Data Config...");
 
         return BattleRoyalePOIsData.Cast( GetConfig("POIsData") );
     }
