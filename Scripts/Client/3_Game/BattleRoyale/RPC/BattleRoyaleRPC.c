@@ -65,7 +65,7 @@ class BattleRoyaleRPC
 	int nb_players = 0;
 	int nb_groups = 0;
 
-	void SetPlayerCount(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetPlayerCount(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param2<int, int> data;
 		if( !ctx.Read( data ) )
@@ -85,7 +85,7 @@ class BattleRoyaleRPC
 
 	bool fade_state = false;
 
-	void SetFade(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetFade(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<bool> data;
 		if( !ctx.Read( data ) )
@@ -111,7 +111,7 @@ class BattleRoyaleRPC
 
 	bool input_state = false;
 
-	void SetInput(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetInput(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<bool> data;
 		if( !ctx.Read( data ) )
@@ -130,7 +130,7 @@ class BattleRoyaleRPC
 
 	int player_kills = 0;
 
-	void AddPlayerKill(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void AddPlayerKill(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<int> data;
 		if( !ctx.Read( data ) )
@@ -149,7 +149,7 @@ class BattleRoyaleRPC
 
 	bool match_started = false;
 
-	void StartMatch(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void StartMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		if ( type == CallType.Client )
 		{
@@ -162,7 +162,7 @@ class BattleRoyaleRPC
 
 	int countdown_seconds = 0;
 
-	void SetCountdownSeconds(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetCountdownSeconds(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<int> data;
 		if( !ctx.Read( data ) )
@@ -182,7 +182,7 @@ class BattleRoyaleRPC
 	vector current_play_area_center = "0 0 0";
 	float current_play_area_radius = 0.0;
 
-	void UpdateCurrentPlayArea(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void UpdateCurrentPlayArea(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param2<vector, float> data;
 		if( !ctx.Read( data ) )
@@ -204,7 +204,7 @@ class BattleRoyaleRPC
 	float future_play_area_radius = 0.0;
 	bool b_ArtillerySound = false;
 
-	void UpdateFuturePlayArea(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void UpdateFuturePlayArea(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param3<vector, float, bool> data;
 		if( !ctx.Read( data ) )
@@ -225,7 +225,7 @@ class BattleRoyaleRPC
 
 	int top_position = 0;
 
-	void SetTopPosition(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void SetTopPosition(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<int> data;
 		if( !ctx.Read( data ) )
@@ -244,7 +244,7 @@ class BattleRoyaleRPC
 
 	bool winner_screen = false;
 
-	void ShowWinScreen(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void ShowWinScreen(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		if ( type == CallType.Client )
 		{
@@ -253,7 +253,7 @@ class BattleRoyaleRPC
 		}
 	}
 
-	void ChatLog(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void ChatLog(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param2<string, string> data;
 		if( !ctx.Read( data ) )
@@ -269,7 +269,7 @@ class BattleRoyaleRPC
 		}
 	}
 
-	void NotificationMessage(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void NotificationMessage(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param7<string, float, string, string, string, string, string> data;
 		if( !ctx.Read( data ) )

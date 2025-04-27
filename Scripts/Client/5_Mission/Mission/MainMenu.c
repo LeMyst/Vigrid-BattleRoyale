@@ -251,7 +251,7 @@ modded class MainMenu
 			delete m_ModsDetailed;
 	}
 
-	void CreatePopup(string message, string button_text = "", ref PopupButtonCallback onClickCallback = NULL, string button_text_2 = "", ref PopupButtonCallback onClickCallback_2 = NULL )
+	void CreatePopup(string message, string button_text = "", PopupButtonCallback onClickCallback = NULL, string button_text_2 = "", PopupButtonCallback onClickCallback_2 = NULL )
 	{
 		m_PopupText.SetText(message);
 		popup_onClick = onClickCallback;
@@ -463,7 +463,7 @@ modded class MainMenu
 		}
 	}
 
-	void ColorNormal(Widget w)
+	override void ColorNormal(Widget w)
 	{
 		if (!w)
 			return;

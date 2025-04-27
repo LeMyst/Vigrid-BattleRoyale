@@ -24,7 +24,7 @@ class BattleRoyaleZone
 
     static ref map<int, ref BattleRoyaleZone> m_Zones;
 
-    void BattleRoyaleZone(ref BattleRoyaleZone parent = NULL)
+    void BattleRoyaleZone(BattleRoyaleZone parent = NULL)
     {
         m_ParentZone = parent;
     }
@@ -103,7 +103,7 @@ class BattleRoyaleZone
         m_PlayArea = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
     }
 
-    void OnActivate(notnull ref array<PlayerBase> players)
+    void OnActivate(notnull array<PlayerBase> players)
     {
         //This method is run before GetArea() is ever called. This can be used to change the play area size based on players.
         //Note that this on the main thread, therefore it must be performant.

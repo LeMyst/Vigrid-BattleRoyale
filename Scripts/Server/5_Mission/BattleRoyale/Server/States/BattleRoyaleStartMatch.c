@@ -211,7 +211,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 		}
 	}
 
-    override void OnPlayerKilled(PlayerBase player, Object killer)
+    override void OnPlayerKilled(PlayerBase player, Object source)
     {
         if(!b_IsGameplay)
         {

@@ -482,7 +482,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         return m_SpectatorSystem;
     }
 
-    void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+    void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
 
         PlayerBase pbTarget;
@@ -496,7 +496,7 @@ class BattleRoyaleServer: BattleRoyaleBase
     }
 #endif
 
-    void PlayerReadyUp(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+    void PlayerReadyUp(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         Param1< bool > data;
         if( !ctx.Read( data ) ) return;
@@ -531,7 +531,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 
-    void PlayerUnstuck(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+    void PlayerUnstuck(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
 		if(!target) return;
 

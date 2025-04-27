@@ -27,7 +27,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     //If this is NULL, we assume previous state is debug
     //a battle royale round represents a playing state with a play area
-    void BattleRoyaleRound(ref BattleRoyaleState previous_state)
+    void BattleRoyaleRound(BattleRoyaleState previous_state)
     {
         m_PreviousState = previous_state;
 

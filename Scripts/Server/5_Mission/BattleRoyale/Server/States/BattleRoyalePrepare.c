@@ -438,7 +438,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         TeleportPlayer(process_player, position, village);
     }
 
-    protected void TeleportGroup(ref set<PlayerBase> group)
+    protected void TeleportGroup(set<PlayerBase> group)
     {
         ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
         vector position = random_pos.param1;
