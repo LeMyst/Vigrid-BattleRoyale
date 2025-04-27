@@ -11,7 +11,7 @@ modded class Weapon_Base
 		Magazine mag = GetMagazine(0);
 		if ( mag == NULL )  // Can't spawn a magazine if there's already one
 		{
-			SpawnAttachedMagazine( "", WeaponWithAmmoFlags.CHAMBER | WeaponWithAmmoFlags.QUANTITY_RNG );
+			SpawnAmmo();
 		}
 	}
 }
