@@ -16,3 +16,8 @@ for %%F in ("%~dp0..\ExtraPBOs\*.bisign") do (
 	echo !date! !time! Copying extra bisign "%%~F"
 	copy "%%~F" "%pboNamesFoldername%\addons\"
 )
+
+for %%F in ("%~dp0..\ExtraPBOs\*.bikey") do (
+	echo !date! !time! Copying extra bikey "%%~F"
+	copy "%%~F" "%pboNamesFoldername%\keys\"
+)
