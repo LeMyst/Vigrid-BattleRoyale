@@ -174,12 +174,13 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
 	void Unstuck( PlayerBase player )
 	{
-		for(int search_pos = 1; search_pos <= 50; search_pos++)
+		bool unstuckSuccess = false;
+		for(int search_pos = 0; search_pos < 50; search_pos++)
 		{
 			float radius, angle, x, z, y;
 			vector player_position, playerDir, direction;
 
-			radius = 10.0;
+			radius = 10.0 + (search_pos * 0.5);
 			angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
 			player_position = player.GetPosition();
 			x = player_position[0] + ( radius * Math.Cos(angle) );
@@ -197,8 +198,16 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 				player.SendSyncJuncture( 88, pCtx );
 				player.SetSynchDirty();
 				player.wait_unstuck = false;
+
+				unstuckSuccess = true;
 				break;
 			}
+		}
+
+		if( !unstuckSuccess )
+		{
+			BattleRoyaleUtils.Error( player.GetIdentity().GetName() + " unstuck failed at " + player.GetPosition() );
+			player.wait_unstuck = false;
 		}
 	}
 
