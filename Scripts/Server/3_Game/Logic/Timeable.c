@@ -26,7 +26,7 @@ class Timeable
         return m_Timer;
     }
 
-    bool RemoveTimer(ref Timer m_Timer)
+    bool RemoveTimer(Timer m_Timer)
     {
         int index = m_Timers.Find(m_Timer);
         if(index == -1)

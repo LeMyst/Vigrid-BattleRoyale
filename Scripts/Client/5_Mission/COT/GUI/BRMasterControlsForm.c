@@ -51,49 +51,49 @@ class BRMasterControlsForm: JMFormBase
     {
     }
 
-    void StateMachine_Next(UIEvent eid, ref UIActionBase action)
+    void StateMachine_Next(UIEvent eid, UIActionBase action)
     {
         m_Module.StateMachine_Next();
     }
 
-    void StateMachine_Pause(UIEvent eid, ref UIActionBase action)
+    void StateMachine_Pause(UIEvent eid, UIActionBase action)
     {
         m_Module.StateMachine_Pause();
     }
 
-    void StateMachine_Resume(UIEvent eid, ref UIActionBase action)
+    void StateMachine_Resume(UIEvent eid, UIActionBase action)
     {
         m_Module.StateMachine_Resume();
     }
 
-    void AddFakePlayer(UIEvent eid, ref UIActionBase action)
+    void AddFakePlayer(UIEvent eid, UIActionBase action)
     {
         m_Module.AddFakePlayer();
     }
 
-    void AddFakeGroup(UIEvent eid, ref UIActionBase action)
+    void AddFakeGroup(UIEvent eid, UIActionBase action)
     {
         m_Module.AddFakeGroup();
     }
 
 #ifdef SPECTATOR
-    void ToggleSpectating(UIEvent eid, ref UIActionBase action)
+    void ToggleSpectating(UIEvent eid, UIActionBase action)
     {
         m_Module.TestSpectator();
     }
 #endif
 
-    void SpawnAirdrop(UIEvent eid, ref UIActionBase action)
+    void SpawnAirdrop(UIEvent eid, UIActionBase action)
     {
         m_Module.SpawnAirdrop();
     }
 
-    void SpawnHorde(UIEvent eid, ref UIActionBase action)
+    void SpawnHorde(UIEvent eid, UIActionBase action)
     {
         m_Module.SpawnHorde();
     }
 
-    void SpawnChemicals(UIEvent eid, ref UIActionBase action)
+    void SpawnChemicals(UIEvent eid, UIActionBase action)
     {
         m_Module.SpawnChemicals();
     }

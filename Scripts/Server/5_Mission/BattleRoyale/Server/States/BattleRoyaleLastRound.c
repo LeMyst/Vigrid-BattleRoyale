@@ -16,7 +16,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
     protected ref Timer m_FinalZoneLockTimer;
     protected ref array<ref Timer> m_MessageTimers;
 
-    void BattleRoyaleLastRound(ref BattleRoyaleState previous_state)
+    void BattleRoyaleLastRound(BattleRoyaleState previous_state)
     {
         m_PreviousState = previous_state;
 

@@ -50,7 +50,7 @@ modded class MissionGameplay
 		InitBRhud();
 	}
 
-	BattleRoyaleClient GetBattleRoyale()
+	override BattleRoyaleClient GetBattleRoyale()
 	{
 		if ( !m_BattleRoyale )
 		{

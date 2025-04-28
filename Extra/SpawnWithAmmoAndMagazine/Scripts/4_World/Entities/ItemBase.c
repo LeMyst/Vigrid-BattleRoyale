@@ -30,7 +30,7 @@ modded class ItemBase
 					if( ammoTypes.Count() > 0 )
 					{
 						string ammoType = ammoTypes.GetRandomElement();
-						EntityAI ammoPile = GetGame().CreateObjectEx( ammoType, GetPosition(), ECE_CREATEPHYSICS|ECE_UPDATEPATHGRAPH );
+						EntityAI ammoPile = EntityAI.Cast(GetGame().CreateObjectEx( ammoType, GetPosition(), ECE_CREATEPHYSICS|ECE_UPDATEPATHGRAPH ));
 						if( ammoPile.GetEconomyProfile() == NULL || ammoPile.GetEconomyProfile().GetNominal() == 0 )
 						{
 							// Ammo pile has no economy profile, delete it

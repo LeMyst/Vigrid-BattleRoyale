@@ -313,7 +313,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     }
 
-    void StartMatch(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+    void StartMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         if ( type == CallType.Client )
         {

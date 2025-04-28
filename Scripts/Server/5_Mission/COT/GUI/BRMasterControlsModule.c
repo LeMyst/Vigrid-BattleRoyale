@@ -30,23 +30,23 @@ modded class BRMasterControlsModule
         }
     }
 
-    private void RPC_Next( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    private void RPC_Next( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         Server_Next(); //Server received next command
     }
 
-    private void RPC_Pause( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    private void RPC_Pause( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         Server_Pause(); //Server received next command
     }
 
-    private void RPC_Resume( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    private void RPC_Resume( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         Server_Resume(); //Server received next command
     }
 
 #ifdef SPECTATOR
-    private void RPC_TestSpectator( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    private void RPC_TestSpectator( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
         PlayerBase pbTarget;
         if(Class.CastTo( pbTarget, target ))
@@ -60,7 +60,7 @@ modded class BRMasterControlsModule
     }
 #endif
 
-    private void RPC_SpawnAirdrop( ref ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
+    private void RPC_SpawnAirdrop( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
 #ifdef EXPANSIONMODMISSIONS
 		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "Airdrop sent." ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
