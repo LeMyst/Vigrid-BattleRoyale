@@ -110,7 +110,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         	if ( m_ZoneStartTimer && m_ZoneStartTimer.IsRunning() && m_ZoneStartTimer.GetRemaining() > 0 )
 				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( m_ZoneStartTimer.GetRemaining() ), true);
 			else
-				BattleRoyaleUtils.Trace("BattleRoyaleRound::ResendGameInfo() - No timer running or time is 0");
+				BattleRoyaleUtils.Trace("BattleRoyaleStartMatch::ResendGameInfo() - No timer running or time is 0");
         }
     }
 
