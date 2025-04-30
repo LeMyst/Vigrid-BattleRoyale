@@ -152,11 +152,14 @@ class BattleRoyaleClient: BattleRoyaleBase
 			OnMatchStarted();
 		}
 
-		// Update countdown timer and zone distance
+		// Update countdown timer
 		if ( br_previous_countdown != br_rpc.countdown_seconds )
 		{
 			i_SecondsRemaining = br_rpc.countdown_seconds;
-			gameplay.UpdateCountdownTimer( i_SecondsRemaining );
+			if (gameplay)
+			{
+				gameplay.UpdateCountdownTimer( i_SecondsRemaining );
+			}
 			br_previous_countdown = br_rpc.countdown_seconds;
 		}
 

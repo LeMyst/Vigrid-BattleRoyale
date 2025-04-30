@@ -24,9 +24,10 @@ class BattleRoyaleState: Timeable
         b_IsPaused = false;
         b_IsDebug = false;
 
+        // Resend game info every 5 seconds
+        AddTimer(5.0, this, "ResendGameInfo", NULL, true);
+
 #ifdef SCHANAMODPARTY
-        // Only really useful when party are enabled
-        AddTimer(5.0, this, "OnPlayerCountChanged", NULL, true);
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
         {
@@ -141,6 +142,17 @@ class BattleRoyaleState: Timeable
             }
         }
 #endif
+    }
+
+    void ResendGameInfo()
+    {
+    	BattleRoyaleUtils.Trace("BattleRoyaleState::ResendGameInfo()");
+
+        if(IsActive())
+        {
+        	// Send SetPlayerCount and SetTopPosition
+            OnPlayerCountChanged();
+        }
     }
 
     //player count changed event handler
