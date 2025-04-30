@@ -24,9 +24,10 @@ class BattleRoyaleState: Timeable
         b_IsPaused = false;
         b_IsDebug = false;
 
+        // Resend game info every 5 seconds
+        AddTimer(5.0, this, "ResendGameInfo", NULL, true);
+
 #ifdef Carim
-        // Only really useful when party are enabled
-        AddTimer(5.0, this, "OnPlayerCountChanged", NULL, true);
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
         {
@@ -143,13 +144,24 @@ class BattleRoyaleState: Timeable
 #endif
     }
 
-	//player count changed event handler
-	protected void OnPlayerCountChanged()
-	{
-		//BattleRoyaleUtils.Trace("OnPlayerCountChanged()");
-		if(IsActive())
-		{
-			int nb_players, nb_groups;
+	void ResendGameInfo()
+    {
+    	BattleRoyaleUtils.Trace("BattleRoyaleState::ResendGameInfo()");
+
+        if(IsActive())
+        {
+        	// Send SetPlayerCount and SetTopPosition
+            OnPlayerCountChanged();
+        }
+    }
+
+    //player count changed event handler
+    protected void OnPlayerCountChanged()
+    {
+        //BattleRoyaleUtils.Trace("OnPlayerCountChanged()");
+        if(IsActive())
+        {
+            int nb_players, nb_groups;
 
 			nb_players = GetPlayers().Count();
 #ifdef Carim
@@ -405,7 +417,7 @@ class BattleRoyaleState: Timeable
 
 			// Iterate over parties
 			ref set<PlayerBase> group;
-			// Using parties.mutuals here instead of parties.registered because mutuals represents 
+			// Using parties.mutuals here instead of parties.registered because mutuals represents
 			// the set of parties with confirmed mutual agreements, which is required for this logic.
 			ref map<string, ref CarimSet> registered_parties = parties.mutuals;
 			int partyCount = registered_parties.Count();

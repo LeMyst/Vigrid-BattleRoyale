@@ -269,6 +269,23 @@ class BattleRoyaleRound: BattleRoyaleState
         return super.IsComplete();
     }
 
+    override void ResendGameInfo()
+    {
+    	BattleRoyaleUtils.Trace("BattleRoyaleRound::ResendGameInfo()");
+    	super.ResendGameInfo();
+
+        if(IsActive())
+        {
+        	// Send SetCountdownSeconds
+        	if ( m_NewZoneLockTimer && m_NewZoneLockTimer.IsRunning() && m_NewZoneLockTimer.GetRemaining() > 0 )
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( m_NewZoneLockTimer.GetRemaining() ), true);
+        	else if ( m_RoundTimeUpTimer && m_RoundTimeUpTimer.IsRunning() && m_RoundTimeUpTimer.GetRemaining() > 0 )
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( m_RoundTimeUpTimer.GetRemaining() ), true);
+			else
+				BattleRoyaleUtils.Trace("BattleRoyaleRound::ResendGameInfo() - No timer running or time is 0");
+        }
+    }
+
     override bool SkipState(BattleRoyaleState _previousState)
     {
         if( _previousState.i_StartingZone > zone_num )

@@ -64,7 +64,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
-        //timer before first zone appears
+        //timer before starting the first zone
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true);
     }
 
@@ -97,6 +97,21 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         }
 
         return super.IsComplete();
+    }
+
+    override void ResendGameInfo()
+    {
+    	BattleRoyaleUtils.Trace("BattleRoyaleStartMatch::ResendGameInfo()");
+    	super.ResendGameInfo();
+
+        if(IsActive())
+        {
+        	// Send SetCountdownSeconds
+        	if ( m_ZoneStartTimer && m_ZoneStartTimer.IsRunning() && m_ZoneStartTimer.GetRemaining() > 0 )
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( m_ZoneStartTimer.GetRemaining() ), true);
+			else
+				BattleRoyaleUtils.Trace("BattleRoyaleStartMatch::ResendGameInfo() - No timer running or time is 0");
+        }
     }
 
     //TODO: add this to battleroyaleconstants and use string replace to insert seconds_till
