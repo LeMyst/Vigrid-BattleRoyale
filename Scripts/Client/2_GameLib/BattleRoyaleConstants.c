@@ -49,19 +49,6 @@ static const float BATTLEROYALE_UNCONSCIOUS_MODIFIER = 0.8; //multiplier from ba
 static const float BATTLEROYALE_SHOCK_REFILL_SPEED = 5; //multiplier from base game values on shock refill unconscious speed
 
 
-//--- state machine | state names
-static const string DAYZBR_SM_COUNT_REACHED_NAME = "Player Count Reached State";
-static const string DAYZBR_SM_DEBUG_ZONE_NAME = "Debug Zone State";
-static const string DAYZBR_SM_LAST_ROUND_NAME = "Last Gameplay State";
-static const string DAYZBR_SM_PREPARE_NAME = "Prepare State";
-static const string DAYZBR_SM_RESTART_NAME = "Restart State";
-static const string DAYZBR_SM_GAMEPLAY_NAME = "Gameplay State";
-static const string DAYZBR_SM_START_MATCH_NAME = "Start Match State";
-static const string DAYZBR_SM_UNKNOWN_NAME = "Unknown State";
-static const string DAYZBR_SM_WIN_NAME = "Win State";
-static const string DAYZBR_SM_UNKNOWN_DEBUG_NAME = "Unknown Debug State";
-
-
 //--- notification messages
 static const float DAYZBR_MSG_TIME = 7;
 static const string DAYZBR_MSG_IMAGE = "set:expansion_iconset image:icon_info";

@@ -97,7 +97,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_GAMEPLAY_NAME + " (" + zone_num + ")";
+        return "Gameplay State (" + zone_num + ")";
     }
 
     override void Activate()

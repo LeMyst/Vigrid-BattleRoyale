@@ -21,7 +21,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 
     override string GetName()
     {
-        return DAYZBR_SM_COUNT_REACHED_NAME;
+        return "Player Count Reached State";
     }
 
     override void Activate()
