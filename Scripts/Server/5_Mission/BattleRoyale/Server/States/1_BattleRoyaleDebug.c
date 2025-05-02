@@ -29,7 +29,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     override string GetName()
     {
-        return DAYZBR_SM_DEBUG_ZONE_NAME;
+        return "Debug Zone State";
     }
 
     //returns true when this state is complete

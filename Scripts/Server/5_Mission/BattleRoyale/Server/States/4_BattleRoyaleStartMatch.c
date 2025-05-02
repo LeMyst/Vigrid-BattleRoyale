@@ -41,7 +41,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_START_MATCH_NAME;
+        return "Start Match State";
     }
 
     override void Activate()

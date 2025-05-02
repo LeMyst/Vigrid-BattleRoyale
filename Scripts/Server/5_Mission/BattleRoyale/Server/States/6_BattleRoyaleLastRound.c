@@ -121,7 +121,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_LAST_ROUND_NAME;
+        return "Last Gameplay State";
     }
 
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state

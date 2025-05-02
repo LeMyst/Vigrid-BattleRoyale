@@ -14,7 +14,7 @@ class BattleRoyaleRestart: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_RESTART_NAME;
+        return "Restart State";
     }
 
     override void Deactivate()

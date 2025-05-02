@@ -43,7 +43,7 @@ class BattleRoyaleWin: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_WIN_NAME;
+        return "Win State";
     }
 
     override void Deactivate()

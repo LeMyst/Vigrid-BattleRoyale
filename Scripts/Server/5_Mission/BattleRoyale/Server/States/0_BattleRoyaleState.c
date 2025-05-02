@@ -13,7 +13,7 @@ class BattleRoyaleState: Timeable
 
     string GetName()
     {
-        return DAYZBR_SM_UNKNOWN_NAME;
+        return "Unknown State";
     }
 
     void BattleRoyaleState()
@@ -588,7 +588,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_UNKNOWN_DEBUG_NAME;
+        return "Unknown Debug State";
     }
 
     /*

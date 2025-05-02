@@ -122,7 +122,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     override string GetName()
     {
-        return DAYZBR_SM_PREPARE_NAME;
+        return "Prepare State";
     }
 
     protected bool DeleteAllItems(PlayerBase process_player)
