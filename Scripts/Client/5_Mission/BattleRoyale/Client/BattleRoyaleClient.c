@@ -119,79 +119,85 @@ class BattleRoyaleClient: BattleRoyaleBase
 #endif
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 
-		// Update player and group remaining count
-		PlayerCountChanged( br_rpc.nb_players, br_rpc.nb_groups );
-
-		// Fade in/out effect
-		if( br_previous_fade_state != br_rpc.fade_state )
+		if( br_rpc )
 		{
-			if( br_rpc.fade_state )
+			// Update player and group remaining count
+			PlayerCountChanged( br_rpc.nb_players, br_rpc.nb_groups );
+
+			// Fade in/out effect
+			if( br_previous_fade_state != br_rpc.fade_state )
 			{
-				FadeIn();
-			}
-			else
-			{
-				FadeOut();
-			}
-			br_previous_fade_state = br_rpc.fade_state;
-		}
-
-		// Input enable/disable
-		if( br_previous_input_state != br_rpc.input_state )
-		{
-			player.DisableInput( br_rpc.input_state );
-			br_previous_input_state = br_rpc.input_state;
-		}
-
-		// Update player kill count
-		gameplay.UpdateKillCount( br_rpc.player_kills );
-
-		// Update match start state
-		if( br_rpc.match_started && !b_MatchStarted )
-		{
-			OnMatchStarted();
-		}
-
-		// Update countdown timer and zone distance
-		if ( br_previous_countdown != br_rpc.countdown_seconds )
-		{
-			i_SecondsRemaining = br_rpc.countdown_seconds;
-			gameplay.UpdateCountdownTimer( i_SecondsRemaining );
-			br_previous_countdown = br_rpc.countdown_seconds;
-		}
-
-		// Update current play area
-		if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
-			m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
-
-		// Update future play area
-		if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
-		{
-			if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
-			{
-				m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
-
-				UpdateZoneCenterMaker( br_rpc.future_play_area_center );
-
-				if ( br_rpc.b_ArtillerySound )
+				if( br_rpc.fade_state )
 				{
-					ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
-					m_ArtySound.SetAutodestroy(true);
+					FadeIn();
 				}
+				else
+				{
+					FadeOut();
+				}
+				br_previous_fade_state = br_rpc.fade_state;
 			}
-			br_previous_future_play_area_center = br_rpc.future_play_area_center;
-			br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
-		}
 
-		// Set top position
-		player.position_top = br_rpc.top_position;
+			// Input enable/disable
+			if( br_previous_input_state != br_rpc.input_state )
+			{
+				player.DisableInput( br_rpc.input_state );
+				br_previous_input_state = br_rpc.input_state;
+			}
 
-		// Show the winner screen
-		if( br_rpc.winner_screen && !br_previous_win_screen )
-		{
-			Widget win_screen_hud = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
-			win_screen_hud.Show( true );
-			br_previous_win_screen = true;
+			// Update player kill count
+			gameplay.UpdateKillCount( br_rpc.player_kills );
+
+			// Update match start state
+			if( br_rpc.match_started && !b_MatchStarted )
+			{
+				OnMatchStarted();
+			}
+
+			// Update countdown timer and zone distance
+			if ( br_previous_countdown != br_rpc.countdown_seconds )
+			{
+				i_SecondsRemaining = br_rpc.countdown_seconds;
+				gameplay.UpdateCountdownTimer( i_SecondsRemaining );
+				br_previous_countdown = br_rpc.countdown_seconds;
+			}
+
+			// Update current play area
+			if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
+				m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
+
+			// Update future play area
+			if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
+			{
+				if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
+				{
+					m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
+
+					UpdateZoneCenterMaker( br_rpc.future_play_area_center );
+
+					if ( br_rpc.b_ArtillerySound )
+					{
+						ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+						m_ArtySound.SetAutodestroy(true);
+					}
+				}
+				br_previous_future_play_area_center = br_rpc.future_play_area_center;
+				br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
+			}
+
+			// Set top position
+			if ( player )
+			{
+				player.position_top = br_rpc.top_position;
+			}
+
+			// Show the winner screen
+			if( br_rpc.winner_screen && !br_previous_win_screen )
+			{
+				Widget win_screen_hud = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
+				win_screen_hud.Show( true );
+				br_previous_win_screen = true;
+			}
 		}
     }
 

@@ -28,6 +28,13 @@ modded class MissionGameplay
 #ifdef SPECTATOR
 		is_spectator = false;
 #endif
+
+		// Add RPCs
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", this );
+#ifdef SCHANAMODPARTY
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShareSpawnPoint", this );
+#endif
 	}
 
 	void ~MissionGameplay()
@@ -38,6 +45,13 @@ modded class MissionGameplay
 		}
 
 		m_BattleRoyale = null;
+
+		// Remove RPCs
+		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection" );
+		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection" );
+#ifdef SCHANAMODPARTY
+		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShareSpawnPoint" );
+#endif
 	}
 
 	override void OnInit()
@@ -283,6 +297,13 @@ modded class MissionGameplay
 			if (GetUApi().GetInputByID(UADayZBRUnstuck).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).Unstuck();
 			}
+			// Debug key
+			if (GetUApi().GetInputByID(UADayZBRDebug).LocalPress()) {
+				SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, GetUIManager().GetMenu()));
+				m.SetInitialCountdown(45);
+				m.SetSpawnSize(50);
+				m.SetFirstZone(Vector(6000, 0, 7777), 1500);
+			}
 #ifdef BR_MINIMAP
 			if (GetUApi().GetInputByID(UADayZBRToggleMiniMap).LocalPress()) {
 				b_MiniMapShow = !b_MiniMapShow;
@@ -315,6 +336,59 @@ modded class MissionGameplay
 		if ( hud )
 		{
 			hud.BR_HIDE();
+		}
+	}
+#endif
+
+	void ShowSpawnSelection(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param4<int, float, vector, float> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SHOWSPAWNSELECTION RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("ShowSpawnSelection: %1 %2 %3 %4", data.param1, data.param2, data.param3, data.param4));
+			//ANVICaptchaMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_ANVI_CAPTCHA, GetUIManager().GetMenu()));
+			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, GetUIManager().GetMenu()));
+			m.SetInitialCountdown(data.param1);
+			m.SetSpawnSize(data.param2);
+			m.SetFirstZone(data.param3, data.param4);
+		}
+	}
+
+	void HideSpawnSelection(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("HideSpawnSelection");
+			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
+			if (m)
+			{
+				m.Close();
+			}
+		}
+	}
+
+#ifdef SCHANAMODPARTY
+	void ShareSpawnPoint(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<PlayerBase, vector> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SHARESPAWNPOINT RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("ShareSpawnPoint: %1 %2", data.param1, data.param2));
+			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
+			if (m)
+			{
+				m.SetTeammateSpawnPoint(data.param1, data.param2);
+			}
 		}
 	}
 #endif

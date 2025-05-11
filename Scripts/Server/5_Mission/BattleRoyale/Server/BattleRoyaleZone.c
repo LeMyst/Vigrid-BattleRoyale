@@ -266,7 +266,14 @@ class BattleRoyaleZone
             max_try--;
 
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
-            float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
+
+            // Get direction toward map center
+            int world_size = GetGame().GetWorld().GetWorldSize();
+            float centerDir = Math.Atan2((world_size / 2) - oldX, (world_size / 2) - oldZ);
+
+            // Limit angle to ±45 degrees from center direction (90-degree arc)
+            float angleOffset = Math.RandomFloat(-45, 45) * Math.DEG2RAD;
+            float moveDir = centerDir + angleOffset;
 
             float dX = distance * Math.Sin(moveDir);
             float dZ = distance * Math.Cos(moveDir);
@@ -275,8 +282,6 @@ class BattleRoyaleZone
             new_center[2] = oldZ + dZ;
 
             // We check if the (new center+radius) is inside the world
-            int world_size = GetGame().GetWorld().GetWorldSize();
-
             if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_size || (new_center[2] + new_radius) > world_size)
             {
                 BattleRoyaleUtils.Trace("not inside the world " + new_center[0] + " " + new_center[2] + " " + world_size + " " + new_radius);
@@ -313,7 +318,7 @@ class BattleRoyaleZone
 
                     BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
                     // TODO: crash the server if no good zone found?
-                    //GetGame().RequestExit(0);
+                    GetGame().RequestExit(0);
                     break;
                 }
 

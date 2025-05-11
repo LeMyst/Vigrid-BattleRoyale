@@ -18,6 +18,8 @@ modded class PlayerBase
 	int br_position = -1;
 	string player_steamid = "";
 
+	vector spawn_pos = "0 0 0";
+
 	PlayerBase last_unconscious_source;
 	float m_UnconsciousStartTime;
 
@@ -261,4 +263,15 @@ modded class PlayerBase
         PluginLifespan moduleLifespan = PluginLifespan.Cast(GetPlugin(PluginLifespan));
         moduleLifespan.UpdateBloodyHandsVisibilityEx(this, eBloodyHandsTypes.CLEAN);
     }
+
+    void SetSpawnPos(vector pos)
+	{
+		BattleRoyaleUtils.Trace("SetSpawnPos: " + pos);
+		spawn_pos = pos;
+	}
+
+	vector GetSpawnPos()
+	{
+		return spawn_pos;
+	}
 };

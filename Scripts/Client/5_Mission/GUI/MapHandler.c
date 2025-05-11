@@ -25,7 +25,7 @@ class BRMapHandler : ScriptedWidgetEventHandler
 		GetGame().Chat("BRMapHandler::OnClick", "colorFriendly");
 
 		SpawnSelectionMenu m = SpawnSelectionMenu.Cast(g_Game.GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
-		m.SelectSpawnPoint(MapWidget.Cast(w).ScreenToMap(Vector(x, y, 0)));
+		m.SelectSpawnPoint(Vector(x, y, 0));
 
 		return true;
 	}
@@ -37,7 +37,7 @@ class BRMapHandler : ScriptedWidgetEventHandler
 		GetGame().Chat("BRMapHandler::OnDoubleClick", "colorFriendly");
 
 		SpawnSelectionMenu m = SpawnSelectionMenu.Cast(g_Game.GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
-		m.SelectSpawnPoint(MapWidget.Cast(w).ScreenToMap(Vector(x, y, 0)));
+		m.SelectSpawnPoint(Vector(x, y, 0));
 
 		return true;
 	}

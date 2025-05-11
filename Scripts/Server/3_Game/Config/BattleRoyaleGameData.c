@@ -6,6 +6,9 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     int num_zones = 6;  // number of zones
     int round_duration_minutes = 5;  // round length in minutes
 
+    bool show_spawn_selection_menu = true;  // show spawn selection menu (0 = no, 1 = yes)
+    float spawn_selection_radius = 50;  // radius where the player can spawn
+
     int time_until_teleport_unlock = 10;  // seconds before unlock after teleporting & preparing
 
     ref array<int> zone_notification_minutes = { 1, 2 };  // minutes when notification about the zone shrinking will be displayed

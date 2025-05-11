@@ -1,9 +1,12 @@
 #ifdef SERVER
 class BattleRoyalePrepare: BattleRoyaleState
 {
-    protected ref array<PlayerBase> m_PlayerList;
+    protected ref array<PlayerBase> a_PlayerList;
+
     protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
+    protected ref array<string> a_AvoidCitySpawn;
+    protected bool b_ShowSpawnSelectionMenu;
 
 	private BattleRoyaleConfig m_Config;
     private BattleRoyaleGameData m_GameSettings;
@@ -12,40 +15,29 @@ class BattleRoyalePrepare: BattleRoyaleState
     private BattleRoyalePOIsData m_POIsSettings;
 
     private ref array<ref NamedLocation> villages;
-    private int villages_index;
+    private int i_VillagesIndex;
 
     private string last_village_spawn = "";
-
-    ref array<string> avoid_city_spawn;
 
     ref map<string, vector> m_OverrideSpawnPositions;
 
     void BattleRoyalePrepare()
     {
     	m_Config = BattleRoyaleConfig.GetConfig();
+
         m_GameSettings = m_Config.GetGameData();
         m_SpawnsSettings = m_Config.GetSpawnsData();
         m_ServerData = m_Config.GetServerData();
         m_POIsSettings = m_Config.GetPOIsData();
-        if(m_GameSettings)
-        {
-            a_StartingClothes = m_GameSettings.player_starting_clothes;
-            a_StartingItems = m_GameSettings.player_starting_items;
-            avoid_city_spawn = m_SpawnsSettings.avoid_city_spawn;
-        }
-        else
-        {
-            Error("GameSettings is NULL!");
-            a_StartingClothes = {"TrackSuitJacket_Red", "TrackSuitPants_Red", "JoggingShoes_Red"};
-            a_StartingItems = {"HuntingKnife", "BandageDressing", "Compass"};
-            avoid_city_spawn = {"Camp_Shkolnik", "Hill_Zelenayagora", "Settlement_Kumyrna", "Ruin_Voron", "Settlement_Skalisty", "Settlement_Novoselki", "Settlement_Dubovo", "Settlement_Vysotovo"};
-        }
 
-        m_PlayerList = new array<PlayerBase>();
+		a_StartingClothes = m_GameSettings.player_starting_clothes;
+		a_StartingItems = m_GameSettings.player_starting_items;
+		a_AvoidCitySpawn = m_SpawnsSettings.avoid_city_spawn;
+		b_ShowSpawnSelectionMenu = m_GameSettings.show_spawn_selection_menu;
 
-        string path = "CfgWorlds " + GetGame().GetWorldName();
+        a_PlayerList = new array<PlayerBase>();
 
-        villages_index = 0;
+        i_VillagesIndex = 0;
     }
 
     override void Activate()
@@ -66,7 +58,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
 
         //we process on a static list so when players possibly disconnect during this phase we don't error out or skip any clients
-        m_PlayerList.InsertAll( m_Players ); //this gave an error when using m_Players
+        a_PlayerList.InsertAll( m_Players ); //this gave an error when using m_Players
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
 
@@ -74,35 +66,6 @@ class BattleRoyalePrepare: BattleRoyaleState
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
-
-        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
-		if ( m_ZoneSettings.use_dynamic_zones )
-		{
-			// Found the first zone based on number of registered players
-			int pCount = m_PlayerList.Count();
-			int last_try_zone = 1;
-			BattleRoyaleUtils.Trace("Number of players registered: " + pCount);
-			for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
-			{
-				BattleRoyaleUtils.Trace("Try zone: " + i_zone);
-				last_try_zone = i_zone;
-				BattleRoyaleUtils.Trace("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
-				if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < pCount)
-				{
-					BattleRoyaleUtils.Trace("It's a match! " + i_zone);
-					break;
-				}
-				if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
-				{
-					BattleRoyaleUtils.Trace("Reach the minimum! " + i_zone);
-					break;
-				}
-				BattleRoyaleUtils.Trace("No chance, we continue...");
-			}
-			i_StartingZone = last_try_zone;
-        }
-
-        BattleRoyaleUtils.Trace("Starting zone will be " + i_StartingZone);
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
@@ -237,7 +200,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 					continue;
 
 				// Check if city Entry is not in the avoid spawn list
-				if(avoid_city_spawn.Find(town_entry.Name) != -1)
+				if(a_AvoidCitySpawn.Find(town_entry.Name) != -1)
 					continue;
 
 				if(m_SpawnsSettings.spawn_in_first_zone && area != NULL)
@@ -288,10 +251,10 @@ class BattleRoyalePrepare: BattleRoyaleState
         if(villages.Count() > 0)
         {
             //return villages[Math.RandomInt(0, villages.Count())];
-            if(villages_index > villages.Count()+1)
-                villages_index = 0;
+            if(i_VillagesIndex > villages.Count()+1)
+                i_VillagesIndex = 0;
 
-            return villages[villages_index++];
+            return villages[i_VillagesIndex++];
         }
         else
             return NULL;
@@ -336,8 +299,8 @@ class BattleRoyalePrepare: BattleRoyaleState
         if (m_SpawnsSettings.spawn_in_villages)
         {
             vector village_pos = "0 0 0";
-            BattleRoyaleUtils.Trace("Spawn in zone " + i_StartingZone);
-            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_StartingZone).GetArea();
+            BattleRoyaleUtils.Trace("Spawn in zone " + GetDynamicStartingZone(i_NumStartingPlayers));
+            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers)).GetArea();
             for(int village_spawn_try = 1; village_spawn_try <= 200; village_spawn_try++)
             {
                 BattleRoyaleUtils.Trace("Try to spawn in village " + village_spawn_try);
@@ -429,6 +392,33 @@ class BattleRoyalePrepare: BattleRoyaleState
         return new Param2<vector, NamedLocation>(random_pos, village);
     }
 
+    protected vector GetRandomSafePosition(vector position = "0 0 0", float radius = 100.0)
+	{
+		BattleRoyaleUtils.Trace("GetRandomSafePosition() with position " + position + " and radius " + radius);
+
+		vector random_pos = "0 0 0";
+		int max_spawn_try = 50;
+		for(int i = 0; i < max_spawn_try; i++)
+		{
+			BattleRoyaleUtils.Trace("Try to spawn at random position " + i);
+
+			random_pos[0] = position[0] + Math.RandomFloatInclusive(-radius-i, radius+i);
+			random_pos[2] = position[2] + Math.RandomFloatInclusive(-radius-i, radius+i);
+			random_pos[1] = GetGame().SurfaceY(random_pos[0], random_pos[2]);
+
+			if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], false))
+			{
+				BattleRoyaleUtils.Trace("Position " + random_pos + " is not safe, we try again");
+				random_pos = "0 0 0";  // Reset random_pos to zero vector
+				continue;
+			}
+
+			break;
+		}
+
+		return random_pos;
+	}
+
     protected void Teleport(PlayerBase process_player)
     {
         ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
@@ -503,10 +493,10 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Starting to process players...");
         int i;
         PlayerBase process_player;
-        int pCount = m_PlayerList.Count();
+        int pCount = GetPlayers().Count();
 
         for (i = 0; i < pCount; i++) {
-            process_player = m_PlayerList[i];
+            process_player = a_PlayerList[i];
             if (process_player)
             	DisablePlayerInput(process_player);
 
@@ -514,10 +504,10 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
         BattleRoyaleUtils.Trace("Players are disabled");
 
-        m_PlayerList.ShuffleArray();
+        a_PlayerList.ShuffleArray();
 
         for (i = 0; i < pCount; i++) {
-            process_player = m_PlayerList[i];
+            process_player = a_PlayerList[i];
             if (process_player) GiveStartingItems(process_player);
 
             Sleep(100);
@@ -526,84 +516,129 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
         array<ref map<string, string>> parties_list = new array<ref map<string, string>> ();
-#ifdef Carim
-        BattleRoyaleUtils.Trace("Mod party enabled");
 
-        // ref array ref set, what in the seven fucks is this ?
-        ref array<ref set<PlayerBase>> teleport_groups = GetGroups();
-
-        // Teleport groups
-        int pGroupCount = teleport_groups.Count();
-        ref set<PlayerBase> group;
-
-        // Send parties list to API server
-        for (i = 0; i < pGroupCount; i++) {
-            group = teleport_groups.Get(i);
-#ifdef BR_TRACE_ENABLED
-			Print( group );
-#endif
-            map<string, string> party = new map<string, string>();
-			int tmpNbPlayers = group.Count();
-			for(int j = 0; j < tmpNbPlayers; j++)
-			{
-            	process_player = group.Get(j);
-#ifdef BR_TRACE_ENABLED
-				Print( process_player );
-#endif
-				if ( process_player && process_player.GetIdentity() )
+		if (b_ShowSpawnSelectionMenu)
+		{
+			BattleRoyaleUtils.Trace("Spawn selection menu enabled");
+			for (i = 0; i < pCount; i++) {
+				process_player = GetPlayers()[i];
+				if (process_player)
 				{
-					BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
+					float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
+					vector position = process_player.GetSpawnPos();
+					BattleRoyaleUtils.Trace("Try to spawn player " + process_player.GetIdentity().GetName() + " at " + position + " with a radius of " + f_SpawnSelectionRadius);
+
+					vector random_position = GetRandomSafePosition(position, f_SpawnSelectionRadius);
+
+					if ( random_position == "0 0 0" )
+					{
+						BattleRoyaleUtils.Trace("No safe position found, we randomly teleport the player");
+						Teleport(process_player);
+					}
+					else
+					{
+						BattleRoyaleUtils.Trace("Found a safe position " + random_position);
+						TeleportPlayer(process_player, random_position);
+					}
+
+					Sleep(100);
+				}
+			}
+		}
+		else
+		{
+			BattleRoyaleUtils.Trace("Spawn selection menu disabled");
+			// Check if mod party is present
+#ifdef Carim
+			BattleRoyaleUtils.Trace("Mod party present");
+
+			// ref array ref set, what in the seven fucks is this ?
+			ref array<ref set<PlayerBase>> teleport_groups = GetGroups();
+
+			// Teleport groups
+			int pGroupCount = teleport_groups.Count();
+			ref set<PlayerBase> group;
+
+			teleport_groups.ShuffleArray();
+			BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
+			for (i = 0; i < pGroupCount; i++) {
+				BattleRoyaleUtils.Trace("Teleport group " + i);
+				group = teleport_groups.Get(i);
+				if ( group.Count() > 1 )
+				{
+					TeleportGroup( group );
+				} else {
+					process_player = group.Get(0);
+					if (process_player) Teleport(process_player);
+				}
+				Sleep(100);
+			}
+#else
+			BattleRoyaleUtils.Trace("Mod party absent");
+			for (i = 0; i < pCount; i++) {
+				process_player = a_PlayerList[i];
+				if (process_player)
+				{
+					Teleport(process_player);
+					Sleep(100);
+				}
+			}
+#endif
+		}
+        BattleRoyaleUtils.Trace("Teleported players");
+
+		if ( m_ServerData.enable_vigrid_api )
+		{
+#ifdef SCHANAMODPARTY
+			// ref array ref set, what in the seven fucks is this ?
+			ref array<ref set<PlayerBase>> teleport_groups = GetGroups();
+
+			// Teleport groups
+			int pGroupCount = teleport_groups.Count();
+			ref set<PlayerBase> group;
+
+			// Send parties list to API server
+			for (i = 0; i < pGroupCount; i++) {
+				group = teleport_groups.Get(i);
+				BattleRoyaleUtils.Trace( group );
+				map<string, string> party = new map<string, string>();
+				int tmpNbPlayers = group.Count();
+				for(int j = 0; j < tmpNbPlayers; j++)
+				{
+					process_player = group.Get(j);
+					BattleRoyaleUtils.Trace( process_player );
+					if ( process_player && process_player.GetIdentity() )
+					{
+						BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
+						CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
+						CF_Base16Stream base16_stream = CF_Base16Stream();
+						string_stream.CopyTo( base16_stream );
+						party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
+					}
+				}
+				BattleRoyaleUtils.Trace( party );
+				parties_list.Insert( party );
+			}
+#else
+			for (i = 0; i < pCount; i++) {
+				process_player = a_PlayerList[i];
+				if (process_player)
+				{
+					map<string, string> party = new map<string, string>();
+					// Encode player ID to Base16
 					CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
 					CF_Base16Stream base16_stream = CF_Base16Stream();
 					string_stream.CopyTo( base16_stream );
-					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
+					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() )
+					parties_list.Insert( party );
 				}
 			}
-#ifdef BR_TRACE_ENABLED
-			Print( party );
 #endif
-			parties_list.Insert( party );
-        }
-
-        teleport_groups.ShuffleArray();
-        BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
-        for (i = 0; i < pGroupCount; i++) {
-            BattleRoyaleUtils.Trace("Teleport group " + i);
-            group = teleport_groups.Get(i);
-            if ( group.Count() > 1 )
-            {
-                TeleportGroup( group );
-            } else {
-                process_player = group.Get(0);
-                if (process_player) Teleport(process_player);
-            }
-            Sleep(100);
-        }
-#else
-        for (i = 0; i < pCount; i++) {
-            process_player = m_PlayerList[i];
-            if (process_player) Teleport(process_player);
-
-            map<string, string> party = new map<string, string>();
-			CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
-			CF_Base16Stream base16_stream = CF_Base16Stream();
-			string_stream.CopyTo( base16_stream );
-			party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() )
-#ifdef BR_TRACE_ENABLED
-			Print( party );
-#endif
-			parties_list.Insert( party );
-
-            Sleep(100);
-        }
-#endif
-        BattleRoyaleUtils.Trace("Teleported players");
 
 #ifdef BR_TRACE_ENABLED
-		Print( parties_list );
+			Print( parties_list );
 #endif
-		if ( m_ServerData.enable_vigrid_api )
-		{
+
 			PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
 			partiesWebhook.postParties( br_instance.match_uuid, parties_list );
 			BattleRoyaleUtils.Trace("Parties list sent");
@@ -613,7 +648,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         Sleep(1000);
 
         for (i = 0; i < pCount; i++) {
-            process_player = m_PlayerList[i];
+            process_player = a_PlayerList[i];
             if (process_player) process_player.ResetPlayer(true);
 
             Sleep(100);
