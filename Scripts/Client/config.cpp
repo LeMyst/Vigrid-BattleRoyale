@@ -88,23 +88,6 @@ class CfgMods
     };
 };
 
-class CfgWorlds
-{
-    class DefaultWorld;
-    class CAWorld: DefaultWorld
-    {
-        class Weather
-        {
-            class VolFog
-            {
-                CameraFog=0;
-                Item1[]={0,0,0,0,0};
-                Item2[]={0,0,0,0,0};
-            };
-        };
-    };
-};
-
 class CfgVehicles
 {
     class EffectArea;
