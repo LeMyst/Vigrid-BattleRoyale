@@ -2,13 +2,13 @@
 *.biprivatekey
 user.cfg
 
-.vscode/
-.vs/
+/.vscode/
+/.vs/
+/.idea/
 
 *.bak
 *.pbo
 *.bisign
-Workbench/*.cfg.bat
-Workbench/*.cfg.*.bat
-Workbench/Logs/
-/.idea/
+/Workbench/*.cfg.bat
+/Workbench/*.cfg.*.bat
+/Workbench/Logs/
