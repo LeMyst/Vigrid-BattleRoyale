@@ -16,7 +16,7 @@ class BattleRoyaleRound: BattleRoyaleState
     bool b_AirdropEnabled;
     int i_AirdropIgnoreLastZones;
 
-#ifdef SCHANAMODPARTY
+#ifdef Carim
     int i_MaxPartySize;
     autoptr set<string> remaining_parties
 #endif
@@ -51,8 +51,8 @@ class BattleRoyaleRound: BattleRoyaleState
         b_AirdropEnabled = m_GameSettings.airdrop_enabled;
         i_AirdropIgnoreLastZones = m_GameSettings.airdrop_ignore_last_zones;
 
-#ifdef SCHANAMODPARTY
-        i_MaxPartySize = GetSchanaPartyServerSettings().GetMaxPartySize();
+#ifdef Carim
+        i_MaxPartySize = CfgGameplayHandler.GetCarimPartyMaxPartySize();
 #endif
 
         Init();
@@ -249,7 +249,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
 		if(IsActive())
 		{
-#ifdef SCHANAMODPARTY
+#ifdef Carim
 			if(i_MaxPartySize < 1 || nb_players <= i_MaxPartySize)
 			{
 				if( nb_players <= 1 || GetGroups().Count() <= 1 )
@@ -269,35 +269,6 @@ class BattleRoyaleRound: BattleRoyaleState
         return super.IsComplete();
     }
 
-#ifdef SCHANAMODPARTY
-    bool AllPlayersSameParty(set<string> players)
-    {
-        //BattleRoyaleUtils.Trace("AllPlayersSameParty");
-        SchanaPartyManagerServer manager = GetSchanaPartyManagerServer();
-        autoptr map<string, autoptr set<string>> s_parties = manager.GetParties();
-        remaining_parties = new set<string>;
-        foreach (auto id, auto party_ids: s_parties) {  // For each party
-            foreach (string member: party_ids)  // For each member of the party
-            {
-                if(players.Find(member) != -1)  // If the member is alive
-                {
-                    remaining_parties.Insert(id);  // Insert the party inside the remaining parties
-
-                    if (remaining_parties.Count() > 1)
-                        return false;
-                }
-            }
-        }
-
-        //BattleRoyaleUtils.Trace(remaining_parties);
-
-        if (remaining_parties.Count() == 1)
-            return true;
-
-        return false;
-    }
-#endif
-
     override bool SkipState(BattleRoyaleState _previousState)
     {
         if( _previousState.i_StartingZone > zone_num )
@@ -311,7 +282,7 @@ class BattleRoyaleRound: BattleRoyaleState
         if(_previousState.GetPlayers().Count() <= 1)
             return true;
 
-#ifdef SCHANAMODPARTY
+#ifdef Carim
         if(_previousState.GetGroups().Count() <= 1)
             return true;
 #endif

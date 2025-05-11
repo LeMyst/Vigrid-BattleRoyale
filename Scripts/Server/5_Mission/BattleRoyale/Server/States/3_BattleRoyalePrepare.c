@@ -526,7 +526,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
         array<ref map<string, string>> parties_list = new array<ref map<string, string>> ();
-#ifdef SCHANAMODPARTY
+#ifdef Carim
         BattleRoyaleUtils.Trace("Mod party enabled");
 
         // ref array ref set, what in the seven fucks is this ?

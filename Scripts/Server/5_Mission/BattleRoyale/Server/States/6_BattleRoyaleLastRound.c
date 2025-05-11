@@ -111,7 +111,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
         if(_previousState.GetPlayers().Count() > 1)
             return false;
 
-#ifdef SCHANAMODPARTY
+#ifdef Carim
         if(_previousState.GetGroups().Count() > 1)
             return false;
 #endif
@@ -131,7 +131,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
             if(GetPlayers().Count() < 2)
                 Deactivate();
 
-#ifdef SCHANAMODPARTY
+#ifdef Carim
             if(GetGroups().Count() < 2)
                 Deactivate();
 #endif
