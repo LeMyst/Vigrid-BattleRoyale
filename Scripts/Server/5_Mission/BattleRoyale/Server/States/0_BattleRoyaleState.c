@@ -143,30 +143,32 @@ class BattleRoyaleState: Timeable
 #endif
     }
 
-    //player count changed event handler
-    protected void OnPlayerCountChanged()
-    {
-        //BattleRoyaleUtils.Trace("OnPlayerCountChanged()");
-        if(IsActive())
-        {
-            int nb_players, nb_groups;
+	//player count changed event handler
+	protected void OnPlayerCountChanged()
+	{
+		//BattleRoyaleUtils.Trace("OnPlayerCountChanged()");
+		if(IsActive())
+		{
+			int nb_players, nb_groups;
 
-            nb_players = GetPlayers().Count();
+			nb_players = GetPlayers().Count();
 #ifdef Carim
-            if(nb_players < 10 && hide_players_endgame && !b_IsDebug)
-                nb_groups = -1;
-            else
-                nb_groups = GetGroups().Count();
-            UpdateTopPosition( GetGroups().Count() );
+			int groups_count = GetGroupsCount();
+
+			if(nb_players < 10 && hide_players_endgame && !b_IsDebug)
+				nb_groups = -1;
+			else
+				nb_groups = groups_count;
+			UpdateTopPosition( groups_count );
 #else
-            nb_groups = -2;
-            UpdateTopPosition( nb_players );
+			nb_groups = -2;
+			UpdateTopPosition( nb_players );
 #endif
 
-            //BattleRoyaleUtils.Trace(string.Format("OnPlayerCountChanged: %1 %2", nb_players, nb_groups));
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( nb_players, nb_groups ), true);
-        }
-    }
+			//BattleRoyaleUtils.Trace(string.Format("OnPlayerCountChanged: %1 %2", nb_players, nb_groups));
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( nb_players, nb_groups ), true);
+		}
+	}
 
     void UpdateTopPosition( int position )
     {
@@ -330,6 +332,46 @@ class BattleRoyaleState: Timeable
     }
 
 #ifdef Carim
+	/*
+	 * Get the number of groups in the game
+	 * Quickly iterate over the parties and count the number of groups
+	 * @return The number of groups
+	 */
+	int GetGroupsCount()
+	{
+		//TODO: Remove next line
+		BattleRoyaleUtils.Trace("GetGroupsCount()");  // Keep the trace to check if this function is not called too often
+		ref map<string, ref CarimSet> parties = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals;
+
+		set<string> already_found_players = new set<string>;  // Already found players
+		set<string> groups = new set<string>;  // Final groups list
+
+		foreach (string key, ref CarimSet party : parties)
+		{
+			if (already_found_players.Find(key) != -1)
+			{
+				continue;  // Skip if already found
+			}
+
+			// Add the party to the list of groups
+			if (groups.Find(key) == -1)  // Should not be needed
+			{
+				groups.Insert(key);
+			}
+
+			// Add the players to the list of already found players
+			foreach (string player : party.ToArray())
+			{
+				if (already_found_players.Find(player) == -1)
+				{
+					already_found_players.Insert(player);
+				}
+			}
+		}
+
+		return groups.Count();
+	}
+
     ref array<ref set<PlayerBase>> GetGroups()
     {
         int i;
@@ -365,7 +407,9 @@ class BattleRoyaleState: Timeable
 
 			// Iterate over parties
 			ref set<PlayerBase> group;
-			ref map<string, ref CarimSet> registered_parties = parties.registered;
+			// Using parties.mutuals here instead of parties.registered because mutuals represents 
+			// the set of parties with confirmed mutual agreements, which is required for this logic.
+			ref map<string, ref CarimSet> registered_parties = parties.mutuals;
 			int partyCount = registered_parties.Count();
 			BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
 			for (i = 0; i < partyCount; ++i)
@@ -390,13 +434,16 @@ class BattleRoyaleState: Timeable
 								BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
 								for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
 								{
-									PlayerBase plrpart = PlayerBase.Cast(id_map.Get(tmpPlayPart.Get(j)));
-									BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
-									if(m_PlayerWaitList.Find(plrpart) != -1)
+									PlayerBase plrpart = id_map.Get(tmpPlayPart.Get(j));
+									if ( plrpart )
 									{
-										BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
-										m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
-										group.Insert(plrpart);  // Insert party member into group
+										BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
+										if(m_PlayerWaitList.Find(plrpart) != -1)
+										{
+											BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
+											m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
+											group.Insert(plrpart);  // Insert party member into group
+										}
 									}
 								}
 							}

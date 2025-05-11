@@ -112,7 +112,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
             return false;
 
 #ifdef Carim
-        if(_previousState.GetGroups().Count() > 1)
+        if(_previousState.GetGroupsCount() > 1)
             return false;
 #endif
 
@@ -132,7 +132,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
                 Deactivate();
 
 #ifdef Carim
-            if(GetGroups().Count() < 2)
+            if(GetGroupsCount() < 2)
                 Deactivate();
 #endif
         }
