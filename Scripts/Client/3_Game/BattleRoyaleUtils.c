@@ -25,10 +25,10 @@ class BattleRoyaleUtils: Managed
 			string msg;
         	if (level == NONE) {
         		msg = hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2) + " [DayZ-BattleRoyale] " + message;
-        		Error(msg);
+        		Error2("", string.ToString(msg));
         	} else {
         		msg = hour.ToStringLen(2) + ":" + minute.ToStringLen(2) + ":" + second.ToStringLen(2) + " [DayZ-BattleRoyale][" + level + "] " + message;
-	        	Print(msg);
+	        	PrintFormat("%1:%2:%3 [DayZ-BattleRoyale][%4] %5", hour.ToStringLen(2), minute.ToStringLen(2), second.ToStringLen(2), level, message);
             }
 
 			string chat_color = "default";
