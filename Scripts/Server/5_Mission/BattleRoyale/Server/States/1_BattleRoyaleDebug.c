@@ -35,7 +35,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //returns true when this state is complete
     override bool IsComplete()
     {
-#ifdef SCHANAMODPARTY
+#ifdef Carim
         if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGroups().Count() > 1 && GetGame().GetTickTime() >= f_MinWaitingTime )
 #else
         if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime )
@@ -138,7 +138,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		if( player_count <= i_MinPlayers ) // need more than the minimum player
 			return false;
 
-#ifdef SCHANAMODPARTY
+#ifdef Carim
 		if( GetGroups().Count() <= 1 ) // need more than one group
 			return false;
 #endif
