@@ -45,8 +45,6 @@ static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBR
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
 static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 10; //multiplier from base game values on blood regen speed
-static const float BATTLEROYALE_UNCONSCIOUS_MODIFIER = 0.8; //multiplier from base game values on unconscious and conscious threshold
-static const float BATTLEROYALE_SHOCK_REFILL_SPEED = 5; //multiplier from base game values on shock refill unconscious speed
 
 
 //--- notification messages
