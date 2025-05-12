@@ -36,7 +36,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     override bool IsComplete()
     {
 #ifdef Carim
-        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGroups().Count() > 1 && GetGame().GetTickTime() >= f_MinWaitingTime )
+        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime && GetGroupsCount() > 1 )
 #else
         if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime )
 #endif
@@ -139,7 +139,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			return false;
 
 #ifdef Carim
-		if( GetGroups().Count() <= 1 ) // need more than one group
+		if( GetGroupsCount() <= 1 ) // need more than one group
 			return false;
 #endif
 

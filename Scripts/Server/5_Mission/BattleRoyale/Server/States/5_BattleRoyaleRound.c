@@ -252,7 +252,7 @@ class BattleRoyaleRound: BattleRoyaleState
 #ifdef Carim
 			if(i_MaxPartySize < 1 || nb_players <= i_MaxPartySize)
 			{
-				if( nb_players <= 1 || GetGroups().Count() <= 1 )
+				if( nb_players <= 1 || GetGroupsCount() <= 1 )
 				{
 					BattleRoyaleUtils.Trace(GetName() + " IsComplete (Groups)!");
 					Deactivate();
@@ -283,7 +283,7 @@ class BattleRoyaleRound: BattleRoyaleState
             return true;
 
 #ifdef Carim
-        if(_previousState.GetGroups().Count() <= 1)
+        if(_previousState.GetGroupsCount() <= 1)
             return true;
 #endif
 
