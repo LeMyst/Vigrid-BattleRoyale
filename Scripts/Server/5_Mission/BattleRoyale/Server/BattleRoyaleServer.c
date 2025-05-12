@@ -172,6 +172,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         return false;
     }
 
+	const float CHECK_IS_COMPLETE = 0.1;  //seconds
+	float m_TimeSinceLastTick = CHECK_IS_COMPLETE + 1;
+
     override void Update(float delta)
     {
         float timeslice = delta; //Legacy
@@ -188,38 +191,45 @@ class BattleRoyaleServer: BattleRoyaleBase
                 Error("BAD STATE IN m_States!");
         }
 
+		m_TimeSinceLastTick += delta;
+
         //--- transition states
-        if(GetCurrentState().IsComplete()) //current state is complete
+        if (m_TimeSinceLastTick > CHECK_IS_COMPLETE)
         {
-            int next_index = GetNextStateIndex();
-            if(next_index > 0)
-            {
-                BattleRoyaleState next_state = GetState(next_index);
+        	m_TimeSinceLastTick = 0;
 
-                BattleRoyaleUtils.Trace("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
-                if(GetCurrentState().IsActive())
-                    GetCurrentState().Deactivate(); //deactivate old state
+			if (GetCurrentState().IsComplete()) //current state is complete
+			{
+				int next_index = GetNextStateIndex();
+				if(next_index > 0)
+				{
+					BattleRoyaleState next_state = GetState(next_index);
 
-                ref array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
-                for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
-                {
-                    if(players[i])
-                    {
-                        next_state.AddPlayer(players[i]); //add players to new state
-                    }
-                    else
-                    {
-                        Error("null player in RemoveAllPlayers result!");
-                    }
-                }
-                i_CurrentStateIndex = next_index;//move us to the next state
-                BattleRoyaleUtils.Trace("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
-                GetCurrentState().Activate(); //activate new state
-            }
-            else
-            {
-                Error("NEXT STATE IS NULL!");
-            }
+					BattleRoyaleUtils.Trace("[State Machine] Leaving State `" + GetCurrentState().GetName() + "`");
+					if(GetCurrentState().IsActive())
+						GetCurrentState().Deactivate(); //deactivate old state
+
+					ref array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
+					for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
+					{
+						if(players[i])
+						{
+							next_state.AddPlayer(players[i]); //add players to new state
+						}
+						else
+						{
+							Error("null player in RemoveAllPlayers result!");
+						}
+					}
+					i_CurrentStateIndex = next_index;//move us to the next state
+					BattleRoyaleUtils.Trace("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
+					GetCurrentState().Activate(); //activate new state
+				}
+				else
+				{
+					Error("NEXT STATE IS NULL!");
+				}
+			}
         }
     }
 
