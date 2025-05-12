@@ -1,3 +1,4 @@
+#ifndef SERVER
 modded class PlayerBase
 {
 	override void CheckLiftWeapon()

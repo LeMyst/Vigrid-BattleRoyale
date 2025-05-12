@@ -33,7 +33,7 @@ class CfgMods
 				value="";
 				files[]=
 				{
-					"Vigrid-BattleRoyale/PreventWeaponRaise/Scripts/4_World"
+					"Vigrid-BattleRoyale/Extra/PreventWeaponRaise/Scripts/4_World"
 				};
 			};
 		};
