@@ -339,8 +339,6 @@ class BattleRoyaleState: Timeable
 	 */
 	int GetGroupsCount()
 	{
-		//TODO: Remove next line
-		BattleRoyaleUtils.Trace("GetGroupsCount()");  // Keep the trace to check if this function is not called too often
 		ref map<string, ref CarimSet> parties = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals;
 
 		set<string> already_found_players = new set<string>;  // Already found players
