@@ -100,17 +100,17 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		// Find CountdownText widget
 		if (m_CountdownText)
 		{
-			int time_left = i_CountdownEnd - GetGame().GetTime();
-			if (time_left >= 1000)
+			float time_left = Math.Ceil((i_CountdownEnd - GetGame().GetTime()) / 1000);  // calculate time left in seconds
+			if (time_left >= 1)
 			{
 				StringLocaliser message;
-				if (time_left >= 1500)
+				if (time_left > 1)
 				{
 					message = new StringLocaliser("STR_BR_TIMER_SPAWN_SELECTION_SECONDS");
 				} else {
 					message = new StringLocaliser("STR_BR_TIMER_SPAWN_SELECTION_SECOND");
 				}
-				message.Set(0, time_left / 1000);
+				message.Set(0, time_left);  // replace the first parameter with the time left in seconds
 				m_CountdownText.SetText(message.Format());
 			} else {
 				message = new StringLocaliser("STR_BR_TIME_TO_DEPLOY");

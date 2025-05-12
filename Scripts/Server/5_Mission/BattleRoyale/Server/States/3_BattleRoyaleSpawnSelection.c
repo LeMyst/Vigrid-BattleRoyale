@@ -1,8 +1,9 @@
 #ifdef SERVER
 class BattleRoyaleSpawnSelection: BattleRoyaleState
 {
+	// TODO: Move these to the config
 	int i_SpawnSelectionDuration = 30; // Duration in seconds
-	int i_ExtraScreenTime = 3; // Extra time before the screen closes and switches to the next state
+	int i_ExtraScreenTime = 2; // Extra time before the screen closes and switches to the next state
 	ref Timer m_SpawnSelectionTimer;
 
 	private BattleRoyaleConfig m_Config;
