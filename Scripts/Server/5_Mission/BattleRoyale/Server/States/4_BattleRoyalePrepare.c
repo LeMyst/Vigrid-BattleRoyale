@@ -250,8 +250,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         if(villages.Count() > 0)
         {
-            //return villages[Math.RandomInt(0, villages.Count())];
-            if(i_VillagesIndex > villages.Count()+1)
+            if(i_VillagesIndex >= villages.Count())
                 i_VillagesIndex = 0;
 
             return villages[i_VillagesIndex++];
