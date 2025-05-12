@@ -410,7 +410,7 @@ class BattleRoyaleState: Timeable
 
 			// Iterate over parties
 			ref set<PlayerBase> group;
-			// Using parties.mutuals here instead of parties.registered because mutuals represents 
+			// Using parties.mutuals here instead of parties.registered because mutuals represents
 			// the set of parties with confirmed mutual agreements, which is required for this logic.
 			ref map<string, ref CarimSet> registered_parties = parties.mutuals;
 			int partyCount = registered_parties.Count();
@@ -464,6 +464,7 @@ class BattleRoyaleState: Timeable
 				}
 			}
 		}
+
         // Add remaining players
         ref set<PlayerBase> solo_group;
         int pRemCount = m_PlayerWaitList.Count();
@@ -492,6 +493,8 @@ class BattleRoyaleState: Timeable
 				return groups.Get(i);
 			}
 		}
+
+		return null;
 	}
 #endif
 

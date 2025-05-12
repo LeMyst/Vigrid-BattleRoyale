@@ -268,18 +268,18 @@ class BattleRoyaleZone
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
 
             // Get direction toward map center
-            int world_size = GetGame().GetWorld().GetWorldSize();
-            float centerDir = Math.Atan2((world_size / 2) - oldX, (world_size / 2) - oldZ);
+            int world_size = GetGame().GetWorld().GetWorldSize();  // Get world size
+            float centerDir = Math.Atan2((world_size / 2) - oldX, (world_size / 2) - oldZ);  // Get direction to center of the map based on the old center
 
             // Limit angle to ±45 degrees from center direction (90-degree arc)
-            float angleOffset = Math.RandomFloat(-45, 45) * Math.DEG2RAD;
-            float moveDir = centerDir + angleOffset;
+            float angleOffset = Math.RandomFloat(-45, 45) * Math.DEG2RAD;  // Random angle offset in radians, between -45 and 45 degrees
+            float moveDir = centerDir + angleOffset;  // Get new direction based on the angle offset
 
-            float dX = distance * Math.Sin(moveDir);
-            float dZ = distance * Math.Cos(moveDir);
+            float dX = distance * Math.Sin(moveDir);  // Calculate the x-component of the movement
+            float dZ = distance * Math.Cos(moveDir);  // Calculate the z-component of the movement
 
-            new_center[0] = oldX + dX;
-            new_center[2] = oldZ + dZ;
+            new_center[0] = oldX + dX;  // Calculate new x-coordinate
+            new_center[2] = oldZ + dZ;  // Calculate new z-coordinate
 
             // We check if the (new center+radius) is inside the world
             if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_size || (new_center[2] + new_radius) > world_size)

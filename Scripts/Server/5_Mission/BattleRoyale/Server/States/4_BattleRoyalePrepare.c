@@ -589,24 +589,20 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
-#ifdef SCHANAMODPARTY
-			// ref array ref set, what in the seven fucks is this ?
-			ref array<ref set<PlayerBase>> teleport_groups = GetGroups();
+#ifdef Carim
+			teleport_groups = GetGroups();
 
 			// Teleport groups
-			int pGroupCount = teleport_groups.Count();
-			ref set<PlayerBase> group;
+			pGroupCount = teleport_groups.Count();
 
 			// Send parties list to API server
 			for (i = 0; i < pGroupCount; i++) {
 				group = teleport_groups.Get(i);
-				BattleRoyaleUtils.Trace( group );
 				map<string, string> party = new map<string, string>();
 				int tmpNbPlayers = group.Count();
 				for(int j = 0; j < tmpNbPlayers; j++)
 				{
 					process_player = group.Get(j);
-					BattleRoyaleUtils.Trace( process_player );
 					if ( process_player && process_player.GetIdentity() )
 					{
 						BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
@@ -616,7 +612,6 @@ class BattleRoyalePrepare: BattleRoyaleState
 						party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
 					}
 				}
-				BattleRoyaleUtils.Trace( party );
 				parties_list.Insert( party );
 			}
 #else

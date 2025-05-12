@@ -32,8 +32,8 @@ modded class MissionGameplay
 		// Add RPCs
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", this );
-#ifdef SCHANAMODPARTY
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShareSpawnPoint", this );
+#ifdef Carim
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", this );
 #endif
 	}
 
@@ -49,8 +49,8 @@ modded class MissionGameplay
 		// Remove RPCs
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection" );
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection" );
-#ifdef SCHANAMODPARTY
-		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShareSpawnPoint" );
+#ifdef Carim
+		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint" );
 #endif
 	}
 
@@ -372,25 +372,23 @@ modded class MissionGameplay
 		}
 	}
 
-#ifdef SCHANAMODPARTY
-	void ShareSpawnPoint(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	void ShowSpawnPoint(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
-		Param2<PlayerBase, vector> data;
+		Param3<PlayerBase, vector, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SHARESPAWNPOINT RPC");
+			Error("FAILED TO READ SHOWSPAWNPOINT RPC");
 			return;
 		}
 		if ( type == CallType.Client )
 		{
-			BattleRoyaleUtils.Trace(string.Format("ShareSpawnPoint: %1 %2", data.param1, data.param2));
+			BattleRoyaleUtils.Trace(string.Format("ShowSpawnPoint: %1 %2 %3", data.param1, data.param2, data.param3));
 			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
 			if (m)
 			{
-				m.SetTeammateSpawnPoint(data.param1, data.param2);
+				m.SetTeammateSpawnPoint(data.param1, data.param2, data.param3);
 			}
 		}
 	}
-#endif
 }
 #endif

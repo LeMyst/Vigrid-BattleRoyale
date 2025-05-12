@@ -20,8 +20,8 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	protected vector v_FirstZoneCenter = "0 0 0";
 	protected float f_FirstZoneRadius = 0;
 
-	protected ref map<PlayerBase, vector> m_TeammateSpawnPoints = new map<PlayerBase, vector>();
-	protected ref map<PlayerBase, int> m_TeammateSpawnPointsColor = new map<PlayerBase, int>();
+	protected ref map<string, vector> m_TeammateSpawnPoints = new map<string, vector>();
+	protected ref map<string, int> m_TeammateSpawnPointsColor = new map<string, int>();
 
 	void SpawnSelectionMenu()
 	{
@@ -130,26 +130,26 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			float screen_x, screen_y;
 			m_MapWidget.GetScreenPos(screen_x, screen_y);
 
-			// Selected spawn zone
-			m_edgePos_A = m_SelectedSpawnPoint;
-			m_edgePos_A[0] = m_edgePos_A[0] + spawn_size;
-
-			m_edgePos_B = m_SelectedSpawnPoint;
-			m_edgePos_B[2] = m_edgePos_B[2] + spawn_size;
-
-			mapPos_edge_A = m_MapWidget.MapToScreen(m_edgePos_A);
-			mapPos_edge_B = m_MapWidget.MapToScreen(m_edgePos_B);
-			mapPos_center = m_MapWidget.MapToScreen(m_SelectedSpawnPoint);
-
-			distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
-			distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
-
-			RenderOval(map_pos[0] - screen_x, map_pos[1] - screen_y, distance_A, distance_B);
+//			// Selected spawn zone
+//			m_edgePos_A = m_SelectedSpawnPoint;
+//			m_edgePos_A[0] = m_edgePos_A[0] + spawn_size;
+//
+//			m_edgePos_B = m_SelectedSpawnPoint;
+//			m_edgePos_B[2] = m_edgePos_B[2] + spawn_size;
+//
+//			mapPos_edge_A = m_MapWidget.MapToScreen(m_edgePos_A);
+//			mapPos_edge_B = m_MapWidget.MapToScreen(m_edgePos_B);
+//			mapPos_center = m_MapWidget.MapToScreen(m_SelectedSpawnPoint);
+//
+//			distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
+//			distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
+//
+//			RenderOval(map_pos[0] - screen_x, map_pos[1] - screen_y, distance_A, distance_B);
 
 			// Show the teammates zones
-			foreach (PlayerBase player, vector spawn_point : m_TeammateSpawnPoints)
+			foreach (string playerId, vector spawn_point : m_TeammateSpawnPoints)
 			{
-				if (player)
+				if (playerId)
 				{
 					m_edgePos_A = spawn_point;
 					m_edgePos_A[0] = m_edgePos_A[0] + spawn_size;
@@ -164,13 +164,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 					distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
 					distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
 
-					// Generate a random color for the player if it doesn't exist
-					if(!m_TeammateSpawnPointsColor.Contains(player))
-					{
-						m_TeammateSpawnPointsColor.Set(player, ARGB(255, Math.RandomIntInclusive(0, 255), Math.RandomIntInclusive(0, 255), Math.RandomIntInclusive(0, 255)));
-					}
-
-					RenderOval(mapPos_center[0] - screen_x, mapPos_center[1] - screen_y, distance_A, distance_B, m_TeammateSpawnPointsColor.Get(player));
+					RenderOval(mapPos_center[0] - screen_x, mapPos_center[1] - screen_y, distance_A, distance_B, m_TeammateSpawnPointsColor.Get(playerId));
 				}
 			}
 
@@ -312,20 +306,23 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		return m_SelectedSpawnPoint;
 	}
 
-	void SetTeammateSpawnPoint(PlayerBase player, vector pos)
+	void SetTeammateSpawnPoint(PlayerBase player, vector pos, int color)
 	{
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SetTeammateSpawnPoint");
-		if (player)
+		if (player && player.GetIdentity() && player.GetIdentity().GetId())
 		{
+			string playerId = player.GetIdentity().GetId();
+
 			BattleRoyaleUtils.Trace(string.Format("Player: %1", player.GetIdentity().GetName()));
-			if (m_TeammateSpawnPoints.Contains(player))
+			if (m_TeammateSpawnPoints.Contains(playerId))
 			{
 				BattleRoyaleUtils.Trace(string.Format("Player already in map: %1", player.GetIdentity().GetName()));
-				m_TeammateSpawnPoints.Set(player, pos);
+				m_TeammateSpawnPoints.Set(playerId, pos);
 			} else {
 				BattleRoyaleUtils.Trace(string.Format("Player not in map: %1", player.GetIdentity().GetName()));
-				m_TeammateSpawnPoints.Insert(player, pos);
+				m_TeammateSpawnPoints.Insert(playerId, pos);
 			}
+			m_TeammateSpawnPointsColor.Set(playerId, color);
 		}
 	}
 }
