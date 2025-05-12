@@ -19,6 +19,7 @@ modded class PlayerBase
 	string player_steamid = "";
 
 	PlayerBase last_unconscious_source;
+	float m_UnconsciousStartTime;
 
 #ifdef SPECTATOR
     bool UpdateHealthStatsServer(float hp, float blood, float delta)
