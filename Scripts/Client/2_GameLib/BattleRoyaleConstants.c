@@ -7,7 +7,7 @@
 
 static const string BATTLEROYALE_VERSION = "0.1.0-Vigrid";
 
-#ifdef DIAG_DEVELOPER
+#ifdef DIAG
 #define BR_TRACE_ENABLED
 #endif
 
