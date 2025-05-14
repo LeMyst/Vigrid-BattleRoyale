@@ -35,8 +35,8 @@ class BattleRoyaleRound: BattleRoyaleState
         BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
         i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
 
-        lock_notif_min =  m_GameSettings.zone_notification_minutes;
-        lock_notif_sec =  m_GameSettings.zone_notification_seconds;
+        lock_notif_min = m_GameSettings.zone_notification_minutes;
+        lock_notif_sec = m_GameSettings.zone_notification_seconds;
 
         i_DamageTickTime = m_GameSettings.zone_damage_tick_seconds;
         f_Damage = m_GameSettings.zone_damage_delta;
@@ -113,7 +113,7 @@ class BattleRoyaleRound: BattleRoyaleState
         int sec;
         int val;
 
-		if( m_PreviousState.i_StartingZone < zone_num )
+		if( GetDynamicStartingZone(i_NumStartingPlayers) < zone_num )
 		{
 			//--- notification message timers
 			for(i = 0; i < lock_notif_min.Count();i++)
@@ -271,9 +271,9 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override bool SkipState(BattleRoyaleState _previousState)
     {
-        if( _previousState.i_StartingZone > zone_num )
+        if( GetDynamicStartingZone(i_NumStartingPlayers) > zone_num )
         {
-            BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + _previousState.i_StartingZone + "` > `" + zone_num + "`");
+            BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + GetDynamicStartingZone(i_NumStartingPlayers) + "` > `" + zone_num + "`");
             return true;
         }
 

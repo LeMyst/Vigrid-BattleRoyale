@@ -7,7 +7,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     protected bool b_ShowFirstZone;
     protected bool b_ArtillerySound;
 
-    protected ref array<PlayerBase> m_PlayerList;
+    protected ref array<PlayerBase> a_PlayerList;
 
     protected ref array<ref Timer> m_MessageTimers;
     protected ref Timer m_UnlockTimer;
@@ -22,11 +22,11 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         i_FirstRoundDelay = (60 * m_GameSettings.round_duration_minutes) / 2;
 
         //seconds until unlock
-        #ifdef DIAG
+#ifdef DIAG_DEVELOPER
         i_TimeToUnlock = 1;
-        #else
+#else
         i_TimeToUnlock = m_GameSettings.time_until_teleport_unlock;
-        #endif
+#endif
 
         b_ShowFirstZone = m_GameSettings.show_first_zone_at_start;
 
@@ -34,7 +34,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
         b_IsGameplay = false;
 
-        m_PlayerList = new array<PlayerBase>;
+        a_PlayerList = new array<PlayerBase>;
 
         m_MessageTimers = new array<ref Timer>;
     }
@@ -111,7 +111,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
     void UnlockPlayers()
     {
-        m_PlayerList.InsertAll( m_Players );
+        a_PlayerList.InsertAll( m_Players );
 
         //enable player input on clients (we'll do this on server in another thread)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
@@ -124,7 +124,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         // Show first circle
         BattleRoyaleUtils.Trace("[BattleRoyaleStartMatch] Show first circle");
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;
-        m_Zone = m_Zone.GetZone(BattleRoyalePrepare.i_StartingZone);
+        m_Zone = m_Zone.GetZone(GetDynamicStartingZone(m_Players.Count()));
         m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
         ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
 
@@ -137,9 +137,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     void HandleUnlock()
     {
         BattleRoyaleUtils.Trace("HandleUnlock");
-        for(int i = 0; i < m_PlayerList.Count(); i++)
+        for(int i = 0; i < a_PlayerList.Count(); i++)
         {
-            PlayerBase player = m_PlayerList[i];
+            PlayerBase player = a_PlayerList[i];
             BattleRoyaleUtils.Trace("Unlock " + player.GetIdentity().GetName());
 
             player.DisableInput(false); //This will re-enable input

@@ -10,6 +10,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     int i_NumRounds;
 
+    bool b_ShowSpawnSelectionMenu;
+
     string match_uuid;
 
     protected ref Timer m_Timer;
@@ -90,26 +92,35 @@ class BattleRoyaleServer: BattleRoyaleBase
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
         i_NumRounds = m_GameData.num_zones;
+        b_ShowSpawnSelectionMenu = m_GameData.show_spawn_selection_menu;
 
         //--- initialize all states (in order from start to finish)
         m_States = new array<ref BattleRoyaleState>;
 
-        //DEBUG ZONE
+        // (1) DEBUG ZONE
         BattleRoyaleDebug debug_state = new BattleRoyaleDebug;
         m_States.Insert(debug_state); //insert debug state
 
-        //PLAYER COUNT REACHED COUNTDOWN
+        // (2) PLAYER COUNT REACHED COUNTDOWN
         BattleRoyaleCountReached count_reached = new BattleRoyaleCountReached;
         m_States.Insert(count_reached);
 
-        //PREPARE CLIENTS & TELEPORT
+        // (3) SPAWN SELECTION MENU
+        if (b_ShowSpawnSelectionMenu)
+		{
+			BattleRoyaleSpawnSelection spawn_selection = new BattleRoyaleSpawnSelection;
+			m_States.Insert(spawn_selection);
+		}
+
+        // (4) PREPARE CLIENTS & TELEPORT
         BattleRoyalePrepare prepare_clients = new BattleRoyalePrepare;
         m_States.Insert(prepare_clients);
 
-        //UNLOCK CLIENTS AND START MATCH WOO
+        // (5) UNLOCK CLIENTS AND START MATCH WOO
         BattleRoyaleStartMatch start_match = new BattleRoyaleStartMatch;
         m_States.Insert(start_match);
 
+		// (6) ROUNDS
         int num_states = m_States.Count();
         for(int i = 0; i < i_NumRounds; i++)
         {
@@ -120,18 +131,18 @@ class BattleRoyaleServer: BattleRoyaleBase
             m_States.Insert(round);
         }
 
-        // LAST ROUND
+        // (7) LAST ROUND
         BattleRoyaleLastRound last_round = new BattleRoyaleLastRound(m_States[m_States.Count() - 1]);
         m_States.Insert(last_round);
 
-        // WINNING PLAYER/TEAM
+        // (8) WINNING PLAYER/TEAM
         m_States.Insert(new BattleRoyaleWin);
 
-        // RESTART SERVER
+        // (9) RESTART SERVER
         m_States.Insert(new BattleRoyaleRestart);
 
-        i_CurrentStateIndex = 0;
-        GetCurrentState().Activate();
+        i_CurrentStateIndex = 0;  // start at the first state
+        GetCurrentState().Activate();  // activate the first state
 
         RandomizeServerEnvironment();
 
@@ -261,6 +272,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
 
         BattleRoyaleDebugState m_DebugStateObj;
+
         // if we are not in the debug state, then we need to check if the player can spectate
         if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
         {
@@ -305,6 +317,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             //Note: the spectator system will also handle client respawn events too.
             //We need to create a list of *allowed* spectators. This should be in the server config (for private servers)
 
+			// If the player is not a spectator, we don't want to add him to the state
             return;
         }
 

@@ -5,7 +5,11 @@ class BattleRoyaleState: Timeable
     protected bool b_IsActive;
     protected bool b_IsPaused;
     protected bool b_IsDebug;
-    static int i_StartingZone = 1; // Default zone is the biggest one
+
+	// Track the number of players in the game when the game starts - shared between all states
+    static int i_NumStartingPlayers = 0;
+
+    //static int i_StartingZone = 1; // Default zone is the biggest one
 
 #ifdef Carim
     bool hide_players_endgame = false;
@@ -249,10 +253,11 @@ class BattleRoyaleState: Timeable
     protected bool IsSafeForTeleport(float x, float y, float z, bool check_zone = true)
     {
         BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
+
     	// Check if in zone (if needed)
-        if(check_zone && m_SpawnsSettings.spawn_in_first_zone)
+        if(check_zone)
         {
-            if(!BattleRoyaleZone.GetZone(i_StartingZone).IsInZone(x, z))
+            if(!BattleRoyaleZone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers)).IsInZone(x, z))
                 return false;
         }
 
@@ -405,7 +410,7 @@ class BattleRoyaleState: Timeable
 
 			// Iterate over parties
 			ref set<PlayerBase> group;
-			// Using parties.mutuals here instead of parties.registered because mutuals represents 
+			// Using parties.mutuals here instead of parties.registered because mutuals represents
 			// the set of parties with confirmed mutual agreements, which is required for this logic.
 			ref map<string, ref CarimSet> registered_parties = parties.mutuals;
 			int partyCount = registered_parties.Count();
@@ -417,7 +422,7 @@ class BattleRoyaleState: Timeable
 				if(plr && plr.GetIdentity())
 				{
 					BattleRoyaleUtils.Trace("Party leader is " + plr.GetIdentity().GetName());
-					if(m_PlayerWaitList.Find(plr) != -1)  // Test if party leader is still in waiting list
+					if(m_PlayerWaitList.Find(plr) != -1)// Test if party leader is still in waiting list
 					{
 						BattleRoyaleUtils.Trace(plr.GetIdentity().GetName() + " is in the wait list");
 						m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plr));
@@ -474,7 +479,58 @@ class BattleRoyaleState: Timeable
 
         return groups;
     }
+
+    set<PlayerBase> GetGroup(PlayerBase player)
+	{
+		BattleRoyaleUtils.Trace("GetGroup for player " + player.GetIdentity().GetName());
+		ref array<ref set<PlayerBase>> groups = GetGroups();
+		for (int i = 0; i < groups.Count(); i++)
+		{
+			BattleRoyaleUtils.Trace("Group " + i + " has " + groups.Get(i).Count() + " players");
+			if (groups.Get(i).Find(player) != -1)
+			{
+				BattleRoyaleUtils.Trace("Found group for player " + player.GetIdentity().GetName());
+				return groups.Get(i);
+			}
+		}
+
+		return null;
+	}
 #endif
+
+	// Maybe this should be moved to another class, maybe not
+    int GetDynamicStartingZone(int num_players)
+    {
+    	BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
+		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+		if ( m_ZoneSettings.use_dynamic_zones )
+		{
+			// Return the first zone based on number of registered players
+			int last_try_zone = 1;
+			BattleRoyaleUtils.Trace("Number of players registered: " + num_players);
+			for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
+			{
+				BattleRoyaleUtils.Trace("Try zone: " + i_zone);
+				last_try_zone = i_zone;
+				BattleRoyaleUtils.Trace("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
+				if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < num_players)
+				{
+					BattleRoyaleUtils.Trace("It's a match! " + i_zone);
+					break;
+				}
+				if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
+				{
+					BattleRoyaleUtils.Trace("Reach the minimum! " + i_zone);
+					break;
+				}
+				BattleRoyaleUtils.Trace("No chance we continue...");
+			}
+
+			return last_try_zone;
+		}
+
+		return 1;  // Default to 1 if dynamic zones are not enabled
+	}
 
 	void OnPlayerDisconnected(PlayerBase player)
 	{

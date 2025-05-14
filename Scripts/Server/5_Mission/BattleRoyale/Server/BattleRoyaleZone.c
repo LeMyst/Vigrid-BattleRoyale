@@ -266,17 +266,22 @@ class BattleRoyaleZone
             max_try--;
 
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
-            float moveDir = Math.RandomFloat(DAYZBR_ZS_MIN_ANGLE, DAYZBR_ZS_MAX_ANGLE) * Math.DEG2RAD; //direction from previous center
 
-            float dX = distance * Math.Sin(moveDir);
-            float dZ = distance * Math.Cos(moveDir);
+            // Get direction toward map center
+            int world_size = GetGame().GetWorld().GetWorldSize();  // Get world size
+            float centerDir = Math.Atan2((world_size / 2) - oldX, (world_size / 2) - oldZ);  // Get direction to center of the map based on the old center
 
-            new_center[0] = oldX + dX;
-            new_center[2] = oldZ + dZ;
+            // Limit angle to ±45 degrees from center direction (90-degree arc)
+            float angleOffset = Math.RandomFloat(-45, 45) * Math.DEG2RAD;  // Random angle offset in radians, between -45 and 45 degrees
+            float moveDir = centerDir + angleOffset;  // Get new direction based on the angle offset
+
+            float dX = distance * Math.Sin(moveDir);  // Calculate the x-component of the movement
+            float dZ = distance * Math.Cos(moveDir);  // Calculate the z-component of the movement
+
+            new_center[0] = oldX + dX;  // Calculate new x-coordinate
+            new_center[2] = oldZ + dZ;  // Calculate new z-coordinate
 
             // We check if the (new center+radius) is inside the world
-            int world_size = GetGame().GetWorld().GetWorldSize();
-
             if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_size || (new_center[2] + new_radius) > world_size)
             {
                 BattleRoyaleUtils.Trace("not inside the world " + new_center[0] + " " + new_center[2] + " " + world_size + " " + new_radius);
@@ -313,7 +318,7 @@ class BattleRoyaleZone
 
                     BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
                     // TODO: crash the server if no good zone found?
-                    //GetGame().RequestExit(0);
+                    GetGame().RequestExit(0);
                     break;
                 }
 

@@ -51,6 +51,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         super.AddPlayer( player );
 
+		// Track the first connected player tick time to determine when to start the game
         if( GetPlayers().Count() == 1 )
         	i_FirstPlayerTick = GetGame().GetTickTime();
     }
