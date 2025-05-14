@@ -10,8 +10,9 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected bool b_IsReady;
 
-    protected Basic_Zone m_BlueZone;
-    protected Basic_Zone m_DebugZone;
+    protected Basic_Zone_int m_BlueZone_int
+    protected Basic_Zone_ext m_BlueZone_ext;
+    protected Basic_Zone_ext m_DebugZone;
 
 #ifdef SPECTATOR
     protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
@@ -165,37 +166,58 @@ class BattleRoyaleClient: BattleRoyaleBase
 				br_previous_countdown = br_rpc.countdown_seconds;
 			}
 
-			// Update current play area
-			if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
-			{
+		// Update current play area
+		if ( br_rpc.current_play_area_center[0] != 0 && br_rpc.current_play_area_center[2] != 0 && br_rpc.current_play_area_radius > 0 )
+		{
+			BattleRoyaleUtils.Trace("Current play area center: " + br_rpc.current_play_area_center);
 			m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
 
 			// TODO: Create multiple p3d objects for different zone sizes
 
 			// Create blue zone if it doesn't exist
-			if ( !m_BlueZone )
+			if ( !m_BlueZone_int )
 			{
-				m_BlueZone = Basic_Zone.Cast( GetGame().CreateObjectEx( "Basic_Zone", br_rpc.current_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
+				BattleRoyaleUtils.Trace("Creating blue zone int");
+				m_BlueZone_int = Basic_Zone_int.Cast( GetGame().CreateObjectEx( "Basic_Zone_int", br_rpc.current_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
 			}
 
 			// Update blue zone scale and position
-			if ( m_BlueZone )
+			if ( m_BlueZone_int )
 			{
 				// The default scale is 10 meters radius
 				BattleRoyaleUtils.Trace("Blue zone scale: " + br_rpc.current_play_area_radius / 10);
-				m_BlueZone.SetScale( br_rpc.current_play_area_radius / 10 );
+//				m_BlueZone_int.SetScale( br_rpc.current_play_area_radius / 10 );
 				BattleRoyaleUtils.Trace("Blue zone position: " + br_rpc.current_play_area_center);
-				m_BlueZone.SetPosition( br_rpc.current_play_area_center );
-				m_BlueZone.Update();
+				m_BlueZone_int.SetPosition( br_rpc.current_play_area_center );
+				m_BlueZone_int.Update();
+			}
+
+			if ( !m_BlueZone_ext )
+			{
+				BattleRoyaleUtils.Trace("Creating blue zone ext");
+				m_BlueZone_ext = Basic_Zone_ext.Cast( GetGame().CreateObjectEx( "Basic_Zone_ext", br_rpc.current_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
+			}
+
+			if ( m_BlueZone_ext )
+			{
+				// The default scale is 10 meters radius
+				BattleRoyaleUtils.Trace("Blue zone scale: " + br_rpc.current_play_area_radius / 10);
+//				m_BlueZone_ext.SetScale( br_rpc.current_play_area_radius / 10 );
+				BattleRoyaleUtils.Trace("Blue zone position: " + br_rpc.current_play_area_center);
+				m_BlueZone_ext.SetPosition( br_rpc.current_play_area_center );
+				m_BlueZone_ext.Update();
 			}
 		}
 
 		// Update future play area (only if it has changed)
 			if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
 			{
-				if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
-				{
-					m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
+				br_previous_future_play_area_center = br_rpc.future_play_area_center;
+			br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
+
+			if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
+			{
+				m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
 
 					UpdateZoneCenterMaker( br_rpc.future_play_area_center );
 
@@ -204,24 +226,22 @@ class BattleRoyaleClient: BattleRoyaleBase
 					ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
 					m_ArtySound.SetAutodestroy(true);
 				}
-			}
-			br_previous_future_play_area_center = br_rpc.future_play_area_center;
-			br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
 
-			if ( !m_DebugZone )
-			{
-				m_DebugZone = Basic_Zone.Cast( GetGame().CreateObjectEx( "Basic_Zone", br_rpc.current_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
-			}
-
-			// Update blue zone scale and position
-			if ( m_DebugZone )
-			{
-				// The default scale is 10 meters radius
-				BattleRoyaleUtils.Trace("Debug zone scale: " + br_rpc.future_play_area_radius / 10);
-				m_DebugZone.SetScale( br_rpc.future_play_area_radius / 10 );
-				BattleRoyaleUtils.Trace("Debug zone position: " + br_rpc.future_play_area_center);
-				m_DebugZone.SetPosition( br_rpc.future_play_area_center );
-				m_DebugZone.Update();
+//				if ( !m_DebugZone )
+//				{
+//					m_DebugZone = Basic_Zone_ext.Cast( GetGame().CreateObjectEx( "Basic_Zone_ext", br_rpc.future_play_area_center, ECE_LOCAL|ECE_PLACE_ON_SURFACE ) );
+//				}
+//
+//				// Update blue zone scale and position
+//				if ( m_DebugZone )
+//				{
+//					// The default scale is 10 meters radius
+//					BattleRoyaleUtils.Trace("Debug zone scale: " + br_rpc.future_play_area_radius / 10);
+////					m_DebugZone.SetScale( br_rpc.future_play_area_radius / 10 );
+//					BattleRoyaleUtils.Trace("Debug zone position: " + br_rpc.future_play_area_center);
+//					m_DebugZone.SetPosition( br_rpc.future_play_area_center );
+//					m_DebugZone.Update();
+//				}
 			}
 		}
 
