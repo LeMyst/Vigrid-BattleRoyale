@@ -33,3 +33,39 @@ class Basic_Zone: House
 		return "Basic_Zone";
 	}
 }
+
+class Basic_Zone_int: House
+{
+	void Basic_Zone_int()
+	{
+		Print("Basic_Zone_int::Basic_Zone_int");
+	}
+
+	void ~Basic_Zone_int()
+	{
+		Print("Basic_Zone_int::~Basic_Zone_int");
+	}
+
+	string GetZoneName()
+	{
+		return "Basic_Zone_int";
+	}
+}
+
+class Basic_Zone_ext: House
+{
+	void Basic_Zone_ext()
+	{
+		Print("Basic_Zone_ext::Basic_Zone_ext");
+	}
+
+	void ~Basic_Zone_ext()
+	{
+		Print("Basic_Zone_ext::~Basic_Zone_ext");
+	}
+
+	string GetZoneName()
+	{
+		return "Basic_Zone_ext";
+	}
+}
