@@ -25,23 +25,41 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
         "123456789123456789" // Dummy SteamID64
     };
 
-    override string GetPath()
+    override string GetProfilePath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "lobby_settings.json";
     }
 
-    override void Save()
+    override string GetMissionPath()
     {
-    	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleLobbyData>.SaveFile(GetPath(), this, errorMessage))
-			ErrorEx(errorMessage);
+        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "lobby_settings.json";
     }
 
-    override void Load()
-    {
-    	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleLobbyData>.LoadFile(GetPath(), this, errorMessage))
+	override void Load()
+	{
+		string errorMessage;
+		// Load from profile folder
+		if (FileExist(GetProfilePath()))
+		{
+			if (!JsonFileLoader<BattleRoyaleLobbyData>.LoadFile(GetProfilePath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
+
+		// Run the upgrade function here to avoid overrides from mission folder
+		Upgrade();
+
+		// Override from mission folder
+		if (FileExist(GetMissionPath()))
+		{
+			if (!JsonFileLoader<BattleRoyaleLobbyData>.LoadFile(GetMissionPath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
+	}
+
+	override void Save()
+	{
+		string errorMessage;
+		if (!JsonFileLoader<BattleRoyaleLobbyData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
-    }
+	}
 };
-#endif

@@ -27,23 +27,41 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // Constant (NOT USED ANYMORE)
     float constant_scale = 0.65;
 
-    override string GetPath()
+    override string GetProfilePath()
+    {
+        return BATTLEROYALE_SETTINGS_FOLDER + "zone_settings.json";
+    }
+
+    override string GetMissionPath()
     {
         return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "zone_settings.json";
     }
 
-    override void Load()
-    {
-    	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetPath(), this, errorMessage))
-			ErrorEx(errorMessage);
-    }
+	override void Load()
+	{
+		string errorMessage;
+		// Load from profile folder
+		if (FileExist(GetProfilePath()))
+		{
+			if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetProfilePath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
 
-    override void Save()
-    {
-    	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleZoneData>.SaveFile(GetPath(), this, errorMessage))
+		// Run the upgrade function here to avoid overrides from mission folder
+		Upgrade();
+
+		// Override from mission folder
+		if (FileExist(GetMissionPath()))
+		{
+			if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetMissionPath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
+	}
+
+	override void Save()
+	{
+		string errorMessage;
+		if (!JsonFileLoader<BattleRoyaleZoneData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
-    }
+	}
 };
-#endif

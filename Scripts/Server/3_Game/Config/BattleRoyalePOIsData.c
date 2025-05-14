@@ -12,22 +12,41 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 	[NonSerialized()]
 	ref map<string, vector> m_OverrideSpawnPositions;
 
-	override string GetPath()
-	{
-		return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "pois_settings.json";
-	}
+    override string GetProfilePath()
+    {
+        return BATTLEROYALE_SETTINGS_FOLDER + "pois_settings.json";
+    }
+
+    override string GetMissionPath()
+    {
+        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "pois_settings.json";
+    }
 
 	override void Load()
 	{
 		string errorMessage;
-		if (!JsonFileLoader<BattleRoyalePOIsData>.LoadFile(GetPath(), this, errorMessage))
-			ErrorEx(errorMessage);
+		// Load from profile folder
+		if (FileExist(GetProfilePath()))
+		{
+			if (!JsonFileLoader<BattleRoyalePOIsData>.LoadFile(GetProfilePath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
+
+		// Run the upgrade function here to avoid overrides from mission folder
+		Upgrade();
+
+		// Override from mission folder
+		if (FileExist(GetMissionPath()))
+		{
+			if (!JsonFileLoader<BattleRoyalePOIsData>.LoadFile(GetMissionPath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
 	}
 
 	override void Save()
 	{
 		string errorMessage;
-		if (!JsonFileLoader<BattleRoyalePOIsData>.SaveFile(GetPath(), this, errorMessage))
+		if (!JsonFileLoader<BattleRoyalePOIsData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
 	}
 
@@ -72,4 +91,3 @@ class BattleRoyaleOverridePOIPosition
 		this.new_position = in_new_position;
 	}
 };
-#endif

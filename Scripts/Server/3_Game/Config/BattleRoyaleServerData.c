@@ -19,23 +19,36 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
     // If the server should warn the players if no UUID is received
     bool warning_no_uuid = false;
 
-    override string GetPath()
+    override string GetProfilePath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "server_settings.json";
     }
 
-    override void Load()
+    override string GetMissionPath()
     {
-    	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleServerData>.LoadFile(GetPath(), this, errorMessage))
-			ErrorEx(errorMessage);
+        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "server_settings.json";
     }
 
-    override void Save()
-    {
-    	string errorMessage;
-        if (!JsonFileLoader<BattleRoyaleServerData>.SaveFile(GetPath(), this, errorMessage))
+	override void Load()
+	{
+		string errorMessage;
+		// Load from profile folder
+		if (FileExist(GetProfilePath()))
+		{
+			if (!JsonFileLoader<BattleRoyaleServerData>.LoadFile(GetProfilePath(), this, errorMessage))
+				ErrorEx(errorMessage);
+		}
+
+		// Run the upgrade function here to avoid overrides from mission folder
+		Upgrade();
+
+		// No load from mission folder for this one
+	}
+
+	override void Save()
+	{
+		string errorMessage;
+		if (!JsonFileLoader<BattleRoyaleServerData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
-    }
+	}
 };
-#endif
