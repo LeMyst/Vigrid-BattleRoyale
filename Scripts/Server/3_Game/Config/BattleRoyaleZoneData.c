@@ -13,7 +13,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
     int shrink_type = 3;  // 1 = Exp, 2 = Lin, 3 = Static, 4 = Const
     // TODO: I think Exp, Lin and Const are not used anymore
-    // TODO: That is because the logic changed at one point and now the zone is
+    // TODO: That is because the logic changed at one point and now the zone is always static
 
     // Exponential (NOT USED ANYMORE)
     float shrink_base = 2.718281828459; // ~ e
