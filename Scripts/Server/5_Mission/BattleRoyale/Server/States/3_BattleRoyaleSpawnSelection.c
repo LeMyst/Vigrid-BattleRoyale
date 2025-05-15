@@ -1,7 +1,6 @@
 #ifdef SERVER
 class BattleRoyaleSpawnSelection: BattleRoyaleState
 {
-	// TODO: Move these to the config
 	int i_SpawnSelectionDuration = 30; // Duration in seconds
 	int i_ExtraScreenTime = 2; // Extra time before the screen closes and switches to the next state
 	ref Timer m_SpawnSelectionTimer;
@@ -17,6 +16,9 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
     	m_Config = BattleRoyaleConfig.GetConfig();
 
         m_GameSettings = m_Config.GetGameData();
+
+		i_SpawnSelectionDuration = m_GameSettings.spawn_selection_duration;
+		i_ExtraScreenTime = m_GameSettings.spawn_selection_extra_time;
 
 		spawn_colors = new set<int>;
 //        spawn_colors.Insert(ARGB(255, 255, 179, 186));  // Light Pastel Pink
