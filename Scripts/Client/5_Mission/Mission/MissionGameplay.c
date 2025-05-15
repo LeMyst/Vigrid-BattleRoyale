@@ -32,9 +32,7 @@ modded class MissionGameplay
 		// Add RPCs
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", this );
-#ifdef Carim
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", this );
-#endif
 	}
 
 	void ~MissionGameplay()
@@ -49,9 +47,7 @@ modded class MissionGameplay
 		// Remove RPCs
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection" );
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection" );
-#ifdef Carim
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint" );
-#endif
 	}
 
 	override void OnInit()

@@ -113,8 +113,14 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 				BattleRoyaleUtils.Trace("Player " + pbTarget.GetIdentity().GetName() + " selected spawn point: " + data.param1.ToString());
 				pbTarget.SetSpawnPos(data.param1); // Set the spawn position for the player
 
+#ifdef Carim
+				int own_color = GetSpawnColor(pbTarget.GetIdentity().GetId());
+#else
+				int own_color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));
+#endif
+
 				// Set the spawn position and color for the player
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, GetSpawnColor(pbTarget.GetIdentity().GetId())), true, pbTarget.GetIdentity(), pbTarget);
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, own_color), true, pbTarget.GetIdentity(), pbTarget);
 
 #ifdef Carim
 				BattleRoyaleUtils.Trace("Test if player is in a group");
@@ -145,6 +151,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		}
 	}
 
+#ifdef Carim
 	int GetSpawnColor(string playerId)
 	{
 		if(player_spawn_colors.Contains(playerId))
@@ -192,4 +199,5 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
 		return color;
 	}
+#endif
 }
