@@ -2,37 +2,58 @@
 
 Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/BattleRoyale
 
-# LICENSE
+## LICENSE
 
 This work is licensed under the [DAYZ STANDALONE PUBLIC LICENSE SHARE ALIKE (DSPL-SA)](LICENSE).  
-Additionally, you may not use this mod or any mod derived from this mod on a commercial server, such as a server with paid priority queue or paid access.  
-And you may not share or package this mod or any mod derived from this mod **in an obfuscated or encrypted manner**.
+Additionally:
 
-# Development
+- You may not use this mod or any mod derived from it on a commercial server, such as a server with paid priority queue or paid access.
+- You may not share or package this mod or any mod derived from it **in an obfuscated or encrypted manner**.
+
+## Development
 
 You can help develop this mod by creating issues and pull requests.  
-There is a minimalistic Discord server for this mod: https://discord.gg/egJWhJAf8b
+Join our Discord server for discussions: https://discord.gg/egJWhJAf8b
 
-# Configuration files
+### Debugging
 
-Configuration files are available in the profile folder. They can be overridden with files in the mission folder.
+The mod supports various logging levels that can be enabled via launch parameters. Use only one parameter at a time:
 
-## Available files
+| Parameter   | Description                                                     |
+|-------------|-----------------------------------------------------------------|
+| `-br-warn`  | Displays warning messages only                                  |
+| `-br-info`  | Displays information messages and warnings                      |
+| `-br-debug` | Displays debug messages, information, and warnings              |
+| `-br-trace` | Displays all messages (trace, debug, information, and warnings) |
 
-Profile folder is where mods saves some of their configuration files and also where the server put the logs. The configuration files are saved in the `Vigrid-BattleRoyale` folder inside the profile folder.
+**Note for Diag users:** When using the Diag executable, trace logging is enabled by default. You can use the parameters above to reduce verbosity if needed.
 
-* `pois_settings.json`: Overriding spawn points.
-* `spawns_settings.json`: Lobby spawn point, players spawn points, avoiding cities spawn points.
-* `zone_settings.json`: Number of zones, zone size and duration, end zone configuration.
-* `lobby_settings.json`: Lobby configuration.
-* `general_settings.json`: Notification, zone damage, airdrop, etc.
-* `server_settings.json`: Vigrid API configuration (non-mandatory). Can't be overridden by mission file.
+## Configuration Files
 
-## Mission specific overrides
+Configuration files are stored in the profile folder and can be overridden with files in the mission folder.
 
-You can override the default configuration files with mission specific settings by creating a folder named `Vigrid-BattleRoyale` in the mission folder. eg: `mpmissions/DayZBattleRoyale.ChernarusPlus
+### Location and Structure
 
-Example for overriding the `avoid_city_spawn` from the `spawns_settings.json` file, create a folder named `Vigrid-BattleRoyale` in the mission folder and create a file named `spawns_settings.json` inside it.
+Files are saved in the `Vigrid-BattleRoyale` folder inside the profile directory:
+
+| Filename                | Purpose                                                                    |
+|-------------------------|----------------------------------------------------------------------------|
+| `pois_settings.json`    | Overriding spawn points                                                    |
+| `spawns_settings.json`  | Lobby spawn point, player spawn points, city avoidance settings            |
+| `zone_settings.json`    | Number of zones, zone size and duration, end zone configuration            |
+| `lobby_settings.json`   | Lobby configuration                                                        |
+| `general_settings.json` | Notification, zone damage, airdrop settings, etc.                          |
+| `server_settings.json`  | Vigrid API configuration (optional, cannot be overridden by mission files) |
+
+### Mission-Specific Overrides
+
+You can override default configurations with mission-specific settings by creating a folder named `Vigrid-BattleRoyale` in your mission folder.
+
+Example path: `mpmissions/DayZBattleRoyale.ChernarusPlus/Vigrid-BattleRoyale/`
+
+#### Example Override
+
+To override the `avoid_city_spawn` setting from `spawns_settings.json`, create this file in your mission folder with the following content:
 
 ```json
 {
@@ -43,12 +64,15 @@ Example for overriding the `avoid_city_spawn` from the `spawns_settings.json` fi
 }
 ```
 
-This going to override the `avoid_city_spawn` from the `spawns_settings.json` file in the profile folder.
+This will override only the `avoid_city_spawn` setting while preserving other settings from the profile folder's configuration.
 
-# Matchmaking and Vigrid Network
+## Matchmaking and Vigrid Network
 
-The Vigrid Network is a matchmaking service for this mod.  
-It's a **non-mandatory feature** that allows players to join a match from the main menu, without having to search for a server in the server browser.  
-If you are hosting your own server, when a player join your server, the client detects that it's not a Vigrid server and fallback to the default behavior.  
-If the player join a Vigrid server from the server browser, the client will connect to the Vigrid API to get the match information.
-At this date, the matchmaking service is limited to the Vigrid Network.
+The Vigrid Network provides matchmaking services for this mod. It's an **optional feature** that allows players to join matches directly from the main menu without searching the server browser.
+
+### How it works:
+
+- **Your own server:** When players join your non-Vigrid server, the client automatically falls back to default behavior.
+- **Vigrid servers:** When players join a Vigrid server (either through matchmaking or the server browser), the client connects to the Vigrid API for match information.
+
+Currently, the matchmaking service is limited to the Vigrid Network.
