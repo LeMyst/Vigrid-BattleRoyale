@@ -86,11 +86,16 @@ class BattleRoyaleUtils: Managed
 		LogServerMessage(TRACE, f.ToString());
 	}
 
-    static bool CheckLogLevel(int level)
-    {
-    	// TODO: Add get log level from config file (if exists)
-        return BATTLEROYALE_LOG_LEVEL >= level;
-    }
+	static bool CheckLogLevel(int level)
+	{
+		// TODO: Add get log level from config file (if exists)
+		string param;
+		if (GetCLIParam("br-trace", param)) return (TRACE >= level);
+		if (GetCLIParam("br-debug", param)) return (DEBUG >= level);
+		if (GetCLIParam("br-info", param)) return (INFO >= level);
+		if (GetCLIParam("br-warn", param)) return (WARN >= level);
+		return BATTLEROYALE_LOG_LEVEL >= level;
+	}
 
     static string GetDateTime(string dateTimeFormat = "%1.%2.%3 %4:%5:%6")
     {
