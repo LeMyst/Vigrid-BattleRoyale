@@ -129,8 +129,6 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 			m_SpawnCanvas.Clear();
 
-			vector map_pos = m_MapWidget.MapToScreen(m_SelectedSpawnPoint);
-
 			float screen_x, screen_y;
 			m_MapWidget.GetScreenPos(screen_x, screen_y);
 
@@ -152,7 +150,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 					distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
 					distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
 
-					RenderOval(mapPos_center[0] - screen_x, mapPos_center[1] - screen_y, distance_A, distance_B, m_TeammateSpawnPointsColor.Get(playerId));
+					WorldRenderOval(m_SpawnCanvas, m_MapWidget, spawn_point[0], spawn_point[2], spawn_size, spawn_size, m_TeammateSpawnPointsColor.Get(playerId));
 				}
 			}
 
@@ -172,7 +170,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 				distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
 				distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
 
-				RenderOval(mapPos_center[0] - screen_x, mapPos_center[1] - screen_y, distance_A, distance_B, ARGB(255, 255, 255, 255));
+				WorldRenderOval(m_SpawnCanvas, m_MapWidget, v_FirstZoneCenter[0], v_FirstZoneCenter[2], f_FirstZoneRadius, f_FirstZoneRadius, ARGB(255, 255, 255, 255));
 			}
 
 			// Define constants for heat map
@@ -383,41 +381,67 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		if (v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
 		{
 			float distance = vector.Distance(tempPosition, v_FirstZoneCenter);
-			if (distance > f_FirstZoneRadius)
+			// Add a small tolerance (25 meters) to account for precision errors
+			if (distance > (f_FirstZoneRadius + 25))
 			{
 				BattleRoyaleUtils.Trace("SpawnSelectionMenu::SelectSpawnPoint Invalid Position (out of first zone)");
 				return;
 			}
 		}
 
-		m_SelectedSpawnPoint = tempPosition;
-
-//		m_MapWidget.ClearUserMarks();
-//		int color = ARGB(255, 255, 0, 255);
-//		m_MapWidget.AddUserMark(m_SelectedSpawnPoint, "", color, "\\DZ\\gear\\navigation\\data\\map_viewpoint_ca.paa");
-
-		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint: %1", m_SelectedSpawnPoint));
+		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint: %1", tempPosition));
 
 		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( m_SelectedSpawnPoint ), true, NULL, player );
+		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( tempPosition ), true, NULL, player );
 	}
 
-	void RenderOval(float cx, float cy, float a, float b, int color = -1)
+	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1)
 	{
-		for(int i = 0; i < 360; i++)
+		if (!world_map || radius_x <= 0 || radius_z <= 0 || !canvas)
 		{
-			float x1 = cx + (a * Math.Cos(i*Math.DEG2RAD));
-			float y1 = cy + (b * Math.Sin(i*Math.DEG2RAD));
+			BattleRoyaleUtils.Trace("WorldRenderOval: Invalid parameters");
+			return;
+		}
 
-			float x2 = cx + (a * Math.Cos((i+1)*Math.DEG2RAD));
-			float y2 = cy + (b * Math.Sin((i+1)*Math.DEG2RAD));
+		float screen_x, screen_y;
+		world_map.GetScreenPos(screen_x, screen_y);
 
-			if (m_SpawnCanvas)
-			{
-				m_SpawnCanvas.DrawLine(x1, y1, x2, y2, 2, color);
-			} else {
-				BattleRoyaleUtils.Trace("m_SpawnCanvas is NULL");
-			}
+		// Create the center point in world coordinates
+		vector worldCenter = Vector(world_x, 0, world_z);
+		vector screenCenter = world_map.MapToScreen(worldCenter);
+
+		// Create edge points in world coordinates for accurate size calculation
+		vector worldEdgeX = Vector(world_x + radius_x, 0, world_z);
+		vector worldEdgeZ = Vector(world_x, 0, world_z + radius_z);
+
+		// Convert edges to screen coordinates
+		vector screenEdgeX = world_map.MapToScreen(worldEdgeX);
+		vector screenEdgeZ = world_map.MapToScreen(worldEdgeZ);
+
+		// Calculate width and height in screen pixels
+		float screenWidth = vector.Distance(screenCenter, screenEdgeX);
+		float screenHeight = vector.Distance(screenCenter, screenEdgeZ);
+
+		// Calculate the center of the oval in screen space
+		float cx = screenCenter[0] - screen_x;
+		float cy = screenCenter[1] - screen_y;
+
+		// Draw the oval
+		int segments = Math.Max(360, Math.Round(Math.Max(screenWidth, screenHeight) / 2));
+		float angleIncrement = 360.0 / segments;
+
+		for(int i = 0; i < segments; i++)
+		{
+			float angle1 = i * angleIncrement;
+			float angle2 = (i + 1) * angleIncrement;
+
+			float x1 = cx + (screenWidth * Math.Cos(angle1 * Math.DEG2RAD));
+			float y1 = cy + (screenHeight * Math.Sin(angle1 * Math.DEG2RAD));
+
+			float x2 = cx + (screenWidth * Math.Cos(angle2 * Math.DEG2RAD));
+			float y2 = cy + (screenHeight * Math.Sin(angle2 * Math.DEG2RAD));
+
+			canvas.DrawLine(x1, y1, x2, y2, 2, color);
 		}
 	}
 
