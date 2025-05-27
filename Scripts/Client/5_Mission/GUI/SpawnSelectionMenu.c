@@ -23,6 +23,9 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	protected ref map<string, vector> m_TeammateSpawnPoints = new map<string, vector>();
 	protected ref map<string, int> m_TeammateSpawnPointsColor = new map<string, int>();
 
+	protected CanvasWidget m_HeatMapCanvas;
+	protected ref array<vector> m_HeatMapSpawnPoints = new array<vector>();
+
 	void SpawnSelectionMenu()
 	{
 		GetGame().Chat("SpawnSelectionMenu::SpawnSelectionMenu", "colorFriendly");
@@ -86,6 +89,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			}
 
 			m_SpawnCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("CanvasSpawnMap"));
+			m_HeatMapCanvas = layoutRoot.FindAnyWidget("CanvasHeatmap");
 		}
 
 		layoutRoot.Update();
@@ -118,7 +122,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			}
 		}
 
-		if(m_SpawnCanvas)
+		if(m_MapWidget && m_SpawnCanvas)
 		{
 			vector m_edgePos_A, m_edgePos_B, mapPos_edge_A, mapPos_edge_B, mapPos_center;
 			float distance_A, distance_B;
@@ -129,22 +133,6 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 			float screen_x, screen_y;
 			m_MapWidget.GetScreenPos(screen_x, screen_y);
-
-//			// Selected spawn zone
-//			m_edgePos_A = m_SelectedSpawnPoint;
-//			m_edgePos_A[0] = m_edgePos_A[0] + spawn_size;
-//
-//			m_edgePos_B = m_SelectedSpawnPoint;
-//			m_edgePos_B[2] = m_edgePos_B[2] + spawn_size;
-//
-//			mapPos_edge_A = m_MapWidget.MapToScreen(m_edgePos_A);
-//			mapPos_edge_B = m_MapWidget.MapToScreen(m_edgePos_B);
-//			mapPos_center = m_MapWidget.MapToScreen(m_SelectedSpawnPoint);
-//
-//			distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
-//			distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
-//
-//			RenderOval(map_pos[0] - screen_x, map_pos[1] - screen_y, distance_A, distance_B);
 
 			// Show the teammates zones
 			foreach (string playerId, vector spawn_point : m_TeammateSpawnPoints)
@@ -185,6 +173,138 @@ class SpawnSelectionMenu extends UIScriptedMenu
 				distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
 
 				RenderOval(mapPos_center[0] - screen_x, mapPos_center[1] - screen_y, distance_A, distance_B, ARGB(255, 255, 255, 255));
+			}
+
+			// Define constants for heat map
+			float heatmap_grid_size = spawn_size * HEATMAP_GRID_SIZE_MULTIPLIER; // Size of each grid cell in the heat map
+
+			// Update the heat map
+			if (m_HeatMapCanvas)
+			{
+				m_HeatMapCanvas.Clear();
+
+				// Declare all variables upfront
+				string grid_key;
+				int grid_x, grid_z;
+				array<string> coords = new array<string>();
+				float world_x, world_z;
+				float intensity, surroundIntensity;
+				int capped_density, r, b, alpha, color, surroundColor;
+				int offset, dx, dz;
+
+				// Create a grid data structure to count spawn points in each cell
+				ref map<string, int> grid_density = new map<string, int>();
+
+				// Count spawn points in each grid cell
+				for (int i = 0; i < m_HeatMapSpawnPoints.Count(); i++)
+				{
+					vector heatPoint = m_HeatMapSpawnPoints[i];
+
+					// Convert to grid coordinates (snap to grid)
+					grid_x = Math.Floor(heatPoint[0] / heatmap_grid_size);
+					grid_z = Math.Floor(heatPoint[2] / heatmap_grid_size);
+
+					// Create a unique key for this grid cell
+					grid_key = grid_x.ToString() + "," + grid_z.ToString();
+
+					// Increment the density counter for this cell
+					if (grid_density.Contains(grid_key))
+						grid_density.Set(grid_key, grid_density.Get(grid_key) + 1);
+					else
+						grid_density.Insert(grid_key, 1);
+				}
+
+				// First pass: render degraded effect for surroundings (lowest layers first)
+				foreach (string key, int density : grid_density)
+				{
+					// Skip if density is 0
+					if (density <= 0)
+						continue;
+
+					// Parse grid coordinates from key
+					coords.Clear();
+					key.Split(",", coords);
+
+					if (coords.Count() != 2)
+						continue;
+
+					grid_x = coords[0].ToInt();
+					grid_z = coords[1].ToInt();
+
+					// Convert back to world coordinates for rendering (use cell center)
+					world_x = grid_x * heatmap_grid_size + (heatmap_grid_size / 2);
+					world_z = grid_z * heatmap_grid_size + (heatmap_grid_size / 2);
+
+					// Cap density at max_density for color calculation
+					capped_density = Math.Min(density, HEATMAP_MAX_DENSITY);
+
+					// Calculate intensity factor (0.0 to 1.0)
+					intensity = capped_density / (float)HEATMAP_MAX_DENSITY;
+
+					// Add degraded effect to surrounding cells
+					for (offset = 2; offset >= 1; offset--)
+					{
+						// Calculate alpha for surrounding cells (50-100 based on offset)
+						alpha = 50 * (3 - offset);
+
+						// Calculate color intensity for surrounding (reduced by distance)
+						surroundIntensity = intensity * (1 - (offset * 0.3));
+
+						// Calculate RGB values - blue (low) to red (high) gradient
+						r = Math.Round(surroundIntensity * 255);
+						b = Math.Round((1 - surroundIntensity) * 255);
+						surroundColor = ARGB(alpha, r, 0, b);
+
+						// Render surrounding cells in a ring pattern
+						for (dx = -offset; dx <= offset; dx++)
+						{
+							for (dz = -offset; dz <= offset; dz++)
+							{
+								// Skip the center and non-edge cells (only draw the ring)
+								if ((Math.AbsInt(dx) != offset) && (Math.AbsInt(dz) != offset))
+									continue;
+
+								RenderFilledSquare(m_HeatMapCanvas, m_MapWidget, world_x + (dx * heatmap_grid_size), world_z + (dz * heatmap_grid_size), heatmap_grid_size, surroundColor);
+							}
+						}
+					}
+				}
+
+				// Second pass: render the primary cells with full intensity
+				foreach (string density_key, int density_value : grid_density)
+				{
+					// Skip if density is 0
+					if (density_value <= 0)
+						continue;
+
+					// Parse grid coordinates from key
+					coords.Clear();
+					density_key.Split(",", coords);
+
+					if (coords.Count() != 2)
+						continue;
+
+					grid_x = coords[0].ToInt();
+					grid_z = coords[1].ToInt();
+
+					// Convert back to world coordinates for rendering (use cell center)
+					world_x = grid_x * heatmap_grid_size + (heatmap_grid_size / 2);
+					world_z = grid_z * heatmap_grid_size + (heatmap_grid_size / 2);
+
+					// Cap density at max_density for color calculation
+					capped_density = Math.Min(density_value, HEATMAP_MAX_DENSITY);
+
+					// Calculate color intensity (0.0 to 1.0)
+					intensity = capped_density / (float)HEATMAP_MAX_DENSITY;
+
+					// Calculate RGB values - blue (low) to red (high) gradient
+					r = Math.Round(intensity * 255);
+					b = Math.Round((1 - intensity) * 255);
+					color = ARGB(150, r, 0, b);
+
+					// Draw the primary cell
+					RenderFilledSquare(m_HeatMapCanvas, m_MapWidget, world_x, world_z, heatmap_grid_size, color);
+				}
 			}
 		}
 	}
@@ -299,6 +419,68 @@ class SpawnSelectionMenu extends UIScriptedMenu
 				BattleRoyaleUtils.Trace("m_SpawnCanvas is NULL");
 			}
 		}
+	}
+
+	/**
+	 * Renders a filled square on the given canvas, using world coordinates for positioning.
+	 *
+	 * @param canvas      The CanvasWidget instance used for rendering.
+	 * @param world_map   The MapWidget instance used to convert world coordinates to screen coordinates.
+	 * @param world_x     The X-coordinate of the square's center in world space.
+	 * @param world_z     The Z-coordinate of the square's center in world space.
+	 * @param size        The size of the square in world units.
+	 * @param color       The color of the square, specified as an ARGB integer. Defaults to -1 (white).
+	 *
+	 * The method calculates the square's position and dimensions in screen space
+	 * and renders it as a series of horizontal lines to fill the area.
+	 */
+	void RenderFilledSquare(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float size, int color = -1)
+	{
+		if (!world_map || size <= 0 || !canvas)
+		{
+			BattleRoyaleUtils.Trace("RenderFilledSquare: Invalid parameters");
+			return;
+		}
+
+		float screen_x, screen_y;
+		world_map.GetScreenPos(screen_x, screen_y);
+
+		// Create the center point in world coordinates
+		vector worldCenter = Vector(world_x, 0, world_z);
+		vector screenCenter = world_map.MapToScreen(worldCenter);
+
+		// Create edge points in world coordinates for accurate size calculation
+		vector worldEdgeX = Vector(world_x + size, 0, world_z);
+		vector worldEdgeZ = Vector(world_x, 0, world_z + size);
+
+		// Convert edges to screen coordinates
+		vector screenEdgeX = world_map.MapToScreen(worldEdgeX);
+		vector screenEdgeZ = world_map.MapToScreen(worldEdgeZ);
+
+		// Calculate width and height in screen pixels
+		float screenWidth = vector.Distance(screenCenter, screenEdgeX);
+		float screenHeight = vector.Distance(screenCenter, screenEdgeZ);
+
+		// Calculate the corners of the square in screen space
+		float cx = screenCenter[0] - screen_x;
+		float cy = screenCenter[1] - screen_y;
+
+		float left = cx - screenWidth/2;
+		float right = cx + screenWidth/2;
+		float top = cy - screenHeight/2;
+		float bottom = cy + screenHeight/2;
+
+		// Draw the filled square using horizontal lines
+		for (float y = top; y <= bottom; y += 1)
+		{
+			canvas.DrawLine(left, y, right, y, 1, color);
+		}
+	}
+
+	void UpdateHeatMap(array<vector> spawnPoints)
+	{
+		BattleRoyaleUtils.Trace("SpawnSelectionMenu::UpdateHeatMap");
+		m_HeatMapSpawnPoints = spawnPoints;
 	}
 
 	vector GetSelectedSpawnPoint()

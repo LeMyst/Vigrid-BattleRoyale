@@ -33,6 +33,7 @@ modded class MissionGameplay
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateHeatMap", this );
 	}
 
 	void ~MissionGameplay()
@@ -48,6 +49,7 @@ modded class MissionGameplay
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection" );
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection" );
 		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint" );
+		GetRPCManager().RemoveRPC( RPC_DAYZBR_NAMESPACE, "UpdateHeatMap" );
 	}
 
 	override void OnInit()
@@ -383,6 +385,25 @@ modded class MissionGameplay
 			if (m)
 			{
 				m.SetTeammateSpawnPoint(data.param1, data.param2, data.param3);
+			}
+		}
+	}
+
+	void UpdateHeatMap(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<array<vector>> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ UPDATEHEATMAP RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("UpdateHeatMap");
+			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
+			if (m)
+			{
+				m.UpdateHeatMap(data.param1);
 			}
 		}
 	}
