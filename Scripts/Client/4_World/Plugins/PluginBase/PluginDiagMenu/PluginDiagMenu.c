@@ -1,4 +1,5 @@
 #ifndef SERVER
+#ifdef DIAG_DEVELOPER
 modded class PluginDiagMenu
 {
 	protected int m_BRDiagRootMenuID;
