@@ -1,4 +1,5 @@
 #ifndef SERVER
+#ifdef DIAG_DEVELOPER
 modded class PluginDiagMenuClient
 {
 	override protected void BindCallbacks()
