@@ -3,6 +3,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 {
 	int i_SpawnSelectionDuration = 30; // Duration in seconds
 	int i_ExtraScreenTime = 2; // Extra time before the screen closes and switches to the next state
+	bool b_ShowHeatMap = true; // Show spawn heatmap
 	ref Timer m_SpawnSelectionTimer;
 
 	private BattleRoyaleConfig m_Config;
@@ -10,6 +11,8 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
 	private ref set<int> spawn_colors;
 	private ref map<string, int> player_spawn_colors = new map<string, int>; // Player ID -> Spawn color
+
+	ref map<string, vector> spawnpoints;
 
     void BattleRoyaleSpawnSelection()
     {
@@ -19,6 +22,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
 		i_SpawnSelectionDuration = m_GameSettings.spawn_selection_duration;
 		i_ExtraScreenTime = m_GameSettings.spawn_selection_extra_time;
+		b_ShowHeatMap = m_GameSettings.show_spawn_heatmap;
 
 		spawn_colors = new set<int>;
 //        spawn_colors.Insert(ARGB(255, 255, 179, 186));  // Light Pastel Pink
@@ -41,6 +45,8 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 //		spawn_colors.Insert(ARGB(255, 127, 0, 255));  // Purple
 //		spawn_colors.Insert(ARGB(255, 127, 255, 0));  // Lime
 //		spawn_colors.Insert(ARGB(255, 0, 127, 255));  // Light Blue
+
+		spawnpoints = new map<string, vector>();
     }
 
     override void Activate()
@@ -113,6 +119,21 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 			if(pbTarget)
 			{
 				BattleRoyaleUtils.Trace("Player " + pbTarget.GetIdentity().GetName() + " selected spawn point: " + data.param1.ToString());
+
+				if (b_ShowHeatMap)
+				{
+					// Add the spawn point to the player's spawnpoints map
+					spawnpoints.Set(pbTarget.GetIdentity().GetId(), data.param1);
+
+					// Update the heatmap for the players
+					array<vector> heatmap_points = new array<vector>;
+					foreach (string id, vector point : spawnpoints)
+					{
+						heatmap_points.Insert(point);
+					}
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHeatMap", new Param1<array<vector>>(heatmap_points), true );
+				}
+
 				pbTarget.SetSpawnPos(data.param1); // Set the spawn position for the player
 
 #ifdef Carim
