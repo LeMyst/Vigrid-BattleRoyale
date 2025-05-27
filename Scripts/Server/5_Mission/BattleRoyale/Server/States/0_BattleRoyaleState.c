@@ -47,12 +47,14 @@ class BattleRoyaleState: Timeable
     //state controls
     void Activate()
     {
+    	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleState::Activate: %1", GetName()));
         //Note: this is called AFTER players are added
         b_IsActive = true;
     }
 
     void Deactivate()
     {
+    	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleState::Deactivate: %1", GetName()));
         //Note: this is called BEFORE players are removed
         //--- stop all repeating timers
         StopTimers();
@@ -101,18 +103,21 @@ class BattleRoyaleState: Timeable
 
     void AddPlayer(PlayerBase player)
     {
+    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::AddPlayer: %1", player.GetIdentityName()));
         m_Players.Insert( player );
         OnPlayerCountChanged();
     }
 
     void RemovePlayer(PlayerBase player)
     {
+    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::RemovePlayer: %1", player.GetIdentityName()));
         m_Players.RemoveItem(player);
         OnPlayerCountChanged();
     }
 
     ref array<PlayerBase> RemoveAllPlayers()
     {
+    	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleState::RemoveAllPlayers: removed %1 players", m_Players.Count()));
         ref array<PlayerBase> result_array = new array<PlayerBase>();
         result_array.InsertAll(m_Players);
         m_Players.Clear();
@@ -187,6 +192,7 @@ class BattleRoyaleState: Timeable
     //CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
     void MessagePlayers(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
     {
+		BattleRoyaleUtils.Info(string.Format("MessagePlayers: %1", message));
         StringLocaliser text = new StringLocaliser( message );
         ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create();
     }
@@ -198,6 +204,7 @@ class BattleRoyaleState: Timeable
             PlayerIdentity identity = player.GetIdentity();
             if(identity)
             {
+            	BattleRoyaleUtils.Info(string.Format("MessagePlayer: %1 %2", identity.GetName(), message));
                 StringLocaliser text = new StringLocaliser( message );
                 ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create(identity);
             }
@@ -220,6 +227,7 @@ class BattleRoyaleState: Timeable
 	 */
 	void MessagePlayersUntranslatedTimed(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
 	{
+		BattleRoyaleUtils.Info(string.Format("MessagePlayersUntranslated: %1", message));
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( message, time, param1, param2, param3, param4, param5 ), true);
 	}
 
@@ -245,6 +253,7 @@ class BattleRoyaleState: Timeable
 	    {
 	    	if(player.GetIdentity())
 	    	{
+	    		BattleRoyaleUtils.Info(string.Format("MessagePlayerUntranslated: %1 %2", player.GetIdentity().GetName(), message));
 	    		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( message, time, param1, param2, param3, param4, param5 ), true, player.GetIdentity());
 	    	}
 	    }

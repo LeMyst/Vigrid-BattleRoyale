@@ -17,6 +17,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 
     override void Activate()
     {
+    	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleCountReached: Activating with time to start: %1 seconds", i_TimeToStart));
         super.Activate();
 
         string second = "seconds";
