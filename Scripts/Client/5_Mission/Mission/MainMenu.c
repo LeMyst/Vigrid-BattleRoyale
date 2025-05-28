@@ -188,6 +188,18 @@ modded class MainMenu
 		string m_ConnectPort;
 		GetCLIParam("connect", m_ConnectAddress);
 		GetCLIParam("port", m_ConnectPort);
+
+		if (m_ConnectAddress.Contains(":"))
+		{
+			array<string> connectParts = new array<string>;
+			m_ConnectAddress.Split(":", connectParts);
+			if (connectParts.Count() >= 2)
+			{
+				m_ConnectAddress = connectParts[0];
+				m_ConnectPort = connectParts[1];
+			}
+		}
+
 		b_MatchMakingAvailable = matchMakingWebhook.isMatchMakingAvailable( m_ConnectAddress, m_ConnectPort );
 		BattleRoyaleUtils.Trace("MatchMaking Available: " + b_MatchMakingAvailable);
 
