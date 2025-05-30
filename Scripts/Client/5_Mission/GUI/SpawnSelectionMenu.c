@@ -89,7 +89,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			}
 
 			m_SpawnCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("CanvasSpawnMap"));
-			m_HeatMapCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("CanvasHeatMap"));
+			m_HeatMapCanvas = CanvasWidget.Cast(layoutRoot.FindAnyWidget("CanvasHeatmap"));
 		}
 
 		layoutRoot.Update();
