@@ -35,6 +35,12 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	void ~SpawnSelectionMenu()
 	{
 		g_Game.SetKeyboardHandle(NULL);
+
+		if (m_Hud)
+		{
+			m_Hud.ShowHudUI(true);
+			m_Hud.ShowQuickbarUI(true);
+		}
 	}
 
 	override void OnShow()
