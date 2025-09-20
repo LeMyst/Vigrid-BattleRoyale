@@ -89,7 +89,7 @@ SetupLaunch.bat      # Validate configuration (run before launch)
 │       ├── 3_Game/      # Server game logic
 │       ├── 4_World/     # Server world management
 │       └── 5_Mission/   # Server mission control
-├── Data/                # Configuration and data files
+├── Data/                # Resource files and configurations
 ├── GUI/                 # User interface assets
 ├── Models/              # 3D models and shapes
 ├── Workbench/           # Build system and tools
@@ -104,7 +104,6 @@ SetupLaunch.bat      # Validate configuration (run before launch)
 - **`Scripts/Client/config.cpp`**: Client-side mod configuration and patches
 - **`Scripts/Server/config.cpp`**: Server-side mod configuration
 - **`Scripts/Client/2_GameLib/BattleRoyaleConstants.c`**: Version and debug constants
-- **`Data/config.cpp`**: Data patches and configurations
 - **`Workbench/project.cfg`**: Build project settings (ModName, dependencies, launch params)
 - **`Workbench/user.cfg`**: User-specific paths and settings (copy from user_sample.cfg)
 
@@ -140,7 +139,6 @@ To validate changes:
 - Battle royale logic: `Scripts/*/5_Mission/BattleRoyale/`
 - UI modifications: `Scripts/Client/5_Mission/` and `GUI/`
 - Game mechanics: `Scripts/*/3_Game/`
-- Configuration: `Data/` directory JSON files
 
 ## Important Notes for Coding Agents
 
@@ -150,8 +148,7 @@ To validate changes:
 4. **Client/Server separation** is critical - changes must go in correct directories
 5. **Dependencies are strict** - respect the mod loading order in configs
 6. **Test incrementally** - build and test small changes before major modifications
-7. **Configuration files** in `Data/` use JSON format and are loaded at runtime
-8. **UI changes** require both script and GUI asset modifications
+7. **UI changes** require both script and GUI asset modifications
 
 ### Debug Configuration
 The mod supports multiple debug levels via launch parameters:
