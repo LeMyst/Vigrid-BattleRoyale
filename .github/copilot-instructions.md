@@ -42,7 +42,7 @@ Deploy.bat
 ```
 - This is the primary build command
 - Calls `CI.bat` which orchestrates the entire build
-- Creates PBO files (Packed Bank Objects - DayZ mod format)
+- Creates PBO files (Packed Bohemia Object archives - DayZ mod format)
 - **Timing**: Can take 2-5 minutes depending on system
 - **Validates**: P:\ drive mount, configuration files, tool availability
 
