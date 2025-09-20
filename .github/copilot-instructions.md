@@ -47,7 +47,7 @@ Deploy.bat
 - **Validates**: P:\ drive mount, configuration files, tool availability
 
 #### Build Validation Steps
-1. Check for P:\ drive: `if not exist "P:\" echo "Mount P: drive first"`
+1. Check for P:\ drive: `if not exist "P:\" ( echo Mount P: drive first & exit /b 1 )`
 2. Verify configuration: Build will fail if `project.cfg` or `user.cfg` missing
 3. Monitor build logs in `Workbench/Logs/` directory
 4. Success indicator: `Workbench/Logs/Build.success` file created
