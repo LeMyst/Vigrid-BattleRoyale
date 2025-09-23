@@ -4,7 +4,6 @@ modded class MissionBase
 	override UIScriptedMenu CreateScriptedMenu(int id)
 	{
 #ifndef NO_GUI
-		GetGame().Chat("CreateScriptedMenu: " + id.ToString(), "colorFriendly");
 		if (id == MENU_SPAWN_SELECTION)
 		{
 			GetGame().Chat("CreateScriptedMenu: MENU_SPAWN_SELECTION", "colorFriendly");
