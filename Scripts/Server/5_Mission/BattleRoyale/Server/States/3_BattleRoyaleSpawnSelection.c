@@ -53,9 +53,6 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
     {
         super.Activate();
 
-        // Disable user input on all clients (is this needed?)
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true);
-
         // Send RPC to all players to show spawn selection UI
         ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(GetDynamicStartingZone(m_Players.Count())).GetArea();
         vector v_FirstZoneCenter = spawn_area.GetCenter();
@@ -66,6 +63,12 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
         // Add timer to deactivate this state after a certain time
         m_SpawnSelectionTimer = AddTimer(i_SpawnSelectionDuration + i_ExtraScreenTime, this, "OnSpawnSelectionTimeout", NULL, false);
+
+        // Re-enable player input on clients
+		EnableInput();
+
+		// Disable player input on clients after 0.5 seconds (500ms) to reset the current animations (e.g. keep walking if they were walking)
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "DisableInput", 500, false);
 
         // Listen to player spawn selection
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", this);
@@ -97,6 +100,19 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
     {
         return "Spawn Selection State";
     }
+
+    void EnableInput()
+	{
+		// Enable user input on all clients
+		// Note: 'SetInput' expects 'true' to disable input and 'false' to enable input. So we pass 'false' here to enable input.
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
+	}
+
+    void DisableInput()
+    {
+		// Disable user input on all clients
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true);
+	}
 
     void OnSpawnSelectionTimeout()
 	{
