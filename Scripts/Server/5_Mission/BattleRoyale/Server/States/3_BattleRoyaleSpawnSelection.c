@@ -37,11 +37,11 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 //        spawn_colors.Insert(ARGB(255, 229, 255, 179));  // Light Pastel Lime Green
 		spawn_colors.Insert(ARGB(255, 255, 0, 0));  // Red
 		spawn_colors.Insert(ARGB(255, 0, 255, 0));  // Green
-		spawn_colors.Insert(ARGB(255, 0, 0, 255));  // Blue
+//		spawn_colors.Insert(ARGB(255, 0, 0, 255));  // Blue
 		spawn_colors.Insert(ARGB(255, 255, 255, 0));  // Yellow
 		spawn_colors.Insert(ARGB(255, 255, 0, 255));  // Magenta
 //		spawn_colors.Insert(ARGB(255, 0, 255, 255));  // Cyan
-//		spawn_colors.Insert(ARGB(255, 255, 127, 0));  // Orange
+		spawn_colors.Insert(ARGB(255, 255, 127, 0));  // Orange
 //		spawn_colors.Insert(ARGB(255, 127, 0, 255));  // Purple
 //		spawn_colors.Insert(ARGB(255, 127, 255, 0));  // Lime
 //		spawn_colors.Insert(ARGB(255, 0, 127, 255));  // Light Blue
@@ -198,11 +198,20 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 			return player_spawn_colors.Get(playerId);  // Return the color if already assigned
 		}
 
+		int color = -1;  // Declare color variable
+
+		if(MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals.Get(playerId) == NULL)
+		{
+			BattleRoyaleUtils.Trace("Player " + playerId + " is not in a group, assigning random color");
+			color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));  // Get a random color
+			player_spawn_colors.Set(playerId, color);
+			return color;
+		}
+
 		// Get the others teammates
 		array<string> teammates = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals.Get(playerId).ToArray();
 
 		// Find a color that is not already used by the teammates
-		int color = -1;
 		int try_count = 0;
 		while(true)
 		{
