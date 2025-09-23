@@ -44,12 +44,6 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         super.Activate();
 
-		if ( m_ServerData.enable_vigrid_api )
-		{
-			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
-			serverWebhook.LockServer();
-		}
-
         StartMatchWebhook matchWebhook = new StartMatchWebhook( m_ServerData.webhook_jwt_token );
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
         matchWebhook.startMatch( br_instance.match_uuid );

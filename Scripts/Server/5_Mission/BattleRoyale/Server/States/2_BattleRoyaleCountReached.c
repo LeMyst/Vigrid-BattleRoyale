@@ -20,6 +20,15 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
     	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleCountReached: Activating with time to start: %1 seconds", i_TimeToStart));
         super.Activate();
 
+    	BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
+		if ( m_ServerData.enable_vigrid_api )
+		{
+			// Lock the server via webhook
+			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
+			serverWebhook.LockServer();
+		}
+
         string second = "seconds";
         if ( i_TimeToStart == 1 )
             second = "second";
