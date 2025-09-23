@@ -67,7 +67,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         // Re-enable player input on clients
 		EnableInput();
 
-		// Disable player input on clients after 1 second to reset the current animations (e.g. keep walking if they were walking)
+		// Disable player input on clients after 0.5 seconds (500ms) to reset the current animations (e.g. keep walking if they were walking)
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "DisableInput", 500, false);
 
         // Listen to player spawn selection
