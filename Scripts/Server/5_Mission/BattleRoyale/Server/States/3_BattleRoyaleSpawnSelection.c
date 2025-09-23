@@ -104,6 +104,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
     void EnableInput()
 	{
 		// Enable user input on all clients
+		// Note: 'SetInput' expects 'true' to disable input and 'false' to enable input. So we pass 'false' here to enable input.
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(false), true);
 	}
 
