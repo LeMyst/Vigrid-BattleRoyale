@@ -18,7 +18,6 @@ class BattleRoyaleRound: BattleRoyaleState
 
 #ifdef Carim
     int i_MaxPartySize;
-    autoptr set<string> remaining_parties
 #endif
 
     protected ref array<ref Timer> m_MessageTimers;
