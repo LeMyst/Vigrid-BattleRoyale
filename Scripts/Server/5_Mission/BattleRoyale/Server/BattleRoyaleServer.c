@@ -28,6 +28,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 #endif
 #endif
 
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "CreateZone", this, SingleplayerExecutionType.Server);
+
         Init();
     }
 
@@ -40,6 +42,32 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         delete m_Timer;
     }
+
+    void CreateZone(CallType type, ref ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		Param1<vector> data;
+		if ( !ctx.Read(data) ) return;
+
+		vector pos = data.param1;
+
+		float scale = Math.RandomFloatInclusive( 0.5, 10.0 );
+
+		Basic_Zone_int zone_int = Basic_Zone_int.Cast( GetGame().CreateObjectEx( "Basic_Zone_int", pos, ECE_SETUP | ECE_UPDATEPATHGRAPH | ECE_CREATEPHYSICS | ECE_NOLIFETIME | ECE_DYNAMIC_PERSISTENCY ) );
+		if ( zone_int )
+		{
+			BattleRoyaleUtils.Trace("Zone created '" + zone_int.GetZoneName() + "' on position " + pos + " with scale " + scale);
+			zone_int.SetScale( scale );
+			zone_int.Update();
+		}
+
+		Basic_Zone_ext zone_ext = Basic_Zone_ext.Cast( GetGame().CreateObjectEx( "Basic_Zone_ext", pos, ECE_SETUP | ECE_UPDATEPATHGRAPH | ECE_CREATEPHYSICS | ECE_NOLIFETIME | ECE_DYNAMIC_PERSISTENCY ) );
+		if ( zone_ext )
+		{
+			BattleRoyaleUtils.Trace("Zone created '" + zone_ext.GetZoneName() + "' on position " + pos + " with scale " + scale);
+			zone_ext.SetScale( scale );
+			zone_ext.Update();
+		}
+	}
 
     void Init()
     {
