@@ -10,7 +10,7 @@ modded class DayZPlayerImplement
 			"Next time, try to aim better...",
 			"Congrats, you just found out bullets don’t mix well with you.",
 			"Looks like your battle royale career just hit a respawn checkpoint.",
-			"Newsflash: bushes don’t stop bullets. (or are they?)",
+			"Newsflash: bushes don’t stop bullets. (or do they?)",
 			"Respawn isn’t a strategy, it’s your lifestyle.",
 			"Running in a straight line? Bold choice. Stupid, but bold.",
 			"Forget kills, you’ve mastered the art of dying creatively.",
