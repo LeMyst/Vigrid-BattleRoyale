@@ -84,19 +84,32 @@ class BattleRoyaleClient: BattleRoyaleBase
 		float angle;
 		bool isInsideZone;
 
-		// Show distance when we have a white zone
-		if( m_FuturePlayArea )
+		// First check if player is outside current play area
+		if (m_CurrentPlayArea)
 		{
-            isInsideZone = GetZoneDistance( m_FuturePlayArea, distExt, distInt, angle );
-            gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
+			// Check if player is inside current play area and get distExt, distInt and angle
+			isInsideZone = GetZoneDistance(m_CurrentPlayArea, distExt, distInt, angle);
+
+			// If outside current play area, show distance to it
+			if (!isInsideZone)
+			{
+				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle);
+			}
+			// Player is inside current play area, check if future play area exists
+			else if (m_FuturePlayArea)
+			{
+				isInsideZone = GetZoneDistance(m_FuturePlayArea, distExt, distInt, angle);
+				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle);
+			}
+			// Player inside current area but no future area
+			else
+			{
+				gameplay.UpdateZoneDistance(true, 0, distInt, angle);
+			}
 		}
-		// otherwise, show distance to the blue zone
-		else if( m_CurrentPlayArea )
+		// No current play area
+		else
 		{
-			isInsideZone = GetZoneDistance( m_CurrentPlayArea, distExt, distInt, angle );
-			gameplay.UpdateZoneDistance( isInsideZone, distExt, distInt, angle );
-		// otherwise, hide distance
-		} else {
 			gameplay.HideDistance();
 		}
 
@@ -108,7 +121,9 @@ class BattleRoyaleClient: BattleRoyaleBase
             if (distExt > 0)
             {
                 player.QueueAddGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
-            } else {
+            }
+            else
+            {
                 player.QueueRemoveGlassesEffect(PPERequesterBank.REQ_BATTLEROYALE);
             }
         }
