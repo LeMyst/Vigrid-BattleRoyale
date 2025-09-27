@@ -244,26 +244,17 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
     {
-		int nb_players = GetPlayers().Count();
-
 		if(IsActive())
 		{
 #ifdef Carim
-			if(i_MaxPartySize < 1 || nb_players <= i_MaxPartySize)
-			{
-				if( nb_players <= 1 || GetGroupsCount() <= 1 )
-				{
-					BattleRoyaleUtils.Trace(GetName() + " IsComplete (Groups)!");
-					Deactivate();
-				}
-			}
+			if(GetPlayers().Count() <= 1 || GetGroupsCount() <= 1)
 #else
-			if( nb_players <= 1 )
+			if(GetPlayers().Count() <= 1)
+#endif
 			{
 				BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
 				Deactivate();
 			}
-#endif
         }
         return super.IsComplete();
     }

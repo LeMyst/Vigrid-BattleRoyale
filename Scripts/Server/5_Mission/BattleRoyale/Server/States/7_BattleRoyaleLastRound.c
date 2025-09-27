@@ -128,13 +128,12 @@ class BattleRoyaleLastRound: BattleRoyaleState
     {
         if(IsActive())
         {
-            if(GetPlayers().Count() < 2)
-                Deactivate();
-
 #ifdef Carim
-            if(GetGroupsCount() < 2)
-                Deactivate();
+            if(GetPlayers().Count() <= 1 || GetGroupsCount() <= 1)
+#else
+			if(GetPlayers().Count() <= 1)
 #endif
+                Deactivate();
         }
 
         return super.IsComplete();
