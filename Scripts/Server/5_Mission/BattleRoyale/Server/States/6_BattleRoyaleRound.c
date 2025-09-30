@@ -449,58 +449,57 @@ class BattleRoyaleRound: BattleRoyaleState
         return true;
     }
 
-    void SpawnAirdropMessage()
-    {
-        MessagePlayersUntranslated("STR_BR_AIR_DEPLOYED");
-    }
+	void SpawnAirdropMessage()
+	{
+		MessagePlayersUntranslated("STR_BR_AIR_DEPLOYED");
+	}
 
-    // Round messaging
-    //TODO: add these to dayzbrconstants and use String Replace to insert the seconds or minutes values
-    void NotifyTimeTillLockSeconds(int seconds)
-    {
-        if(seconds > 1)
-            MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_SECONDS", seconds.ToString());
-        else
-            MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_SECOND", seconds.ToString());
-    }
+	// Round messaging
+	void NotifyTimeTillLockSeconds(int seconds)
+	{
+		if(seconds > 1)
+			MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_SECONDS", seconds.ToString());
+		else
+			MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_SECOND", seconds.ToString());
+	}
 
-    void NotifyTimeTillLockMinutes(int minutes)
-    {
-        if(minutes > 1)
-            MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_MINUTES", minutes.ToString());
-        else
-            MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_MINUTE", minutes.ToString());
-    }
+	void NotifyTimeTillLockMinutes(int minutes)
+	{
+		if(minutes > 1)
+			MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_MINUTES", minutes.ToString());
+		else
+			MessagePlayersUntranslated("STR_BR_CURRENT_ZONE_WILL_LOCK_IN_MINUTE", minutes.ToString());
+	}
 
-    void NotifyTimeTillNewZoneSeconds(int seconds)
-    {
-        if(seconds > 1)
-            MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_SECONDS", seconds.ToString());
-        else
-        	MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_SECOND", seconds.ToString());
-    }
+	void NotifyTimeTillNewZoneSeconds(int seconds)
+	{
+		if(seconds > 1)
+			MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_SECONDS", seconds.ToString());
+		else
+			MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_SECOND", seconds.ToString());
+	}
 
-    void NotifyTimeTillNewZoneMinutes(int minutes)
-    {
-        if(minutes > 1)
-        	MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_MINUTES", minutes.ToString());
-        else
+	void NotifyTimeTillNewZoneMinutes(int minutes)
+	{
+		if(minutes > 1)
+			MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_MINUTES", minutes.ToString());
+		else
 			MessagePlayersUntranslated("STR_BR_A_NEW_ZONE_WILL_APPEAR_IN_MINUTE", minutes.ToString());
-    }
+	}
 
-    void NotifyTimeTillNoZoneSeconds(int seconds)
-    {
-        if(seconds > 1)
-            MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_SECONDS", seconds.ToString());
-        else
-            MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_SECOND", seconds.ToString());
-    }
+	void NotifyTimeTillNoZoneSeconds(int seconds)
+	{
+		if(seconds > 1)
+			MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_SECONDS", seconds.ToString());
+		else
+			MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_SECOND", seconds.ToString());
+	}
 
-    void NotifyTimeTillNoZoneMinutes(int minutes)
-    {
-        if(minutes > 1)
-            MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_MINUTES", minutes.ToString());
+	void NotifyTimeTillNoZoneMinutes(int minutes)
+	{
+		if(minutes > 1)
+			MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_MINUTES", minutes.ToString());
 		else
 			MessagePlayersUntranslated("STR_BR_THE_LAST_ZONE_WILL_APPEAR_IN_MINUTE", minutes.ToString());
-    }
+	}
 }
