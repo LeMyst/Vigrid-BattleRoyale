@@ -119,30 +119,30 @@ class BattleRoyaleLastRound: BattleRoyaleState
         return true;
     }
 
-    override string GetName()
-    {
-        return "Last Gameplay State";
-    }
+	override string GetName()
+	{
+		return "Last Gameplay State";
+	}
 
-    override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
-    {
-        if(IsActive())
-        {
+	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
+	{
+		if(IsActive())
+		{
 #ifdef Carim
-            if(GetPlayers().Count() <= 1 || GetGroupsCount() <= 1)
+			if(GetPlayers().Count() <= 1 || GetGroupsCount() <= 1)
 #else
 			if(GetPlayers().Count() <= 1)
 #endif
-                Deactivate();
-        }
+				Deactivate();
+		}
 
-        return super.IsComplete();
-    }
+		return super.IsComplete();
+	}
 
-    override void OnPlayerKilled(PlayerBase player, Object source)
-    {
-        super.OnPlayerKilled( player, source );
-    }
+	override void OnPlayerKilled(PlayerBase player, Object source)
+	{
+		super.OnPlayerKilled( player, source );
+	}
 
     override void OnPlayerTick(PlayerBase player, float timeslice)
     {
