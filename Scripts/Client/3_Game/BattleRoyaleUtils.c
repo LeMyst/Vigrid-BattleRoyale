@@ -88,12 +88,29 @@ class BattleRoyaleUtils: Managed
 
 	static bool CheckLogLevel(int level)
 	{
-		// TODO: Add get log level from config file (if exists)
+		// Check command line params
 		string param;
 		if (GetCLIParam("br-trace", param)) return (TRACE >= level);
 		if (GetCLIParam("br-debug", param)) return (DEBUG >= level);
 		if (GetCLIParam("br-info", param)) return (INFO >= level);
 		if (GetCLIParam("br-warn", param)) return (WARN >= level);
+		if (GetCLIParam("br-none", param)) return false;  // Disable all logging
+
+		// Check server config
+		int config_br_log_level = GetGame().ServerConfigGetInt("BRLogLevel");
+		if (config_br_log_level > 0)
+		{
+			return (config_br_log_level >= level);
+		}
+		// config_br_log_level == 0 can mean that the config value is not set
+		// In that case we use the default log level defined by BATTLEROYALE_LOG_LEVEL
+		// Check negative value to disable all logging
+		if (config_br_log_level < 0)
+		{
+			return false;  // Disable all logging
+		}
+
+		// Default log level
 		return BATTLEROYALE_LOG_LEVEL >= level;
 	}
 
