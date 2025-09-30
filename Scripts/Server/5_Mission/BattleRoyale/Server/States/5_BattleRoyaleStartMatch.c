@@ -99,14 +99,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         return super.IsComplete();
     }
 
-    //TODO: add this to battleroyaleconstants and use string replace to insert seconds_till
     void MessageUnlock(int seconds_till)
     {
-        string second = "second";
-        if(seconds_till != 1)
-            second = "seconds";
-
-        MessagePlayers("Starting in " + seconds_till.ToString() + " " + second + "!");
+        if(seconds_till > 1)
+			MessagePlayersUntranslated("STR_BR_STARTING_IN_SECONDS", seconds_till.ToString());
+		else
+			MessagePlayersUntranslated("STR_BR_STARTING_IN_SECOND", seconds_till.ToString());
     }
 
     void UnlockPlayers()
