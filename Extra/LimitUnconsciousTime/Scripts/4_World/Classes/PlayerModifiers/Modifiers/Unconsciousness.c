@@ -13,11 +13,26 @@ modded class UnconsciousnessMdfr
 
 	override bool ActivateCondition(PlayerBase player)
 	{
-		if(super.ActivateCondition(player))
+		bool config_disable_unconsciousness = GetGame().ServerConfigGetInt("BRDisableUnconsciousness") == 1;
+		if(!config_disable_unconsciousness)
 		{
-			// Save the time when the player became unconscious
-			player.m_UnconsciousStartTime = GetGame().GetTime();
-			return true;
+			if(super.ActivateCondition(player))
+			{
+				// Save the time when the player became unconscious
+				player.m_UnconsciousStartTime = GetGame().GetTime();
+				return true;
+			}
+		} else {
+			if(super.ActivateCondition(player))
+			{
+				// Force player to prone if unconsciousness is disabled
+				HumanCommandMove hcm = player.StartCommand_Move();
+				hcm = player.GetCommand_Move();
+				if (hcm)
+				{
+					hcm.ForceStance(DayZPlayerConstants.STANCEIDX_PRONE);
+				}
+			}
 		}
 
 		return false;
