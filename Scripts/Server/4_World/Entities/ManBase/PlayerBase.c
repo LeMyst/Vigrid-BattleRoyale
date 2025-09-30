@@ -18,7 +18,7 @@ modded class PlayerBase
 	int br_position = -1;
 	string player_steamid = "";
 
-	vector spawn_pos = "0 0 0";
+	vector spawn_pos = vector.Zero;
 
 	PlayerBase last_unconscious_source;
 	float m_UnconsciousStartTime;

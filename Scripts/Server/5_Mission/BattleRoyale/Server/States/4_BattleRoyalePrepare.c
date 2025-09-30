@@ -61,11 +61,11 @@ class BattleRoyalePrepare: BattleRoyaleState
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
 
-        // Resend hide Spawn Selection UI RPC in case some players didn't get it
-        if (b_ShowSpawnSelectionMenu)
-        {
-        	GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", NULL, true);
-        }
+		// Resend hide Spawn Selection UI RPC in case some players didn't get it
+		if (b_ShowSpawnSelectionMenu)
+		{
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", NULL, true);
+		}
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
@@ -526,7 +526,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 					float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
 					vector position = process_player.GetSpawnPos();
 
-					if( position == "0 0 0" )
+					if( position == vector.Zero )
 					{
 						BattleRoyaleUtils.Trace("Player " + process_player.GetIdentity().GetName() + " didn't select a spawn point, we randomly teleport them");
 						Teleport(process_player);
@@ -538,7 +538,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 					vector random_position = GetRandomSafePosition(position, f_SpawnSelectionRadius);
 
-					if ( random_position == "0 0 0" )
+					if ( random_position == vector.Zero )
 					{
 						BattleRoyaleUtils.Trace("No safe position found, we randomly teleport the player");
 						Teleport(process_player);

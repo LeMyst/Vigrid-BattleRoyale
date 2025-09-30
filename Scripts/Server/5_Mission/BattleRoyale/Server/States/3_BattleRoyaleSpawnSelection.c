@@ -96,7 +96,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		ref array<PlayerBase> players = GetPlayers();
 		foreach (PlayerBase player : players)
 		{
-			if( player.GetSpawnPos() == "0 0 0" ) // Player didn't select a spawn point
+			if( player.GetSpawnPos() == vector.Zero ) // Player didn't select a spawn point
 			{
 				BattleRoyaleUtils.Trace("Player " + player.GetIdentity().GetName() + " didn't select a spawn point, checking party members");
 #ifdef Carim
@@ -105,7 +105,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 				{
 					foreach (PlayerBase member : groupMembers)
 					{
-						if( member != player && member.GetSpawnPos() != "0 0 0" ) // Found a party member who selected a spawn point
+						if( member != player && member.GetSpawnPos() != vector.Zero ) // Found a party member who selected a spawn point
 						{
 							BattleRoyaleUtils.Trace("Assigning spawn point of " + member.GetIdentity().GetName() + " to " + player.GetIdentity().GetName());
 							player.SetSpawnPos(member.GetSpawnPos());
@@ -115,7 +115,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 				}
 
 				// If still no spawn point assigned, use a random one from the map
-				if( player.GetSpawnPos() == "0 0 0" )
+				if( player.GetSpawnPos() == vector.Zero )
 				{
 					BattleRoyaleUtils.Trace("No party members with selected spawn point, assigning random spawn point");
 					// Get a random spawn point from the spawnpoints map
@@ -132,7 +132,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 						{
 							foreach (PlayerBase member2 : groupMembers)
 							{
-								if( member2 != player && member2.GetSpawnPos() == "0 0 0" )
+								if( member2 != player && member2.GetSpawnPos() == vector.Zero ) // Found a party member who didn't select a spawn point
 								{
 									BattleRoyaleUtils.Trace("Assigning random spawn point to " + member2.GetIdentity().GetName());
 									member2.SetSpawnPos(random_spawn);
