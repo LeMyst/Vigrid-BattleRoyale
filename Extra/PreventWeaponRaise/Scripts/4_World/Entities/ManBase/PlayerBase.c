@@ -3,14 +3,23 @@ modded class PlayerBase
 {
 	override void CheckLiftWeapon()
 	{
-		// lift weapon check
-		if (GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT)
+		bool config_disable_prevent_weapon_raise = GetGame().ServerConfigGetInt( "BRDisablePreventWeaponRaise" );
+
+		if (!config_disable_prevent_weapon_raise)
 		{
-			// Never lift weapon and sync it to false if already lifted
-			if (m_LiftWeapon_player)
+			// lift weapon check
+			if (GetInstanceType() == DayZPlayerInstanceType.INSTANCETYPE_CLIENT)
 			{
-				SendLiftWeaponSync(false);
+				// Never lift weapon and sync it to false if already lifted
+				if (m_LiftWeapon_player)
+				{
+					SendLiftWeaponSync(false);
+				}
 			}
+		}
+		else
+		{
+			super.CheckLiftWeapon();
 		}
 	}
 }
