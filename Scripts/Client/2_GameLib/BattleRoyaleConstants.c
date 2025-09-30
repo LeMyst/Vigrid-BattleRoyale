@@ -64,7 +64,7 @@ static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 
 
 //--- spawn selection menu
-static const float HEATMAP_GRID_SIZE_MULTIPLIER = 2.0; //multiplier for the heatmap grid size, e.g. 2.0 = 2x the spawn size
+static const float HEATMAP_GRID_SIZE_MULTIPLIER = 4.0; //multiplier for the heatmap grid size, e.g. 4.0 = 4x the spawn size
 static const int HEATMAP_MAX_DENSITY = 5; //max density for color scaling in the heatmap
 
 
