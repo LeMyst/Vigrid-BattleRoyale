@@ -381,23 +381,19 @@ class BattleRoyaleState: Timeable
 		{
 			// Skip if party has no members or leader isn't in our ID map
 			PlayerBase leader = id_map.Get(leader_id);
-			if (!leader || processed_players.Find(leader) != -1)
+			if (!leader || processed_players.Find(leader) != -1 || party_members.Count() == 0)
 				continue;
 
-			// Found a valid party with the leader in this state
-			if (m_Players.Find(leader) != -1)
-			{
-				group_count++;
-				processed_players.Insert(leader);
+			group_count++;
+			processed_players.Insert(leader);
 
-				// Process party members in one pass
-				array<string> party_members_arr = party_members.ToArray();
-				foreach (string member_id : party_members_arr)
-				{
-					PlayerBase member = id_map.Get(member_id);
-					if (member && m_Players.Find(member) != -1)
-						processed_players.Insert(member);
-				}
+			// Process party members in one pass
+			array<string> party_members_arr = party_members.ToArray();
+			foreach (string member_id : party_members_arr)
+			{
+				PlayerBase member = id_map.Get(member_id);
+				if (member && m_Players.Find(member) != -1)
+					processed_players.Insert(member);
 			}
 		}
 
