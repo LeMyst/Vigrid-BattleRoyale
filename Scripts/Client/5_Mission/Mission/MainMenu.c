@@ -158,6 +158,8 @@ modded class MainMenu
 		}
 		else
 		{
+			//TODO: If there's parameters from the CLI, use them to connect to the server automatically
+			//TODO: Must test if it's the first time the main menu is loaded, to avoid an infinite loop
 			m_PlayButtonLabel.SetText("#main_menu_play");
 		}
 
