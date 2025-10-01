@@ -117,43 +117,12 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 				// If still no spawn point assigned, use a random one from the map
 				if( player.GetSpawnPos() == vector.Zero )
 				{
-					BattleRoyaleUtils.Trace("No party members with selected spawn point, assigning random spawn point");
-					// Get a random spawn point from the spawnpoints map
-					array<vector> heatmap_points = spawnpoints.GetValueArray();
-					if( heatmap_points.Count() > 0 )
-					{
-						// Get a random spawn point
-						vector random_spawn = heatmap_points.GetRandomElement();
-						// Assign it to the player
-						player.SetSpawnPos(random_spawn);
-
-						// If in a group, assign to all group members who haven't selected a spawn
-						if(groupMembers)
-						{
-							foreach (PlayerBase member2 : groupMembers)
-							{
-								if( member2 != player && member2.GetSpawnPos() == vector.Zero ) // Found a party member who didn't select a spawn point
-								{
-									BattleRoyaleUtils.Trace("Assigning random spawn point to " + member2.GetIdentity().GetName());
-									member2.SetSpawnPos(random_spawn);
-								}
-							}
-						}
-					}
+					AssignRandomSpawnPoint(player, groupMembers);
 				}
 #else
 				// No party mod - just assign a random spawn point from the map
 				BattleRoyaleUtils.Trace("No party system available, assigning random spawn point");
-				// Get a random spawn point from the spawnpoints map
-				array<vector> heatmap_points = spawnpoints.GetValueArray();
-				if( heatmap_points.Count() > 0 )
-				{
-					// Get a random spawn point
-					vector random_spawn = heatmap_points.GetRandomElement();
-					// Assign it to the player
-					BattleRoyaleUtils.Trace("Assigning random spawn point to " + player.GetIdentity().GetName());
-					player.SetSpawnPos(random_spawn);
-				}
+				AssignRandomSpawnPoint(player, null);
 #endif
 			}
 		}
@@ -318,4 +287,36 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		return color;
 	}
 #endif
+	/**
+	 * Assigns a random spawn point to a player and optionally to their group members
+	 * @param player The player to assign a spawn point to
+	 * @param groupMembers Optional group members to also assign the spawn point to
+	 */
+	private void AssignRandomSpawnPoint(PlayerBase player, set<PlayerBase> groupMembers)
+	{
+		BattleRoyaleUtils.Trace("Assigning random spawn point");
+		// Get a random spawn point from the spawnpoints map
+		array<vector> heatmap_points = spawnpoints.GetValueArray();
+		if( heatmap_points.Count() > 0 )
+		{
+			// Get a random spawn point
+			vector random_spawn = heatmap_points.GetRandomElement();
+			// Assign it to the player
+			BattleRoyaleUtils.Trace("Assigning random spawn point to " + player.GetIdentity().GetName());
+			player.SetSpawnPos(random_spawn);
+
+			// If in a group, assign to all group members who haven't selected a spawn
+			if(groupMembers)
+			{
+				foreach (PlayerBase member : groupMembers)
+				{
+					if( member != player && member.GetSpawnPos() == vector.Zero ) // Found a party member who didn't select a spawn point
+					{
+						BattleRoyaleUtils.Trace("Assigning random spawn point to " + member.GetIdentity().GetName());
+						member.SetSpawnPos(random_spawn);
+					}
+				}
+			}
+		}
+	}
 }
