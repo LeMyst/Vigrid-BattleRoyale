@@ -358,50 +358,53 @@ class BattleRoyaleState: Timeable
 			return 0;
 
 		ref map<string, ref CarimSet> parties = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals;
-		int group_count = 0;
 
 		// If no parties exist, each player is a solo group
 		if (!parties || parties.Count() == 0)
-		{
 			return m_Players.Count();
-		}
 
-		// Track players who are part of a group
+		// Create player ID mapping and track processed players
 		ref set<PlayerBase> processed_players = new set<PlayerBase>();
-
-		// Create player ID mapping once
 		ref map<string, PlayerBase> id_map = new map<string, PlayerBase>();
+
+		// Only create ID map entries for players that are in this state
 		foreach (PlayerBase player : m_Players)
 		{
 			if (player && player.GetIdentity())
 				id_map.Insert(player.GetIdentity().GetId(), player);
 		}
 
-		// Process all parties
+		int group_count = 0;
+
+		// Process parties more efficiently
 		foreach (string leader_id, ref CarimSet party_members : parties)
 		{
-			if (party_members.Count() == 0)
-				continue; // Skip empty parties or with only the leader
-
+			// Skip if party has no members or leader isn't in our ID map
 			PlayerBase leader = id_map.Get(leader_id);
-			if (leader && m_Players.Find(leader) != -1 && processed_players.Find(leader) == -1)
-			{
-				// Found a valid party
-				group_count++;
-				processed_players.Insert(leader);
+			// Check if the leader is valid
+			if (!leader)
+				continue;
+			// Check if the leader has already been processed
+			if (processed_players.Find(leader) != -1)
+				continue;
+			// Check if the party has no members
+			if (party_members.Count() == 0)
+				continue;
 
-				// Add party members to processed players
-				array<string> party_members_arr = party_members.ToArray();
-				foreach (string member_id : party_members_arr)
-				{
-					PlayerBase member = id_map.Get(member_id);
-					if (member && m_Players.Find(member) != -1)
-						processed_players.Insert(member);
-				}
+			group_count++;
+			processed_players.Insert(leader);
+
+			// Process party members in one pass
+			array<string> party_members_arr = party_members.ToArray();
+			foreach (string member_id : party_members_arr)
+			{
+				PlayerBase member = id_map.Get(member_id);
+				if (member && m_Players.Find(member) != -1)
+					processed_players.Insert(member);
 			}
 		}
 
-		// Count remaining unprocessed players as solo groups
+		// Add solo players (not in any group)
 		int remaining_players = m_Players.Count() - processed_players.Count();
 		group_count += remaining_players;
 
