@@ -10,7 +10,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     int i_NumRounds;
 
-    bool b_ShowSpawnSelectionMenu;
+    bool b_EnableSpawnSelectionMenu;
 
     string match_uuid;
 
@@ -92,7 +92,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
         i_NumRounds = m_GameData.num_zones;
-        b_ShowSpawnSelectionMenu = m_GameData.show_spawn_selection_menu;
+        b_EnableSpawnSelectionMenu = m_GameData.enable_spawn_selection_menu;
 
         //--- initialize all states (in order from start to finish)
         m_States = new array<ref BattleRoyaleState>;
@@ -106,7 +106,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         m_States.Insert(count_reached);
 
         // (3) SPAWN SELECTION MENU
-        if (b_ShowSpawnSelectionMenu)
+        if (b_EnableSpawnSelectionMenu)
 		{
 			BattleRoyaleSpawnSelection spawn_selection = new BattleRoyaleSpawnSelection;
 			m_States.Insert(spawn_selection);

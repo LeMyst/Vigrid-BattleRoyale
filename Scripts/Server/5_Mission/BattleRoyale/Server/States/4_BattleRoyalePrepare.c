@@ -6,7 +6,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
     protected ref array<string> a_AvoidCitySpawn;
-    protected bool b_ShowSpawnSelectionMenu;
+    protected bool b_EnableSpawnSelectionMenu;
 
 	private BattleRoyaleConfig m_Config;
     private BattleRoyaleGameData m_GameSettings;
@@ -33,7 +33,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 		a_StartingClothes = m_GameSettings.player_starting_clothes;
 		a_StartingItems = m_GameSettings.player_starting_items;
 		a_AvoidCitySpawn = m_SpawnsSettings.avoid_city_spawn;
-		b_ShowSpawnSelectionMenu = m_GameSettings.show_spawn_selection_menu;
+		b_EnableSpawnSelectionMenu = m_GameSettings.enable_spawn_selection_menu;
 
         a_PlayerList = new array<PlayerBase>();
 
@@ -60,6 +60,12 @@ class BattleRoyalePrepare: BattleRoyaleState
         int year, month, day, hour, minute;
         GetGame().GetWorld().GetDate(year, month, day, hour, minute);
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
+
+		// Resend hide Spawn Selection UI RPC in case some players didn't get it
+		if (b_EnableSpawnSelectionMenu)
+		{
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", NULL, true);
+		}
 
         GetGame().GameScript.Call(this, "ProcessPlayers", NULL); //Spin up a new thread to process giving players items and teleporting them
     }
@@ -510,7 +516,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
         array<ref map<string, string>> parties_list = new array<ref map<string, string>> ();
 
-		if (b_ShowSpawnSelectionMenu)
+		if (b_EnableSpawnSelectionMenu)
 		{
 			BattleRoyaleUtils.Trace("Spawn selection menu enabled");
 			for (i = 0; i < pCount; i++) {
@@ -519,11 +525,20 @@ class BattleRoyalePrepare: BattleRoyaleState
 				{
 					float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
 					vector position = process_player.GetSpawnPos();
+
+					if( position == vector.Zero )
+					{
+						BattleRoyaleUtils.Trace("Player " + process_player.GetIdentity().GetName() + " didn't select a spawn point, we randomly teleport them");
+						Teleport(process_player);
+						Sleep(100);
+						continue;
+					}
+
 					BattleRoyaleUtils.Trace("Try to spawn player " + process_player.GetIdentity().GetName() + " at " + position + " with a radius of " + f_SpawnSelectionRadius);
 
 					vector random_position = GetRandomSafePosition(position, f_SpawnSelectionRadius);
 
-					if ( random_position == "0 0 0" )
+					if ( random_position == vector.Zero )
 					{
 						BattleRoyaleUtils.Trace("No safe position found, we randomly teleport the player");
 						Teleport(process_player);
