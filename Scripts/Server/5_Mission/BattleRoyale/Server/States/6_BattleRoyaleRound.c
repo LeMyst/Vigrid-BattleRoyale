@@ -242,22 +242,38 @@ class BattleRoyaleRound: BattleRoyaleState
         super.Deactivate();
     }
 
-    override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
-    {
-		if(IsActive())
-		{
+	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
+	{
+		if(!IsActive())
+			return super.IsComplete();
+
 #ifdef Carim
-			if(GetPlayers().Count() <= 1 || GetGroupsCount() <= 1)
+		bool playersLessThanTwo = GetPlayers().Count() <= 1;
+		bool groupsLessThanTwo = GetGroupsCount() <= 1;
+
+		if(playersLessThanTwo || groupsLessThanTwo)
+		{
+			string reason;
+			if(playersLessThanTwo && groupsLessThanTwo)
+				reason = "(Players/Groups)";
+			else if(playersLessThanTwo)
+				reason = "(Players)";
+			else
+				reason = "(Groups)";
+
+			BattleRoyaleUtils.Trace(GetName() + " IsComplete " + reason + "!");
+			Deactivate();
+		}
 #else
-			if(GetPlayers().Count() <= 1)
+		if(GetPlayers().Count() <= 1)
+		{
+			BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
+			Deactivate();
+		}
 #endif
-			{
-				BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
-				Deactivate();
-			}
-        }
-        return super.IsComplete();
-    }
+
+		return super.IsComplete();
+	}
 
     override bool SkipState(BattleRoyaleState _previousState)
     {
