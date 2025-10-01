@@ -12,11 +12,6 @@ static const string BATTLEROYALE_VERSION = "0.1.0-Vigrid";
 #define CF_TRACE_ENABLED
 #endif
 
-#ifdef SERVER
-#define BR_TRACE_ENABLED
-#define CF_TRACE_ENABLED
-#endif
-
 //--- debug settings
 #ifdef BR_TRACE_ENABLED
 	static const int BATTLEROYALE_LOG_LEVEL = 4; // Trace
