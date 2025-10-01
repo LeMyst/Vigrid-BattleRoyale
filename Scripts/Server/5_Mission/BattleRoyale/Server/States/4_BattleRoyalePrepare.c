@@ -6,7 +6,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     protected ref array<string> a_StartingClothes;
     protected ref array<string> a_StartingItems;
     protected ref array<string> a_AvoidCitySpawn;
-    protected bool b_ShowSpawnSelectionMenu;
+    protected bool b_EnableSpawnSelectionMenu;
 
 	private BattleRoyaleConfig m_Config;
     private BattleRoyaleGameData m_GameSettings;
@@ -33,7 +33,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 		a_StartingClothes = m_GameSettings.player_starting_clothes;
 		a_StartingItems = m_GameSettings.player_starting_items;
 		a_AvoidCitySpawn = m_SpawnsSettings.avoid_city_spawn;
-		b_ShowSpawnSelectionMenu = m_GameSettings.show_spawn_selection_menu;
+		b_EnableSpawnSelectionMenu = m_GameSettings.enable_spawn_selection_menu;
 
         a_PlayerList = new array<PlayerBase>();
 
@@ -62,7 +62,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         GetGame().GetWorld().SetDate(year, month, day, Math.RandomIntInclusive(6, 12), 0);
 
 		// Resend hide Spawn Selection UI RPC in case some players didn't get it
-		if (b_ShowSpawnSelectionMenu)
+		if (b_EnableSpawnSelectionMenu)
 		{
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", NULL, true);
 		}
@@ -516,7 +516,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
         array<ref map<string, string>> parties_list = new array<ref map<string, string>> ();
 
-		if (b_ShowSpawnSelectionMenu)
+		if (b_EnableSpawnSelectionMenu)
 		{
 			BattleRoyaleUtils.Trace("Spawn selection menu enabled");
 			for (i = 0; i < pCount; i++) {

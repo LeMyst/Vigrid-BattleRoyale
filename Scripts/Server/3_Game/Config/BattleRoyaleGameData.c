@@ -6,7 +6,7 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     int num_zones = 6;  // number of zones
     int round_duration_minutes = 5;  // round length in minutes
 
-	bool show_spawn_selection_menu = true;  // show spawn selection menu (0 = no, 1 = yes)
+	bool enable_spawn_selection_menu = true;  // show spawn selection menu (0 = no, 1 = yes)
 	int spawn_selection_duration = 30;  // spawn selection duration in seconds
 	int spawn_selection_extra_time = 2;  // extra time between spawn selection and next state in seconds
 	float spawn_selection_radius = 50;  // radius where the player can spawn
