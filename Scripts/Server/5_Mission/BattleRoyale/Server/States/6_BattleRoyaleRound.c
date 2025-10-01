@@ -242,31 +242,38 @@ class BattleRoyaleRound: BattleRoyaleState
         super.Deactivate();
     }
 
-    override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
-    {
-		int nb_players = GetPlayers().Count();
+	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
+	{
+		if(!IsActive())
+			return super.IsComplete();
 
-		if(IsActive())
-		{
 #ifdef Carim
-			if(i_MaxPartySize < 1 || nb_players <= i_MaxPartySize)
-			{
-				if( nb_players <= 1 || GetGroupsCount() <= 1 )
-				{
-					BattleRoyaleUtils.Trace(GetName() + " IsComplete (Groups)!");
-					Deactivate();
-				}
-			}
+		bool playersLessThanTwo = GetPlayers().Count() <= 1;
+		bool groupsLessThanTwo = GetGroupsCount() <= 1;
+
+		if(playersLessThanTwo || groupsLessThanTwo)
+		{
+			string reason;
+			if(playersLessThanTwo && groupsLessThanTwo)
+				reason = "(Players/Groups)";
+			else if(playersLessThanTwo)
+				reason = "(Players)";
+			else
+				reason = "(Groups)";
+
+			BattleRoyaleUtils.Trace(GetName() + " IsComplete " + reason + "!");
+			Deactivate();
+		}
 #else
-			if( nb_players <= 1 )
-			{
-				BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
-				Deactivate();
-			}
+		if(GetPlayers().Count() <= 1)
+		{
+			BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
+			Deactivate();
+		}
 #endif
-        }
-        return super.IsComplete();
-    }
+
+		return super.IsComplete();
+	}
 
     override bool SkipState(BattleRoyaleState _previousState)
     {
