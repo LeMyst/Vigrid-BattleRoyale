@@ -14,7 +14,8 @@ modded class UnconsciousnessMdfr
 	override bool ActivateCondition(PlayerBase player)
 	{
 		bool config_disable_unconsciousness = GetGame().ServerConfigGetInt("BRDisableUnconsciousness") == 1;
-		if(!config_disable_unconsciousness)
+		bool cli_disable_unconsciousness = IsCLIParam("br-disable-unconsciousness");
+		if(!config_disable_unconsciousness && !cli_disable_unconsciousness)
 		{
 			if(super.ActivateCondition(player))
 			{
