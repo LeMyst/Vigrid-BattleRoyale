@@ -1,5 +1,4 @@
 #ifdef SERVER
-#ifdef SPECTATOR
 class BattleRoyaleSpectators
 {
     protected ref array<PlayerBase> m_Spectators;
@@ -60,6 +59,7 @@ class BattleRoyaleSpectators
         return CanIdSpectate( identity );
     }
 
+#ifdef SPECTATOR
     bool ContainsPlayer(PlayerBase player)
     {
         return (m_Spectators.Find(player) != -1);
@@ -141,4 +141,5 @@ class BattleRoyaleSpectators
             Error("What the fuck? No Player Identity in Spectator Init");
         }
     }
+#endif
 }

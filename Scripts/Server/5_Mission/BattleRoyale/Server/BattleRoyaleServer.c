@@ -2,9 +2,7 @@
 class BattleRoyaleServer: BattleRoyaleBase
 {
 	protected static BattleRoyaleServer m_Instance;
-#ifdef SPECTATOR
     protected ref BattleRoyaleSpectators m_SpectatorSystem;
-#endif
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
 
@@ -85,9 +83,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         m_Timer = new Timer;
 
-#ifdef SPECTATOR
         m_SpectatorSystem = new BattleRoyaleSpectators;
-#endif
 
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
@@ -276,9 +272,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         // if we are not in the debug state, then we need to check if the player can spectate
         if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
         {
-#ifdef SPECTATOR
             if(m_SpectatorSystem.CanSpectate( player ))
             {
+#ifdef SPECTATOR
                 if (b_AutoSpectateMode)
                 {
                     BattleRoyaleUtils.Trace("Spectator connected, inserting into spectator system");
@@ -297,10 +293,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 						MessagePlayer( player, message, DAYZBR_MSG_TIME, time_until_spectate );
                     }
                 }
+#endif
             }
             else
             {
-#endif
                 //BAD VERY BAD!
                 //This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
                 //Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
@@ -309,9 +305,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                 Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
                 m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
-#ifdef SPECTATOR
             }
-#endif
 
             //TODO: Create a *spectator* system that handles players connecting during non-debug zone states
             //Note: the spectator system will also handle client respawn events too.
