@@ -28,7 +28,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 	void SpawnSelectionMenu()
 	{
-		GetGame().Chat("SpawnSelectionMenu::SpawnSelectionMenu", "colorFriendly");
+		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SpawnSelectionMenu");
 		g_Game.SetKeyboardHandle(this);
 	}
 
@@ -45,7 +45,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 	override void OnShow()
 	{
-		GetGame().Chat("SpawnSelectionMenu::OnShow", "colorFriendly");
+		BattleRoyaleUtils.Trace("SpawnSelectionMenu::OnShow");
 		super.OnShow();
 
 		PPEffects.SetBlurMenu(1);
@@ -55,7 +55,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 	override void OnHide()
 	{
-		GetGame().Chat("SpawnSelectionMenu::OnHide", "colorFriendly");
+		BattleRoyaleUtils.Trace("SpawnSelectionMenu::OnHide");
 		super.OnHide();
 
 		PPEffects.SetBlurMenu(0);
@@ -64,7 +64,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 	override Widget Init()
 	{
-		GetGame().Chat("SpawnSelectionMenu::Init", "colorFriendly");
+		BattleRoyaleUtils.Trace("SpawnSelectionMenu::Init");
 		layoutRoot = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/spawn_selection.layout");
 		m_Hud = IngameHud.Cast(GetGame().GetMission().GetHud());
 
