@@ -20,6 +20,10 @@ static const string BATTLEROYALE_VERSION = "0.1.0-Vigrid";
 #endif
 
 
+//--- GitHub repository
+static const string GITHUB_URL = "https://github.com/LeMyst/Vigrid-BattleRoyale";
+
+
 //--- API endpoint
 static const string BATTLEROYALE_API_ENDPOINT = "https://api.vigrid.ovh/";
 
