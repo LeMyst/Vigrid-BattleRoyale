@@ -89,12 +89,11 @@ class BattleRoyaleUtils: Managed
 	static bool CheckLogLevel(int level)
 	{
 		// Check command line params
-		string param;
-		if (GetCLIParam("br-trace", param)) return (TRACE >= level);
-		if (GetCLIParam("br-debug", param)) return (DEBUG >= level);
-		if (GetCLIParam("br-info", param)) return (INFO >= level);
-		if (GetCLIParam("br-warn", param)) return (WARN >= level);
-		if (GetCLIParam("br-none", param)) return false;  // Disable all logging
+		if (IsCLIParam("br-trace")) return (TRACE >= level);
+		if (IsCLIParam("br-debug")) return (DEBUG >= level);
+		if (IsCLIParam("br-info")) return (INFO >= level);
+		if (IsCLIParam("br-warn")) return (WARN >= level);
+		if (IsCLIParam("br-none")) return false;  // Disable all logging
 
 		// Check server config
 		int config_br_log_level = GetGame().ServerConfigGetInt("BRLogLevel");
