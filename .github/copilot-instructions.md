@@ -143,7 +143,9 @@ To validate changes:
 ## Important Notes for Coding Agents
 
 1. **Always validate P:\ drive mount** before attempting builds
-2. **EnfusionScript syntax** is C-like but has DayZ-specific conventions
+2. **EnfusionScript syntax** is C-like but has DayZ-specific conventions:
+   - **Does NOT support ternary operators** (`condition ? trueValue : falseValue`)
+   - Use if-else statements instead of ternary operators
 3. **Never modify working batch files** without understanding the build pipeline
 4. **Client/Server separation** is critical - changes must go in correct directories
 5. **Dependencies are strict** - respect the mod loading order in configs
