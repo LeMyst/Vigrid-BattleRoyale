@@ -151,13 +151,13 @@ modded class MissionServer
 					player.Delete();
 				}
 			}
-			else
-			{
-				//can't cast current state to debug? Kick
-				BattleRoyaleUtils.Trace("Kicking player (Not in debug state)");
-				GetGame().DisconnectPlayer( identity );
-				// TODO: Replace with RPC call to ask the player to disconnect
-			}
+//			else
+//			{
+//				//can't cast current state to debug? Kick
+//				BattleRoyaleUtils.Trace("Kicking player (Not in debug state)");
+//				GetGame().DisconnectPlayer( identity );
+//				// TODO: Replace with RPC call to ask the player to disconnect
+//			}
 		}
 		else
 		{
