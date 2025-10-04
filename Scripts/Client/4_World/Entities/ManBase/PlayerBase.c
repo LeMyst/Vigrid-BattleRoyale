@@ -44,6 +44,41 @@ modded class PlayerBase
 #endif
 #endif
 
+	void LockControls(bool state)
+	{
+		if (state == true)
+		{
+			GetGame().GetInput().ChangeGameFocus(1, INPUT_DEVICE_MOUSE);
+			GetGame().GetInput().ChangeGameFocus(1, INPUT_DEVICE_KEYBOARD);
+			GetGame().GetInput().ChangeGameFocus(1, INPUT_DEVICE_GAMEPAD);
+
+			if (GetGame().GetUIManager())
+			{
+				GetGame().GetUIManager().ShowUICursor(true);
+				if (GetGame().GetUIManager().IsDialogVisible())
+					GetGame().GetUIManager().CloseDialog();
+			}
+		}
+		else
+		{
+			GetGame().GetInput().ChangeGameFocus(-1, INPUT_DEVICE_MOUSE);
+			GetGame().GetInput().ChangeGameFocus(-1, INPUT_DEVICE_KEYBOARD);
+			GetGame().GetInput().ChangeGameFocus(-1, INPUT_DEVICE_GAMEPAD);
+
+			if (GetGame().GetUIManager())
+			{
+				if (GetGame().GetUIManager().GetMenu())
+				{
+					GetGame().GetUIManager().ShowUICursor(true);
+				}
+				else
+				{
+					GetGame().GetUIManager().ShowUICursor(false);
+				}
+			}
+		}
+	}
+
     void DisableInput(bool disabled)
     {
     	if ( disabled )

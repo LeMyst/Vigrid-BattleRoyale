@@ -812,6 +812,8 @@ class BattleRoyaleDebugState: BattleRoyaleState
             return false;
         }
 
+        return true;  // Debug for spectate test
+
         return (a_AllowedOutsideLobby.Find(steamid) != -1);
     }
 

@@ -64,15 +64,27 @@ class BattleRoyaleClient: BattleRoyaleBase
 			BattleRoyaleUtils.Trace("InitSpectate");
 			if ( data.param1 != null )
 			{
+				PlayerBase originalPlayer = GetGame().GetPlayer();
 				if (GetGame().GetPlayer() != null)
 				{
+//					// Remove the Shock effect
+//					PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+//					if ( player )
+//					{
+//						delete player.GetShockEffect();
+//					}
+
 					GetGame().ObjectDelete(GetGame().GetPlayer());
 					GetGame().SelectPlayer(null, null);
 				}
 
+				BattleRoyaleUtils.Trace("Starting spectate mode");
 				VPPSpectateCam cam = VPPSpectateCam.Cast(GetGame().CreateObject( "VPPSpectateCam", data.param1.GetPosition(), true ));
-				cam.SetTargetObj( PlayerBase.Cast(data.param1) );
+				cam.SetTargetObj( PlayerBase.Cast(data.param1) );  // Set the target to follow
+				cam.SetOriginalPlayer( originalPlayer ); // Set the original player to return to
 				cam.SetActive(true);
+
+//				GetGame().SelectSpectator( GetGame().GetPlayer().GetIdentity(), "VPPSpectateCam", data.param1.GetPosition() );
 
 				// TODO: Fix the player position for the distance to the zone
 				// TODO: Fix the HUD to remove unconscious filter

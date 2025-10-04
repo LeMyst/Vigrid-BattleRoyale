@@ -20,11 +20,14 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
 #ifdef VPPADMINTOOLS
-        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this);
 #ifdef SPECTATOR
-        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this, SingleplayerExecutionType.Server);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this);
 #endif
 #endif
+
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "SpectateRandom", this);
+		GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "UpdateSpectatorPosition", this);
 
         Init();
     }
@@ -323,7 +326,6 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         if( match_uuid == "" )
         	GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
-        	// TODO: Replace with RPC (for client side translation) ?
 
 //        if ( GetCurrentState().GetPlayers().Count() > 1 )
 //        {
@@ -683,4 +685,87 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 #endif
+
+	void SpectateRandom(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		BattleRoyaleUtils.Trace("BattleRoyaleManager SpectateRandom");
+
+		if(!target) return;
+		PlayerBase targetBase = PlayerBase.Cast(target);
+		if(!targetBase) return;
+
+		BattleRoyaleUtils.Trace("SpectateRandom called by: " + targetBase.GetIdentity().GetName());
+
+		if (type == CallType.Server)
+		{
+			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+			if (!br_instance)
+				return;
+
+			// Check if there are enough players to spectate
+			if (br_instance.GetCurrentState().GetPlayers().Count() <= 1)
+			{
+				BattleRoyaleUtils.Trace("No players to spectate");
+				return;
+			}
+
+			// Find a player to spectate (not ourselves)
+			PlayerIdentity my_identity = targetBase.GetIdentity();
+			array<PlayerBase> potential_targets = new array<PlayerBase>();
+
+			// Collect all possible spectate targets
+			for (int i = 0; i < br_instance.GetCurrentState().GetPlayers().Count(); i++)
+			{
+				PlayerBase current_player = br_instance.GetCurrentState().GetPlayers()[i];
+				if (current_player && current_player.GetIdentity() != my_identity)
+				{
+					potential_targets.Insert(current_player);
+				}
+			}
+
+			PlayerBase player = potential_targets.GetRandomElement();
+
+			// Check if we found a player to spectate
+			if (!player)
+			{
+				BattleRoyaleUtils.Trace("No valid player found to spectate");
+				return;
+			}
+
+			BattleRoyaleUtils.Trace("Spectating player: " + player.GetIdentity().GetName());
+
+			// Delete the player object and initiate spectate mode
+			// GetGame().ObjectDelete( targetBase );
+			targetBase.SetInvisible(true);
+			GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(player), true, my_identity);
+		}
+	}
+
+	void UpdateSpectatorPosition(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<PlayerBase, vector> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ UpdateSpectatorPosition RPC");
+			return;
+		}
+		if (type == CallType.Server)
+		{
+			PlayerBase pbFromIdentity = PlayerBase.Cast(sender.GetPlayer());
+
+			if (pbFromIdentity && data.param2 != vector.Zero)
+			{
+				string playerName = "unknown";
+				if (pbFromIdentity.GetIdentity())
+				{
+					playerName = pbFromIdentity.GetIdentity().GetName();
+				}
+				BattleRoyaleUtils.Trace("Updating spectator position for: " + playerName + " to " + data.param2.ToString());
+
+				// Update player position
+				pbFromIdentity.SetPosition(data.param2);
+				pbFromIdentity.SetSynchDirty();
+			}
+		}
+	}
 }
