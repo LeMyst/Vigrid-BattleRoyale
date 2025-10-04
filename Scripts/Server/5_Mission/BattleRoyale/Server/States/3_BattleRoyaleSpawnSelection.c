@@ -69,6 +69,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
 		// Disable player input on clients after 0.5 seconds (500ms) to reset the current animations (e.g. keep walking if they were walking)
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "DisableInput", 500, false);
+//		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "DisablePlayerInput", NULL, true);
 
         // Listen to player spawn selection
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", this);

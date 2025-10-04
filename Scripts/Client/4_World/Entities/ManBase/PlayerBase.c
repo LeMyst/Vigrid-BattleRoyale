@@ -44,6 +44,44 @@ modded class PlayerBase
 #endif
 #endif
 
+	void LockControls(bool state)
+	{
+		if (state == true)  // Lock
+		{
+			GetGame().GetInput().ChangeGameFocus(1, INPUT_DEVICE_MOUSE);
+			GetGame().GetInput().ChangeGameFocus(1, INPUT_DEVICE_KEYBOARD);
+			GetGame().GetInput().ChangeGameFocus(1, INPUT_DEVICE_GAMEPAD);
+
+			if (GetGame().GetUIManager())
+			{
+				GetGame().GetUIManager().ShowUICursor(true);
+				if (GetGame().GetUIManager().IsDialogVisible())
+					GetGame().GetUIManager().CloseDialog();
+			}
+		}
+		else  // Unlock
+		{
+			GetGame().GetInput().ChangeGameFocus(-1, INPUT_DEVICE_MOUSE);
+			GetGame().GetInput().ChangeGameFocus(-1, INPUT_DEVICE_KEYBOARD);
+			GetGame().GetInput().ChangeGameFocus(-1, INPUT_DEVICE_GAMEPAD);
+
+			if (GetGame().GetUIManager())
+			{
+				if (GetGame().GetUIManager().GetMenu())
+				{
+					GetGame().GetUIManager().ShowUICursor(true);
+				}
+				else
+				{
+					GetGame().GetUIManager().ShowUICursor(false);
+				}
+			}
+		}
+
+		GetGame().MuteAllPlayers( GetIdentity().GetPlainId() , state );  // Mute all players when controls are locked
+		GetGame().EnableVoN(this, !state);  // Disable VoN when controls are locked
+	}
+
     void DisableInput(bool disabled)
     {
     	if ( disabled )
