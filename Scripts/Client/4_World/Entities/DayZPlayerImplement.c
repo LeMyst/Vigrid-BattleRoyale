@@ -6,6 +6,7 @@ modded class DayZPlayerImplement
 
 	override void ShowDeadScreen(bool show, float duration)
 	{
+#ifndef NO_GUI
         array<string> funny_strings = {
 			"Next time, try to aim better...",
 			"Congrats, you just found out bullets don’t mix well with you.",
@@ -29,6 +30,9 @@ modded class DayZPlayerImplement
 			{
 				string funny_string = funny_strings.GetRandomElement();
 				message = "You failed in position #" + position_top + "!\r\n" + funny_string;
+				message = message + "\r\n\r\nIf you are in a squad, your teammates can still improve your position!";
+				message = message + "\r\nYou can spectate the match or leave the server.";
+				message = message + "\r\nYou will be automatically disconnected in 30 seconds.";
 			}
 
 			GetGame().GetUIManager().ScreenFadeIn(duration, message, FadeColors.DARK_RED, FadeColors.WHITE);
@@ -38,11 +42,12 @@ modded class DayZPlayerImplement
 			super.ShowDeadScreen(show, duration);
 		}
 
-		// 15s timer before leaving server
-		if (show)
-		{
-			GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(LeaveServer, 15000, false);
-		}
+//		// 30s timer before leaving server
+//		if (show)
+//		{
+//			GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(LeaveServer, 30000, false);
+//		}
+#endif
 	}
 
 	void LeaveServer()

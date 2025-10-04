@@ -4,7 +4,7 @@ modded class InGameMenu
 {
     override Widget Init()
     {
-        Widget result = super.Init();
+        Widget layoutRoot = super.Init();
 
         //BR logo
         if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
@@ -12,7 +12,10 @@ modded class InGameMenu
 
         SetServerInfoVisibility( false ); //Don't ever show what server you're on for DayZBR
 
-        return result;
+        // Change respawn button label to spectate
+        ButtonSetText(m_RespawnButton, "#STR_BR_MENU_SPECTATE");
+
+        return layoutRoot;
     }
 
     override protected void SetGameVersion()
@@ -37,8 +40,8 @@ modded class InGameMenu
 	override protected void UpdateGUI()
 	{
 		super.UpdateGUI();
-		m_RespawnButton.Show( false );  // Hide the respawn button
 		m_RestartButton.Show( false );  // Hide the restart button
+		m_FeedbackButton.Show( false ); // Hide the feedback button
 	}
 }
 #endif

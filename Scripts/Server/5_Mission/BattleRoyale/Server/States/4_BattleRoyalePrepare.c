@@ -511,7 +511,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             if (process_player)
             	DisablePlayerInput(process_player);
 
-            Sleep(100);
+            Sleep(50);
         }
         BattleRoyaleUtils.Trace("Players are disabled");
 
@@ -521,7 +521,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             process_player = a_PlayerList[i];
             if (process_player) GiveStartingItems(process_player);
 
-            Sleep(100);
+            Sleep(50);
         }
         BattleRoyaleUtils.Trace("Gave starting items");
 
