@@ -204,7 +204,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
 		if( !unstuckSuccess )
 		{
-			BattleRoyaleUtils.Error( player.GetIdentity().GetName() + " unstuck failed at " + player.GetPosition() );
+			BattleRoyaleUtils.Warn( player.GetIdentity().GetName() + " unstuck failed at " + player.GetPosition() );
 			player.wait_unstuck = false;
 		}
 	}
@@ -213,7 +213,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     {
         if(!b_IsGameplay)
         {
-            Error("Player killed before gameplay!");
+            BattleRoyaleUtils.Info("Player killed before gameplay!");
             return;
         }
 

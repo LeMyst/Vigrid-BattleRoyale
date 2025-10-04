@@ -6,7 +6,7 @@ modded class MissionBase
 #ifndef NO_GUI
 		if (id == MENU_SPAWN_SELECTION)
 		{
-			GetGame().Chat("CreateScriptedMenu: MENU_SPAWN_SELECTION", "colorFriendly");
+			BattleRoyaleUtils.Trace("CreateScriptedMenu: MENU_SPAWN_SELECTION");
 			UIScriptedMenu menu = new SpawnSelectionMenu;
 			menu.SetID(id);
 			return menu;

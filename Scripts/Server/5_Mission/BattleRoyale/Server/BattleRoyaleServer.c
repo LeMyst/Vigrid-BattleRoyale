@@ -357,10 +357,10 @@ class BattleRoyaleServer: BattleRoyaleBase
                         PlayerBase killer = PlayerBase.Cast( player.last_unconscious_source );
                         GetCurrentState().OnPlayerKilled( player, killer );
                     } else {
-                        BattleRoyaleUtils.Error("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but the last damage source is not a player.");
+                        BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but the last damage source is not a player.");
                     }
                 } else {
-                    BattleRoyaleUtils.Error("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but there is no last damage source.");
+                    BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but there is no last damage source.");
                 }
 
                 // If the player is alive, we kill him

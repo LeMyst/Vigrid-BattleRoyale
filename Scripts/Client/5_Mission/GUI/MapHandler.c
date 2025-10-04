@@ -29,7 +29,7 @@ class BRMapHandler : ScriptedWidgetEventHandler
 		}
 		last_click_on_map = GetGame().GetTime();
 
-		GetGame().Chat("BRMapHandler::OnMouseButtonDown", "colorFriendly");
+		BattleRoyaleUtils.Trace("BRMapHandler::OnMouseButtonDown");
 
 		SpawnSelectionMenu m = SpawnSelectionMenu.Cast(g_Game.GetUIManager().FindMenu(MENU_SPAWN_SELECTION));
 		m.SelectSpawnPoint(Vector(x, y, 0));
