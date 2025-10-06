@@ -34,10 +34,6 @@ class BRMasterControlsForm: JMFormBase
             UIActionManager.CreateText( wrapper, "DIAG DEBUG" );
             UIActionManager.CreateButton( wrapper, "Add Player", this, "AddFakePlayer" );
             UIActionManager.CreateButton( wrapper, "Add Group", this, "AddFakeGroup" );
-
-        //wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 2 );
-        //    UIActionManager.CreateText( wrapper, "Spectating Camera" );
-            UIActionManager.CreateButton( wrapper, "Spectate", this, "ToggleSpectating" );
 #endif
 
         m_sclr_MainActions.UpdateScroller();
@@ -75,13 +71,6 @@ class BRMasterControlsForm: JMFormBase
     {
         m_Module.AddFakeGroup();
     }
-
-#ifdef SPECTATOR
-    void ToggleSpectating(UIEvent eid, UIActionBase action)
-    {
-        m_Module.TestSpectator();
-    }
-#endif
 
     void SpawnAirdrop(UIEvent eid, UIActionBase action)
     {

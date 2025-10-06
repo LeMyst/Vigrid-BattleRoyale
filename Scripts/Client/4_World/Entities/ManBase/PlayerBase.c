@@ -29,19 +29,6 @@ modded class PlayerBase
         players = new array<PlayerBase>();
         players.Copy(s_LocalPlayers);
     }
-
-#ifdef SPECTATOR
-    float health_percent = -1;
-    float blood_percent = -1;
-
-    bool UpdateHealthStats(float hp, float blood)
-    {
-        bool changed = (health_percent != hp) || (blood_percent != blood);
-        health_percent = hp;
-        blood_percent = hp;
-        return changed;
-    }
-#endif
 #endif
 
     void DisableInput(bool disabled)

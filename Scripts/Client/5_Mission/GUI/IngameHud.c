@@ -8,15 +8,6 @@ modded class IngameHud
 		b_BrVisibilityOverride = false;
 	}
 
-#ifdef SPECTATOR
-	void BR_HIDE()
-	{
-		Show( false );
-
-		b_BrVisibilityOverride = true;
-	}
-#endif
-
 	override void Show( bool show )
 	{
 		if(b_BrVisibilityOverride)

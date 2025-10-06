@@ -15,19 +15,11 @@ modded class MissionGameplay
 	float radius;
 #endif
 
-#ifdef SPECTATOR
-	protected bool is_spectator;
-#endif
-
 	void MissionGameplay()
 	{
 		Print("MissionGameplay::MissionGameplay");
 		m_BattleRoyaleHudRootWidget = null;
 		m_BattleRoyale = null;
-
-#ifdef SPECTATOR
-		is_spectator = false;
-#endif
 
 		// Add RPCs
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", this );
@@ -98,23 +90,6 @@ modded class MissionGameplay
 			BattleRoyaleUtils.Trace("HUD Initialized");
 		}
 	}
-
-#ifdef SPECTATOR
-	bool IsInSpectator()
-	{
-		return is_spectator;
-	}
-
-	void InitSpectator()
-	{
-		BattleRoyaleUtils.Trace("Initializing Spectator HUD");
-		m_BattleRoyaleHud.InitSpectator();
-
-		is_spectator = true;
-
-		HideHud();
-	}
-#endif
 
 	void UpdateKillCount(int count)
 	{
@@ -283,11 +258,6 @@ modded class MissionGameplay
 
 		m_BattleRoyale.Update( timeslice ); //send tick to br client
 
-#ifdef SPECTATOR
-		if ( is_spectator )
-			m_BattleRoyaleHud.Update( timeslice ); //this is really only used for spectator HUD updates
-#endif
-
 		if (GetUApi() && !m_UIManager.IsMenuOpen(MENU_CHAT_INPUT)) {
 			if (GetUApi().GetInputByID(UADayZBRReadyUp).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).ReadyUp();
@@ -320,25 +290,7 @@ modded class MissionGameplay
 			}
 #endif
 		}
-
-#ifdef SPECTATOR
-		if ( is_spectator )
-		{
-			HideHud();
-		}
-#endif
 	}
-
-#ifdef SPECTATOR
-	void HideHud()
-	{
-		IngameHud hud = IngameHud.Cast( GetHud() );
-		if ( hud )
-		{
-			hud.BR_HIDE();
-		}
-	}
-#endif
 
 	void ShowSpawnSelection(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{

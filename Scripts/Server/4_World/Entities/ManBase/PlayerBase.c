@@ -23,30 +23,6 @@ modded class PlayerBase
 	PlayerBase last_unconscious_source;
 	float m_UnconsciousStartTime;
 
-#ifdef SPECTATOR
-    bool UpdateHealthStatsServer(float hp, float blood, float delta)
-    {
-        time_since_last_net_sync += delta;
-        if(time_since_last_net_sync > time_between_net_sync)
-        {
-            time_since_last_net_sync = 0;
-            bool return_me; //we'll need to flip force_result back to false, so we need a temp variable to store this value in
-            if ( force_result || UpdateHealthStats(hp, blood) )
-                return_me = true;
-            force_result = false;
-            return return_me;
-        }
-        else
-        {
-            //if we ever get a "true" in this update system, we need to store it for the next sync tick
-            if ( UpdateHealthStats(hp, blood) )
-                force_result = true;
-            
-            return false;
-        }
-    }
-#endif
-
 	void SetBRPosition( int position )
 	{
 		br_position = position;
