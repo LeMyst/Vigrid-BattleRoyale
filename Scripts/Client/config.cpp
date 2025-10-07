@@ -39,8 +39,7 @@ class CfgMods
 			//"BR_TRACE_ENABLED",
 			//"MOVING_ZONE"
 			//"BR_MINIMAP",
-			//"BLUE_ZONE",
-			//"SPECTATOR"
+			//"BLUE_ZONE"
 		};
 
         class defs

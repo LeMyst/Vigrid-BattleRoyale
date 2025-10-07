@@ -2,7 +2,6 @@
 class BattleRoyaleServer: BattleRoyaleBase
 {
 	protected static BattleRoyaleServer m_Instance;
-    protected ref BattleRoyaleSpectators m_SpectatorSystem;
     ref array<ref BattleRoyaleState> m_States;
     int i_CurrentStateIndex;
 
@@ -21,9 +20,6 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
-#ifdef SPECTATOR
-        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", this, SingleplayerExecutionType.Server);
-#endif
 #endif
 
         Init();
@@ -82,8 +78,6 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
 
         m_Timer = new Timer;
-
-        m_SpectatorSystem = new BattleRoyaleSpectators;
 
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleGameData m_GameData = config_data.GetGameData();
@@ -186,10 +180,6 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         float timeslice = delta; //Legacy
 
-#ifdef SPECTATOR
-        m_SpectatorSystem.Update(timeslice);
-#endif
-
         foreach(BattleRoyaleState state: m_States)
         {
             if(state)
@@ -265,57 +255,32 @@ class BattleRoyaleServer: BattleRoyaleBase
 		vector playerDir = vector.YawToVector(dir);
 		player.SetDirection( Vector(playerDir[0], 0, playerDir[1]) );
 
-        bool b_AutoSpectateMode = BattleRoyaleConfig.GetConfig().GetGameData().auto_spectate_mode;
-
         BattleRoyaleDebugState m_DebugStateObj;
 
-        // if we are not in the debug state, then we need to check if the player can spectate
         if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
         {
-            if(m_SpectatorSystem.CanSpectate( player ))
-            {
-#ifdef SPECTATOR
-                if (b_AutoSpectateMode)
-                {
-                    BattleRoyaleUtils.Trace("Spectator connected, inserting into spectator system");
+			//BAD VERY BAD!
+			//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
+			//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
 
-                    float time_until_spectate = 20.0;
+			//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
 
-                    //it seems that AddPlayer's client init may be causing some crashes, so we'll wait 15 seconds and then initialize the player as a spectator
-                    //note that 20 seconds is still too short. increased for now, but a more effective way of knowing when the player is "ready for interaction" is necessary
-                    m_Timer.Run( time_until_spectate, m_SpectatorSystem, "AddPlayer", new Param1<PlayerBase>( player ), false);
+			BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+			ref array<string> a_AdminsList = m_GameSettings.admins_steamid64;
 
-                    string message = string.Format("You will be given spectator in ~%1 seconds...", time_until_spectate);
+			if ( a_AdminsList.Find( player.GetIdentity().GetPlainId() ) != -1 )
+			{
+				BattleRoyaleUtils.Info("Admin " + player.GetIdentity().GetName() + " has connected during non-debug state, allowing connection.");
+				return; //allow admins to connect during non-debug state
+			}
 
-                    //m_SpectatorSystem.AddPlayer( player );
-                    if(player)
-                    {
-						MessagePlayer( player, message, DAYZBR_MSG_TIME, time_until_spectate );
-                    }
-                }
-#endif
-            }
-            else
-            {
-                //BAD VERY BAD!
-                //This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
-                //Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
+			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
+			m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 
-                //NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
-
-                Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
-                m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
-            }
-
-            //TODO: Create a *spectator* system that handles players connecting during non-debug zone states
-            //Note: the spectator system will also handle client respawn events too.
-            //We need to create a list of *allowed* spectators. This should be in the server config (for private servers)
-
-			// If the player is not a spectator, we don't want to add him to the state
             return;
         }
 
-        // only add player if they connect during debug (otherwise they're a spectator)
+        // only add player if they connect during debug
         if( player.GetIdentity() )
             player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
@@ -332,12 +297,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void OnPlayerDisconnect(PlayerBase player, PlayerIdentity identity)
     {
-    	// If the game is currently running, and the player is not a spectator, we kill the player
-#ifdef SPECTATOR
-		if ( GetCurrentState().ContainsPlayer(player) && !m_SpectatorSystem.ContainsPlayer(player) )
-#else
 		if ( GetCurrentState().ContainsPlayer(player) )
-#endif
 		{
 		    if ( player.IsUnconscious() )
             {
@@ -426,33 +386,15 @@ class BattleRoyaleServer: BattleRoyaleBase
             {
                 if(player && player.GetIdentity())
                 {
-#ifdef SPECTATOR
-                    if(m_SpectatorSystem.ContainsPlayer( player ))
-                    {
-                        m_SpectatorSystem.OnPlayerTick( player, timeslice );
-                    }
-                    else
-                    {
-#endif
-                        if ( temp_disconnecting.Find(player) == -1 )
-                        {
-#ifdef SPECTATOR
-							if ( m_SpectatorSystem.CanSpectate( player ) ) //TODO: find a better way to do this, if someone is bugged,but they can be a spectator, they aren't kicked :/
-							{
-#endif
-								//this ensures we only call disconnect on this player once
-								temp_disconnecting.Insert(player);
+					if ( temp_disconnecting.Find(player) == -1 )
+					{
+						//this ensures we only call disconnect on this player once
+						temp_disconnecting.Insert(player);
 
-								GetGame().SendLogoutTime(player, 0);
-								//GetGame().DisconnectPlayer( player.GetIdentity() );
-								//Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
-#ifdef SPECTATOR
-							}
-#endif
-                        }
-#ifdef SPECTATOR
-                    }
-#endif
+						GetGame().SendLogoutTime(player, 0);
+						//GetGame().DisconnectPlayer( player.GetIdentity() );
+						//Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
+					}
                 }
 
             }
@@ -492,26 +434,6 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         return -1;
     }
-
-#ifdef SPECTATOR
-    ref BattleRoyaleSpectators GetSpectatorSystem()
-    {
-        return m_SpectatorSystem;
-    }
-
-    void RequestEntityHealthUpdate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-    {
-
-        PlayerBase pbTarget;
-        //--- client is requesting stats on the existing player (ensure their stats are updated and send a result back only to that specific client)
-        BattleRoyaleUtils.Trace("Spectator client requested status update for target");
-        if(Class.CastTo( pbTarget, target ))
-        {
-            pbTarget.UpdateHealthStats( pbTarget.GetHealth01("", "Health"), pbTarget.GetHealth01("", "Blood") );
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float,float>( pbTarget.health_percent, pbTarget.blood_percent ), true, sender, pbTarget);
-        }
-    }
-#endif
 
     void PlayerReadyUp(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
@@ -612,15 +534,6 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 
-#ifdef SPECTATOR
-    //--- Admin tool functions only
-    void TestSpectator(PlayerBase player)
-    {
-        OnPlayerKilled(player, NULL); //1. simulate player killed ()
-        GetSpectatorSystem().AddPlayer( player ); //2. insert them into spectator system (like simulating joining during a non-debug state)
-    }
-#endif
-
     void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         BattleRoyaleUtils.Trace("BattleRoyaleManager NextState");
@@ -637,29 +550,4 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
 #endif
     }
-
-#ifdef SPECTATOR
-    void StartSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-    {
-        BattleRoyaleUtils.Trace("BattleRoyaleManager StartSpectate");
-        PlayerBase pbTarget;
-        if(Class.CastTo( pbTarget, target ))
-        {
-            BattleRoyaleServer m_BrServer;
-            if(Class.CastTo( m_BrServer, GetBR()))
-            {
-                BattleRoyaleUtils.Trace("[DayZBR COT] Testing Spectating!");
-                m_BrServer.TestSpectator(pbTarget);
-            }
-            else
-            {
-                Error("Failed to cast GetBR() to BattleRoyaleServer");
-            }
-        }
-        else
-        {
-            Error("Failed to cast TestSpectator target object to playerbase");
-        }
-    }
-#endif
 }

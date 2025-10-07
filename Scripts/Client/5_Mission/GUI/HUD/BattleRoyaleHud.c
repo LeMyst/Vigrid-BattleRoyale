@@ -18,11 +18,6 @@ class BattleRoyaleHud
     protected ImageWidget m_DistanceZoneArrow;
     protected ImageWidget m_ImageClock;
 
-#ifdef SPECTATOR
-    protected ref array<ref BattleRoyaleSpectatorPlayerWidget> m_SpectatorWidgets;
-    protected bool show_spectator;
-#endif
-
     protected bool is_shown;
 
     protected int timeRemaining;
@@ -37,10 +32,6 @@ class BattleRoyaleHud
 
     protected void Init()
     {
-#ifdef SPECTATOR
-        m_SpectatorWidgets = new array<ref BattleRoyaleSpectatorPlayerWidget>();
-#endif
-
         m_PlayerCountPanel = Widget.Cast( m_Root.FindAnyWidget( "PlayerCountPanel" ) );
         m_GroupCountPanel = Widget.Cast( m_Root.FindAnyWidget( "GroupsCountPanel" ) );
         m_ZoneDistancePanel = Widget.Cast( m_Root.FindAnyWidget( "ZoneDistancePanel" ) );
@@ -224,59 +215,4 @@ class BattleRoyaleHud
 
         m_CountdownTextWidget.SetText( display_str );
     }
-
-#ifdef SPECTATOR
-    void Update(float timeslice)
-    {
-        if(show_spectator)
-        {
-            array<PlayerBase> players;
-            PlayerBase.GetLocalPlayers( players );
-            int i;
-
-            //1. iterate over all players, assign them to spectator widgets (in order)
-            int index = 0;
-            for(i = 0; i < players.Count(); i++)
-            {
-                //don't render whatever getplayer returns (maybe this will fix the issue with freecam showing the spectator's deleted player on HUD?)
-                if(players[i] == PlayerBase.Cast( GetGame().GetPlayer() ) )
-                    continue;
-
-                if(index == m_SpectatorWidgets.Count())
-                {
-                    //not enough spectator widgets! create one!
-                    m_SpectatorWidgets.Insert( CreatePlayerWidget( players[i] ) );
-                }
-                else
-                {
-                    //widget already exists! update it's player!
-                    m_SpectatorWidgets[index].SetPlayer( players[i] );
-                }
-
-                //update the widget! (position and stats)
-                m_SpectatorWidgets[index].Update(timeslice);
-
-                index++;
-            }
-            //2. iterate over excess spectator widgets and disable (delete) them.
-            for(i = players.Count(); i < m_SpectatorWidgets.Count(); i++)
-            {
-                m_SpectatorWidgets[i].Delete();
-            }
-        }
-    }
-
-    void InitSpectator()
-    {
-        show_spectator = true;
-    }
-
-    //--- spectator!
-    ref BattleRoyaleSpectatorPlayerWidget CreatePlayerWidget(PlayerBase player)
-    {
-        ref BattleRoyaleSpectatorPlayerWidget player_widget = new BattleRoyaleSpectatorPlayerWidget(m_Root, player);
-        return player_widget;
-    }
-#endif
 }
-#endif

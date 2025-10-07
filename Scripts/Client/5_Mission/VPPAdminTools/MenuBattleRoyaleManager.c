@@ -3,7 +3,6 @@
 class MenuBattleRoyaleManager: AdminHudSubMenu
 {
     private ButtonWidget nextStateButton;
-    private ButtonWidget startSpectateButton;
 
     void MenuBattleRoyaleManager()
     {
@@ -20,7 +19,6 @@ class MenuBattleRoyaleManager: AdminHudSubMenu
         m_closeButton = ButtonWidget.Cast( M_SUB_WIDGET.FindAnyWidget( "BtnClose") );
 
         nextStateButton = ButtonWidget.Cast(M_SUB_WIDGET.FindAnyWidget("BtnNextState"));
-        startSpectateButton = ButtonWidget.Cast(M_SUB_WIDGET.FindAnyWidget("BtnStartSpectate"));
     }
 
     override void OnUpdate(float timeslice)
@@ -40,9 +38,6 @@ class MenuBattleRoyaleManager: AdminHudSubMenu
             case nextStateButton:
                 NextState();
             break;
-            case startSpectateButton:
-                StartSpectate();
-            break;
         }
 
         return false;
@@ -51,12 +46,6 @@ class MenuBattleRoyaleManager: AdminHudSubMenu
     private void NextState()
     {
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", NULL, true);
-    }
-
-    private void StartSpectate()
-    {
-        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "StartSpectate", NULL, true, NULL, player);
     }
 };
 #endif

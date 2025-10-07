@@ -6,9 +6,6 @@ enum BattleRoyaleCOTStateMachineRPC
     Next,
     Pause,
     Resume,
-#ifdef SPECTATOR
-    TestSpectator,
-#endif
     AddFakePlayer,
     AddFakeGroup,
     SpawnAirdrop,

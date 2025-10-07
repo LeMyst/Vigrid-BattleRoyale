@@ -140,31 +140,17 @@ modded class MissionServer
 			else
 			{
 				//can't cast current state to debug? Kick
-#ifdef SPECTATOR
-				if( !BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ) )
-				{
-#endif
-					BattleRoyaleUtils.Trace("Kicking player (Not in debug state | Not a spectator)");
-					GetGame().DisconnectPlayer( identity );
-					// TODO: Replace with RPC call to ask the player to disconnect
-#ifdef SPECTATOR
-				}
-#endif
+				BattleRoyaleUtils.Trace("Kicking player (Not in debug state)");
+				GetGame().DisconnectPlayer( identity );
+				// TODO: Replace with RPC call to ask the player to disconnect
 			}
 		}
 		else
 		{
 			//Really no idea what this could be... maybe dead? Kick
-#ifdef SPECTATOR
-			if(!BattleRoyaleServer.Cast( m_BattleRoyale ).GetSpectatorSystem().CanIdSpectate( identity ))
-			{
-#endif
-				BattleRoyaleUtils.Trace("Kicking player (Not a valid player object | Not a spectator)");
-				GetGame().DisconnectPlayer( identity );
-				// TODO: Replace with RPC call to ask the player to disconnect
-#ifdef SPECTATOR
-			}
-#endif
+			BattleRoyaleUtils.Trace("Kicking player (Not a valid player object)");
+			GetGame().DisconnectPlayer( identity );
+			// TODO: Replace with RPC call to ask the player to disconnect
 		}
 	}
 

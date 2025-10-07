@@ -10,10 +10,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected bool b_IsReady;
 
-#ifdef SPECTATOR
-    protected ref map<string, ref BattleRoyaleSpectatorMapEntityData> m_SpectatorMapEntityData;
-#endif
-
     protected ref ExpansionServerMarkerData m_ZoneCenterMapMarker;
 
     void BattleRoyaleClient()
@@ -24,10 +20,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         b_MatchStarted = false;
         i_Kills = 0;
         i_SecondsRemaining = 0;
-
-#ifdef SPECTATOR
-        m_SpectatorMapEntityData = new map<string, ref BattleRoyaleSpectatorMapEntityData>();
-#endif
 
         Init();
     }
@@ -48,13 +40,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
-
-#ifdef SPECTATOR
-    ref map<string, ref BattleRoyaleSpectatorMapEntityData> GetSpectatorMapEntityData()
-    {
-        return m_SpectatorMapEntityData;
-    }
-#endif
 
     //--- note: these return NULL of there is no area referenced for next or current area
     BattleRoyalePlayArea GetPlayArea()

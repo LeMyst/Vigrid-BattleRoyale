@@ -3,6 +3,11 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 {
 	int version = 1;  // Config version
 
+	// Allowed admins - Are immune to kick and can go outside the play area
+	ref array<string> admins_steamid64 = {
+		"123456789123456789" // Dummy SteamID64
+	};
+
     int num_zones = 6;  // number of zones
     int round_duration_minutes = 5;  // round length in minutes
 
@@ -46,13 +51,6 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
         "Compass",
         "Battery9V",
         "Battery9V"
-    };
-
-	// Spectate settings
-    bool use_spectate_whitelist = true;  // Use the spectate whitelist, otherwise everyone can spectate
-    bool auto_spectate_mode = true;  // Automatically start spectating when dead
-    ref array<string> allowed_spectate_steamid64 = {
-        "123456789123456789" // Dummy SteamID64
     };
 
     override string GetProfilePath()

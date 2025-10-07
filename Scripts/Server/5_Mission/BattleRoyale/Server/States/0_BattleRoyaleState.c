@@ -130,27 +130,9 @@ class BattleRoyaleState: Timeable
         return (m_Players.Find(player) >= 0);
     }
 
-    void OnPlayerTick(PlayerBase player, float timeslice)
-    {
-#ifdef SPECTATOR
-        if(player)
-        {
-            if(player.UpdateHealthStatsServer( player.GetHealth01("", "Health"), player.GetHealth01("", "Blood"), timeslice ))
-            {
-                //BattleRoyaleUtils.Trace("Player Health Changed! Syncing Network...");
-                //the player's stats changed (sync it over the network)
-                GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateEntityHealth", new Param2<float, float>( player.health_percent, player.blood_percent ), true, NULL, player);
-            }
-
-            //UpdateHealthStatsServer will ensure that time_since_last_net_sync == 0 when a potential health update gets triggered. We can use this same window to also send map entity data updates
-            //TODO: look for a more performant way of doing this maybe?
-            if(player.time_since_last_net_sync == 0)
-            {
-                GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateMapEntityData", new Param4<string, string, vector, vector>( player.GetIdentity().GetId(), player.GetIdentityName(), player.GetPosition(), player.GetDirection() ), true);
-            }
-        }
-#endif
-    }
+	void OnPlayerTick(PlayerBase player, float timeslice)
+	{
+	}
 
 	//player count changed event handler
 	protected void OnPlayerCountChanged()
@@ -684,26 +666,24 @@ class BattleRoyaleDebugState: BattleRoyaleState
     protected vector v_Center;
     protected float f_Radius;
     protected int i_HealTickTime;
-    protected ref array<string> a_AllowedOutsideLobby;
+    protected ref array<string> a_AdminsList;
 
     void BattleRoyaleDebugState()
     {
         BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
-        BattleRoyaleLobbyData mLobbySettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
 
-        if(m_SpawnsSettings && mLobbySettings)
+        if(m_SpawnsSettings && m_GameSettings)
         {
             v_Center = m_SpawnsSettings.spawn_point;
             f_Radius = m_SpawnsSettings.radius;
-            a_AllowedOutsideLobby = mLobbySettings.allowed_outside_lobby;
+            a_AdminsList = m_GameSettings.admins_steamid64;
         }
         else
         {
             Error("DEBUG SETTINGS IS NULL!");
             GetGame().RequestExit(0);  // Exit the game
         }
-
-        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
 
         if(m_GameSettings)
         {
@@ -797,7 +777,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
     {
         if(!player)
         {
-            Error("Null player in CanSpectate");
+            Error("Null player in CanGoOutsideLobby");
             return false;
         }
         PlayerIdentity identity = player.GetIdentity();
@@ -812,7 +792,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
             return false;
         }
 
-        return (a_AllowedOutsideLobby.Find(steamid) != -1);
+        return (a_AdminsList.Find(steamid) != -1);
     }
 
     //TODO:
