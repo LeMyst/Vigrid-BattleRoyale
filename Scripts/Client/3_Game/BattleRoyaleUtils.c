@@ -95,6 +95,7 @@ class BattleRoyaleUtils: Managed
 		if (IsCLIParam("br-warn")) return (WARN >= level);
 		if (IsCLIParam("br-none")) return false;  // Disable all logging
 
+#ifdef SERVER
 		// Check server config
 		int config_br_log_level = GetGame().ServerConfigGetInt("BRLogLevel");
 		if (config_br_log_level > 0)
@@ -108,6 +109,7 @@ class BattleRoyaleUtils: Managed
 		{
 			return false;  // Disable all logging
 		}
+#endif
 
 		// Default log level
 		return BATTLEROYALE_LOG_LEVEL >= level;
