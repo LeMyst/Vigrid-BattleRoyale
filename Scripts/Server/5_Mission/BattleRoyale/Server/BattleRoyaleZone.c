@@ -316,7 +316,7 @@ class BattleRoyaleZone
 						// If we couldn't find a valid position within the polygon after all attempts
 						if(!found_valid_position)
 						{
-							Error("Could not find a valid position within the specified polygon!");
+							BattleRoyaleUtils.Error("Could not find a valid position within the specified polygon! Polygon vertex count: " + m_ZoneSettings.first_zone_polygon.Count() + ", Attempts made: " + (attempts - max_attempts));
 							// Fall back to the default method
 							BattleRoyaleUtils.Trace("Falling back to default method");
 							if(b_EndInVillages)
