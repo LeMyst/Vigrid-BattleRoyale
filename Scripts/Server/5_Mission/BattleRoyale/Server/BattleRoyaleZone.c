@@ -565,7 +565,7 @@ class BattleRoyaleZone
 		return poi_position;
 	}
 
-	bool IsPointInPolygon(vector point, array<string> polygon)
+	bool IsPointInPolygon(vector point, array<vector> polygon)
 	{
 		if (!polygon || polygon.Count() < 3)
 			return false;
@@ -575,8 +575,8 @@ class BattleRoyaleZone
 		j = polygon.Count() - 1;
 		for (i = 0; i < polygon.Count(); i++)
 		{
-			vector vtx_i = polygon[i].ToVector();
-			vector vtx_j = polygon[j].ToVector();
+			vector vtx_i = polygon[i];
+			vector vtx_j = polygon[j];
 			// Only compare x and z coordinates (ignore y/height)
 			bool crossesZLine = (vtx_i[2] > point[2]) != (vtx_j[2] > point[2]);
 
@@ -609,7 +609,14 @@ class BattleRoyaleZone
 		if (!m_ZoneSettings.restrict_first_zone || !m_ZoneSettings.first_zone_polygon || m_ZoneSettings.first_zone_polygon.Count() < 3)
 			return true;
 
+		// Convert first_zone_polygon strings to vectors and check if position is inside the polygon
+		array<vector> polygon_vertices = new array<vector>();
+		foreach(string v : m_ZoneSettings.first_zone_polygon)
+		{
+			polygon_vertices.Insert(v.ToVector());
+		}
+
 		// Check if the position is within the defined polygon
-		return IsPointInPolygon(position, m_ZoneSettings.first_zone_polygon);
+		return IsPointInPolygon(position, polygon_vertices);
 	}
 }
