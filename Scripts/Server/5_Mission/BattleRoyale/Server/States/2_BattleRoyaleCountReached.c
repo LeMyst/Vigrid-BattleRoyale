@@ -29,6 +29,12 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 			serverWebhook.LockServer();
 		}
 
+		if ( m_ServerData.use_autolock && m_ServerData.autolock_url != "" && m_ServerData.autolock_ip != "" && m_ServerData.autolock_port > 0 && m_ServerData.autolock_rcon_password != "" )
+		{
+			AutoLockWebhook autoLockWebhook = new AutoLockWebhook( m_ServerData.autolock_url, m_ServerData.autolock_ip, m_ServerData.autolock_port, m_ServerData.autolock_rcon_password );
+			autoLockWebhook.LockServer();
+		}
+
         string second = "seconds";
         if ( i_TimeToStart == 1 )
             second = "second";
