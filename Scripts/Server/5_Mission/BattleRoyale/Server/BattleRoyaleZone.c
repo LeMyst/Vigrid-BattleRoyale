@@ -184,6 +184,26 @@ class BattleRoyaleZone
 		{
 			m_PlayAreas = new array<ref BattleRoyalePlayArea>();
 
+			// Initialize bounding box variables at the method level
+			float min_x = float.MAX;
+			float max_x = float.LOWEST;
+			float min_z = float.MAX;
+			float max_z = float.LOWEST;
+
+			// Calculate the bounding box of the polygon if restriction is enabled
+			if (m_ZoneSettings.restrict_first_zone && m_ZoneSettings.first_zone_polygon && m_ZoneSettings.first_zone_polygon.Count() >= 3)
+			{
+				// Iterate through all vertices to find the bounding box
+				foreach(string v : m_ZoneSettings.first_zone_polygon)
+				{
+					vector vtx = v.ToVector();
+					min_x = Math.Min(min_x, vtx[0]);
+					max_x = Math.Max(max_x, vtx[0]);
+					min_z = Math.Min(min_z, vtx[2]);
+					max_z = Math.Max(max_z, vtx[2]);
+				}
+			}
+
 			BattleRoyaleUtils.Trace("CfgWorlds " + GetGame().GetWorldName());
 			vector previous_center;
 			for(int i = 0; i < i_NumRounds; i++)
@@ -270,21 +290,6 @@ class BattleRoyaleZone
 						{
 							BattleRoyaleUtils.Trace("No POI found in restricted zone or POI mode disabled, trying random positions");
 							int max_attempts = 500;
-
-							// Calculate the bounding box of the polygon once before the loop
-							float min_x = float.MAX;
-							float max_x = float.LOWEST;
-							float min_z = float.MAX;
-							float max_z = float.LOWEST;
-							// Iterate through all vertices to find the bounding box
-							foreach(string v : m_ZoneSettings.first_zone_polygon)
-							{
-								vector vtx = v.ToVector();
-								min_x = Math.Min(min_x, vtx[0]);
-								max_x = Math.Max(max_x, vtx[0]);
-								min_z = Math.Min(min_z, vtx[2]);
-								max_z = Math.Max(max_z, vtx[2]);
-							}
 
 							while(max_attempts > 0 && !found_valid_position)
 							{
