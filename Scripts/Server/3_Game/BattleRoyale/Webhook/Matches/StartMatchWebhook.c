@@ -39,7 +39,7 @@ class StartMatchWebhook
         ctx.POST(new StartMatchCallback( s_ServerToken, match_uuid, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/start", match_uuid)), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};

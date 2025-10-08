@@ -39,7 +39,7 @@ class ScoreWebhook
         ctx.POST(new ScoreCallback( s_ServerToken, match_uuid, player_steamid, position, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/players/%2/score/%3", match_uuid, player_steamid, position )), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};
