@@ -175,63 +175,180 @@ class BattleRoyaleZone
 
     static ref array<ref BattleRoyalePlayArea> m_PlayAreas;
 
-    BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)
-    {
-    	// If we don't have the play areas, we generate them
-        if(!m_PlayAreas)
-        {
-            m_PlayAreas = new array<ref BattleRoyalePlayArea>();
+	BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)
+	{
+		// If we don't have the play areas, we generate them
+		if(!m_PlayAreas)
+		{
+			m_PlayAreas = new array<ref BattleRoyalePlayArea>();
 
-            BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-            BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
-            BattleRoyaleUtils.Trace("CfgWorlds " + GetGame().GetWorldName());
-            vector previous_center;
-            for(int i = 0; i < i_NumRounds; i++)
-            {
-                BattleRoyaleUtils.Trace("Generate Area " + i);
-                if(i > a_StaticSizes.Count())
-                {
-                    Error("Not enough static sizes for static zone sizes! (want " + i + " have " + a_StaticSizes.Count() + ")");
-                }
-                BattleRoyalePlayArea playArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
-                float radius = a_StaticSizes[i];
-                BattleRoyaleUtils.Trace("radius: " + radius);
-                playArea.SetRadius(radius);
-                vector area_center;
+			BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+			BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+			BattleRoyaleUtils.Trace("CfgWorlds " + GetGame().GetWorldName());
+			vector previous_center;
+			for(int i = 0; i < i_NumRounds; i++)
+			{
+				BattleRoyaleUtils.Trace("Generate Area " + i);
+				if(i > a_StaticSizes.Count())
+				{
+					Error("Not enough static sizes for static zone sizes! (want " + i + " have " + a_StaticSizes.Count() + ")");
+				}
+				BattleRoyalePlayArea playArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
+				float radius = a_StaticSizes[i];
+				BattleRoyaleUtils.Trace("radius: " + radius);
+				playArea.SetRadius(radius);
+				vector area_center;
 
-                if(i == 0)  // First zone
-                {
-                    BattleRoyaleUtils.Trace("Generate first zone");
+				if(i == 0)  // First zone
+				{
+					BattleRoyaleUtils.Trace("Generate first zone");
 
-                    // Get world size
-                    int world_size = GetGame().GetWorld().GetWorldSize();
-                    BattleRoyaleUtils.Trace("world_size: " + world_size);
+					// Get world size
+					int world_size = GetGame().GetWorld().GetWorldSize();
+					BattleRoyaleUtils.Trace("world_size: " + world_size);
 
-                    if(b_EndInVillages)
-                        area_center = GetRandomPOI();
-                    else
-                        area_center = GetValidPositionSquare(radius, world_size - radius, radius, world_size - radius);
-                } else {  // Next zones
-                    BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
-                    area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
-                }
+					// Initialize POIs list before attempting to find zones
+					if(b_EndInVillages)
+					{
+						InitializePOIs();
+					}
 
-                BattleRoyaleUtils.Trace("area_center x: " + area_center[0]);
-                BattleRoyaleUtils.Trace("area_center z: " + area_center[2]);
+					// Check if first zone polygon restriction is enabled
+					if(m_ZoneSettings.restrict_first_zone && m_ZoneSettings.first_zone_polygon && m_ZoneSettings.first_zone_polygon.Count() >= 3)
+					{
+						BattleRoyaleUtils.Trace("First zone restricted to polygon with " + m_ZoneSettings.first_zone_polygon.Count() + " vertices");
 
-                playArea.SetCenter(area_center);
+						bool found_valid_position = false;
 
-                BattleRoyaleUtils.Trace("Zone Data");
-                BattleRoyaleUtils.Trace(playArea.GetCenter());
-                BattleRoyaleUtils.Trace(playArea.GetRadius());
+						// First try to find a POI within the restricted zone
+						if(b_EndInVillages)
+						{
+							BattleRoyaleUtils.Trace("Trying to find POI in restricted zone");
+							// Try to find a POI within the polygon
+							int max_poi_attempts = 100;
 
-                m_PlayAreas.Insert(playArea);
-            }
-        }
+							string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
 
-        BattleRoyaleUtils.Trace("Return zone number: " + zone_number);
-        return m_PlayAreas[zone_number];
-    }
+							if(s_POI)
+							{
+								// Try all POIs to find one in the polygon
+								for(int poi_idx = 0; poi_idx < s_POI.Count() && !found_valid_position; poi_idx++)
+								{
+									ref array<float> poi = s_POI.Get(poi_idx);
+
+									// Try multiple positions around this POI
+									for(int attempt = 0; attempt < max_poi_attempts && !found_valid_position; attempt++)
+									{
+										float radius_poi = 10 * Math.Sqrt(Math.RandomFloat(0, 1));
+										float theta_poi = Math.RandomFloat(0, 1) * Math.PI2;
+										float x_poi = poi[0] + radius_poi * Math.Cos(theta_poi);
+										float z_poi = poi[1] + radius_poi * Math.Sin(theta_poi);
+
+										vector test_poi = "0 0 0";
+										test_poi[0] = x_poi;
+										test_poi[2] = z_poi;
+
+										if(IsValidFirstZonePosition(test_poi) && IsSafeZoneCenter(test_poi[0], test_poi[2]))
+										{
+											area_center = test_poi;
+											area_center[1] = GetGame().SurfaceY(area_center[0], area_center[2]);
+											found_valid_position = true;
+											BattleRoyaleUtils.Trace("Found valid POI position in polygon: " + area_center + " after " + (attempt + 1) + " attempts");
+											break;
+										}
+									}
+								}
+							}
+							else
+							{
+								BattleRoyaleUtils.Trace("POI list not initialized yet, will try random position");
+							}
+						}
+
+						// If no POI found in the restricted zone, try random positions
+						if(!found_valid_position)
+						{
+							BattleRoyaleUtils.Trace("No POI found in restricted zone or POI mode disabled, trying random positions");
+							int max_attempts = 500;
+
+							while(max_attempts > 0 && !found_valid_position)
+							{
+								max_attempts--;
+
+								// Try to generate a position within the polygon
+								// First find the bounding box of the polygon
+								float min_x = float.MAX;
+								float max_x = 0;
+								float min_z = float.MAX;
+								float max_z = 0;
+
+								foreach(string v : m_ZoneSettings.first_zone_polygon)
+								{
+									vector vtx = v.ToVector();
+									min_x = Math.Min(min_x, vtx[0]);
+									max_x = Math.Max(max_x, vtx[0]);
+									min_z = Math.Min(min_z, vtx[2]);
+									max_z = Math.Max(max_z, vtx[2]);
+								}
+
+								// Generate a random position within the bounding box
+								vector test_pos = "0 0 0";
+								test_pos[0] = Math.RandomFloat(min_x, max_x);
+								test_pos[2] = Math.RandomFloat(min_z, max_z);
+
+								// Use the IsValidFirstZonePosition helper method to check if position is valid
+								// Also check if it's a safe zone (not in water, etc.)
+								if(IsValidFirstZonePosition(test_pos) && IsSafeZoneCenter(test_pos[0], test_pos[2]))
+								{
+									area_center = test_pos;
+									area_center[1] = GetGame().SurfaceY(area_center[0], area_center[2]);
+									found_valid_position = true;
+									BattleRoyaleUtils.Trace("Found valid random position in polygon: " + area_center);
+								}
+							}
+						}
+
+						// If we couldn't find a valid position within the polygon after all attempts
+						if(!found_valid_position)
+						{
+							Error("Could not find a valid position within the specified polygon!");
+							// Fall back to the default method
+							BattleRoyaleUtils.Trace("Falling back to default method");
+							if(b_EndInVillages)
+								area_center = GetRandomPOI();
+							else
+								area_center = GetValidPositionSquare(radius, world_size - radius, radius, world_size - radius);
+						}
+					}
+					else
+					{
+						// Default behavior if restriction is not enabled
+						if(b_EndInVillages)
+							area_center = GetRandomPOI();
+						else
+							area_center = GetValidPositionSquare(radius, world_size - radius, radius, world_size - radius);
+					}
+				} else {  // Next zones
+					BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
+					area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
+				}
+
+				BattleRoyaleUtils.Trace("area_center x: " + area_center[0]);
+				BattleRoyaleUtils.Trace("area_center z: " + area_center[2]);
+
+				playArea.SetCenter(area_center);
+
+				BattleRoyaleUtils.Trace("Zone Data");
+				BattleRoyaleUtils.Trace(playArea.GetCenter());
+				BattleRoyaleUtils.Trace(playArea.GetRadius());
+
+				m_PlayAreas.Insert(playArea);
+			}
+		}
+
+		BattleRoyaleUtils.Trace("Return zone number: " + zone_number);
+		return m_PlayAreas[zone_number];
+	}
 
     vector GetValidPositionSquare(float min_x, float max_x, float min_z, float max_z)
     {
@@ -366,68 +483,131 @@ class BattleRoyaleZone
 
     static ref set<ref array<float>> s_POI;
 
-    vector GetRandomPOI()
-    {
-        string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
-        BattleRoyaleUtils.Trace(cfg);
+	// Initialize the POIs if they haven't been loaded already
+	void InitializePOIs()
+	{
+		if(s_POI)
+			return; // POIs already initialized
 
-        BattleRoyaleUtils.Trace("Avoid Type Count: " + a_avoidType.Count());
-        BattleRoyaleUtils.Trace("Avoid City Count: " + a_avoidCity.Count());
+		s_POI = new set<ref array<float>>;
+		string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
 
-        if(!s_POI)
-        {
-            s_POI = new set<ref array<float>>;
-            BattleRoyaleUtils.Trace(string.Format("Loading %1 POIs", GetGame().ConfigGetChildrenCount(cfg)));
-            for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++)
-            {
-                string city;
-                GetGame().ConfigGetChildName(cfg, i, city);
+		BattleRoyaleUtils.Trace("Initializing POIs");
+		BattleRoyaleUtils.Trace("Avoid Type Count: " + a_avoidType.Count());
+		BattleRoyaleUtils.Trace("Avoid City Count: " + a_avoidCity.Count());
 
-                TFloatArray city_position = {};
-                GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), city_position);
-                string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
+		BattleRoyaleUtils.Trace(string.Format("Loading %1 POIs", GetGame().ConfigGetChildrenCount(cfg)));
+		for (int i = 0; i < GetGame().ConfigGetChildrenCount(cfg); i++)
+		{
+			string city;
+			GetGame().ConfigGetChildName(cfg, i, city);
 
-				if(a_avoidType.Find(poi_type) != -1 || a_avoidCity.Find(city) != -1)
+			TFloatArray city_position = {};
+			GetGame().ConfigGetFloatArray(string.Format("%1 %2 position", cfg, city), city_position);
+			string poi_type = GetGame().ConfigGetTextOut(string.Format("%1 %2 type", cfg, city));
+
+			if(a_avoidType.Find(poi_type) != -1 || a_avoidCity.Find(city) != -1)
+			{
+				BattleRoyaleUtils.Trace("Avoiding "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
+				continue;
+			}
+
+			vector override_position = BattleRoyaleConfig.GetConfig().GetPOIsData().GetOverrodePosition( city );
+			if( override_position != "0 0 0" )
+			{
+				city_position = {override_position[0], 0, override_position[2]};
+				BattleRoyaleUtils.Trace("Override " + city + " position!");
+			}
+
+			BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
+			s_POI.Insert(city_position);
+		}
+
+		BattleRoyaleUtils.Trace("Loaded " + s_POI.Count() + " POIs");
+	}
+
+	vector GetRandomPOI()
+	{
+		// Make sure POIs are initialized
+		InitializePOIs();
+
+		string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
+		BattleRoyaleUtils.Trace(cfg);
+
+		float radius, theta, x, z;
+		while(true)
+		{
+			ref array<float> poi = s_POI.Get(Math.RandomInt(0, s_POI.Count()));
+
+			radius = 10 * Math.Sqrt( Math.RandomFloat(0, 1) );
+			theta = Math.RandomFloat(0, 1) * Math.PI2;
+			x = poi[0] + radius * Math.Cos(theta);
+			z = poi[1] + radius * Math.Sin(theta);
+
+			if(!IsSafeZoneCenter(x, z))
+				continue;
+
+			break;
+		}
+
+		vector poi_position = "0 0 0";
+		poi_position[0] = x;
+		poi_position[2] = z;
+		poi_position[1] = GetGame().SurfaceY(poi_position[0], poi_position[2]);
+
+		BattleRoyaleUtils.Trace(poi_position);
+
+		return poi_position;
+	}
+
+	bool IsPointInPolygon(vector point, array<string> polygon)
+	{
+		if (!polygon || polygon.Count() < 3)
+			return false;
+
+		int i, j;
+		bool result = false;
+		j = polygon.Count() - 1;
+		for (i = 0; i < polygon.Count(); i++)
+		{
+			vector vtx_i = polygon[i].ToVector();
+			vector vtx_j = polygon[j].ToVector();
+			// Only compare x and z coordinates (ignore y/height)
+			bool crossesZLine = (vtx_i[2] > point[2]) != (vtx_j[2] > point[2]);
+
+			if (crossesZLine)
+			{
+				float intersectX = vtx_i[0];
+				float zDiff = vtx_j[2] - vtx_i[2];
+
+				if (zDiff != 0)
 				{
-					BattleRoyaleUtils.Trace("Avoiding "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
-					continue;
+					float xDiff = vtx_j[0] - vtx_i[0];
+					float ratio = (point[2] - vtx_i[2]) / zDiff;
+					intersectX = vtx_i[0] + (xDiff * ratio);
 				}
 
-				vector override_position = BattleRoyaleConfig.GetConfig().GetPOIsData().GetOverrodePosition( city );
-				if( override_position != "0 0 0" )
+				if (point[0] < intersectX)
 				{
-					city_position = {override_position[0], 0, override_position[2]};
-					BattleRoyaleUtils.Trace("Override " + city + " position!");
+					result = !result;
 				}
+			}
+			j = i;
+		}
 
-                BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
-                s_POI.Insert(city_position);
-            }
-        }
+		return result;
+	}
 
-        float radius, theta, x, z;
-        while(true)
-        {
-        	ref array<float> poi = s_POI.Get(Math.RandomInt(0, s_POI.Count()));
+	bool IsValidFirstZonePosition(vector position)
+	{
+		BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+		BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
 
-            radius = 10 * Math.Sqrt( Math.RandomFloat(0, 1) );
-            theta = Math.RandomFloat(0, 1) * Math.PI2;
-            x = poi[0] + radius * Math.Cos(theta);
-            z = poi[1] + radius * Math.Sin(theta);
+		// If restriction is not enabled or no polygon is defined, any position is valid
+		if (!m_ZoneSettings.restrict_first_zone || !m_ZoneSettings.first_zone_polygon || m_ZoneSettings.first_zone_polygon.Count() < 3)
+			return true;
 
-            if(!IsSafeZoneCenter(x, z))
-                continue;
-
-            break;
-        }
-
-        vector poi_position = "0 0 0";
-        poi_position[0] = x;
-        poi_position[2] = z;
-        poi_position[1] = GetGame().SurfaceY(poi_position[0], poi_position[2]);
-
-        BattleRoyaleUtils.Trace(poi_position);
-
-        return poi_position;
-    }
+		// Check if the position is within the defined polygon
+		return IsPointInPolygon(position, m_ZoneSettings.first_zone_polygon);
+	}
 }
