@@ -4,6 +4,9 @@ class BattleRoyaleZone
     protected ref BattleRoyaleZone m_ParentZone;
     protected ref BattleRoyalePlayArea m_PlayArea;
 
+    protected BattleRoyaleConfig m_Config;
+    protected BattleRoyaleZoneData m_ZoneSettings;
+
     protected float f_ConstantShrink;
     protected int i_ShrinkType;
     protected int i_NumRounds;
@@ -31,14 +34,13 @@ class BattleRoyaleZone
 
     void Create()
     {
-        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+        m_Config = BattleRoyaleConfig.GetConfig();
 
-        BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
-        BattleRoyaleGameData m_GameData = config_data.GetGameData();
+        BattleRoyaleGameData m_GameData = m_Config.GetGameData();
         i_NumRounds = m_GameData.num_zones;
         i_RoundDurationMinutes = m_GameData.round_duration_minutes;
 
+        m_ZoneSettings = m_Config.GetZoneData();
         f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
         f_Eulers = m_ZoneSettings.shrink_base;
@@ -182,8 +184,6 @@ class BattleRoyaleZone
 		{
 			m_PlayAreas = new array<ref BattleRoyalePlayArea>();
 
-			BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-			BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
 			BattleRoyaleUtils.Trace("CfgWorlds " + GetGame().GetWorldName());
 			vector previous_center;
 			for(int i = 0; i < i_NumRounds; i++)
@@ -271,25 +271,25 @@ class BattleRoyaleZone
 							BattleRoyaleUtils.Trace("No POI found in restricted zone or POI mode disabled, trying random positions");
 							int max_attempts = 500;
 
+							// Calculate the bounding box of the polygon once before the loop
+							float min_x = float.MAX;
+							float max_x = float.LOWEST;
+							float min_z = float.MAX;
+							float max_z = float.LOWEST;
+							// Iterate through all vertices to find the bounding box
+							foreach(string v : m_ZoneSettings.first_zone_polygon)
+							{
+								vector vtx = v.ToVector();
+								min_x = Math.Min(min_x, vtx[0]);
+								max_x = Math.Max(max_x, vtx[0]);
+								min_z = Math.Min(min_z, vtx[2]);
+								max_z = Math.Max(max_z, vtx[2]);
+							}
+
 							while(max_attempts > 0 && !found_valid_position)
 							{
 								max_attempts--;
-
 								// Try to generate a position within the polygon
-								// First find the bounding box of the polygon
-								float min_x = float.MAX;
-								float max_x = 0;
-								float min_z = float.MAX;
-								float max_z = 0;
-
-								foreach(string v : m_ZoneSettings.first_zone_polygon)
-								{
-									vector vtx = v.ToVector();
-									min_x = Math.Min(min_x, vtx[0]);
-									max_x = Math.Max(max_x, vtx[0]);
-									min_z = Math.Min(min_z, vtx[2]);
-									max_z = Math.Max(max_z, vtx[2]);
-								}
 
 								// Generate a random position within the bounding box
 								vector test_pos = "0 0 0";
@@ -512,7 +512,7 @@ class BattleRoyaleZone
 				continue;
 			}
 
-			vector override_position = BattleRoyaleConfig.GetConfig().GetPOIsData().GetOverrodePosition( city );
+			vector override_position = m_Config.GetPOIsData().GetOverrodePosition( city );
 			if( override_position != "0 0 0" )
 			{
 				city_position = {override_position[0], 0, override_position[2]};
@@ -600,9 +600,6 @@ class BattleRoyaleZone
 
 	bool IsValidFirstZonePosition(vector position)
 	{
-		BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-		BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
-
 		// If restriction is not enabled or no polygon is defined, any position is valid
 		if (!m_ZoneSettings.restrict_first_zone || !m_ZoneSettings.first_zone_polygon || m_ZoneSettings.first_zone_polygon.Count() < 3)
 			return true;
