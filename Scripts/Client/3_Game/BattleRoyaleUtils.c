@@ -43,7 +43,9 @@ class BattleRoyaleUtils: Managed
 			}
 
 #ifdef SERVER
+#ifdef DIAG
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", new Param2<string, string>(msg, chat_color), true);
+#endif
 #else
 			if ( GetGame() )
 				GetGame().Chat("C:" + msg, chat_color);
