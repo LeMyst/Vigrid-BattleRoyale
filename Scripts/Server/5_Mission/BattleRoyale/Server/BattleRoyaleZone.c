@@ -132,7 +132,7 @@ class BattleRoyaleZone
             float x = GetZoneNumber();
             if(x > a_StaticTimers.Count())
             {
-                Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
+                BattleRoyaleUtils.Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
                 return 300;
             }
             return a_StaticTimers[i_NumRounds - x] + f_durationOffset;
@@ -211,7 +211,7 @@ class BattleRoyaleZone
 				BattleRoyaleUtils.Trace("Generate Area " + i);
 				if(i > a_StaticSizes.Count())
 				{
-					Error("Not enough static sizes for static zone sizes! (want " + i + " have " + a_StaticSizes.Count() + ")");
+					BattleRoyaleUtils.Error("Not enough static sizes for static zone sizes! (want " + i + " have " + a_StaticSizes.Count() + ")");
 				}
 				BattleRoyalePlayArea playArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 				float radius = a_StaticSizes[i];
@@ -316,7 +316,7 @@ class BattleRoyaleZone
 						// If we couldn't find a valid position within the polygon after all attempts
 						if(!found_valid_position)
 						{
-							BattleRoyaleUtils.Error("Could not find a valid position within the specified polygon! Polygon vertex count: " + m_ZoneSettings.first_zone_polygon.Count() + ", Attempts made: " + (attempts - max_attempts));
+							BattleRoyaleUtils.Error("Could not find a valid position within the specified polygon!");
 							// Fall back to the default method
 							BattleRoyaleUtils.Trace("Falling back to default method");
 							if(b_EndInVillages)
