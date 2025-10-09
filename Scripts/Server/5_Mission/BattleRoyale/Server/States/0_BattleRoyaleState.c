@@ -435,7 +435,7 @@ class BattleRoyaleState: Timeable
 			BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
 			for (i = 0; i < partyCount; ++i)
 			{
-				group = new ref set<PlayerBase>;
+				group = new set<PlayerBase>;
 				PlayerBase plr = PlayerBase.Cast(id_map.Get(registered_parties.GetKey(i)));  // Get party leader
 				if(plr && plr.GetIdentity())
 				{
