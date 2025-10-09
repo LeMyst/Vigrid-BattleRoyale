@@ -25,6 +25,8 @@ class BattleRoyaleZone
 
     protected int i_RoundDurationMinutes;
 
+    protected ref array<vector> polygon_vertices;
+
     static ref map<int, ref BattleRoyaleZone> m_Zones;
 
     void BattleRoyaleZone(BattleRoyaleZone parent = NULL)
@@ -32,8 +34,10 @@ class BattleRoyaleZone
         m_ParentZone = parent;
     }
 
-    void Create()
+    void Init()
     {
+        BattleRoyaleUtils.Trace("BattleRoyaleZone Init()");
+
         m_Config = BattleRoyaleConfig.GetConfig();
 
         BattleRoyaleGameData m_GameData = m_Config.GetGameData();
@@ -54,7 +58,17 @@ class BattleRoyaleZone
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
-        Init();
+		// Convert first_zone_polygon strings to vectors and check if position is inside the polygon
+		if (m_ZoneSettings.restrict_first_zone)
+		{
+			polygon_vertices = new array<vector>();
+			foreach(string v : m_ZoneSettings.first_zone_polygon)
+			{
+				polygon_vertices.Insert(v.ToVector());
+			}
+		}
+
+        m_PlayArea = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
     }
 
     static ref BattleRoyaleZone GetZone(int x = 1)
@@ -81,7 +95,7 @@ class BattleRoyaleZone
                 m_Zone = new BattleRoyaleZone;
                 z_Index = 0;
             }
-            m_Zone.Create();
+            m_Zone.Init();
             m_Zones.Insert(z_Index, m_Zone);
             return m_Zone;
         } else {
@@ -97,12 +111,6 @@ class BattleRoyaleZone
     ref BattleRoyaleZone GetParent()
     {
         return m_ParentZone;
-    }
-
-    void Init()
-    {
-        BattleRoyaleUtils.Trace("BattleRoyaleZone Init()");
-        m_PlayArea = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
     }
 
     void OnActivate(notnull array<PlayerBase> players)
@@ -194,9 +202,8 @@ class BattleRoyaleZone
 			if (m_ZoneSettings.restrict_first_zone && m_ZoneSettings.first_zone_polygon && m_ZoneSettings.first_zone_polygon.Count() >= 3)
 			{
 				// Iterate through all vertices to find the bounding box
-				foreach(string v : m_ZoneSettings.first_zone_polygon)
+				foreach(vector vtx : polygon_vertices)
 				{
-					vector vtx = v.ToVector();
 					min_x = Math.Min(min_x, vtx[0]);
 					max_x = Math.Max(max_x, vtx[0]);
 					min_z = Math.Min(min_z, vtx[2]);
@@ -608,13 +615,6 @@ class BattleRoyaleZone
 		// If restriction is not enabled or no polygon is defined, any position is valid
 		if (!m_ZoneSettings.restrict_first_zone || !m_ZoneSettings.first_zone_polygon || m_ZoneSettings.first_zone_polygon.Count() < 3)
 			return true;
-
-		// Convert first_zone_polygon strings to vectors and check if position is inside the polygon
-		array<vector> polygon_vertices = new array<vector>();
-		foreach(string v : m_ZoneSettings.first_zone_polygon)
-		{
-			polygon_vertices.Insert(v.ToVector());
-		}
 
 		// Check if the position is within the defined polygon
 		return IsPointInPolygon(position, polygon_vertices);
