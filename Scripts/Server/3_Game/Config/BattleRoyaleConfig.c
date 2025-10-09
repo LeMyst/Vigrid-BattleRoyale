@@ -119,6 +119,16 @@ class BattleRoyaleConfig
 					{
 						Error("Config with invalid path in BattleRoyale Configs");
 					}
+
+					string mission_path = config.GetMissionPath();
+					if(mission_path != "")
+					{
+						if(FileExist( mission_path ))
+						{
+							BattleRoyaleUtils.Trace("Loading Mission Config: " + mission_path);
+							config.LoadMission();
+						}
+					}
 				}
 				else
 				{

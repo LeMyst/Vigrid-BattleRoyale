@@ -36,11 +36,6 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
         return BATTLEROYALE_SETTINGS_FOLDER + "server_settings.json";
     }
 
-    override string GetMissionPath()
-    {
-        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "server_settings.json";
-    }
-
 	override void Load()
 	{
 		string errorMessage;

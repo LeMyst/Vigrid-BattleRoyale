@@ -47,7 +47,11 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 
 		// Run the upgrade function here to avoid overrides from mission folder
 		Upgrade();
+	}
 
+	override void LoadMission()
+	{
+		string errorMessage;
 		// Override from mission folder
 		if (FileExist(GetMissionPath()))
 		{
