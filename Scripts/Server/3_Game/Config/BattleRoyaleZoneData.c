@@ -7,6 +7,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     ref array<string> end_avoid_type = {"DeerStand", "FeedShack", "Marine"};  // Types to avoid in the final zone (Only if end_in_villages is true)
     ref array<string> end_avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty"};  // Cities to avoid in the final zone (Only if end_in_villages is true)
 
+    // First zone polygon restriction
+    bool restrict_first_zone = false;  // Whether to restrict the first zone to a polygon
+    ref array<string> first_zone_polygon = {}; // Array of vectors defining polygon for first zone
+
 	// Dynamic zones
     bool use_dynamic_zones = true;  // Use dynamic zones based on player count
     int min_zone_num = 4;  // Minimum number of zones to have
