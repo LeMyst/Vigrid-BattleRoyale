@@ -145,6 +145,8 @@ To validate changes:
 1. **Always validate P:\ drive mount** before attempting builds
 2. **EnfusionScript syntax** is C-like but has DayZ-specific conventions:
    - **Does NOT support ternary operators** (`condition ? trueValue : falseValue`)
+   - **Does NOT support multi-line if conditions** - all conditions must be on a single line
+   - **Variables must be declared once per method scope** - even if in different code blocks/conditions
    - Use if-else statements instead of ternary operators
 3. **Never modify working batch files** without understanding the build pipeline
 4. **Client/Server separation** is critical - changes must go in correct directories
