@@ -40,7 +40,7 @@ class PartiesWebhook
         ctx.POST(new PartiesCallback( s_ServerToken, match_uuid, parties, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/parties", match_uuid)), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};

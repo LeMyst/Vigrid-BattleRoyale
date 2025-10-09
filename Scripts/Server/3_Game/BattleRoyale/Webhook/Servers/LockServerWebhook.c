@@ -45,7 +45,7 @@ class LockServerWebhook
         ctx.POST(new LockServerCallback( s_ServerToken, lock_server, i_TryLeft ) , arguments.ToQuery(string.Format("servers/%1", action)), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};

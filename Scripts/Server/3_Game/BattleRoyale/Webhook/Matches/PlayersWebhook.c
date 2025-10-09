@@ -40,7 +40,7 @@ class PlayersWebhook
         ctx.POST(new PlayersCallback( s_ServerToken, match_uuid, players, i_TryLeft ) , arguments.ToQuery(string.Format("matches/%1/players", match_uuid)), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};

@@ -41,7 +41,7 @@ class EventWebhook
         ctx.POST(new EventCallback( s_ServerToken, match_uuid, event_name, json_data, i_TryLeft ) , arguments.ToQuery(string.Format("events/%1", match_uuid)), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};

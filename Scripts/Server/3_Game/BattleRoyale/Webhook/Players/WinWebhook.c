@@ -39,7 +39,7 @@ class WinWebhook
         ctx.POST(new WinCallback( s_ServerToken, match_uuid, player_steamid, i_TryLeft ) , arguments.ToQuery(string.Format("players/%1/wins/%2/add", player_steamid, match_uuid )), jatString);
 	};
 
-	void SetTryLeft(bool try_left)
+	void SetTryLeft(int try_left)
 	{
 		i_TryLeft = try_left;
 	};
