@@ -507,8 +507,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         int minute = 0;
         GetGame().GetWorld().SetDate(year, month, day, hour, minute);
 
-		string world_name = "";
-		GetGame().GetWorldName(world_name);
+		string world_name = GetGame().GetWorldName();
 		world_name.ToLower();
 
 		if (world_name != "takistanplus")
