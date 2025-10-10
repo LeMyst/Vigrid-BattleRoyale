@@ -21,10 +21,6 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
     bool autostart_enabled = true;  // Enable autostart
     float autostart_delay = 750.0;  // Delay before autostart
 
-    ref array<string> allowed_outside_lobby = {
-        "123456789123456789" // Dummy SteamID64
-    };
-
 	// Items given to players when they spawn in the lobby
     ref array<string> player_lobby_items = {
         "TShirt_DBR",
