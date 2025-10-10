@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
-	int version = 1;  // Config version
+	int version = 2;  // Config version
 
 	// Lobby spawn location are in the spawns settings located in the mission folder.
 
@@ -24,6 +24,22 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
     ref array<string> allowed_outside_lobby = {
         "123456789123456789" // Dummy SteamID64
     };
+
+	// Items given to players when they spawn in the lobby
+    ref array<string> player_lobby_items = {
+        "TShirt_DBR",
+        "Jeans_Black",
+        "Sneakers_Black",
+        "Apple",
+        "Zucchini",
+        "Apple"
+    };
+
+    // Items that can be quickly accessed in the inventory hotbar
+    // The index corresponds to the item in the player_lobby_items array (0 = first item, 1 = second item, etc.)
+    ref array<int> player_lobby_items_shortcut = {
+		4,  // Zucchini
+	};
 
     override string GetProfilePath()
     {
@@ -65,5 +81,25 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 		string errorMessage;
 		if (!JsonFileLoader<BattleRoyaleLobbyData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
+	}
+
+	override void Upgrade()
+	{
+		if (version < 2)
+		{
+			// Add default items to the lobby items
+			player_lobby_items.Insert("TShirt_DBR");
+			player_lobby_items.Insert("Jeans_Black");
+			player_lobby_items.Insert("Sneakers_Black");
+			player_lobby_items.Insert("Apple");
+			player_lobby_items.Insert("Zucchini");
+			player_lobby_items.Insert("Apple");
+
+			// Set default shortcut to the Zucchini
+			player_lobby_items_shortcut.Insert(4);  // Zucchini
+
+			version = 2;
+			Save();
+		}
 	}
 };
