@@ -47,6 +47,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 	void InitSpectate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
+		BattleRoyaleUtils.Trace("InitSpectate");
 		Param1<Object> data;
 		if( !ctx.Read( data ) )
 		{
@@ -55,20 +56,15 @@ class BattleRoyaleClient: BattleRoyaleBase
 		}
 		if ( type == CallType.Client )
 		{
-			BattleRoyaleUtils.Trace("InitSpectate");
+			BattleRoyaleUtils.Trace("InitSpectate : " + data.param1);
 			if ( data.param1 != null )
 			{
 				BattleRoyaleUtils.Trace("Target for spectate: " + data.param1.GetPosition());
-				PlayerBase originalPlayer = GetGame().GetPlayer();
 				if (GetGame().GetPlayer() != null)
 				{
 					BattleRoyaleUtils.Trace("Deleting original player for spectate");
-//					// Remove the Shock effect
-//					PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-//					if ( player )
-//					{
-//						delete player.GetShockEffect();
-//					}
+
+					// TODO: Remove the Shock effect from the player if needed in future.
 
 					GetGame().ObjectDelete(GetGame().GetPlayer());
 					GetGame().SelectPlayer(null, null);
@@ -81,7 +77,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 				BattleRoyaleUtils.Trace("Starting spectate mode");
 				VPPSpectateCam cam = VPPSpectateCam.Cast(GetGame().CreateObject( "VPPSpectateCam", data.param1.GetPosition(), true ));
 				cam.SetTargetObj( PlayerBase.Cast(data.param1) );  // Set the target to follow
-				cam.SetOriginalPlayer( originalPlayer ); // Set the original player to return to
 				cam.SetActive(true);
 
 //				GetGame().SelectSpectator( GetGame().GetPlayer().GetIdentity(), "VPPSpectateCam", data.param1.GetPosition() );

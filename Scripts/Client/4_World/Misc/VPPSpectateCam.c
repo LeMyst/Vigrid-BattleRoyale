@@ -12,7 +12,6 @@ class VPPSpectateCam extends Camera
 	private float m_bblUpdateInterval = 0.0;
 	private vector m_vPreviousPosition = "0 0 0";
 	PlayerBase m_FollowObject;
-	PlayerBase m_OriginalPlayer;
 
 	void VPPSpectateCam()
 	{
@@ -30,11 +29,6 @@ class VPPSpectateCam extends Camera
 	{
 		m_FollowObject = target;
 		PPEffects.ResetDOFOverride();
-	}
-
-	void SetOriginalPlayer(PlayerBase player)
-	{
-		m_OriginalPlayer = player;
 	}
 
 	protected void FollowTarget3PP(float timeSlice)
@@ -84,8 +78,8 @@ class VPPSpectateCam extends Camera
 			BattleRoyaleUtils.Trace("SpectateCam Teleport Player to: " + spawn_pos);
 			BattleRoyaleUtils.Trace("SpectateCam Distance: " + distance);
 			BattleRoyaleUtils.Trace("SpectateCam Player: " + GetGame().GetPlayer());
-			BattleRoyaleUtils.Trace("SpectateCam OriginalPlayer: " + m_OriginalPlayer);
-			GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "UpdateSpectatorPosition", new Param2<PlayerBase, vector>(m_OriginalPlayer, spawn_pos), true );
+			BattleRoyaleUtils.Trace("SpectateCam OriginalPlayer: " + GetGame().GetPlayer());
+			GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "UpdateSpectatorPosition", new Param2<PlayerBase, vector>(GetGame().GetPlayer(), spawn_pos), true );
 
 			m_vPreviousPosition = spawn_pos;
 		}

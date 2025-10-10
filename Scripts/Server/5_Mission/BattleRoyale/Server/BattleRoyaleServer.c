@@ -238,19 +238,19 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 
-    void OnPlayerConnected(PlayerBase player)
-    {
-        //Teleport player into debug zone
-        BattleRoyaleUtils.Trace("Player " + player.GetIdentity().GetName() + " connected!"); //lets find out if respawning players end up here
+	void OnPlayerConnected(PlayerBase player)
+	{
+		//Teleport player into debug zone
+		BattleRoyaleUtils.Trace("Player " + player.GetIdentity().GetName() + " connected!"); //lets find out if respawning players end up here
 
-        //Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
-        player.player_steamid = player.GetIdentity().GetPlainId();
+		//Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
+		player.player_steamid = player.GetIdentity().GetPlainId();
 
-        //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
-        BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
+		//Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
+		BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
 
-        BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
-        vector debug_pos = m_Debug.GetCenter();
+		BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
+		vector debug_pos = m_Debug.GetCenter();
 
 		vector spawn_pos = "0 0 0";
 		spawn_pos[0] = Math.RandomFloatInclusive((debug_pos[0] - 5), (debug_pos[0] + 5));
@@ -259,61 +259,68 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 		player.SetPosition(spawn_pos);
 
-        // Check if this player is in our dead players list and should become a spectator
-        if (m_DeadPlayers && m_DeadPlayers.Contains(player.player_steamid))
-        {
-            BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " reconnected after dying - will enter spectator mode");
+		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
 
-            // Make player invisible until spectator mode begins
-            player.SetInvisibility(true);
+		if ( m_GameSettings.spectate_enabled )
+		{
+			// Check if this player is in our dead players list and should become a spectator
+			if (m_DeadPlayers && m_DeadPlayers.Contains(player.player_steamid))
+			{
+				BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " reconnected after dying - will enter spectator mode");
 
-            // Don't allow player to interact with world
-            player.SetAllowDamage(false);
+				// Make player invisible until spectator mode begins
+				player.SetInvisibility(true);
 
-            // Start spectator mode after a delay to ensure client is fully connected
-            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitiateSpectatorMode", 2000, false, new Param1<PlayerBase>(player));
+				// Don't allow player to interact with world
+				player.SetAllowDamage(false);
 
-            return;
-        }
+				// Start spectator mode after a delay to ensure client is fully connected
+				GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitiateSpectatorMode", 5000, false, new Param1<PlayerBase>(player));
+
+				return;
+			}
+		}
 
 		float dir = Math.RandomFloat(0, 360);
 		vector playerDir = vector.YawToVector(dir);
 		player.SetDirection( Vector(playerDir[0], 0, playerDir[1]) );
 
-        BattleRoyaleDebugState m_DebugStateObj;
+		BattleRoyaleDebugState m_DebugStateObj;
 
-        if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
-        {
-            //BAD VERY BAD!
-            //This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
-            //Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
+		if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
+		{
+			//BAD VERY BAD!
+			//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
+			//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
 
-            //NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
+			//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
 
-            BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
-            ref array<string> a_AdminsList = m_GameSettings.admins_steamid64;
+			ref array<string> a_AdminsList = m_GameSettings.admins_steamid64;
 
-            if ( a_AdminsList.Find( player.GetIdentity().GetPlainId() ) != -1 )
-            {
-                BattleRoyaleUtils.Info("Admin " + player.GetIdentity().GetName() + " has connected during non-debug state, allowing connection.");
-                return; //allow admins to connect during non-debug state
-            }
+			if ( a_AdminsList.Find( player.GetIdentity().GetPlainId() ) != -1 )
+			{
+				BattleRoyaleUtils.Info("Admin " + player.GetIdentity().GetName() + " has connected during non-debug state, allowing connection.");
+				return; //allow admins to connect during non-debug state
+			}
 
-            Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
-            m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
+			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
+			m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
 
-            return;
-        }
+			return;
+		}
 
-    // only add player if they connect during debug
-    if( player.GetIdentity() )
-        player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
+		// only add player if they connect during debug
+		if( player.GetIdentity() )
+			player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
 
-    GetCurrentState().AddPlayer(player);
+		GetCurrentState().AddPlayer(player);
 
-    if( match_uuid == "" )
-        GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
-}
+		if( match_uuid == "" )
+		{
+			GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
+		}
+	}
+
     void StartSpectate( PlayerBase player, PlayerBase target )
 	{
 		if ( player && target )
@@ -641,6 +648,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 			BattleRoyaleUtils.Trace("Removing player object: " + targetBase.GetIdentity().GetName());
 
 			// Delete the player object and initiate spectate mode
+			// TODO: Disabled deletion of player object for spectate mode. Re-enable GetGame().ObjectDelete(targetBase) if invisibility is insufficient or if object persistence causes issues.
 			// GetGame().ObjectDelete( targetBase );
 			targetBase.SetInvisibility( true );
 			GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(player), true, my_identity);
@@ -738,19 +746,30 @@ class BattleRoyaleServer: BattleRoyaleBase
             // Make the player invisible
             player.SetInvisibility(true);
 
+            vector new_position = target.GetPosition();
+            new_position[1] = 0;
+
             // Move the player to the target's position
-            player.SetPosition(target.GetPosition());
+            player.SetPosition(new_position);
 
-            // Sleep a moment to ensure position is set before starting spectate
-            Sleep(500);
+            BattleRoyaleUtils.Trace("Initiating spectate RPC call");
 
-            // Use the SpectateRandom approach which is known to work
-            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(target), true, player.GetIdentity());
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitSpectate", 1000, false, new Param2<PlayerBase, PlayerBase>(player, target));
         }
         else
         {
             BattleRoyaleUtils.Trace("No suitable spectate target found for player: " + player.GetIdentity().GetName());
         }
     }
+
+	void InitSpectate(PlayerBase player, PlayerBase target)
+	{
+		BattleRoyaleUtils.Trace("InitSpectate called by timer for: " + player.GetIdentity().GetName());
+		if ( player && target )
+		{
+			BattleRoyaleUtils.Trace( "InitSpectate: " + player.GetIdentity().GetName() + " -> " + target.GetIdentity().GetName() );
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(target), true, player.GetIdentity() );
+		}
+	}
 }
 #endif
