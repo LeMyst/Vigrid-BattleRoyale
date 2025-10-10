@@ -71,15 +71,29 @@ modded class MissionServer
 
 	override void EquipCharacter(MenuDefaultCharacterData char_data)
 	{
-		//TODO: get this from a setting file
-		m_player.GetInventory().CreateInInventory( "TShirt_DBR" );
-		m_player.GetInventory().CreateInInventory( "Jeans_Black" );
-		m_player.GetInventory().CreateInInventory( "Sneakers_Black" );
+		BattleRoyaleLobbyData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
 
-		m_player.GetInventory().CreateInInventory( "Apple" );
-		EntityAI new_item = m_player.GetInventory().CreateInInventory( "Zucchini" );
-		m_player.SetQuickBarEntityShortcut(new_item, 0);
-		m_player.GetInventory().CreateInInventory( "Apple" );
+		array<string> player_lobby_items = m_DebugSettings.player_lobby_items;
+		array<int> player_lobby_items_shortcut = m_DebugSettings.player_lobby_items_shortcut;
+
+		for(int i = 0; i < player_lobby_items.Count(); i++)
+		{
+			string item_name = player_lobby_items.Get(i);
+			EntityAI item = m_player.GetInventory().CreateInInventory( item_name );
+			if(item)
+			{
+				//see if this item has a shortcut
+				int shortcut_index = player_lobby_items_shortcut.Find(i);
+				if(shortcut_index != -1)
+				{
+					m_player.SetQuickBarEntityShortcut(item, shortcut_index);
+				}
+			}
+			else
+			{
+				BattleRoyaleUtils.Trace("Failed to create lobby item: " + item_name);
+			}
+		}
 
 		StartingEquipSetup(m_player, true);
 	}
