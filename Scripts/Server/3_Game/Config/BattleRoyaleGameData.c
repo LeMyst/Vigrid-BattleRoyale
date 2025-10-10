@@ -61,6 +61,8 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 		0  // HuntingKnife
 	};
 
+	bool spectate_enabled = false;  // Enable spectating after death
+
     override string GetProfilePath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "general_settings.json";
