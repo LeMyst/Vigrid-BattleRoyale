@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleGameData: BattleRoyaleDataBase
 {
-	int version = 1;  // Config version
+	int version = 2;  // Config version
 
 	// Allowed admins - Are immune to kick and can go outside the play area
 	ref array<string> admins_steamid64 = {
@@ -39,12 +39,14 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     bool airdrop_enabled = true;  // Enable airdrops
     int airdrop_ignore_last_zones = 3;  // Number of last zones to ignore for airdrops
 
+	// Clothing the player starts with
     ref array<string> player_starting_clothes = {
         "TrackSuitJacket_Red",
         "TrackSuitPants_Red",
         "JoggingShoes_Red"
     };
 
+	// Items the player starts with
     ref array<string> player_starting_items = {
         "HuntingKnife",
         "BandageDressing",
@@ -52,6 +54,12 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
         "Battery9V",
         "Battery9V"
     };
+
+    // Items that can be quickly accessed in the inventory hotbar
+    // The index corresponds to the item in the player_starting_items array (0 = first item, 1 = second item, etc.)
+    ref array<int> player_starting_items_shortcut = {
+		0  // HuntingKnife
+	};
 
     override string GetProfilePath()
     {
@@ -93,5 +101,18 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 		string errorMessage;
 		if (!JsonFileLoader<BattleRoyaleGameData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
+	}
+
+	override void Upgrade()
+	{
+		// Future upgrades will be handled here
+		if (version == 1)
+		{
+			// Set default shortcut for the first item (HuntingKnife) if not set
+			player_starting_items_shortcut.Insert(0);
+
+			version = 2;
+			Save();  // Save the upgraded config
+		}
 	}
 };
