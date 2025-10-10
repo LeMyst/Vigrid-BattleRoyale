@@ -105,6 +105,8 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         DeleteAllItems(process_player);
 
+		array<int> player_lobby_items_shortcut = m_GameSettings.player_starting_items_shortcut;
+
         int cCount = a_StartingClothes.Count();
         bool item_spawned = false;
         EntityAI new_item;
@@ -117,8 +119,15 @@ class BattleRoyalePrepare: BattleRoyaleState
                 for (int j = 0; j < iCount; j++)
                 {
                     new_item = clothes.GetInventory().CreateEntityInCargo(a_StartingItems[j]);
-                    if( a_StartingItems[j] == "HuntingKnife" )
-                        process_player.SetQuickBarEntityShortcut(new_item, 0);
+                    if( new_item )
+					{
+						// If item is in the shortcut list, set it to the hotbar
+						int shortcut_index = player_lobby_items_shortcut.Find(j);
+						if(shortcut_index != -1)
+						{
+							process_player.SetQuickBarEntityShortcut(new_item, shortcut_index);
+						}
+					}
                 }
                 item_spawned = true;
             }
