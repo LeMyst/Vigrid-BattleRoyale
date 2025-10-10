@@ -1,3 +1,4 @@
+#ifndef SERVER
 modded class LoadingScreen
 {
     protected autoptr array< ref LoadingScreenBackground > m_Backgrounds;
@@ -48,10 +49,44 @@ modded class LoadingScreen
 
 		f_LoadingTime = 0;
 
-		LoadingScreenBackground backgrounds = m_Backgrounds[1]; // TODO: override default map
+		// Get current world name
+		LoadingScreenBackground backgrounds = null;
+		LoadingScreenBackground defaultBackgrounds = null;
+
+		string worldNameLower = GetGame().GetWorldName();
+		worldNameLower.ToLower();
+
+		// Find background for current map or default
+		for (int i = 0; i < m_Backgrounds.Count(); i++)
+		{
+			LoadingScreenBackground current = m_Backgrounds[i];
+			if (current)
+			{
+				string mapNameLower = current.MapName;
+				mapNameLower.ToLower();
+				if (mapNameLower == worldNameLower)
+				{
+					backgrounds = current;
+					break;
+				}
+
+				if (mapNameLower == "default")
+				{
+					defaultBackgrounds = current;
+				}
+			}
+		}
+
+		// If no matching background found, use default
+		if (!backgrounds)
+		{
+			backgrounds = defaultBackgrounds;
+		}
 
 		if (backgrounds)
 			m_ImageBackground.LoadImageFile(0, backgrounds.GetRandomPath());
+		else
+			m_ImageBackground.LoadImageFile(0, "Vigrid-BattleRoyale/GUI/textures/loading_screens/br_loading_1.edds");
 	}
 
     override void OnUpdate(float timeslice)
@@ -63,3 +98,4 @@ modded class LoadingScreen
             UpdateLoadingBackground();
     }
 }
+#endif

@@ -30,7 +30,7 @@ class LoadingScreenBackgrounds
 		if (!s_Backgrounds.Count())
 		{
     		string errorMessage;
-			if (!JsonFileLoader<array<ref LoadingScreenBackground>>.LoadFile( "Vigrid-BattleRoyale/Data/LoadingScreens.json", s_Backgrounds, errorMessage))
+			if (!JsonFileLoader<array<ref LoadingScreenBackground>>.LoadFile( DAYZBR_LOADING_SCREENS_PATH, s_Backgrounds, errorMessage))
 				ErrorEx(errorMessage);
 		}
 
