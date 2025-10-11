@@ -18,22 +18,33 @@ class BRVPPSpectateCam extends Camera
 		SetEventMask( EntityEvent.FRAME );
 	}
 
+	/**
+	 * Called on each frame update.
+	 * @param other The entity that triggered the event.
+	 * @param timeSlice The time elapsed since the last frame.
+	 */
 	override void EOnFrame( IEntity other, float timeSlice )
 	{
-//		BattleRoyaleUtils.Trace("SpectateCam EOnFrame");
 		if (m_FollowObject == NULL) return;
 			FollowTarget3PP(timeSlice);
 	}
 
+	/**
+	 * Sets the target object for the camera to follow.
+	 * @param target The PlayerBase object to follow.
+	 */
 	void SetTargetObj(PlayerBase target)
 	{
 		m_FollowObject = target;
 		PPEffects.ResetDOFOverride();
 	}
 
+	/**
+	 * Follows the target object in a third-person perspective.
+	 * @param timeSlice The time elapsed since the last frame.
+	 */
 	protected void FollowTarget3PP(float timeSlice)
 	{
-//		BattleRoyaleUtils.Trace("SpectateCam FollowTarget3PP");
 		if ( m_FollowObject == null ) return;
 
 		float ud = m_FollowObject.GetAimingAngleUD();
@@ -62,9 +73,6 @@ class BRVPPSpectateCam extends Camera
 		}
 		m_bblUpdateInterval = m_bblUpdateInterval + timeSlice;
 
-		// Fix tentative because UpdateSpectatorPosition doesn't work properly
-		vector player_position = GetGame().GetPlayer().GetPosition();
-//		float distance = vector.Distance( Vector( player_position[0], 0, player_position[2] ), Vector( camPOS[0], 0, camPOS[2] ) );
 		float distance = vector.Distance( Vector( m_vPreviousPosition[0], 0, m_vPreviousPosition[2] ), Vector( camPOS[0], 0, camPOS[2] ) );
 
 		if (distance > 50)

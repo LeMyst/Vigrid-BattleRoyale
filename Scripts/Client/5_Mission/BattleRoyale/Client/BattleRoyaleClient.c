@@ -78,13 +78,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 				BRVPPSpectateCam cam = BRVPPSpectateCam.Cast(GetGame().CreateObject( "BRVPPSpectateCam", data.param1.GetPosition(), true ));
 				cam.SetTargetObj( PlayerBase.Cast(data.param1) );  // Set the target to follow
 				cam.SetActive(true);
-
-//				GetGame().SelectSpectator( GetGame().GetPlayer().GetIdentity(), "BRVPPSpectateCam", data.param1.GetPosition() );
-
-				// TODO: Fix the player position for the distance to the zone
-				// TODO: Fix the HUD to remove unconscious filter
-				// TODO: Hide HUD interface like health
-				// TODO: Prevent player to go into the inventory
 			}
 			else
 			{

@@ -647,10 +647,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 			BattleRoyaleUtils.Trace("Spectating player: " + player.GetIdentity().GetName());
 			BattleRoyaleUtils.Trace("Removing player object: " + targetBase.GetIdentity().GetName());
 
-			// Delete the player object and initiate spectate mode
-			// TODO: Disabled deletion of player object for spectate mode. Re-enable GetGame().ObjectDelete(targetBase) if invisibility is insufficient or if object persistence causes issues.
-			// GetGame().ObjectDelete( targetBase );
 			targetBase.SetInvisibility( true );
+
 			GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(player), true, my_identity);
 		}
 	}
