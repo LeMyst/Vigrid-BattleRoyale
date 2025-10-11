@@ -5,7 +5,7 @@
  * https://github.com/VanillaPlusPlus/VPP-Admin-Tools/blob/8f19c5e559e5b2b46ecb118c48c5b12432e93b5d/4_World/VPPAdminTools/Misc/VPPCameras/VPPSpectateCam.c
  */
 
-class VPPSpectateCam extends Camera
+class BRVPPSpectateCam extends Camera
 {
 	private vector m_y_p_r_previous;
 	private vector u_d_p_r_previous;
@@ -13,7 +13,7 @@ class VPPSpectateCam extends Camera
 	private vector m_vPreviousPosition = "0 0 0";
 	PlayerBase m_FollowObject;
 
-	void VPPSpectateCam()
+	void BRVPPSpectateCam()
 	{
 		SetEventMask( EntityEvent.FRAME );
 	}

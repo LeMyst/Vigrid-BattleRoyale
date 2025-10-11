@@ -75,11 +75,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 				}
 
 				BattleRoyaleUtils.Trace("Starting spectate mode");
-				VPPSpectateCam cam = VPPSpectateCam.Cast(GetGame().CreateObject( "VPPSpectateCam", data.param1.GetPosition(), true ));
+				BRVPPSpectateCam cam = BRVPPSpectateCam.Cast(GetGame().CreateObject( "BRVPPSpectateCam", data.param1.GetPosition(), true ));
 				cam.SetTargetObj( PlayerBase.Cast(data.param1) );  // Set the target to follow
 				cam.SetActive(true);
 
-//				GetGame().SelectSpectator( GetGame().GetPlayer().GetIdentity(), "VPPSpectateCam", data.param1.GetPosition() );
+//				GetGame().SelectSpectator( GetGame().GetPlayer().GetIdentity(), "BRVPPSpectateCam", data.param1.GetPosition() );
 
 				// TODO: Fix the player position for the distance to the zone
 				// TODO: Fix the HUD to remove unconscious filter
