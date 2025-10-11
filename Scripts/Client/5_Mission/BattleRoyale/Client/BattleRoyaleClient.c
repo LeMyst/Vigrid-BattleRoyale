@@ -38,8 +38,57 @@ class BattleRoyaleClient: BattleRoyaleBase
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 		br_rpc.Reset();
 
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", this );
+
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SyncInvisibility", this );
+
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
+
+	void InitSpectate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	{
+		BattleRoyaleUtils.Trace("InitSpectate");
+		Param1<Object> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ INIT_SPECTATE RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("InitSpectate : " + data.param1);
+			if ( data.param1 != null )
+			{
+				BattleRoyaleUtils.Trace("Target for spectate: " + data.param1.GetPosition());
+				if (GetGame().GetPlayer() != null)
+				{
+					BattleRoyaleUtils.Trace("Deleting original player for spectate");
+
+					// TODO: Remove the Shock effect from the player if needed in future.
+
+					GetGame().ObjectDelete(GetGame().GetPlayer());
+					GetGame().SelectPlayer(null, null);
+				}
+				else
+				{
+					BattleRoyaleUtils.Trace("Original player for spectate is null");
+				}
+
+				BattleRoyaleUtils.Trace("Starting spectate mode");
+				BRVPPSpectateCam cam = BRVPPSpectateCam.Cast(GetGame().CreateObject( "BRVPPSpectateCam", data.param1.GetPosition(), true ));
+				cam.SetTargetObj( PlayerBase.Cast(data.param1) );  // Set the target to follow
+				cam.SetActive(true);
+			}
+			else
+			{
+				Error("InitSpectate - No target for spectate");
+			}
+		}
+		else
+		{
+			Error("InitSpectate - Not Client");
+		}
+	}
 
     //--- note: these return NULL of there is no area referenced for next or current area
     BattleRoyalePlayArea GetPlayArea()
@@ -336,5 +385,40 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         //unused
     }
+
+    void SyncInvisibility(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SYNC_INVISIBILITY RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			bool is_enabled = data.param1;
+			BattleRoyaleUtils.Trace("SyncInvisibility: " + is_enabled);
+			PlayerBase player;
+			if (Class.CastTo(player, target))
+			{
+				const int FLAGS_VISIBLE = EntityFlags.VISIBLE|EntityFlags.SOLID|EntityFlags.ACTIVE;
+				player.m_isInvisible = data.param1;
+				if (is_enabled)
+				{
+					player.ClearFlags(FLAGS_VISIBLE, true);
+					dBodySetInteractionLayer(player, PhxInteractionLayers.NOCOLLISION);
+					player.Update();
+					player.DisableSimulation(is_enabled);
+				}
+				else
+				{
+					player.SetFlags(FLAGS_VISIBLE, true);
+					dBodySetInteractionLayer(player, PhxInteractionLayers.CHARACTER);
+				}
+
+				player.SetInvisible(is_enabled);
+			}
+		}
+	}
 }
 #endif

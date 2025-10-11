@@ -249,4 +249,11 @@ modded class PlayerBase
 	{
 		return spawn_pos;
 	}
+
+	void SetInvisibility(bool state)
+	{
+		m_isInvisible = state;
+		SetSynchDirty();
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SyncInvisibility", new Param1<bool>(state), true, NULL, this );
+	}
 };
