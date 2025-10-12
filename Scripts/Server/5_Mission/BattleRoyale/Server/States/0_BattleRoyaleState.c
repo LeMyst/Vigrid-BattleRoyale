@@ -653,8 +653,11 @@ class BattleRoyaleState: Timeable
 				}
 			}
 
-			EventWebhook eventWebhook = new EventWebhook( m_ServerData.webhook_jwt_token );
-			eventWebhook.Send( br_instance.match_uuid, "player.kill", JsonFileLoader<map<string, string>>.JsonMakeData( json_data ) );
+			if ( m_ServerData.enable_vigrid_api )
+			{
+				EventWebhook eventWebhook = new EventWebhook( m_ServerData.webhook_jwt_token );
+				eventWebhook.Send( br_instance.match_uuid, "player.kill", JsonFileLoader<map<string, string>>.JsonMakeData( json_data ) );
+			}
 		}
 	}
 }
