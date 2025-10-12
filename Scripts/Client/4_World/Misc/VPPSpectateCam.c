@@ -54,7 +54,7 @@ class BRVPPSpectateCam extends Camera
 
 		SetOrientation(Vector(m_FollowObject.GetOrientation()[0], aimOrientation.VectorToAngles()[1] ,m_FollowObject.GetOrientation()[2]));
 
-		float f = GetOrientation()[0] * 0.017453292;
+		float f = GetOrientation()[0] * Math.DEG2RAD;
 		float motionX = (double)(Math.Sin(f) * 1.0);
 		float motionZ = (double)(Math.Cos(f) * 1.0);
 
@@ -63,18 +63,19 @@ class BRVPPSpectateCam extends Camera
 		camPOS[1] = m_FollowObject.GetPosition()[1] + 1.6;
 		camPOS[2] = camPOS[2] - motionZ;
 
-		SetPosition(camPOS);
+		SetPosition(camPOS);  // Set camera position
 
 		if( m_bblUpdateInterval > 0.5 )
 		{
+			// Try to use the DayZ UpdateSpectatorPosition function to update the player position on the server
+			// This will keep the player in the network bubble of the target player
+			// Al least that's the idea...
 			GetGame().UpdateSpectatorPosition(GetPosition());
-			BattleRoyaleUtils.Trace("SpectateCam Pos: " + GetPosition());
 			m_bblUpdateInterval = 0;
 		}
 		m_bblUpdateInterval = m_bblUpdateInterval + timeSlice;
 
 		float distance = vector.Distance( Vector( m_vPreviousPosition[0], 0, m_vPreviousPosition[2] ), Vector( camPOS[0], 0, camPOS[2] ) );
-
 		if (distance > 50)
 		{
 			vector spawn_pos = "0 0 0";

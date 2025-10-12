@@ -22,6 +22,7 @@ class SpectatorSystem
     // Find a suitable spectate target prioritizing teammates
     static PlayerBase FindSpectateTarget(BattleRoyaleServer server, string playerSteamId)
     {
+    	BattleRoyaleUtils.Trace("Finding spectate target for player ID: " + playerSteamId);
         if (!server || !playerSteamId || playerSteamId == "")
             return null;
 
@@ -37,15 +38,23 @@ class SpectatorSystem
         PlayerBase target = FindTeammateTarget(server, spectatorInfo);
         if (target)
         {
-            BattleRoyaleUtils.Trace("Found teammate target for spectating: " + target.GetIdentity().GetName());
+            BattleRoyaleUtils.Trace("Found living teammate to spectate: " + target.GetIdentity().GetName());
             return target;
         }
 
-        // If no teammates are alive, try to find the killer
-        target = FindKillerTarget(server, spectatorInfo);
+        // If no living teammates, find the killer of the last teammate who died
+        target = FindLastTeammateKillerTarget(server, spectatorInfo);
         if (target)
         {
-            BattleRoyaleUtils.Trace("Found killer target for spectating: " + target.GetIdentity().GetName());
+            BattleRoyaleUtils.Trace("Found last teammate's killer to spectate: " + target.GetIdentity().GetName());
+            return target;
+        }
+
+        // If no last teammate killer is found or not alive, try the player's direct killer
+        target = FindDirectKillerTarget(server, spectatorInfo);
+        if (target)
+        {
+            BattleRoyaleUtils.Trace("Found direct killer to spectate: " + target.GetIdentity().GetName());
             return target;
         }
 
@@ -53,54 +62,168 @@ class SpectatorSystem
         return FindRandomTarget(server, playerSteamId);
     }
 
-    // Find a living teammate to spectate
-    private static PlayerBase FindTeammateTarget(BattleRoyaleServer server, SpectatorInfo spectatorInfo)
+	// Find a living teammate to spectate
+	private static PlayerBase FindTeammateTarget(BattleRoyaleServer server, SpectatorInfo spectatorInfo)
+	{
+		if (!server || !spectatorInfo || !spectatorInfo.teammates || spectatorInfo.teammates.Count() == 0)
+			return null;
+
+		// Check if Carim mod is available for teammate tracking
+	#ifdef Carim
+		MissionServer missionServer = MissionServer.Cast(GetGame().GetMission());
+		if (missionServer && missionServer.carimModelPartyParties)
+		{
+			// Get current active players
+			array<PlayerBase> activePlayers = server.GetCurrentState().GetPlayers();
+
+			// Try to find a living teammate
+			foreach (string teammateId : spectatorInfo.teammates)
+			{
+				foreach (PlayerBase player : activePlayers)
+				{
+					// Check if this player is a teammate and still alive
+					if (player && player.GetIdentity() && player.GetIdentity().GetPlainId() == teammateId && player.IsAlive())
+					{
+						BattleRoyaleUtils.Trace("Found living teammate to spectate: " + player.GetIdentity().GetName());
+						return player; // Found a living teammate
+					}
+				}
+			}
+		}
+	#else
+		BattleRoyaleUtils.Trace("Carim mod not available, skipping teammate search for spectator");
+	#endif
+
+		return null;
+	}
+
+    // Find the player who killed this player or follow the killer chain
+    private static PlayerBase FindDirectKillerTarget(BattleRoyaleServer server, SpectatorInfo spectatorInfo)
     {
-        if (!server || !spectatorInfo || !spectatorInfo.teammates || spectatorInfo.teammates.Count() == 0)
+        if (!server || !spectatorInfo)
             return null;
 
-        // Check if Carim mod is available for teammate tracking
-#ifdef Carim
-        MissionServer missionServer = MissionServer.Cast(GetGame().GetMission());
-        if (missionServer && missionServer.carimModelPartyParties)
-        {
-            // Get current active players
-            array<PlayerBase> activePlayers = server.GetCurrentState().GetPlayers();
+        // Get current active players
+        array<PlayerBase> activePlayers = server.GetCurrentState().GetPlayers();
 
-            // Try to find a living teammate
-            foreach (string teammateId : spectatorInfo.teammates)
+        // First try direct killer
+        if (spectatorInfo.killedBy)
+        {
+            // Check if killer is a player and still alive
+            PlayerBase killer = PlayerBase.Cast(spectatorInfo.killedBy);
+            if (killer && killer.IsAlive())
             {
-                foreach (PlayerBase player : activePlayers)
+                // Verify killer is in current players list
+                if (activePlayers.Find(killer) != -1)
                 {
-                    if (player && player.GetIdentity() && player.GetIdentity().GetPlainId() == teammateId)
-                    {
-                        return player;
-                    }
+                    BattleRoyaleUtils.Trace("Found direct killer to spectate: " + killer.GetIdentity().GetName());
+                    return killer;
                 }
             }
         }
-#else
-        BattleRoyaleUtils.Trace("Carim mod not available, skipping teammate search for spectator");
-#endif
 
         return null;
     }
 
-    // Find the player who killed this player
-    private static PlayerBase FindKillerTarget(BattleRoyaleServer server, SpectatorInfo spectatorInfo)
+    // Find the player who killed the last teammate or follow the killer chain
+    private static PlayerBase FindLastTeammateKillerTarget(BattleRoyaleServer server, SpectatorInfo spectatorInfo)
     {
-        if (!server || !spectatorInfo || !spectatorInfo.killedBy)
+        if (!server || !spectatorInfo)
             return null;
 
-        // Check if killer is a player and still alive
-        PlayerBase killer = PlayerBase.Cast(spectatorInfo.killedBy);
-        if (killer && killer.IsAlive())
+        // Get current active players
+        array<PlayerBase> activePlayers = server.GetCurrentState().GetPlayers();
+
+        // If no teammates are alive, we cannot find the last teammate's killer
+        if (spectatorInfo.teammates && spectatorInfo.teammates.Count() > 0)
         {
-            // Verify killer is in current players list
-            array<PlayerBase> activePlayers = server.GetCurrentState().GetPlayers();
-            if (activePlayers.Find(killer) != -1)
+            // Set to track visited players to avoid infinite loops
+            ref set<string> visitedPlayers = new set<string>();
+            visitedPlayers.Insert(spectatorInfo.playerId); // Mark self as visited
+
+            // Try to find the killer of any teammate who died
+            return FindKillerChain(server, spectatorInfo, visitedPlayers);
+        }
+
+        return null;
+    }
+
+    // Recursively follow the killer chain through teammates and their killers
+    private static PlayerBase FindKillerChain(BattleRoyaleServer server, SpectatorInfo spectatorInfo, set<string> visitedPlayers)
+    {
+        if (!server || !spectatorInfo)
+            return null;
+
+        array<PlayerBase> activePlayers = server.GetCurrentState().GetPlayers();
+        PlayerBase chainTarget;
+
+        // Check all teammates
+        if (spectatorInfo.teammates)
+        {
+            foreach (string teammateId : spectatorInfo.teammates)
             {
-                return killer;
+                // Skip if we've already visited this player
+                if (visitedPlayers.Find(teammateId) != -1)
+                    continue;
+
+                // Mark as visited to prevent cycles
+                visitedPlayers.Insert(teammateId);
+
+                // Check if teammate is alive
+                foreach (PlayerBase player : activePlayers)
+                {
+                    if (player && player.GetIdentity() && player.GetIdentity().GetPlainId() == teammateId && player.IsAlive())
+                    {
+                        BattleRoyaleUtils.Trace("Found living teammate through killer chain: " + player.GetIdentity().GetName());
+                        return player;
+                    }
+                }
+
+                // If teammate is dead, check their spectator info
+                SpectatorInfo teammateInfo = server.GetSpectatorInfo(teammateId);
+                if (teammateInfo)
+                {
+                    // Check teammate's direct killer
+                    if (teammateInfo.killedBy)
+                    {
+                        PlayerBase killer = PlayerBase.Cast(teammateInfo.killedBy);
+                        if (killer && killer.IsAlive())
+                        {
+                            // Verify killer is in current players list
+                            if (activePlayers.Find(killer) != -1)
+                            {
+                                BattleRoyaleUtils.Trace("Found teammate's killer to spectate: " + killer.GetIdentity().GetName());
+                                return killer;
+                            }
+                        }
+
+                        // If the killer is a player but not alive or not found in active players,
+                        // we need to check the killer's killer (continue the chain)
+                        if (killer && killer.GetIdentity())
+                        {
+                            string killerId = killer.GetIdentity().GetPlainId();
+                            if (visitedPlayers.Find(killerId) == -1)
+                            {
+                                // Mark as visited
+                                visitedPlayers.Insert(killerId);
+
+                                // Get the killer's SpectatorInfo to follow the chain
+                                SpectatorInfo killerInfo = server.GetSpectatorInfo(killerId);
+                                if (killerInfo)
+                                {
+                                    chainTarget = FindKillerChain(server, killerInfo, visitedPlayers);
+                                    if (chainTarget)
+                                        return chainTarget;
+                                }
+                            }
+                        }
+                    }
+
+                    // Recursively check this teammate's spectator info
+                    chainTarget = FindKillerChain(server, teammateInfo, visitedPlayers);
+                    if (chainTarget)
+                        return chainTarget;
+                }
             }
         }
 

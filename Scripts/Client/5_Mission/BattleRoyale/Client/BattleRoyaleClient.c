@@ -38,16 +38,15 @@ class BattleRoyaleClient: BattleRoyaleBase
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 		br_rpc.Reset();
 
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", this );
-
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "InitSpectateClient", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SyncInvisibility", this );
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
 
-	void InitSpectate(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
+	void InitSpectateClient(CallType type, ParamsReadContext ctx, ref PlayerIdentity sender, ref Object target)
 	{
-		BattleRoyaleUtils.Trace("InitSpectate");
+		BattleRoyaleUtils.Trace("InitSpectateClient");
 		Param1<Object> data;
 		if( !ctx.Read( data ) )
 		{
@@ -56,16 +55,13 @@ class BattleRoyaleClient: BattleRoyaleBase
 		}
 		if ( type == CallType.Client )
 		{
-			BattleRoyaleUtils.Trace("InitSpectate : " + data.param1);
+			BattleRoyaleUtils.Trace("InitSpectateClient : " + data.param1);
 			if ( data.param1 != null )
 			{
 				BattleRoyaleUtils.Trace("Target for spectate: " + data.param1.GetPosition());
 				if (GetGame().GetPlayer() != null)
 				{
 					BattleRoyaleUtils.Trace("Deleting original player for spectate");
-
-					// TODO: Remove the Shock effect from the player if needed in future.
-
 					GetGame().ObjectDelete(GetGame().GetPlayer());
 					GetGame().SelectPlayer(null, null);
 				}
@@ -81,12 +77,12 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 			else
 			{
-				Error("InitSpectate - No target for spectate");
+				Error("InitSpectateClient - No target for spectate");
 			}
 		}
 		else
 		{
-			Error("InitSpectate - Not Client");
+			Error("InitSpectateClient - Not Client");
 		}
 	}
 

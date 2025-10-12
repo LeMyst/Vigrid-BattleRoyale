@@ -275,7 +275,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 				player.SetAllowDamage(false);
 
 				// Start spectator mode after a delay to ensure client is fully connected
-				GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitiateSpectatorMode", 5000, false, new Param1<PlayerBase>(player));
+				GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitiateSpectatorMode", 15000, false, new Param1<PlayerBase>(player));
 
 				return;
 			}
@@ -318,16 +318,6 @@ class BattleRoyaleServer: BattleRoyaleBase
 		if( match_uuid == "" )
 		{
 			GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
-		}
-	}
-
-    void StartSpectate( PlayerBase player, PlayerBase target )
-	{
-		if ( player && target )
-		{
-			BattleRoyaleUtils.Trace( "StartSpectate: " + player.GetIdentity().GetName() + " -> " + target.GetIdentity().GetName() );
-			GetGame().ObjectDelete( player );
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(target), true, player.GetIdentity() );
 		}
 	}
 
@@ -649,7 +639,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 			targetBase.SetInvisibility( true );
 
-			GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(player), true, my_identity);
+			GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "InitSpectateClient", new Param1<Object>(player), true, my_identity);
 		}
 	}
 
@@ -675,6 +665,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 				BattleRoyaleUtils.Trace("Updating spectator position for: " + playerName + " to " + data.param2.ToString());
 
 				// Update player position
+				// It's the position for the server and the other players
+				// For the spectator himself, it don't do anything because it's deleted on his side
+				// and the camera is used instead
+				// If we don't update the position, the target player will be outside the network bubble of the spectator
 				pbFromIdentity.SetPosition(data.param2);
 				pbFromIdentity.SetSynchDirty();
 			}
@@ -707,6 +701,14 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         // Get player's teammates if Carim mod is available
         spectatorInfo.teammates = SpectatorSystem.GetPlayerTeammates(playerId);
+        if (spectatorInfo.teammates)
+        {
+            BattleRoyaleUtils.Trace("Player had " + spectatorInfo.teammates.Count() + " teammates");
+        }
+        else
+        {
+            BattleRoyaleUtils.Trace("Player had no teammates");
+        }
 
         // Store the spectator info
         m_DeadPlayers.Set(playerId, spectatorInfo);
@@ -752,7 +754,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
             BattleRoyaleUtils.Trace("Initiating spectate RPC call");
 
-            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitSpectate", 1000, false, new Param2<PlayerBase, PlayerBase>(player, target));
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "InitSpectateServer", 1000, false, new Param2<PlayerBase, PlayerBase>(player, target));
         }
         else
         {
@@ -760,13 +762,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 
-	void InitSpectate(PlayerBase player, PlayerBase target)
+	void InitSpectateServer(PlayerBase player, PlayerBase target)
 	{
 		BattleRoyaleUtils.Trace("InitSpectate called by timer for: " + player.GetIdentity().GetName());
 		if ( player && target )
 		{
 			BattleRoyaleUtils.Trace( "InitSpectate: " + player.GetIdentity().GetName() + " -> " + target.GetIdentity().GetName() );
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "InitSpectate", new Param1<Object>(target), true, player.GetIdentity() );
+			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "InitSpectateClient", new Param1<Object>(target), true, player.GetIdentity() );
 		}
 	}
 }
