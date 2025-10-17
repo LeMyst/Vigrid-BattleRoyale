@@ -31,6 +31,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // Constant (NOT USED ANYMORE)
     float constant_scale = 0.65;
 
+    // Hot Zones - Static red circles shown on map throughout the game
+    ref array<string> hot_zone_centers = {};  // Array of vectors as strings (e.g., "6000 0 7000")
+    ref array<float> hot_zone_radii = {};  // Array of radii corresponding to each hot zone center
+
     override string GetProfilePath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "zone_settings.json";

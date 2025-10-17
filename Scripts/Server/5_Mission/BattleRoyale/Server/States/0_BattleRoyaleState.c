@@ -660,6 +660,22 @@ class BattleRoyaleState: Timeable
 			}
 		}
 	}
+
+    void SendHotZones()
+    {
+        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
+
+        if (m_ZoneSettings.hot_zone_centers && m_ZoneSettings.hot_zone_centers.Count() > 0)
+        {
+            BattleRoyaleUtils.Trace(string.Format("[BattleRoyaleStartMatch] Sending %1 hot zones", m_ZoneSettings.hot_zone_centers.Count()));
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", new Param2<ref array<string>, ref array<float>>(m_ZoneSettings.hot_zone_centers, m_ZoneSettings.hot_zone_radii), true);
+        }
+        else
+        {
+            BattleRoyaleUtils.Trace("[BattleRoyaleStartMatch] No hot zones configured");
+        }
+    }
 }
 
 // Base state for the Debug Zone.

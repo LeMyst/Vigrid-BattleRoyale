@@ -61,6 +61,9 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", new Param4<int, float, vector, float>(i_SpawnSelectionDuration, f_SpawnSelectionRadius, v_FirstZoneCenter, f_FirstZoneRadius), true);
 
+        // Send hot zones configuration to all clients
+        SendHotZones();
+
         // Add timer to deactivate this state after a certain time
         m_SpawnSelectionTimer = AddTimer(i_SpawnSelectionDuration + i_ExtraScreenTime, this, "OnSpawnSelectionTimeout", NULL, false);
 

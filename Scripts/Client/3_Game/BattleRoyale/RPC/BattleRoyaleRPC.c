@@ -16,8 +16,8 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", this );
-
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", this );
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
@@ -53,6 +53,8 @@ class BattleRoyaleRPC
 		future_play_area_radius = 0.0;
 		top_position = 0;
 		winner_screen = false;
+		hot_zone_centers = new array<vector>();
+		hot_zone_radii = new array<float>();
 	}
 
 	// Set the number of players and groups
@@ -290,6 +292,46 @@ class BattleRoyaleRPC
 			}
 
 			ExpansionNotification(DAYZBR_MSG_TITLE, translated_message, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, data.param2).Create();
+		}
+	}
+
+	// Hot Zones
+
+	ref array<vector> hot_zone_centers = new array<vector>();
+	ref array<float> hot_zone_radii = new array<float>();
+	bool hot_zones_received = false;
+
+	void UpdateHotZones(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<ref array<string>, ref array<float>> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ UPDATEHOTZONES RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			if (hot_zones_received)
+			{
+				BattleRoyaleUtils.Trace("UpdateHotZones: Already received, ignoring");
+				return;
+			}
+
+			BattleRoyaleUtils.Trace(string.Format("UpdateHotZones: Received %1 hot zones", data.param1.Count()));
+			hot_zone_centers.Clear();
+			hot_zone_radii.Clear();
+
+			int i;
+			for (i = 0; i < data.param1.Count(); i++)
+			{
+				vector center = data.param1.Get(i).ToVector();
+				float radius = data.param2.Get(i);
+				hot_zone_centers.Insert(center);
+				hot_zone_radii.Insert(radius);
+				BattleRoyaleUtils.Trace(string.Format("Hot Zone %1: Center=%2 Radius=%3", i, center, radius));
+			}
+
+			hot_zones_received = true;
 		}
 	}
 }

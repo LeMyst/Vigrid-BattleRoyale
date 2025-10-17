@@ -53,26 +53,29 @@ modded class LoadingScreen
 		LoadingScreenBackground backgrounds = null;
 		LoadingScreenBackground defaultBackgrounds = null;
 
-		string worldNameLower = GetGame().GetWorldName();
-		worldNameLower.ToLower();
-
-		// Find background for current map or default
-		for (int i = 0; i < m_Backgrounds.Count(); i++)
+		if (GetGame())
 		{
-			LoadingScreenBackground current = m_Backgrounds[i];
-			if (current)
-			{
-				string mapNameLower = current.MapName;
-				mapNameLower.ToLower();
-				if (mapNameLower == worldNameLower)
-				{
-					backgrounds = current;
-					break;
-				}
+			string worldNameLower = GetGame().GetWorldName();
+			worldNameLower.ToLower();
 
-				if (mapNameLower == "default")
+			// Find background for current map or default
+			for (int i = 0; i < m_Backgrounds.Count(); i++)
+			{
+				LoadingScreenBackground current = m_Backgrounds[i];
+				if (current)
 				{
-					defaultBackgrounds = current;
+					string mapNameLower = current.MapName;
+					mapNameLower.ToLower();
+					if (mapNameLower == worldNameLower)
+					{
+						backgrounds = current;
+						break;
+					}
+
+					if (mapNameLower == "default")
+					{
+						defaultBackgrounds = current;
+					}
 				}
 			}
 		}

@@ -26,6 +26,8 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	protected CanvasWidget m_HeatMapCanvas;
 	protected ref array<vector> m_HeatMapSpawnPoints = new array<vector>();
 
+	protected ref array<TextWidget> m_HotZoneTextWidgets = new array<TextWidget>();
+
 	void SpawnSelectionMenu()
 	{
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SpawnSelectionMenu");
@@ -35,6 +37,13 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	void ~SpawnSelectionMenu()
 	{
 		g_Game.SetKeyboardHandle(NULL);
+
+		// Clean up text widgets
+		foreach (TextWidget widget : m_HotZoneTextWidgets)
+		{
+			widget.Unlink();
+		}
+		m_HotZoneTextWidgets.Clear();
 
 		if (m_Hud)
 		{
@@ -176,7 +185,70 @@ class SpawnSelectionMenu extends UIScriptedMenu
 				distance_A = vector.Distance(mapPos_center,mapPos_edge_A);
 				distance_B = vector.Distance(mapPos_center,mapPos_edge_B);
 
-				WorldRenderOval(m_SpawnCanvas, m_MapWidget, v_FirstZoneCenter[0], v_FirstZoneCenter[2], f_FirstZoneRadius, f_FirstZoneRadius, ARGB(255, 255, 255, 255));
+				WorldRenderOval(m_SpawnCanvas, m_MapWidget, v_FirstZoneCenter[0], v_FirstZoneCenter[2], f_FirstZoneRadius, f_FirstZoneRadius, ARGB(128, 255, 255, 255));
+			}
+
+			// Show hot zones (red circles)
+			BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+			if (br_rpc && br_rpc.hot_zone_centers && br_rpc.hot_zone_centers.Count() > 0)
+			{
+				int hz_index;
+				for (hz_index = 0; hz_index < br_rpc.hot_zone_centers.Count(); hz_index++)
+				{
+					vector hot_zone_center = br_rpc.hot_zone_centers.Get(hz_index);
+					float hot_zone_radius = br_rpc.hot_zone_radii.Get(hz_index);
+
+					m_edgePos_A = hot_zone_center;
+					m_edgePos_A[0] = m_edgePos_A[0] + hot_zone_radius;
+
+					m_edgePos_B = hot_zone_center;
+					m_edgePos_B[2] = m_edgePos_B[2] + hot_zone_radius;
+
+					mapPos_edge_A = m_MapWidget.MapToScreen(m_edgePos_A);
+					mapPos_edge_B = m_MapWidget.MapToScreen(m_edgePos_B);
+					mapPos_center = m_MapWidget.MapToScreen(hot_zone_center);
+
+					distance_A = vector.Distance(mapPos_center, mapPos_edge_A);
+					distance_B = vector.Distance(mapPos_center, mapPos_edge_B);
+
+					WorldRenderFilledOval(m_SpawnCanvas, m_MapWidget, hot_zone_center[0], hot_zone_center[2], hot_zone_radius, hot_zone_radius, ARGB(50, 255, 215, 0), ARGB(100, 255, 215, 0));
+
+//					// Add text over the hot zone
+//					Widget frameTextWidget = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/widgets/text_widget.layout", m_MapWidget);
+//					if (frameTextWidget)
+//					{
+//						BattleRoyaleUtils.Trace("Creating hot zone text widget frame for hot zone " + (hz_index + 1));
+//						TextWidget hotZoneText = TextWidget.Cast(frameTextWidget.FindAnyWidget("TextWidget1"));
+//						if (hotZoneText)
+//						{
+//							BattleRoyaleUtils.Trace("Creating hot zone text widget for hot zone " + (hz_index + 1));
+//
+//							// Get map widget's position
+//							float map_x, map_y;
+//							m_MapWidget.GetScreenPos(map_x, map_y);
+//
+//							// Position the text at the center of the hot zone
+//							// Adjust the position to be relative to the MapWidget
+//							float x_pos = mapPos_center[0] - map_x;
+//							float y_pos = mapPos_center[1] - map_y - 10; // Adjust 10 pixels up for better positioning
+//
+//							hotZoneText.SetPos(x_pos, y_pos);
+//							hotZoneText.SetText(string.Format("HOT ZONE %1", hz_index + 1));
+//							hotZoneText.SetColor(ARGB(255, 255, 0, 0)); // Make it red for better visibility
+//							hotZoneText.SetShadow(1);
+//
+//							// Ensure the text size is appropriate
+//							hotZoneText.SetSize(100, 20);
+//
+//							m_HotZoneTextWidgets.Insert(hotZoneText);
+//							BattleRoyaleUtils.Trace("Hot zone text widget created and positioned at " + x_pos + "," + y_pos);
+//						} else {
+//							BattleRoyaleUtils.Trace("Failed to find TextWidget1 in hot zone text widget");
+//						}
+//					} else {
+//						BattleRoyaleUtils.Trace("Failed to create hot zone text widget");
+//					}
+				}
 			}
 
 			// Define constants for heat map
@@ -401,6 +473,17 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( tempPosition ), true, NULL, player );
 	}
 
+	/**
+	 * Renders the outline of an oval on the given canvas, using world coordinates for positioning.
+	 *
+	 * @param canvas      The CanvasWidget instance used for rendering.
+	 * @param world_map   The MapWidget instance used to convert world coordinates to screen coordinates.
+	 * @param world_x     The X-coordinate of the oval's center in world space.
+	 * @param world_z     The Z-coordinate of the oval's center in world space.
+	 * @param radius_x    The radius of the oval along the X-axis in world units.
+	 * @param radius_z    The radius of the oval along the Z-axis in world units.
+	 * @param color       The color of the oval outline, specified as an ARGB integer. Defaults to -1 (white).
+	 */
 	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1)
 	{
 		if (!world_map || radius_x <= 0 || radius_z <= 0 || !canvas)
@@ -448,6 +531,106 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			float y2 = cy + (screenHeight * Math.Sin(angle2 * Math.DEG2RAD));
 
 			canvas.DrawLine(x1, y1, x2, y2, 2, color);
+		}
+	}
+
+	/**
+	 * Renders a filled oval on the given canvas, using world coordinates for positioning.
+	 *
+	 * @param canvas      The CanvasWidget instance used for rendering.
+	 * @param world_map   The MapWidget instance used to convert world coordinates to screen coordinates.
+	 * @param world_x     The X-coordinate of the oval's center in world space.
+	 * @param world_z     The Z-coordinate of the oval's center in world space.
+	 * @param radius_x    The radius of the oval along the X-axis in world units.
+	 * @param radius_z    The radius of the oval along the Z-axis in world units.
+	 * @param fillColor   The color to fill the oval with, specified as an ARGB integer. Defaults to -1 (white).
+	 * @param outlineColor The color of the oval outline, specified as an ARGB integer. If -1, no outline is drawn.
+	 */
+	void WorldRenderFilledOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int fillColor = -1, int outlineColor = -1)
+	{
+		if (!world_map || radius_x <= 0 || radius_z <= 0 || !canvas)
+		{
+			BattleRoyaleUtils.Trace("WorldRenderFilledOval: Invalid parameters");
+			return;
+		}
+
+		float screen_x, screen_y;
+		world_map.GetScreenPos(screen_x, screen_y);
+
+		// Create the center point in world coordinates
+		vector worldCenter = Vector(world_x, 0, world_z);
+		vector screenCenter = world_map.MapToScreen(worldCenter);
+
+		// Create edge points in world coordinates for accurate size calculation
+		vector worldEdgeX = Vector(world_x + radius_x, 0, world_z);
+		vector worldEdgeZ = Vector(world_x, 0, world_z + radius_z);
+
+		// Convert edges to screen coordinates
+		vector screenEdgeX = world_map.MapToScreen(worldEdgeX);
+		vector screenEdgeZ = world_map.MapToScreen(worldEdgeZ);
+
+		// Calculate width and height in screen pixels
+		float screenWidth = vector.Distance(screenCenter, screenEdgeX);
+		float screenHeight = vector.Distance(screenCenter, screenEdgeZ);
+
+		// Calculate the center of the oval in screen space
+		float cx = screenCenter[0] - screen_x;
+		float cy = screenCenter[1] - screen_y;
+
+		// Draw the filled part of the oval using horizontal lines
+		float a = screenWidth;  // Semi-major axis
+		float b = screenHeight; // Semi-minor axis
+
+		float a_squared = a * a;
+		float b_squared = b * b;
+
+		// Calculate the bounding rectangle for the oval
+		float top = cy - b;
+		float bottom = cy + b;
+
+		float x1, x2, y1, y2;
+
+		// For each scanline (horizontal line)
+		for (float y = top; y <= bottom; y += 1)
+		{
+			// Calculate how far we are from the center vertically
+			float dy = y - cy;
+			float dy_squared = dy * dy;
+
+			// If we're inside the vertical bounds of the ellipse
+			if (b_squared - dy_squared >= 0)
+			{
+				// Calculate the half-width of the ellipse at this y position
+				float half_width = a * Math.Sqrt(1 - (dy_squared / b_squared));
+
+				// Calculate the start and end points of the horizontal line
+				x1 = cx - half_width;
+				x2 = cx + half_width;
+
+				// Draw the horizontal line
+				canvas.DrawLine(x1, y, x2, y, 1, fillColor);
+			}
+		}
+
+		// Draw the outline of the oval if an outline color is specified
+		if (outlineColor != -1)
+		{
+			int segments = Math.Max(360, Math.Round(Math.Max(screenWidth, screenHeight) / 2));
+			float angleIncrement = 360.0 / segments;
+
+			for(int i = 0; i < segments; i++)
+			{
+				float angle1 = i * angleIncrement;
+				float angle2 = (i + 1) * angleIncrement;
+
+				x1 = cx + (screenWidth * Math.Cos(angle1 * Math.DEG2RAD));
+				y1 = cy + (screenHeight * Math.Sin(angle1 * Math.DEG2RAD));
+
+				x2 = cx + (screenWidth * Math.Cos(angle2 * Math.DEG2RAD));
+				y2 = cy + (screenHeight * Math.Sin(angle2 * Math.DEG2RAD));
+
+				canvas.DrawLine(x1, y1, x2, y2, 2, outlineColor);
+			}
 		}
 	}
 
@@ -538,3 +721,4 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		}
 	}
 }
+
