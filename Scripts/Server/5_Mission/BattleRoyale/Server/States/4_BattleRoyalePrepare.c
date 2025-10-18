@@ -108,7 +108,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         DeleteAllItems(process_player);
 
-		array<int> player_lobby_items_shortcut = m_GameSettings.player_starting_items_shortcut;
+		array<int> player_starting_items_shortcut = m_GameSettings.player_starting_items_shortcut;
 
         int cCount = a_StartingClothes.Count();
         bool item_spawned = false;
@@ -124,8 +124,11 @@ class BattleRoyalePrepare: BattleRoyaleState
                     new_item = clothes.GetInventory().CreateEntityInCargo(a_StartingItems[j]);
                     if( new_item )
 					{
+						// set health to the maximum
+						new_item.SetHealthMax();
+
 						// If item is in the shortcut list, set it to the hotbar
-						int shortcut_index = player_lobby_items_shortcut.Find(j);
+						int shortcut_index = player_starting_items_shortcut.Find(j);
 						if(shortcut_index != -1)
 						{
 							process_player.SetQuickBarEntityShortcut(new_item, shortcut_index);
