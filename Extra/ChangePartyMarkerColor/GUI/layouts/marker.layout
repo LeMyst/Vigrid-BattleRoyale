@@ -1,0 +1,69 @@
+FrameWidgetClass rootFrame {
+ clipchildren 0
+ ignorepointer 1
+ size 0 0
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  TextWidgetClass nametag {
+   clipchildren 0
+   ignorepointer 1
+   position 0 0
+   size 0 0
+   halign center_ref
+   hexactpos 0
+   vexactpos 0
+   hexactsize 1
+   vexactsize 1
+   scaled 1
+   font "gui/fonts/sdf_MetronLight72"
+   "shadow size" 5
+   "text sharpness" 1.5
+   "exact text" 1
+   "exact text size" 10
+   "size to text h" 1
+   "size to text v" 1
+   "text halign" center
+   "text valign" center
+   {
+    TextWidgetClass distance {
+     clipchildren 0
+     ignorepointer 1
+     position 0 1
+     size 0 0
+     halign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 1
+     vexactsize 1
+     scaled 1
+     font "gui/fonts/sdf_MetronLight72"
+     "shadow size" 5
+     "text sharpness" 1.5
+     "exact text" 1
+     "exact text size" 10
+     "size to text h" 1
+     "size to text v" 1
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  ImageWidgetClass icon {
+   ignorepointer 1
+   color 0 0 0 0
+   position -8 -16
+   size 16 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   scaled 1
+   mode blend
+   "src alpha" 1
+   "stretch mode" stretch_w_h
+  }
+ }
+}
