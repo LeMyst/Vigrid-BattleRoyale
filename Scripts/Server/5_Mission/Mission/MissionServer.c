@@ -79,9 +79,12 @@ modded class MissionServer
 		for(int i = 0; i < player_lobby_items.Count(); i++)
 		{
 			string item_name = player_lobby_items.Get(i);
-			EntityAI item = m_player.GetInventory().CreateInInventory( item_name );
+			EntityAI item = m_player.GetInventory().CreateInInventory(item_name);
 			if(item)
 			{
+				// set health to the maximum
+				item.SetHealth(item.GetMaxHealth());
+
 				//see if this item has a shortcut
 				int shortcut_index = player_lobby_items_shortcut.Find(i);
 				if(shortcut_index != -1)
