@@ -14,6 +14,10 @@ class KillFeedRowModel
     //--- Not a ref: an engine-owned Object, released with Delete() rather than by refcount.
     EntityAI preview;
 
+    //--- Width/height of the rendered model, so the row can size its weapon cell to fit rather
+    //--- than reserving a fixed box. Read from the weapon's config; see KILLFEED_WEAPON_ASPECT.
+    float preview_aspect = KILLFEED_WEAPON_ASPECT;
+
     void KillFeedRowModel(KillFeedEntry source_entry)
     {
         entry = source_entry;
@@ -81,6 +85,15 @@ class KillFeedRowModel
 
         weapon.DisableSimulation(true);
         weapon.SetAllowDamage(false);
+
+        //--- itemSize[] is the inventory footprint in grid cells, e.g. {8,3} for an M4A1. Read off
+        //--- the entity rather than by config path so class inheritance resolves.
+        vector item_size = weapon.ConfigGetVector("itemSize");
+        if (item_size[0] > 0 && item_size[1] > 0)
+            preview_aspect = item_size[0] / item_size[1];
+
+        KillFeedLog.Trace(string.Format("Preview %1: itemSize %2x%3, aspect %4",
+            source_entry.weapon_type, item_size[0], item_size[1], preview_aspect));
 
         return weapon;
     }

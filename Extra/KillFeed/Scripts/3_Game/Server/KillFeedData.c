@@ -10,11 +10,15 @@
  */
 class KillFeedData
 {
-    int version = 1;
+    int version = 2;
 
     bool enabled = true;                  //!< master switch; false stops the server broadcasting
     bool show_distance = true;            //!< include the metre count on gunshot rows
     bool show_environment_deaths = true;  //!< zone, falls, starvation, infected and animals
+
+    //--- Turn off other mods' kill feeds so a death is not announced twice. Only mods that are
+    //--- actually loaded are touched; see KillFeedSuppress.
+    bool suppress_other_killfeeds = true;
 
     string GetPath()
     {
@@ -43,10 +47,15 @@ class KillFeedData
 
     void Upgrade()
     {
-        //--- No migrations yet. When one is needed: add an `if (version == N)` branch that fills
-        //--- the new fields, set version to N+1, then Save().
-        if (version < 1)
-            version = 1;
+        if (version < 2)
+        {
+            //--- New in v2. Default it on: a server running this addon alongside another kill feed
+            //--- was announcing every death twice, which is the reason the option exists.
+            suppress_other_killfeeds = true;
+
+            version = 2;
+            Save();
+        }
     }
 }
 #endif

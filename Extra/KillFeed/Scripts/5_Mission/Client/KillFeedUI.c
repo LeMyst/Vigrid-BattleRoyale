@@ -20,6 +20,7 @@ class KillFeedUI
 
     private ref array<Widget> m_RowWidgets;
     private ref array<TextWidget> m_RowKillers;
+    private ref array<Widget> m_RowMiddles;
     private ref array<ItemPreviewWidget> m_RowWeapons;
     private ref array<ImageWidget> m_RowCauseIcons;
     private ref array<TextWidget> m_RowCauseTexts;
@@ -32,6 +33,7 @@ class KillFeedUI
 
         m_RowWidgets = new array<Widget>();
         m_RowKillers = new array<TextWidget>();
+        m_RowMiddles = new array<Widget>();
         m_RowWeapons = new array<ItemPreviewWidget>();
         m_RowCauseIcons = new array<ImageWidget>();
         m_RowCauseTexts = new array<TextWidget>();
@@ -133,6 +135,7 @@ class KillFeedUI
 
             m_RowWidgets.Insert(row);
             m_RowKillers.Insert(TextWidget.Cast(row.FindAnyWidget("RowKiller")));
+            m_RowMiddles.Insert(row.FindAnyWidget("RowMiddle"));
             m_RowWeapons.Insert(ItemPreviewWidget.Cast(row.FindAnyWidget("RowWeapon")));
             m_RowCauseIcons.Insert(ImageWidget.Cast(row.FindAnyWidget("RowCauseIcon")));
             m_RowCauseTexts.Insert(TextWidget.Cast(row.FindAnyWidget("RowCauseText")));
@@ -220,8 +223,10 @@ class KillFeedUI
                 continue;
             }
 
-            Bind(i, m_Model.Get(i));
+            //--- Show before binding: GetTextSize measures a laid-out widget, and vanilla's own
+            //--- measure sites call Show(true) first (actiontargetscursor.c:1148-1151).
             row.Show(true);
+            Bind(i, m_Model.Get(i));
         }
 
         m_Root.Show(model_count > 0);
@@ -274,6 +279,126 @@ class KillFeedUI
             if (!has_model)
                 cause.SetText(CausePhrase(entry.cause));
         }
+
+        LayoutRow(index, model, has_model);
+    }
+
+    /**
+     *  Place the four cells and shrink the row to fit them.
+     *
+     *  Done in script rather than with a spacer's "Size To Content H": a spacer can only collapse to
+     *  the sum of its children, and these children are fixed-width boxes, so it had nothing to
+     *  collapse to and the background stretched the full declared width.
+     *
+     *  GetTextSize reports the currently set text in pixels and is valid in the same frame as
+     *  SetText - vanilla measures exactly this way in actiontargetscursor.c:1141-1153.
+     */
+    private void LayoutRow(int index, KillFeedRowModel model, bool has_model)
+    {
+        Widget row = m_RowWidgets.Get(index);
+        if (!row)
+            return;
+
+        int x = KILLFEED_ROW_PAD;
+        int text_w;
+        int text_h;
+
+        //--- Killer. A zone death has nobody to credit, so the cell contributes nothing at all
+        //--- rather than an empty gap.
+        TextWidget killer = m_RowKillers.Get(index);
+        if (killer)
+        {
+            //--- Update() before every read-back: the row was only just shown, and a stale layout
+            //--- measures as zero. TabberUI.c:126 and sizetochild.c:35 do the same.
+            killer.Update();
+            killer.GetTextSize(text_w, text_h);
+            killer.Show(text_w > 0);
+
+            if (text_w > 0)
+            {
+                killer.SetPos(x, 0);
+                killer.SetSize(text_w, KILLFEED_ROW_INNER_HEIGHT);
+                x = x + text_w + KILLFEED_ROW_GAP;
+            }
+        }
+
+        //--- Middle cell: the weapon box, or the icon plus its phrase.
+        int middle_w = KILLFEED_ICON_WIDTH;
+        if (has_model)
+        {
+            //--- Match the box to the model's aspect. A fixed box left dead space for anything
+            //--- shorter than it was wide, which is what put a gap before the victim name.
+            float wanted = KILLFEED_ROW_INNER_HEIGHT * model.preview_aspect;
+            middle_w = Math.Round(Math.Clamp(wanted, KILLFEED_WEAPON_MIN_WIDTH, KILLFEED_WEAPON_MAX_WIDTH));
+
+            //--- The preview widget itself defines the render viewport, so it has to be resized
+            //--- too - resizing only its parent panel would leave the model in its old box.
+            ItemPreviewWidget preview = m_RowWeapons.Get(index);
+            if (preview)
+                preview.SetSize(middle_w, KILLFEED_ROW_INNER_HEIGHT);
+        }
+        else
+        {
+            TextWidget cause = m_RowCauseTexts.Get(index);
+            if (cause)
+            {
+                cause.Update();
+                cause.GetTextSize(text_w, text_h);
+                cause.SetPos(KILLFEED_ICON_WIDTH + KILLFEED_ROW_GAP, 0);
+                cause.SetSize(text_w, KILLFEED_ROW_INNER_HEIGHT);
+                middle_w = middle_w + KILLFEED_ROW_GAP + text_w;
+            }
+        }
+
+        Widget middle = m_RowMiddles.Get(index);
+        if (middle)
+        {
+            middle.SetPos(x, 0);
+            middle.SetSize(middle_w, KILLFEED_ROW_INNER_HEIGHT);
+        }
+        x = x + middle_w + KILLFEED_ROW_GAP;
+
+        TextWidget victim = m_RowVictims.Get(index);
+        if (victim)
+        {
+            victim.Update();
+            victim.GetTextSize(text_w, text_h);
+            victim.Show(text_w > 0);
+
+            if (text_w > 0)
+            {
+                victim.SetPos(x, 0);
+                victim.SetSize(text_w, KILLFEED_ROW_INNER_HEIGHT);
+                x = x + text_w + KILLFEED_ROW_GAP;
+            }
+        }
+
+        //--- Distance is blank for melee and for every environmental cause.
+        TextWidget distance = m_RowDistances.Get(index);
+        if (distance)
+        {
+            distance.Update();
+            distance.GetTextSize(text_w, text_h);
+            distance.Show(text_w > 0);
+
+            if (text_w > 0)
+            {
+                distance.SetPos(x, 0);
+                distance.SetSize(text_w, KILLFEED_ROW_INNER_HEIGHT);
+                x = x + text_w + KILLFEED_ROW_GAP;
+            }
+        }
+
+        //--- The trailing gap becomes the right-hand inset.
+        int total = x - KILLFEED_ROW_GAP + KILLFEED_ROW_PAD;
+
+        KillFeedLog.Trace(string.Format("LayoutRow %1: width %2", index, total));
+
+        row.SetSize(total, KILLFEED_ROW_INNER_HEIGHT);
+
+        //--- Re-anchor after the resize. With halign right_ref, x = 0 puts the row's right edge
+        //--- flush against the parent's, whatever its width.
+        row.SetPos(0, index * KILLFEED_ROW_HEIGHT);
     }
 
     /**

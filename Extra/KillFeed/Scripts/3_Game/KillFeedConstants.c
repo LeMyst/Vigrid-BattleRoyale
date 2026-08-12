@@ -44,7 +44,24 @@ static const string KILLFEED_ATTACHMENT_SEPARATOR = ";";
 //--- and the client cannot read it; pushing them per-connect is a possible follow-up.
 static const int KILLFEED_MAX_ROWS = 4;         //!< rows on screen; also caps live preview entities
 static const int KILLFEED_ROW_SECONDS = 8;      //!< how long a row stays up
-static const int KILLFEED_ROW_HEIGHT = 60;      //!< px between row origins, must clear the row layout
+static const int KILLFEED_ROW_HEIGHT = 46;      //!< px between row origins, must clear KILLFEED_ROW_INNER_HEIGHT
+static const int KILLFEED_ROW_INNER_HEIGHT = 42; //!< the row background's own height
+
+//--- Row geometry, applied by KillFeedUI.LayoutRow(). The row is measured and sized in script
+//--- rather than by a spacer, so the background ends exactly where the text ends.
+static const int KILLFEED_ROW_PAD = 8;          //!< inset at each end of the row
+static const int KILLFEED_ROW_GAP = 10;         //!< space between cells
+static const int KILLFEED_ICON_WIDTH = 24;      //!< cause icon, must match killfeed_row.layout
+
+//--- Weapon cell. ItemPreviewWidget fits the model inside its box preserving aspect, so a fixed
+//--- box leaves dead space whenever the weapon is not as long as the box is wide - a crossbow in a
+//--- 144px cell rendered ~50px and left ~90px of empty background before the victim name.
+//--- The cell is therefore sized per weapon from its config `itemSize[]`, which is the item's
+//--- inventory footprint in grid cells and a good proxy for the model's aspect: rifles are {8,3}
+//--- to {10,3}, SMGs {4,3} to {6,3}, pistols {3,2}.
+static const float KILLFEED_WEAPON_ASPECT = 3.0;  //!< fallback when itemSize is missing
+static const int KILLFEED_WEAPON_MIN_WIDTH = 48;  //!< keeps a tiny item from becoming a smear
+static const int KILLFEED_WEAPON_MAX_WIDTH = 170; //!< keeps a freak config from spanning the row
 
 //--- Icon shown in place of the weapon preview when there is nothing to render. A vanilla imageset
 //--- on purpose: depending on another mod's texture would break the standalone promise.
