@@ -24,6 +24,7 @@ class VigridPartyManager
     private ref array<ref VigridPartyInvite> m_Invites;
     private ref map<string, int> m_LastInviteMs;
     private ref map<string, int> m_LastPlayerListMs;
+    private ref map<string, int> m_LastPingMs;
 
     /**
      *  PlayerIdentity.GetId() (hashed) -> GetPlainId() (SteamID64).
@@ -52,6 +53,7 @@ class VigridPartyManager
         m_Invites = new array<ref VigridPartyInvite>();
         m_LastInviteMs = new map<string, int>();
         m_LastPlayerListMs = new map<string, int>();
+        m_LastPingMs = new map<string, int>();
         m_HashedToPlain = new map<string, string>();
 
         m_FormationLocked = false;
@@ -75,6 +77,8 @@ class VigridPartyManager
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_TRANSFER_LEADER, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_REQUEST_PLAYERLIST, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_REQUEST_SYNC, this);
+        GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_ADD, this);
+        GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_CLEAR, this);
 
         m_Parties = VigridPartyStore.Load(m_Settings);
         RebuildIndex();
@@ -470,9 +474,16 @@ class VigridPartyManager
         DropMemberIndex(uid);
         party.roster_version = NextRosterVersion();
 
+        //--- Their markers leave with them: a marker outliving its owner's membership would keep
+        //--- pointing somewhere on behalf of somebody no longer on the team.
+        party.RemovePingsOf(uid);
+
         PlayerBase leaver = GetPlayerByUid(uid);
         if (leaver && leaver.GetIdentity())
+        {
             SendEmptyRoster(leaver.GetIdentity());
+            SendEmptyPings(leaver.GetIdentity());
+        }
 
         if (party.Count() < 2)
         {
@@ -483,6 +494,7 @@ class VigridPartyManager
                 if (last && last.GetIdentity())
                 {
                     SendEmptyRoster(last.GetIdentity());
+                    SendEmptyPings(last.GetIdentity());
                     SendNotify(last.GetIdentity(), "STR_PARTY_DISBANDED", "", "");
                 }
             }
@@ -496,6 +508,7 @@ class VigridPartyManager
             NotifyParty(party, notify_key, NameOfUid(uid), "");
 
         BroadcastRoster(party);
+        BroadcastPings(party);
         MarkDirty(true);
     }
 
@@ -631,6 +644,14 @@ class VigridPartyManager
 
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_LOCKED,
             new Param1<bool>(m_FormationLocked), true, identity);
+
+        //--- A separate message rather than two more members on VP_Settings. If the arities of that
+        //--- Param5 ever disagreed between client and server, ctx.Read would fail *silently* and
+        //--- every setting it carries would sit at its default with nothing in the log to say so;
+        //--- widening it puts working settings inside that blast radius for no gain. VP_Locked was
+        //--- split out for the same reason.
+        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PING_SETTINGS,
+            new Param2<bool, int>(m_Settings.ping_enabled, m_Settings.ping_cooldown_ms), true, identity);
     }
 
     private void BroadcastLocked()
@@ -728,6 +749,131 @@ class VigridPartyManager
             true, identity);
     }
 
+    /**
+     *  Push the party's whole ping set to every online member.
+     *
+     *  The entire set travels rather than a delta. That makes the message idempotent, so a client
+     *  that missed one is corrected by the next and no periodic resend is needed at all - Carim, in
+     *  which the client owned the list, had to heartbeat it every 60 s.
+     *
+     *  Entries name their own owner, unlike VP_TeamState's roster-indexed arrays, so a roster change
+     *  cannot mis-index them and there is no version guard to keep in step. Do not add one: it would
+     *  put a ping rebroadcast next to every BroadcastRoster() call site.
+     */
+    void BroadcastPings(VigridParty party)
+    {
+        if (!party)
+            return;
+
+        array<string> owners = new array<string>();
+        array<vector> positions = new array<vector>();
+        array<int> remaining = new array<int>();
+        BuildPingArrays(party, owners, positions, remaining);
+
+        int member_count = party.member_uids.Count();
+        for (int i = 0; i < member_count; i++)
+        {
+            PlayerBase member = GetPlayerByUid(party.member_uids.Get(i));
+            if (!member)
+                continue;
+            if (!member.GetIdentity())
+                continue;
+
+            GetRPCManager().SendRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PING_SET,
+                new Param3<array<string>, array<vector>, array<int>>(owners, positions, remaining),
+                true, member.GetIdentity());
+        }
+    }
+
+    void SendPingsTo(VigridParty party, PlayerIdentity identity)
+    {
+        if (!party)
+            return;
+        if (!identity)
+            return;
+
+        array<string> owners = new array<string>();
+        array<vector> positions = new array<vector>();
+        array<int> remaining = new array<int>();
+        BuildPingArrays(party, owners, positions, remaining);
+
+        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PING_SET,
+            new Param3<array<string>, array<vector>, array<int>>(owners, positions, remaining),
+            true, identity);
+    }
+
+    //! An empty set is how "you have no markers any more" is expressed, mirroring SendEmptyRoster.
+    void SendEmptyPings(PlayerIdentity identity)
+    {
+        if (!identity)
+            return;
+
+        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PING_SET,
+            new Param3<array<string>, array<vector>, array<int>>(
+                new array<string>(), new array<vector>(), new array<int>()),
+            true, identity);
+    }
+
+    /**
+     *  Fill the three parallel wire arrays, skipping anything already expired.
+     *
+     *  Milliseconds *remaining* travel, not an absolute expiry: this process's GetTime() and the
+     *  client's are unrelated. VP_InviteReceived ships a TTL for exactly the same reason.
+     */
+    private void BuildPingArrays(VigridParty party, array<string> owners, array<vector> positions, array<int> remaining)
+    {
+        int now_ms = VigridPartyTime.NowMs();
+
+        int count = party.pings.Count();
+        for (int i = 0; i < count; i++)
+        {
+            VigridPartyPing ping = party.pings.Get(i);
+            if (!ping)
+                continue;
+            if (ping.IsExpired(now_ms))
+                continue;
+
+            owners.Insert(ping.owner_uid);
+            positions.Insert(ping.position);
+            remaining.Insert(ping.RemainingMs(now_ms));
+        }
+    }
+
+    /**
+     *  Drop expired markers, and re-broadcast only the parties that actually changed - a party whose
+     *  markers are all permanent generates no traffic here at all.
+     */
+    private void SweepPings()
+    {
+        int now_ms = VigridPartyTime.NowMs();
+
+        int party_count = m_Parties.Count();
+        for (int i = 0; i < party_count; i++)
+        {
+            VigridParty party = m_Parties.Get(i);
+            if (!party)
+                continue;
+
+            bool changed = false;
+
+            //--- Backwards so a removal does not shift an index not yet visited.
+            for (int j = party.pings.Count() - 1; j >= 0; j--)
+            {
+                VigridPartyPing ping = party.pings.Get(j);
+                if (ping && !ping.IsExpired(now_ms))
+                    continue;
+
+                //--- Ordered: Remove() would fill the hole with the last element and scramble the
+                //--- placement order the FIFO cap depends on. See VigridParty.AddPing.
+                party.pings.RemoveOrdered(j);
+                changed = true;
+            }
+
+            if (changed)
+                BroadcastPings(party);
+        }
+    }
+
     void SendNotify(PlayerIdentity identity, string key, string arg1, string arg2)
     {
         if (!identity)
@@ -783,8 +929,8 @@ class VigridPartyManager
                 continue; //!< nothing to show a solo player
 
             array<vector> positions = new array<vector>();
-            array<int> health = new array<int>();
-            array<int> blood = new array<int>();
+            array<int> health_levels = new array<int>();
+            array<int> blood_levels = new array<int>();
             array<int> flags = new array<int>();
 
             int member_count = party.member_uids.Count();
@@ -796,9 +942,11 @@ class VigridPartyManager
 
                 if (!member)
                 {
+                    //--- Level 0 reads as GREAT, but flags are empty here so the client takes its
+                    //--- offline branch and never looks at the level at all.
                     positions.Insert("0 0 0");
-                    health.Insert(0);
-                    blood.Insert(0);
+                    health_levels.Insert(0);
+                    blood_levels.Insert(0);
                     flags.Insert(0);
                     continue;
                 }
@@ -811,11 +959,15 @@ class VigridPartyManager
                 if (member.IsUnconscious())
                     member_flags = member_flags | VIGRID_PARTY_FLAG_UNCONSCIOUS;
 
-                //--- GetHealth01 is already normalised to 0..1, which sidesteps having to guard the
-                //--- max value against zero.
+                //--- Send the stat level (EStatLevels, 0..4) rather than a percentage, and let
+                //--- vanilla decide it. A percentage had to be quantised to an int before the
+                //--- client could bucket it, which moved every threshold by up to half a percent,
+                //--- and it forced the client to hardcode blood's cutoffs as a fraction of a 5000
+                //--- maximum. These are the very calls the player's own HUD badge reads, so the
+                //--- teammate icon now cannot disagree with what that player sees.
                 positions.Insert(member.GetPosition());
-                health.Insert(Percent(member.GetHealth01("", "Health")));
-                blood.Insert(Percent(member.GetHealth01("", "Blood")));
+                health_levels.Insert(member.GetStatLevelHealth());
+                blood_levels.Insert(member.GetStatLevelBlood());
                 flags.Insert(member_flags);
             }
 
@@ -832,22 +984,10 @@ class VigridPartyManager
 
                 GetRPCManager().SendRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_TEAMSTATE,
                     new Param5<int, array<vector>, array<int>, array<int>, array<int>>(
-                        party.roster_version, positions, health, blood, flags),
+                        party.roster_version, positions, health_levels, blood_levels, flags),
                     false, recipient.GetIdentity());
             }
         }
-    }
-
-    //! Normalised 0..1 reading to a clamped 0..100 integer, so the whole channel stays int-sized.
-    private int Percent(float normalised)
-    {
-        int percent = Math.Round(normalised * 100);
-        if (percent < 0)
-            return 0;
-        if (percent > 100)
-            return 100;
-
-        return percent;
     }
 
     // ---------------------------------------------------------------- tick
@@ -860,6 +1000,7 @@ class VigridPartyManager
         {
             m_SweepDueMs = now_ms + 1000;
             SweepInvites();
+            SweepPings();
         }
 
         if (now_ms >= m_StatePushDueMs)
@@ -888,6 +1029,7 @@ class VigridPartyManager
         if (!party)
         {
             SendEmptyRoster(identity);
+            SendEmptyPings(identity);
             return;
         }
 
@@ -897,6 +1039,10 @@ class VigridPartyManager
 
         //--- Names come from live identities, so a reconnect refreshes them for everyone.
         BroadcastRoster(party);
+
+        //--- Markers survive a disconnect, exactly as membership does, so someone rejoining
+        //--- mid-match is handed whatever the team has standing right now.
+        SendPingsTo(party, identity);
     }
 
     /**
@@ -1264,6 +1410,7 @@ class VigridPartyManager
                 continue;
 
             SendEmptyRoster(member.GetIdentity());
+            SendEmptyPings(member.GetIdentity());
             SendNotify(member.GetIdentity(), "STR_PARTY_DISBANDED", "", "");
         }
 
@@ -1381,10 +1528,115 @@ class VigridPartyManager
         if (!party)
         {
             SendEmptyRoster(sender);
+            SendEmptyPings(sender);
             return;
         }
 
         SendRosterTo(party, sender, uid);
+        SendPingsTo(party, sender);
+    }
+
+    /**
+     *  Place a world marker where the sender says they are looking.
+     *
+     *  Deliberately NOT gated on RejectIfUnavailable. That helper also refuses while the formation
+     *  is locked, and the lock is switched on for the entire match - which is the only time markers
+     *  are of any use, so gating on it would ship a feature that never works. Only the two enable
+     *  switches are checked, exactly as VP_RequestSync does.
+     *
+     *  A single position is all that travels; owner, name and both timestamps are minted here from
+     *  `sender`. The one value a modified client gets to choose is therefore range-checked below,
+     *  and that is the whole of its influence - unlike Carim, where the client uploaded the entire
+     *  set including its own cap and labels.
+     */
+    void VP_PingAdd(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param1<vector> data;
+        if (!ctx.Read(data))
+            return;
+        if (type != CallType.Server)
+            return;
+        if (!sender)
+            return;
+        if (!m_Settings.enabled)
+            return;
+        if (!m_Settings.ping_enabled)
+            return;
+
+        string uid = sender.GetPlainId();
+
+        //--- Re-checked here even though the client checks it too: a modified client is not bound
+        //--- by the engine's input handling.
+        PlayerBase player = GetPlayerByUid(uid);
+        if (!player)
+            return;
+        if (!player.IsAlive())
+            return;
+        if (player.IsUnconscious())
+            return;
+
+        int now_ms = VigridPartyTime.NowMs();
+        if (m_LastPingMs.Contains(uid) && (now_ms - m_LastPingMs.Get(uid)) < m_Settings.ping_cooldown_ms)
+        {
+            //--- Dropped silently. A notification per rejected press would itself become the spam
+            //--- channel the cooldown exists to close.
+            VigridPartyLog.Trace("Ping from " + uid + " dropped by cooldown");
+            return;
+        }
+
+        vector position = data.param1;
+        if (position == vector.Zero)
+            return;
+
+        //--- Warn, never Error: Error routes to Error2() and raises a VM exception, which would
+        //--- turn one malformed packet into a dead server.
+        if (vector.Distance(player.GetPosition(), position) > VIGRID_PARTY_PING_MAX_PLACE_DIST)
+        {
+            VigridPartyLog.Warn("Rejected out-of-range ping from " + uid);
+            return;
+        }
+
+        VigridParty party = GetPartyByUid(uid);
+        if (!party)
+            return;
+
+        m_LastPingMs.Set(uid, now_ms);
+
+        int expires_at_ms = 0;
+        if (m_Settings.ping_ttl_seconds > 0)
+            expires_at_ms = now_ms + m_Settings.ping_ttl_seconds * 1000;
+
+        //--- Held in a ref local before being handed over, exactly as an invite is: AddPing evicts
+        //--- before it inserts, so the new marker has to survive a few statements first.
+        ref VigridPartyPing ping = new VigridPartyPing(uid, position, now_ms, expires_at_ms);
+        party.AddPing(ping, m_Settings.ping_max_per_player);
+
+        BroadcastPings(party);
+
+        VigridPartyLog.Debug("Ping by " + uid + " at " + position.ToString() + ", party now holds " + party.pings.Count());
+    }
+
+    //! Clear every marker the sender owns. A member can only ever clear their own.
+    void VP_PingClear(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if (type != CallType.Server)
+            return;
+        if (!sender)
+            return;
+        if (!m_Settings.enabled)
+            return;
+        if (!m_Settings.ping_enabled)
+            return;
+
+        string uid = sender.GetPlainId();
+        VigridParty party = GetPartyByUid(uid);
+        if (!party)
+            return;
+        if (!party.RemovePingsOf(uid))
+            return;
+
+        BroadcastPings(party);
+        VigridPartyLog.Debug("Pings cleared by " + uid);
     }
 }
 #endif

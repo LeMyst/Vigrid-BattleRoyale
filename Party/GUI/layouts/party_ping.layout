@@ -1,0 +1,50 @@
+PanelWidgetClass PingRoot {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 90 36
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0 0 0 0
+ {
+  ImageWidgetClass PingIcon {
+   inheritalpha 0
+   ignorepointer 1
+   position 38 0
+   size 14 14
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   image0 "set:dayz_gui image:icon_x"
+   mode blend
+   "src alpha" 1
+   "no wrap" 1
+   stretch 1
+  }
+  TextWidgetClass PingDistance {
+   inheritalpha 1
+   ignorepointer 1
+   position 0 0.44
+   size 1 0.56
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   scaled 1
+   text "0m"
+   font "gui/fonts/metron"
+   "outline size" 1
+   "outline color" 0 0 0 0.5
+   "shadow size" 5
+   "shadow color" 0 0 0 0.4
+   "shadow offset" 1 1
+   "exact text" 0
+   "text halign" center
+   "text valign" center
+  }
+ }
+}

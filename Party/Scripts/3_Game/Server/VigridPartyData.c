@@ -9,7 +9,7 @@
  */
 class VigridPartyData
 {
-    int version = 1;
+    int version = 2;
 
     bool enabled = VIGRID_PARTY_DEF_ENABLED;
     int max_party_size = VIGRID_PARTY_DEF_MAX_SIZE;
@@ -22,6 +22,11 @@ class VigridPartyData
 
     bool show_hud_panel = true;
     bool leader_transfer_on_disconnect = true;
+
+    bool ping_enabled = VIGRID_PARTY_DEF_PING_ENABLED;
+    int ping_max_per_player = VIGRID_PARTY_DEF_PING_MAX;
+    int ping_ttl_seconds = VIGRID_PARTY_DEF_PING_TTL_SECONDS; //!< 0 = never expires
+    int ping_cooldown_ms = VIGRID_PARTY_DEF_PING_COOLDOWN_MS;
 
     string GetPath()
     {
@@ -51,10 +56,16 @@ class VigridPartyData
 
     void Upgrade()
     {
-        //--- No migrations yet. When one is needed: bump the constant, add an `if (version == N)`
-        //--- branch that fills the new fields, set version to N+1, then Save().
         if (version < 1)
             version = 1;
+
+        //--- 1 -> 2 added the four ping_* fields, and the migration is intentionally empty: a
+        //--- member absent from the JSON keeps the initialiser it is declared with above, which is
+        //--- already the intended default. Load()'s unconditional re-save is what writes the new
+        //--- keys into an existing server's file. Only a migration that has to *derive* a value
+        //--- from an old one needs code here.
+        if (version < 2)
+            version = 2;
     }
 
     /**
@@ -89,6 +100,24 @@ class VigridPartyData
             nametag_min_alpha = 0;
         if (nametag_min_alpha > 1)
             nametag_min_alpha = 1;
+
+        //--- Floors at 1, not 0: ping_enabled is the off switch, and a cap of 0 would present as a
+        //--- keybind that silently does nothing.
+        if (ping_max_per_player < 1)
+            ping_max_per_player = 1;
+        if (ping_max_per_player > 10)
+            ping_max_per_player = 10;
+
+        //--- 0 is legal and means "never expires" - the behaviour Carim always had.
+        if (ping_ttl_seconds < 0)
+            ping_ttl_seconds = 0;
+        if (ping_ttl_seconds > 3600)
+            ping_ttl_seconds = 3600;
+
+        if (ping_cooldown_ms < 0)
+            ping_cooldown_ms = 0;
+        if (ping_cooldown_ms > 60000)
+            ping_cooldown_ms = 60000;
     }
 }
 #endif

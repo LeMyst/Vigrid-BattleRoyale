@@ -13,10 +13,12 @@ class VigridPartyClient
 {
     private ref VigridPartyHud m_Hud;
     private ref VigridPartyNametags m_Nametags;
+    private ref VigridPartyPings m_Pings;
 
     private int m_HudDueMs;
     private int m_LastInviteSeq;
     private bool m_RequestedSync;
+    private int m_PingCooldownDueMs;
 
     /**
      *  Traced step by step on purpose. This runs inside MissionGameplay.OnInit, which is early
@@ -35,9 +37,13 @@ class VigridPartyClient
         VigridPartyLog.Debug("VigridPartyClient ctor: creating nametags");
         m_Nametags = new VigridPartyNametags();
 
+        VigridPartyLog.Debug("VigridPartyClient ctor: creating pings");
+        m_Pings = new VigridPartyPings();
+
         m_HudDueMs = 0;
         m_LastInviteSeq = 0;
         m_RequestedSync = false;
+        m_PingCooldownDueMs = 0;
 
         VigridPartyLog.Debug("VigridPartyClient ctor: done");
     }
@@ -46,6 +52,7 @@ class VigridPartyClient
     {
         m_Hud = NULL;
         m_Nametags = NULL;
+        m_Pings = NULL;
     }
 
     void Update(float timeslice)
@@ -65,6 +72,11 @@ class VigridPartyClient
 
         //--- Name tags follow the camera, so they must run every frame.
         m_Nametags.Update(timeslice);
+
+        //--- After the name tags on purpose. The two are independent workspace-level roots, so
+        //--- SetSort inside one says nothing about the other and creation order is what decides
+        //--- which layer wins: pings are the transient, deliberate signal and belong on top.
+        m_Pings.Update();
 
         //--- The panel is fed by a 2 Hz push, so refreshing it faster than 5 Hz buys nothing.
         int now_ms = GetGame().GetTime();
@@ -165,6 +177,98 @@ class VigridPartyClient
     void Disband()
     {
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_DISBAND, NULL, true);
+    }
+
+    /**
+     *  Place a world marker where the player is looking.
+     *
+     *  Every rejection is decided here, so a press that cannot succeed generates no traffic at all -
+     *  including the cooldown, which is the difference between a held-down key costing nothing and
+     *  it costing a packet per frame. The server re-checks all of it regardless: none of this binds
+     *  a modified client.
+     *
+     *  The ray starts a metre ahead of the camera and reaches 8 km, matching Carim, which is far
+     *  enough to mark a ridgeline across the map and near enough not to catch the player's own body.
+     */
+    void PlacePing()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        if (!rpc.enabled || !rpc.ping_enabled)
+        {
+            Announce("STR_PARTY_PING_DISABLED");
+            return;
+        }
+
+        if (!rpc.HasParty())
+        {
+            Announce("STR_PARTY_PING_NO_PARTY");
+            return;
+        }
+
+        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
+        if (!player)
+            return;
+
+        //--- Silent, unlike the cases above: the player already knows they are dead.
+        if (!player.IsAlive())
+            return;
+        if (player.IsUnconscious())
+            return;
+
+        int now_ms = GetGame().GetTime();
+        if (now_ms < m_PingCooldownDueMs)
+            return;
+
+        vector begin = GetGame().GetCurrentCameraPosition() + GetGame().GetCurrentCameraDirection();
+        vector end = begin + GetGame().GetCurrentCameraDirection() * VIGRID_PARTY_PING_RAY_LENGTH;
+
+        vector contact_pos;
+        vector contact_dir;
+        int contact_component;
+
+        if (!DayZPhysics.RaycastRV(begin, end, contact_pos, contact_dir, contact_component))
+        {
+            Announce("STR_PARTY_PING_NO_TARGET");
+            return;
+        }
+
+        //--- vector.Zero is treated as a miss on both sides of the wire; the server refuses it too.
+        if (contact_pos == vector.Zero)
+        {
+            Announce("STR_PARTY_PING_NO_TARGET");
+            return;
+        }
+
+        m_PingCooldownDueMs = now_ms + rpc.ping_cooldown_ms;
+
+        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_ADD, new Param1<vector>(contact_pos), true);
+    }
+
+    //! Clear every marker this player owns. Teammates' markers are untouched, here and server-side.
+    void ClearPings()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        if (!rpc.enabled || !rpc.ping_enabled)
+            return;
+        if (!rpc.HasParty())
+            return;
+
+        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_CLEAR, NULL, true);
+        Announce("STR_PARTY_PING_CLEARED");
+    }
+
+    /**
+     *  Say something about a ping locally.
+     *
+     *  Deliberately not routed through VP_Notify: every condition that produces one of these is
+     *  detectable before the RPC is sent, so the server never has to say anything on this path.
+     */
+    private void Announce(string key)
+    {
+        StringLocaliser message = new StringLocaliser(key);
+        GetGame().Chat(message.Format(), "colorFriendly");
     }
 }
 #endif

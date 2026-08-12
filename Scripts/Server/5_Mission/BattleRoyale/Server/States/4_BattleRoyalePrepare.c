@@ -588,20 +588,26 @@ class BattleRoyalePrepare: BattleRoyaleState
     }
 
     /**
-     * Groups of the current roster, largest concept first: a party is one group, and a player with
-     * no party is a group of one. Without the party addon compiled in every player is their own
+     * Groups of `population`, largest concept first: a party is one group, and a player with no
+     * party is a group of one. Without the party addon compiled in every player is their own
      * group, which lets the teleport and reporting paths share a single loop instead of carrying a
      * mirrored #else branch each.
+     *
+     * The population is a parameter because ProcessPlayers must group the *snapshot*
+     * (a_PlayerList), never the live roster - see the note above pCount. Callers outside the
+     * coroutine can leave it out and get the live roster.
      */
-    protected array<ref array<PlayerBase>> BuildPartyGroups()
+    protected array<ref array<PlayerBase>> BuildPartyGroups(array<PlayerBase> population = NULL)
     {
+        if (!population)
+            population = GetPlayers();
+
 #ifdef VIGRID_PARTY
-        return VigridPartyAPI.GetGroups( GetPlayers() );
+        return VigridPartyAPI.GetGroups( population );
 #else
         array<ref array<PlayerBase>> groups = new array<ref array<PlayerBase>>();
-        ref array<PlayerBase> roster = GetPlayers();
 
-        foreach (PlayerBase roster_player : roster)
+        foreach (PlayerBase roster_player : population)
         {
             if (!roster_player)
                 continue;
@@ -741,21 +747,43 @@ class BattleRoyalePrepare: BattleRoyaleState
 		if (b_EnableSpawnSelectionMenu)
 		{
 			BattleRoyaleUtils.Trace("Spawn selection menu enabled");
-			for (i = 0; i < pCount; i++) {
-				//--- The snapshot, like every other loop in this method. This was the one place
-				//--- that indexed the live roster.
-				process_player = a_PlayerList[i];
-				if (process_player)
-				{
+
+			//--- Grouped rather than flat, so a party where NOBODY picked a spawn point is dropped by
+			//--- TeleportGroup() - one village position for the whole party, members scattered within
+			//--- 5 m of it - instead of each member getting their own random village kilometres from
+			//--- the others. Parties where at least one member picked were already resolved in
+			//--- 3_BattleRoyaleSpawnSelection.Deactivate(), so those members arrive here with a
+			//--- position each and take the per-player path below unchanged.
+			//---
+			//--- Built from the snapshot, not GetPlayers(): the live roster shrinks across every
+			//--- Sleep(100) below, which is the whole reason this method works off a_PlayerList.
+			//--- Solo players come back as groups of one and behave exactly as before.
+			array<ref array<PlayerBase>> selection_groups = BuildPartyGroups( a_PlayerList );
+			int sGroupCount = selection_groups.Count();
+
+			selection_groups.ShuffleArray();
+			BattleRoyaleUtils.Trace("Spawn selection groups: " + sGroupCount);
+
+			for (i = 0; i < sGroupCount; i++) {
+				array<PlayerBase> selection_group = selection_groups.Get(i);
+
+				//--- Members with no spawn point of their own, held back so they can be dropped
+				//--- together once the rest of their party is placed.
+				array<PlayerBase> unplaced = new array<PlayerBase>();
+
+				for (int m = 0; m < selection_group.Count(); m++) {
+					process_player = selection_group.Get(m);
+					if (!process_player)
+						continue;
+
 					float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
 					vector position = process_player.GetSpawnPos();
 					string player_name = GetPlayerLogName(process_player);
 
 					if( position == vector.Zero )
 					{
-						BattleRoyaleUtils.Trace("Player " + player_name + " didn't select a spawn point, we randomly teleport them");
-						Teleport(process_player);
-						Sleep(100);
+						BattleRoyaleUtils.Trace("Player " + player_name + " didn't select a spawn point, holding them for a group drop");
+						unplaced.Insert(process_player);
 						continue;
 					}
 
@@ -774,6 +802,22 @@ class BattleRoyalePrepare: BattleRoyaleState
 						TeleportPlayer(process_player, random_position);
 					}
 
+					Sleep(100);
+				}
+
+				//--- One shared drop for an undecided party, the ordinary random spawn for a lone
+				//--- undecided player. TeleportGroup picks the position once and scatters the members
+				//--- around it, so they land together.
+				if ( unplaced.Count() > 1 )
+				{
+					BattleRoyaleUtils.Trace("Dropping " + unplaced.Count() + " undecided party members together");
+					TeleportGroup( unplaced );
+					Sleep(100);
+				}
+				else if ( unplaced.Count() == 1 )
+				{
+					BattleRoyaleUtils.Trace("Randomly teleporting a single undecided player");
+					Teleport( unplaced.Get(0) );
 					Sleep(100);
 				}
 			}

@@ -26,9 +26,21 @@ class VigridParty
      */
     int roster_version;
 
+    /**
+     *  World markers placed by members, in placement order - which is what makes the per-owner
+     *  eviction below FIFO.
+     *
+     *  Hung off the party rather than kept in a second manager-side registry: there is no extra
+     *  index to hold in lockstep with m_Parties, and deleting a party takes its markers with it.
+     *  Session-scoped, so the store DTO does not carry the field - the runtime type is explicitly
+     *  allowed to have members the file format does not (VigridPartyStoreDTO.c:5-6).
+     */
+    ref array<ref VigridPartyPing> pings;
+
     void VigridParty()
     {
         member_uids = new array<string>();
+        pings = new array<ref VigridPartyPing>();
     }
 
     bool Contains(string uid)
@@ -97,6 +109,84 @@ class VigridParty
 
         leader_uid = uid;
         return true;
+    }
+
+    // ---------------------------------------------------------------- pings
+
+    /**
+     *  Append a marker, evicting this owner's oldest first once they are at the cap.
+     *
+     *  Evicting rather than refusing the placement is deliberate: a marker quietly disappearing
+     *  explains itself, whereas a refusal needs a message the player then has to read mid-fight.
+     *  Only the owner's own markers are ever evicted, so one player cannot push out a teammate's.
+     */
+    void AddPing(VigridPartyPing ping, int max_per_owner)
+    {
+        if (!ping)
+            return;
+
+        while (CountPingsOf(ping.owner_uid) >= max_per_owner)
+        {
+            int oldest = FirstPingIndexOf(ping.owner_uid);
+            if (oldest == -1)
+                break;
+
+            //--- RemoveOrdered, never Remove: vanilla's Remove() fills the hole with the *last*
+            //--- element ("do not retain order", EnScript.c), which silently destroys the placement
+            //--- order this whole scheme is built on - the next eviction would then drop an
+            //--- arbitrary marker instead of the oldest, and the #n labels would scramble with it.
+            pings.RemoveOrdered(oldest);
+        }
+
+        pings.Insert(ping);
+    }
+
+    int CountPingsOf(string uid)
+    {
+        int total = 0;
+        int count = pings.Count();
+        for (int i = 0; i < count; i++)
+        {
+            VigridPartyPing ping = pings.Get(i);
+            if (ping && ping.owner_uid == uid)
+                total = total + 1;
+        }
+
+        return total;
+    }
+
+    //! Drop every marker owned by `uid`. Returns true when something was actually removed.
+    bool RemovePingsOf(string uid)
+    {
+        bool removed = false;
+
+        //--- Backwards so a removal does not shift an index not yet visited.
+        for (int i = pings.Count() - 1; i >= 0; i--)
+        {
+            VigridPartyPing ping = pings.Get(i);
+            if (ping && ping.owner_uid != uid)
+                continue;
+
+            //--- Ordered for the same reason as AddPing: the surviving markers keep their relative
+            //--- placement order, so a teammate's #1/#2 do not swap when somebody else clears.
+            pings.RemoveOrdered(i);
+            removed = true;
+        }
+
+        return removed;
+    }
+
+    private int FirstPingIndexOf(string uid)
+    {
+        int count = pings.Count();
+        for (int i = 0; i < count; i++)
+        {
+            VigridPartyPing ping = pings.Get(i);
+            if (ping && ping.owner_uid == uid)
+                return i;
+        }
+
+        return -1;
     }
 
     string Repr()
