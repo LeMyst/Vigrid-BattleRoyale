@@ -200,6 +200,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- own flush, so this only ever catches mid-match progress.
 			BattleRoyaleLeaderboard.GetInstance().Tick();
 
+			//--- Push each player the list of speakers they can actually hear. Self-throttled to
+			//--- BR_SPEAKING_POLL_MS and only sends on change, so this is cheap at 10 Hz.
+			BattleRoyaleVoice.UpdateSpeakers();
+
 			if (GetCurrentState().IsComplete()) //current state is complete
 			{
 				int next_index = GetNextStateIndex();
@@ -248,6 +252,11 @@ class BattleRoyaleServer: BattleRoyaleBase
         //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = config_data.GetServerData();
+
+        //--- The speaking-players panel is a client HUD element gated by two server settings, so the
+        //--- joining player needs them before their first frame of gameplay.
+        BattleRoyaleGameData voice_settings = config_data.GetGameData();
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", new Param2<bool, bool>( voice_settings.show_speaking_players, voice_settings.speaking_list_during_match ), true, player.GetIdentity() );
 
         BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
         vector debug_pos = m_Debug.GetCenter();

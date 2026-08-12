@@ -141,6 +141,46 @@ static const int BR_SPAWN_SNAP_MAX_STEPS = 512;
 static const float BR_SPAWN_SNAP_INSET = 25.0;
 
 
+//--- "who is speaking" HUD list
+//
+//This list is built on the SERVER and pushed to each client, which is not the obvious design.
+//It is that way because DayZPlayer.IsPlayerSpeaking() behaves differently on the two sides, as
+//measured on 2026-08-04 with two clients:
+//  - server: correctly per-entity. The speaker reads non-zero, everyone else reads exactly 0.
+//  - client: returns the LOCAL microphone level no matter which entity it is called on. While
+//    Client_B spoke, B's own client reported the same amplitude for Client_B and Client_A alike,
+//    and A's client reported 0 for both. It is a global mic meter, not a per-player query.
+//So the client physically cannot work out who is talking, and the server can.
+//
+//how often the server samples every player's amplitude. Voice arrives in packets, so sampling much
+//slower than this drops short words; much faster buys nothing a listener can perceive.
+static const int BR_SPEAKING_POLL_MS = 200;
+//how long a row stays up after a speaker goes quiet. Without it the list strobes between syllables,
+//because normal speech dips below the threshold several times a second.
+static const int BR_SPEAKING_LINGER_MS = 700;
+//amplitude above which a player counts as speaking.
+//NOT vanilla's 0.1 - that is its talking-ANIMATION threshold and is far too high here. Measured
+//speech peaks at 0.05-0.14 and normally sits at 0.01-0.09, so 0.1 misses almost every word. The
+//silence floor is 3.05176e-05, exactly 1/32768 - one LSB of 16-bit audio - so anything comfortably
+//above that separates speech from silence.
+static const float BR_SPEAKING_AMPLITUDE_THRESHOLD = 0.005;
+//hard cap on rows. In the frozen states you only ever hear your own party, so this is only reached
+//during the match in a crowd; past it, the newest speaker is simply not shown.
+static const int BR_SPEAKING_MAX_ROWS = 6;
+//row pitch in pixels, and where the panel sits. Chosen to clear the party HUD, which occupies
+//(24, 180) to (24, 660) - see Party/GUI/layouts/party_hud.layout.
+static const int BR_SPEAKING_ROW_HEIGHT = 26;
+
+
+//--- party gathering at spawn selection
+//how far from their leader a gathered member is placed, in metres. Small on purpose: voice is
+//clamped to Whisper until the match starts, and CGame.MutePlayer is subtractive - it can only
+//remove hearing from inside the engine's proximity set, never add it. So a teammate who is out of
+//whisper range stays inaudible no matter what the mute matrix says, and the only way party voice
+//works during spawn selection is if the party is physically together.
+static const float BR_PARTY_GATHER_RADIUS = 3.0;
+
+
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
 static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.75; //max next zone distance as a percent of maximum distance (1 => 100%)

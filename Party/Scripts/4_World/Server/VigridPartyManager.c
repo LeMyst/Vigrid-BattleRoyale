@@ -352,6 +352,42 @@ class VigridPartyManager
         return mates;
     }
 
+    /**
+     *  The leader of `player`'s party, if they are present in `population`.
+     *
+     *  Null for a solo player, and null when the leader is offline or otherwise absent from the
+     *  population - the caller decides what to do about that rather than being handed a substitute.
+     */
+    PlayerBase GetLeaderIn(PlayerBase player, array<PlayerBase> population)
+    {
+        if (!player)
+            return NULL;
+        if (!population)
+            return NULL;
+
+        string uid = UidOf(player);
+        if (uid == "")
+            return NULL;
+
+        VigridParty party = GetPartyByUid(uid);
+        if (!party)
+            return NULL;
+        if (party.leader_uid == "")
+            return NULL;
+
+        int count = population.Count();
+        for (int i = 0; i < count; i++)
+        {
+            PlayerBase candidate = population.Get(i);
+            if (!candidate)
+                continue;
+            if (UidOf(candidate) == party.leader_uid)
+                return candidate;
+        }
+
+        return NULL;
+    }
+
     // ---------------------------------------------------------------- mutations
 
     void SetFormationLocked(bool locked)

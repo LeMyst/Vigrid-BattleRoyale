@@ -91,14 +91,59 @@ class BattleRoyalePrepare: BattleRoyaleState
         return "Prepare State";
     }
 
+    /**
+     *  Strip the lobby loadout.
+     *
+     *  This deliberately does NOT call vanilla PlayerBase.RemoveAllItems(), which throws one
+     *  "LocalDestroyEntity: No inventory location" VM exception per player every match. Two reasons,
+     *  both visible in playerbase.c:1600-1613 and inventory.c:1346-1361:
+     *
+     *   - It enumerates PREORDER, which lists a container *before* its contents, and then destroys
+     *     in that order. Destroying a container takes its children with it, so by the time the loop
+     *     reaches those children they have no inventory location left and LocalDestroyEntity errors.
+     *     Walking the same PREORDER list backwards fixes it: in preorder an ancestor always precedes
+     *     its descendants, so in reverse every item is destroyed before anything that contains it.
+     *
+     *   - It ignores the hands slot. LocalDestroyEntity errors on a HANDS location too, with
+     *     "player has to handle this" - the engine expects a hands transition instead. Nothing was
+     *     ever held during our test runs, so only the first fault actually fired, but a player who
+     *     is holding something when the match starts would hit this one.
+     *
+     *  POSTORDER traversal would express the ordering directly, but it appears zero times in the
+     *  whole vanilla tree (PREORDER appears six), so it is unexercised engine behaviour. Reversing a
+     *  PREORDER walk relies only on the traversal vanilla itself depends on.
+     */
     protected bool DeleteAllItems(PlayerBase process_player)
     {
         if ( process_player == NULL )
             return false;
 
-        if (process_player.GetInventory().CountInventory() > 0)
+        GameInventory inventory = process_player.GetInventory();
+        if ( !inventory )
+            return false;
+
+        //--- Hands first, through the API the engine sanctions for it.
+        if ( process_player.GetEntityInHands() )
+            process_player.LocalDestroyEntityInHands();
+
+        if ( inventory.CountInventory() <= 0 )
+            return true;
+
+        array<EntityAI> items = new array<EntityAI>();
+        inventory.EnumerateInventory( InventoryTraversalType.PREORDER, items );
+
+        //--- Backwards: deepest items first, so nothing is destroyed after its container.
+        for ( int i = items.Count() - 1; i >= 0; i-- )
         {
-            process_player.RemoveAllItems();
+            ItemBase item = ItemBase.Cast( items.Get(i) );
+            if ( !item )
+                continue;
+
+            //--- Same exclusion vanilla makes: the character itself shows up in the enumeration.
+            if ( item.IsInherited( SurvivorBase ) )
+                continue;
+
+            inventory.LocalDestroyEntity( item );
         }
 
         return true;

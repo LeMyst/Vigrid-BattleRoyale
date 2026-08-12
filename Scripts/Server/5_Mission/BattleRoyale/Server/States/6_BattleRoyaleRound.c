@@ -415,7 +415,9 @@ class BattleRoyaleRound: BattleRoyaleState
 
     void OnRoundTimeUp()
     {
-        Deactivate();
+        //--- Deferred: this is a timer callback, i.e. inside TimerQueue.Tick. See
+        //--- BattleRoyaleState.DeactivateDeferred().
+        DeactivateDeferred();
     }
 
     void SpawnAirdrop()

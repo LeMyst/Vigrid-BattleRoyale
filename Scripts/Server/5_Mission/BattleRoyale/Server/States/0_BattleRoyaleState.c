@@ -68,6 +68,38 @@ class BattleRoyaleState: Timeable
         b_IsActive = false;
     }
 
+    /**
+     *  Deactivate() on the next frame instead of right now.
+     *
+     *  **Call this instead of Deactivate() from inside a timer callback.**
+     *
+     *  Stopping a Timer removes it from vanilla's TimerQueue (`TimerBase.SetRunning` ->
+     *  `m_timerQueue.Remove`, tools.c:351-375), and Deactivate() stops several at once - the state's
+     *  own one-shots plus every looping timer via StopTimers(). Meanwhile `TimerQueue.Tick`
+     *  (tools.c:407-420) snapshots Count() *before* its loop and then walks indices downward:
+     *
+     *      int count = Count();
+     *      for (int i = count - 1; i >= 0; i--)
+     *          Get(i).Tick(timeslice);
+     *
+     *  A one-shot timer has already removed itself by the time its callback runs (`TimerBase.Tick`
+     *  calls SetRunning(false) at tools.c:287, before OnTimer()), so the snapshot is stale by one
+     *  the moment we are entered. Each further timer the callback stops shrinks the array again,
+     *  and once Count() drops below the loop's index, Get(i) returns NULL - the
+     *  "NULL pointer to instance / Class: 'TimerQueue' / Function: 'Tick'" exception.
+     *
+     *  Deferring by one frame takes every removal out of TimerQueue.Tick. Nothing observable
+     *  changes: the driver only polls IsComplete() at 10 Hz anyway (BattleRoyaleServer.c:195), so a
+     *  state that signals completion a frame earlier or later transitions on the same tick.
+     *
+     *  Deactivate() reached from IsComplete() or from a script coroutine does NOT need this - those
+     *  do not run inside TimerQueue.Tick.
+     */
+    void DeactivateDeferred()
+    {
+        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Deactivate", 0, false);
+    }
+
     bool IsActive()
     {
         return b_IsActive;

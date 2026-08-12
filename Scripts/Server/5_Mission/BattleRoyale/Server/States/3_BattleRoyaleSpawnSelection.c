@@ -77,6 +77,11 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		// Disable player input on clients after 0.5 seconds (500ms) to reset the current animations (e.g. keep walking if they were walking)
 		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "DisableInput", 500, false);
 
+		//--- Gather parties on the same delay, and for a different reason: by now the map menu is up
+		//--- on every client and covers the character entirely, so the teleport is not seen. Doing it
+		//--- in Activate() instead produced a visible snap in the moment before the map opened.
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "GatherPartiesOnLeader", 500, false);
+
         // Listen to player spawn selection
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", this);
     }
@@ -198,10 +203,96 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true);
 	}
 
+    /**
+     *  Put every party member next to their leader for the duration of spawn selection.
+     *
+     *  Party-only voice alone is not enough to let a squad coordinate here. CGame.MutePlayer is
+     *  *subtractive*: it removes hearing from inside the engine's proximity set and can never add
+     *  it. Voice is also clamped to Whisper until the match starts. So a member who drifted to the
+     *  far side of the lobby - or who connected late and was placed elsewhere - is inaudible to
+     *  their own party no matter what the mute matrix permits. Standing them together is the only
+     *  thing that actually makes party voice usable.
+     *
+     *  Safe to move players here: the lobby leash lives on BattleRoyaleDebugState.OnPlayerTick and
+     *  this state is a plain BattleRoyaleState, so nothing drags them back. Input is already frozen,
+     *  so nobody walks away either. SetPosition matches what the leash itself uses.
+     *
+     *  Solo players are untouched - GetGroups() returns them as groups of one.
+     *
+     *  Called 500 ms after Activate() rather than from it, so the map menu is already covering every
+     *  client's screen and the teleport is invisible. Not protected, because the call queue reaches
+     *  it by name. Being deferred, it can in principle fire after the state ended, hence the guard.
+     */
+    void GatherPartiesOnLeader()
+    {
+#ifdef VIGRID_PARTY
+        if (!IsActive())
+            return;
+
+        if (!m_GameSettings.gather_party_for_spawn_selection)
+            return;
+
+        array<PlayerBase> population = GetPlayers();
+        array<ref array<PlayerBase>> groups = VigridPartyAPI.GetGroups(population);
+
+        int gathered = 0;
+
+        for (int g = 0; g < groups.Count(); g++)
+        {
+            array<PlayerBase> group = groups.Get(g);
+            if (group.Count() < 2)
+                continue;
+
+            //--- Anchor on the leader when they are here. If they are not - offline, or dropped
+            //--- between the countdown and now - the first member anchors instead, so the party
+            //--- still ends up together rather than being left scattered.
+            PlayerBase anchor = VigridPartyAPI.GetLeader(group.Get(0), population);
+            if (!anchor)
+                anchor = group.Get(0);
+            if (!anchor)
+                continue;
+
+            vector anchor_pos = anchor.GetPosition();
+
+            for (int m = 0; m < group.Count(); m++)
+            {
+                PlayerBase member = group.Get(m);
+                if (!member)
+                    continue;
+                if (member == anchor)
+                    continue;
+
+                vector spot = "0 0 0";
+                spot[0] = anchor_pos[0] + Math.RandomFloatInclusive(-BR_PARTY_GATHER_RADIUS, BR_PARTY_GATHER_RADIUS);
+                spot[2] = anchor_pos[2] + Math.RandomFloatInclusive(-BR_PARTY_GATHER_RADIUS, BR_PARTY_GATHER_RADIUS);
+                spot[1] = GetGame().SurfaceY(spot[0], spot[2]);
+
+                member.SetPosition(spot);
+
+                //--- Face the anchor, so a gathered party visibly forms a huddle. vector.Direction
+                //--- returns an un-normalized difference, and SetDirection wants a unit vector, so
+                //--- flatten then normalize. Skipped outright if the two land on the same spot,
+                //--- because normalizing a zero vector is undefined.
+                vector facing = vector.Direction(spot, anchor_pos);
+                facing[1] = 0;
+                if (facing.Length() > 0.001)
+                    member.SetDirection(facing.Normalized());
+
+                gathered++;
+            }
+        }
+
+        if (gathered > 0)
+            BattleRoyaleUtils.Info(string.Format("Spawn selection: gathered %1 player(s) onto their party leader", gathered));
+#endif
+    }
+
     void OnSpawnSelectionTimeout()
 	{
-		// Deactivate this state and move to the next state
-		Deactivate();
+		// Deactivate this state and move to the next state.
+		//--- Deferred: this is a timer callback, i.e. inside TimerQueue.Tick. See
+		//--- BattleRoyaleState.DeactivateDeferred().
+		DeactivateDeferred();
 	}
 
 	//--- Server-side validation of a client-submitted spawn point.

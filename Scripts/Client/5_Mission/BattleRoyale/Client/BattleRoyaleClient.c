@@ -12,6 +12,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected ref ExpansionServerMarkerData m_ZoneCenterMapMarker;
 
+    protected ref BattleRoyaleSpeakingList m_SpeakingList;
+
     void BattleRoyaleClient()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleClient::BattleRoyaleClient");
@@ -37,6 +39,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 		br_rpc.Reset();
+
+		m_SpeakingList = new BattleRoyaleSpeakingList();
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -189,6 +193,16 @@ class BattleRoyaleClient: BattleRoyaleBase
 			if ( player )
 			{
 				player.position_top = br_rpc.top_position;
+			}
+
+			// Update the list of players currently speaking
+			if( m_SpeakingList )
+			{
+				bool show_speaking = br_rpc.speaking_list_enabled;
+				if( b_MatchStarted && !br_rpc.speaking_list_during_match )
+					show_speaking = false;
+
+				m_SpeakingList.Update( show_speaking );
 			}
 
 			// Show the winner screen

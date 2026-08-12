@@ -47,4 +47,39 @@ modded class VONManagerImplementation
 	{
 		max_voice_level = max_level;
 	}
+
+	/**
+	 *  Diagnostic only - no behaviour depends on this.
+	 *
+	 *  Vanilla builds its own "who is speaking" notification list out of these two engine events
+	 *  (VONManagerImplementation.OnEvent -> DayZGame.AddVoiceNotification -> NotificationUI), and
+	 *  NotificationUI is constructed on every platform. But every vanilla call that clears that list
+	 *  is #ifdef PLATFORM_CONSOLE, which suggests the engine may only fire the events on console -
+	 *  and script cannot tell either way.
+	 *
+	 *  BattleRoyaleSpeakingList deliberately does not depend on the answer; it samples
+	 *  IsPlayerSpeaking() instead. If these lines ever show up in a trace-level .rpt on PC, the
+	 *  events are a cheaper source that arrives already filtered by the engine, and the panel could
+	 *  be re-pointed at them.
+	 *
+	 *  Trace is a runtime level check, so this costs a comparison per VON event on normal builds.
+	 */
+	override void OnEvent(EventType eventTypeId, Param params)
+	{
+		super.OnEvent(eventTypeId, params);
+
+		if (eventTypeId == VONStartSpeakingEventTypeID)
+		{
+			VONStartSpeakingEventParams start_params;
+			if (Class.CastTo(start_params, params))
+				BattleRoyaleUtils.Trace(string.Format("VON probe: start speaking name=%1 uid=%2", start_params.param1, start_params.param2));
+		}
+
+		if (eventTypeId == VONStopSpeakingEventTypeID)
+		{
+			VONStopSpeakingEventParams stop_params;
+			if (Class.CastTo(stop_params, params))
+				BattleRoyaleUtils.Trace(string.Format("VON probe: stop speaking name=%1 uid=%2", stop_params.param1, stop_params.param2));
+		}
+	}
 }

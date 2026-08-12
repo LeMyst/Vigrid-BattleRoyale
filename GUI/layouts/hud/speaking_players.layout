@@ -1,0 +1,70 @@
+FrameWidgetClass SpeakingRoot {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ priority 1100
+ {
+  PanelWidgetClass SpeakingPanel {
+   visible 1
+   ignorepointer 1
+   position 24 700
+   size 256 200
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0
+   {
+    PanelWidgetClass SpeakingTitleBg {
+     visible 1
+     ignorepointer 1
+     position 0 0
+     size 256 22
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0 0 0 0.85
+     style DayZDefaultPanel
+     {
+      TextWidgetClass SpeakingTitle {
+       inheritalpha 0
+       ignorepointer 1
+       position 6 0
+       size 250 22
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       color 1 1 1 1
+       text "#STR_BR_SPEAKING_TITLE"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "size to text h" 0
+       "size to text v" 0
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass SpeakingRows {
+     visible 1
+     ignorepointer 1
+     position 0 24
+     size 256 176
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0 0 0 0
+    }
+   }
+  }
+ }
+}

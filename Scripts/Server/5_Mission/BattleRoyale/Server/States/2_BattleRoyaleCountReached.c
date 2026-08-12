@@ -42,6 +42,11 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
         // Track the number of players at start
         i_NumStartingPlayers = m_Players.Count();
 
+        //--- Restrict voice to party members for the whole frozen window (this state, spawn
+        //--- selection and prepare). The server is locked from here, so the roster is fixed and the
+        //--- matrix never needs rebuilding. Cleared again in 5_BattleRoyaleStartMatch.
+        BattleRoyaleVoice.ApplyPartyOnly( GetPlayers() );
+
         MessagePlayersUntranslated("STR_BR_ANNOUNCEMENT_PLAYERCOUNTREACHED", i_TimeToStart.ToString(), second);
         m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
@@ -59,6 +64,8 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 
     void DoStart()
     {
-        Deactivate();
+        //--- Deferred: this is a timer callback, i.e. inside TimerQueue.Tick. See
+        //--- BattleRoyaleState.DeactivateDeferred().
+        DeactivateDeferred();
     }
 }

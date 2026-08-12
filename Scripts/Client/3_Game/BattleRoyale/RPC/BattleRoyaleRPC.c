@@ -17,6 +17,8 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLeaderboard", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpeakingPlayers", this );
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 
@@ -61,6 +63,13 @@ class BattleRoyaleRPC
 		lb_group.Clear();
 		lb_season = 1;
 		leaderboard_seq = 0;
+		//--- Defaults match BattleRoyaleGameData, so a missed sync leaves shipped behaviour rather
+		//--- than a silently dead feature. The server corrects both on connect.
+		speaking_list_enabled = true;
+		speaking_list_during_match = true;
+		speaking_names.Clear();
+		speaking_self_index = -1;
+		speaking_seq = 0;
 	}
 
 	// Set the number of players and groups
@@ -81,6 +90,54 @@ class BattleRoyaleRPC
 			BattleRoyaleUtils.Trace(string.Format("SetPlayerCount: %1 %2", data.param1, data.param2));
 			nb_players = data.param1;
 			nb_groups = data.param2;
+		}
+	}
+
+	// Voice settings
+
+	bool speaking_list_enabled = true;
+	bool speaking_list_during_match = true;
+
+	// Who this player can currently hear. Pushed by the server only when the set changes - the
+	// client cannot work this out for itself, because IsPlayerSpeaking() returns the local mic
+	// level for every entity client-side (see BattleRoyaleConstants.c).
+
+	ref array<string> speaking_names = new array<string>();
+	int speaking_self_index = -1;
+	int speaking_seq = 0;
+
+	void SetSpeakingPlayers(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<array<string>, int> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SETSPEAKINGPLAYERS RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			speaking_names.Clear();
+			if ( data.param1 )
+				speaking_names.InsertAll( data.param1 );
+
+			speaking_self_index = data.param2;
+			speaking_seq++;
+		}
+	}
+
+	void SetVoiceSettings(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<bool, bool> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SETVOICESETTINGS RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("SetVoiceSettings: %1 %2", data.param1, data.param2));
+			speaking_list_enabled = data.param1;
+			speaking_list_during_match = data.param2;
 		}
 	}
 

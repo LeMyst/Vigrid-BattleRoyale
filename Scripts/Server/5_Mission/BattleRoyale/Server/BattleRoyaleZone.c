@@ -489,8 +489,17 @@ class BattleRoyaleZone
     vector GetValidPositionSquare(float min_x, float max_x, float min_z, float max_z)
     {
         vector new_center = "0 0 0";
-        while(true)
+
+        //--- Bounded for the same reason as GetValidPositionNewCircle: an unbounded retry on
+        //--- IsSafeZoneCenter hangs the server outright if the search box happens to be all water.
+        //--- On exhaustion we hand back the last candidate rather than failing the match - a final
+        //--- circle placed badly is a degraded round, a frozen server is a dead one - and warn so the
+        //--- cause is visible in the log. Warn, not Error: Error raises a VM exception.
+        int max_try = 500;
+        while(max_try > 0)
         {
+            max_try--;
+
             new_center[0] = Math.RandomFloat(min_x, max_x);
             new_center[2] = Math.RandomFloat(min_z, max_z);
 
@@ -499,8 +508,11 @@ class BattleRoyaleZone
 
             new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
 
-            break;
+            return new_center;
         }
+
+        BattleRoyaleUtils.Warn("GetValidPositionSquare found no safe position in x[" + min_x + ", " + max_x + "] z[" + min_z + ", " + max_z + "] after 500 attempts - using the last candidate, which may be on water.");
+        new_center[1] = GetGame().SurfaceY(new_center[0], new_center[2]);
 
         return new_center;
     }
@@ -522,6 +534,32 @@ class BattleRoyaleZone
         {
             max_try--;
 
+            //--- The budget check belongs HERE, before any rejection path, not inside one of them.
+            //--- It used to live only in the "not inside the world" branch below, so a candidate that
+            //--- was inside the world but landed on water hit a bare `continue` and never consumed
+            //--- the budget in a way that could end the loop. On a mostly-sea map that spins forever
+            //--- and floods the log - observed on Sakhal as 4.6 million "not IsSafeZoneCenter" lines
+            //--- in four minutes, with the server hung during zone generation and never reaching the
+            //--- lobby. Every `continue` below is now bounded by this one check.
+            if(max_try <= 0)
+            {
+                //--- One good candidate is enough - take it rather than failing the match.
+                if ( potentialpos != "0 0 0" )
+                {
+                    potentialpos[1] = GetGame().SurfaceY(potentialpos[0], potentialpos[2]);
+                    return potentialpos;
+                }
+
+                //--- Nothing at all was found. Clamping the last rejected position into the
+                //--- world would hand back a circle that is not contained by its parent, so the
+                //--- match would be unplayable anyway - fail loudly instead.
+                //--- RequestExit is asked for BEFORE the Error: BattleRoyaleUtils.Error raises a VM
+                //--- exception, so anything after it may not run.
+                GetGame().RequestExit(0);
+                BattleRoyaleUtils.Error("Could not place a zone circle of radius " + new_radius + " around " + circle_center + " (radius " + old_radius + ") after 500 attempts. Shutting the server down - a match cannot be played without a full set of circles.");
+                return "0 0 0";  //--- sentinel: caller aborts generation
+            }
+
             float distance = Math.RandomFloatInclusive(DAYZBR_ZS_MIN_DISTANCE_PERCENT * max_distance, DAYZBR_ZS_MAX_DISTANCE_PERCENT * max_distance); //distance change from previous center
 
             // Get direction toward map center
@@ -542,24 +580,6 @@ class BattleRoyaleZone
             if(new_center[0] < new_radius || new_center[2] < new_radius || (new_center[0] + new_radius) > world_size || (new_center[2] + new_radius) > world_size)
             {
                 BattleRoyaleUtils.Trace("not inside the world " + new_center[0] + " " + new_center[2] + " " + world_size + " " + new_radius);
-
-                if(max_try <= 0)
-                {
-                    //--- One good candidate is enough - take it rather than failing the match.
-                    if ( potentialpos != "0 0 0" )
-                    {
-                        potentialpos[1] = GetGame().SurfaceY(potentialpos[0], potentialpos[2]);
-                        return potentialpos;
-                    }
-
-                    //--- Nothing at all was found. Clamping the last rejected position into the
-                    //--- world would hand back a circle that is not contained by its parent, so the
-                    //--- match would be unplayable anyway - fail loudly instead.
-                    BattleRoyaleUtils.Error("Could not place a zone circle of radius " + new_radius + " around " + circle_center + " (radius " + old_radius + ") after 500 attempts. Shutting the server down - a match cannot be played without a full set of circles.");
-                    GetGame().RequestExit(0);
-                    return "0 0 0";  //--- sentinel: caller aborts generation
-                }
-
                 continue;
             }
 
@@ -660,9 +680,29 @@ class BattleRoyaleZone
 		string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
 		BattleRoyaleUtils.Trace(cfg);
 
-		float radius, theta, x, z;
-		while(true)
+		//--- No POIs means s_POI.Get() below would index an empty set, so bail before the loop.
+		if(!s_POI || s_POI.Count() == 0)
 		{
+			BattleRoyaleUtils.Warn("GetRandomPOI has no POIs loaded for " + GetGame().GetWorldName() + " - falling back to the middle of the map.");
+
+			vector fallback = "0 0 0";
+			fallback[0] = GetGame().GetWorld().GetWorldSize() / 2;
+			fallback[2] = GetGame().GetWorld().GetWorldSize() / 2;
+			fallback[1] = GetGame().SurfaceY(fallback[0], fallback[2]);
+
+			return fallback;
+		}
+
+		//--- Bounded for the same reason as the other two position searches - an unbounded retry on
+		//--- IsSafeZoneCenter hangs zone generation if every POI roll lands on water. On exhaustion
+		//--- the last candidate is used and warned about, rather than freezing the server.
+		float radius, theta, x, z;
+		int max_try = 500;
+		bool found_poi = false;
+		while(max_try > 0 && !found_poi)
+		{
+			max_try--;
+
 			ref array<float> poi = s_POI.Get(Math.RandomInt(0, s_POI.Count()));
 
 			radius = 10 * Math.Sqrt( Math.RandomFloat(0, 1) );
@@ -673,8 +713,13 @@ class BattleRoyaleZone
 			if(!IsSafeZoneCenter(x, z))
 				continue;
 
-			break;
+			found_poi = true;
 		}
+
+		//--- Tracks success explicitly rather than testing max_try, which would warn spuriously when
+		//--- the very last attempt is the one that succeeds.
+		if(!found_poi)
+			BattleRoyaleUtils.Warn("GetRandomPOI found no safe POI position after 500 attempts - using the last candidate, which may be on water.");
 
 		vector poi_position = "0 0 0";
 		poi_position[0] = x;
