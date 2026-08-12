@@ -280,11 +280,52 @@ class BattleRoyaleRPC
 		{
 			BattleRoyaleUtils.Trace(string.Format("SetResolvedName: %1 -> %2", data.param2, data.param3));
 
+			//--- An empty name is the server saying "drop whatever you hold for this uid" - the player
+			//--- has set a name of their own, so theirs is the one to show from now on. See
+			//--- BattleRoyaleNameService.BroadcastClearedName.
+			if ( data.param3 == "" )
+			{
+				ClearResolvedName( data.param1 );
+				return;
+			}
+
 			if ( data.param1 != "" )
 				resolved_by_uid.Set( data.param1, data.param3 );
 
 			if ( data.param2 != "" )
 				resolved_by_name.Set( data.param2, data.param3 );
+		}
+	}
+
+	/**
+	 *  Forget the override held for one player.
+	 *
+	 *  resolved_by_name is keyed on the name the player was WEARING when they were resolved, which is
+	 *  not something we still know - but its value is the override we are dropping, so every key
+	 *  pointing at that goes with it. Collected first and removed second: removing while walking a map
+	 *  moves the ground under the walk.
+	 */
+	void ClearResolvedName( string uid )
+	{
+		if ( uid == "" )
+			return;
+		if ( !resolved_by_uid.Contains( uid ) )
+			return;
+
+		string stale = resolved_by_uid.Get( uid );
+		resolved_by_uid.Remove( uid );
+
+		array<string> doomed = new array<string>();
+
+		for ( int i = 0; i < resolved_by_name.Count(); i++ )
+		{
+			if ( resolved_by_name.GetElement( i ) == stale )
+				doomed.Insert( resolved_by_name.GetKey( i ) );
+		}
+
+		for ( int j = 0; j < doomed.Count(); j++ )
+		{
+			resolved_by_name.Remove( doomed.Get( j ) );
 		}
 	}
 

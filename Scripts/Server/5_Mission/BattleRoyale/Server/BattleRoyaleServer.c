@@ -331,14 +331,20 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         //Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
         player.player_steamid = player.GetIdentity().GetPlainId();
-        //Same reason: the leaderboard has to render a name for someone who already left.
-        player.player_name = BattleRoyaleNameService.ResolveIdentity( player.GetIdentity() );
 
         //--- A player who never set a name in the launcher connects as "Survivor", and the engine
         //--- turns a second one into "Survivor (2)". Queue a Steam lookup; the answer lands a few
         //--- seconds later and rewrites player_name plus vanilla's own cached name. No-op unless
         //--- enable_steam_name_lookup is on.
+        //---
+        //--- Above the player_name seed below, and that order is load-bearing: this call is also where
+        //--- a returning player who has SINCE set a name of their own has their old override dropped,
+        //--- and a ResolveIdentity() taken before that decision would bake the stale name into
+        //--- player_name with nothing left to undo it.
         BattleRoyaleNameService.RequestForPlayer( player );
+
+        //Copy the display name too: the leaderboard has to render a name for someone who already left.
+        player.player_name = BattleRoyaleNameService.ResolveIdentity( player.GetIdentity() );
 
         //--- And hand them everyone else's resolved names, so a late joiner does not see "Survivor"
         //--- on players the server corrected before they arrived.

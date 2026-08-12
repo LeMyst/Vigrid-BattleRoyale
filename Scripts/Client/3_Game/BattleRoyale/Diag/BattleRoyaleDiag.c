@@ -70,6 +70,15 @@ class BattleRoyaleDiag
     //--- Party roster size to fabricate.
     static int party_size = 3;
 
+    //--- How many connected players to fabricate for the party menu's left column. Separate from
+    //--- party_size: the roster and the online list are two independent fabrications, and the point
+    //--- of the second is having somebody to invite INTO the first.
+    //---
+    //--- MUST match the default declared on the "Fake Online Players" range in PluginDiagMenu. A
+    //--- range callback only fires when the value is CHANGED, so a mismatch means pressing Apply
+    //--- without touching the slider silently uses this number rather than the one on screen.
+    static int party_online_count = 20;
+
     //--- Spectate range test: how far from the spectator's corpse to fling the watched target.
     //--- Held client-side and sent only when "TP Target: Go" is pressed, for the same reason
     //--- goto_state is - a range callback plausibly fires on every step while scrubbing.
@@ -108,6 +117,7 @@ class BattleRoyaleDiag
         kf_cause = 0;
         kf_with_weapon = true;
         party_size = 3;
+        party_online_count = 20;
         tp_target_distance = 1200;
 
         goto_state = 0;

@@ -18,7 +18,7 @@
  *  is compiled at all, so Match Flow and Spawn / Teleport doing nothing there is expected.
  *
  *  ID BUDGET. Ids come from GetModdedDiagID(), which counts up from DiagMenuIDs.MODDED_MENU (~235)
- *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 56,
+ *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 60,
  *  measured from the canary line rather than counted by hand (the previous "47" was one short). Do
  *  not allocate an id for something a bag field can carry: an entry whose value is only ever read
  *  when another entry fires does not need its id kept.
@@ -67,6 +67,10 @@ modded class PluginDiagMenu
 	protected int m_BRDiagPartyMenuID;
 	protected int m_BRDiagPartySizeID;
 	protected int m_BRDiagPartyApplyID;
+	protected int m_BRDiagPartyOnlineCountID;
+	protected int m_BRDiagPartyOnlineApplyID;
+	protected int m_BRDiagPartyInviteMeID;
+	protected int m_BRDiagPartyOfflineID;
 	protected int m_BRDiagPartyPingID;
 	protected int m_BRDiagPartyClearID;
 
@@ -141,6 +145,10 @@ modded class PluginDiagMenu
 		m_BRDiagPartyMenuID = GetModdedDiagID();
 		m_BRDiagPartySizeID = GetModdedDiagID();
 		m_BRDiagPartyApplyID = GetModdedDiagID();
+		m_BRDiagPartyOnlineCountID = GetModdedDiagID();
+		m_BRDiagPartyOnlineApplyID = GetModdedDiagID();
+		m_BRDiagPartyInviteMeID = GetModdedDiagID();
+		m_BRDiagPartyOfflineID = GetModdedDiagID();
 		m_BRDiagPartyPingID = GetModdedDiagID();
 		m_BRDiagPartyClearID = GetModdedDiagID();
 
@@ -242,12 +250,33 @@ modded class PluginDiagMenu
 #ifdef VIGRID_PARTY
 			//--- Party. Normally three clients: two partied plus one solo, because a round never
 			//--- advances while everyone is in one group.
+			//---
+			//--- Two independent fabrications, and both are needed to reach the whole party menu.
+			//--- "Apply Fake Party" builds the ROSTER - the menu's right column, plus the HUD panel,
+			//--- the world nametags and the map's team layer. "Apply Fake Online" builds the ONLINE
+			//--- LIST - the left column, which is what every outgoing action needs a target from and
+			//--- which is empty on a one-client session because it comes from a real VP_PlayerList.
+			//---
+			//--- With either applied the client is LATCHED: every server push that would overwrite
+			//--- the fabrication is discarded, and the menu's buttons act on it locally instead of
+			//--- going on the wire. So Invite / Kick / Promote / Leave / Disband / Accept / Decline
+			//--- all work solo. "Clear Fakes" is what hands the session back to the real server, and
+			//--- it must be pressed - a latch left down looks exactly like a broken connection.
 			DiagMenu.RegisterMenu(m_BRDiagPartyMenuID, "Party", m_BRDiagRootMenuID);
 			{
 				DiagMenu.RegisterRange(m_BRDiagPartySizeID, "", "Fake Party Size", m_BRDiagPartyMenuID, "1, 6, 3, 1");
 				DiagMenu.RegisterBool(m_BRDiagPartyApplyID, "", "Apply Fake Party", m_BRDiagPartyMenuID);
+				//--- Ranges up to a realistically full server. Two reasons for the headroom: past the
+				//--- default max_party_size of 4, inviting is the only way to see the Invite buttons
+				//--- disappear on a full party; and the column fits about 8 rows, so the default of
+				//--- 20 overflows it immediately - which is what makes scrolling testable at all
+				//--- without touching the slider first.
+				DiagMenu.RegisterRange(m_BRDiagPartyOnlineCountID, "", "Fake Online Players", m_BRDiagPartyMenuID, "0, 60, 20, 1");
+				DiagMenu.RegisterBool(m_BRDiagPartyOnlineApplyID, "", "Apply Fake Online", m_BRDiagPartyMenuID);
+				DiagMenu.RegisterBool(m_BRDiagPartyInviteMeID, "", "Fake Incoming Invite", m_BRDiagPartyMenuID);
+				DiagMenu.RegisterBool(m_BRDiagPartyOfflineID, "", "Toggle Member Offline", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyPingID, "", "Add Fake Ping", m_BRDiagPartyMenuID);
-				DiagMenu.RegisterBool(m_BRDiagPartyClearID, "", "Clear Fake Party", m_BRDiagPartyMenuID);
+				DiagMenu.RegisterBool(m_BRDiagPartyClearID, "", "Clear Fakes", m_BRDiagPartyMenuID);
 			}
 #endif
 

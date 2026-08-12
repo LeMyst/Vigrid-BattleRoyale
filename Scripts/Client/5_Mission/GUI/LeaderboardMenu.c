@@ -13,7 +13,8 @@
  *  when a match ends, and the server restarts its process between matches, so the cache never
  *  outlives the data it holds.
  *
- *  Rows are pooled and positioned manually, and surplus rows are hidden rather than destroyed.
+ *  Rows are pooled, laid out by the WrapSpacer they hang off rather than positioned by hand, and
+ *  surplus rows are destroyed rather than hidden - see TrimPool for why the distinction matters.
  */
 class LeaderboardMenu extends UIScriptedMenu
 {
@@ -142,11 +143,25 @@ class LeaderboardMenu extends UIScriptedMenu
         return row;
     }
 
-    private void HideFrom(int first)
+    /**
+     *  Destroy every pooled row from `first` on.
+     *
+     *  Unlink, not Show(false), which is what this used to do. A spacer lays out the children it
+     *  HAS, and LeaderboardRows is a WrapSpacer - so a hidden row is still a child holding its slot,
+     *  and the scroll range stays as long as the LONGEST ladder ever displayed. That is reachable
+     *  here in one click: Group ships fewer entries than Solo, so switching to it left the shorter
+     *  list followed by a screen of nothing to scroll through.
+     *
+     *  Walked backwards so each removal is of the last element and cannot renumber an index still to
+     *  be visited. RemoveOrdered rather than Remove, because vanilla's Remove() fills the hole with
+     *  the LAST element.
+     */
+    private void TrimPool(int first)
     {
-        for (int i = first; i < m_RowPool.Count(); i++)
+        for (int i = m_RowPool.Count() - 1; i >= first; i--)
         {
-            m_RowPool.Get(i).Show(false);
+            m_RowPool.Get(i).Unlink();
+            m_RowPool.RemoveOrdered(i);
         }
     }
 
@@ -184,7 +199,7 @@ class LeaderboardMenu extends UIScriptedMenu
             shown = shown + 1;
         }
 
-        HideFrom(shown);
+        TrimPool(shown);
 
         //--- Scrolling is entirely declarative: LeaderboardRows is a WrapSpacerWidget carrying
         //--- "Size To Content V", so it grows with the rows and the ScrollWidget scrolls it. An
@@ -261,6 +276,29 @@ class LeaderboardMenu extends UIScriptedMenu
         BattleRoyaleRPC rpc = BattleRoyaleRPC.GetInstance();
         m_LastSeq = rpc.leaderboard_seq;
         RefreshRows(rpc, rpc.GetLeaderboardBoard(m_Board));
+    }
+
+    /**
+     *  Scroll the ladder on the mouse wheel.
+     *
+     *  A ScrollWidget does not do this by itself: nothing in the engine turns a wheel event into a
+     *  scroll, and no vanilla script calls VScrollStep anywhere. Vanilla's own ScrollBarContainer
+     *  implements the wheel by hand (scrollbarcontainer.c:220), which is the precedent here.
+     *
+     *  Note this is invisible to the trace in RefreshRows: content height and IsScrollbarVisible()
+     *  were both already correct, which is exactly why it went unnoticed - the bar is drawn, so the
+     *  list looks scrollable and simply is not.
+     *
+     *  No hit test, unlike VigridPartyMenu: this screen has one list, so any wheel over the menu is
+     *  meant for it. Sign follows vanilla's convention - a positive wheel scrolls UP.
+     */
+    override bool OnMouseWheel(Widget w, int x, int y, int wheel)
+    {
+        if (!m_Scroll)
+            return super.OnMouseWheel(w, x, y, wheel);
+
+        m_Scroll.VScrollStep(-wheel);
+        return true;
     }
 
     override bool OnClick(Widget w, int x, int y, int button)

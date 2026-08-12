@@ -20,6 +20,11 @@ class VigridPartyClient
     private bool m_RequestedSync;
     private int m_PingCooldownDueMs;
 
+#ifdef DIAG_DEVELOPER
+    //! Last frame's latch state, so Update can spot the falling edge and re-sync.
+    private bool m_WasFakeSession;
+#endif
+
     /**
      *  Traced step by step on purpose. This runs inside MissionGameplay.OnInit, which is early
      *  enough that a failure here stalls the client on the loading screen with nothing after the
@@ -45,6 +50,10 @@ class VigridPartyClient
         m_RequestedSync = false;
         m_PingCooldownDueMs = 0;
 
+#ifdef DIAG_DEVELOPER
+        m_WasFakeSession = false;
+#endif
+
         VigridPartyLog.Debug("VigridPartyClient ctor: done");
     }
 
@@ -58,6 +67,18 @@ class VigridPartyClient
     void Update(float timeslice)
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+#ifdef DIAG_DEVELOPER
+        //--- Re-sync the moment a fabricated session is cleared. Every push was being discarded
+        //--- while the latch was down, including the roster, so without this the party stays empty
+        //--- until the server next happens to broadcast one - which on a live server it only does
+        //--- when the composition changes, i.e. possibly never.
+        bool faking_now = IsFakeSession();
+        if (m_WasFakeSession && !faking_now)
+            m_RequestedSync = false;
+
+        m_WasFakeSession = faking_now;
+#endif
 
         //--- Ask once, on the first tick after the mission is live, for settings plus roster. The
         //--- server also pushes both on connect; this covers a client that loaded late.
@@ -125,23 +146,68 @@ class VigridPartyClient
 
     // ---------------------------------------------------------------- client -> server
 
+    /**
+     *  DIAG ONLY - is the diag menu currently driving a fabricated party?
+     *
+     *  Every command below asks this first. The menu targets uids the server has never heard of
+     *  while a fake party is up, so each one is applied to the fabrication here instead of going on
+     *  the wire; that is what makes Invite, Kick, Promote, Leave, Disband and the invite banner
+     *  reachable from a single client. Diverting them in this class rather than in VigridPartyMenu
+     *  keeps "the single place client -> server commands are sent from" true, and leaves the menu
+     *  itself completely unaware that any of this exists.
+     *
+     *  Compiles to a constant false in a release build, so nothing below changes shape.
+     */
+    private bool IsFakeSession()
+    {
+#ifdef DIAG_DEVELOPER
+        if (VigridPartyAPI.IsDebugFakeSession())
+            return true;
+#endif
+
+        return false;
+    }
+
     void RequestSync()
     {
+        //--- Nothing would come back that is not discarded, so the poll is simply not sent.
+        if (IsFakeSession())
+            return;
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_REQUEST_SYNC, NULL, true);
     }
 
     void RequestPlayerList()
     {
+        if (IsFakeSession())
+            return;
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_REQUEST_PLAYERLIST, NULL, true);
     }
 
     void CreateParty()
     {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugCreateParty();
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_CREATE, NULL, true);
     }
 
     void Invite(string uid)
     {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugInvite(uid);
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE, new Param1<string>(uid), true);
     }
 
@@ -150,6 +216,17 @@ class VigridPartyClient
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
         if (!rpc.HasInvite())
             return;
+
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            //--- DebugRespondToInvite clears the invite and bumps the sequence itself; the tracker
+            //--- still has to follow, or AnnounceInvite re-announces a banner nobody can act on.
+            VigridPartyAPI.DebugRespondToInvite(accept);
+            m_LastInviteSeq = rpc.invite_seq;
+            return;
+        }
+#endif
 
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE_RESPOND, new Param2<string, bool>(rpc.invite_id, accept), true);
 
@@ -161,21 +238,53 @@ class VigridPartyClient
 
     void Kick(string uid)
     {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugKick(uid);
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_KICK, new Param1<string>(uid), true);
     }
 
     void TransferLeader(string uid)
     {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugPromote(uid);
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_TRANSFER_LEADER, new Param1<string>(uid), true);
     }
 
     void Leave()
     {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugLeaveParty();
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_LEAVE, NULL, true);
     }
 
     void Disband()
     {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugDisbandParty();
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_DISBAND, NULL, true);
     }
 
@@ -242,6 +351,16 @@ class VigridPartyClient
 
         m_PingCooldownDueMs = now_ms + rpc.ping_cooldown_ms;
 
+#ifdef DIAG_DEVELOPER
+        //--- A fabricated roster makes HasParty() true above, so without this the key would send a
+        //--- real RPC whose answer the latch discards - a marker that never appears.
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugAddPing(contact_pos, 0);
+            return;
+        }
+#endif
+
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_ADD, new Param1<vector>(contact_pos), true);
     }
 
@@ -254,6 +373,15 @@ class VigridPartyClient
             return;
         if (!rpc.HasParty())
             return;
+
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugClearPings();
+            Announce("STR_PARTY_PING_CLEARED");
+            return;
+        }
+#endif
 
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_CLEAR, NULL, true);
         Announce("STR_PARTY_PING_CLEARED");

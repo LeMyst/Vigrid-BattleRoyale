@@ -537,22 +537,88 @@ class VigridPartyAPI
 
 #ifdef DIAG_DEVELOPER
     /**
-     *  Fabricate a party of `member_count` teammates around the local player. Diag builds only.
+     *  A LOCAL SANDBOX FOR THE PARTY UI. Diag builds only.
      *
      *  A party needs three real clients to exercise properly - two partied plus one solo, because a
-     *  round never advances while everyone is in one group - so every renderer that reads a roster
-     *  (the HUD panel, the world nametags, the map's team layer) is otherwise untestable alone.
-     *  This writes the same fields the VP_Roster and VP_TeamState handlers write, so every consumer
-     *  runs unmodified.
+     *  round never advances while everyone is in one group - so nothing that reads a roster (the HUD
+     *  panel, the world nametags, the map's team layer, the menu itself) is testable alone.
      *
-     *  Slot 0 is always the local player, exactly as a real roster has it: consumers resolve their
-     *  own position from GetGame().GetPlayer() via GetSelfIndex(), and ClientData excludes the local
-     *  player, so a fabricated self position would be the one value that never updates.
+     *  Two halves, and the second is what makes the menu interactive. DebugSetRoster fabricates the
+     *  ROSTER, which is the menu's right column. DebugSetPlayerList fabricates the ONLINE LIST,
+     *  which is its left column and the thing every outgoing action needs a target from. Everything
+     *  below writes the same fields the VP_* handlers write, so every consumer runs unmodified.
      *
-     *  Teammates are placed on a ring around the player so they land at different bearings and
-     *  distances - a cluster at one point would not exercise the nametag edge-clamp at all.
+     *  THE LATCH. Setting debug_fake_session makes VigridPartyRPC discard every incoming server push
+     *  that would overwrite fabricated state - see VigridPartyRPC.DebugSuppressesPush. Without it a
+     *  fake list survives at most one poll on a live server, because VigridPartyMenu asks for the
+     *  real one every three seconds. VigridPartyClient's send methods read the same latch and apply
+     *  each command here instead of putting it on the wire, so Invite / Kick / Promote / Leave /
+     *  Disband / Accept / Decline all act on the fabrication. DebugClearFakes drops it again.
      */
-    static void DebugSetRoster(int member_count)
+
+    //--- The fabricated identities. Uids only have to be unique and recognisable in a log: nothing
+    //--- resolves them against a real player, and FindLocalPlayer simply never matches one.
+    private static const string DEBUG_PARTY_ID = "debug-party";
+    private static const string DEBUG_SELF_UID = "debug-self";
+    private static const string DEBUG_SELF_NAME = "You";
+    private static const string DEBUG_MEMBER_PREFIX = "debug-member-";
+    private static const string DEBUG_ONLINE_PREFIX = "debug-online-";
+    private static const string DEBUG_INVITE_ID = "debug-invite";
+    private static const string DEBUG_INVITER_UID = "debug-inviter";
+    private static const string DEBUG_INVITER_NAME = "Fake Inviter";
+
+    //! Whether the diag menu is currently driving a fabricated party. The one thing 5_Mission asks.
+    static bool IsDebugFakeSession()
+    {
+        return VigridPartyRPC.GetInstance().debug_fake_session;
+    }
+
+    /**
+     *  Where the `ring_slot`-th teammate stands.
+     *
+     *  Teammates go on a ring around the player so they land at different bearings and distances - a
+     *  cluster at one point would not exercise the nametag edge-clamp at all.
+     */
+    private static vector DebugRingPos(vector origin, int ring_slot, int ring_total)
+    {
+        if (ring_total < 1)
+            ring_total = 1;
+
+        float bearing = (ring_slot * 360.0) / ring_total;
+        float distance = 25.0 + (ring_slot * 35.0);
+
+        vector offset = vector.Zero;
+        offset[0] = Math.Sin(bearing * Math.DEG2RAD) * distance;
+        offset[2] = Math.Cos(bearing * Math.DEG2RAD) * distance;
+
+        vector result = origin + offset;
+        result[1] = GetGame().SurfaceY(result[0], result[2]);
+        return result;
+    }
+
+    /**
+     *  Refill state_* from whatever the fabricated roster currently holds, and raise the repaint
+     *  edges. EVERY mutation below ends here.
+     *
+     *  Three invariants live in this one place, and each of them has to hold or the party silently
+     *  disappears rather than failing:
+     *
+     *  - the state_* arrays must be EXACTLY as long as roster_uids, since consumers index them with
+     *    one counter;
+     *  - state_version must equal roster_version, or IsMemberOnline and IsMemberVisible both read
+     *    "no usable state";
+     *  - state_recv_ms / state_prev_recv_ms must be current, or IsStateStale() is true from the
+     *    first frame and every renderer dims or hides the whole party.
+     *
+     *  roster_seq is bumped here too. It is the menu's ONLY repaint trigger for the member column
+     *  (VigridPartyMenu.Update), and it also forces the online column to repaint, so a mutation that
+     *  did not bump it would not be visible until something else changed.
+     *
+     *  Flags are reset to online+alive for every slot, so a member toggled offline comes back online
+     *  on the next mutation. That is a deliberate simplification: carrying flags across an insert or
+     *  a remove means tracking them by uid, and re-pressing Toggle Member Offline is one keystroke.
+     */
+    private static void DebugRebuildState()
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
 
@@ -561,37 +627,33 @@ class VigridPartyAPI
         if (local_player)
             origin = local_player.GetPosition();
 
-        rpc.roster_uids.Clear();
-        rpc.roster_names.Clear();
         rpc.state_positions.Clear();
         rpc.state_prev_positions.Clear();
         rpc.state_health_level.Clear();
         rpc.state_blood_level.Clear();
         rpc.state_flags.Clear();
 
-        //--- Slot 0: you.
-        rpc.roster_uids.Insert("debug-self");
-        rpc.roster_names.Insert("You");
-        rpc.state_positions.Insert(origin);
-        rpc.state_prev_positions.Insert(origin);
-        rpc.state_health_level.Insert(0);
-        rpc.state_blood_level.Insert(0);
-        rpc.state_flags.Insert(VIGRID_PARTY_FLAG_ONLINE | VIGRID_PARTY_FLAG_ALIVE);
+        int count = rpc.roster_uids.Count();
 
-        for (int i = 0; i < member_count; i++)
+        //--- Your own slot takes no ring position, so the ring is one shorter than the roster.
+        int ring_total = count;
+        if (rpc.self_index >= 0 && rpc.self_index < count)
+            ring_total = count - 1;
+
+        int ring_slot = 0;
+
+        for (int i = 0; i < count; i++)
         {
-            float bearing = (i * 360.0) / member_count;
-            float distance = 25.0 + (i * 35.0);
+            //--- Your own slot keeps the real position. ClientData excludes the local player, so a
+            //--- fabricated self position would be the one value that never updates - which is also
+            //--- why GetMemberPosition must not be asked for it.
+            vector member_pos = origin;
+            if (i != rpc.self_index)
+            {
+                member_pos = DebugRingPos(origin, ring_slot, ring_total);
+                ring_slot = ring_slot + 1;
+            }
 
-            vector offset = vector.Zero;
-            offset[0] = Math.Sin(bearing * Math.DEG2RAD) * distance;
-            offset[2] = Math.Cos(bearing * Math.DEG2RAD) * distance;
-
-            vector member_pos = origin + offset;
-            member_pos[1] = GetGame().SurfaceY(member_pos[0], member_pos[2]);
-
-            rpc.roster_uids.Insert("debug-member-" + i);
-            rpc.roster_names.Insert("Fake " + (i + 1));
             rpc.state_positions.Insert(member_pos);
             rpc.state_prev_positions.Insert(member_pos);
             rpc.state_health_level.Insert(i % 5);
@@ -599,44 +661,422 @@ class VigridPartyAPI
             rpc.state_flags.Insert(VIGRID_PARTY_FLAG_ONLINE | VIGRID_PARTY_FLAG_ALIVE);
         }
 
-        rpc.party_id = "debug-party";
-        rpc.self_index = 0;
-        rpc.leader_index = 0;
         rpc.roster_version = rpc.roster_version + 1;
         rpc.roster_seq = rpc.roster_seq + 1;
-
-        //--- state_version must match roster_version or every member reads as "no usable state".
         rpc.state_version = rpc.roster_version;
-
-        //--- Freshness. Without these IsStateStale() is true from the first frame and consumers dim
-        //--- or hide the whole fabricated party.
         rpc.state_recv_ms = GetGame().GetTime();
         rpc.state_prev_recv_ms = rpc.state_recv_ms;
-
-        VigridPartyLog.Debug("DebugSetRoster " + member_count + " fake members around " + origin);
     }
 
-    //! Drop the fabricated party. Same shape as VigridPartyRPC.Reset's roster half.
+    //! Index of `uid` in the fabricated online list, or -1.
+    private static int DebugFindListIndex(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int count = rpc.list_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            if (rpc.list_uids.Get(i) == uid)
+                return i;
+        }
+
+        return -1;
+    }
+
+    //! Index of `uid` in the fabricated roster, or -1.
+    private static int DebugFindRosterIndex(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int count = rpc.roster_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            if (rpc.roster_uids.Get(i) == uid)
+                return i;
+        }
+
+        return -1;
+    }
+
+    //! Put one fabricated player onto the online list. Never flagged as already partied: a member
+    //! that just left one is by definition available again.
+    private static void DebugAppendToList(string uid, string name)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.list_uids.Insert(uid);
+        rpc.list_names.Insert(name);
+        rpc.list_flags.Insert(0);
+        rpc.list_seq = rpc.list_seq + 1;
+    }
+
+    //! Hand every teammate back to the online list, so leaving or disbanding is a loop rather than
+    //! a one-way trip that empties the left column too.
+    private static void DebugReturnMembersToList()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int count = rpc.roster_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            if (i == rpc.self_index)
+                continue;
+
+            DebugAppendToList(rpc.roster_uids.Get(i), rpc.roster_names.Get(i));
+        }
+    }
+
+    /**
+     *  Fabricate a party of `member_count` teammates around the local player.
+     *
+     *  Slot 0 is always you, exactly as a real roster has it, and you are the leader - which is the
+     *  branch that shows Promote and Kick on every other row.
+     */
+    static void DebugSetRoster(int member_count)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.roster_uids.Clear();
+        rpc.roster_names.Clear();
+
+        //--- Slot 0: you.
+        rpc.roster_uids.Insert(DEBUG_SELF_UID);
+        rpc.roster_names.Insert(DEBUG_SELF_NAME);
+
+        for (int i = 0; i < member_count; i++)
+        {
+            rpc.roster_uids.Insert(DEBUG_MEMBER_PREFIX + i);
+            rpc.roster_names.Insert("Fake " + (i + 1));
+        }
+
+        rpc.party_id = DEBUG_PARTY_ID;
+        rpc.self_index = 0;
+        rpc.leader_index = 0;
+        rpc.debug_fake_session = true;
+
+        DebugRebuildState();
+
+        VigridPartyLog.Debug("DebugSetRoster " + member_count + " fake members");
+    }
+
+    //! Drop the fabricated party, keeping the online list and the latch. DebugClearFakes is the one
+    //! that hands the session back to the real server.
     static void DebugClearRoster()
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
 
         rpc.roster_uids.Clear();
         rpc.roster_names.Clear();
-        rpc.state_positions.Clear();
-        rpc.state_prev_positions.Clear();
-        rpc.state_health_level.Clear();
-        rpc.state_blood_level.Clear();
-        rpc.state_flags.Clear();
 
         rpc.party_id = "";
         rpc.self_index = -1;
         rpc.leader_index = -1;
-        rpc.roster_version = rpc.roster_version + 1;
-        rpc.roster_seq = rpc.roster_seq + 1;
-        rpc.state_version = rpc.roster_version;
+
+        DebugRebuildState();
 
         VigridPartyLog.Debug("DebugClearRoster");
+    }
+
+    /**
+     *  Fabricate `count` connected players for the menu's left column.
+     *
+     *  This is the half DebugSetRoster never covered. The left column is VigridPartyRPC.list_*,
+     *  filled only by a real VP_PlayerList reply, so solo there is nobody to invite and every
+     *  outgoing action in the menu was unreachable.
+     *
+     *  Names are plain strings on purpose: VigridPartyMenu.RefreshOnline sets the row text straight
+     *  from list_names, without the leading-'#' translation GetMemberName does for the roster, so a
+     *  stringtable key here would render as the key.
+     *
+     *  Every third entry is flagged as already being in a party - bit0, the same bit the server
+     *  sets - which is the only way to see the row whose Invite button is hidden.
+     */
+    static void DebugSetPlayerList(int count)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.list_uids.Clear();
+        rpc.list_names.Clear();
+        rpc.list_flags.Clear();
+
+        for (int i = 0; i < count; i++)
+        {
+            rpc.list_uids.Insert(DEBUG_ONLINE_PREFIX + i);
+            rpc.list_names.Insert("Fake Player " + (i + 1));
+
+            int entry_flags = 0;
+            if ((i % 3) == 2)
+                entry_flags = 1;
+
+            rpc.list_flags.Insert(entry_flags);
+        }
+
+        rpc.debug_fake_session = true;
+        rpc.list_seq = rpc.list_seq + 1;
+
+        VigridPartyLog.Debug("DebugSetPlayerList " + count + " fake players");
+    }
+
+    //! Start a party of one, as the Create button does.
+    static void DebugCreateParty()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.roster_uids.Clear();
+        rpc.roster_names.Clear();
+        rpc.roster_uids.Insert(DEBUG_SELF_UID);
+        rpc.roster_names.Insert(DEBUG_SELF_NAME);
+
+        rpc.party_id = DEBUG_PARTY_ID;
+        rpc.self_index = 0;
+        rpc.leader_index = 0;
+        rpc.debug_fake_session = true;
+
+        DebugRebuildState();
+
+        VigridPartyLog.Debug("DebugCreateParty");
+    }
+
+    /**
+     *  Move a fabricated player from the online list into the party.
+     *
+     *  A real invite is a round trip the invitee has to accept; there is nobody to accept here, so
+     *  this collapses to the outcome. Inviting with no party creates one first, matching the
+     *  server's own VP_Invite.
+     */
+    static void DebugInvite(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int list_index = DebugFindListIndex(uid);
+        if (list_index < 0)
+        {
+            VigridPartyLog.Debug("DebugInvite: " + uid + " is not in the fake player list");
+            return;
+        }
+
+        if (rpc.roster_uids.Count() == 0)
+            DebugCreateParty();
+
+        string invited_name = rpc.list_names.Get(list_index);
+
+        //--- RemoveOrdered, never Remove: vanilla's Remove() fills the hole with the LAST element,
+        //--- which would reorder the column under the player's cursor between repaints.
+        rpc.list_uids.RemoveOrdered(list_index);
+        rpc.list_names.RemoveOrdered(list_index);
+        rpc.list_flags.RemoveOrdered(list_index);
+        rpc.list_seq = rpc.list_seq + 1;
+
+        rpc.roster_uids.Insert(uid);
+        rpc.roster_names.Insert(invited_name);
+
+        DebugRebuildState();
+
+        VigridPartyLog.Debug("DebugInvite " + uid + " joined the fake party");
+    }
+
+    /**
+     *  Fabricate an incoming invitation, so the banner, the chat prompt and the two buttons under it
+     *  are reachable without a second client.
+     */
+    static void DebugReceiveInvite()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.invite_id = DEBUG_INVITE_ID;
+        rpc.invite_inviter_uid = DEBUG_INVITER_UID;
+        rpc.invite_inviter_name = DEBUG_INVITER_NAME;
+        rpc.invite_expires_ms = GetGame().GetTime() + (rpc.invite_ttl_seconds * 1000);
+        rpc.invite_seq = rpc.invite_seq + 1;
+        rpc.debug_fake_session = true;
+
+        VigridPartyLog.Debug("DebugReceiveInvite from " + DEBUG_INVITER_NAME);
+    }
+
+    /**
+     *  Answer the fabricated invitation.
+     *
+     *  Accepting joins SOMEBODY ELSE'S party - the inviter takes slot 0 and you take slot 1. That is
+     *  the only way to reach the non-leader branches: RefreshOnline hides every Invite button and
+     *  RefreshMembers hides Promote and Kick whenever self_index != leader_index.
+     */
+    static void DebugRespondToInvite(bool accept)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.ClearInvite();
+        rpc.invite_seq = rpc.invite_seq + 1;
+
+        if (!accept)
+        {
+            VigridPartyLog.Debug("DebugRespondToInvite declined");
+            return;
+        }
+
+        rpc.roster_uids.Clear();
+        rpc.roster_names.Clear();
+        rpc.roster_uids.Insert(DEBUG_INVITER_UID);
+        rpc.roster_names.Insert(DEBUG_INVITER_NAME);
+        rpc.roster_uids.Insert(DEBUG_SELF_UID);
+        rpc.roster_names.Insert(DEBUG_SELF_NAME);
+
+        rpc.party_id = DEBUG_PARTY_ID;
+        rpc.self_index = 1;
+        rpc.leader_index = 0;
+        rpc.debug_fake_session = true;
+
+        DebugRebuildState();
+
+        VigridPartyLog.Debug("DebugRespondToInvite accepted, you are not the leader");
+    }
+
+    //! Remove a teammate and hand them back to the online list. Dissolves the party below two
+    //! members, exactly as the server's RemoveMemberInternal does.
+    static void DebugKick(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int roster_index = DebugFindRosterIndex(uid);
+        if (roster_index < 0)
+            return;
+
+        string kicked_name = rpc.roster_names.Get(roster_index);
+
+        rpc.roster_uids.RemoveOrdered(roster_index);
+        rpc.roster_names.RemoveOrdered(roster_index);
+
+        DebugAppendToList(uid, kicked_name);
+
+        //--- Removing a slot shifts every later slot down by one.
+        if (rpc.self_index > roster_index)
+            rpc.self_index = rpc.self_index - 1;
+        if (rpc.leader_index > roster_index)
+            rpc.leader_index = rpc.leader_index - 1;
+
+        VigridPartyLog.Debug("DebugKick " + uid);
+
+        if (rpc.roster_uids.Count() < 2)
+        {
+            DebugClearRoster();
+            return;
+        }
+
+        DebugRebuildState();
+    }
+
+    //! Hand leadership to a teammate.
+    static void DebugPromote(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int roster_index = DebugFindRosterIndex(uid);
+        if (roster_index < 0)
+            return;
+
+        rpc.leader_index = roster_index;
+
+        //--- Nothing about the members themselves changed, but roster_seq is the menu's only repaint
+        //--- trigger for that column, so the leader marker would not move until something else did.
+        DebugRebuildState();
+
+        VigridPartyLog.Debug("DebugPromote " + uid);
+    }
+
+    //! Leave the fabricated party. Teammates go back onto the online list so the loop can be run
+    //! again without re-applying the fake list.
+    static void DebugLeaveParty()
+    {
+        DebugReturnMembersToList();
+        DebugClearRoster();
+
+        VigridPartyLog.Debug("DebugLeaveParty");
+    }
+
+    //! Disband it. Locally indistinguishable from leaving - the difference is who else it reaches,
+    //! and here there is nobody else.
+    static void DebugDisbandParty()
+    {
+        DebugReturnMembersToList();
+        DebugClearRoster();
+
+        VigridPartyLog.Debug("DebugDisbandParty");
+    }
+
+    /**
+     *  Flip the last teammate between online and offline, so the grey "(Offline)" row and the HUD's
+     *  inactive styling are reachable.
+     *
+     *  Never your own slot: the renderers read your position from GetGame().GetPlayer() regardless,
+     *  so marking yourself offline would show nothing and confuse the reading of everything else.
+     */
+    static void DebugToggleMemberOffline()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int target = -1;
+        int count = rpc.roster_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            if (i == rpc.self_index)
+                continue;
+
+            target = i;
+        }
+
+        if (target < 0)
+            return;
+        if (target >= rpc.state_flags.Count())
+            return;
+
+        //--- Added and subtracted rather than masked with a complement: the bit's state is already
+        //--- known here, and EnfusionScript's support for '~' is not worth depending on.
+        int flags = rpc.state_flags.Get(target);
+        bool online = (flags & VIGRID_PARTY_FLAG_ONLINE) != 0;
+
+        if (online)
+            flags = flags - VIGRID_PARTY_FLAG_ONLINE;
+        else
+            flags = flags + VIGRID_PARTY_FLAG_ONLINE;
+
+        rpc.state_flags.Set(target, flags);
+
+        //--- roster_seq rather than a state push: RefreshMembers only repaints on a roster change,
+        //--- so the grey row would otherwise not appear until the composition changed. This is the
+        //--- one mutation that must NOT go through DebugRebuildState, which would reset the flag.
+        rpc.roster_seq = rpc.roster_seq + 1;
+
+        VigridPartyLog.Debug("DebugToggleMemberOffline slot " + target + " online=" + !online);
+    }
+
+    /**
+     *  Drop everything fabricated AND the latch, handing the session back to the real server.
+     *
+     *  The latch is the whole point of this method. While it is set every server push is discarded,
+     *  so leaving it on would silently freeze the client's party state for the rest of the session -
+     *  and present as a networking bug rather than as a debug switch left down.
+     */
+    static void DebugClearFakes()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        DebugClearRoster();
+
+        rpc.list_uids.Clear();
+        rpc.list_names.Clear();
+        rpc.list_flags.Clear();
+        rpc.list_seq = rpc.list_seq + 1;
+
+        rpc.ClearInvite();
+        rpc.invite_seq = rpc.invite_seq + 1;
+
+        rpc.ping_owner_uids.Clear();
+        rpc.ping_positions.Clear();
+        rpc.ping_expire_ms.Clear();
+        rpc.ping_recv_ms = GetGame().GetTime();
+
+        rpc.debug_fake_session = false;
+
+        VigridPartyLog.Debug("DebugClearFakes - real server state resumes");
     }
 
     /**
@@ -652,7 +1092,7 @@ class VigridPartyAPI
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
 
-        string owner = "debug-self";
+        string owner = DEBUG_SELF_UID;
         if (rpc.roster_uids.Count() > 0)
             owner = rpc.roster_uids.Get(0);
 
@@ -666,6 +1106,20 @@ class VigridPartyAPI
         rpc.ping_recv_ms = GetGame().GetTime();
 
         VigridPartyLog.Debug("DebugAddPing at " + pos + " ttl=" + ttl_seconds);
+    }
+
+    //! Drop every local marker. The fabricated counterpart of VP_PingClear, which cannot round-trip
+    //! while the latch is discarding the VP_PingSet that would answer it.
+    static void DebugClearPings()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.ping_owner_uids.Clear();
+        rpc.ping_positions.Clear();
+        rpc.ping_expire_ms.Clear();
+        rpc.ping_recv_ms = GetGame().GetTime();
+
+        VigridPartyLog.Debug("DebugClearPings");
     }
 #endif // DIAG_DEVELOPER
 

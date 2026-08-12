@@ -1,29 +1,110 @@
+// One connected player in the menu's left column.
+//
+// Built on the same construct as party_hud_row.layout, and for the same reasons - see that file's
+// header for the full argument. In short:
+//
+//  1. `color` TINTS A STYLE TEXTURE; it is not a fill. A panel with no `style` draws nothing at all.
+//     `rover_sim_colorable` is vanilla's flat tintable fill. This row used to carry
+//     `style DayZDefaultPanel`, a bordered 9-slice whose texture swallows the declared alpha - which
+//     is why every row rendered as an opaque grey slab rather than the faint 0.25 tint it asked for.
+//  2. A widget's colour alpha and its widget alpha are THE SAME VALUE, and every `inheritalpha 1`
+//     child multiplies by it. So the root cannot both draw the backdrop and carry the row's alpha.
+//
+// PlayerRowRoot is therefore a pure alpha carrier: no style, renders nothing, alpha 1 so children
+// are undimmed. PlayerRowBackdrop does the drawing and only it is faint.
+//
+// 384 wide against a 420 viewport - see the comment on OnlineScroll in party_menu.layout. Sizes here
+// are DECLARED, so the engine scales them by viewport/1920 like every other declared geometry; the
+// script must not SetPos or SetSize these rows or the two unit systems mix and the list drifts.
 PanelWidgetClass PlayerRowRoot {
  visible 1
  position 0 0
- size 400 40
+ size 384 44
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 1 1 1 0.25
- style DayZDefaultPanel
+ color 1 1 1 1
  {
+  PanelWidgetClass PlayerRowBackdrop {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 384 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 0.07
+   style rover_sim_colorable
+  }
+  // Availability at a glance, so the eye can skip the rows it cannot act on without reading them.
+  // Tinted from script: VigridPartyMenu.COLOR_ACCENT_FREE / _ACCENT_TAKEN.
+  PanelWidgetClass PlayerRowAccent {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 3 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   style rover_sim_colorable
+  }
+  // `"exact text" 1` plus a font declared at a concrete size. Without it the glyphs are scaled to
+  // fill the box, so a SHORT name renders BIGGER than a long one - the defect party_hud_row.layout
+  // calls out. Note SetTextExactSize() at runtime does nothing; the size is the declared face.
   TextWidgetClass PlayerRowName {
-   position 8 0
-   size 250 40
+   inheritalpha 1
+   ignorepointer 1
+   position 12 0
+   size 224 40
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
    text "Survivor"
-   font "gui/fonts/metron"
-   "exact text" 0
+   font "gui/fonts/metron-bold22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 18
+   "size to text h" 0
+   "size to text v" 0
    "text halign" left
    "text valign" center
   }
+  // Shares the right-hand cell with the Invite button and is mutually exclusive with it: exactly one
+  // of the two is shown. A row you cannot invite used to be a row with a silently missing button,
+  // which reads as a rendering fault rather than as a state.
+  TextWidgetClass PlayerRowStatus {
+   visible 0
+   inheritalpha 1
+   ignorepointer 1
+   position 240 0
+   size 136 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/metron16"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 14
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" right
+   "text valign" center
+  }
   ButtonWidgetClass PlayerRowInviteButton {
-   position 268 4
+   position 252 4
    size 124 32
    hexactpos 1
    vexactpos 1

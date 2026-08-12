@@ -112,6 +112,23 @@ PanelWidgetClass PartyMenuRoot {
      "text halign" left
      "text valign" center
     }
+    // A ScrollWidget extends SpacerBaseWidget, so it MANAGES its child's geometry: a plain
+    // PanelWidget resized from script never grows the scroll range, GetContentHeight() keeps
+    // reporting the viewport height, and the list silently clips instead of scrolling. That is what
+    // both of these used to be, and why the player list stopped dead at whatever fitted in 360 px.
+    //
+    // The working shape is the engine's own demo, P:\gui\layouts\examples\scrolltest.layout: a
+    // WrapSpacer child with "Size To Content V", which is the property that makes the content grow
+    // with its children. "Scrollbar V" is the real property name - "scrollbar visible" is not a
+    // property and is ignored silently.
+    //
+    // Two rules follow for VigridPartyMenu, and both are load-bearing:
+    //  - it must NOT SetPos the rows. The spacer lays its own children out and hand-positioning
+    //    fights it; row order is creation order.
+    //  - surplus rows must be Unlink()ed, not hidden. A spacer lays out the children it HAS.
+    //
+    // Rows are 384 wide against a 420 viewport: comfortably under the ~390 left by the scrollbar, so
+    // a WrapSpacer can never fit two side by side and wrap the list into columns.
     ScrollWidgetClass OnlineScroll {
      position 24 158
      size 420 360
@@ -119,15 +136,16 @@ PanelWidgetClass PartyMenuRoot {
      vexactpos 1
      hexactsize 1
      vexactsize 1
+     "Scrollbar V" 1
      {
-      PanelWidgetClass OnlineRows {
+      WrapSpacerWidgetClass OnlineRows {
        position 0 0
-       size 400 360
+       size 1 44
        hexactpos 1
        vexactpos 1
-       hexactsize 1
+       hexactsize 0
        vexactsize 1
-       color 0 0 0 0
+       "Size To Content V" 1
       }
      }
     }
@@ -138,15 +156,16 @@ PanelWidgetClass PartyMenuRoot {
      vexactpos 1
      hexactsize 1
      vexactsize 1
+     "Scrollbar V" 1
      {
-      PanelWidgetClass MemberRows {
+      WrapSpacerWidgetClass MemberRows {
        position 0 0
-       size 400 360
+       size 1 44
        hexactpos 1
        vexactpos 1
-       hexactsize 1
+       hexactsize 0
        vexactsize 1
-       color 0 0 0 0
+       "Size To Content V" 1
       }
      }
     }

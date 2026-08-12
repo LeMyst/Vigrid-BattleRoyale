@@ -71,6 +71,17 @@ Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 
 
 Validation loop: `Deploy.bat` → launch (`ClientEXE` defaults to `DayZDiag_x64.exe`) → read the `.rpt` in the profile directory for script errors.
 
+⚠️ **Never screen-capture the machine and never send synthetic input to the game.** No
+`CopyFromScreen` / `PrintWindow` / screenshot tool — the game window is not fullscreen, so a grab is
+a picture of the whole desktop, not of the mod — and no `SendKeys` / `keybd_event` / `mouse_event` /
+AutoHotkey aimed at the client. Building, deploying and launching through `Workbench/Batchfiles` is
+the normal workflow and is unaffected; what is out of bounds is watching or driving the machine.
+When a change can only be judged by eye, make the thing under test **open itself from script** (a
+one-shot `EnterScriptedMenu`, or a `Show(true)` forced per frame from `Update()` so the widget's own
+state feed cannot undo it), read the client `script_*.log`, and **ask Myst to look and report** —
+they will supply a screenshot themselves if one helps. Note injected input does not work anyway:
+DayZ reads raw input and discards it (measured 2026-08-11).
+
 Runtime log verbosity (one at a time): `-br-warn`, `-br-info`, `-br-debug`, `-br-trace`, `-br-none`. On a server, `serverDZ.cfg` key `BRLogLevel` (1-4, negative disables) does the same. Diag builds default to trace via `#ifdef DIAG` → `BR_TRACE_ENABLED` in `BattleRoyaleConstants.c:10-20`.
 
 Log with `BattleRoyaleUtils.Error/Warn/Info/Debug/Trace(string)` (`Scripts/Client/3_Game/BattleRoyaleUtils.c`) — not `Print`. On server+DIAG these mirror into in-game chat via the `ChatLog` RPC.
@@ -223,7 +234,7 @@ Server-side only (`Scripts/Server/3_Game/Config/`, all `#ifdef SERVER`). `Battle
 | `voice_settings.json` | `BattleRoyaleVoiceData` | `VoiceData` | party-only voice while frozen, speaking-list panel |
 | `spawns_settings.json` | `BattleRoyaleSpawnsData` | `SpawnsData` | lobby spawn point and match spawn placement |
 | `pois_settings.json` | `BattleRoyalePOIsData` | `POIsData` | POI position overrides |
-| `server_settings.json` | `BattleRoyaleServerData` | `ServerData` | Vigrid API/webhook + autolock infra — **no mission override** |
+| `server_settings.json` | `BattleRoyaleServerData` | `ServerData` | Vigrid API/webhook + autolock infra + Steam name lookup — **no mission override** |
 | `leaderboard_settings.json` | `BattleRoyaleLeaderboardData` | `LeaderboardData` | scoring curve + persistence knobs — **no mission override**, integrity-sensitive |
 
 The mission override (`$mission:Vigrid-BattleRoyale\`) is **not a merge** — `JsonFileLoader<T>.LoadFile()` is called twice into the same instance (`Load()` then `LoadMission()`), so only keys present in the mission JSON get overwritten. `Upgrade()` runs inside `Load()`, before the mission pass, and `Save()` only ever writes the profile path.
@@ -231,6 +242,20 @@ The mission override (`$mission:Vigrid-BattleRoyale\`) is **not a merge** — `J
 A field can also be locked out of mission override *within* an otherwise-overridable file: `LoadMission()` snapshots it before the deserialize call and restores it right after. `BattleRoyaleGameData.admins_steamid64` is the example — general_settings.json supports mission overrides, but the admin list is a server-operator concern, not mission content, so it's exempted. Reach for the same idiom for any future field that needs this.
 
 Each class carries `int version` plus an `Upgrade()` migration. `Load()` re-saves after reading, so new fields appear in existing profile JSONs on next boot. Moving a field to a different settings file is *not* treated as a migration — the field starts from its new class's default and the old key is left inert in the old file.
+
+### Player names
+
+A player who never set a name in the launcher connects as `Survivor`, and the engine turns a second one into `Survivor (2)`. **`PlayerIdentity` cannot be renamed** — every accessor is a getter and there is no `SetName` (`P:\scripts\3_game\gameplay.c`) — so the corrected name lives mod-side in `BattleRoyaleNameService` (`Scripts/Server/4_World/Names/`, all `#ifdef SERVER`), keyed on SteamID64, resolved from the Steam Web API by `SteamNameWebhook` and gated on `enable_steam_name_lookup`. Vanilla surfaces that read the identity directly — in-game chat, the vanilla player list — are out of reach and still show `Survivor`.
+
+**Two maps, and the split is the whole design.** `s_Overrides` is what is *in force*: every `Resolve*()` reads it and nothing else, so a uid absent from it is shown under the name it connected with. `s_Cache` is what is *known*: every persona ever resolved, dated, persisted to `$profile:Vigrid-BattleRoyale\steam_names.json`. A cache entry is promoted into `s_Overrides` **only by a connect that is actually wearing a placeholder name** — they were one map until it was noticed that a player who once joined as `Survivor` and has since set a name of their own was *still* being shown the resolved one, because the warm-cache branch of `RequestForPlayer` ran before the placeholder test and "we have an answer for this uid" was standing in for "this uid still needs one". Three consequences worth keeping:
+
+- **`RequestForPlayer` must run before `player_name` is seeded** in `BattleRoyaleServer.OnPlayerConnected` — it is where the override is dropped, and a `ResolveIdentity()` taken first would bake the stale name in with nothing left to undo it.
+- **The clear has to reach clients too.** A client already online holds `resolved_by_uid[uid]` for its whole session, so `ClearOverride` broadcasts `SetResolvedName` with an **empty name** — the wire contract for "drop any override for this uid", handled by `BattleRoyaleRPC.ClearResolvedName`. A client connecting *later* needs nothing: `SendAllResolvedNames` walks the online players against `s_Overrides`.
+- **The disk entry is kept** when a player stops using a placeholder. It is still a true steamid→persona record and re-applies for free if they go back.
+
+`steam_name_cache_max_age_hours` (`server_settings.json` v4, default 168, **0 = never**) ages the cache: past that, a connect that was going to use the cache **applies the cached name immediately and queues a refresh anyway**, so nobody waits on the request and a changed persona is picked up. An undated entry — a v1 cache file, migrated in — counts as stale, so each is re-asked exactly once. The `s_Requested` guard covers the refresh path too: it lets one lookup out per process and stops a permanently unanswerable one (a private profile) re-queuing on every reconnect.
+
+Application is `WriteThrough`: the mod's own `PlayerBase.player_name`, vanilla's protected `m_CachedPlayerName` (via `BR_SetCachedName`), and COT's `JMPlayerInstance.m_Name`. That middle one is the lever that reaches code this mod does not own — `Party` and `KillFeed` both prefer `GetCachedName()` and pick the corrected name up without ever naming a `BattleRoyale*` symbol. `PluginAdminLog` is **not** covered by it and needs its own `modded class` (`BattleRoyaleAdminLog.c`), because vanilla only falls back to the cache once the identity is gone.
 
 ### Parties (`Party/`)
 
@@ -530,6 +555,10 @@ camera.
 Layouts live in `GUI/layouts/`. The dominant pattern is imperative — `GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/....layout")` then `FindAnyWidget("Name")`; most layouts have no `scriptclass`. `SpawnSelectionMenu` is a `UIScriptedMenu` (`MENU_SPAWN_SELECTION = 75` in `Scripts/Client/3_Game/Constants.c`, instantiated in `MissionBase.CreateScriptedMenu`). The only declarative `scriptclass` binding is the COT `master_controls.layout` → `BRMasterControlsForm`.
 
 Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`.
+
+**The two scrolling lists — `LeaderboardMenu` and `VigridPartyMenu` — share one construct, and all three of its parts are needed.** A `ScrollWidget` owns its child's geometry, so each wraps a `WrapSpacer` carrying `"Size To Content V"` (plus `"Scrollbar V"` on the scroll itself); the script must therefore **never `SetPos` a row**, and must **`Unlink()` surplus rows rather than hide them** — a spacer lays out the children it *has*, so a hidden row keeps its slot and leaves dead scroll below a shorter refresh. Both also implement `OnMouseWheel` → `VScrollStep`, following vanilla's own `ScrollBarContainer`. Note this binds only under a spacer: `VigridPartyHud`, `BattleRoyaleSpeakingList` and `Extra/KillFeed`'s row pools free-position with `SetPos` into plain panels and correctly keep hiding their surplus.
+
+⚠️ **A list that "does not scroll" is usually a list that fits.** The leaderboard was diagnosed twice as a widget bug when its fake data was 12 rows against a ~16-row viewport — content height and scrollbar state were both already correct. The diag fixtures are deliberately oversized for this reason (`BRDiagFillBoard` at 40 solo / 25 group, `Fake Online Players` defaulting to 20 of a possible 60): **a fixture that fits cannot reach the feature it exists to exercise.** Count rows against the viewport before changing widget code.
 
 **The vanilla right-hand HUD is trimmed.** `modded class IngameHud` (`Scripts/Client/5_Mission/GUI/IngameHud.c`) hides the thirst, hunger and temperature notifiers plus the `NotifierDivider` beside Blood, and shifts `BadgesSpacer` / `BadgesPanel` right to close the resulting gap. `Extra/PreventPlayerModifiers/` already makes `ThirstMdfr.OnTick` and `HungerMdfr.OnTick` return immediately, so those three icons never move for a whole match — they are pinned decoration. Gated on `BR_HIDE_SURVIVAL_NOTIFIERS` (`BattleRoyaleConstants.c`), compile-time because the settings files are server-side only and this is a client cosmetic.
 
