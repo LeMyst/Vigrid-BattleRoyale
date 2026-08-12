@@ -46,6 +46,15 @@ class DeathScreenMenu extends UIScriptedMenu
     private ButtonWidget m_SpectateButton;
     private ButtonWidget m_QuitButton;
 
+    //--- Admin only. Respawns into a non-participant body and opens the admin camera, in one press.
+    //--- Shown purely on BattleRoyaleRPC.is_admin - the server re-checks admins_steamid64 when the
+    //--- RPC lands, so a client that forces this button visible achieves nothing but a rejection.
+    private ButtonWidget m_AdminButton;
+
+    //--- Edge tracking for the admin button, exactly like m_SpectateShown below and for the same
+    //--- reason: calling Show() every frame eats the click.
+    private int m_AdminShown;
+
     private bool m_Requested;
 
     //--- Last value pushed to the button, so Show() is only called on a CHANGE. Calling Show() every
@@ -74,6 +83,7 @@ class DeathScreenMenu extends UIScriptedMenu
     {
         m_Requested = false;
         m_SpectateShown = -1;
+        m_AdminShown = -1;
         m_AutoEnterAtMs = 0;
         m_LastSecondShown = -1;
         m_AutoEnterArmed = false;
@@ -97,6 +107,12 @@ class DeathScreenMenu extends UIScriptedMenu
         m_StatusText = TextWidget.Cast( layoutRoot.FindAnyWidget("StatusText") );
         m_SpectateButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpectateButton") );
         m_QuitButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("QuitButton") );
+        m_AdminButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AdminButton") );
+
+        //--- Hidden until Tick decides otherwise, so an ordinary player never sees it flash on the
+        //--- frame the menu opens.
+        if( m_AdminButton )
+            m_AdminButton.Show( false );
 
         //--- Which widgets resolved. Kept because a layout that loads but renames a widget fails
         //--- silently and invisibly - the screen just quietly stops doing one of its jobs.
@@ -195,6 +211,23 @@ class DeathScreenMenu extends UIScriptedMenu
             return;
         }
 
+        //--- A LIVING player has no business looking at the death screen. This is the admin respawn
+        //--- landing: the server made a fresh body and selected it, and if entering the camera then
+        //--- failed for any reason, nothing else here would close the screen - the quit countdown
+        //--- would run and drop a perfectly alive admin back to the main menu.
+        //---
+        //--- Stated as an invariant rather than keyed to the respawn path, so it holds for any
+        //--- future route back to a body without needing to know about this one. Note GetPlayer()
+        //--- does NOT go NULL while spectating - it hands back the corpse - so IsAlive is the test,
+        //--- not existence.
+        PlayerBase local_player = PlayerBase.Cast( GetGame().GetPlayer() );
+        if( local_player && local_player.IsAlive() )
+        {
+            BattleRoyaleUtils.Trace("[Spectate] death screen: player is alive again, closing");
+            Close();
+            return;
+        }
+
         //--- Only the SPECTATE button is conditional - it appears once the server has said this
         //--- player is dead and eligible, and hides again once they have asked. Quit is always
         //--- available: with spectate_enabled false the server never sends an offer at all, and
@@ -229,6 +262,23 @@ class DeathScreenMenu extends UIScriptedMenu
                 m_SpectateButton.Show( offer );
         }
 
+        //--- The admin route out of the death screen: respawn into a non-participant body and open
+        //--- the admin camera. Shown independently of the spectate offer, because the two are
+        //--- separately configured - admin_spectate_enabled and spectate_enabled - and an admin on a
+        //--- server where players cannot spectate should still get their own tools. Same edge
+        //--- tracking as above, for the same click-eating reason.
+        int admin_state = 0;
+        if( br_rpc.is_admin && !m_Requested )
+            admin_state = 1;
+
+        if( admin_state != m_AdminShown )
+        {
+            m_AdminShown = admin_state;
+
+            if( m_AdminButton )
+                m_AdminButton.Show( admin_state == 1 );
+        }
+
         //--- The deadline is armed EXACTLY ONCE and never recomputed. Deriving it inside the edge
         //--- block meant any re-fire of that edge pushed it forward again, which pins the countdown
         //--- at its starting value forever - the reported "countdown didn't decrease".
@@ -244,12 +294,19 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- pre-spectate death path used an unconditional 15 s CallLater(LeaveServer).
         //--- Re-armed rather than armed-once, so an offer that is withdrawn mid-countdown starts a
         //--- fresh window instead of quitting on whatever was left of the old one.
-        if( offered && m_QuitArmed )
+        //--- "Is there anything on this screen still worth waiting for." The spectate offer is one
+        //--- such thing; a standing ADMIN button is another, and forgetting the second one meant an
+        //--- admin reading the screen for fifteen seconds got quit to the main menu out from under
+        //--- a button they were about to press. Seen live 2026-08-11 with spectate_enabled off,
+        //--- which is the configuration where the quit countdown is the only one running.
+        bool pending_action = offered || (admin_state == 1);
+
+        if( pending_action && m_QuitArmed )
         {
             m_QuitArmed = false;
             m_LastSecondShown = -1;
         }
-        else if( !offered && !m_QuitArmed )
+        else if( !pending_action && !m_QuitArmed )
         {
             m_QuitArmed = true;
             m_QuitAtMs = GetGame().GetTime() + BR_DEAD_AUTO_QUIT_MS;
@@ -277,6 +334,16 @@ class DeathScreenMenu extends UIScriptedMenu
     {
         if( !m_StatusText )
             return;
+
+        //--- Neither countdown is running: no spectate offer, and the quit clock is held off because
+        //--- an admin button is standing. Blank rather than fall through - m_QuitAtMs is stale in
+        //--- that state and would render a frozen or negative "Returning to menu in N...".
+        if( !offered && !m_QuitArmed )
+        {
+            m_StatusText.SetText( "" );
+            m_LastSecondShown = -1;
+            return;
+        }
 
         int deadline_ms = m_QuitAtMs;
         string status_key = "#STR_BR_DEAD_QUIT_IN";
@@ -348,6 +415,29 @@ class DeathScreenMenu extends UIScriptedMenu
             //--- No payload: the server resolves the actor from the RPC sender, so there is nothing
             //--- here a client could aim at somebody else.
             GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestSpectate", NULL, true );
+            return true;
+        }
+
+        if( w == m_AdminButton )
+        {
+            //--- Same message F3 sends. The server reads the press against this player's actual
+            //--- situation - dead, so it respawns them and opens the camera in one step - which is
+            //--- why there is no separate "respawn" RPC for the button to send.
+            //---
+            //--- m_Requested latches so the button hides and the status line stops offering. The
+            //--- screen itself is closed by Tick() the moment spectate_active arrives; if the server
+            //--- refuses, the quit countdown takes over as it would for any withdrawn offer.
+            m_Requested = true;
+
+            if( m_AdminButton )
+                m_AdminButton.Show( false );
+            if( m_SpectateButton )
+                m_SpectateButton.Show( false );
+
+            if( m_StatusText )
+                m_StatusText.SetText( "#STR_BR_DEAD_ENTERING" );
+
+            GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateToggle", NULL, true );
             return true;
         }
 

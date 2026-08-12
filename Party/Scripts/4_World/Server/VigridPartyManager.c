@@ -47,6 +47,19 @@ class VigridPartyManager
      */
     private ref map<string, string> m_NameByUid;
 
+    /**
+     *  Members who are connected but must not be shown to their party, by GetPlainId().
+     *
+     *  Set by the host mod through VigridPartyAPI.SetMemberHidden. Party has no idea why anyone is
+     *  on this list and deliberately does not ask - the case it was added for is a host whose player
+     *  is temporarily somewhere that is not their real position, but "do not broadcast this member's
+     *  state" is a complete description of the request either way.
+     *
+     *  SESSION-SCOPED and never persisted: parties survive a process restart, this does not, and a
+     *  hidden flag surviving one would leave a member invisible with nothing left to clear it.
+     */
+    private ref array<string> m_HiddenUids;
+
     private VigridPartyData m_Settings;
 
     private bool m_FormationLocked;
@@ -67,6 +80,7 @@ class VigridPartyManager
         m_LastPingMs = new map<string, int>();
         m_HashedToPlain = new map<string, string>();
         m_NameByUid = new map<string, string>();
+        m_HiddenUids = new array<string>();
 
         m_FormationLocked = false;
         m_Dirty = false;
@@ -1000,6 +1014,43 @@ class VigridPartyManager
     }
 
     /**
+     *  Hide or show one member in the state their party receives. See m_HiddenUids.
+     *
+     *  Idempotent both ways, so a caller can assert the state it wants without tracking edges.
+     */
+    void SetMemberHidden(string uid, bool hidden)
+    {
+        if (uid == "")
+            return;
+
+        int index = m_HiddenUids.Find(uid);
+
+        if (hidden)
+        {
+            if (index == -1)
+            {
+                m_HiddenUids.Insert(uid);
+                VigridPartyLog.Debug("SetMemberHidden " + uid + " hidden");
+            }
+
+            return;
+        }
+
+        if (index != -1)
+        {
+            m_HiddenUids.Remove(index);
+            VigridPartyLog.Debug("SetMemberHidden " + uid + " visible");
+        }
+    }
+
+    bool IsMemberHidden(string uid)
+    {
+        int index = m_HiddenUids.Find(uid);
+
+        return index != -1;
+    }
+
+    /**
      *  Push position and health for every member of every party with at least two members.
      *
      *  This channel exists because a client only receives entities inside its network bubble: a
@@ -1028,9 +1079,25 @@ class VigridPartyManager
 
             for (int j = 0; j < member_count; j++)
             {
-                PlayerBase member = GetPlayerByUid(party.member_uids.Get(j));
+                //--- Read out before the call that consumes it, per the container-aliasing rule.
+                string member_uid = party.member_uids.Get(j);
 
-                if (!member)
+                PlayerBase member = GetPlayerByUid(member_uid);
+
+                /**
+                 *  A HIDDEN MEMBER IS PRESENTED EXACTLY AS AN OFFLINE ONE, and that is the whole
+                 *  implementation rather than a new flag on the wire.
+                 *
+                 *  Every consumer already routes through IsMemberVisible / IsMemberOnline, both of
+                 *  which key off the ONLINE bit - so zeroing the flags suppresses the world nametag,
+                 *  the compass caret and the map's team layer in one move, with no client change and
+                 *  no new state for a renderer to get wrong. The position is zeroed too: leaving a
+                 *  real one in an array the client is told to ignore would put the thing being
+                 *  hidden on the wire anyway.
+                 */
+                bool member_hidden = IsMemberHidden(member_uid);
+
+                if (!member || member_hidden)
                 {
                     //--- Level 0 reads as GREAT, but flags are empty here so the client takes its
                     //--- offline branch and never looks at the level at all.

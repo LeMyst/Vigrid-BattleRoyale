@@ -109,6 +109,14 @@ class VigridPartyNametags
             return;
         }
 
+        //--- Something else owns the screen and is drawing its own name tags. Without this the
+        //--- player gets two labels stacked over the same character, one from each system.
+        if (VigridPartyClientAPI.IsHudSuppressed())
+        {
+            HideAll();
+            return;
+        }
+
         int member_count = rpc.roster_uids.Count();
 
         //--- One widget per member, minus ourselves.

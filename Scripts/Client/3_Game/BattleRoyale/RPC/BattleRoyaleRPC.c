@@ -10,6 +10,12 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyNames", this );
+
+		lobby_net_low = new array<int>();
+		lobby_net_high = new array<int>();
+		lobby_names = new array<string>();
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
@@ -22,6 +28,16 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpectateOffer", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpectateTarget", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EndSpectate", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", this );
+
+		admin_uids = new array<string>();
+		admin_names = new array<string>();
+		admin_positions = new array<vector>();
+		admin_prev_positions = new array<vector>();
+		admin_healths = new array<float>();
+		admin_kills = new array<int>();
+		admin_slots = new array<int>();
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
@@ -74,6 +90,10 @@ class BattleRoyaleRPC
 		input_state = false;
 		player_kills = 0;
 		match_started = false;
+		lobby_phase = false;
+		lobby_net_low.Clear();
+		lobby_net_high.Clear();
+		lobby_names.Clear();
 		countdown_seconds = 0;
 		current_play_area_center = "0 0 0";
 		current_play_area_radius = 0.0;
@@ -104,6 +124,21 @@ class BattleRoyaleRPC
 		spectate_target_pos = "0 0 0";
 		spectate_mode = 0;
 		spectate_target_obj = NULL;
+		//--- is_admin and death_locked are deliberately NOT reset here. is_admin is a property of WHO
+		//--- IS CONNECTED, pushed once and never again, so clearing it would silently disarm the
+		//--- admin keys mid-session. death_locked is a one-shot handshake that BattleRoyaleClient
+		//--- consumes on the very next frame - clearing it in between would skip the matching focus
+		//--- release and leave input locked for good.
+		admin_uids.Clear();
+		admin_names.Clear();
+		admin_positions.Clear();
+		admin_prev_positions.Clear();
+		admin_healths.Clear();
+		admin_kills.Clear();
+		admin_slots.Clear();
+		admin_recv_ms = 0;
+		admin_prev_recv_ms = 0;
+		admin_seq = 0;
 	}
 
 	// Set the number of players and groups
@@ -158,6 +193,13 @@ class BattleRoyaleRPC
 	string dead_placement = "";
 	string dead_flavour = "";
 
+	//! Did the death path take an input-focus lock? Written by ShowDeadScreen, read by
+	//! BattleRoyaleClient before it releases one. Travels here for the same stage-ordering reason as
+	//! the two strings above - and it exists because an admin can enter spectate ALIVE, having never
+	//! run SimulateDeath, in which case there is no lock to release and releasing anyway drives the
+	//! additive focus counter negative. See BattleRoyaleClient.EnterSpectate.
+	bool death_locked = false;
+
 	//! The server has decided this player is dead and eligible - the death screen may offer Spectate.
 	bool spectate_offered = false;
 	bool spectate_active = false;
@@ -167,6 +209,88 @@ class BattleRoyaleRPC
 	vector spectate_target_pos = "0 0 0";
 	int spectate_mode = 0;
 	Object spectate_target_obj = NULL;
+
+	//------------------------------------------------------------------------------------------
+	//--- Admin spectate.
+	//------------------------------------------------------------------------------------------
+
+	//! Does the server consider this client an admin? Pushed once on connect. PRESENTATION ONLY -
+	//! it gates which keys send a packet and whether the death screen offers its admin button, and
+	//! is never trusted as authorization. Every admin RPC is re-checked against admins_steamid64
+	//! server-side, so a client that sets this itself gains nothing but rejected packets.
+	bool is_admin = false;
+
+	//! The admin overlay roster, as parallel arrays. Sent ONLY to a connection the server has
+	//! already established is an admin in a spectate session - never broadcast, because it carries
+	//! SteamID64s, which SetLeaderboard deliberately keeps off the wire for exactly that reason.
+	//!
+	//! admin_prev_positions plus the two timestamps are what let the overlay interpolate between
+	//! 2 Hz pushes, the same shape VigridPartyAPI.ResolveBodyPos uses for party members. Without it
+	//! a tag on a player outside the network bubble visibly steps twice a second.
+	ref array<string> admin_uids;
+	ref array<string> admin_names;
+	ref array<vector> admin_positions;
+	ref array<vector> admin_prev_positions;
+	ref array<float> admin_healths;
+	ref array<int> admin_kills;
+	ref array<int> admin_slots;
+	int admin_recv_ms = 0;
+	int admin_prev_recv_ms = 0;
+	int admin_seq = 0;
+
+	void SetAdminFlag(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			BattleRoyaleUtils.Warn("FAILED TO READ SETADMINFLAG RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("[Spectate] SetAdminFlag: " + data.param1);
+			is_admin = data.param1;
+		}
+	}
+
+	void SetAdminPlayerList(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>> data;
+		if( !ctx.Read( data ) )
+		{
+			BattleRoyaleUtils.Warn("FAILED TO READ SETADMINPLAYERLIST RPC");
+			return;
+		}
+		if ( type != CallType.Client )
+			return;
+
+		//--- Carry the previous snapshot forward BEFORE overwriting, so the overlay has two samples
+		//--- to interpolate between. Copied rather than swapped: the incoming arrays are owned by the
+		//--- Param and must not be aliased into two fields.
+		admin_prev_positions.Clear();
+		int previous = admin_positions.Count();
+		for( int i = 0; i < previous; i++ )
+		{
+			admin_prev_positions.Insert( admin_positions.Get(i) );
+		}
+		admin_prev_recv_ms = admin_recv_ms;
+
+		admin_uids.Copy( data.param1 );
+		admin_names.Copy( data.param2 );
+		admin_positions.Copy( data.param3 );
+		admin_healths.Copy( data.param4 );
+		admin_kills.Copy( data.param5 );
+		admin_slots.Copy( data.param6 );
+
+		//--- A roster that changed LENGTH cannot be interpolated against the previous one - index i
+		//--- is a different player now - so drop the old sample rather than lerping between two
+		//--- unrelated positions, which reads as every tag flying across the map for half a second.
+		if( admin_prev_positions.Count() != admin_positions.Count() )
+			admin_prev_positions.Clear();
+
+		admin_recv_ms = GetGame().GetTime();
+		admin_seq = admin_seq + 1;
+	}
 
 	void SetSpectateOffer(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
@@ -425,6 +549,83 @@ class BattleRoyaleRPC
 			BattleRoyaleUtils.Trace("StartMatch");
 			match_started = true;
 		}
+	}
+
+	/**
+	 *  Are we in the pre-match lobby right now?
+	 *
+	 *  A SEPARATE FACT FROM match_started, AND NOT ITS INVERSE. match_started is a one-way latch set
+	 *  by the StartMatch broadcast, so a client that connects AFTER that broadcast never receives it
+	 *  and reads `match_started == false` for its entire session - which is only ever an admin, since
+	 *  everyone else is kicked, and is exactly the case that made the lobby-only name tags follow an
+	 *  admin into a live match. This one is pushed on every state transition AND per-identity when a
+	 *  client reports in, so a late joiner is told the truth.
+	 *
+	 *  The window is narrower than !match_started as well: the server sends true only while the
+	 *  current state is the lobby or the pre-match countdown, so spawn selection and the drop are
+	 *  outside it. Nobody's name hangs over their head at the spawn point.
+	 */
+	bool lobby_phase = false;
+
+	void SetLobbyPhase(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<bool> data;
+		if ( !ctx.Read( data ) )
+			return;
+
+		if ( type == CallType.Client )
+		{
+			lobby_phase = data.param1;
+			BattleRoyaleUtils.Trace("SetLobbyPhase " + lobby_phase);
+		}
+	}
+
+	/**
+	 *  Who to draw a lobby name tag over, as parallel arrays of network id and name.
+	 *
+	 *  ⚠️ THE NETWORK ID IS HERE BECAUSE A CLIENT CANNOT IDENTIFY ANOTHER PLAYER'S ENTITY.
+	 *  PlayerBase.GetIdentity() is not reliably populated client-side for a REMOTE player, so
+	 *  matching an entity to a name through GetPlainId() silently matches nothing. Both existing
+	 *  consumers of that idiom - VigridPartyAPI.FindLocalPlayer and BattleRoyaleSpectatorTags - hide
+	 *  it, because each falls back to a server-pushed position when the lookup fails and so still
+	 *  renders. This overlay had no such fallback and drew nothing at all, which is how the gap was
+	 *  finally noticed. Object.GetNetworkID / GetGame().GetObjectByNetworkId are the pair that do
+	 *  work on both sides, and both have real vanilla call sites.
+	 *
+	 *  PER-IDENTITY, and teammates are dropped SERVER-SIDE before the packet is built - the client
+	 *  draws every row it receives. That keeps party composition off the wire entirely, and it is
+	 *  why there are no uids here: the leaderboard keeps SteamID64s off broadcasts deliberately and
+	 *  a name tag needs no identifier beyond the entity it hangs over.
+	 */
+	ref array<int> lobby_net_low;
+	ref array<int> lobby_net_high;
+	ref array<string> lobby_names;
+
+	void SetLobbyNames(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param3<array<int>, array<int>, array<string>> data;
+		if ( !ctx.Read( data ) )
+		{
+			BattleRoyaleUtils.Warn("FAILED TO READ SETLOBBYNAMES RPC");
+			return;
+		}
+
+		if ( type != CallType.Client )
+			return;
+
+		lobby_net_low.Clear();
+		lobby_net_high.Clear();
+		lobby_names.Clear();
+
+		//--- Copied, never aliased: the incoming arrays are owned by the Param and go away with it.
+		if ( data.param1 )
+			lobby_net_low.Copy( data.param1 );
+		if ( data.param2 )
+			lobby_net_high.Copy( data.param2 );
+		if ( data.param3 )
+			lobby_names.Copy( data.param3 );
+
+		BattleRoyaleUtils.Trace("SetLobbyNames " + lobby_names.Count() + " row(s)");
 	}
 
 	// Set the countdown seconds

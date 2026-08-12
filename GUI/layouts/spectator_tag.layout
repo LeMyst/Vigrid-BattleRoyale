@@ -1,0 +1,96 @@
+// One player tag on the admin spectator overlay: name, health bar, and a distance/kills line.
+//
+// Modelled on Party/GUI/layouts/party_nametag.layout, and the same rule applies to both text cells:
+// `"exact text" 1` with a font declared at a concrete size, NOT `scaled 1`. Scaling stretches the
+// glyphs to fill the cell, so a four-letter name renders about twice the height of a twelve-letter
+// one.
+//
+// The root is 190x54. BR_SPECTATE_TAG_SIZE_W/H must track it - BattleRoyaleSpectatorTags centres
+// the tag above the head by shifting it half its own width, and falls back to those constants on
+// the first frame, before the widget has been shown and can report a real size.
+//
+// TagHealthBack/TagHealthFill are PanelWidgetClass with a `style`, because a PanelWidget with a
+// `color` and no `style` paints NOTHING - it still lays out and still hosts children, so the defect
+// looks like a missing widget rather than a missing fill. rover_sim_colorable is a plain tintable
+// fill; DayZDefaultPanel's texture eats the alpha and reads as a solid slab.
+PanelWidgetClass TagRoot {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 190 54
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0 0 0 0
+ {
+  TextWidgetClass TagName {
+   inheritalpha 1
+   ignorepointer 1
+   position 0 0
+   size 1 0.44
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   text "Survivor"
+   font "gui/fonts/metron-bold22"
+   "outline size" 1
+   "outline color" 0 0 0 0.5
+   "shadow size" 5
+   "shadow color" 0 0 0 0.4
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 16
+   "text halign" center
+   "text valign" center
+  }
+  PanelWidgetClass TagHealthBack {
+   inheritalpha 1
+   ignorepointer 1
+   position 0.16 0.48
+   size 0.68 0.14
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   style rover_sim_colorable
+   color 0 0 0 0.55
+   {
+    PanelWidgetClass TagHealthFill {
+     inheritalpha 1
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     style rover_sim_colorable
+     color 0.35 0.78 0.35 1
+    }
+   }
+  }
+  TextWidgetClass TagInfo {
+   inheritalpha 1
+   ignorepointer 1
+   position 0 0.66
+   size 1 0.34
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   text "0m"
+   font "gui/fonts/metron16"
+   "outline size" 1
+   "outline color" 0 0 0 0.5
+   "shadow size" 5
+   "shadow color" 0 0 0 0.4
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 13
+   "text halign" center
+   "text valign" center
+  }
+ }
+}

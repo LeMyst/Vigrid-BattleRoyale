@@ -19,8 +19,36 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected ref BattleRoyaleSpeakingList m_SpeakingList;
 
+    //--- The admin spectator's floating player tags. Built lazily on first use, so an ordinary
+    //--- player never creates the widget tree at all.
+    protected ref BattleRoyaleSpectatorTags m_SpectatorTags;
+
+    //--- Names over the heads of non-teammates while the lobby is running. Also built lazily, and
+    //--- kept afterwards rather than torn down: it costs one hidden panel for the rest of the match.
+    protected ref BattleRoyaleLobbyTags m_LobbyTags;
+
     //--- Set from the SetSpectateTarget / EndSpectate edge in Update(). Read through IsSpectating().
     protected bool b_Spectating;
+
+    //--- Mirrored from BattleRoyaleRPC.is_admin, which the server pushes once on connect.
+    //--- PRESENTATION ONLY. It decides whether the admin keys put a packet on the wire and whether
+    //--- the death screen offers its third button; it is never an authorization decision, because
+    //--- every admin RPC is re-checked against admins_steamid64 server-side.
+    protected bool b_IsAdmin;
+
+    //--- Did the DEATH path lock input before this client started spectating?
+    //---
+    //--- THE FOCUS COUNTER IS ADDITIVE AND THIS IS WHAT KEEPS IT BALANCED. EnterSpectate ends with
+    //--- three ChangeGameFocus(-1) calls that exist to undo the LockControls(true) SimulateDeath
+    //--- performed. An ADMIN entering spectate alive never ran SimulateDeath, so those three
+    //--- releases would drive the counter NEGATIVE - and a negative focus counter breaks input with
+    //--- no error, no log line and nothing on screen to say what happened.
+    protected bool b_DeathLocked;
+
+    //--- Is the skeleton overlay on at this admin's request? OURS, not a mirror of COT's own flag -
+    //--- the drawing runs from UpdateSkeletonOverlay rather than from JMESPModule.OnUpdate.
+    protected bool b_SkeletonOverlay;
+    protected int m_NextSkeletonDiagMs;
 
     //--- Whether the out-of-zone tint is currently running via the requester directly, which is the
     //--- spectator path. Edge-tracked because PPERequesterBase.Stop() walks the whole request
@@ -42,6 +70,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         b_SentLoadedIn = false;
         b_MatchStarted = false;
         b_Spectating = false;
+        b_IsAdmin = false;
+        b_DeathLocked = false;
         b_TintActive = false;
         m_PPESignature = -1;
         m_PPENextLogMs = 0;
@@ -631,6 +661,12 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// Spectating
 			UpdateSpectate( br_rpc );
 
+			// Names over the heads of everyone in the lobby
+			UpdateLobbyTags( br_rpc );
+
+			// Bone skeletons for the admin spectator. Returns on one bool when off.
+			UpdateSkeletonOverlay();
+
 			// Update the list of players currently speaking
 			if( m_SpeakingList )
 			{
@@ -726,13 +762,46 @@ class BattleRoyaleClient: BattleRoyaleBase
         if( death_menu )
             death_menu.Tick();
 
-        //--- Enter once, on the rising edge. b_SpectateEntered is what guarantees the input-focus
-        //--- release below happens EXACTLY once: ChangeGameFocus is an additive counter, so a second
-        //--- release would leave the game permanently unfocused.
+        //--- Mirrored every frame rather than latched on an edge: SetAdminFlag arrives once, and this
+        //--- is a plain copy of it, so there is no edge to miss and nothing to get out of step.
+        b_IsAdmin = br_rpc.is_admin;
+
+        //--- Latched, NOT mirrored, and the difference matters. ShowDeadScreen sets death_locked and
+        //--- nothing ever clears it, so a plain copy would re-arm the flag after EnterSpectate had
+        //--- already consumed it - and an admin who died, spectated, respawned and spectated again
+        //--- would release a focus lock that no longer exists. Rising edge only.
+        if( br_rpc.death_locked )
+        {
+            b_DeathLocked = true;
+            br_rpc.death_locked = false;
+        }
+
+        //--- Enter once, on the rising edge. b_Spectating is what guarantees the input-focus release
+        //--- inside EnterSpectate happens EXACTLY once: ChangeGameFocus is an additive counter, so a
+        //--- second release would leave the game permanently unfocused.
         if( br_rpc.spectate_active && !b_Spectating )
         {
             b_Spectating = true;
             EnterSpectate();
+        }
+
+        //--- Falling edge, and the test for it is "did the engine hand us back a LIVING player".
+        //---
+        //--- Both cases clear spectate_active, so the flag alone cannot tell them apart:
+        //---   match ended  - an ordinary spectator keeps the camera on purpose (see EndSpectate in
+        //---                  BattleRoyaleRPC), and GetPlayer() still hands back their CORPSE, which
+        //---                  is not alive - so this branch correctly does not fire.
+        //---   admin left   - the server ran SelectPlayer(identity, body) first, so GetPlayer() is a
+        //---                  live character and everything spectate changed has to be put back.
+        //---
+        //--- Using IsAlive rather than "is there a player object" is the whole point: GetPlayer()
+        //--- does NOT go NULL while spectating, which is the trap documented on IsSpectating().
+        PlayerBase returned_body = PlayerBase.Cast( GetGame().GetPlayer() );
+        if( !br_rpc.spectate_active && b_Spectating && returned_body && returned_body.IsAlive() )
+        {
+            b_Spectating = false;
+            LeaveSpectate();
+            return;
         }
 
         if( !b_Spectating )
@@ -749,6 +818,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         //--- Before the camera, because it does not depend on one existing.
         UpdatePartyViewpoint( br_rpc );
+
+        UpdateSpectatorTags( br_rpc );
 
         BattleRoyaleSpectatorCamera camera = BattleRoyaleSpectatorCamera.GetInstance();
         if( !camera )
@@ -884,6 +955,12 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected void UpdatePartyViewpoint(BattleRoyaleRPC br_rpc)
     {
 #ifdef VIGRID_PARTY
+        //--- ADMIN ONLY. An admin draws their own name tags over every player and their own roster
+        //--- data, so leaving Party's HUD up stacks two labels over each character and shows a party
+        //--- panel for a party they are not currently playing in. An ORDINARY spectator keeps theirs:
+        //--- following a teammate with the party HUD live is the existing, wanted behaviour.
+        VigridPartyClientAPI.SetHudSuppressed( b_IsAdmin && IsSpectating() );
+
         vector subject_pos;
 
         //--- ORBIT mode has no subject, and GetSubjectPosition says so - fall back to the local
@@ -893,6 +970,88 @@ class BattleRoyaleClient: BattleRoyaleBase
         else
             VigridPartyClientAPI.ClearHudViewpoint();
 #endif
+    }
+
+    /**
+     *  Drive the admin overlay: a name, health bar, distance and kill count over every living player.
+     *
+     *  Built on first use rather than in the constructor, so an ordinary player - who will never see
+     *  this - never creates the widget tree. Once built it is kept: an admin toggles in and out of
+     *  spectate repeatedly, and tearing the pool down each time would rebuild it seconds later.
+     *
+     *  Origin is the CAMERA, not a body. For a flying admin "how far away is that" can only sensibly
+     *  mean "from where I am looking", and GetReferencePosition already answers exactly that while
+     *  spectating.
+     */
+    protected void UpdateSpectatorTags(BattleRoyaleRPC br_rpc)
+    {
+        bool wanted = b_IsAdmin && IsSpectating() && br_rpc.spectate_active;
+
+        if( !m_SpectatorTags )
+        {
+            if( !wanted )
+                return;
+
+            m_SpectatorTags = new BattleRoyaleSpectatorTags();
+        }
+
+        m_SpectatorTags.Update( wanted, GetReferencePosition(), br_rpc.spectate_target_uid );
+    }
+
+    /**
+     *  Drive the lobby name tags: a name over every living non-teammate while the players are still
+     *  gathered before the match.
+     *
+     *  The phase test is lobby_phase, NOT !match_started, and the difference is the whole reason
+     *  that fact exists. match_started is a one-way latch set by a broadcast, so a client that
+     *  connected after it was sent - an admin joining mid-match, everyone else being kicked - never
+     *  receives it and reads false for the rest of the session. That is exactly how the old
+     *  point-at-somebody tag ended up live for an admin in a running match.
+     *
+     *  Suppressed while spectating as well. It cannot currently coincide - no state both allows
+     *  spectating and counts as the lobby - but if one ever did, an admin would be looking at two
+     *  overlays naming the same characters.
+     */
+    protected void UpdateLobbyTags(BattleRoyaleRPC br_rpc)
+    {
+        bool wanted = BR_LOBBY_TAGS_ENABLED && br_rpc.lobby_phase && !IsSpectating();
+
+        if( !m_LobbyTags )
+        {
+            //--- Nothing is built until the first frame that actually wants tags, so a client that
+            //--- connects mid-match never creates the widget tree at all.
+            if( !wanted )
+                return;
+
+            m_LobbyTags = new BattleRoyaleLobbyTags();
+        }
+
+        m_LobbyTags.Update( wanted );
+    }
+
+    /**
+     *  Is the mod currently drawing its own names over players' heads?
+     *
+     *  Read by the modded IngameHud, which uses it to keep the "point at somebody" tag - vanilla's,
+     *  or DayZ Expansion's if that addon is loaded - out of the way while we are naming everyone
+     *  anyway. Two labels for one character is the stacking that had to be fixed once already for
+     *  the party tags.
+     */
+    bool IsShowingOwnNameTags()
+    {
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc )
+            return false;
+
+        if( BR_LOBBY_TAGS_ENABLED && br_rpc.lobby_phase && !IsSpectating() )
+            return true;
+
+        //--- The admin overlay. An ORDINARY spectator is deliberately not covered: they have no name
+        //--- overlay of their own, so there is nothing for the point tag to collide with.
+        if( b_IsAdmin && IsSpectating() && br_rpc.spectate_active )
+            return true;
+
+        return false;
     }
 
     //! Nearest local player entity within BR_SPECTATE_LATCH_RADIUS of `position`, or NULL.
@@ -965,11 +1124,20 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- 3. Hand input back to the game. This mirrors LockControls(false)'s else branch
         //--- (dayzplayerimplement.c:874). SimulateDeath called LockControls(true) exactly once, so
         //--- exactly one release balances it.
-        if( GetGame().GetInput() )
+        //---
+        //--- GATED ON b_DeathLocked, AND THAT GATE IS LOAD-BEARING. ChangeGameFocus is an ADDITIVE
+        //--- counter. An admin entering spectate alive never went through SimulateDeath and so has
+        //--- no lock outstanding - releasing anyway would drive the counter negative, and a negative
+        //--- focus counter breaks input with no error, no log line and nothing on screen to explain
+        //--- it. The ledger this has to balance is written out in DeathScreenMenu.c:10-22.
+        if( b_DeathLocked && GetGame().GetInput() )
         {
             GetGame().GetInput().ChangeGameFocus( -1, INPUT_DEVICE_MOUSE );
             GetGame().GetInput().ChangeGameFocus( -1, INPUT_DEVICE_KEYBOARD );
             GetGame().GetInput().ChangeGameFocus( -1, INPUT_DEVICE_GAMEPAD );
+
+            //--- Consumed. The release has happened, so a later LeaveSpectate must not repeat it.
+            b_DeathLocked = false;
         }
 
         if( GetGame().GetUIManager() )
@@ -1011,6 +1179,64 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- cannot produce, so its first pass always reports what is running - that first line is
         //--- the whole diagnostic for anything the sweep failed to clear.
         m_PPESignature = -1;
+    }
+
+    /**
+     *  Put back what EnterSpectate changed, for an admin who has been handed a living body.
+     *
+     *  Only ever runs on that path - an ordinary spectator's session ends with the match and keeps
+     *  its camera, so there is nothing to restore and nowhere to restore it to.
+     *
+     *  DELIBERATELY NOT A MIRROR IMAGE OF EnterSpectate, and each omission is a decision:
+     *
+     *    - No ChangeGameFocus. EnterSpectate's three releases are gated on b_DeathLocked and are
+     *      consumed there; an admin who entered alive never had a lock, so there is nothing to
+     *      re-take. Adding a symmetric-looking +1 here is exactly how the counter goes wrong.
+     *    - No sound-bus restore. Those were never zeroed for a living admin, and re-setting them
+     *      from g_Game.m_volume_* would be a no-op at best.
+     *    - StopAllEffects is not undone. The body's own modifiers re-assert whatever it should have
+     *      within a tick or two, and there is no "restore the effects I stopped" API to call.
+     */
+    protected void LeaveSpectate()
+    {
+        BattleRoyaleUtils.Info("[Spectate] leaving: hud / tint / camera state");
+
+        //--- The vanilla HUD went away in EnterSpectate step 4 and nothing else brings it back:
+        //--- vanilla only shows it on respawn, which is not a path this player took.
+        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if( gameplay )
+            gameplay.SetVanillaHudVisible( true );
+
+        //--- The spectator tint is driven through the requester directly and is edge-tracked, so it
+        //--- would stay on for a living player whose zone verdict is now computed a different way.
+        ApplyOutOfZoneTint( false, NULL );
+
+        //--- Force the post-process scan to report on its next pass rather than trusting a signature
+        //--- taken while a corpse was re-asserting effects.
+        m_PPESignature = -1;
+
+        //--- Hidden HERE rather than left to UpdateSpectatorTags, because UpdateSpectate returns
+        //--- immediately after calling this and never reaches it again - the tags would stay painted
+        //--- over a living player for the rest of the match. The pool itself is kept: an admin
+        //--- toggles in and out repeatedly and would only rebuild it seconds later.
+        if( m_SpectatorTags )
+            m_SpectatorTags.Update( false, vector.Zero, "" );
+
+        //--- Same reason: UpdatePartyViewpoint is above the early return, so without this the party
+        //--- HUD would stay suppressed for the rest of the match once an admin left the camera.
+#ifdef VIGRID_PARTY
+        VigridPartyClientAPI.SetHudSuppressed( false );
+#endif
+
+        //--- And the skeletons, which COT would otherwise keep drawing over living players for the
+        //--- rest of the match - an admin back in their own body with an x-ray view of everyone is
+        //--- the exact thing the non-participant rule exists to prevent. Only touched when it is on,
+        //--- so an admin who never pressed F6 does not pay for a COT lookup on every exit.
+        if( b_SkeletonOverlay )
+            SetSkeletonOverlay( false );
+
+        if( GetGame().GetUIManager() )
+            GetGame().GetUIManager().ShowUICursor( false );
     }
 
     protected void PlayerCountChanged(int nb_players, int nb_groups)
@@ -1111,6 +1337,395 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- No target - see ReadyUp above.
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", NULL, true );
 
+    }
+
+    //------------------------------------------------------------------------------------------
+    //--- Admin spectate, client half. All four are requests: the server owns the session, the
+    //--- target and the mode, and pushes them back through SetSpectateTarget. Nothing here changes
+    //--- what the camera does - it only asks.
+    //---
+    //--- The b_IsAdmin gate is presentation, not security. It stops an ordinary player's F3 from
+    //--- putting a packet on the wire at all; the server re-checks every one of these against
+    //--- admins_steamid64 regardless, so a client that lies about the flag achieves nothing.
+    //------------------------------------------------------------------------------------------
+
+    //! F3. Enter or leave admin spectate, respawning first when dead. What the press means is
+    //! resolved server-side from the admin's actual situation - see BattleRoyaleSpectators.AdminToggle.
+    void AdminSpectateToggle()
+    {
+        if( !b_IsAdmin )
+            return;
+
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateToggle", NULL, true );
+    }
+
+    //! F5. Flip between following a player and flying the free camera.
+    void AdminSpectateCycleMode()
+    {
+        if( !b_IsAdmin )
+            return;
+        if( !IsSpectating() )
+            return;
+
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc )
+            return;
+
+        //--- Asked for against the mode the SERVER last pushed, not a locally-toggled one, so a
+        //--- dropped or reordered reply cannot leave the two disagreeing about which mode we are in.
+        int wanted = BR_SPECTATE_MODE_FREE;
+        if( br_rpc.spectate_mode == BR_SPECTATE_MODE_FREE )
+            wanted = BR_SPECTATE_MODE_FOLLOW;
+
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateMode", new Param1<int>( wanted ), true );
+    }
+
+    //! Left / Right arrow. Step through the living players. Works in FREE mode too - the target is
+    //! still tracked there, for the overlay highlight and so that flipping back to FOLLOW lands
+    //! somewhere deliberate.
+    void AdminSpectateCycle( int direction )
+    {
+        if( !b_IsAdmin )
+            return;
+        if( !IsSpectating() )
+            return;
+
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", new Param1<int>( direction ), true );
+    }
+
+    /**
+     *  F6. Draw a bone skeleton over every player, or stop.
+     *
+     *  THE ONLY ADMIN KEY WITH NO SERVER HALF. The other four ask the server to change a session it
+     *  owns; this one changes what this client renders and nothing else, so there is no state to
+     *  replicate and nothing to authorise on the wire.
+     *
+     *  IT IS COT'S RENDERER, CALLED, NOT COPIED. Community-Online-Tools is already a hard dependency
+     *  and JMESPModule.SetDrawPlayerSkeletonsEnabled is a public method on it; its OnUpdate runs on
+     *  every client all the time and returns immediately unless the flag is set, and the canvas it
+     *  needs is created unconditionally from COT's own MissionGameplay.OnInit. So the whole feature
+     *  is this call. That also settles the licence question that made porting the code a non-starter:
+     *  COT is CC BY-SA 4.0 and this repo is DSPL-SA, which adds restrictions BY-SA forbids adding to
+     *  adapted material - but calling a published API is interoperation, not adaptation.
+     *
+     *  COT's ESPRadius is deliberately left alone. It is the admin's own COT setting, it survives
+     *  this session, and quietly rewriting another mod's configuration to suit ours is not ours to do.
+     */
+    void AdminSpectateToggleSkeleton()
+    {
+        if( !b_IsAdmin )
+            return;
+        if( !IsSpectating() )
+            return;
+
+        SetSkeletonOverlay( !b_SkeletonOverlay );
+    }
+
+    /**
+     *  Apply the skeleton flag and say what actually happened.
+     *
+     *  THE READ-BACK IS THE POINT. COT's setter opens with `if (!HasAccess()) return;` - a silent
+     *  refusal for anyone without its ESP.View permission - so asking for skeletons without that
+     *  permission would look exactly like a dead key. Reading the flag back turns that into a
+     *  message. This mod has been bitten by silent no-ops often enough to be worth the extra call.
+     */
+    protected void SetSkeletonOverlay( bool enabled )
+    {
+#ifdef JM_COT
+        JMESPModule esp;
+        if( !CF_Modules<JMESPModule>.Get( esp ) )
+        {
+            BattleRoyaleUtils.Warn("[Spectate] JMESPModule not available - no skeleton overlay");
+            NotifyLocal( "#STR_BR_SPECTATE_SKELETON_DENIED" );
+            return;
+        }
+
+        //--- The canvas is COT's, created unconditionally from its MissionGameplay.OnInit. Asking it
+        //--- to build one is harmless if it already has (CreateCanvas is guarded internally).
+        if( !esp.m_ESPCanvas )
+            esp.CreateCanvas();
+
+        b_SkeletonOverlay = enabled;
+
+        //--- Clear on the way out. Nothing else will: COT's own loop early-returns on a flag we
+        //--- deliberately never set, so a canvas we stopped refreshing would keep its last frame
+        //--- painted over the world for good.
+        if( !enabled )
+            ClearSkeletonCanvas( esp );
+
+        BattleRoyaleUtils.Info("[Spectate] Skeleton overlay " + enabled);
+
+        if( enabled )
+            NotifyLocal( "#STR_BR_SPECTATE_SKELETON_ON" );
+        else
+            NotifyLocal( "#STR_BR_SPECTATE_SKELETON_OFF" );
+#else
+        //--- Build without COT. Nothing to draw with, so say so rather than leaving a dead key.
+        b_SkeletonOverlay = false;
+        NotifyLocal( "#STR_BR_SPECTATE_SKELETON_DENIED" );
+#endif
+    }
+
+#ifdef JM_COT
+    /**
+     *  A red skeleton over a corpse, drawn straight onto the canvas.
+     *
+     *  WHY THIS IS NOT JMESPSkeleton.Draw. That method takes no colour: it picks one from
+     *  human.GetHealthLevel(), and a dead body is STATE_RUINED, which COT paints 0xFF232323 -
+     *  near-black, and useless for the one thing corpse markers are for. JMESPCanvas.DrawLine does
+     *  take a colour and does its own projection and bounds check, so the corpse pass uses that
+     *  directly. Living players still go through COT's renderer, whose health colouring is worth
+     *  having and which is already proven.
+     *
+     *  ⚠️ THE BONE CHAIN IS DERIVED FROM VANILLA'S RIG, NOT COPIED FROM COT'S LIMB TABLE, and that
+     *  distinction is the licence. COT is CC BY-SA 4.0 against this repo's DSPL-SA: *calling*
+     *  JMESPSkeleton.Draw is interoperation and carries no obligation, but transcribing its
+     *  s_Limbs array would be adaptation. These pairs come from the bone names vanilla itself
+     *  registers per damage zone in BleedingSourcesManagerBase.Init
+     *  (P:\scripts\4_world\classes\bleedingsources\bleedingsourcesmanagerbase.c:23-61), walked in
+     *  rig order. It shows: this chain carries the shoulders and the full spine, which COT's does
+     *  not, and stops at the feet rather than the finger bones.
+     */
+    protected void DrawCorpseSkeleton( PlayerBase body, JMESPCanvas canvas )
+    {
+        //--- Spine, head to pelvis.
+        DrawBone( body, canvas, "Head", "Neck" );
+        DrawBone( body, canvas, "Neck", "Spine3" );
+        DrawBone( body, canvas, "Spine3", "Spine2" );
+        DrawBone( body, canvas, "Spine2", "Spine1" );
+        DrawBone( body, canvas, "Spine1", "Spine" );
+        DrawBone( body, canvas, "Spine", "Pelvis" );
+
+        //--- Arms.
+        DrawBone( body, canvas, "Neck", "LeftShoulder" );
+        DrawBone( body, canvas, "LeftShoulder", "LeftArm" );
+        DrawBone( body, canvas, "LeftArm", "LeftForeArm" );
+        DrawBone( body, canvas, "LeftForeArm", "LeftForeArmRoll" );
+
+        DrawBone( body, canvas, "Neck", "RightShoulder" );
+        DrawBone( body, canvas, "RightShoulder", "RightArm" );
+        DrawBone( body, canvas, "RightArm", "RightForeArm" );
+        DrawBone( body, canvas, "RightForeArm", "RightForeArmRoll" );
+
+        //--- Legs.
+        DrawBone( body, canvas, "Pelvis", "LeftUpLeg" );
+        DrawBone( body, canvas, "LeftUpLeg", "LeftLeg" );
+        DrawBone( body, canvas, "LeftLeg", "LeftFoot" );
+        DrawBone( body, canvas, "LeftFoot", "LeftToeBase" );
+
+        DrawBone( body, canvas, "Pelvis", "RightUpLeg" );
+        DrawBone( body, canvas, "RightUpLeg", "RightLeg" );
+        DrawBone( body, canvas, "RightLeg", "RightFoot" );
+        DrawBone( body, canvas, "RightFoot", "RightToeBase" );
+    }
+
+    //! One limb. A bone that will not resolve is skipped rather than drawn from the origin, which is
+    //! what an unchecked -1 index would produce - a line shooting off to the map corner.
+    protected void DrawBone( PlayerBase body, JMESPCanvas canvas, string from_bone, string to_bone )
+    {
+        int from_index = body.GetBoneIndexByName( from_bone );
+        if( from_index == -1 )
+            return;
+
+        int to_index = body.GetBoneIndexByName( to_bone );
+        if( to_index == -1 )
+            return;
+
+        vector from_pos = body.GetBonePositionWS( from_index );
+        vector to_pos = body.GetBonePositionWS( to_index );
+
+        //--- DrawLine takes WORLD positions and does its own projection and off-screen rejection.
+        canvas.DrawLine( from_pos, to_pos, BR_SPECTATE_SKELETON_CORPSE_THICKNESS, BR_SPECTATE_SKELETON_CORPSE_COLOUR );
+    }
+
+    protected void ClearSkeletonCanvas( JMESPModule esp )
+    {
+        if( !esp.m_ESPCanvas )
+            return;
+        if( !esp.m_ESPCanvas.HasCanvas() )
+            return;
+
+        esp.m_ESPCanvas.Clear();
+    }
+#endif
+
+    /**
+     *  Draw the skeletons, once per frame, from our own loop.
+     *
+     *  ⚠️ WHY THIS DOES NOT USE COT'S OWN RENDERER LOOP, having tried twice. The first build set
+     *  JMESPModule.SetDrawPlayerSkeletonsEnabled(true) and nothing appeared; the log proved the flag
+     *  was set, the permission granted and the canvas present, so the only thing left was that
+     *  JMESPModule.OnUpdate - which is what actually draws - was never being ticked. The second
+     *  build added esp.EnableUpdate() and STILL nothing appeared.
+     *
+     *  So the loop is ours. JMESPSkeleton.Draw is a public static taking a Human, a canvas and a
+     *  line width; it reads bone positions in world space and writes into the canvas. Calling it
+     *  directly needs nothing enabled and nothing ticking, and it is the same published-API call as
+     *  before as far as the licence goes - COT is CC BY-SA 4.0, and using its API is interoperation,
+     *  not adaptation.
+     *
+     *  Two things come with owning the loop, both of them wanted:
+     *    - RANGE IS OURS. COT culls at ESPRadius, default 200 m and an admin's own COT setting - well
+     *      inside where a spectating admin watches from, and a strong candidate for why even the
+     *      EnableUpdate build showed nothing.
+     *    - CLEARING IS OURS. A CanvasWidget keeps what was drawn until something clears it, so the
+     *      Clear() must happen every frame BEFORE the redraw, and again when the overlay is turned
+     *      off or the session ends.
+     */
+    protected void UpdateSkeletonOverlay()
+    {
+#ifdef JM_COT
+        if( !b_SkeletonOverlay )
+            return;
+
+        //--- Belt and braces against a session that ended without LeaveSpectate: an admin back in
+        //--- their body with skeletons still painted is the x-ray view the whole feature is gated to
+        //--- prevent.
+        if( !IsSpectating() )
+        {
+            SetSkeletonOverlay( false );
+            return;
+        }
+
+        JMESPModule esp;
+        if( !CF_Modules<JMESPModule>.Get( esp ) )
+            return;
+        if( !esp.m_ESPCanvas )
+            return;
+        if( !esp.m_ESPCanvas.HasCanvas() )
+            return;
+
+        esp.m_ESPCanvas.Clear();
+
+        if( !ClientData.m_PlayerBaseList )
+            return;
+
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc )
+            return;
+
+        int count = ClientData.m_PlayerBaseList.Count();
+        int drawn = 0;
+        int not_playing = 0;
+        int corpses = 0;
+
+        for( int i = 0; i < count; i++ )
+        {
+            PlayerBase other = PlayerBase.Cast( ClientData.m_PlayerBaseList.Get( i ) );
+            if( !other )
+                continue;
+
+            /**
+             *  THE LIVING AND THE DEAD ARE FILTERED DIFFERENTLY, because only one of them can be
+             *  checked against a roster.
+             *
+             *  ⚠️ LIVING: MATCH PARTICIPANTS ONLY, and this is what keeps the admin's OWN body out.
+             *  The anchor body the camera carries under itself is created server-side and reaches
+             *  this client as a REMOTE entity - the connection's selected object is the spectator
+             *  camera, not the body - so ClientData.m_PlayerBaseList holds it like anybody else and
+             *  it was getting a skeleton of its own. Comparing against GetGame().GetPlayer() does
+             *  not help precisely because that inequality is why it was inserted. admin_uids is the
+             *  server's match roster, pushed for the overlay tags, and a non-participant admin is
+             *  absent from it by construction.
+             *
+             *  DEAD: DRAWN UNCONDITIONALLY, to find bodies after a fight. They cannot be roster-
+             *  checked at all - admin_uids carries only the LIVING, so a corpse fails that test by
+             *  definition - and there is nothing to gate them on anyway: a corpse is somewhere a
+             *  fight happened, which is exactly the thing worth seeing.
+             */
+            bool is_alive = other.IsAlive();
+
+            if( is_alive )
+            {
+                PlayerIdentity subject = other.GetIdentity();
+                if( !subject )
+                {
+                    not_playing++;
+                    continue;
+                }
+
+                string uid = subject.GetPlainId();
+
+                //--- On its own line ahead of the test: a container read nested inside a call
+                //--- argument has a measured aliasing defect in this codebase.
+                int roster_index = br_rpc.admin_uids.Find( uid );
+                if( roster_index == -1 )
+                {
+                    not_playing++;
+                    continue;
+                }
+            }
+            else
+            {
+                if( !BR_SPECTATE_SKELETON_CORPSES )
+                    continue;
+
+                corpses++;
+            }
+
+            //--- z is depth along the view axis, which is what a range cull wants, and its SIGN is
+            //--- the behind-camera test. Drawing a behind-camera subject would mirror it to the
+            //--- wrong side of the screen.
+            vector screen_pos = GetGame().GetScreenPosRelative( other.GetPosition() );
+            if( screen_pos[2] < 0 )
+                continue;
+            if( screen_pos[2] > BR_SPECTATE_SKELETON_RANGE_M )
+                continue;
+
+            //--- Living go through COT's renderer, which colours by health level. Corpses go through
+            //--- ours, because that renderer has no colour parameter and would paint them near-black.
+            if( is_alive )
+                JMESPSkeleton.Draw( other, esp.m_ESPCanvas, BR_SPECTATE_SKELETON_THICKNESS );
+            else
+                DrawCorpseSkeleton( other, esp.m_ESPCanvas );
+
+            drawn++;
+        }
+
+        ReportSkeletonFunnel( count, not_playing, corpses, drawn );
+#endif
+    }
+
+    //! One throttled line: how many replicated players there were and how many got a skeleton. The
+    //! lobby tags needed exactly this to stop the guessing, and this feature has now cost two builds
+    //! to blind reasoning.
+    protected void ReportSkeletonFunnel( int population, int not_playing, int corpses, int drawn )
+    {
+        int now = GetGame().GetTime();
+        if( now < m_NextSkeletonDiagMs )
+            return;
+
+        m_NextSkeletonDiagMs = now + BR_LOBBY_TAG_DIAG_MS;
+
+        //--- notplaying counts LIVING entities that are replicated but not on the match roster -
+        //--- normally just the admin's own anchor body, so a figure above 1 is worth a look. corpses
+        //--- is how many of `drawn` were bodies rather than players.
+        BattleRoyaleUtils.Debug("[Spectate] skeletons population=" + population + " notplaying=" + not_playing + " corpses=" + corpses + " drawn=" + drawn);
+    }
+
+    /**
+     *  A notification raised by this client for itself.
+     *
+     *  Every other notification in this mod is a server push through MessagePlayerUntranslated, and
+     *  that is still the rule for anything the server decides. This one exists because the skeleton
+     *  toggle never reaches the server, so there is nobody else to raise it. Same widget, icon and
+     *  duration as the RPC path - see BattleRoyaleRPC.NotificationMessage and DAYZBR_MSG_TIME, which
+     *  is what MessagePlayerUntranslated passes - just without the wire.
+     *
+     *  The key is passed with its leading '#' and handed straight to the widget, unlike the server
+     *  path, which ships a bare key and localises it on arrival. Nothing crosses a stage boundary
+     *  here, so there is no reason to take the string apart and put it back together.
+     */
+    protected void NotifyLocal( string key )
+    {
+        ExpansionNotification( DAYZBR_MSG_TITLE, key, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME ).Create();
+    }
+
+    //! Does this client believe it is an admin? Pushed once by the server on connect. Used to gate
+    //! the keys above and the death screen's admin button - never as an authorization decision.
+    bool IsAdmin()
+    {
+        return b_IsAdmin;
     }
 
     //--- There was a ReportSteamName() here, sending BiosUser.GetName() to the server as a fallback

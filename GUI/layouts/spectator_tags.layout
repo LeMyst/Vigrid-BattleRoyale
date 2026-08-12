@@ -1,0 +1,24 @@
+// Container for the admin spectator's floating player tags. One child per visible player, pooled
+// and repositioned every frame by BattleRoyaleSpectatorTags.
+//
+// Full-screen frame with hexactsize 0 / vexactsize 0, which is the ONE container shape whose
+// GetScreenSize reports real pixels - so children SetPos'd in pixels land where they are put. A
+// fixed-pixel container would render at viewport/1920 of its declared width while its children were
+// laid out in the declared units, which shifts the whole group while its spacing stays correct.
+//
+// priority is above the party name tags (which have none) so the admin overlay wins where they
+// overlap; an admin is never in a party for gameplay purposes anyway.
+PanelWidgetClass SpectatorTagsRoot {
+ visible 1
+ ignorepointer 1
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ priority 50
+ color 0 0 0 0
+ {
+ }
+}

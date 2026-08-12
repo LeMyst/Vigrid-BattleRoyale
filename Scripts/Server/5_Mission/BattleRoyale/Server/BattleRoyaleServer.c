@@ -37,6 +37,10 @@ class BattleRoyaleServer: BattleRoyaleBase
     //--- and an exempt admin is, by construction, in no state.
     protected ref array<string> a_LateJoinExempt;
 
+    //--- Next time PushLobbyNames is allowed to send. Self-throttling, so its caller can sit in the
+    //--- existing 10 Hz block without a second timer.
+    protected int m_NextLobbyNamesMs;
+
     void BattleRoyaleServer()
     {
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
@@ -45,6 +49,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestSpectate", this);
+        //--- Admin spectate. All four resolve their actor from the engine-supplied `sender` and all
+        //--- four gate on BattleRoyaleSpectators.AdminEligibility, which is the single definition of
+        //--- who may do this - see the header of BattleRoyaleSpectators.c.
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateToggle", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateMode", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCamPos", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
@@ -262,6 +273,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- of ticks.
 			UpdateLateJoiners();
 
+			//--- Tell each lobby player who to draw a name over. Self-throttled to 1 Hz and returns
+			//--- on one bool outside the lobby, so it costs nothing for the rest of the match.
+			PushLobbyNames();
+
 #ifdef VIGRID_PARTY
 			//--- A resolved name is not a party composition change, so Party has no reason to re-send
 			//--- its rosters and its HUD row would keep rendering "Survivor". Consume-once flag, so
@@ -315,6 +330,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 					i_CurrentStateIndex = next_index;//move us to the next state
 					BattleRoyaleUtils.Trace("[State Machine] Entering State `" + GetCurrentState().GetName() + "`");
 					GetCurrentState().Activate(); //activate new state
+
+					//--- One call covering every transition, so no individual state has to remember
+					//--- to announce itself and a state inserted later cannot forget to.
+					BroadcastLobbyPhase();
 				}
 				else
 				{
@@ -387,6 +406,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         if(!placed_at_zone)
         {
+            //--- The lobby half of GetAdminSpawnPosition, reached directly because the circle half
+            //--- above has already been tried and its answer is what `placed_at_zone` records.
             BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
             vector debug_pos = m_Debug.GetCenter();
 
@@ -487,7 +508,51 @@ class BattleRoyaleServer: BattleRoyaleBase
         return true;
     }
 
-    //--- True if this player is allowed to stay connected while holding no state (admins only).
+    /**
+     *  Where to put an admin who needs to be somewhere useful: the live circle, or the lobby centre
+     *  when no circle is in play yet.
+     *
+     *  The fallback used to live inline in OnPlayerConnected, which was fine while that was the only
+     *  caller. AdminRespawn is a second one, and duplicating it there would mean two places that can
+     *  disagree about where an admin belongs.
+     */
+    void GetAdminSpawnPosition(out vector position)
+    {
+        if(GetAdminJoinPosition( position ))
+            return;
+
+        BattleRoyaleDebug debug_state = BattleRoyaleDebug.Cast( GetState(0) );
+        if(!debug_state)
+            return;
+
+        vector debug_pos = debug_state.GetCenter();
+
+        position[0] = Math.RandomFloatInclusive((debug_pos[0] - 5), (debug_pos[0] + 5));
+        position[2] = Math.RandomFloatInclusive((debug_pos[2] - 5), (debug_pos[2] + 5));
+        position[1] = GetGame().SurfaceY(position[0], position[2]);
+    }
+
+    //--- Remember a uid as exempt from the late-join kick. Idempotent.
+    void ExemptFromLateJoinKick(string uid)
+    {
+        if(uid == "")
+            return;
+        if(a_LateJoinExempt.Find( uid ) != -1)
+            return;
+
+        a_LateJoinExempt.Insert( uid );
+    }
+
+    /**
+     *  True if this player is allowed to stay connected while holding no state (admins only).
+     *
+     *  Checks admins_steamid64 DIRECTLY as well as the a_LateJoinExempt list, and that is a fix
+     *  rather than belt-and-braces. a_LateJoinExempt is only ever populated by OnPlayerConnected's
+     *  mid-match branch, so an admin who connected during the LOBBY and later stopped holding state
+     *  - by dying, or by taking the admin respawn - was not on it and got kicked by OnPlayerTick's
+     *  not-in-state branch. The steamid list is the actual authority for "is an admin"; the array is
+     *  just a cache of the ones we happened to notice on the way in.
+     */
     bool IsLateJoinExempt(PlayerBase player)
     {
         if(!player)
@@ -498,9 +563,19 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(player.player_steamid != "" && a_LateJoinExempt.Find( player.player_steamid ) != -1)
             return true;
 
+        BattleRoyaleGameData game_settings = BattleRoyaleConfig.GetConfig().GetGameData();
+        if(game_settings && game_settings.admins_steamid64 && player.player_steamid != "")
+        {
+            if(game_settings.admins_steamid64.Find( player.player_steamid ) != -1)
+                return true;
+        }
+
         PlayerIdentity identity = player.GetIdentity();
         if(!identity)
             return false;
+
+        if(IsAdminIdentity( identity ))
+            return true;
 
         return (a_LateJoinExempt.Find( identity.GetPlainId() ) != -1);
     }
@@ -586,6 +661,35 @@ class BattleRoyaleServer: BattleRoyaleBase
         string sender_id = sender.GetPlainId();
         if(sender_id == "")
             return;
+
+        //--- Tell an admin client that it is one, so it can arm the admin keys and offer the death
+        //--- screen's third button. Sent HERE rather than from OnPlayerConnected because that fires
+        //--- while the client is still loading the world - measured at 20 s before ClientNew alone -
+        //--- and an RPC delivered into that window is simply lost. This handler exists precisely
+        //--- because it is the first moment the client is provably listening.
+        //---
+        //--- Presentation only. Every admin RPC re-checks IsAdminIdentity server-side, so this tells
+        //--- the client nothing it can act on that the server will not verify again.
+        //---
+        //--- THE VERDICT IS COMPUTED ON ITS OWN LINE, and that is not style. Written as
+        //--- `new Param1<bool>( IsAdminIdentity( sender ) )` this threw "NULL pointer to instance"
+        //--- for every client that loaded in - and because a VM exception unwinds the stack, the
+        //--- late-joiner arming loop below never ran either, so the bug reached further than the one
+        //--- line it was on. Same family as the measured array-read aliasing bug in this codebase:
+        //--- an array read (admins_steamid64.Find) nested inside a call inside a constructor inside
+        //--- another call does not evaluate reliably. Keep it flat.
+        bool sender_is_admin = IsAdminIdentity( sender );
+
+        ref Param1<bool> admin_flag = new Param1<bool>( sender_is_admin );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", admin_flag, true, sender );
+
+        //--- And where the match currently is, for the same reason: this client missed every
+        //--- broadcast sent before it connected. Without it a mid-match joiner - which in practice
+        //--- means an admin, everyone else being kicked - reads the shipped default and behaves as
+        //--- though the lobby were still running. Flat, like the admin verdict above.
+        bool in_lobby = IsLobbyPhase();
+        ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true, sender );
 
         for(int i = 0; i < a_LateJoiners.Count(); ++i)
         {
@@ -867,6 +971,126 @@ class BattleRoyaleServer: BattleRoyaleBase
         return GetState(i_CurrentStateIndex);
     }
 
+    /**
+     *  Are the players still gathered in the lobby?
+     *
+     *  True for the lobby and for the pre-match countdown, false from spawn selection onwards. The
+     *  test is the same cast OnPlayerConnected uses to decide whether an arrival is a late joiner:
+     *  BattleRoyaleCountReached derives from BattleRoyaleDebugState, so one cast covers both, and
+     *  they are precisely the two states in which everyone is standing in the same place.
+     */
+    bool IsLobbyPhase()
+    {
+        BattleRoyaleState state = GetCurrentState();
+        if(!state)
+            return false;
+
+        BattleRoyaleDebugState lobby = BattleRoyaleDebugState.Cast( state );
+
+        return lobby != NULL;
+    }
+
+    /**
+     *  Push each lobby player the list of people to hang a name over.
+     *
+     *  ONE PACKET PER RECIPIENT, and their own teammates are dropped from it here rather than
+     *  filtered on arrival. Party composition therefore never goes on the wire, and neither do
+     *  SteamID64s - the client identifies each subject by NETWORK ID, which is the only handle both
+     *  sides agree on for a remote entity. GetIdentity() is not reliably populated client-side for
+     *  another player, which is what made the first attempt draw nothing at all.
+     *
+     *  Names come from PlayerBase.player_name, so they carry the name service's corrections rather
+     *  than the "Survivor" the client connected with.
+     *
+     *  Positions are deliberately NOT sent. Everyone in the lobby is in the same clearing and so
+     *  inside every other client's network bubble, which makes the live entity both exact and
+     *  per-frame - strictly better than a 1 Hz push, and free.
+     */
+    protected void PushLobbyNames()
+    {
+        if(!IsLobbyPhase())
+            return;
+
+        int now = GetGame().GetTime();
+        if(now < m_NextLobbyNamesMs)
+            return;
+
+        m_NextLobbyNamesMs = now + BR_LOBBY_NAMES_PUSH_MS;
+
+        BattleRoyaleState state = GetCurrentState();
+        if(!state)
+            return;
+
+        array<PlayerBase> population = state.GetPlayers();
+        if(!population)
+            return;
+
+        int count = population.Count();
+
+        for(int i = 0; i < count; i++)
+        {
+            PlayerBase recipient = population.Get(i);
+            if(!recipient)
+                continue;
+
+            PlayerIdentity identity = recipient.GetIdentity();
+            if(!identity)
+                continue;
+
+            array<PlayerBase> teammates = new array<PlayerBase>();
+#ifdef VIGRID_PARTY
+            //--- A partition, so a solo recipient simply gets a list containing only themselves.
+            teammates = VigridPartyAPI.GetTeammates( recipient, population );
+#endif
+
+            array<int> net_low = new array<int>();
+            array<int> net_high = new array<int>();
+            array<string> names = new array<string>();
+
+            for(int j = 0; j < count; j++)
+            {
+                if(net_low.Count() >= BR_LOBBY_TAG_MAX_ROWS)
+                    break;
+
+                PlayerBase subject = population.Get(j);
+                if(!subject)
+                    continue;
+                if(subject == recipient)
+                    continue;
+                if(!subject.IsAlive())
+                    continue;
+                if(teammates.Find( subject ) != -1)
+                    continue;
+
+                int subject_low;
+                int subject_high;
+                subject.GetNetworkID( subject_low, subject_high );
+
+                net_low.Insert( subject_low );
+                net_high.Insert( subject_high );
+                names.Insert( subject.player_name );
+            }
+
+            ref Param3<array<int>, array<int>, array<string>> payload = new Param3<array<int>, array<int>, array<string>>( net_low, net_high, names );
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyNames", payload, true, identity );
+        }
+    }
+
+    /**
+     *  Tell every connected client where the match is.
+     *
+     *  Called from the two places a state is activated, so no state has to remember to do it and a
+     *  new state added in the middle cannot forget. Broadcast rather than diffed: it is one bool a
+     *  handful of times per match, and a client that missed one is a client showing the wrong thing
+     *  until the next transition.
+     */
+    void BroadcastLobbyPhase()
+    {
+        bool in_lobby = IsLobbyPhase();
+        ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true );
+    }
+
     int GetNextStateIndex()
     {
         if(m_States.Count() <= (i_CurrentStateIndex + 1))
@@ -1004,6 +1228,71 @@ class BattleRoyaleServer: BattleRoyaleBase
         {
             BattleRoyaleSpectators.GetInstance().RequestSpectate( sender );
         }
+    }
+
+    //------------------------------------------------------------------------------------------
+    //--- Admin spectate. Same rule as every other admin RPC in this file: the actor is `sender`,
+    //--- never anything in the payload, and authorization is re-checked server-side on every call
+    //--- rather than trusted from whatever the client believes about itself.
+    //------------------------------------------------------------------------------------------
+
+    //! Enter / leave admin spectate, respawning first when the admin is dead. No payload: what the
+    //! press means is derived from server state, not sent by the client.
+    void AdminSpectateToggle(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if(type != CallType.Server)
+            return;
+
+        BattleRoyaleSpectators.GetInstance().AdminToggle( sender );
+    }
+
+    void AdminSpectateCycle(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param1< int > data;
+        if( !ctx.Read( data ) ) return;
+
+        if(type != CallType.Server)
+            return;
+
+        //--- Normalised rather than trusted: the payload only ever means "next" or "previous", so a
+        //--- client sending 10000 steps one place, not ten thousand.
+        int direction = 1;
+        if(data.param1 < 0)
+            direction = -1;
+
+        BattleRoyaleSpectators.GetInstance().CycleTarget( sender, direction );
+    }
+
+    void AdminSpectateMode(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param1< int > data;
+        if( !ctx.Read( data ) ) return;
+
+        if(type != CallType.Server)
+            return;
+
+        //--- SetAdminMode rejects anything that is not FOLLOW or FREE, so an out-of-range value from
+        //--- a crafted packet is a no-op rather than a mode nothing renders.
+        BattleRoyaleSpectators.GetInstance().SetAdminMode( sender, data.param1 );
+    }
+
+    /**
+     *  The free camera reporting where it is, so the server can keep the admin's body underneath it
+     *  and the replication bubble with it.
+     *
+     *  ~2 Hz and unvalidated as to position, deliberately: the only thing a lying client can achieve
+     *  is to move their OWN already-invisible body somewhere else, which is precisely what the honest
+     *  path does anyway. It is refused outright for anyone who is not in an admin session.
+     */
+    void AdminSpectateCamPos(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param1< vector > data;
+        if( !ctx.Read( data ) ) return;
+
+        if(type != CallType.Server)
+            return;
+
+        BattleRoyaleSpectators.GetInstance().SetAdminCamPos( sender, data.param1 );
     }
 
     void RequestLeaderboard(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
@@ -1422,6 +1711,16 @@ class BattleRoyaleServer: BattleRoyaleBase
                 //--- diag toggle must not become a persisted setting.
                 BattleRoyaleConfig.GetConfig().GetGameData().spectate_enabled = (data.param2 != 0);
                 BattleRoyaleUtils.Info("[Diag] spectate_enabled -> " + BattleRoyaleConfig.GetConfig().GetGameData().spectate_enabled + " (this process only)");
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_ADMIN_SPECTATE:
+            {
+                //--- In memory only, same reasoning as SET_SPECTATE above. This one exists mainly to
+                //--- reach the OFF case: admin_spectate_enabled ships ON, so the test worth having is
+                //--- that turning it off makes AdminEligibility refuse.
+                BattleRoyaleConfig.GetConfig().GetGameData().admin_spectate_enabled = (data.param2 != 0);
+                BattleRoyaleUtils.Info("[Diag] admin_spectate_enabled -> " + BattleRoyaleConfig.GetConfig().GetGameData().admin_spectate_enabled + " (this process only)");
                 break;
             }
 

@@ -138,6 +138,33 @@ class VigridPartyAPI
         return manager.GetMemberIndexOf(VigridPartyManager.UidOf(player));
     }
 
+    /**
+     *  Hide or show one connected member in the state their party receives.
+     *
+     *  A hidden member is presented to their teammates exactly as an offline one - no position, no
+     *  world nametag, no compass caret, no marker on the map - while remaining a full member: still
+     *  on the roster, still listed by name, still counted by GetGroupCount, and unaffected in every
+     *  grouping query. Nothing else about the party changes.
+     *
+     *  WHY THIS EXISTS, stated as a general contract rather than the host's use case: a host mod can
+     *  put a player somewhere that is not where they are playing from. Party cannot detect that and
+     *  must not try - it has no concept of a match, a camera or a spectator - so the host asserts it.
+     *
+     *  Idempotent, session-scoped, and never persisted: parties outlive the process and this must
+     *  not, or a member could come back invisible with nothing left to clear the flag.
+     *
+     *  ⚠️ The caller owns the clear. Set it false on every path out - including the ones that are
+     *  not a clean exit, since a member left hidden reads to their party as permanently offline.
+     */
+    static void SetMemberHidden(string uid, bool hidden)
+    {
+        VigridPartyManager manager = VigridPartyManager.GetInstance();
+        if (!manager || !manager.IsEnabled())
+            return;
+
+        manager.SetMemberHidden(uid, hidden);
+    }
+
     static int GetMaxPartySize()
     {
         VigridPartyManager manager = VigridPartyManager.GetInstance();

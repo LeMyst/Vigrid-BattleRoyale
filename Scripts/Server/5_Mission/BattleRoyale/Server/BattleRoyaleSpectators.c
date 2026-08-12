@@ -41,8 +41,24 @@
  *  block. No Timer, no CallLaterByName, no coroutine: a driver that only touches strings cannot fire
  *  against a freed object.
  *
- *  There is NO client -> server RPC. Target selection is automatic, so there is no client request to
- *  authenticate, and therefore nothing to spoof, rate-limit or gate.
+ *  CLIENT -> SERVER RPCs. For an ordinary spectator there is exactly one, RequestSpectate, and it
+ *  carries no payload: the actor is the engine-supplied `sender` and the only thing it can do is
+ *  start spectating for a uid the server itself already registered. The four admin RPCs
+ *  (AdminSpectateToggle / Cycle / Mode / CamPos) all resolve their actor the same way and all open
+ *  with AdminEligibility, so nothing a client sends chooses who it acts on.
+ *
+ *  ADMIN SPECTATE, in one rule: it requires a NON-PARTICIPANT - alive, holding a body, and absent
+ *  from m_Players. An admin who is competing is refused, because a competitor who can freecam the
+ *  map is indistinguishable from a cheat. Two ways to be a non-participant: connect mid-match (which
+ *  BattleRoyaleServer.OnPlayerConnected already handles, placing them at the live circle and
+ *  exempting them from the late-join kick), or die and take AdminRespawn, which is the bridge
+ *  between the two halves of the lifecycle. AdminEligibility is that rule, and every admin RPC
+ *  consults it rather than re-deriving it.
+ *
+ *  Note that AdminRespawn is the one thing here that creates an entity, which invariant 2 otherwise
+ *  forbids. It does not violate it: the new body is never added to m_Players, so the roster count,
+ *  IsComplete() and br_position are all untouched, and the admin's own placement, leaderboard entry
+ *  and corpse survive their respawn exactly as they were.
  */
 
 //! One death. Written once, read for the rest of the match.
@@ -87,6 +103,24 @@ class BattleRoyaleSpectatorEntry
     //! step distance, since an already-emptied, already-moved body has nothing left to protect.
     bool corpse_carried;
 
+    //! An ADMIN session rather than a death. Changes three things and nothing else: the target
+    //! resolver (ResolveAdminTarget, because ResolveTarget keys off the spectator's own death record
+    //! and an admin has none), the carry destination (the camera, not the target), and the fact that
+    //! the body being carried is alive and its gear must not be dropped.
+    bool is_admin;
+
+    //! Camera mode. Server-authoritative and pushed to the client in SetSpectateTarget - the client
+    //! never picks one, it only asks. Only an admin entry is ever set to BR_SPECTATE_MODE_FREE.
+    int mode;
+
+    //! Last camera position the client reported, for the free-camera body carry. "0 0 0" until the
+    //! first report, which CarryAnchorBody treats as "nothing to do".
+    vector cam_pos;
+
+    //! Earliest time the anchor body may be re-placed. Per-entry rather than global, so two admins
+    //! spectating at once do not share one clock and starve each other.
+    int next_anchor_ms;
+
     void BattleRoyaleSpectatorEntry(string spectator_uid, string spectator_name)
     {
         uid = spectator_uid;
@@ -97,6 +131,10 @@ class BattleRoyaleSpectatorEntry
         pending_enter = true;
         resolved_tier = 0;
         corpse_carried = false;
+        is_admin = false;
+        mode = BR_SPECTATE_MODE_ORBIT;
+        cam_pos = "0 0 0";
+        next_anchor_ms = 0;
     }
 }
 
@@ -110,6 +148,7 @@ class BattleRoyaleSpectators
 
     protected int m_NextPushMs;
     protected int m_NextCarryMs;
+    protected int m_NextAdminListMs;
     protected bool m_Ended;
 
     //! Which tier the LAST ResolveTarget call returned from. Written at every one of its five exits
@@ -125,6 +164,7 @@ class BattleRoyaleSpectators
         m_Spectators = new map<string, ref BattleRoyaleSpectatorEntry>();
         m_NextPushMs = 0;
         m_NextCarryMs = 0;
+        m_NextAdminListMs = 0;
         m_Ended = false;
         m_LastResolveTier = 0;
     }
@@ -666,8 +706,45 @@ class BattleRoyaleSpectators
         if (!m_Spectators.Contains(uid))
             return;
 
-        m_Spectators.Remove(uid);
+        DropEntry(uid);
         BattleRoyaleUtils.Info("[Spectate] Removed " + uid);
+    }
+
+    /**
+     *  THE ONLY PLACE A SPECTATOR ENTRY IS DROPPED.
+     *
+     *  It exists so that no exit path can forget to undo what a session took out on the rest of the
+     *  mod. There are four of them - a clean F3 exit, a body that went away underneath one, the
+     *  liveness sweep, and an admin respawn superseding an ordinary death session - and the party
+     *  hide had to be released on every single one, because a member left hidden reads to their
+     *  teammates as permanently offline for the rest of the match.
+     */
+    protected void DropEntry(string uid)
+    {
+        SetPartyHidden(uid, false);
+        m_Spectators.Remove(uid);
+    }
+
+    /**
+     *  Keep a spectating admin out of the state their own party receives.
+     *
+     *  ⚠️ THIS IS THE OTHER HALF OF A FIX THAT LOOKED DONE. Suppressing Party's HUD through
+     *  VigridPartyClientAPI.SetHudSuppressed only ever fixed the ADMIN'S OWN screen; the leak is on
+     *  their TEAMMATES' screens, where a respawned admin kept showing as a live member with a
+     *  compass caret pointing at wherever the camera had carried their body. Nothing client-side can
+     *  reach that, because it is the server's state push putting the position on the wire.
+     *
+     *  Party is told only "do not broadcast this member" - it has no idea what spectating is, and
+     *  the call is behind #ifdef VIGRID_PARTY like every other, so the mod still builds without it.
+     *  Safe to call for an ordinary spectator too, and it deliberately is not: a dead teammate
+     *  showing in the roster as dead is wanted behaviour, and only an admin is somewhere they are
+     *  not really standing.
+     */
+    protected void SetPartyHidden(string uid, bool hidden)
+    {
+#ifdef VIGRID_PARTY
+        VigridPartyAPI.SetMemberHidden(uid, hidden);
+#endif
     }
 
     /**
@@ -699,18 +776,35 @@ class BattleRoyaleSpectators
             if (entry.target_uid != lost_uid && entry.target_uid != "")
                 continue;
 
-            Retarget(entry);
+            Retarget(entry, lost_uid);
         }
     }
 
-    protected void Retarget(BattleRoyaleSpectatorEntry entry)
+    /**
+     *  Pick a new target for this entry. `lost_uid` is who they were watching (or who just left),
+     *  and is only consulted for an admin - it is what makes "the camera follows the kill" work.
+     */
+    protected void Retarget(BattleRoyaleSpectatorEntry entry, string lost_uid)
     {
         if (!entry)
             return;
 
         string previous = entry.target_uid;
-        entry.target_uid = ResolveTarget(entry.uid);
-        entry.resolved_tier = m_LastResolveTier;
+
+        //--- Two different resolvers, and the split is not an optimisation. ResolveTarget opens with
+        //--- m_Deaths.Get(spectator_uid) to find the spectator's own party and killer chain; an admin
+        //--- has no death record (they are alive, and may never have died at all), so every one of
+        //--- its five tiers degrades to the T5 orbit without saying so.
+        if (entry.is_admin)
+        {
+            entry.target_uid = ResolveAdminTarget(entry.uid, lost_uid);
+            entry.resolved_tier = 0;  //--- tiers are a ResolveTarget concept; 0 reads as "admin" in the log
+        }
+        else
+        {
+            entry.target_uid = ResolveTarget(entry.uid);
+            entry.resolved_tier = m_LastResolveTier;
+        }
 
         if (entry.pending_enter)
             return;  //--- not spectating yet; BeginSpectate will push the fresh target
@@ -756,8 +850,11 @@ class BattleRoyaleSpectators
 
         //--- Off the 10 Hz tick on purpose: the carry pass resolves bodies by walking every Man in
         //--- the world, which is not something to do ten times a second per spectator.
+        //--- BR_SPECTATE_CARRY_CORPSE is checked inside CarryCorpse rather than here, because it
+        //--- governs dragging a DEAD player's loot across the map - a gameplay trade that has nothing
+        //--- to say about an admin carrying their own live body under their own camera.
         bool do_carry = false;
-        if (BR_SPECTATE_CARRY_CORPSE && now >= m_NextCarryMs)
+        if (now >= m_NextCarryMs)
         {
             m_NextCarryMs = now + BR_SPECTATE_CARRY_INTERVAL_MS;
             do_carry = true;
@@ -775,7 +872,7 @@ class BattleRoyaleSpectators
             PlayerIdentity identity = IdentityOfUid(uid);
             if (!identity)
             {
-                m_Spectators.Remove(uid);
+                DropEntry(uid);
                 BattleRoyaleUtils.Info("[Spectate] Removed " + uid + " (identity gone)");
                 continue;
             }
@@ -794,7 +891,7 @@ class BattleRoyaleSpectators
             //--- is gone" converges here within 100 ms, whether or not its specific hook fired.
             if (entry.target_uid != "" && !LivingPlayerByUid(entry.target_uid))
             {
-                Retarget(entry);
+                Retarget(entry, entry.target_uid);
                 continue;
             }
 
@@ -803,10 +900,26 @@ class BattleRoyaleSpectators
             if (do_push)
                 Push(entry, identity);
 
-            //--- (e) corpse carry. Keeps the replication bubble - which sits on the corpse, not on
-            //--- the camera - within range of whoever is being watched.
+            //--- (e) body carry. Keeps the replication bubble - which sits on the connection's own
+            //--- entity, not on the camera - within range of what is being watched. An admin's
+            //--- anchor is their own live body and it follows the CAMERA; a dead player's is their
+            //--- corpse and it follows the TARGET.
             if (do_carry)
-                CarryCorpse(entry);
+            {
+                if (entry.is_admin)
+                    CarryAnchorBody(entry);
+                else
+                    CarryCorpse(entry);
+            }
+        }
+
+        //--- (f) the admin overlay list. Outside the per-entry loop: it builds the roster payload
+        //--- once and fans it out to whichever admins are watching, rather than rebuilding it per
+        //--- admin. PushAdminList returns immediately when there are none.
+        if (now >= m_NextAdminListMs)
+        {
+            m_NextAdminListMs = now + BR_ADMIN_CAMPOS_PUSH_MS;
+            PushAdminList();
         }
     }
 
@@ -831,6 +944,8 @@ class BattleRoyaleSpectators
      */
     protected void CarryCorpse(BattleRoyaleSpectatorEntry entry)
     {
+        if (!BR_SPECTATE_CARRY_CORPSE)
+            return;
         if (!entry)
             return;
         if (entry.target_uid == "")
@@ -1061,23 +1176,7 @@ class BattleRoyaleSpectators
 
         vector position = TargetPositionOf(entry);
 
-        //--- Drop the corpse from the connection's selection.
-        //---
-        //--- IT DOES NOT DROP THE NETWORK BUBBLE WITH IT, and do not assume otherwise from the shape
-        //--- of this call. The bubble stays on the corpse: measured both directions 2026-08-10 with
-        //--- the diag TP Target entry, the watched target is not replicated at 1200 m from where this
-        //--- player died (sustained 90 s, no recovery walking back to 1122 m) and is replicated again
-        //--- at 700 m, with the camera's UpdateSpectatorPosition running throughout - 507 pushes,
-        //--- camera always within ~4 m of the pushed position. That call is documented as "position
-        //--- of network bubble" and has no effect on player replication.
-        //---
-        //--- So this line is kept for what it actually does - taking the corpse out of the
-        //--- connection's selection so the client stops treating it as its own player - and the ~1 km
-        //--- limit is a known, documented limitation rather than something this line solves.
-        //--- CLAUDE.md carries the full history, including why the carrier body is not the answer.
-        GetGame().SelectPlayer(identity, NULL);
-
-        GetGame().SelectSpectator(identity, BR_SPECTATE_CAM_CLASS, position);
+        AttachSpectatorCamera(identity, position);
 
         entry.pending_enter = false;
         entry.entered_ms = GetGame().GetTime();
@@ -1086,6 +1185,32 @@ class BattleRoyaleSpectators
         Notify(entry, identity);
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] BeginSpectate %1 class=%2 pos=%3 target=%4 (T%5)", entry.uid, BR_SPECTATE_CAM_CLASS, position.ToString(), TargetLog(entry.target_uid), entry.resolved_tier));
+    }
+
+    /**
+     *  Put this connection behind a spectator camera. The two lines every entry path shares.
+     *
+     *  SelectPlayer(identity, NULL) DOES NOT DROP THE NETWORK BUBBLE, and do not assume otherwise
+     *  from the shape of the call. The bubble stays on the connection's own entity - the corpse for
+     *  a dead spectator, the live body for an admin. Measured both directions 2026-08-10 with the
+     *  diag TP Target entry: the watched target is not replicated at 1200 m from where the spectator
+     *  died (sustained 90 s, no recovery walking back to 1122 m) and is replicated again at 700 m,
+     *  with the camera's UpdateSpectatorPosition running throughout - 507 pushes, camera always
+     *  within ~4 m of the pushed position. That call is documented as "position of network bubble"
+     *  and has no effect on player replication.
+     *
+     *  So this line is kept for what it actually does - taking the entity out of the connection's
+     *  selection so the client stops treating it as its own player - and the range limit is answered
+     *  by CarryAnchorBody instead. CLAUDE.md carries the full history, including why the carrier
+     *  body is not the answer.
+     */
+    protected void AttachSpectatorCamera(PlayerIdentity identity, vector position)
+    {
+        if (!identity)
+            return;
+
+        GetGame().SelectPlayer(identity, NULL);
+        GetGame().SelectSpectator(identity, BR_SPECTATE_CAM_CLASS, position);
     }
 
     //------------------------------------------------------------------------------------------
@@ -1147,6 +1272,14 @@ class BattleRoyaleSpectators
             }
         }
 
+        //--- FREE overrides whatever the target situation is - the camera is flying and is not
+        //--- anchored to anybody. The target is still resolved and still pushed, because the client
+        //--- highlights it in the overlay and cycling has to keep working while free-flying.
+        if (entry.is_admin && entry.mode == BR_SPECTATE_MODE_FREE)
+            mode = BR_SPECTATE_MODE_FREE;
+        else
+            entry.mode = mode;  //--- keep the entry honest for anything that reads it later
+
         vector position = TargetPositionOf(entry);
 
         //--- `target` is the CF Object argument, marshalled by network id. At the first push the
@@ -1194,10 +1327,31 @@ class BattleRoyaleSpectators
         if (m_Ended)
             return;
 
-        m_Ended = true;
-
         int count = m_Spectators.Count();
         int i = 0;
+
+        //--- Hand admin bodies back. Without this an admin is left in a camera with no way out: the
+        //--- clear below drops their session, AdminToggle is guarded on m_Ended and would refuse, and
+        //--- they are not dead so there is no death screen to quit from either. Runs first and in two
+        //--- passes rather than inside the notify loop, because EndAdminSpectate mutates the map.
+        array<string> admin_uids = new array<string>();
+        for (i = 0; i < count; i++)
+        {
+            BattleRoyaleSpectatorEntry admin_entry = m_Spectators.GetElement(i);
+            if (admin_entry && admin_entry.is_admin)
+                admin_uids.Insert(admin_entry.uid);
+        }
+
+        for (i = 0; i < admin_uids.Count(); i++)
+        {
+            PlayerIdentity admin_identity = IdentityOfUid(admin_uids.Get(i));
+            if (admin_identity)
+                EndAdminSpectate(admin_identity);
+        }
+
+        m_Ended = true;
+
+        count = m_Spectators.Count();
         for (i = 0; i < count; i++)
         {
             BattleRoyaleSpectatorEntry entry = m_Spectators.GetElement(i);
@@ -1214,6 +1368,19 @@ class BattleRoyaleSpectators
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] EndAll (%1 spectators)", count));
 
+        //--- Release any party hide still standing before the map goes, since Clear() is the one
+        //--- removal that does not run through DropEntry. The loop above cannot be trusted to have
+        //--- done it: EndAdminSpectate is skipped for an admin whose identity has already gone, and
+        //--- that is precisely the admin who would come back invisible to their party.
+        for (i = 0; i < count; i++)
+        {
+            BattleRoyaleSpectatorEntry stale = m_Spectators.GetElement(i);
+            if (!stale)
+                continue;
+
+            SetPartyHidden(stale.uid, false);
+        }
+
         m_Spectators.Clear();
     }
 
@@ -1223,6 +1390,971 @@ class BattleRoyaleSpectators
             return "none";
 
         return uid;
+    }
+
+    //------------------------------------------------------------------------------------------
+    //--- ADMIN SPECTATE
+    //---
+    //--- One rule, stated once in AdminEligibility and never re-derived: admin spectate requires a
+    //--- NON-PARTICIPANT - alive, holding a body, absent from m_Players.
+    //------------------------------------------------------------------------------------------
+
+    /**
+     *  What may this identity do right now? The whole lifecycle, in one place.
+     *
+     *  Every admin RPC opens with this rather than assembling its own checks, so there is exactly one
+     *  definition of "may spectate" and no way for two entry points to disagree - which is the bug
+     *  the late-join admin exemption already had once, when OnPlayerConnected and OnPlayerTick
+     *  each decided for themselves.
+     */
+    int AdminEligibility(PlayerIdentity identity)
+    {
+        if (!BattleRoyaleServer.IsAdminIdentity(identity))
+            return BR_ADMIN_REFUSED_NOT_ADMIN;
+
+        if (!BattleRoyaleConfig.GetConfig().GetGameData().admin_spectate_enabled)
+            return BR_ADMIN_REFUSED_NOT_ADMIN;
+
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (!server)
+            return BR_ADMIN_REFUSED_NOT_ADMIN;
+
+        BattleRoyaleState state = server.GetCurrentState();
+        if (!state)
+            return BR_ADMIN_REFUSED_NOT_ADMIN;
+
+        //--- A real admin in the wrong phase. Its own verdict rather than folding into NOT_ADMIN,
+        //--- so it can be explained on screen: NOT_ADMIN is answered silently by design, which made
+        //--- pressing F3 in the lobby indistinguishable from a broken key.
+        if (!state.AllowsSpectate())
+            return BR_ADMIN_REFUSED_PHASE;
+
+        //--- COMPETING. The roster is the authority, and this is the check the whole feature turns
+        //--- on: an admin who is playing the match stays playing it.
+        if (state.GetPlayerFromIdentity(identity))
+            return BR_ADMIN_REFUSED_COMPETING;
+
+        string uid = identity.GetPlainId();
+        if (uid == "")
+            return BR_ADMIN_REFUSED_NOT_ADMIN;
+
+        //--- Not competing and holding a live body: mid-match joiner, or already respawned.
+        PlayerBase body = FindBodyByUid(uid);
+        if (body && body.IsAlive())
+            return BR_ADMIN_ALLOW_SPECTATE;
+
+        return BR_ADMIN_OFFER_RESPAWN;
+    }
+
+    //! Is this uid currently in an ADMIN spectate session (as opposed to an ordinary death one)?
+    bool IsAdminSpectator(string uid)
+    {
+        BattleRoyaleSpectatorEntry entry = m_Spectators.Get(uid);
+        if (!entry)
+            return false;
+
+        return entry.is_admin;
+    }
+
+    /**
+     *  Hide or restore the admin's anchor body - the live character being carried under the camera.
+     *
+     *  WHY THIS IS NOT `SetInvisibleRecursive`. That was tried, shipped and measured on 2026-08-11:
+     *  other players could still see the body, and the admin could see their own standing beside
+     *  whoever they were following. `SetInvisible` looks to be a LOCAL RENDER FLAG rather than
+     *  replicated state - COT only ever calls it client-side, on the local player's own model
+     *  (JM/COT/.../Player/DayZPlayerImplement.c:208) - so setting it server-side hides the body from
+     *  nobody at all, silently.
+     *
+     *  COT's `COTSetInvisibility` is the route that actually replicates: it writes
+     *  `m_JMIsInvisibleRemoteSynch` and calls `SetSynchDirty()`, which is precisely the half that
+     *  was missing. This is a plain API call into a hard dependency, not adapted code, so it carries
+     *  no obligation under COT's CC BY-SA licence.
+     *
+     *  `Interactive` rather than `DisableSimulation`, deliberately. This body is teleported every
+     *  time the camera drifts, and control is handed back to it on exit - and the crash already
+     *  fixed in EndAdminSpectate came from vanilla's camera initialising against a body that had
+     *  never been simulated. Turning simulation off would push it further in that direction for no
+     *  gain: invisibility is all that is wanted here.
+     *
+     *  Behind #ifdef JM_COT because that define comes from COT itself. COT is a hard dependency of
+     *  this mod, so in practice it is always present; a build without it falls back to a visible
+     *  body rather than failing to compile.
+     */
+    protected void HideAnchorBody(PlayerBase body, bool hidden)
+    {
+        if (!body)
+            return;
+
+        //--- Vanilla, and independent of the above: a parked body nobody can see must not be
+        //--- killable by whatever it is dropped on top of.
+        body.SetAllowDamage(!hidden);
+
+#ifdef JM_COT
+        if (hidden)
+            body.COTSetInvisibility(JMInvisibilityType.Interactive);
+        else
+            body.COTSetInvisibility(JMInvisibilityType.None);
+#else
+        //--- No COT: say so once rather than leaving "the admin is visible" as a silent mystery.
+        if (hidden)
+            BattleRoyaleUtils.Warn("[Spectate] No JM_COT - the admin's body will be VISIBLE to other players while spectating");
+#endif
+    }
+
+    //! Is anybody at all in an admin session? Gates the overlay push out of the common path.
+    protected bool HasAdminSpectator()
+    {
+        int count = m_Spectators.Count();
+        for (int i = 0; i < count; i++)
+        {
+            BattleRoyaleSpectatorEntry entry = m_Spectators.GetElement(i);
+            if (entry && entry.is_admin)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     *  The one admin entry point: F3, and the death screen's admin button.
+     *
+     *  Deliberately ONE action rather than three, because what the admin wants is always "get me to
+     *  the camera" or "get me out of it", and which mechanical step that needs is the server's
+     *  problem, not something to make them press keys in the right order for. So:
+     *
+     *    already spectating          -> leave, and hand the body back
+     *    eligible, holding a body    -> enter
+     *    eligible but dead           -> respawn AND enter, in one press
+     *    competing                   -> refuse, and say why
+     */
+    void AdminToggle(PlayerIdentity sender)
+    {
+        if (m_Ended)
+            return;
+        if (!sender)
+            return;
+
+        string uid = sender.GetPlainId();
+        if (uid == "")
+            return;
+
+        //--- Leaving does not need eligibility: an admin who is already flying must always be able to
+        //--- get out, even if the state moved on or the setting was turned off underneath them.
+        if (IsAdminSpectator(uid))
+        {
+            EndAdminSpectate(sender);
+            return;
+        }
+
+        int verdict = AdminEligibility(sender);
+
+        if (verdict == BR_ADMIN_REFUSED_NOT_ADMIN)
+        {
+            BattleRoyaleUtils.Warn("[Spectate] Rejected AdminToggle from " + BattleRoyaleServer.GetIdentityLogName(sender));
+            return;
+        }
+
+        if (verdict == BR_ADMIN_REFUSED_PHASE)
+        {
+            BattleRoyaleUtils.Info("[Spectate] AdminToggle refused for " + uid + ": state does not allow spectating");
+            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>("STR_BR_SPECTATE_ADMIN_PHASE", DAYZBR_MSG_TIME, "", "", "", "", ""), true, sender);
+            return;
+        }
+
+        if (verdict == BR_ADMIN_REFUSED_COMPETING)
+        {
+            BattleRoyaleUtils.Info("[Spectate] AdminToggle refused for " + uid + ": still competing");
+            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>("STR_BR_SPECTATE_ADMIN_COMPETING", DAYZBR_MSG_TIME, "", "", "", "", ""), true, sender);
+            return;
+        }
+
+        if (verdict == BR_ADMIN_OFFER_RESPAWN)
+        {
+            if (!AdminRespawn(sender))
+                return;
+
+            //--- Fall through into the camera in the same press. AdminRespawn left them alive,
+            //--- non-participant and holding a body, which is exactly BeginAdminSpectate's precondition.
+        }
+
+        BeginAdminSpectate(sender);
+    }
+
+    /**
+     *  Give a dead admin a fresh body, so they become a non-participant and can then spectate.
+     *
+     *  THE THREE LINES ARE VANILLA'S OWN, from MissionServer.CreateCharacter
+     *  (P:\scripts\5_mission\mission\missionserver.c:486-495). Called directly rather than through
+     *  the mission, for two reasons: CreateCharacter writes the mission's `m_player` member as a side
+     *  effect, and this mod overrides EquipCharacter to apply the LOBBY loadout, which is wrong here.
+     *
+     *  CLAUDE.md records two crashes around player creation and neither applies. CreateObjectEx
+     *  faulted at 0x0, and CreatePlayer faulted at 0x9 with a NULL identity - which is out of
+     *  contract, its doc being "assign player entity to client" and vanilla's only null call site
+     *  being missionbenchmark.c:366, a mission with no clients. This one passes a real, connected
+     *  identity. The second recorded objection - "the body would be ALIVE and outside the state, so
+     *  OnPlayerTick force-logs-it-out" - was about the carrier body; here alive-and-outside is the
+     *  goal, and BattleRoyaleServer.IsLateJoinExempt covers admins.
+     *
+     *  NOTHING ABOUT THE MATCH CHANGES. The new body is never added to m_Players, so the roster
+     *  count, every IsComplete() and br_position are untouched; the admin's placement, leaderboard
+     *  entry and death record all stand, and their corpse and its loot stay where they fell.
+     */
+    bool AdminRespawn(PlayerIdentity identity)
+    {
+        if (m_Ended)
+            return false;
+        if (!identity)
+            return false;
+
+        string uid = identity.GetPlainId();
+        if (uid == "")
+            return false;
+
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (!server)
+            return false;
+
+        //--- Same placement a mid-match admin connect gets: the circle actually in play, falling back
+        //--- to the lobby centre when no circle is live yet. Shared helper rather than a second copy
+        //--- of the fallback, so the two entry points cannot disagree about where an admin belongs.
+        vector position = "0 0 0";
+        server.GetAdminSpawnPosition(position);
+
+        Entity player_ent = GetGame().CreatePlayer(identity, BR_ADMIN_RESPAWN_CHARACTER, position, 0, "NONE");
+        PlayerBase body = PlayerBase.Cast(player_ent);
+        if (!body)
+        {
+            BattleRoyaleUtils.Warn("[Spectate] AdminRespawn " + uid + ": CreatePlayer returned nothing for " + BR_ADMIN_RESPAWN_CHARACTER);
+            return false;
+        }
+
+        GetGame().SelectPlayer(identity, body);
+
+        //--- Set by hand because nothing else does outside OnPlayerConnected, and FindBodyByUid
+        //--- matches on player_steamid - without this the body this method just made is invisible to
+        //--- every uid->body lookup in the file, including AdminEligibility's.
+        body.player_steamid = uid;
+        body.player_name = BattleRoyaleNameService.ResolveIdentity(identity);
+
+        //--- They hold no state, so OnPlayerTick's not-in-state branch would schedule a kick. The
+        //--- exemption is the same list a mid-match admin connect uses. IsLateJoinExempt now also
+        //--- consults admins_steamid64 directly, so this is belt-and-braces rather than the only
+        //--- thing standing between this body and an immediate disconnect - but it keeps the list
+        //--- honest for anything that reads it.
+        server.ExemptFromLateJoinKick(uid);
+
+        //--- They are no longer an ordinary death spectator. Their death RECORD stays - it is a true
+        //--- record and the killer chain still needs it - but the session goes.
+        if (m_Spectators.Contains(uid))
+            DropEntry(uid);
+
+        //--- Undo the death-time deafening. They are a moderator now, not a dead player who might
+        //--- relay what they see.
+        GetGame().MuteAllPlayers(uid, false);
+
+        //--- Deliberately NO EndSpectate RPC here. The caller enters the camera on the very next
+        //--- line, whose Push sets spectate_active and closes the death screen anyway - and racing
+        //--- an EndSpectate against that Push risks the two landing in the wrong order and leaving
+        //--- the client believing it is not spectating when it is. The death screen closes itself
+        //--- for a living player regardless (DeathScreenMenu.Tick), which covers the case where
+        //--- entering the camera fails after the body was already created.
+        BattleRoyaleUtils.Info(string.Format("[Spectate] AdminRespawn %1 as %2 at %3", uid, BR_ADMIN_RESPAWN_CHARACTER, position.ToString()));
+        return true;
+    }
+
+    /**
+     *  Start an admin session. The caller has already established eligibility.
+     *
+     *  Unlike OnDeath there is no deferred entry and no offer: the admin asked for this, so it
+     *  happens now.
+     */
+    bool BeginAdminSpectate(PlayerIdentity identity)
+    {
+        if (m_Ended)
+            return false;
+        if (!identity)
+            return false;
+
+        string uid = identity.GetPlainId();
+        if (uid == "")
+            return false;
+
+        if (m_Spectators.Contains(uid))
+        {
+            BattleRoyaleUtils.Warn("[Spectate] BeginAdminSpectate: " + uid + " already has a session");
+            return false;
+        }
+
+        PlayerBase body = FindBodyByUid(uid);
+        if (!body)
+        {
+            BattleRoyaleUtils.Warn("[Spectate] BeginAdminSpectate: " + uid + " has no body");
+            return false;
+        }
+
+        string admin_name = body.player_name;
+        if (admin_name == "")
+            admin_name = identity.GetName();
+
+        HideAnchorBody(body, true);
+
+        BattleRoyaleSpectatorEntry entry = new BattleRoyaleSpectatorEntry(uid, admin_name);
+        entry.is_admin = true;
+        entry.pending_enter = false;   //--- no death screen to wait out
+        entry.entered_ms = GetGame().GetTime();
+        entry.cam_pos = body.GetPosition();
+        entry.target_uid = ResolveAdminTarget(uid, "");
+        entry.mode = BR_SPECTATE_MODE_FOLLOW;
+        m_Spectators.Set(uid, entry);
+
+        //--- Out of their party's state feed for the duration. The anchor body is about to start
+        //--- following the camera, and every position it takes would otherwise be broadcast to their
+        //--- teammates as a live member - a compass caret pointing straight at wherever the admin
+        //--- chose to watch from. Released by DropEntry on every exit path.
+        SetPartyHidden(uid, true);
+
+        AttachSpectatorCamera(identity, TargetPositionOf(entry));
+
+        Push(entry, identity);
+        Notify(entry, identity);
+
+        BattleRoyaleUtils.Info(string.Format("[Spectate] BeginAdminSpectate %1 (%2) target=%3", uid, admin_name, TargetLog(entry.target_uid)));
+        return true;
+    }
+
+    /**
+     *  End an admin session and hand the body back.
+     *
+     *  The body is moved to the camera first, so leaving the camera puts the admin where they were
+     *  looking rather than back where they started - which is the whole point of being able to fly
+     *  there. Uses the same juncture as every other teleport in the mod.
+     */
+    bool EndAdminSpectate(PlayerIdentity identity)
+    {
+        if (!identity)
+            return false;
+
+        string uid = identity.GetPlainId();
+        if (uid == "")
+            return false;
+
+        BattleRoyaleSpectatorEntry entry = m_Spectators.Get(uid);
+        if (!entry || !entry.is_admin)
+            return false;
+
+        //--- IsAlive as well as non-null. The body is carried around under the camera and is not
+        //--- replicated, so nobody can shoot it - but it can still drown, fall or be caught by a
+        //--- scripted damage source, and handing a corpse back would drop the admin into a dead
+        //--- body with no death screen and no way out. Treated as "gone" so the next toggle offers a
+        //--- respawn, which is the path that does work.
+        PlayerBase body = FindBodyByUid(uid);
+        if (!body || !body.IsAlive())
+        {
+            DropEntry(uid);
+            BattleRoyaleUtils.Warn("[Spectate] EndAdminSpectate " + uid + ": body is gone or dead, session dropped");
+            return false;
+        }
+
+        //--- Copied out BEFORE the Remove below. m_Spectators holds the only strong reference to the
+        //--- entry, so removing it frees the object and `entry` becomes a dangling weak local - the
+        //--- log line at the bottom of this method used to read entry.cam_pos AFTER the Remove,
+        //--- which is a use-after-free that happened to print correct values most of the time.
+        vector exit_pos = entry.cam_pos;
+
+        //--- Leaving the camera puts the admin where they were LOOKING, not back where they started -
+        //--- which is the whole point of being able to fly there.
+        if (exit_pos != "0 0 0")
+            MoveCorpse(body, exit_pos);
+
+        //--- BEFORE handing control back - an admin who reappeared as an invisible invincible player
+        //--- would be a far worse bug than the visible body this fixes.
+        HideAnchorBody(body, false);
+
+        //--- POSITION FIRST, CONTROL A TICK LATER, and the gap is deliberate.
+        //---
+        //--- Handing the body back in the same frame as the juncture teleport crashed the CLIENT
+        //--- outright: "Access violation ... at 0x74" in vanilla
+        //--- DayZPlayerCamera1stPerson.UpdateUDAngleUnlocked (dayzplayercamera_base.c:132), 2026-08-11.
+        //--- That body has never been simulated - it was created by CreatePlayer and dropped from
+        //--- the connection's selection immediately - so vanilla's first-person camera initialises
+        //--- against a player that is mid-juncture and has no command state yet.
+        //---
+        //--- The teleport is left where it is and only SelectPlayer moves, because the position has
+        //--- to be authoritative before the client starts predicting from it. Same spirit as
+        //--- BR_NotifyTeleported: never resync a player inside the frame that moved them.
+        //---
+        //--- DropEntry rather than a bare Remove: it also puts the admin back into their party's
+        //--- state feed, which is the one side effect of a session that outlives the session itself.
+        DropEntry(uid);
+
+        GetGame().GetCallQueue(CALL_CATEGORY_GAMEPLAY).CallLater(FinishAdminExit, BR_ADMIN_EXIT_SELECT_DELAY_MS, false, identity, body);
+
+        GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "EndSpectate", NULL, true, identity);
+
+        BattleRoyaleUtils.Info(string.Format("[Spectate] EndAdminSpectate %1 at %2", uid, exit_pos.ToString()));
+        return true;
+    }
+
+    //! The deferred half of EndAdminSpectate - see the comment there. Re-checks both arguments,
+    //! because a disconnect inside the delay window frees either of them.
+    void FinishAdminExit(PlayerIdentity identity, PlayerBase body)
+    {
+        if (!identity || !body)
+        {
+            BattleRoyaleUtils.Warn("[Spectate] FinishAdminExit: identity or body gone, cannot hand control back");
+            return;
+        }
+
+        GetGame().SelectPlayer(identity, body);
+        BattleRoyaleUtils.Info("[Spectate] FinishAdminExit: control returned to " + identity.GetPlainId());
+        return;
+    }
+
+    /**
+     *  Who should an admin watch?
+     *
+     *  Deliberately NOT a sixth tier on ResolveTarget, which opens with m_Deaths.Get(spectator_uid)
+     *  to find the spectator's own party and killer chain. An admin has no death record - they are
+     *  alive, and may never have died at all - so every one of those five tiers degrades to the T5
+     *  orbit without saying so.
+     *
+     *  Order:
+     *    1. THE KILLER of whoever just died, if they are still alive. This is the "follow the fight"
+     *       behaviour: watch someone lose a gunfight and the camera stays on the winner.
+     *    2. The next living player in cycle order, so a zone death or a disconnect still lands
+     *       somewhere useful rather than on the empty circle.
+     *    3. "" - orbit the final circle, when nobody is left to watch.
+     */
+    protected string ResolveAdminTarget(string uid, string lost_uid)
+    {
+        if (lost_uid != "")
+        {
+            BattleRoyaleDeathRecord record = m_Deaths.Get(lost_uid);
+            if (record && record.killer_uid != "" && record.killer_uid != lost_uid)
+            {
+                if (LivingPlayerByUid(record.killer_uid))
+                {
+                    BattleRoyaleUtils.Debug(string.Format("[Spectate] Admin %1 follows the killer of %2 -> %3", uid, lost_uid, record.killer_uid));
+                    return record.killer_uid;
+                }
+            }
+        }
+
+        array<string> living = new array<string>();
+        BuildCycleList(living);
+        if (living.Count() == 0)
+            return "";
+
+        return living.Get(0);
+    }
+
+    /**
+     *  Every living player, in a STABLE order.
+     *
+     *  Sorted by uid rather than left in roster order, because the roster is compacted as people die
+     *  and an unsorted list would silently renumber itself under the admin - pressing Next twice
+     *  could land back where it started. Sorting a string array is enough: uids are fixed-width
+     *  SteamID64s, so lexicographic and numeric order agree.
+     */
+    protected void BuildCycleList(out array<string> living)
+    {
+        living.Clear();
+
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (!server)
+            return;
+
+        BattleRoyaleState state = server.GetCurrentState();
+        if (!state)
+            return;
+
+        array<PlayerBase> roster = state.GetPlayers();
+        if (!roster)
+            return;
+
+        int count = roster.Count();
+        for (int i = 0; i < count; i++)
+        {
+            PlayerBase candidate = roster.Get(i);
+            if (!candidate)
+                continue;
+            if (!candidate.GetIdentity())
+                continue;
+
+            string candidate_uid = candidate.GetIdentity().GetPlainId();
+            if (candidate_uid == "")
+                continue;
+
+            living.Insert(candidate_uid);
+        }
+
+        living.Sort();
+    }
+
+    /**
+     *  Step an admin's target forwards or backwards through the living players.
+     *
+     *  Wraps. A target that is no longer in the list - they died between the keypress and here -
+     *  restarts from the top rather than refusing, since refusing would leave the admin pressing a
+     *  key that appears to do nothing.
+     */
+    void CycleTarget(PlayerIdentity identity, int direction)
+    {
+        if (m_Ended)
+            return;
+        if (!identity)
+            return;
+
+        string uid = identity.GetPlainId();
+        BattleRoyaleSpectatorEntry entry = m_Spectators.Get(uid);
+        if (!entry || !entry.is_admin)
+            return;
+
+        array<string> living = new array<string>();
+        BuildCycleList(living);
+
+        int count = living.Count();
+        if (count == 0)
+        {
+            entry.target_uid = "";
+            Push(entry, identity);
+            Notify(entry, identity);
+            return;
+        }
+
+        int index = living.Find(entry.target_uid);
+        if (index == -1)
+        {
+            index = 0;
+        }
+        else
+        {
+            index = index + direction;
+
+            //--- Not a modulo: EnfusionScript's % on a negative left operand is not something to
+            //--- rely on, and there are only ever two ways off the end of the list.
+            if (index < 0)
+                index = count - 1;
+            if (index >= count)
+                index = 0;
+        }
+
+        entry.target_uid = living.Get(index);
+        entry.resolved_tier = 0;
+
+        Push(entry, identity);
+        Notify(entry, identity);
+
+        BattleRoyaleUtils.Debug(string.Format("[Spectate] Admin %1 cycled %2 -> %3 (%4/%5)", uid, direction, TargetLog(entry.target_uid), index + 1, count));
+    }
+
+    //! Switch an admin between FOLLOW and FREE. Server-authoritative: the client asks, the camera
+    //! changes only when the new mode comes back down in SetSpectateTarget.
+    void SetAdminMode(PlayerIdentity identity, int mode)
+    {
+        if (m_Ended)
+            return;
+        if (!identity)
+            return;
+        if (mode != BR_SPECTATE_MODE_FOLLOW && mode != BR_SPECTATE_MODE_FREE)
+            return;
+
+        BattleRoyaleSpectatorEntry entry = m_Spectators.Get(identity.GetPlainId());
+        if (!entry || !entry.is_admin)
+            return;
+
+        entry.mode = mode;
+
+        //--- Entering FREE seeds the camera position from wherever the follow camera was, so the
+        //--- body carry has something sane before the client's first report arrives.
+        if (mode == BR_SPECTATE_MODE_FREE && entry.cam_pos == "0 0 0")
+            entry.cam_pos = TargetPositionOf(entry);
+
+        //--- Leaving FREE snaps to whoever the camera is NEAREST, rather than resuming whoever was
+        //--- being followed before. An admin flies somewhere specific to look at something specific,
+        //--- so "follow what I flew to" is the useful reading of the key - resuming a target on the
+        //--- far side of the map would throw away the whole reason they flew there.
+        if (mode == BR_SPECTATE_MODE_FOLLOW && entry.cam_pos != "0 0 0")
+        {
+            string nearest = NearestLivingUidTo(entry.cam_pos);
+            if (nearest != "")
+                entry.target_uid = nearest;
+        }
+
+        Push(entry, identity);
+
+        //--- Feedback, because F5 is otherwise a key that visibly does nothing when the camera
+        //--- happens to be pointing somewhere similar in both modes.
+        string mode_key = "STR_BR_SPECTATE_ADMIN_FOLLOW";
+        if (mode == BR_SPECTATE_MODE_FREE)
+            mode_key = "STR_BR_SPECTATE_ADMIN_FREE";
+
+        GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>(mode_key, DAYZBR_MSG_TIME, "", "", "", "", ""), true, identity);
+
+        BattleRoyaleUtils.Debug(string.Format("[Spectate] Admin %1 mode -> %2", entry.uid, mode));
+    }
+
+    //! The client reporting where its free camera is, so the body can follow. ~2 Hz.
+    void SetAdminCamPos(PlayerIdentity identity, vector position)
+    {
+        if (m_Ended)
+            return;
+        if (!identity)
+            return;
+
+        BattleRoyaleSpectatorEntry entry = m_Spectators.Get(identity.GetPlainId());
+        if (!entry || !entry.is_admin)
+            return;
+
+        entry.cam_pos = position;
+    }
+
+    /**
+     *  Keep an admin's own body under their camera, so the replication bubble follows the view.
+     *
+     *  Same mechanism as CarryCorpse and the same measured justification - the bubble sits on the
+     *  connection's entity and UpdateSpectatorPosition does not move it - but three things differ,
+     *  and all three are because this body is ALIVE and belongs to the person flying the camera:
+     *
+     *    - the destination is the CAMERA, not a target. A free camera has no target to chase.
+     *    - the gear is NOT dropped. It is the admin's own kit and they get it back on exit.
+     *    - there is no bystander check and no forced bound. Nobody is coming to loot a live admin.
+     *
+     *  DO NOT assume this body is invisible the way a carried corpse is. That measurement was taken
+     *  on a CORPSE; a live body is still simulated, so its teleports replicate and other players
+     *  watch it slide across the map. BeginAdminSpectate hides it explicitly instead.
+     */
+    protected void CarryAnchorBody(BattleRoyaleSpectatorEntry entry)
+    {
+        if (!entry)
+            return;
+        if (entry.cam_pos == "0 0 0")
+            return;  //--- no camera report yet
+
+        PlayerBase body = FindBodyByUid(entry.uid);
+        if (!body)
+            return;
+
+        vector body_pos = body.GetPosition();
+        int now = GetGame().GetTime();
+
+        //--- TWO CLOCKS, and the second is what makes the lazy one safe. Ordinarily the body is
+        //--- re-placed at most every BR_ADMIN_ANCHOR_INTERVAL_MS, because each move is a sync
+        //--- juncture on a live entity and the best position changes slowly. But a free camera at
+        //--- the top speed step covers over 200 m/s - far enough in one interval to leave its own
+        //--- bubble behind - so drifting past BR_ADMIN_ANCHOR_URGENT_M overrides the wait.
+        bool urgent = vector.Distance(body_pos, entry.cam_pos) >= BR_ADMIN_ANCHOR_URGENT_M;
+        if (!urgent && now < entry.next_anchor_ms)
+            return;
+
+        entry.next_anchor_ms = now + BR_ADMIN_ANCHOR_INTERVAL_MS;
+
+        int covered = 0;
+        vector wanted = ChooseAnchorPosition(entry.cam_pos, covered);
+
+        //--- Hysteresis. Without it the body chases every small change in the best answer, which is
+        //--- a juncture per tick for no visible gain.
+        float move_distance = vector.Distance(body_pos, wanted);
+        if (move_distance < BR_ADMIN_ANCHOR_STEP_M)
+            return;
+
+        BattleRoyaleUtils.Debug(string.Format("[Spectate] Anchor admin %1: body %2 -> %3 (%4 m, covers %5 player(s), urgent=%6)", entry.uid, body_pos.ToString(), wanted.ToString(), move_distance, covered, urgent));
+
+        MoveCorpse(body, wanted);
+    }
+
+    /**
+     *  Where to park the admin's body so the bubble holds as many players as possible.
+     *
+     *  The naive answer - put it on the camera - wastes most of the bubble whenever the camera is
+     *  at the edge of a group, and the admin then cannot see or HEAR players who are only a few
+     *  hundred metres from the ones they are watching. Voice and replication are both keyed to this
+     *  entity, not to the camera, so moving it off-camera towards the crowd buys both at once.
+     *
+     *  Constraints, in priority order:
+     *    1. The CAMERA must stay comfortably inside the bubble. Optimising coverage of players the
+     *       admin cannot actually see would be worse than useless, so every candidate is capped at
+     *       BR_ADMIN_ANCHOR_MAX_OFFSET_M from the camera.
+     *    2. Cover as many living players as possible within BR_ADMIN_ANCHOR_COVER_M.
+     *    3. Stay at least BR_ADMIN_ANCHOR_MIN_PLAYER_M from any one of them.
+     *
+     *  Constraint 3 is a PREFERENCE, not a hard rule: in a shrinking final circle every point is
+     *  near somebody, and refusing to place the body at all would cost the admin the whole view.
+     *  The search therefore runs twice, and the second pass drops it.
+     *
+     *  Candidates are the camera itself plus four points along the line from the camera to the
+     *  centroid of the players it can see. A line rather than a grid because the useful direction
+     *  is always "towards the crowd", and a 5-point line costs 5 * N distance checks where a sweep
+     *  would cost hundreds - this runs on the server with every player in the match in scope.
+     */
+    protected vector ChooseAnchorPosition(vector camera_pos, out int covered)
+    {
+        covered = 0;
+
+        array<vector> positions = new array<vector>();
+        CollectLivingPositions(positions);
+        if (positions.Count() == 0)
+            return camera_pos;
+
+        //--- Centroid of the players already within reach of the camera. Everyone else is beyond
+        //--- saving from here, and including them would drag the anchor towards the far side of the
+        //--- map and lose the players the admin is actually watching.
+        vector sum = "0 0 0";
+        int near_count = 0;
+        int i = 0;
+        for (i = 0; i < positions.Count(); i++)
+        {
+            if (vector.Distance(positions.Get(i), camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
+                continue;
+
+            sum = sum + positions.Get(i);
+            near_count = near_count + 1;
+        }
+
+        if (near_count == 0)
+            return camera_pos;
+
+        //--- Componentwise, NOT `sum / near_count`: EnfusionScript has no vector/float divide
+        //--- operator. Same trap the camera boom hit, which is why it uses Normalized().
+        float inv = 1.0 / near_count;
+        vector centroid = Vector(sum[0] * inv, sum[1] * inv, sum[2] * inv);
+
+        //--- Clamp the pull towards the centroid, so the camera never leaves the bubble.
+        vector offset = centroid - camera_pos;
+        offset[1] = 0;
+        float offset_len = offset.Length();
+        if (offset_len > BR_ADMIN_ANCHOR_MAX_OFFSET_M)
+            offset = offset.Normalized() * BR_ADMIN_ANCHOR_MAX_OFFSET_M;
+
+        vector best = camera_pos;
+        int best_score = -1;
+        float best_clearance = 0;
+
+        //--- Two passes: honour the minimum spacing, then give it up rather than give up entirely.
+        int pass = 0;
+        for (pass = 0; pass < 2; pass++)
+        {
+            bool enforce_spacing = (pass == 0);
+
+            int step = 0;
+            for (step = 0; step <= 4; step++)
+            {
+                vector candidate = camera_pos + (offset * (step * 0.25));
+                candidate[1] = GetGame().SurfaceY(candidate[0], candidate[2]);
+
+                int score = 0;
+                float clearance = 100000;
+
+                int p = 0;
+                for (p = 0; p < positions.Count(); p++)
+                {
+                    float distance = vector.Distance(positions.Get(p), candidate);
+                    if (distance <= BR_ADMIN_ANCHOR_COVER_M)
+                        score = score + 1;
+                    if (distance < clearance)
+                        clearance = distance;
+                }
+
+                if (enforce_spacing && clearance < BR_ADMIN_ANCHOR_MIN_PLAYER_M)
+                    continue;
+
+                //--- Coverage first; among equal coverage prefer the spot furthest from anybody, so
+                //--- the admin drifts to the quiet edge of a group rather than its middle.
+                if (score < best_score)
+                    continue;
+                if (score == best_score && clearance <= best_clearance)
+                    continue;
+
+                best_score = score;
+                best_clearance = clearance;
+                best = candidate;
+            }
+
+            if (best_score >= 0)
+                break;  //--- pass 0 found something; no need to relax the spacing
+        }
+
+        if (best_score < 0)
+            return camera_pos;
+
+        covered = best_score;
+        return best;
+    }
+
+    /**
+     *  The living player closest to a point, or "" when the roster is empty.
+     *
+     *  Distinct from NearestLivingUid, which measures from a spectator's DEATH POSITION and is part
+     *  of the five-tier chain. This one takes an arbitrary point, because what an admin wants is
+     *  "nearest to where I am now", and an admin has no death position to measure from.
+     */
+    protected string NearestLivingUidTo(vector origin)
+    {
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (!server)
+            return "";
+
+        BattleRoyaleState state = server.GetCurrentState();
+        if (!state)
+            return "";
+
+        array<PlayerBase> roster = state.GetPlayers();
+        if (!roster)
+            return "";
+
+        string best_uid = "";
+        float best_distance = 0;
+
+        int count = roster.Count();
+        for (int i = 0; i < count; i++)
+        {
+            PlayerBase candidate = roster.Get(i);
+            if (!candidate)
+                continue;
+            if (!candidate.GetIdentity())
+                continue;
+
+            string candidate_uid = candidate.GetIdentity().GetPlainId();
+            if (candidate_uid == "")
+                continue;
+
+            float distance = vector.Distance(candidate.GetPosition(), origin);
+            if (best_uid != "" && distance >= best_distance)
+                continue;
+
+            best_uid = candidate_uid;
+            best_distance = distance;
+        }
+
+        return best_uid;
+    }
+
+    //! Positions of every living roster member. Positions only - nothing here needs identity, and
+    //! copying them out keeps the scoring loop off the roster array.
+    protected void CollectLivingPositions(out array<vector> positions)
+    {
+        positions.Clear();
+
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (!server)
+            return;
+
+        BattleRoyaleState state = server.GetCurrentState();
+        if (!state)
+            return;
+
+        array<PlayerBase> roster = state.GetPlayers();
+        if (!roster)
+            return;
+
+        int count = roster.Count();
+        for (int i = 0; i < count; i++)
+        {
+            PlayerBase candidate = roster.Get(i);
+            if (!candidate)
+                continue;
+
+            positions.Insert(candidate.GetPosition());
+        }
+    }
+
+    /**
+     *  Build the admin overlay payload and send it to every admin currently spectating.
+     *
+     *  PER-IDENTITY, NEVER BROADCAST, and that is not incidental. This carries SteamID64s, which
+     *  SetLeaderboard deliberately refuses to put on the wire precisely because it is a broadcast -
+     *  "shipping SteamID64s to every client would be pure liability". Sending them only to a
+     *  connection the server has already established is an admin is what makes it acceptable here.
+     *
+     *  Bounded by BR_ADMIN_LIST_MAX by construction: this mod has no RPC chunking anywhere.
+     */
+    protected void PushAdminList()
+    {
+        //--- Cheap bail before any roster work. On the overwhelmingly common path - a match with no
+        //--- admin watching - this is the whole cost of the feature.
+        if (!HasAdminSpectator())
+            return;
+
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (!server)
+            return;
+
+        BattleRoyaleState state = server.GetCurrentState();
+        if (!state)
+            return;
+
+        array<PlayerBase> roster = state.GetPlayers();
+        if (!roster)
+            return;
+
+        array<string> uids = new array<string>();
+        array<string> names = new array<string>();
+        array<vector> positions = new array<vector>();
+        array<float> healths = new array<float>();
+        array<int> kills = new array<int>();
+        array<int> slots = new array<int>();
+
+        int count = roster.Count();
+        int i = 0;
+        for (i = 0; i < count; i++)
+        {
+            if (uids.Count() >= BR_ADMIN_LIST_MAX)
+            {
+                BattleRoyaleUtils.Warn(string.Format("[Spectate] Admin list truncated at %1 of %2 players", BR_ADMIN_LIST_MAX, count));
+                break;
+            }
+
+            PlayerBase candidate = roster.Get(i);
+            if (!candidate)
+                continue;
+            if (!candidate.GetIdentity())
+                continue;
+
+            string candidate_uid = candidate.GetIdentity().GetPlainId();
+            if (candidate_uid == "")
+                continue;
+
+            string candidate_name = candidate.player_name;
+            if (candidate_name == "")
+                candidate_name = candidate.GetIdentity().GetName();
+
+            uids.Insert(candidate_uid);
+            names.Insert(candidate_name);
+            positions.Insert(candidate.GetPosition());
+            healths.Insert(candidate.GetHealth01("", "Health"));
+            kills.Insert(candidate.br_kills);
+            slots.Insert(AdminListSlotOf(candidate));
+        }
+
+        int spectators = m_Spectators.Count();
+        for (i = 0; i < spectators; i++)
+        {
+            BattleRoyaleSpectatorEntry entry = m_Spectators.GetElement(i);
+            if (!entry)
+                continue;
+            if (!entry.is_admin)
+                continue;
+
+            PlayerIdentity identity = IdentityOfUid(entry.uid);
+            if (!identity)
+                continue;
+
+            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", new Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>>(uids, names, positions, healths, kills, slots), true, identity);
+        }
+    }
+
+    //! Party slot for the overlay's colour, or -1 without the addon / without a party.
+    //! GetMemberIndex is join-ordered and never reshuffled, so a player keeps their colour for the
+    //! whole match - which is the property the overlay needs and the reason not to derive one here.
+    protected int AdminListSlotOf(PlayerBase player)
+    {
+#ifdef VIGRID_PARTY
+        return VigridPartyAPI.GetMemberIndex(player);
+#else
+        return -1;
+#endif
     }
 
 #ifdef DIAG_DEVELOPER

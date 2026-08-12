@@ -87,25 +87,55 @@ modded class IngameHud
 	{
 		super.Update( timeslice );
 
-		// Show player tags only if the match is not started
-		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
-		if( !br_rpc.match_started )
-		{
-			RefreshPlayerTags();
-			ShowPlayerTag(timeslice);
-			if ( m_CurrentTaggedPlayer && m_CurrentTaggedPlayer.GetIdentity() )
-			{
-				Widget m_TagFrame = m_PlayerTag.FindAnyWidget( "TagFrame" );
-				m_TagFrame.SetSize( 300, 25 );
+		BR_SuppressPointTag();
+	}
 
-				//--- Vanilla's ShowPlayerTag just wrote GetPlainName() into the tag, and on the client
-				//--- that is still the launcher name - the correction only exists on the server. Repaint
-				//--- it here, after super has run, rather than reimplementing the tag's own fade and
-				//--- placement logic. Falls through to the same string when nothing was resolved.
-				if ( m_PlayerTagText )
-					m_PlayerTagText.SetText( br_rpc.ResolveDisplayName( m_CurrentTaggedPlayer.GetIdentity() ) );
-			}
-		}
+	/**
+	 *  Keep the "point at somebody to read their name" tag out of the way while the mod is drawing
+	 *  its own names over every head.
+	 *
+	 *  THIS USED TO BE THE FEATURE RATHER THAN ITS SUPPRESSION. The block here called vanilla's
+	 *  RefreshPlayerTags / ShowPlayerTag - which ship #ifdef PLATFORM_PS4 and never run on PC
+	 *  otherwise - whenever the match had not started, and repainted the text with the resolved
+	 *  name. BattleRoyaleLobbyTags replaces it: a name over every non-teammate, which is the shape
+	 *  the question "who is in this lobby" actually has.
+	 *
+	 *  WHAT IS HIDDEN IS THE ROOT, m_PlayerTag, and that choice is what makes this work against DayZ
+	 *  Expansion's NameTags addon too. Expansion's modded IngameHud drives the same vanilla-owned
+	 *  root and text widgets and parents its own icon inside them, so hiding the root takes the icon
+	 *  with it - a hidden parent is not drawn whatever happens to its children. Nothing in vanilla or
+	 *  in Expansion ever calls Show(true) on that root; they fade the text alpha instead. So this
+	 *  wins regardless of which addon's Update runs first in the modded-class chain, which matters
+	 *  because that order is not something this mod's requiredAddons pins down.
+	 *
+	 *  A no-op when neither is loaded: m_PlayerTag is created lazily by whoever draws the tag, so on
+	 *  a server without Expansion it simply stays NULL.
+	 */
+	protected void BR_SuppressPointTag()
+	{
+		if ( !m_PlayerTag )
+			return;
+
+		//--- Show(true) on the other side of the branch rather than a one-way hide, so the tag comes
+		//--- back for the match. Both calls are per-frame and idempotent; the engine no-ops a Show
+		//--- that changes nothing.
+		m_PlayerTag.Show( !BR_ModDrawsItsOwnNames() );
+	}
+
+	//! The mission cast is done here rather than through GetBR(), whose failure path calls the global
+	//! Error() - and that halts the script VM. This runs every frame, including the teardown frames
+	//! where the cast legitimately comes back NULL.
+	protected bool BR_ModDrawsItsOwnNames()
+	{
+		MissionBaseWorld world = MissionBaseWorld.Cast( GetGame().GetMission() );
+		if ( !world )
+			return false;
+
+		BattleRoyaleClient client = BattleRoyaleClient.Cast( world.GetBattleRoyale() );
+		if ( !client )
+			return false;
+
+		return client.IsShowingOwnNameTags();
 	}
 }
 #endif
