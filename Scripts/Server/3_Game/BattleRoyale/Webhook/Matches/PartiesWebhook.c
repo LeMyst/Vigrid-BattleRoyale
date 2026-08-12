@@ -51,7 +51,11 @@ class PartiesCallback: RestCallback
 	protected string s_ServerToken;
 	protected int i_TryLeft;
 	protected string s_MatchUUID;
-	protected array<ref map<string, string>> a_Parties;
+	//--- `ref`, because this outlives the caller. The only other holder is the coroutine local in
+	//--- 4_BattleRoyalePrepare.ProcessPlayers (:560), released as soon as that coroutine ends -
+	//--- long before an HTTP error or timeout callback fires. Held weakly, the payload was gone by
+	//--- then and every retry re-POSTed empty party data, precisely when a retry mattered.
+	protected ref array<ref map<string, string>> a_Parties;
 
 	void PartiesCallback(string server_token, string match_uuid, array<ref map<string, string>> parties, int try_left)
 	{

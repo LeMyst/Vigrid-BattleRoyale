@@ -111,8 +111,8 @@ class BattleRoyaleLastRound: BattleRoyaleState
         if(_previousState.GetPlayers().Count() > 1)
             return false;
 
-#ifdef Carim
-        if(_previousState.GetGroupsCount() > 1)
+#ifdef VIGRID_PARTY
+        if(VigridPartyAPI.GetGroupCount( _previousState.GetPlayers() ) > 1)
             return false;
 #endif
 
@@ -128,11 +128,14 @@ class BattleRoyaleLastRound: BattleRoyaleState
 	{
 		if(IsActive())
 		{
-#ifdef Carim
-			if(GetPlayers().Count() <= 1 || GetGroupsCount() <= 1)
-#else
-			if(GetPlayers().Count() <= 1)
+			//--- Hoisted: EnfusionScript has no multi-line if conditions, so the guarded term
+			//--- cannot be appended inline. Without the party addon this mirrors the player test.
+			bool one_group_left = GetPlayers().Count() <= 1;
+#ifdef VIGRID_PARTY
+			one_group_left = VigridPartyAPI.GetGroupCount( GetPlayers() ) <= 1;
 #endif
+
+			if(GetPlayers().Count() <= 1 || one_group_left)
 				Deactivate();
 		}
 

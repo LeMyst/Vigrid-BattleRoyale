@@ -11,9 +11,9 @@ class BattleRoyaleState: Timeable
 
     //static int i_StartingZone = 1; // Default zone is the biggest one
 
-#ifdef Carim
+    //--- Plain game setting, unrelated to whether parties exist. It used to sit behind the party
+    //--- mod's #ifdef, which meant a build without that mod could not honour it at all.
     bool hide_players_endgame = false;
-#endif
 
     string GetName()
     {
@@ -28,15 +28,16 @@ class BattleRoyaleState: Timeable
         b_IsPaused = false;
         b_IsDebug = false;
 
-#ifdef Carim
-        // Only really useful when party are enabled
+        //--- Drives the player/group counter on every client's HUD. This used to be registered
+        //--- only when the party mod was present, so a build without it never refreshed the
+        //--- counter at all - the panel simply froze on whatever it was first told.
         AddTimer(5.0, this, "OnPlayerCountChanged", NULL, true);
+
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
         {
             hide_players_endgame = m_GameSettings.hide_players_endgame;
         }
-#endif
     }
 
     void Update(float timeslice)
@@ -174,18 +175,22 @@ class BattleRoyaleState: Timeable
 			int nb_players, nb_groups;
 
 			nb_players = GetPlayers().Count();
-#ifdef Carim
-			int groups_count = GetGroupsCount();
+
+			//--- Sentinels the client decodes in BattleRoyaleHud.SetCount: -2 hides the group
+			//--- panel entirely (no party system), -1 shows "???" (endgame concealment).
+			nb_groups = -2;
+			int groups_count = nb_players;
+
+#ifdef VIGRID_PARTY
+			groups_count = VigridPartyAPI.GetGroupCount( GetPlayers() );
+			nb_groups = groups_count;
 
 			if(nb_players < 10 && hide_players_endgame && !b_IsDebug)
 				nb_groups = -1;
-			else
-				nb_groups = groups_count;
-			UpdateTopPosition( groups_count );
-#else
-			nb_groups = -2;
-			UpdateTopPosition( nb_players );
 #endif
+
+			//--- Placement follows groups when parties exist and raw player count otherwise.
+			UpdateTopPosition( groups_count );
 
 			//BattleRoyaleUtils.Trace(string.Format("OnPlayerCountChanged: %1 %2", nb_players, nb_groups));
 			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetPlayerCount", new Param2<int, int>( nb_players, nb_groups ), true);
@@ -357,195 +362,6 @@ class BattleRoyaleState: Timeable
 
         return true;
     }
-
-#ifdef Carim
-	/*
-	 * Get the number of groups in the game
-	 * Quickly iterate over the parties and count the number of groups
-	 * @return The number of groups
-	 */
-	int GetGroupsCount()
-	{
-		// Early return if no players
-		if (m_Players.Count() == 0)
-			return 0;
-
-		ref map<string, ref CarimSet> parties = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals;
-
-		// If no parties exist, each player is a solo group
-		if (!parties || parties.Count() == 0)
-			return m_Players.Count();
-
-		// Create player ID mapping and track processed players
-		ref set<PlayerBase> processed_players = new set<PlayerBase>();
-		ref map<string, PlayerBase> id_map = new map<string, PlayerBase>();
-
-		// Only create ID map entries for players that are in this state
-		foreach (PlayerBase player : m_Players)
-		{
-			if (player && player.GetIdentity())
-				id_map.Insert(player.GetIdentity().GetId(), player);
-		}
-
-		int group_count = 0;
-
-		// Process parties more efficiently
-		foreach (string leader_id, ref CarimSet party_members : parties)
-		{
-			// Skip if party has no members or leader isn't in our ID map
-			PlayerBase leader = id_map.Get(leader_id);
-			// Check if the leader is valid
-			if (!leader)
-				continue;
-			// Check if the leader has already been processed
-			if (processed_players.Find(leader) != -1)
-				continue;
-			// Check if the party has no members
-			if (party_members.Count() == 0)
-				continue;
-
-			group_count++;
-			processed_players.Insert(leader);
-
-			// Process party members in one pass
-			array<string> party_members_arr = party_members.ToArray();
-			foreach (string member_id : party_members_arr)
-			{
-				PlayerBase member = id_map.Get(member_id);
-				if (member && m_Players.Find(member) != -1)
-					processed_players.Insert(member);
-			}
-		}
-
-		// Add solo players (not in any group)
-		int remaining_players = m_Players.Count() - processed_players.Count();
-		group_count += remaining_players;
-
-		return group_count;
-	}
-
-    ref array<ref set<PlayerBase>> GetGroups()
-    {
-        int i;
-        ref array<ref set<PlayerBase>> groups = new array<ref set<PlayerBase>>;
-        ref array<PlayerBase> m_PlayerWaitList = new array<PlayerBase>;
-        m_PlayerWaitList.Copy( m_Players );
-        // Create teleport groups
-
-        // Recuperation des parties
-        // Recuperation de la partie du joueur
-        // Ajout des membres de la partie dans un groupe
-        // Suppression de chaque membre de la liste m_PlayerWaitList
-
-		CarimModelPartyParties parties = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties;
-		if (parties)
-		{
-			BattleRoyaleUtils.Trace("GetGroups: Parties OK");
-			BattleRoyaleUtils.Trace("Current parties: " + parties.Repr());
-
-			// Create map player id <-> player object
-			auto id_map = new map<string, PlayerBase>();
-			array<Man> players = new array<Man>;
-			GetGame().GetPlayers(players);
-			for (i = 0; i < players.Count(); ++i)
-			{
-				PlayerBase player = PlayerBase.Cast(players.Get(i));
-				if (player && player.GetIdentity() && player.IsAlive())
-				{
-					//BattleRoyaleUtils.Trace("Player: " + player.GetIdentity().GetName());
-					id_map.Insert(player.GetIdentity().GetId(), player);
-				}
-			}
-
-			// Iterate over parties
-			ref set<PlayerBase> group;
-			// Using parties.mutuals here instead of parties.registered because mutuals represents
-			// the set of parties with confirmed mutual agreements, which is required for this logic.
-			ref map<string, ref CarimSet> registered_parties = parties.mutuals;
-			int partyCount = registered_parties.Count();
-			BattleRoyaleUtils.Trace("There is " + partyCount + " parties");
-			for (i = 0; i < partyCount; ++i)
-			{
-				group = new set<PlayerBase>;
-				PlayerBase plr = PlayerBase.Cast(id_map.Get(registered_parties.GetKey(i)));  // Get party leader
-				if(plr && plr.GetIdentity())
-				{
-					BattleRoyaleUtils.Trace("Party leader is " + plr.GetIdentity().GetName());
-					if(m_PlayerWaitList.Find(plr) != -1)// Test if party leader is still in waiting list
-					{
-						BattleRoyaleUtils.Trace(plr.GetIdentity().GetName() + " is in the wait list");
-						m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plr));
-						if (plr && plr.GetIdentity() && plr.IsAlive())
-						{
-							BattleRoyaleUtils.Trace("Add leader " + plr.GetIdentity().GetName() + " to the group");
-							group.Insert(plr);  // Insert guild leader into group
-							if (registered_parties.GetElement(i))
-							{
-								array<string, bool> tmpPlayPart = registered_parties.GetElement(i).ToArray();  // Get party members
-								int tmpPlayPartCount = tmpPlayPart.Count();
-								BattleRoyaleUtils.Trace("Party have " + tmpPlayPartCount + " more members");
-								for(int j = 0; j < tmpPlayPartCount; j++)  // Iterate over party members
-								{
-									PlayerBase plrpart = id_map.Get(tmpPlayPart.Get(j));
-									if ( plrpart )
-									{
-										BattleRoyaleUtils.Trace("Try to add player " + plrpart.GetIdentity().GetName() + " to teleport group");
-										if(m_PlayerWaitList.Find(plrpart) != -1)
-										{
-											BattleRoyaleUtils.Trace("Added player " + plrpart.GetIdentity().GetName() + " to teleport group");
-											m_PlayerWaitList.Remove(m_PlayerWaitList.Find(plrpart));
-											group.Insert(plrpart);  // Insert party member into group
-										}
-									}
-								}
-							}
-							groups.Insert(group);  // Insert group into list of groups
-						}
-					} else {
-						BattleRoyaleUtils.Trace("Party leader is not in waiting list, do nothing");
-					}
-
-					if(m_PlayerWaitList.Count() <= 0)
-					{
-						BattleRoyaleUtils.Trace("No more players in waiting list, skip the remaining players");
-						break;
-					}
-				}
-			}
-		}
-
-        // Add remaining players
-        ref set<PlayerBase> solo_group;
-        int pRemCount = m_PlayerWaitList.Count();
-        //BattleRoyaleUtils.Trace("Remaining players: " + pRemCount);
-        for (i = 0; i < pRemCount; i++)
-        {
-            //BattleRoyaleUtils.Trace("Remaining player: " + m_PlayerWaitList.Get(i).GetName());
-            solo_group = new set<PlayerBase>;
-            solo_group.Insert(m_PlayerWaitList.Get(i));
-            groups.Insert(solo_group);
-        }
-
-        return groups;
-    }
-
-    set<PlayerBase> GetGroup(PlayerBase player)
-	{
-		BattleRoyaleUtils.Trace("GetGroup for player " + player.GetIdentity().GetName());
-		ref array<ref set<PlayerBase>> groups = GetGroups();
-		for (int i = 0; i < groups.Count(); i++)
-		{
-			BattleRoyaleUtils.Trace("Group " + i + " has " + groups.Get(i).Count() + " players");
-			if (groups.Get(i).Find(player) != -1)
-			{
-				BattleRoyaleUtils.Trace("Found group for player " + player.GetIdentity().GetName());
-				return groups.Get(i);
-			}
-		}
-
-		return null;
-	}
-#endif
 
 	// Maybe this should be moved to another class, maybe not
     int GetDynamicStartingZone(int num_players)

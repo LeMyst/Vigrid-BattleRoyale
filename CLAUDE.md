@@ -53,7 +53,7 @@ Build result: `Workbench/Logs/Build.log`, plus marker files `Build.success` / `B
 | `_LaunchServer.bat <SteamID>` | Clear logs + storage, then start the dedicated server. |
 | `SetupLaunch.bat <MP\|SP>` | Preamble for every `Launch*.bat`: config, validation, mod list, kill running game. Deliberately no `setlocal` — it exports into the caller. |
 
-Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 7 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`) plus 10 `Extra_*`. Renaming a top-level folder renames its PBO.
+Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`, `Party`) plus 10 `Extra_*`. Renaming a top-level folder renames its PBO.
 
 ## Testing
 
@@ -87,7 +87,7 @@ When adding a file, pick the folder for organisation and **always add the right 
 
 `BattleRoyale_Scripts_Server` lists `BattleRoyale_Scripts_Client` in `requiredAddons`, so server files compile *after* client files in every stage — that ordering is what lets server code `modded class` over client-declared classes.
 
-Compile-time feature flags live in `Scripts/Client/config.cpp:36-43` (`defines[]`). Only `DAYZ_BATTLEROYALE` is active; `BLUE_ZONE`, `BR_MINIMAP`, `MOVING_ZONE`, `BR_TRACE_ENABLED` are commented out but gate real code. Other `#ifdef`s in use: `SERVER`, `DIAG`, `Carim` (party mod), `JM_COT`, `VPPADMINTOOLS`, `EXPANSIONMODMISSIONS`.
+Compile-time feature flags live in `Scripts/Client/config.cpp:36-43` (`defines[]`). Only `DAYZ_BATTLEROYALE` is active; `BLUE_ZONE`, `BR_MINIMAP`, `MOVING_ZONE`, `BR_TRACE_ENABLED` are commented out but gate real code. Other `#ifdef`s in use: `SERVER`, `DIAG`, `VIGRID_PARTY` (the in-repo party addon, see below), `JM_COT`, `VPPADMINTOOLS`, `EXPANSIONMODMISSIONS`.
 
 ### Entry points
 
@@ -157,9 +157,30 @@ The mission override (`$mission:Vigrid-BattleRoyale\`) is **not a merge** — `J
 
 Each class carries `int version` plus an `Upgrade()` migration. `Load()` re-saves after reading, so new fields appear in existing profile JSONs on next boot.
 
+### Parties (`Party/`)
+
+Teams used to come from the third-party `@Carim` mod through 18 `#ifdef Carim` blocks. They now come from **`Party/`**, a top-level folder in this repo that builds into its own `party.pbo` (prefix `Vigrid-BattleRoyale\Party`) and defines `VIGRID_PARTY`.
+
+**`Party/` must not reference any `BattleRoyale*` symbol.** That is why it carries its own logger (`VigridPartyLog`), its own JSON settings loader, its own `stringtable.csv` (`STR_PARTY_*` keys), its own `Data/Inputs.xml` and its own `$profile:Vigrid-Party\` folder. The rule keeps a later extraction into a standalone `@Vigrid-Party` mod a build-plumbing job rather than a rewrite, and it keeps renaming `Party/config.cpp` → `config.cpp.disabled` working as a one-rename kill switch.
+
+The Battle Royale mod talks to it **only** through `VigridPartyAPI` (`Party/Scripts/4_World/VigridPartyAPI.c`), and every call site is wrapped in `#ifdef VIGRID_PARTY` so the mod still builds with the addon disabled:
+
+```c
+#ifdef VIGRID_PARTY
+    int groups = VigridPartyAPI.GetGroupCount( GetPlayers() );
+#endif
+```
+
+- Grouping queries take the population explicitly (`GetGroupCount`, `GetGroups`, `GetTeammates`), so Party never needs to know about match state. `GetGroups()` is a **partition**: solo players come back as groups of one, which is what lets most call sites drop their non-party branch entirely.
+- Identity is `PlayerIdentity.GetPlainId()` (SteamID64) throughout — never `GetPlayerId()`, a session index the engine reuses after a disconnect. Note `MissionServer.PlayerDisconnected` is handed `GetId()` (hashed), so the manager keeps a `GetId()` → `GetPlainId()` table.
+- `VigridPartyAPI.SetFormationLocked(true)` is called from `1_BattleRoyaleDebug.Deactivate()`. While locked, every composition change is refused — otherwise a player leaving mid-match would raise the group count and stall the round-end condition.
+- Files: `$profile:Vigrid-Party\party_settings.json` and `parties.json`. Parties are persisted because the server process restarts between matches.
+- RPC namespaces `RPC-VigridParty` / `RPC-VigridParty-Server`, message names `VP_*`. CF's `AddRPC` dispatches by **method name**, so a handler method must be named exactly like its registered string.
+- Keybind `UAVigridPartyMenu` (P) lives in `Party/Data/Inputs.xml`, declared by a second `inputs=` in `Party/config.cpp`. Read it with `GetUApi().GetInputByName(...)`, not the generated constant.
+
 ### Localization
 
-Single source: `LanguageCore/stringtable.csv`, keys prefixed `STR_BR_`. Three reference styles:
+`LanguageCore/stringtable.csv`, keys prefixed `STR_BR_`. The `Party/` addon carries its own `stringtable.csv` at its PBO root with `STR_PARTY_*` keys — the engine loads one per addon — so party strings do not go here. Three reference styles:
 - Layouts: `text "#STR_BR_..."`
 - Client script: `SetText("#STR_BR_...")`
 - **Server script: the bare key with no `#`.** `MessagePlayerUntranslated()` / `MessagePlayersUntranslated()` (`0_BattleRoyaleState.c:200-242`) ship the key over the `NotificationMessage` RPC and the client localizes it in `BattleRoyaleRPC.NotificationMessage()`, which also substitutes the `READY_KEY` / `UNSTUCK_KEY` placeholders with live keybinds.

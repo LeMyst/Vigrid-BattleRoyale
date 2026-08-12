@@ -16,10 +16,6 @@ class BattleRoyaleRound: BattleRoyaleState
     bool b_AirdropEnabled;
     int i_AirdropIgnoreLastZones;
 
-#ifdef Carim
-    int i_MaxPartySize;
-#endif
-
     protected ref array<ref Timer> m_MessageTimers;
     protected ref Timer m_NewZoneLockTimer;
     protected ref Timer m_RoundTimeUpTimer;
@@ -49,10 +45,6 @@ class BattleRoyaleRound: BattleRoyaleState
 
         b_AirdropEnabled = m_GameSettings.airdrop_enabled;
         i_AirdropIgnoreLastZones = m_GameSettings.airdrop_ignore_last_zones;
-
-#ifdef Carim
-        i_MaxPartySize = CfgGameplayHandler.GetCarimPartyMaxPartySize();
-#endif
 
         Init();
     }
@@ -247,9 +239,14 @@ class BattleRoyaleRound: BattleRoyaleState
 		if(!IsActive())
 			return super.IsComplete();
 
-#ifdef Carim
+		//--- The round ends when a single group is left standing, not a single player: a
+		//--- surviving party has already won. Without the party addon every player is their own
+		//--- group, so the group test simply mirrors the player test.
 		bool playersLessThanTwo = GetPlayers().Count() <= 1;
-		bool groupsLessThanTwo = GetGroupsCount() <= 1;
+		bool groupsLessThanTwo = playersLessThanTwo;
+#ifdef VIGRID_PARTY
+		groupsLessThanTwo = VigridPartyAPI.GetGroupCount( GetPlayers() ) <= 1;
+#endif
 
 		if(playersLessThanTwo || groupsLessThanTwo)
 		{
@@ -264,13 +261,6 @@ class BattleRoyaleRound: BattleRoyaleState
 			BattleRoyaleUtils.Trace(GetName() + " IsComplete " + reason + "!");
 			Deactivate();
 		}
-#else
-		if(GetPlayers().Count() <= 1)
-		{
-			BattleRoyaleUtils.Trace(GetName() + " IsComplete (Players)!");
-			Deactivate();
-		}
-#endif
 
 		return super.IsComplete();
 	}
@@ -288,8 +278,8 @@ class BattleRoyaleRound: BattleRoyaleState
         if(_previousState.GetPlayers().Count() <= 1)
             return true;
 
-#ifdef Carim
-        if(_previousState.GetGroupsCount() <= 1)
+#ifdef VIGRID_PARTY
+        if(VigridPartyAPI.GetGroupCount( _previousState.GetPlayers() ) <= 1)
             return true;
 #endif
 

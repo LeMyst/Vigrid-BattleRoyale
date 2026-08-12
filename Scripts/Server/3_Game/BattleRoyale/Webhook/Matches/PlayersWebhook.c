@@ -51,7 +51,10 @@ class PlayersCallback: RestCallback
 	protected string s_ServerToken;
 	protected int i_TryLeft;
 	protected string s_MatchUUID;
-	protected map<string, string> a_Players;
+	//--- `ref` for the same reason as PartiesCallback.a_Parties: a retry callback outlives whoever
+	//--- built the payload, so holding it weakly means re-POSTing nothing. Dead code today - no
+	//--- caller reaches postPlayers - but fixed alongside so the two do not drift apart again.
+	protected ref map<string, string> a_Players;
 
 	void PlayersCallback(string server_token, string match_uuid, map<string, string> players, int try_left)
 	{
