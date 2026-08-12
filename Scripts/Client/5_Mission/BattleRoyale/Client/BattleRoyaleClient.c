@@ -96,6 +96,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         // The map addon's zone state is static and outlives this object, so without this the
         // previous match's circles would still be drawn after a server change.
         VigridMapAPI.ClearZones();
+        VigridMapAPI.ClearHotZones();
 #endif
     }
 
@@ -650,6 +651,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			VigridMapAPI.SetZones( map_current_center, map_current_radius, map_next_center, map_next_radius );
+
+			// Same push, same deal: the addon diffs internally, so calling this every frame costs a
+			// count comparison on a normal frame and a walk only when the pair actually changed.
+			VigridMapAPI.SetHotZones( br_rpc.hot_zone_centers, br_rpc.hot_zone_radii );
 #endif
 
 			// Set top position

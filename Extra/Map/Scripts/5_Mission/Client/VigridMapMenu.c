@@ -40,6 +40,7 @@ class VigridMapMenu extends UIScriptedMenu
     protected int m_LastRepaintMs;
     protected int m_LastMarkerSeq;
     protected int m_LastZoneSeq;
+    protected int m_LastHotZoneSeq;
 
     //--- The team layer has its own clock, not its own dirty flag. Nothing raises an edge when a
     //--- teammate walks, so it repaints on a timer instead - see Update.
@@ -51,6 +52,7 @@ class VigridMapMenu extends UIScriptedMenu
         m_LastRepaintMs = 0;
         m_LastMarkerSeq = -1;
         m_LastZoneSeq = -1;
+        m_LastHotZoneSeq = -1;
         m_LastTeamRepaintMs = 0;
         m_LastRejectSeq = -1;
         m_ToastUntilMs = 0;
@@ -195,8 +197,9 @@ class VigridMapMenu extends UIScriptedMenu
         m_RenderDirty = true;
         m_LastMarkerSeq = -1;
         m_LastZoneSeq = -1;
+        m_LastHotZoneSeq = -1;
 
-        //--- Baselined rather than reset to -1, unlike the two above. A refusal is an event, not a
+        //--- Baselined rather than reset to -1, unlike the three above. A refusal is an event, not a
         //--- state: catching up on one the player could not have caused - the map was shut - would
         //--- pop a message about a click they made a minute ago.
         m_LastRejectSeq = VigridMapRPC.GetInstance().rejected_seq;
@@ -426,6 +429,15 @@ class VigridMapMenu extends UIScriptedMenu
             m_LastZoneSeq = VigridMapAPI.GetZoneSeq();
         }
 
+        //--- Hot zones share the ZoneCanvas but not the sequence: they arrive once, from a different
+        //--- RPC, and often while the map is already open. Without their own edge the circles would
+        //--- not appear until the watchdog fired up to a second later.
+        if (VigridMapAPI.GetHotZoneSeq() != m_LastHotZoneSeq)
+        {
+            m_RenderDirty = true;
+            m_LastHotZoneSeq = VigridMapAPI.GetHotZoneSeq();
+        }
+
         bool watchdog_due = (GetGame().GetTime() - m_LastRepaintMs) >= VIGRID_MAP_REPAINT_WATCHDOG_MS;
 
         //--- Two gates over one probe, because the two kinds of drawing change for different
@@ -527,6 +539,10 @@ class VigridMapMenu extends UIScriptedMenu
         vector next_center = VigridMapAPI.GetNextCenter();
         float next_radius = VigridMapAPI.GetNextRadius();
 
+        //--- Hot zones first, so the play-area rings draw OVER them. A hot zone is decoration; the
+        //--- circle a player has to run to is not, and must never be the one that gets obscured.
+        RenderHotZones();
+
         if (has_current)
         {
             VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, current_center, current_radius, current_radius, VIGRID_MAP_COLOR_CURRENT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
@@ -549,6 +565,35 @@ class VigridMapMenu extends UIScriptedMenu
 
         if (has_current)
             RenderZoneLine(current_center, current_radius);
+    }
+
+    /**
+     *  The host's hot zones - static circles marking regions of interest.
+     *
+     *  No Clear() of its own: this draws onto the ZoneCanvas that RenderZones has just cleared, and
+     *  is only ever called from there. Kept as its own method so the ordering above stays readable,
+     *  not because it is independently callable.
+     *
+     *  An entry with no radius is skipped rather than dropped on arrival, so the indices a host sees
+     *  and the ones this addon draws stay the same - which is what makes a log line naming "hot zone
+     *  3" mean the same thing on both sides.
+     */
+    protected void RenderHotZones()
+    {
+        int count = VigridMapAPI.GetHotZoneCount();
+
+        for (int i = 0; i < count; i++)
+        {
+            float radius = VigridMapAPI.GetHotZoneRadius(i);
+            if (radius <= 0)
+                continue;
+
+            vector center = VigridMapAPI.GetHotZoneCenter(i);
+            if (center == vector.Zero)
+                continue;
+
+            VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, center, radius, radius, VIGRID_MAP_COLOR_HOT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH, VIGRID_MAP_COLOR_HOT_ZONE_FILL);
+        }
     }
 
     /**

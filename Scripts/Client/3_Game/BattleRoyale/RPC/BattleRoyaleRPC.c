@@ -41,6 +41,10 @@ class BattleRoyaleRPC
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", this );
+
+		hot_zone_centers = new array<vector>();
+		hot_zone_radii = new array<float>();
 
 		resolved_by_uid = new map<string, string>();
 		resolved_by_name = new map<string, string>();
@@ -139,6 +143,11 @@ class BattleRoyaleRPC
 		admin_recv_ms = 0;
 		admin_prev_recv_ms = 0;
 		admin_seq = 0;
+		//--- Cleared, and the sequence bumped rather than zeroed: a renderer comparing against its
+		//--- own last-seen value has to see this as a change, or it keeps drawing the old circles.
+		hot_zone_centers.Clear();
+		hot_zone_radii.Clear();
+		hot_zone_seq++;
 	}
 
 	// Set the number of players and groups
@@ -840,5 +849,65 @@ class BattleRoyaleRPC
 
 			ExpansionNotification(DAYZBR_MSG_TITLE, translated_message, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, data.param2).Create();
 		}
+	}
+
+	/**
+	 *  Hot zones - static, purely cosmetic circles marking regions of interest.
+	 *
+	 *  Sent per-identity from BattleRoyaleServer.PlayerLoadedIn, so every client gets them the moment
+	 *  it is provably listening, including one that connects mid-match. There is deliberately NO
+	 *  "already received" latch: the payload is server config that never changes within a process, so
+	 *  a repeat is idempotent, and a latch that Reset() forgot to clear would kill the feature for the
+	 *  rest of the session with nothing in the log to say so.
+	 *
+	 *  Centres arrive as "x y z" strings because that is how zone_settings.json spells a world
+	 *  position; they are converted once here so no renderer has to.
+	 */
+	ref array<vector> hot_zone_centers;
+	ref array<float> hot_zone_radii;
+
+	//--- Bumped on every accepted payload, so an edge-triggered renderer can repaint the frame the
+	//--- data lands rather than waiting out its watchdog. Raised UNCONDITIONALLY at the end of the
+	//--- handler - a seq bump hidden behind an early return is the documented way this goes wrong.
+	int hot_zone_seq;
+
+	void UpdateHotZones(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<array<string>, array<float>> data;
+		if ( !ctx.Read( data ) )
+		{
+			BattleRoyaleUtils.Warn("FAILED TO READ UPDATEHOTZONES RPC");
+			return;
+		}
+
+		if ( type != CallType.Client )
+			return;
+
+		hot_zone_centers.Clear();
+		hot_zone_radii.Clear();
+
+		if ( data.param1 && data.param2 )
+		{
+			//--- The server already truncated the pair in BattleRoyaleZoneData.Validate(), so this
+			//--- is belt and braces against a future sender - but it costs one comparison and the
+			//--- alternative is an out-of-bounds read on the shorter array.
+			int count = data.param1.Count();
+			if ( data.param2.Count() < count )
+				count = data.param2.Count();
+
+			for ( int i = 0; i < count; i++ )
+			{
+				//--- One array read per line, never nested in a call: a read sharing an expression
+				//--- with a call has been measured here to return a different array's contents.
+				string raw = data.param1[i];
+				float radius = data.param2[i];
+				hot_zone_centers.Insert( raw.ToVector() );
+				hot_zone_radii.Insert( radius );
+			}
+		}
+
+		hot_zone_seq++;
+
+		BattleRoyaleUtils.Trace("UpdateHotZones " + hot_zone_centers.Count() + " zone(s), seq " + hot_zone_seq);
 	}
 }

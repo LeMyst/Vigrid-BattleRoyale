@@ -62,6 +62,24 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         //send start match RPC (this will enable UI such as kill count)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", new Param1<bool>(true), true); //don't need a param, but id rather keep it just so i know nothing wierd occurs (eventually find out if we can remove it)
 
+        //--- Hot zones. Spawn selection normally sets this reference first and this is a harmless
+        //--- re-assert, but spawn selection is OPTIONAL (enable_spawn_selection_menu) - without this
+        //--- call a server with the menu turned off would never show a hot zone at all. Every step
+        //--- is on its own line: an array read nested inside a call inside another call is the shape
+        //--- that has thrown "NULL pointer to instance" here before.
+        BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+        if (br_instance)
+        {
+            int starting_zone = GetDynamicStartingZone(i_NumStartingPlayers);
+            ref BattleRoyaleZone start_zone = BattleRoyaleZone.GetZone(starting_zone);
+            if (start_zone)
+            {
+                ref BattleRoyalePlayArea start_area = start_zone.GetArea();
+                if (start_area)
+                    br_instance.SetHotZoneReference(start_area.GetCenter(), start_area.GetRadius());
+            }
+        }
+
 #ifdef KILLFEED
         //--- Kills count from here on, so the feed goes live with the match.
         KillFeedAPI.SetActive( true );
