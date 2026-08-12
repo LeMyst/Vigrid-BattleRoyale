@@ -40,8 +40,7 @@ admin-spawned or scripted vehicles.
 - Despite the in-file comment "Fill the car to max", **fuel is random 30–100 %**, not full. Only
   coolant and oil are maxed.
 - Neither override calls `super.EEOnCECreate()`. That drops the vanilla base implementation and any
-  other mod's CE-spawn initialisation further along the chain, DayZ-Expansion included. Tracked in
-  `TODO.md`.
+  other mod's CE-spawn initialisation further along the chain, DayZ-Expansion included.
 - Attachments — battery, spark plug, radiator, wheels — are untouched. Whether a vehicle is actually
   driveable still depends on your loot configuration. (`Extra/SpawnWithBattery` covers items with an
   energy manager, not vehicle battery slots.)

@@ -91,6 +91,7 @@ Log with `BattleRoyaleUtils.Error/Warn/Info/Debug/Trace(string)` (`Scripts/Clien
 - **No ternary operator.** Use `if`/`else`.
 - **No multi-line `if` conditions** — the whole condition must be on one line.
 - **One declaration per variable name per method scope**, even across disjoint branches.
+- **A single expression has a complexity ceiling** — around ten concatenated terms is rejected with `Formula too complex`, a hard compile error. The funnel-diagnostic log lines this repo favours are exactly the shape that trips it; build the string in steps once it carries more than about four fields. Packing succeeds regardless, so it only surfaces when the game loads the module.
 - `modded class X` extends an existing class; `override` is required to replace a method.
 
 ## Architecture
@@ -108,7 +109,7 @@ When adding a file, pick the folder for organisation and **always add the right 
 
 `BattleRoyale_Scripts_Server` lists `BattleRoyale_Scripts_Client` in `requiredAddons`, so server files compile *after* client files in every stage — that ordering is what lets server code `modded class` over client-declared classes.
 
-Compile-time feature flags live in `Scripts/Client/config.cpp:36-43` (`defines[]`). Only `DAYZ_BATTLEROYALE` is active; `BLUE_ZONE`, `BR_MINIMAP`, `MOVING_ZONE`, `BR_TRACE_ENABLED` are commented out but gate real code. Other `#ifdef`s in use: `SERVER`, `DIAG`, `VIGRID_PARTY` (the in-repo party addon, see below), `JM_COT`, `VPPADMINTOOLS`, `EXPANSIONMODMISSIONS`.
+Compile-time feature flags live in `Scripts/Client/config.cpp:36-43` (`defines[]`). Only `DAYZ_BATTLEROYALE` is active; `BLUE_ZONE`, `BR_MINIMAP` and `BR_TRACE_ENABLED` are commented out but gate real code. **`MOVING_ZONE` gates nothing** — it is a reserved name with no `#ifdef` anywhere in the tree or in its history, and uncommenting it together with the line below it is a rapify syntax error (neither carries a trailing comma). The unmerged `moving-zone` *branch* is unrelated to it. Other `#ifdef`s in use: `SERVER`, `DIAG`, `VIGRID_PARTY` (the in-repo party addon, see below), `JM_COT`, `VPPADMINTOOLS`, `EXPANSIONMODMISSIONS`.
 
 ### Entry points
 

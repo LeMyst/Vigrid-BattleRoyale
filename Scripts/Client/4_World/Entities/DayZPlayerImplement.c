@@ -96,7 +96,7 @@ modded class DayZPlayerImplement
 		//--- No auto-abort any more: the death screen owns the exit now, through its Quit button, and
 		//--- the server starts spectating on its own after BR_SPECTATE_ENTRY_DELAY_MS if the player
 		//--- does nothing. The old unconditional 15 s CallLater(LeaveServer) also stacked one queued
-		//--- abort per call and never removed any of them (TODO.md item [2]).
+		//--- abort per call and never removed any of them.
 	}
 
 	/**

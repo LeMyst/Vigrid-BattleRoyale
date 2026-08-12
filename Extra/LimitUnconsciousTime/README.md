@@ -62,8 +62,8 @@ if (hcm) hcm.ForceStance(DayZPlayerConstants.STANCEIDX_PRONE);
 - **Not standalone.** `requiredAddons[]` lists only `DZ_Scripts`, but the code reads
   `player.m_UnconsciousStartTime` (declared by the main mod's `PlayerBase`,
   `Scripts/Server/4_World/Entities/ManBase/PlayerBase.c`) and calls `BattleRoyaleUtils`. It works today
-  by incidental load order, not by contract — `TODO.md` tracks adding `BattleRoyale_Scripts_Server` to
-  `requiredAddons[]`.
+  by incidental load order, not by contract; adding `BattleRoyale_Scripts_Server` to
+  `requiredAddons[]` would make the dependency explicit.
 - In the **disabled** path the player keeps their low shock, so the vanilla condition keeps
   re-evaluating on every modifier tick and re-issues the prone command each time.
 

@@ -13,3 +13,6 @@ user.cfg
 /Workbench/*.cfg.*.bat
 /Workbench/Logs/
 /.claude/
+
+# Internal review backlog - kept on disk, never published
+/TODO.md

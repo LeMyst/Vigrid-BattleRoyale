@@ -41,7 +41,7 @@ Bleeding, blood loss and shock are also untouched — they are core combat mecha
 - **The `#ifdef SERVER` guard is inconsistent.** Only `BrokenLegs.c` has one; the other seven files
   have no guard and therefore compile and run client-side too. For `HeatComfortAnimHandler` that is
   arguably load-bearing (it is a client-side handler), but for the `*Mdfr` classes the modifier manager
-  is server-authoritative, so the client copies are redundant. Tracked in `TODO.md`.
+  is server-authoritative, so the client copies are redundant.
 - The three disease files declare `override protected bool ActivateCondition`, but vanilla
   `CommonColdMdfr.ActivateCondition` is declared **without** `protected`. Worth knowing if this ever
   produces a compile warning.
