@@ -1,0 +1,125 @@
+// One mark on the compass strip: a tick, and for the labelled ones the text under it.
+//
+// Pooled by VigridMapCompass and parented to the compass root. The pool is indexed BY BEARING - entry
+// i is permanently the i*15-degree mark - so the text is set once at creation and never again. Per
+// frame only the root's position, alpha and visibility change.
+//
+// THREE LABEL WIDGETS, ONE PER SIZE TIER, AND EXACTLY ONE IS SHOWN PER ENTRY.
+//
+// This looks redundant and is not. MEASURED 2026-08-11 with GetTextSize: TextWidget.SetTextExactSize
+// DOES NOTHING here - asking for 28 / 18 / 13 on one widget rendered 28 / 28 / 28, i.e. every tier
+// came out at the declared face's size and the three tiers were indistinguishable in game. (The tell
+// was available up front and missed: SetTextExactSize has exactly ONE call site in all of P:\scripts,
+// the same shape as OverrideAimChangeX/Y, which also compiled, ran and silently did nothing.)
+//
+// A widget's glyph size is therefore fixed by the FONT FACE it declares, and there is no SetFont to
+// change it from script. Three sizes means three faces means three widgets. Metron is a bitmap font
+// shipped at fixed sizes - 12, 14, 16, 22, 28, 48, 58 - so the tiers have to be chosen from that set.
+//
+// `"exact text" 1` with `"exact text size"` matching the face is what pins the glyphs to that size;
+// without it the text is stretched to fill its box, so a short name renders LARGER than a long one.
+// The declared size is viewport-scaled by the engine, which is exactly what is wanted - it keeps the
+// text in proportion with the lanes, which VigridMapCompass scales by the same viewport/1920 factor.
+PanelWidgetClass EntryRoot {
+ visible 1
+ ignorepointer 1
+ inheritalpha 1
+ clipchildren 0
+ color 1 1 1 1
+ position 0 0
+ size 48 42
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  // Position and height are overwritten per entry at creation - 10 tall for a named direction, 7 for
+  // a numeric degree, 4 for an unlabelled tick. `style rover_sim_colorable` is mandatory: with no
+  // style a coloured panel draws nothing at all.
+  PanelWidgetClass EntryTick {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 23 0
+   size 2 10
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   style rover_sim_colorable
+  }
+  // N / E / S / W - the four a player actually calls out, so the largest.
+  TextWidgetClass EntryLabelCardinal {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 10
+   size 48 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   text ""
+   font "gui/fonts/metron-bold28"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 28
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" center
+   "text valign" center
+  }
+  // NE / SE / SW / NW - a clear step down from the cardinals, a clear step up from the degrees.
+  TextWidgetClass EntryLabelOrdinal {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 10
+   size 48 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   text ""
+   font "gui/fonts/metron-bold22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 22
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" center
+   "text valign" center
+  }
+  // 030, 060, 120 ... - reference detail, so the smallest.
+  TextWidgetClass EntryLabelNumeric {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 10
+   size 48 28
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   text ""
+   font "gui/fonts/metron-bold14"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 14
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" center
+   "text valign" center
+  }
+ }
+}

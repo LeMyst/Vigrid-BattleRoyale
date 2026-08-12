@@ -1,0 +1,41 @@
+// One caret in the compass strip's bottom lane: the next zone, a teammate, or a party ping.
+//
+// Pooled by VigridMapCompass and parented to CompassStrip. Unlike the tick pool this is a SLOT pool -
+// the set changes as people move, ping and die - so every field is written per frame.
+//
+// Two widgets rather than one for the usual reason: a widget's colour alpha and its widget alpha are
+// the same value, so a single panel could not carry both the owner's slot colour (SetColor) and the
+// edge fade (SetAlpha) - the second would overwrite the first. CaretRoot is the alpha carrier with
+// no style, CaretBar takes the colour.
+//
+// CaretBar's width and height are both overwritten per frame: 3 px full-height for the next zone,
+// 2 px full-height for a teammate, 2 px half-height for a ping. Teammate and ping necessarily share
+// a colour, so height and opacity are the only things telling them apart.
+PanelWidgetClass CaretRoot {
+ visible 1
+ ignorepointer 1
+ inheritalpha 1
+ clipchildren 0
+ color 1 1 1 1
+ position 0 0
+ size 12 5
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  PanelWidgetClass CaretBar {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 5 0
+   size 2 5
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   style rover_sim_colorable
+  }
+ }
+}

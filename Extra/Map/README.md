@@ -1,8 +1,8 @@
 # Vigrid Map
 
-A standalone in-game map: a fullscreen pannable map, a HUD minimap, player-placed markers shared with
-your party, and the Battle Royale play-area circles when a host mod pushes them in. It replaces DayZ
-Expansion Navigation.
+A standalone in-game map: a fullscreen pannable map, a HUD minimap, a HUD compass strip, player-placed
+markers shared with your party, and the Battle Royale play-area circles when a host mod pushes them in.
+It replaces DayZ Expansion Navigation.
 
 It hooks nothing of the host mod's, so it works on **any** DayZ server — Battle Royale is not required.
 
@@ -11,7 +11,7 @@ It hooks nothing of the host mod's, so it works on **any** DayZ server — Battl
 | **PBO**         | `extra_map.pbo`                                                    |
 | **Side**        | both — client draws, server owns the marker set                    |
 | **Stages**      | `3_Game`, `4_World`, `5_Mission`                                   |
-| **`defines[]`** | `VIGRID_MAP`, `VIGRID_MAP_MINIMAP`                                 |
+| **`defines[]`** | `VIGRID_MAP`, `VIGRID_MAP_MINIMAP`, `VIGRID_MAP_COMPASS`           |
 | **Requires**    | `DZ_Data`, `DZ_Scripts`, `JM_CF_Scripts` (CF's RPC manager)        |
 | **Standalone**  | yes — no `BattleRoyale*` symbol referenced                         |
 
@@ -24,6 +24,7 @@ It hooks nothing of the host mod's, so it works on **any** DayZ server — Battl
 | **Left click** | Place your marker (one per player, replaces your previous) |
 | **Right click** | Clear your marker |
 | **N** | Toggle the HUD minimap — **off by default**, see below |
+| **K** | Toggle the HUD compass strip — **on by default**, see below |
 
 Pan and zoom are the engine's own. **You can keep running while the map is open**, and clicking the map
 does not fire the weapon underneath it.
@@ -43,25 +44,77 @@ fan of strokes:
 | Lighter diamond | A party ping |
 | Notched dart | You, on both maps — carries your heading, and the largest glyph on either |
 
+## The compass strip
+
+A 620×42 band sitting **flush against the top of the screen**, showing a **90° window** — cardinal
+letters every 45°, numeric degrees every 30°, an unlabelled tick every 15°, and the exact bearing read
+out below it.
+
+Labels come in three sizes so the directions a player actually calls out read first: **N/E/S/W in
+`metron-bold28`, the diagonals in `-bold22`, the numeric degrees in `-bold14`.** Measured in game at
+22 px and 8 px cap height for the outer two tiers.
+
+**Each tier is its own widget, and it has to be.** A widget's glyph size is fixed by the font face it
+declares and there is no `SetFont`, so `compass_entry.layout` carries three label widgets and
+`VigridMapCompass.PickLabel` shows exactly one per entry. `SetTextExactSize` looks like the obvious
+alternative and **was measured to do nothing** — 28/18/13 requested on one widget rendered 28/28/28,
+which is why the tiers were briefly indistinguishable. Metron is a bitmap font shipped at 12, 14, 16,
+22, 28, 48 and 58, so a new tier has to be picked from that set.
+
+**Every length is authored against a 1920-wide screen and scaled by the measured viewport**
+(`VIGRID_MAP_COMPASS_REFERENCE_W`). `SetPos`/`SetSize` take real pixels while the engine scales a
+widget's *declared* geometry — including its font size — by viewport/1920 on its own. Scaling the
+lanes by the same factor is what keeps the two in proportion; without it the strip stayed 42 px tall
+at every resolution while the glyphs inside it grew, and at fullscreen the bearing readout collided
+with the labels. The
+heading comes from the **camera**, never the player's body yaw, for the reasons written up on
+`VigridMapMinimap.DrawHeadingArrow`: body yaw snaps in discrete steps and does not return to its start
+after a full turn. **The regression test is to spin a 360 and check the strip comes back to the same
+reading.**
+
+Three kinds of caret ride in the bottom lane, all read through the same APIs the map uses:
+
+| Caret | Means |
+|---|---|
+| Wide blue bar | The next play-area zone, when a host mod has pushed one in |
+| Full-height slot-coloured bar | A teammate |
+| Half-height slot-coloured bar, 0.75 alpha | A party ping |
+
+A teammate and a ping necessarily share their owner's slot colour, so **height and opacity are the only
+things separating them** — the same two axes that separate the map's triangle from its diamond. Don't
+collapse either without giving the ping a different silhouette.
+
+Unlike the minimap, the strip is redrawn **every frame** rather than at 10 Hz: it slides continuously
+under a fixed cursor, which is exactly where a 10 Hz update reads as stutter.
+
+**Elements fade out over the last 8° of the window rather than being clipped.** Every widget is
+positioned from script against the measured root size, in real screen pixels — see the header of
+`GUI/layouts/compass.layout` for the measurement behind that, and for why a fixed-size container is the
+wrong shape here.
+
 ## Settings
 
 | Where | Keys |
 |---|---|
-| `$profile:Vigrid-Map\map_settings.json` (server) | `enabled`, `minimap_allowed`, `label_max_length` |
-| `$profile:Vigrid-Map\map_client.json` (client) | `minimap_enabled` — the player's own toggle, written by **N** |
+| `$profile:Vigrid-Map\map_settings.json` (server) | `enabled`, `minimap_allowed`, `compass_allowed`, `label_max_length` |
+| `$profile:Vigrid-Map\map_client.json` (client) | `minimap_enabled` (**N**) and `compass_enabled` (**K**) — the player's own toggles |
 
-The minimap is gated by three independent switches, each able only to opt further out than the one
-before it:
+The minimap and the compass are each gated by three independent switches, each able only to opt further
+out than the one before it:
 
-1. **`VIGRID_MAP_MINIMAP`** — the build's. Comment the define out of `config.cpp` and the minimap class,
-   its widgets and the **N** handler are gone from the PBO entirely; the fullscreen map is untouched.
-2. **`minimap_allowed`** — the admin's, pushed to clients over `VM_Settings`. Ships **on**.
-3. **`minimap_enabled`** — the player's, persisted locally. Ships **off**, so the minimap is opt-in.
+1. **`VIGRID_MAP_MINIMAP`** / **`VIGRID_MAP_COMPASS`** — the build's. Comment the define out of
+   `config.cpp` and that feature's class, its widgets and its keybind handler are gone from the PBO
+   entirely; the fullscreen map is untouched either way.
+2. **`minimap_allowed`** / **`compass_allowed`** — the admin's, pushed to clients over `VM_Settings`.
+   Both ship **on**.
+3. **`minimap_enabled`** / **`compass_enabled`** — the player's, persisted locally. The minimap ships
+   **off**, so it is opt-in; the compass ships **on**, because it is a thin strip answering a question
+   the HUD could not otherwise answer at all.
 
-Two things deliberately survive a minimap-less build: `minimap_allowed` on the wire and in the settings
-file, because a *client* build flag must not change the wire format; and the **N** entry in
-`Data/Inputs.xml`, because XML cannot be conditional — it still lists under Options → Controls bound to
-nothing.
+Two things deliberately survive a build with either define removed: the `*_allowed` field on the wire
+and in the settings file, because a *client* build flag must not change the wire format; and the **N** /
+**K** entries in `Data/Inputs.xml`, because XML cannot be conditional — they still list under
+Options → Controls bound to nothing.
 
 ## Public API
 

@@ -6,10 +6,11 @@
  *  #ifdef SERVER, so a client cannot read it at all, and $profile: on a client resolves to the
  *  CLIENT's profile directory. A per-player choice therefore has nowhere else to live.
  *
- *  Only one preference so far - whether the minimap is shown, and it is OFF by default, so the
- *  minimap is opt-in. The server's minimap_allowed is a separate, harder switch: effective
- *  visibility is `allowed && enabled`, so an admin can take the minimap away entirely and a player
- *  can only ever opt further out, never in.
+ *  Two preferences, and their defaults differ on purpose: the minimap is OFF (opt-in - it is a
+ *  200 px window nobody asked for) and the compass is ON (a thin strip answering a question the HUD
+ *  could not answer at all). Each pairs with a harder server-side switch - minimap_allowed and
+ *  compass_allowed - and effective visibility is `allowed && enabled`, so an admin can take either
+ *  away entirely and a player can only ever opt further out, never in.
  *
  *  WRITING JSON TO $profile: FROM CLIENT SCRIPT HAS NO PRECEDENT IN THIS REPO. Every other
  *  JsonFileLoader write here is behind #ifdef SERVER, and the two client-side reads target packed
@@ -30,6 +31,14 @@ class VigridMapPrefsData
     //--- who already toggled it has `minimap_enabled` written in their map_client.json and keeps
     //--- their choice, which is the point of a default.
     bool minimap_enabled = false;
+
+    //--- ON by default, unlike the minimap above, and the asymmetry is deliberate. The minimap is a
+    //--- 200 px window onto another view; the compass is a thin strip that answers one question the
+    //--- HUD could not answer at all, so the useful default is "there". The key toggles it away.
+    //---
+    //--- An existing player's map_client.json has no `compass_enabled` key, so it deserializes to
+    //--- this initialiser and they get the compass on their next session - which is the intent.
+    bool compass_enabled = true;
 
     void Upgrade()
     {
@@ -122,6 +131,23 @@ class VigridMapPrefs
     {
         SetMinimapEnabled(!IsMinimapEnabled());
         return IsMinimapEnabled();
+    }
+
+    static bool IsCompassEnabled()
+    {
+        return Data().compass_enabled;
+    }
+
+    static void SetCompassEnabled(bool enabled)
+    {
+        Data().compass_enabled = enabled;
+        Save();
+    }
+
+    static bool ToggleCompass()
+    {
+        SetCompassEnabled(!IsCompassEnabled());
+        return IsCompassEnabled();
     }
 }
 #endif

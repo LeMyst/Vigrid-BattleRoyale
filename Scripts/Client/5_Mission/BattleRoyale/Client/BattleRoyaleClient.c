@@ -55,6 +55,13 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
     	BattleRoyaleUtils.Trace("BattleRoyaleClient::~BattleRoyaleClient");
 
+        // The GUI call queue lives for the whole process, so without this OnSecond keeps firing
+        // once a second against a mission that no longer exists, for the rest of the session.
+        // GetGame() is checked because a destructor can run on the way out - BattleRoyaleUtils
+        // guards its own client-side Chat() call for the same reason.
+        if ( GetGame() )
+            GetGame().GetCallQueue(CALL_CATEGORY_GUI).RemoveByName( this, "OnSecond" );
+
 #ifdef VIGRID_MAP
         // The map addon's zone state is static and outlives this object, so without this the
         // previous match's circles would still be drawn after a server change.
@@ -413,6 +420,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 		if( !has_subject )
 			subject_pos = GetReferencePosition();
 
+		// Nothing below this line is useful without the mission, and MissionGameplay.OnUpdate calls
+		// us unconditionally - including on the teardown frames where the cast comes back NULL.
+		if ( !gameplay )
+			return;
+
 		// First check if player is outside current play area
 		if (m_CurrentPlayArea)
 		{
@@ -484,8 +496,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// Update player and group remaining count
 			PlayerCountChanged( hud_players, hud_groups );
 
-			// Fade in/out effect
-			if( br_previous_fade_state != br_rpc.fade_state )
+			// Fade in/out effect. Both halves touch the player, so the edge is held rather than
+			// consumed while there isn't one - advancing br_previous_* on a playerless frame would
+			// swallow the transition for the rest of the match. Same for the input edge below.
+			if( br_previous_fade_state != br_rpc.fade_state && player )
 			{
 				if( br_rpc.fade_state )
 				{
@@ -557,7 +571,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// Update future play area
 			if ( zones_from_server && ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius ) )
 			{
-				if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
+				// Same clear payload as the current area above, and the same reason to test it
+				// explicitly - the old test used the vector as a boolean and had no else, so the
+				// next-circle indicator outlived the match it belonged to.
+				if ( br_rpc.future_play_area_center != "0 0 0" && br_rpc.future_play_area_radius != 0.0 )
 				{
 					m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
 
@@ -571,6 +588,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 						m_ArtySound.SetAutodestroy(true);
 					}
 				}
+				else
+				{
+					m_FuturePlayArea = NULL;
+				}
+
 				br_previous_future_play_area_center = br_rpc.future_play_area_center;
 				br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
 			}
@@ -1004,7 +1026,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected void FadeIn()
     {
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         BattleRoyaleUtils.Trace("BattleRoyale: FADE IN!");
 
         //--- The post-process is player-free and always runs; the two inventory/audio calls need a
@@ -1022,7 +1043,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected void FadeOut()
     {
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         BattleRoyaleUtils.Trace("BattleRoyale: FADE OUT!");
 
         PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Stop();
@@ -1037,6 +1057,9 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected void OnSecond()
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if ( !gameplay )
+            return;
+
         if(i_SecondsRemaining > 0)
         {
             i_SecondsRemaining--;
@@ -1052,6 +1075,9 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         i_Kills += increase;
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if ( !gameplay )
+            return;
+
         gameplay.UpdateKillCount(i_Kills);
     }
 

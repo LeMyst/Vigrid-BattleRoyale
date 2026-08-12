@@ -46,7 +46,7 @@ class VigridMapConfig
         //--- writes back any field added since it was last generated.
         m_Settings.Save();
 
-        VigridMapLog.Info("Settings loaded (enabled=" + m_Settings.enabled + " minimap_allowed=" + m_Settings.minimap_allowed + ")");
+        VigridMapLog.Info("Settings loaded (enabled=" + m_Settings.enabled + " minimap_allowed=" + m_Settings.minimap_allowed + " compass_allowed=" + m_Settings.compass_allowed + ")");
     }
 
     VigridMapData GetSettings()
