@@ -59,6 +59,50 @@ static const int BR_LEADERBOARD_MAX_ROWS = 50;
 static const int BR_LEADERBOARD_BOARD_SOLO = 0;
 static const int BR_LEADERBOARD_BOARD_GROUP = 1;
 
+//id of the mod's own DayZPlayer sync juncture, used by every teleport this mod performs (match
+//start and F2 unstuck). Both halves of the handler key off it - the server one repositions, the
+//client one stops predicting the movement command it was in - so it needs a name rather than a
+//literal 88 in four places.
+static const int BR_SYNC_JUNCTURE_TELEPORT = 88;
+
+//metres above the resolved ground position a teleport actually places the player, rather than
+//setting them exactly on it. A seating epsilon and nothing more: enough that the capsule is not
+//started inside the surface it is standing on, far too small to see.
+//
+//**It used to be 1.0, and that was a mistake worth recording.** The theory was that dropping the
+//player in would leave them briefly airborne, the engine would run its own fall -> land
+//transition, and that landing would reset the animation graph. The landing never happens: the
+//character controller does not re-evaluate its ground contact after a scripted SetPosition, so a
+//player placed a metre up simply believes they are standing there. The instrumented run said so at
+//the time - PhysicsIsFalling read "not airborne" on BOTH sides with the metre applied - and the
+//conclusion drawn from it was too narrow. It was not "the Fall branch is not what fixes the
+//unstuck", it was "nothing converts this drop into a fall at all".
+//
+//What that shipped was a character hovering a metre off the ground after every teleport, on both
+//paths, until the player's first input forced a command transition and dropped them. Reported
+//against the match-start teleport 2026-08-09 and confirmed on the F2 unstuck.
+//
+//Two things replace it, because the metre was masking two different faults:
+//  - PlayerBase.CommandHandler now ends every teleport with a real command transition (see
+//    BR_NotifyTeleported), which is the "jump once" cure without the jump.
+//  - BattleRoyaleDebugState.FindUnstuckPosition validates its lobby-centre fallback, so the
+//    unstuck stops landing on an unvetted position that could seat the capsule in the scenery.
+//That second one was always the principled fix, and this comment used to say so.
+static const float BR_TELEPORT_DROP_HEIGHT = 0.05;
+
+//how long after a teleport PlayerBase.CommandHandler keeps asking the controller whether it is
+//airborne. One check on the next command tick is not enough on the client: the juncture can arrive
+//a frame or two before the corrected position does, so the first check legitimately reads the old
+//position and answers "no". Only a fall is ever started from inside this window - the one-shot move
+//has already run by then - so a wrong answer costs nothing but the check.
+static const float BR_TELEPORT_SETTLE_SECONDS = 0.75;
+
+//per-player floor between granted F2 unstuck teleports. Only the pending-request flag guarded this
+//while unstuck existed solely during the warm-up, where the state lasts under a minute; the lobby
+//can now answer it too and players sit there for many minutes, so without a cooldown F2 is free
+//fast-travel around the lobby. Measured against GetTickTime(), which is in seconds.
+static const int BR_UNSTUCK_COOLDOWN_SECONDS = 30;
+
 //field-size weighting curves for leaderboard_settings.json `field_weight_mode`.
 static const int BR_LEADERBOARD_WEIGHT_FLAT = 0;
 static const int BR_LEADERBOARD_WEIGHT_LOG2 = 1;

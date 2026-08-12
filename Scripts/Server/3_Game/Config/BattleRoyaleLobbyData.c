@@ -21,6 +21,16 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
     bool autostart_enabled = true;  // Enable autostart
     float autostart_delay = 750.0;  // Delay before autostart
 
+    int debug_heal_tick_seconds = 5;  // seconds between debug (lobby) heal ticks
+
+	// Spawn selection settings - the pre-match map where players pick where to drop in
+	bool enable_spawn_selection_menu = true;  // show spawn selection menu (0 = no, 1 = yes)
+	bool gather_party_for_spawn_selection = true;  // pull party members next to their leader when the spawn map opens
+	int spawn_selection_duration = 30;  // spawn selection duration in seconds
+	int spawn_selection_extra_time = 2;  // extra time between spawn selection and next state in seconds
+	float spawn_selection_radius = 50;  // radius where the player can spawn
+	bool show_spawn_heatmap = true;  // show spawn heatmap (0 = no, 1 = yes)
+
 	// Items given to players when they spawn in the lobby
     ref array<string> player_lobby_items = {
         "TShirt_DBR",

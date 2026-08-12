@@ -81,9 +81,10 @@ class BattleRoyaleServer: BattleRoyaleBase
         m_Timer = new Timer;
 
         //load config (this may error because GetBattleRoyale would return false)
-        BattleRoyaleGameData m_GameData = config_data.GetGameData();
-        i_NumRounds = m_GameData.num_zones;
-        b_EnableSpawnSelectionMenu = m_GameData.enable_spawn_selection_menu;
+        BattleRoyaleZoneData m_ZoneData = config_data.GetZoneData();
+        BattleRoyaleLobbyData m_LobbyData = config_data.GetLobbyData();
+        i_NumRounds = m_ZoneData.num_zones;
+        b_EnableSpawnSelectionMenu = m_LobbyData.enable_spawn_selection_menu;
 
         //--- initialize all states (in order from start to finish)
         m_States = new array<ref BattleRoyaleState>;
@@ -255,7 +256,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         //--- The speaking-players panel is a client HUD element gated by two server settings, so the
         //--- joining player needs them before their first frame of gameplay.
-        BattleRoyaleGameData voice_settings = config_data.GetGameData();
+        BattleRoyaleVoiceData voice_settings = config_data.GetVoiceData();
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", new Param2<bool, bool>( voice_settings.show_speaking_players, voice_settings.speaking_list_during_match ), true, player.GetIdentity() );
 
         BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
@@ -530,18 +531,25 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
 		if(type == CallType.Server)
 		{
-			BattleRoyaleStartMatch m_StartMatchStateObj;
-			if(!Class.CastTo(m_StartMatchStateObj, GetCurrentState()))
+			//--- Asked of the state rather than by casting to one. This used to require
+			//--- BattleRoyaleStartMatch specifically, which meant F2 was dead in the lobby - where a
+			//--- wedged player has no other way out, and where staying wedged until Prepare costs
+			//--- them their whole loadout. Every state that has not opted in still refuses.
+			BattleRoyaleState state = GetCurrentState();
+			if(!state || !state.AllowsUnstuck())
 				return;
 
-            PlayerBase senderBase = m_StartMatchStateObj.GetPlayerFromIdentity(sender);
+            PlayerBase senderBase = state.GetPlayerFromIdentity(sender);
             if(!senderBase)
             {
-                Error("StartMatch state does not contain player requesting unstuck!");
+                //--- Warn, not Error: Error() raises a VM exception, and now that the lobby is in
+                //--- scope an RPC arriving from someone the state has not registered yet - or has
+                //--- just dropped - is an ordinary race rather than a fatal condition.
+                BattleRoyaleUtils.Warn("Current state does not contain the player requesting unstuck!");
                 return;
             }
 
-			m_StartMatchStateObj.DeferredUnstuck( senderBase );
+			state.DeferredUnstuck( senderBase );
 			senderBase.SetSynchDirty();
 		}
     }

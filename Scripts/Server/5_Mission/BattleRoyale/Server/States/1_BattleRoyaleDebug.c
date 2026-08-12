@@ -16,20 +16,35 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         m_ReadyList = new array<PlayerBase>();
 
-        BattleRoyaleLobbyData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+        BattleRoyaleLobbyData m_LobbySettings = BattleRoyaleConfig.GetConfig().GetLobbyData();
 
-		i_MinPlayers = m_DebugSettings.minimum_players;
+		i_MinPlayers = m_LobbySettings.minimum_players;
 		i_TimeBetweenMessages = 45;
-		b_UseVoteSystem = (m_DebugSettings.use_ready_up == 1);
-		f_VoteThreshold = m_DebugSettings.ready_up_percent;
-		f_MinWaitingTime = m_DebugSettings.min_waiting_time;
-		b_AutoStartGame = m_DebugSettings.autostart_enabled;
-		f_AutoStartDelay = m_DebugSettings.autostart_delay;
+		b_UseVoteSystem = (m_LobbySettings.use_ready_up == 1);
+		f_VoteThreshold = m_LobbySettings.ready_up_percent;
+		f_MinWaitingTime = m_LobbySettings.min_waiting_time;
+		b_AutoStartGame = m_LobbySettings.autostart_enabled;
+		f_AutoStartDelay = m_LobbySettings.autostart_delay;
     }
 
     override string GetName()
     {
         return "Debug Zone State";
+    }
+
+    //--- The lobby needs this at least as much as the warm-up does, and used not to have it. A
+    //--- player wedged in the scenery here has no way out on their own and stays wedged for the
+    //--- whole wait - and if they are still wedged when Prepare runs, the fall command that pinned
+    //--- them has their inventory locked and they start the match with no loadout at all (see
+    //--- BattleRoyalePrepare.ClearStuckMovementState). Observed 2026-08-08: Client_B was stuck for
+    //--- ~80s, pressed F2 to no effect, and spawned naked.
+    //---
+    //--- BattleRoyaleDebugState.FindUnstuckPosition clamps the landing spot to the lobby disc, so
+    //--- this cannot be used to get out of the lobby, and the cooldown in DeferredUnstuck stops it
+    //--- being used as fast-travel within it.
+    override bool AllowsUnstuck()
+    {
+        return true;
     }
 
     //returns true when this state is complete

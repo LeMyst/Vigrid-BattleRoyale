@@ -7,7 +7,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 	ref Timer m_SpawnSelectionTimer;
 
 	private BattleRoyaleConfig m_Config;
-    private BattleRoyaleGameData m_GameSettings;
+    private BattleRoyaleLobbyData m_LobbySettings;
 
 	private ref set<int> spawn_colors;
 	private ref map<string, int> player_spawn_colors = new map<string, int>; // Player ID -> Spawn color
@@ -22,11 +22,11 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
     {
     	m_Config = BattleRoyaleConfig.GetConfig();
 
-        m_GameSettings = m_Config.GetGameData();
+        m_LobbySettings = m_Config.GetLobbyData();
 
-		i_SpawnSelectionDuration = m_GameSettings.spawn_selection_duration;
-		i_ExtraScreenTime = m_GameSettings.spawn_selection_extra_time;
-		b_ShowHeatMap = m_GameSettings.show_spawn_heatmap;
+		i_SpawnSelectionDuration = m_LobbySettings.spawn_selection_duration;
+		i_ExtraScreenTime = m_LobbySettings.spawn_selection_extra_time;
+		b_ShowHeatMap = m_LobbySettings.show_spawn_heatmap;
 
 		spawn_colors = new set<int>;
 //        spawn_colors.Insert(ARGB(255, 255, 179, 186));  // Light Pastel Pink
@@ -64,7 +64,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_SpawnZoneNumber).GetArea();
         vector v_FirstZoneCenter = spawn_area.GetCenter();
         float f_FirstZoneRadius = spawn_area.GetRadius();
-        float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
+        float f_SpawnSelectionRadius = m_LobbySettings.spawn_selection_radius;
 
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", new Param4<int, float, vector, float>(i_SpawnSelectionDuration, f_SpawnSelectionRadius, v_FirstZoneCenter, f_FirstZoneRadius), true);
 
@@ -277,7 +277,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         if (!IsActive())
             return;
 
-        if (!m_GameSettings.gather_party_for_spawn_selection)
+        if (!m_LobbySettings.gather_party_for_spawn_selection)
             return;
 
         array<PlayerBase> population = GetPlayers();

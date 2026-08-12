@@ -29,7 +29,169 @@ modded class PlayerBase
         players = new array<PlayerBase>();
         players.Copy(s_LocalPlayers);
     }
+
+    //--- The client half of the teleport juncture. The server half (which is what actually moves the
+    //--- player) lives in Scripts/Server/4_World/.../PlayerBase.c, and being #ifdef SERVER it does
+    //--- not exist here - so before this, a teleported client kept locally predicting whatever
+    //--- movement command it was in and went on playing the climb animation at the new position.
+    //---
+    //--- Position is deliberately NOT read or set here: it already arrives through ordinary network
+    //--- sync, and re-applying it from a juncture that may land on a different simulation step would
+    //--- only add a pop. All this side owes is to stop predicting the old command.
+    override void OnSyncJuncture(int pJunctureID, ParamsReadContext pCtx)
+    {
+        super.OnSyncJuncture(pJunctureID, pCtx);
+
+        //--- The client does receive this - verified by instrumenting both sides, which was worth
+        //--- doing precisely because the server half lives in an #ifdef SERVER file and nothing had
+        //--- ever proven the client half fired.
+        if ( pJunctureID == BR_SYNC_JUNCTURE_TELEPORT )
+            BR_NotifyTeleported();
+    }
 #endif
+
+    //--- True while a movement command is running that vanilla pairs with an inventory lock:
+    //--- OnCommandFallStart / ClimbStart / LadderStart / SwimStart each take LOCK_FROM_SCRIPT and
+    //--- only release it in the matching ...Finish (playerbase.c:3964-4085).
+    //---
+    //--- Unguarded on purpose. The server needs it to decide whether a player can be dressed at all,
+    //--- and the client needs the same answer to stop predicting a climb it is no longer doing - and
+    //--- the two must never disagree about what counts.
+    bool BR_IsInLockingMovementCommand()
+    {
+        if ( GetCommand_Fall() )
+            return true;
+        if ( GetCommand_Climb() )
+            return true;
+        if ( GetCommand_Ladder() )
+            return true;
+        if ( GetCommand_Swim() )
+            return true;
+
+        return false;
+    }
+
+    //--- Pending deferred reset, consumed by CommandHandler below.
+    protected bool m_BR_ForceMoveRequested = false;
+
+    //--- Seconds left of the post-teleport window in which CommandHandler keeps asking the
+    //--- controller whether it is airborne. See BR_TELEPORT_SETTLE_SECONDS.
+    protected float m_BR_PostTeleportSettle = 0;
+
+    /**
+     *  Tell this character it has just been teleported. **This is the one to call.**
+     *
+     *  Called from both halves of the BR_SYNC_JUNCTURE_TELEPORT handler, and the only thing that
+     *  makes a teleport end in an actual command transition.
+     *
+     *  It only records the request; CommandHandler does the work. Vanilla never starts a command
+     *  anywhere but inside CommandHandler, and always returns immediately afterwards
+     *  (dayzplayerimplement.c:2366-2400 does it four times in a row). Starting one from outside that
+     *  tick - from a juncture handler, say - produces a player who *looks* right, standing in a
+     *  normal pose, but whose movement input is not driving anything: they are pinned in place until
+     *  some real command transition happens and resyncs them. Jumping once was the observed cure,
+     *  which is exactly that.
+     *
+     *  This used to be gated on BR_IsInLockingMovementCommand, so that only a player stuck in a
+     *  fall/climb/ladder/swim was ever reset. A player teleported out of an ordinary standing Move -
+     *  which is every player at match start - failed that gate, the request was dropped, and neither
+     *  side ever told the engine anything had changed. That is what left characters hovering above
+     *  the ground until their first input.
+     */
+    void BR_NotifyTeleported()
+    {
+        //--- A teleport must not yank somebody out of a vehicle seat or a scripted command; that
+        //--- narrowness used to come free from the locking-command gate, so it is stated here
+        //--- instead now that the gate is gone.
+        if ( GetCommand_Vehicle() )
+            return;
+        if ( GetCommand_Script() )
+            return;
+
+        m_BR_ForceMoveRequested = true;
+        m_BR_PostTeleportSettle = BR_TELEPORT_SETTLE_SECONDS;
+    }
+
+    //--- Immediate variant, for the one caller that needs the side effect *now* rather than next
+    //--- tick: BattleRoyalePrepare has to get vanilla to drop its inventory lock before it can
+    //--- create the starting clothes, and it cannot yield. Safe there specifically because player
+    //--- input is disabled for the whole of that state and a teleport follows immediately, so the
+    //--- pinned-input problem described above has no chance to be observed.
+    //---
+    //--- Still gated on the locking commands, unlike BR_NotifyTeleported: this one exists to undo an
+    //--- inventory lock, and a player who does not hold one has nothing here to fix.
+    bool BR_ForceMoveCommandImmediate()
+    {
+        if ( !BR_IsInLockingMovementCommand() )
+            return false;
+
+        StartCommand_Move();
+        return true;
+    }
+
+    //--- Hand the character to the Fall command from wherever it is standing right now. Vanilla
+    //--- pairs these two calls everywhere it leaves a command into a fall
+    //--- (dayzplayerimplement.c:2383-2387, 2540-2545) and the YDiff is what the landing measures its
+    //--- drop against, so they must not be separated.
+    protected void BR_StartFallFromHere()
+    {
+        StartCommand_Fall(0);
+        SetFallYDiff( GetPosition()[1] );
+    }
+
+    //--- Consume the request at the only point the engine sanctions for it. Returning right after
+    //--- StartCommand_Move mirrors vanilla, which never falls through to the rest of the handler on
+    //--- a frame where it changed command.
+    override void CommandHandler(float pDt, int pCurrentCommandID, bool pCurrentCommandFinished)
+    {
+        if ( m_BR_ForceMoveRequested )
+        {
+            m_BR_ForceMoveRequested = false;
+
+            //--- Re-checked rather than trusted from BR_NotifyTeleported: a tick has passed since
+            //--- the juncture, and ejecting somebody from a vehicle seat is not a teleport's job.
+            if ( !GetCommand_Vehicle() && !GetCommand_Script() )
+            {
+                //--- Mirror vanilla's own sequence for leaving a command
+                //--- (dayzplayerimplement.c:2381-2400): if physics says we are airborne, hand over
+                //--- to Fall so the engine runs its normal landing rather than dropping the player
+                //--- straight into a move they are not standing up for; otherwise start the move.
+                //---
+                //--- The move is unconditional, and that is the point of it. It is a genuine command
+                //--- transition, which is exactly what a single jump used to supply by hand for a
+                //--- player left pinned by a teleport - and it is cheap for everybody else, since
+                //--- restarting Move from Move is what vanilla itself does every time a command
+                //--- finishes.
+                if ( PhysicsIsFalling(true) )
+                {
+                    BR_StartFallFromHere();
+                    return;
+                }
+
+                StartCommand_Move();
+                return;
+            }
+        }
+
+        //--- The controller does not re-evaluate its ground contact when a script moves the
+        //--- character, so the one-shot above can honestly answer "not airborne" while standing a
+        //--- metre up - and on the client it can run before the corrected position has even arrived.
+        //--- Keep asking for a moment. Only a fall is started here: the move has already happened,
+        //--- and re-issuing one every frame would fight whatever the player has started doing since.
+        if ( m_BR_PostTeleportSettle > 0 )
+        {
+            m_BR_PostTeleportSettle = m_BR_PostTeleportSettle - pDt;
+
+            if ( !GetCommand_Fall() && PhysicsIsFalling(true) )
+            {
+                m_BR_PostTeleportSettle = 0;
+                BR_StartFallFromHere();
+                return;
+            }
+        }
+
+        super.CommandHandler(pDt, pCurrentCommandID, pCurrentCommandFinished);
+    }
 
     void DisableInput(bool disabled)
     {

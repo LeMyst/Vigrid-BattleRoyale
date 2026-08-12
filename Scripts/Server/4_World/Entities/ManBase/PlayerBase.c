@@ -12,6 +12,10 @@ modded class PlayerBase
     bool force_result = true;
 
     bool wait_unstuck = false;
+    //--- Tick time before which this player may not request another unstuck. wait_unstuck alone only
+    //--- covers the 1-3 s while one is in flight; this is what stops F2 being held down as
+    //--- fast-travel now that the lobby answers it too. See BattleRoyaleState.DeferredUnstuck.
+    float next_unstuck_time = 0;
 
     string owner_id = "";
 
@@ -96,12 +100,19 @@ modded class PlayerBase
 
 		switch( pJunctureID )
 		{
-			case 88:
+			case BR_SYNC_JUNCTURE_TELEPORT:
 				vector position, direction;
 				pCtx.Read( position );
 				pCtx.Read( direction );
 				if ( position )
 				{
+					//--- Seated just above the resolved ground rather than exactly on it, so the
+					//--- capsule never starts inside the surface. This is a few centimetres and
+					//--- nothing depends on it; it is emphatically NOT a drop the engine is expected
+					//--- to turn into a fall - see BR_TELEPORT_DROP_HEIGHT for the metre that tried
+					//--- that and left everybody hovering.
+					position[1] = position[1] + BR_TELEPORT_DROP_HEIGHT;
+
 					SetDynamicPhysicsLifeTime( 0.001 );
 					dBodyActive( this, ActiveState.INACTIVE );
 					SetPosition( position );
@@ -111,6 +122,17 @@ modded class PlayerBase
 				{
 					SetDirection( direction );
 				}
+
+				//--- Repositioning alone leaves the running movement command running, so a player
+				//--- teleported off a ladder or out of an unfinished fall arrives still playing that
+				//--- animation - which, for the unstuck teleport, is the exact state it exists to
+				//--- escape. It has to happen HERE rather than before the teleport: clearing the
+				//--- command while the player is still standing on the ladder just lets the engine
+				//--- re-enter it on the next tick, which is what BattleRoyalePrepare saw.
+				//---
+				//--- Requested rather than done outright: this is a juncture handler, not the
+				//--- command tick. See BR_NotifyTeleported.
+				BR_NotifyTeleported();
 				break;
 		}
 	}

@@ -45,10 +45,10 @@ class BattleRoyaleZone
         m_Config = BattleRoyaleConfig.GetConfig();
 
         BattleRoyaleGameData m_GameData = m_Config.GetGameData();
-        i_NumRounds = m_GameData.num_zones;
         i_RoundDurationMinutes = m_GameData.round_duration_minutes;
 
         m_ZoneSettings = m_Config.GetZoneData();
+        i_NumRounds = m_ZoneSettings.num_zones;
         f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
         f_Eulers = m_ZoneSettings.shrink_base;

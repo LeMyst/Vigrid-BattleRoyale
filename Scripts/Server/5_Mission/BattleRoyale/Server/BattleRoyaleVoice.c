@@ -26,24 +26,24 @@ class BattleRoyaleVoice
     /**
      *  Cached settings handle.
      *
-     *  BattleRoyaleConfig.GetGameData() emits a Trace on every single call
-     *  (BattleRoyaleConfig.c:189), and the code below runs at the server tick rate - once per tick
-     *  in UpdateSpeakers, and once per listener/speaker pair in CanHear. Fetching it each time put
-     *  roughly ten "Accessing Game Data Config..." lines per second into the log, and on a DIAG
-     *  server BattleRoyaleUtils mirrors every level into in-game chat, so it spammed that too.
+     *  BattleRoyaleConfig.GetVoiceData() emits a Trace on every single call, and the code below runs
+     *  at the server tick rate - once per tick in UpdateSpeakers, and once per listener/speaker pair
+     *  in CanHear. Fetching it each time put roughly ten "Accessing Voice Data Config..." lines per
+     *  second into the log, and on a DIAG server BattleRoyaleUtils mirrors every level into in-game
+     *  chat, so it spammed that too.
      *
      *  The config is loaded once at boot and its data objects keep their identity, which is why the
      *  states already cache this in their constructors. Same idea, fetched lazily because this class
      *  has no constructor to hang it off.
      */
-    private static BattleRoyaleGameData s_GameData;
+    private static BattleRoyaleVoiceData s_VoiceData;
 
-    private static BattleRoyaleGameData GameData()
+    private static BattleRoyaleVoiceData VoiceData()
     {
-        if (!s_GameData)
-            s_GameData = BattleRoyaleConfig.GetConfig().GetGameData();
+        if (!s_VoiceData)
+            s_VoiceData = BattleRoyaleConfig.GetConfig().GetVoiceData();
 
-        return s_GameData;
+        return s_VoiceData;
     }
 
     //--- Exactly the uids the matrix was built from, so ClearAll() can undo precisely what it did.
@@ -79,7 +79,7 @@ class BattleRoyaleVoice
             return;
         }
 
-        if (!GameData().party_only_voice)
+        if (!VoiceData().party_only_voice)
         {
             BattleRoyaleUtils.Info("BattleRoyaleVoice: party_only_voice is disabled, leaving voice open");
             return;
@@ -216,7 +216,7 @@ class BattleRoyaleVoice
             return;
         s_NextSpeakerPollMs = now_ms + BR_SPEAKING_POLL_MS;
 
-        if (!GameData().show_speaking_players)
+        if (!VoiceData().show_speaking_players)
             return;
 
         if (!s_LastSpokeMs)
@@ -338,12 +338,12 @@ class BattleRoyaleVoice
             return s_GroupIndex.Get(listener_uid) == s_GroupIndex.Get(speaker_uid);
         }
 
-        float radius = GameData().voice_radius_talk;
+        float radius = VoiceData().voice_radius_talk;
         int level = GetGame().GetVoiceLevel(speaker);
         if (level == VoiceLevelWhisper)
-            radius = GameData().voice_radius_whisper;
+            radius = VoiceData().voice_radius_whisper;
         else if (level == VoiceLevelShout)
-            radius = GameData().voice_radius_shout;
+            radius = VoiceData().voice_radius_shout;
 
         vector listener_pos = listener.GetPosition();
         vector speaker_pos = speaker.GetPosition();

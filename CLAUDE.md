@@ -110,6 +110,20 @@ States are an **ordered `array<ref BattleRoyaleState>`** built in `BattleRoyaleS
 
 Long-running work uses script coroutines — `GetGame().GameScript.Call(this, "MethodName", NULL)` plus `Sleep()` (see `4_BattleRoyalePrepare.ProcessPlayers`), not the call queue.
 
+### Teleports and stuck players
+
+**A player wedged in geometry has their inventory locked, and that is why they used to spawn naked.** Vanilla `PlayerBase.OnCommandFallStart` / `ClimbStart` / `LadderStart` / `SwimStart` each take a `LOCK_FROM_SCRIPT` lock on the character's inventory and only release it in the matching `...Finish` (`playerbase.c:3964-4085`). A player stuck mid-jump never finishes the command, so the lock is still held when `4_BattleRoyalePrepare` dresses everyone — and **a locked inventory refuses `CreateAttachment` silently, returning NULL**. `LocalDestroyEntity` is not an inventory move and ignores the lock, so the lobby clothes still went away: the symptom is "stripped and never re-dressed", not "still in lobby clothes". `ClearStuckMovementState` ends the command and drains any leaked lock count before dressing, every creation result is now checked, and `ProcessPlayers` re-dresses anyone left with zero attachments after the teleport. **A ladder is the deterministic repro** — same lock, reproducible where wedging yourself in a prop is not.
+
+**Never start a movement command outside `CommandHandler`.** Vanilla only ever does it there and always `return`s immediately after (`dayzplayerimplement.c:2366-2400`, four times in a row). Starting one from a juncture handler produces a player who *looks* right but whose movement input drives nothing until some real command transition resyncs them — one jump was the cure. `BR_NotifyTeleported` therefore only sets a flag; the overridden `CommandHandler` consumes it and issues the transition — a `Fall` if the controller reports airborne, otherwise an unconditional `Move`, which is that jump without the jump. `BattleRoyalePrepare` keeps `BR_ForceMoveCommandImmediate` because it needs the inventory unlock synchronously and cannot yield, which is safe only because input is disabled for that whole state.
+
+Both teleports (match start and F2 unstuck) go through **one** sync juncture, `BR_SYNC_JUNCTURE_TELEPORT` (88). Its server half repositions; a **client** half is also required, in `Scripts/Client/4_World/.../PlayerBase.c`, because the server half is `#ifdef SERVER` and the client would otherwise keep predicting the old command. The client does receive the juncture — verified by instrumenting both sides.
+
+**Known bug, deliberately left in (2026-08-09): an F2 unstuck taken *while on a ladder in the lobby* still arrives playing the ladder animation, pinned until the player jumps once.** Everything else is clean — the match-start teleport handles a laddered player correctly, position and animation both, and neither path hovers any more. The difference between the two is the lead: `4_BattleRoyalePrepare` already ended the command server-side in `ClearStuckMovementState` and has input disabled for the whole state, while F2 has only the juncture. **One hypothesis has since been tested and refuted.** The theory was that the client consumes the forced `Move` before the corrected position arrives, restarts Move while still at the ladder, and vanilla re-enters the ladder command. Re-issuing the `Move` every frame of the settle window for as long as `GetCommand_Ladder()` or `GetCommand_Climb()` was running changed **nothing at all** — not the symptom, not even its texture — and everything else stayed clean. Had the ladder command genuinely still been running, forcing Move at frame rate would have looked like *something*. So the command state after the teleport is most likely already correct and **what is stuck is the animation graph, not the command** — which is also why a jump cures it, a jump being a real animation transition. That experiment was reverted rather than kept.
+
+The untried lead is `HumanCommandLadder.Exit()` / `CanExit()` (`P:\scripts\3_game\human.c:644-664`) — vanilla's own way off a ladder, which plays the exit transition instead of replacing the command underneath it. Note `Exit()` plausibly only works while still *at* the ladder, so it would have to run before the teleport rather than in the juncture, and `Unstuck()` already defers 1-3 s, which is where the sequencing would go. **Instrument before writing any of it**: log instance type, `GetCurrentCommandID()` and whether `GetCommand_Ladder()` is null on both sides at juncture receipt and for a few ticks after. That single measurement distinguishes "command stuck" from "graph stuck" outright, and one instrumented run has already settled this subsystem once where reasoning had failed twice. Three explanations have now been wrong here; do not make a fourth without data.
+
+**The controller does not re-check its ground contact after a scripted `SetPosition`, so a teleport must never rely on the engine noticing a drop.** `BR_TELEPORT_DROP_HEIGHT` was briefly 1 m on the theory that a player dropped in would be airborne, fall, and land — and that the landing would reset the animation graph. `PhysicsIsFalling` read "not airborne" on both sides with the metre applied, which was known at the time and read too narrowly ("the Fall branch is not what fixes the unstuck" rather than "nothing converts this drop into a fall"). What shipped was a character hovering a metre up after *every* teleport, on both paths, until the player's first input dropped them. It is now `0.05` — a seating epsilon so the capsule does not start inside the surface, nothing more. Two things replace it: `CommandHandler` ends every teleport with a real command transition (above), and `BattleRoyaleDebugState.FindUnstuckPosition` runs its lobby-centre fallback through `IsSafeForTeleport` instead of taking a raw `SurfaceY`, which is the wedging the metre of clearance was really hiding. `BR_TELEPORT_SETTLE_SECONDS` (0.75 s) is why the airborne check is a window rather than one tick: on the client the juncture can arrive before the corrected position does.
+
 ### Zones
 
 `BattleRoyaleZone` (server, `BattleRoyaleZone.c`) is a static registry; all play areas are generated **once per process** into `static ref array<ref BattleRoyalePlayArea> m_PlayAreas`. **Zone 1 is the largest** and the last zone is the smallest — `BattleRoyaleZone.c:71` indexes with `i_NumRounds - GetZoneNumber()`. Radii come from `zone_settings.json` `static_sizes`; the other `shrink_type` values are declared but marked unused.
@@ -150,18 +164,22 @@ Two secondary channels: `ScriptRPC` with the `BattleRoyaleCOTStateMachineRPC` en
 
 Server-side only (`Scripts/Server/3_Game/Config/`, all `#ifdef SERVER`). `BattleRoyaleConfig` is a singleton holding `map<string, ref BattleRoyaleDataBase>`; reach it with `BattleRoyaleConfig.GetConfig().GetGameData()` etc.
 
-| File in `$profile:Vigrid-BattleRoyale\` | Class | Registry key |
-|---|---|---|
-| `general_settings.json` | `BattleRoyaleGameData` | `GameData` |
-| `lobby_settings.json` | `BattleRoyaleLobbyData` | `DebugData` |
-| `spawns_settings.json` | `BattleRoyaleSpawnsData` | `SpawnsData` |
-| `zone_settings.json` | `BattleRoyaleZoneData` | `ZoneData` |
-| `pois_settings.json` | `BattleRoyalePOIsData` | `POIsData` |
-| `server_settings.json` | `BattleRoyaleServerData` | `ServerData` — **no mission override** |
+| File in `$profile:Vigrid-BattleRoyale\` | Class | Registry key | Scope |
+|---|---|---|---|
+| `general_settings.json` | `BattleRoyaleGameData` | `GameData` | general match-flow settings not owned by another file below |
+| `lobby_settings.json` | `BattleRoyaleLobbyData` | `LobbyData` | pre-match lobby flow: ready-up, autostart, spawn selection |
+| `zone_settings.json` | `BattleRoyaleZoneData` | `ZoneData` | zone geometry, shrink timing, zone damage, shrink-notification timing |
+| `voice_settings.json` | `BattleRoyaleVoiceData` | `VoiceData` | party-only voice while frozen, speaking-list panel |
+| `spawns_settings.json` | `BattleRoyaleSpawnsData` | `SpawnsData` | lobby spawn point and match spawn placement |
+| `pois_settings.json` | `BattleRoyalePOIsData` | `POIsData` | POI position overrides |
+| `server_settings.json` | `BattleRoyaleServerData` | `ServerData` | Vigrid API/webhook + autolock infra — **no mission override** |
+| `leaderboard_settings.json` | `BattleRoyaleLeaderboardData` | `LeaderboardData` | scoring curve + persistence knobs — **no mission override**, integrity-sensitive |
 
 The mission override (`$mission:Vigrid-BattleRoyale\`) is **not a merge** — `JsonFileLoader<T>.LoadFile()` is called twice into the same instance (`Load()` then `LoadMission()`), so only keys present in the mission JSON get overwritten. `Upgrade()` runs inside `Load()`, before the mission pass, and `Save()` only ever writes the profile path.
 
-Each class carries `int version` plus an `Upgrade()` migration. `Load()` re-saves after reading, so new fields appear in existing profile JSONs on next boot.
+A field can also be locked out of mission override *within* an otherwise-overridable file: `LoadMission()` snapshots it before the deserialize call and restores it right after. `BattleRoyaleGameData.admins_steamid64` is the example — general_settings.json supports mission overrides, but the admin list is a server-operator concern, not mission content, so it's exempted. Reach for the same idiom for any future field that needs this.
+
+Each class carries `int version` plus an `Upgrade()` migration. `Load()` re-saves after reading, so new fields appear in existing profile JSONs on next boot. Moving a field to a different settings file is *not* treated as a migration — the field starts from its new class's default and the old key is left inert in the old file.
 
 ### Parties (`Party/`)
 
