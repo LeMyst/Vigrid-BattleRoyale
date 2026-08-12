@@ -1,0 +1,33 @@
+PanelWidgetClass SpeakingRowRoot {
+ visible 1
+ ignorepointer 1
+ position 0 0
+ size 256 26
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0 0 0 0.85
+ style DayZDefaultPanel
+ {
+  TextWidgetClass SpeakingRowName {
+   //--- Deliberately does NOT inherit the parent's alpha: the row panel behind it is a translucent
+   //--- backdrop, and the name has to stay fully opaque to read over a bright spawn map.
+   inheritalpha 0
+   ignorepointer 1
+   position 6 0
+   size 244 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Survivor"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" left
+   "text valign" center
+  }
+ }
+}

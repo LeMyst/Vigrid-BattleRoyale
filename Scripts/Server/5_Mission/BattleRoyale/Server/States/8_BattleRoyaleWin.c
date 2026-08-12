@@ -145,6 +145,8 @@ class BattleRoyaleWin: BattleRoyaleState
 		//--- point their results exist. Still only an optimisation over the restart-state flush.
 		BattleRoyaleLeaderboard.GetInstance().Flush();
 
-        Deactivate();
+        //--- Deferred: this is a timer callback, i.e. inside TimerQueue.Tick. See
+        //--- BattleRoyaleState.DeactivateDeferred().
+        DeactivateDeferred();
     }
 }

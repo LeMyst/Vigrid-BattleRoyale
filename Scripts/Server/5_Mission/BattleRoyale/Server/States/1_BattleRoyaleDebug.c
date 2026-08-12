@@ -92,12 +92,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
 		if( GetGame().GetTickTime() >= f_MinWaitingTime && GetPlayers().Count() > 1 )
 		{
+			//--- Deferred: this runs from a looping timer, i.e. inside TimerQueue.Tick. See
+			//--- BattleRoyaleState.DeactivateDeferred().
 			if( IsActive() && IsVoteReady() )
-				Deactivate();
+				DeactivateDeferred();
 
 			int t_MaxPlayers = GetGame().ServerConfigGetInt( "maxPlayers" );
 			if( b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) ) )
-				Deactivate();
+				DeactivateDeferred();
 		}
     }
 

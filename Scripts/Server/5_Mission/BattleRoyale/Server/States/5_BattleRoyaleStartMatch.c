@@ -48,6 +48,10 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     {
         super.Activate();
 
+        //--- Back to open proximity voice for the match. Deliberately before HandleUnlock() runs its
+        //--- per-player DisableInput(false), so the later call can only ever loosen the policy.
+        BattleRoyaleVoice.ClearAll();
+
         //send start match RPC (this will enable UI such as kill count)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", new Param1<bool>(true), true); //don't need a param, but id rather keep it just so i know nothing wierd occurs (eventually find out if we can remove it)
 
@@ -200,7 +204,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
     void StartZoning()
     {
-        Deactivate();
+        //--- Deferred: this is a timer callback, i.e. inside TimerQueue.Tick. See
+        //--- BattleRoyaleState.DeactivateDeferred().
+        DeactivateDeferred();
     }
 
     void DeferredUnstuck( PlayerBase player )

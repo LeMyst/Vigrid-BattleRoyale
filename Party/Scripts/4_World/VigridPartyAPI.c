@@ -68,6 +68,20 @@ class VigridPartyAPI
         return manager.GetTeammatesIn(player, population);
     }
 
+    /**
+     *  The leader of `player`'s party, if present in `population`. Null for a solo player, and null
+     *  when the leader is absent from the population, so a caller that gathers a party around its
+     *  leader can tell "no leader here" from "I am the leader" rather than being given a stand-in.
+     */
+    static PlayerBase GetLeader(PlayerBase player, array<PlayerBase> population)
+    {
+        VigridPartyManager manager = VigridPartyManager.GetInstance();
+        if (!manager || !manager.IsEnabled())
+            return NULL;
+
+        return manager.GetLeaderIn(player, population);
+    }
+
     //! O(1). Two players in no party are not teammates, and a player is not their own teammate.
     static bool AreTeammates(PlayerBase a, PlayerBase b)
     {

@@ -277,10 +277,15 @@ modded class MissionGameplay
 #ifdef DIAG
 			// Debug key
 			if (GetUApi().GetInputByID(UADayZBRDebug).LocalPress()) {
-				SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, GetUIManager().GetMenu()));
-				m.SetInitialCountdown(45);
-				m.SetSpawnSize(50);
-				m.SetFirstZone(Vector(6000, 0, 7777), 1500);
+				//--- Parentless, same as the real opener - see ShowSpawnSelection for why.
+				GetUIManager().CloseAll();
+				SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, NULL));
+				if (m)
+				{
+					m.SetInitialCountdown(45);
+					m.SetSpawnSize(50);
+					m.SetFirstZone(Vector(6000, 0, 7777), 1500);
+				}
 			}
 #endif
 #ifdef BR_MINIMAP
@@ -312,8 +317,25 @@ modded class MissionGameplay
 		if ( type == CallType.Client )
 		{
 			BattleRoyaleUtils.Trace(string.Format("ShowSpawnSelection: %1 %2 %3 %4", data.param1, data.param2, data.param3, data.param4));
-			//ANVICaptchaMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_ANVI_CAPTCHA, GetUIManager().GetMenu()));
-			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, GetUIManager().GetMenu()));
+
+			//--- Close whatever the player happens to have open first - the escape menu above all.
+			//---
+			//--- This used to pass GetMenu() as the PARENT of the spawn map. GetMenu() is whatever is
+			//--- currently open, so a player sitting in the escape menu when spawn selection began got
+			//--- the map opened as a *child* of it: the escape menu stayed underneath as the parent and
+			//--- could not be dismissed, which left them unable to use the map or talk to their party
+			//--- for the whole 30 seconds. Opening it parentless, on a cleared stack, is unconditional.
+			GetUIManager().CloseAll();
+
+			SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, NULL));
+			if (!m)
+			{
+				//--- Warn, not Error: Error raises a VM exception, and a player without the map is
+				//--- still better off than a dead client - the server assigns them a spawn anyway.
+				BattleRoyaleUtils.Warn("ShowSpawnSelection: could not open the spawn selection menu");
+				return;
+			}
+
 			m.SetInitialCountdown(data.param1);
 			m.SetSpawnSize(data.param2);
 			m.SetFirstZone(data.param3, data.param4);

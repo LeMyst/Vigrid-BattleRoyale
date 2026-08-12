@@ -38,17 +38,11 @@ modded class PlayerBase
 		else
 			BattleRoyaleUtils.Trace( "Call To Enable Player Input" );
 
-		// Disable Voice over Network
-		if ( disabled )
-		{
-			GetGame().MuteAllPlayers( GetIdentity().GetPlainId() , true );
-			GetGame().EnableVoN(this, false);
-		}
-		else
-		{
-			GetGame().EnableVoN(this, true);
-			GetGame().MuteAllPlayers( GetIdentity().GetPlainId() , false );
-		}
+		//--- Voice is deliberately NOT touched here. This method runs on the client for states 2 and
+		//--- 3 (driven by the SetInput RPC) where MuteAllPlayers/EnableVoN are no-ops, because the
+		//--- VON router only answers to the server - so the gag this used to attempt never happened.
+		//--- On the server, in state 4, it did work, but it gagged everyone globally and would defeat
+		//--- party voice during prepare. BattleRoyaleVoice is now the single owner of voice policy.
 
 		HumanInputControllerOverrideType override_type = HumanInputControllerOverrideType.DISABLED;
 		if ( disabled )
