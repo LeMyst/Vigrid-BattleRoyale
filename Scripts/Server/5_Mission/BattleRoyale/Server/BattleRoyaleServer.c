@@ -48,6 +48,10 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = config_data.GetServerData();
 
+		//--- Reads steam_names.json back in. The process restarts between matches, so without this
+		//--- every match would re-query every returning player.
+		BattleRoyaleNameService.Init();
+
 		if ( m_ServerData.enable_vigrid_api )
 		{
 			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
@@ -205,6 +209,18 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- BR_SPEAKING_POLL_MS and only sends on change, so this is cheap at 10 Hz.
 			BattleRoyaleVoice.UpdateSpeakers();
 
+			//--- Flush queued Steam name lookups once the batch window closes, so a lobby filling up
+			//--- in a burst costs one request rather than one per player. Two comparisons when idle.
+			BattleRoyaleNameService.Tick();
+
+#ifdef VIGRID_PARTY
+			//--- A resolved name is not a party composition change, so Party has no reason to re-send
+			//--- its rosters and its HUD row would keep rendering "Survivor". Consume-once flag, so
+			//--- this is a single bool test per tick.
+			if ( BattleRoyaleNameService.ConsumePartyRefresh() )
+				VigridPartyAPI.RefreshRosterNames();
+#endif
+
 			if (GetCurrentState().IsComplete()) //current state is complete
 			{
 				int next_index = GetNextStateIndex();
@@ -248,7 +264,17 @@ class BattleRoyaleServer: BattleRoyaleBase
         //Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
         player.player_steamid = player.GetIdentity().GetPlainId();
         //Same reason: the leaderboard has to render a name for someone who already left.
-        player.player_name = player.GetIdentity().GetName();
+        player.player_name = BattleRoyaleNameService.ResolveIdentity( player.GetIdentity() );
+
+        //--- A player who never set a name in the launcher connects as "Survivor", and the engine
+        //--- turns a second one into "Survivor (2)". Queue a Steam lookup; the answer lands a few
+        //--- seconds later and rewrites player_name plus vanilla's own cached name. No-op unless
+        //--- enable_steam_name_lookup is on.
+        BattleRoyaleNameService.RequestForPlayer( player );
+
+        //--- And hand them everyone else's resolved names, so a late joiner does not see "Survivor"
+        //--- on players the server corrected before they arrived.
+        BattleRoyaleNameService.SendAllResolvedNames( player.GetIdentity() );
 
         //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();

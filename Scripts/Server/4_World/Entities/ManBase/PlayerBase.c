@@ -26,6 +26,16 @@ modded class PlayerBase
 	//--- no longer on the server.
 	string player_name = "";
 
+	/**
+	 *  Overwrite vanilla's own cached name (playerbase.c:221, protected and server-only, seeded from
+	 *  the identity in EEInit). Doing this is what lets Party and KillFeed show a resolved name
+	 *  through the public GetCachedName() without either addon naming a BattleRoyale symbol.
+	 */
+	void BR_SetCachedName(string name)
+	{
+		m_CachedPlayerName = name;
+	}
+
 	//--- Server-side kill tally for the current match. Kills were previously only ever pushed to the
 	//--- owning client over the AddPlayerKill RPC, so nothing on the server could score them.
 	int br_kills = 0;

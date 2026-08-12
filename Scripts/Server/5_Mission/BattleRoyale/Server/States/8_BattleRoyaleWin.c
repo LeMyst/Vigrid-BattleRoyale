@@ -32,7 +32,7 @@ class BattleRoyaleWin: BattleRoyaleState
 				PlayerIdentity identity = winner.GetIdentity();
 				if(identity)
 				{
-					winner_name = identity.GetName();
+					winner_name = BattleRoyaleNameService.ResolveIdentity(identity);
 					BattleRoyaleUtils.Trace("[Win State] Winner!");
 					BattleRoyaleUtils.Trace(identity.GetName());
 					BattleRoyaleUtils.Trace(identity.GetFullName());

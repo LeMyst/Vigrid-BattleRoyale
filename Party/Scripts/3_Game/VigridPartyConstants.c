@@ -67,6 +67,12 @@ static const string VIGRID_PARTY_INPUT_MENU = "UAVigridPartyMenu";
 static const string VIGRID_PARTY_INPUT_PING = "UAVigridPartyPing";
 static const string VIGRID_PARTY_INPUT_PING_CLEAR = "UAVigridPartyPingClear";
 
+//--- Sent in a roster or a notification in place of a name when a member is offline AND no name
+//--- was ever recorded for them - an existing parties.json written before names were persisted.
+//--- It travels as a stringtable key because the server has no client locale; every client-side
+//--- consumer resolves it, which is centralised in VigridPartyAPI.GetMemberName.
+static const string VIGRID_PARTY_UNKNOWN_NAME_KEY = "#STR_PARTY_UNKNOWN_MEMBER";
+
 //--- Member state flags carried by VP_TeamState.
 static const int VIGRID_PARTY_FLAG_ONLINE = 1;      // bit0
 static const int VIGRID_PARTY_FLAG_ALIVE = 2;       // bit1

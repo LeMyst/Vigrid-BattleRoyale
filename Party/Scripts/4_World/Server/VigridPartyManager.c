@@ -36,6 +36,17 @@ class VigridPartyManager
      */
     private ref map<string, string> m_HashedToPlain;
 
+    /**
+     *  GetPlainId() (SteamID64) -> the last display name seen for it, persisted alongside the
+     *  parties.
+     *
+     *  A party outlives both the session and the process - a Battle Royale server restarts between
+     *  every match - but a name can only be read off a live PlayerIdentity. Without this, every
+     *  member who is not currently connected rendered as their raw 17-digit SteamID64 on every
+     *  client, which is what the whole cache exists to stop.
+     */
+    private ref map<string, string> m_NameByUid;
+
     private VigridPartyData m_Settings;
 
     private bool m_FormationLocked;
@@ -55,6 +66,7 @@ class VigridPartyManager
         m_LastPlayerListMs = new map<string, int>();
         m_LastPingMs = new map<string, int>();
         m_HashedToPlain = new map<string, string>();
+        m_NameByUid = new map<string, string>();
 
         m_FormationLocked = false;
         m_Dirty = false;
@@ -80,7 +92,7 @@ class VigridPartyManager
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_ADD, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_PING_CLEAR, this);
 
-        m_Parties = VigridPartyStore.Load(m_Settings);
+        m_Parties = VigridPartyStore.Load(m_Settings, m_NameByUid);
         RebuildIndex();
 
         VigridPartyLog.Info("Manager ready with " + m_Parties.Count() + " parties");
@@ -213,10 +225,33 @@ class VigridPartyManager
     {
         if (!player)
             return "";
-        if (!player.GetIdentity())
+
+        return NameOfIdentity(player.GetIdentity());
+    }
+
+    /**
+     *  The display name for a connected player.
+     *
+     *  Vanilla's own server-side cache (playerbase.c:221) is seeded from the identity, so this
+     *  normally answers exactly as GetPlainName() would. A host mod is free to overwrite it with a
+     *  better name - which is how a player who never set one in the launcher stops being "Survivor"
+     *  here - and Party picks that up without knowing anything about the mod that did it.
+     *
+     *  Takes an identity, not a PlayerBase, because two callers only have one: the invite browser's
+     *  online list walks GetPlayerIndentities(), and OnConnect records a name before it has looked
+     *  the player up. Both used to read GetPlainName() directly and so showed the launcher name
+     *  while the roster beside them showed the corrected one.
+     */
+    static string NameOfIdentity(PlayerIdentity identity)
+    {
+        if (!identity)
             return "";
 
-        return player.GetIdentity().GetPlainName();
+        PlayerBase player = PlayerBase.Cast(identity.GetPlayer());
+        if (player && player.GetCachedName() != "")
+            return player.GetCachedName();
+
+        return identity.GetPlainName();
     }
 
     //--- Not named Link()/Unlink(): `Link` is a global template class in the vanilla script
@@ -425,7 +460,7 @@ class VigridPartyManager
         if (!m_Dirty)
             return;
 
-        VigridPartyStore.Save(m_Parties);
+        VigridPartyStore.Save(m_Parties, m_NameByUid);
         m_Dirty = false;
         m_FlushDueMs = VigridPartyTime.NowMs() + VIGRID_PARTY_FLUSH_DEBOUNCE_MS;
     }
@@ -513,17 +548,49 @@ class VigridPartyManager
     }
 
     /**
-     *  Best-effort display name for a uid that may be offline. Falls back to the uid so a message
-     *  is never rendered with an empty name.
+     *  Record a display name against a uid, so it survives the player's disconnect and the process.
+     *
+     *  Returns early when nothing changed: this runs from NameOfUid, which every roster broadcast
+     *  calls once per member, and dirtying the store on each of those would defeat the write
+     *  debounce entirely. MarkDirty(false) for the same reason - the flush is never synchronous, a
+     *  name is not worth a disk write of its own.
+     */
+    private void RememberName(string uid, string name)
+    {
+        if (uid == "")
+            return;
+        if (name == "")
+            return;
+        if (m_NameByUid.Contains(uid) && m_NameByUid.Get(uid) == name)
+            return;
+
+        m_NameByUid.Set(uid, name);
+        MarkDirty(false);
+    }
+
+    /**
+     *  Display name for a uid that may be offline, in three steps: live identity, then the
+     *  remembered name, then a stringtable key the client resolves.
+     *
+     *  The live branch also refreshes the cache, which is what picks up a Steam name change - and
+     *  it is why every path that needs a name goes through here rather than reading NameOf()
+     *  directly. The uid itself is never returned: a raw SteamID64 in the party menu is the bug
+     *  this exists to fix.
      */
     private string NameOfUid(string uid)
     {
         PlayerBase player = GetPlayerByUid(uid);
         string name = NameOf(player);
         if (name != "")
+        {
+            RememberName(uid, name);
             return name;
+        }
 
-        return uid;
+        if (m_NameByUid.Contains(uid))
+            return m_NameByUid.Get(uid);
+
+        return VIGRID_PARTY_UNKNOWN_NAME_KEY;
     }
 
     // ---------------------------------------------------------------- invites
@@ -732,6 +799,29 @@ class VigridPartyManager
             new Param7<int, string, int, int, array<string>, array<string>, bool>(
                 party.roster_version, party.id, party.IndexOf(uid), party.IndexOf(party.leader_uid), uids, names, m_FormationLocked),
             true, identity);
+    }
+
+    /**
+     *  Re-push every party's roster because a display name changed underneath us.
+     *
+     *  Names are baked into the roster message at broadcast time, and every BroadcastRoster() call
+     *  site is a *composition* change - join, leave, kick, new leader. A name that changes while the
+     *  party's shape does not therefore never reaches the client, and the HUD row and name plate keep
+     *  rendering whatever the player was called when they joined. Nothing inside Party can notice
+     *  that, since the name comes from outside it, so this is the host mod's to call.
+     *
+     *  Cheap and rare by construction: a name resolves at most once per player per process.
+     */
+    void RefreshRosterNames()
+    {
+        for (int i = 0; i < m_Parties.Count(); i++)
+        {
+            VigridParty party = m_Parties.Get(i);
+            if (!party)
+                continue;
+
+            BroadcastRoster(party);
+        }
     }
 
     /**
@@ -1024,6 +1114,12 @@ class VigridPartyManager
 
         string uid = identity.GetPlainId();
         m_HashedToPlain.Set(identity.GetId(), uid);
+
+        //--- Before the partyless early return below, deliberately: this is the only moment the
+        //--- name is readable, and a player with no party today may be invited into one tomorrow -
+        //--- possibly while they are offline, from a roster their teammates are already looking at.
+        RememberName(uid, NameOfIdentity(identity));
+
         VigridParty party = GetPartyByUid(uid);
 
         if (!party)
@@ -1498,7 +1594,7 @@ class VigridPartyManager
                 continue;
 
             uids.Insert(uid);
-            names.Insert(identity.GetPlainName());
+            names.Insert(NameOfIdentity(identity));
 
             //--- bit0: already in a party, so the client can grey the invite button rather than
             //--- letting the player fire an invite the server will only reject.

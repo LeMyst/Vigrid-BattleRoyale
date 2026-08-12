@@ -48,31 +48,79 @@ modded class MissionGameplay
         if (m_UIManager.IsMenuOpen(MENU_CHAT_INPUT))
             return;
 
-        //--- The map takes the whole screen and its own input; a bind firing underneath it would
-        //--- act on a world the player is not currently looking at.
-        if (m_UIManager.IsMenuOpen(MENU_MAP))
+        if (HandlePartyClose())
             return;
 
-        //--- Pings are suppressed while the party menu is open, but the menu bind below is not -
-        //--- pressing it again is how the menu closes.
-        if (!m_UIManager.IsMenuOpen(MENU_VIGRID_PARTY))
-            HandlePingInput();
+        //--- Nothing this addon binds may fire while any menu at all is open. A ping is an 8 km
+        //--- camera raycast against a world the player is not currently looking at, and the menu
+        //--- bind is already handled above for the one menu that is ours.
+        //---
+        //--- "Any menu", not a list of ids - the list this replaces named only MENU_MAP, which is
+        //--- vanilla's map rather than the Vigrid one, so both binds still fired under the Vigrid
+        //--- map, the inventory, the in-game Esc menu and the death screen. Enumerating ids drifts;
+        //--- the map addon learned the same lesson at MapMissionGameplay.HandleMapOpen. Note this
+        //--- deliberately stays id-agnostic: Party must not reference MENU_VIGRID_MAP or anything
+        //--- else owned by Extra/Map.
+        if (m_UIManager.GetMenu())
+            return;
 
-        //--- Resolved by name so nothing here depends on the UAVigridPartyMenu constant, which is
-        //--- generated from another PBO's Inputs.xml.
+        HandlePingInput();
+        HandlePartyOpen();
+    }
+
+    /**
+     *  Close the party menu, on Esc or on a second press of the bind.
+     *
+     *  Esc has to be polled here rather than left to the engine. While ANY scripted menu is open,
+     *  MissionGameplay.OnUpdate never reaches its `else if (UAUIMenu.LocalPress()) Pause()` branch
+     *  (missiongameplay.c:691), so Esc over the party menu was a dead key rather than a competing
+     *  one - nothing closed and nothing opened. Every vanilla menu answers this the same way, by
+     *  reading UAUIBack itself; the vanilla map does it at mapmenu.c:296.
+     *
+     *  UAUIBack is read through GetInputByID, not by name: it is a vanilla input and its constant is
+     *  always present, unlike this PBO's own binds.
+     *
+     *  @return true when the menu was closed, so the caller stops before the open path re-opens it.
+     */
+    protected bool HandlePartyClose()
+    {
+        if (!m_UIManager.IsMenuOpen(MENU_VIGRID_PARTY))
+            return false;
+
+        if (GetUApi().GetInputByID(UAUIBack).LocalPress())
+        {
+            m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
+            return true;
+        }
+
+        UAInput close_input = GetUApi().GetInputByName(VIGRID_PARTY_INPUT_MENU);
+        if (!close_input)
+            return false;
+        if (!close_input.LocalPress())
+            return false;
+
+        m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
+        return true;
+    }
+
+    /**
+     *  Open the party menu. The caller has already established that nothing else is open.
+     *
+     *  Resolved by name so nothing here depends on the UAVigridPartyMenu constant, which is
+     *  generated from another PBO's Inputs.xml.
+     */
+    protected void HandlePartyOpen()
+    {
         UAInput party_input = GetUApi().GetInputByName(VIGRID_PARTY_INPUT_MENU);
         if (!party_input)
             return;
         if (!party_input.LocalPress())
             return;
 
-        if (m_UIManager.IsMenuOpen(MENU_VIGRID_PARTY))
-        {
-            m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
-            return;
-        }
-
-        GetUIManager().EnterScriptedMenu(MENU_VIGRID_PARTY, GetUIManager().GetMenu());
+        //--- NULL parent, not GetMenu(): the gate in OnUpdate proves nothing is open, and adopting
+        //--- whatever was there is what made the in-game Esc menu the party menu's parent, so
+        //--- closing the party menu handed focus back to a screen the player had already left.
+        GetUIManager().EnterScriptedMenu(MENU_VIGRID_PARTY, NULL);
     }
 
     /**

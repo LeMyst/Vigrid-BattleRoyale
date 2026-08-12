@@ -16,6 +16,12 @@ class VigridPartyMenu extends UIScriptedMenu
 {
     private static const int ROW_HEIGHT = 44;
 
+    //--- Row name colours. The grey matches VigridPartyHud.COLOR_INACTIVE, so a member reads the
+    //--- same way in the panel and in this list; the white is the layout's own default, restated
+    //--- here because rows are pooled and a recycled row keeps whatever colour it was last given.
+    private static const int COLOR_MEMBER = 0xFFFFFFFF;
+    private static const int COLOR_MEMBER_OFFLINE = 0xFF787878;
+
     private Widget m_OnlineRows;
     private Widget m_MemberRows;
     private Widget m_InviteBanner;
@@ -249,9 +255,26 @@ class VigridPartyMenu extends UIScriptedMenu
             ButtonWidget promote_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowPromoteButton"));
             ButtonWidget kick_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowKickButton"));
 
-            string display_name = rpc.roster_names.Get(i);
+            //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
+            //--- stringtable key and only GetMemberName resolves it. It has to happen before the
+            //--- suffixes below, since SetText only localises a string that STARTS with '#'.
+            string display_name = VigridPartyAPI.GetMemberName(i);
             if (i == rpc.leader_index)
                 display_name = display_name + " *";
+
+            //--- Say so when the name is a remembered one rather than a live player, matching what
+            //--- the HUD panel already does. The colour is set on BOTH branches on purpose: rows
+            //--- are pooled, so a row left grey by an earlier refresh stays grey otherwise.
+            bool online = VigridPartyAPI.IsMemberOnline(i);
+            if (online)
+            {
+                name_widget.SetColor(COLOR_MEMBER);
+            }
+            else
+            {
+                display_name = display_name + " (" + Widget.TranslateString("#STR_PARTY_HUD_OFFLINE") + ")";
+                name_widget.SetColor(COLOR_MEMBER_OFFLINE);
+            }
 
             name_widget.SetText(display_name);
 

@@ -393,8 +393,19 @@ class VigridPartyRPC
         if (type != CallType.Client)
             return;
 
+        //--- An argument can itself be a stringtable key - VIGRID_PARTY_UNKNOWN_NAME_KEY, when the
+        //--- server has no name for the member a message is about. Resolve those before handing
+        //--- them over: whether StringLocaliser recurses into its own arguments is not something
+        //--- worth depending on. Guarded on the leading '#', so a real player name is never touched.
+        string arg1 = data.param2;
+        string arg2 = data.param3;
+        if (arg1.IndexOf("#") == 0)
+            arg1 = Widget.TranslateString(arg1);
+        if (arg2.IndexOf("#") == 0)
+            arg2 = Widget.TranslateString(arg2);
+
         //--- The server sends a bare stringtable key; localisation happens here.
-        StringLocaliser message = new StringLocaliser(data.param1, data.param2, data.param3);
+        StringLocaliser message = new StringLocaliser(data.param1, arg1, arg2);
         pending_notifications.Insert(message.Format());
     }
 }

@@ -169,6 +169,22 @@ class VigridPartyAPI
         return manager.IsFormationLocked();
     }
 
+    /**
+     *  Tell Party that a member's display name changed, so the rosters go out again.
+     *
+     *  Party reads names off the player at broadcast time and only broadcasts on composition
+     *  changes, so a name that changes on its own is invisible to it. The host mod knows when that
+     *  happens; Party cannot.
+     */
+    static void RefreshRosterNames()
+    {
+        VigridPartyManager manager = VigridPartyManager.GetInstance();
+        if (!manager)
+            return;
+
+        manager.RefreshRosterNames();
+    }
+
     //! Degenerate partition used when the addon is disabled or not up yet: one group per player.
     private static array<ref array<PlayerBase>> SoloGroups(array<PlayerBase> population)
     {
@@ -255,6 +271,15 @@ class VigridPartyAPI
         return rpc.roster_uids.Get(index);
     }
 
+    /**
+     *  Display name for roster slot `index`, ready to hand straight to a TextWidget.
+     *
+     *  The server sends VIGRID_PARTY_UNKNOWN_NAME_KEY when it has never seen a name for an offline
+     *  member, so what arrives may be a stringtable key rather than a name. Resolving it HERE is
+     *  why every renderer should call this instead of reading rpc.roster_names itself: a caller
+     *  that concatenates first - a leader " *", an " (Offline)" suffix - hands SetText a string
+     *  that no longer starts with '#' and the key renders raw.
+     */
     static string GetMemberName(int index)
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
@@ -263,7 +288,37 @@ class VigridPartyAPI
         if (index >= rpc.roster_names.Count())
             return "";
 
-        return rpc.roster_names.Get(index);
+        string name = rpc.roster_names.Get(index);
+        if (name.IndexOf("#") == 0)
+            return Widget.TranslateString(name);
+
+        return name;
+    }
+
+    /**
+     *  Whether slot `index` is currently connected - and nothing else.
+     *
+     *  Separate from IsMemberVisible because that one folds together online, alive and freshness:
+     *  a dead teammate must not get a world tag, but the party menu still wants to list them by
+     *  name without calling them offline.
+     */
+    static bool IsMemberOnline(int index)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        if (index < 0)
+            return false;
+        if (index >= rpc.roster_uids.Count())
+            return false;
+
+        //--- No usable state yet: assume online rather than labelling everybody offline for the
+        //--- frame or two between a roster arriving and the first VP_TeamState that matches it.
+        if (rpc.state_version != rpc.roster_version)
+            return true;
+        if (index >= rpc.state_flags.Count())
+            return true;
+
+        int member_flags = rpc.state_flags.Get(index);
+        return (member_flags & VIGRID_PARTY_FLAG_ONLINE) != 0;
     }
 
     /**

@@ -287,7 +287,7 @@ class BattleRoyaleVoice
                 if (speaker == listener)
                     self_index = names.Count();
 
-                names.Insert(speaker.GetIdentity().GetName());
+                names.Insert(BattleRoyaleNameService.ResolveIdentity(speaker.GetIdentity()));
                 signature = signature + speaker.GetIdentity().GetPlainId() + ",";
             }
 

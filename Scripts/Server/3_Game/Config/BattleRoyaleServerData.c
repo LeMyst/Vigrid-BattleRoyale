@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
-	int version = 2;  // Config version
+	int version = 3;  // Config version
 
 	// Enable Vigrid API support
 	bool enable_vigrid_api = false;
@@ -31,6 +31,23 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	string autolock_ip = "";  // Server RCon IP (mandatory if use_autolock is true)
 	int autolock_port = 2305;  // Server RCon Port (mandatory if use_autolock is true)
 	string autolock_rcon_password = "";  // Server RCon Password (mandatory if use_autolock is true)
+
+	// Look the Steam persona name up for players who never set a name in the launcher.
+	// PlayerIdentity cannot be renamed, so this only changes what the mod itself displays
+	// (party HUD, nametags, kill feed, leaderboard, win screen); vanilla chat is unaffected.
+	bool enable_steam_name_lookup = false;
+
+	// Steam Web API key, from https://steamcommunity.com/dev/apikey
+	// Mandatory if enable_steam_name_lookup is true. Never logged.
+	string steam_web_api_key = "";
+
+	// Names considered "the player never picked one". Matched case-insensitively against the
+	// unprocessed nick, so the engine's " (2)" duplicate suffix does not need listing.
+	ref array<string> placeholder_player_names = {"Survivor", "Player"};
+
+	// Persist resolved names to steam_names.json. Worth leaving on: the server process restarts
+	// between matches, so without it every match re-queries every returning player.
+	bool cache_steam_names = true;
 
     override string GetProfilePath()
     {
@@ -69,6 +86,25 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 			warning_no_uuid = true;
 
 			version = 2;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 3)
+		{
+			// The Steam-name keys were INTRODUCED in v3, so an older file does not carry them - but
+			// unlike the scalar keys, the array field initialiser does NOT survive deserialization of
+			// an existing file: it comes back empty, which would mean "no name is ever a placeholder"
+			// and silently disable the feature on every server that already had a server_settings.json.
+			// Same trap, same fix as BattleRoyaleGameData.Upgrade(): refill only when it came back
+			// genuinely empty, so an admin who deliberately cleared the list keeps their choice.
+			if (!placeholder_player_names || placeholder_player_names.Count() == 0)
+			{
+				placeholder_player_names = new array<string>();
+				placeholder_player_names.Insert("Survivor");
+				placeholder_player_names.Insert("Player");
+			}
+
+			version = 3;
 			Save();  // Save the upgraded config
 		}
 	}

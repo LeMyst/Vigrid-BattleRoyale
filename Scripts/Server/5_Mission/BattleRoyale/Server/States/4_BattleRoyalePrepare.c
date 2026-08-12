@@ -952,7 +952,11 @@ class BattleRoyalePrepare: BattleRoyaleState
 					BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
 
 					// Encode player name to Base16
-					CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
+					//--- ResolveUid rather than ResolveIdentity so the unresolved case still falls back
+					//--- to GetPlainName() exactly as it did: this payload never carried the engine's
+					//--- " (2)" duplicate suffix and should not start now.
+					string payload_name = BattleRoyaleNameService.ResolveUid( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() );
+					CF_StringStream string_stream = CF_StringStream( payload_name );
 					CF_Base16Stream base16_stream = CF_Base16Stream();
 					string_stream.CopyTo( base16_stream );
 					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
