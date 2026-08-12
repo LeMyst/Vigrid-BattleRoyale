@@ -108,10 +108,45 @@ snaps in steps and does not return to its start after a 360.
 only the mouse focus is taken. Do **not** add `AddActiveInputRestriction(EInputRestrictors.MAP)`: it
 looks like the right hook, but its entire body force-enables walk, pinning the player to walking speed.
 
+**The price of that is that every non-keyboard input stays live, and it is paid in two places.**
+`VigridMapMenu.SuppressGameplayInputs` covers the buttons — fire, melee, use-action, gear, quickbar,
+freelook, zoom — one `Supress()` per input, per frame. It cannot cover the four **aim axes**:
+`Supress()` is a press event concept, and both player cameras read the aim engine-side from the input
+controller (`GetAimChange` / `GetAimDelta`), so the mouse still turned the camera under the map.
+`MapMissionGameplay.UpdateAimSuppression` handles them with an exclude group of exactly `{"aiming"}` —
+**the one place in this addon where an exclude group is the right tool.** `"aiming"`
+(`P:\bin\specific.xml:149`) is precisely the four aim inputs and contains **no movement**, which is why
+it works here where vanilla's own `{"map"}` does not: that one is `<include name="menu" />`, and
+`"menu"` includes `"movement"`.
+
+**Measured, do not retry: `HumanInputController.OverrideAimChangeX/Y(ENABLED, 0)` does not work.** It
+was the first attempt, and it looked right — the host mod drives `OverrideMovementSpeed`,
+`OverrideRaise` and `OverrideFreeLook` from that same family and those all work. The camera kept
+turning anyway, with an edge log confirming the calls reached the live controller on every open and
+close. The tell was there in advance: `OverrideRaise` and `Override3rdIsRightShoulder` have real
+vanilla call sites, while `OverrideAimChangeX/Y` have **none anywhere in `P:\scripts`** — only the
+proto declaration at `human.c:240`.
+
+The `UpdateControls()` cost in the caveat below is real and is **accepted**: opening or closing the map
+mid-sprint drops the player out of sprint until Shift is re-pressed. A camera that spins while you read
+the map is worse. Two things keep it contained — it is **edge-triggered**, never per-frame, since each
+call rebuilds the control state; and it lives in the **mission** update rather than the menu, so the
+*remove* edge cannot be missed the way an `OnShow`/`OnHide` pairing can when a menu is torn down
+without `OnHide`. A leaked exclude group would leave the player permanently unable to aim.
+
 ## Caveats
 
 - **Never override `OnMouseWheel`** on the map widget — native zoom dies. `ClampZoom()` holds the range
   each frame instead, because there is no zoom event to hook.
+- **An input exclude group resets every held input, so `{"aiming"}` is the only one used here.** Both
+  `AddActiveInputExcludes` and `RemoveActiveInputExcludes` end in `GetUApi().UpdateControls()`, which
+  rebuilds the control state and drops the **held** state of every input including `UATurbo` — so
+  opening or closing the map mid-sprint dumps the player out of sprint until Shift is re-pressed. The
+  reset comes from the group being added or removed at all, not from what is in it, and it is the same
+  mechanism that walks a vanilla player when they open their inventory. That is why the *buttons* use
+  per-frame `Supress()` instead: it touches nothing global and costs nothing on close. The aim axes
+  have no such option, so they pay the reset — do not extend the group's membership to anything
+  `Supress()` could have handled.
 - Satellite imagery is **not** part of this addon. It comes from `Extra/MapSatellite/`, which patches
   the engine's `MapDefaults`. Every overlay here draws in screen space over whatever the `MapWidget`
   renders, so nothing depends on which raster layer is underneath.

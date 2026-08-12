@@ -14,6 +14,9 @@ modded class MissionGameplay
 {
     protected ref VigridMapClient m_VigridMap;
 
+    //! True while this frame's aim override is ours to release. See UpdateAimSuppression.
+    protected bool m_VigridMapAimOverridden;
+
 #ifdef VIGRID_MAP_MINIMAP
     protected ref VigridMapMinimap m_VigridMinimap;
 #endif
@@ -60,6 +63,10 @@ modded class MissionGameplay
     override void OnUpdate(float timeslice)
     {
         super.OnUpdate(timeslice);
+
+        //--- Above the m_VigridMap guard on purpose: this owns a release edge, and a release that
+        //--- only runs while the controller happens to exist is not a release.
+        UpdateAimSuppression();
 
         if (!m_VigridMap)
             return;
@@ -157,6 +164,65 @@ modded class MissionGameplay
         //--- NULL parent, not GetMenu(): nothing can be open at this point, and adopting whatever was
         //--- there is what caused the focus hand-back described above.
         GetUIManager().EnterScriptedMenu(MENU_VIGRID_MAP, NULL);
+    }
+
+    /**
+     *  Stop the mouse turning the camera while the map is open, without touching the keyboard.
+     *
+     *  The menu leaves the keyboard focus with the game so the player keeps running, and pays for it
+     *  by leaving every non-keyboard input live. VigridMapMenu.SuppressGameplayInputs covers the
+     *  buttons; the four aim axes are the half it cannot reach. Supress() is a PRESS concept and the
+     *  aim axes are analog, and vanilla's own answer for this menu class - Input.DisableKey on mouse
+     *  axes 0-5, missiongameplay.c:616 - is the low-level device, while both player cameras read the
+     *  aim engine-side off the input controller (GetAimChange / GetAimDelta, dayzplayercamera_base.c).
+     *
+     *  "aiming" (bin/specific.xml:149) is exactly the four aim inputs and NOTHING else - in
+     *  particular it does not include "movement", which is what makes it usable here where vanilla's
+     *  own {"map"} is not. {"map"} is `<include name="menu" />`, and "menu" includes "movement", so
+     *  it would take WASD straight back off and undo the whole point of this menu.
+     *
+     *  MEASURED, DO NOT RETRY: HumanInputController.OverrideAimChangeX/Y(ENABLED, 0) does NOT work.
+     *  It is the obvious hook - the host mod already drives OverrideMovementSpeed / OverrideRaise /
+     *  OverrideFreeLook from that same family in PlayerBase.DisableInput, and those do work. But the
+     *  aim pair was tried here first and the camera kept turning, with the edge log confirming the
+     *  calls were reaching the live controller on every open and close. Note the tell that was
+     *  available beforehand and missed: OverrideRaise and Override3rdIsRightShoulder have real
+     *  vanilla call sites, while OverrideAimChangeX/Y have NONE anywhere in P:\scripts - only the
+     *  proto declaration at human.c:240.
+     *
+     *  THE COST IS REAL AND IS ACCEPTED: AddActiveInputExcludes and RemoveActiveInputExcludes both
+     *  end in GetUApi().UpdateControls() ("call this on each change of exclusion"), which rebuilds
+     *  the control state and drops the HELD state of every input including UATurbo. So opening or
+     *  closing the map mid-sprint drops the player out of sprint until Shift is re-pressed. That is
+     *  inherent to adding or removing a group at all, not to its membership - it is the same
+     *  mechanism that walks a vanilla player when they open their inventory. It is preferred to a
+     *  camera that spins while you read the map.
+     *
+     *  THIS LIVES IN THE MISSION UPDATE RATHER THAN IN THE MENU, and that is the point of the latch:
+     *  a leaked exclude group would leave the player permanently unable to aim, and OnUpdate runs
+     *  every frame whether or not the menu exists, so the remove edge cannot be missed the way an
+     *  OnShow/OnHide pairing can when a menu is torn down without OnHide.
+     */
+    protected void UpdateAimSuppression()
+    {
+        bool want = m_UIManager.IsMenuOpen(MENU_VIGRID_MAP);
+
+        //--- Edge-triggered, unlike the per-frame Supress work in the menu: each call rebuilds the
+        //--- control state, so re-adding every frame would reset held inputs continuously.
+        if (want == m_VigridMapAimOverridden)
+            return;
+
+        if (want)
+        {
+            AddActiveInputExcludes({"aiming"});
+            m_VigridMapAimOverridden = true;
+            VigridMapLog.Debug("Aim exclude ON - mouse will not turn the camera");
+            return;
+        }
+
+        RemoveActiveInputExcludes({"aiming"});
+        m_VigridMapAimOverridden = false;
+        VigridMapLog.Debug("Aim exclude OFF - mouse-look restored");
     }
 
 #ifdef VIGRID_MAP_MINIMAP
