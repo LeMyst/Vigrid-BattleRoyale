@@ -15,7 +15,20 @@ modded class MissionServer
         //--- Touching the singleton is what creates the profile folder and writes the file.
         KillFeedConfig.GetConfig();
 
+        KillFeedSuppress.Apply();
+
+        //--- Re-apply once the mission has settled. Another mod's settings may finish loading after
+        //--- this point, which would restore the switch we just cleared; nobody can die in the
+        //--- meantime, so a single late pass is enough.
+        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "SuppressOtherKillFeeds", 10000, false);
+
         KillFeedLog.Info("KillFeed " + KILLFEED_VERSION + " ready");
+    }
+
+    //! Second pass, see OnInit. Safe to run when nothing needs suppressing - it no-ops.
+    void SuppressOtherKillFeeds()
+    {
+        KillFeedSuppress.Apply();
     }
 }
 #endif

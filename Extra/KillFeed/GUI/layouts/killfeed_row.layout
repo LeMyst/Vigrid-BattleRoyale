@@ -1,8 +1,13 @@
+// Child positions and sizes here are placeholders: KillFeedUI.LayoutRow() measures the bound text
+// with GetTextSize() and overwrites every SetPos/SetSize, so the row can hug its content. Keep them
+// plausible anyway so the layout still reads correctly in Workbench.
 PanelWidgetClass RowRoot {
  visible 1
  ignorepointer 1
+ inheritalpha 0
  position 0 0
- size 470 56
+ size 460 42
+ halign right_ref
  hexactpos 1
  vexactpos 1
  hexactsize 1
@@ -11,28 +16,33 @@ PanelWidgetClass RowRoot {
  style DayZDefaultPanel
  {
   TextWidgetClass RowKiller {
-   inheritalpha 1
+   inheritalpha 0
    ignorepointer 1
    position 8 0
-   size 140 56
+   size 132 42
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   style Bold
+   color 1 1 1 1
    text "Killer"
-   font "gui/fonts/etelkatextpro"
-   "exact text" 0
+   font "gui/fonts/etelkatextpro22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 20
    "size to text h" 0
    "size to text v" 0
-   "text halign" right
+   "text halign" left
    "text valign" center
   }
   PanelWidgetClass RowMiddle {
    visible 1
    ignorepointer 1
-   position 156 0
-   size 140 56
+   inheritalpha 0
+   position 150 0
+   size 144 42
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -42,10 +52,10 @@ PanelWidgetClass RowRoot {
     ItemPreviewWidgetClass RowWeapon {
      visible 1
      clipchildren 0
-     inheritalpha 1
+     inheritalpha 0
      ignorepointer 1
      position 0 0
-     size 140 56
+     size 144 42
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -56,14 +66,15 @@ PanelWidgetClass RowRoot {
     }
     ImageWidgetClass RowCauseIcon {
      visible 0
-     inheritalpha 1
+     inheritalpha 0
      ignorepointer 1
-     position 0 12
-     size 32 32
+     position 0 9
+     size 24 24
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
+     color 1 1 1 1
      image0 "set:dayz_gui image:iconSkull"
      mode blend
      "src alpha" 1
@@ -72,17 +83,22 @@ PanelWidgetClass RowRoot {
     }
     TextWidgetClass RowCauseText {
      visible 0
-     inheritalpha 1
+     inheritalpha 0
      ignorepointer 1
-     position 38 0
-     size 102 56
+     position 34 0
+     size 110 42
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
+     color 1 1 1 1
      text ""
-     font "gui/fonts/etelkatextpro"
-     "exact text" 0
+     font "gui/fonts/etelkatextpro22"
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     "exact text" 1
+     "exact text size" 20
      "size to text h" 0
      "size to text v" 0
      "text halign" left
@@ -91,38 +107,47 @@ PanelWidgetClass RowRoot {
    }
   }
   TextWidgetClass RowVictim {
-   inheritalpha 1
+   inheritalpha 0
    ignorepointer 1
    position 304 0
-   size 106 56
+   size 112 42
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   style Bold
+   color 1 1 1 1
    text "Victim"
-   font "gui/fonts/etelkatextpro"
-   "exact text" 0
+   font "gui/fonts/etelkatextpro22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 20
    "size to text h" 0
    "size to text v" 0
    "text halign" left
    "text valign" center
   }
   TextWidgetClass RowDistance {
-   inheritalpha 1
+   inheritalpha 0
    ignorepointer 1
-   position 414 0
-   size 48 56
+   position 420 0
+   size 52 42
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
+   color 1 1 1 1
    text ""
-   font "gui/fonts/etelkatextpro"
-   "exact text" 0
+   font "gui/fonts/etelkatextpro16"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 16
    "size to text h" 0
    "size to text v" 0
-   "text halign" right
+   "text halign" left
    "text valign" center
   }
  }
