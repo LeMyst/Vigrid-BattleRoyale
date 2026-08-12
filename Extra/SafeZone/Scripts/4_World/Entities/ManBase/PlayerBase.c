@@ -115,13 +115,16 @@ modded class PlayerBase
 
         //--- Explosives have no player left in their hierarchy once thrown or placed, but nothing
         //--- else leaves one lying around either. Classified by type, the same way the host mod's
-        //--- own kill reporting does it. IsExplosive() covers Grenade_Base via ExplosivesBase;
-        //--- LandMineTrap descends from TrapBase instead and needs naming separately.
+        //--- own kill reporting does it - and at the vanilla PARENTS, never at a leaf class.
+        //--- IsExplosive() is declared on ItemBase and only ExplosivesBase overrides it to true, so
+        //--- it covers Grenade_Base, Claymore, IED and Plastic Explosive; TrapBase sits outside that
+        //--- branch entirely and needs naming separately. Naming LandMineTrap there let every other
+        //--- player-placed trap - BearTrap and friends - still land damage during the truce.
         ItemBase item = ItemBase.Cast(source);
         if (item && item.IsExplosive())
             return true;
 
-        if (source.IsInherited(LandMineTrap))
+        if (source.IsInherited(TrapBase))
             return true;
 
         return false;
