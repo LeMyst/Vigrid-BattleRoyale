@@ -22,6 +22,12 @@ class BattleRoyaleServer: BattleRoyaleBase
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
+#ifdef DIAG_DEVELOPER
+        //--- Guarded on the same define as its handler, unlike NextState above, whose registration
+        //--- is VPPADMINTOOLS while its only caller is JM_COT - a COT-without-VPP build has a live
+        //--- button and nothing listening.
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "BRDiagAction", this );
+#endif
 
         Init();
     }
@@ -182,6 +188,11 @@ class BattleRoyaleServer: BattleRoyaleBase
 	const float CHECK_IS_COMPLETE = 0.1;  //seconds
 	float m_TimeSinceLastTick = CHECK_IS_COMPLETE + 1;
 
+#ifdef DIAG_DEVELOPER
+	//! Diag "Jump To State" target, or -1. See the fast-forward block in Update().
+	int m_DiagTargetState = -1;
+#endif
+
     override void Update(float delta)
     {
         float timeslice = delta; //Legacy
@@ -219,6 +230,21 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- this is a single bool test per tick.
 			if ( BattleRoyaleNameService.ConsumePartyRefresh() )
 				VigridPartyAPI.RefreshRosterNames();
+#endif
+
+#ifdef DIAG_DEVELOPER
+			//--- Diag fast-forward. Deliberately a fast-forward and not a seek: it deactivates the
+			//--- current state once per tick and lets the transition below run normally, so every
+			//--- state on the way still gets its Activate() and nothing is left half-initialised.
+			//--- Ten states cost one second. Clearing the target on arrival is what stops it from
+			//--- driving the machine off the end.
+			if ( m_DiagTargetState >= 0 )
+			{
+				if ( i_CurrentStateIndex >= m_DiagTargetState )
+					m_DiagTargetState = -1;
+				else if ( GetCurrentState().IsActive() )
+					GetCurrentState().Deactivate();
+			}
 #endif
 
 			if (GetCurrentState().IsComplete()) //current state is complete
@@ -632,6 +658,253 @@ class BattleRoyaleServer: BattleRoyaleBase
 			weather.GetFog().Set( Math.RandomFloatInclusive(0.0, 0.1), 0, 0);
         }
     }
+
+#ifdef DIAG_DEVELOPER
+    /**
+     *  Every server-side debug action, behind one RPC.
+     *
+     *  One RPC carrying an action id rather than one named RPC per action: adding an action is one
+     *  enum value plus one case here, with no new registration and no wire change to keep in sync
+     *  between the two sides.
+     *
+     *  The refusal path logs. A silently-refused button and a broken button look identical from the
+     *  diag menu, and the usual cause is simply that the tester is not in admins_steamid64 - which
+     *  is read from the PROFILE general_settings.json, since that field is exempt from the mission
+     *  override.
+     */
+    void BRDiagAction(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if(type != CallType.Server)
+            return;
+
+        Param3<int, int, float> data;
+        if(!ctx.Read(data))
+        {
+            BattleRoyaleUtils.Warn("Failed to read BRDiagAction RPC");
+            return;
+        }
+
+        if(!IsAdminIdentity(sender))
+        {
+            BattleRoyaleUtils.Warn("Rejected unauthorized BRDiagAction " + data.param1 + " from " + GetIdentityLogName(sender));
+            return;
+        }
+
+        BattleRoyaleUtils.Info("[Diag] action " + data.param1 + " (" + data.param2 + ", " + data.param3 + ") from " + GetIdentityLogName(sender));
+
+        BattleRoyaleState state = GetCurrentState();
+
+        //--- Asked of the state rather than of the game: a player the current state does not hold
+        //--- is one OnPlayerTick would be force-logging-out anyway, so "not in this state" is the
+        //--- right answer to "who sent this".
+        PlayerBase sender_player;
+        if(state)
+            sender_player = state.GetPlayerFromIdentity(sender);
+
+        switch(data.param1)
+        {
+            case BattleRoyaleDiagAction.SKIP_STATE:
+            {
+                //--- Same one-liner the COT and VPP paths use: a state signals "done" by
+                //--- deactivating itself, and Update() picks the transition up at 10 Hz.
+                if(state)
+                    state.Deactivate();
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_PAUSED:
+            {
+                if(!state)
+                    break;
+
+                if(data.param2 != 0)
+                    state.Pause();
+                else
+                    state.Resume();
+                break;
+            }
+
+            case BattleRoyaleDiagAction.GOTO_STATE:
+            {
+                //--- Clamped, and this is not a nicety: the last state is BattleRoyaleRestart, whose
+                //--- Activate() calls RequestExit. A fat-fingered target would kill the server.
+                //--- Not named `target`: this handler already has an Object parameter by that name,
+                //--- and EnfusionScript allows one declaration per name per method scope.
+                int max_target = m_States.Count() - 2;
+                int goto_target = data.param2;
+                if(goto_target > max_target)
+                    goto_target = max_target;
+                if(goto_target < 0)
+                    goto_target = 0;
+
+                if(goto_target <= i_CurrentStateIndex)
+                {
+                    BattleRoyaleUtils.Warn("[Diag] cannot jump back to state " + goto_target + ", already at " + i_CurrentStateIndex);
+                    break;
+                }
+
+                BattleRoyaleUtils.Info("[Diag] fast-forwarding from state " + i_CurrentStateIndex + " to " + goto_target);
+                m_DiagTargetState = goto_target;
+                break;
+            }
+
+            case BattleRoyaleDiagAction.FORCE_READY_ALL:
+            {
+                //--- BattleRoyaleDebug specifically, not BattleRoyaleDebugState: ReadyUp and the
+                //--- ready list live on the lobby state, while CountReached shares the base class.
+                BattleRoyaleDebug lobby;
+                if(!Class.CastTo(lobby, state))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] Force Ready All only works in the lobby state");
+                    break;
+                }
+
+                //--- Readies everyone through the real ReadyUp path, so the countdown, the messages
+                //--- and the vote threshold all behave exactly as they would with real players.
+                ref array<PlayerBase> lobby_players = lobby.GetPlayers();
+                for(int r = 0; r < lobby_players.Count(); r++)
+                {
+                    if(lobby_players[r])
+                        lobby.ReadyUp(lobby_players[r]);
+                }
+                break;
+            }
+
+            case BattleRoyaleDiagAction.LOG_STATE:
+            {
+                if(!state)
+                    break;
+
+                //--- Info rather than Debug: on a DIAG server this mirrors into in-game chat, so the
+                //--- answer lands where the tester is looking instead of only in the log.
+                BattleRoyaleUtils.Info("[Diag] state " + i_CurrentStateIndex + "/" + (m_States.Count() - 1) + " `" + state.GetName() + "` players=" + state.GetPlayers().Count() + " active=" + state.IsActive());
+                break;
+            }
+
+            case BattleRoyaleDiagAction.TP_ZONE_CENTER:
+            {
+                BattleRoyaleRound round_current;
+                if(!Class.CastTo(round_current, state))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP: Zone Centre needs a round state, not `" + state.GetName() + "`");
+                    break;
+                }
+
+                //--- GetActiveZone is the circle that is actually damaging right now, which before
+                //--- the 80% lock is the PREVIOUS one - that is the circle a tester means.
+                BattleRoyaleZone active_zone = round_current.GetActiveZone();
+                if(!active_zone)
+                    active_zone = round_current.GetZone();
+
+                if(active_zone && active_zone.GetArea())
+                    state.BR_DiagTeleport(sender_player, active_zone.GetArea().GetCenter());
+                break;
+            }
+
+            case BattleRoyaleDiagAction.TP_NEXT_ZONE:
+            {
+                BattleRoyaleRound round_next;
+                if(!Class.CastTo(round_next, state))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP: Next Zone needs a round state, not `" + state.GetName() + "`");
+                    break;
+                }
+
+                if(round_next.GetZone() && round_next.GetZone().GetArea())
+                    state.BR_DiagTeleport(sender_player, round_next.GetZone().GetArea().GetCenter());
+                break;
+            }
+
+            case BattleRoyaleDiagAction.TP_LOBBY:
+            {
+                //--- State 0 is always the lobby, whatever the rest of the machine looks like.
+                BattleRoyaleDebugState lobby_state;
+                if(Class.CastTo(lobby_state, GetState(0)) && state)
+                    state.BR_DiagTeleport(sender_player, lobby_state.GetCenter());
+                break;
+            }
+
+            case BattleRoyaleDiagAction.FORCE_UNSTUCK:
+            {
+                if(!state || !sender_player)
+                    break;
+
+                //--- Clear the gates rather than going around DeferredUnstuck: the 1-3 s defer and
+                //--- the position search are the parts worth exercising, and the 30 s cooldown is
+                //--- the only thing that makes the ladder repro slow to iterate on.
+                sender_player.wait_unstuck = false;
+                sender_player.next_unstuck_time = 0;
+                state.DeferredUnstuck(sender_player);
+                break;
+            }
+
+            case BattleRoyaleDiagAction.LOG_ZONE_TABLE:
+            {
+                //--- Generation runs smallest-first, so index 0 is the FINAL circle and each later
+                //--- index contains the one before it. This dump is the cheapest way to see that.
+                if(!BattleRoyaleZone.m_PlayAreas)
+                {
+                    BattleRoyaleUtils.Warn("[Diag] no play areas generated");
+                    break;
+                }
+
+                BattleRoyaleUtils.Info("[Diag] play areas, generation order (index 0 is the FINAL circle):");
+                for(int z = 0; z < BattleRoyaleZone.m_PlayAreas.Count(); z++)
+                {
+                    BattleRoyalePlayArea area = BattleRoyaleZone.m_PlayAreas[z];
+                    if(!area)
+                        continue;
+
+                    float offset = 0;
+                    if(BattleRoyaleZone.s_PlayAreaDurationOffsets && z < BattleRoyaleZone.s_PlayAreaDurationOffsets.Count())
+                        offset = BattleRoyaleZone.s_PlayAreaDurationOffsets[z];
+
+                    BattleRoyaleUtils.Info("[Diag]   [" + z + "] center=" + area.GetCenter() + " radius=" + area.GetRadius() + " duration_offset=" + offset);
+                }
+                break;
+            }
+
+            case BattleRoyaleDiagAction.CLEAR_MAP_MARKERS:
+            {
+#ifdef VIGRID_MAP
+                VigridMapAPI.ClearAllMarkers();
+                BattleRoyaleUtils.Info("[Diag] cleared every map marker");
+#endif
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_LOG_LEVEL:
+            {
+                BattleRoyaleDiag.log_level_override = data.param2;
+                //--- Printed unconditionally through Print, because the new level may well be one
+                //--- that swallows this very line.
+                Print("[DayZ-BattleRoyale][Diag] server log level override -> " + data.param2);
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_CHAT_MIRROR:
+            {
+                BattleRoyaleDiag.chat_mirror = (data.param2 != 0);
+                Print("[DayZ-BattleRoyale][Diag] chat mirror -> " + BattleRoyaleDiag.chat_mirror);
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_TRACE_TP:
+            {
+                BattleRoyaleDiag.trace_teleport = (data.param2 != 0);
+                BattleRoyaleDiag.trace_teleport_ticks = (int)data.param3;
+                BattleRoyaleUtils.Info("[Diag] teleport trace -> " + BattleRoyaleDiag.trace_teleport + " for " + BattleRoyaleDiag.trace_teleport_ticks + " ticks");
+                break;
+            }
+
+            default:
+            {
+                BattleRoyaleUtils.Warn("[Diag] unknown action " + data.param1);
+                break;
+            }
+        }
+    }
+#endif
 
     void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
