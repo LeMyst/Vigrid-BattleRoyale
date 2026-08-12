@@ -232,19 +232,27 @@ class KillFeedDeath
         return cause;
     }
 
-    //! Identity first, cached name as the fallback - a corpse can already have lost its identity.
+    /**
+     *  Cached name first, identity as the fallback.
+     *
+     *  Vanilla seeds the cache from the identity server-side (playerbase.c:221), so the two normally
+     *  agree and the order would not matter. It is this way round because a host mod may overwrite
+     *  the cache with a better name - a player who never set one in the launcher is "Survivor" on
+     *  the identity - and because a corpse can already have lost its identity entirely, which is the
+     *  case that made the fallback necessary in the first place.
+     */
     private static string NameOf(Man player)
     {
         if (!player)
             return "";
 
+        PlayerBase base_player = PlayerBase.Cast(player);
+        if (base_player && base_player.GetCachedName() != "")
+            return base_player.GetCachedName();
+
         PlayerIdentity identity = player.GetIdentity();
         if (identity)
             return identity.GetName();
-
-        PlayerBase base_player = PlayerBase.Cast(player);
-        if (base_player)
-            return base_player.GetCachedName();
 
         return "";
     }

@@ -21,6 +21,10 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpeakingPlayers", this );
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
+
+		resolved_by_uid = new map<string, string>();
+		resolved_by_name = new map<string, string>();
 
 		lb_solo = new BattleRoyaleLeaderboardBoard();
 		lb_group = new BattleRoyaleLeaderboardBoard();
@@ -32,6 +36,21 @@ class BattleRoyaleRPC
 	{
 
 	}
+
+	/**
+	 *  Resolved display names for players who connected as "Survivor".
+	 *
+	 *  The correction lives on the server - PlayerIdentity cannot be renamed and the client's copy
+	 *  still carries the launcher name - so any client-side surface that reads the identity has to
+	 *  come through here. Vanilla's own player tag ("looking at someone") is exactly that case.
+	 *
+	 *  Keyed twice on purpose. GetPlainId() is the identity that matters, but it is not certain to be
+	 *  populated on a *client-side* identity for another player, and guessing wrong would fail
+	 *  silently. GetName() is a guaranteed-unique per-session fallback, since it is precisely the
+	 *  string the engine already deduplicates with " (2)". Lookup tries the uid, then the name.
+	 */
+	ref map<string, string> resolved_by_uid;
+	ref map<string, string> resolved_by_name;
 
 	private static ref BattleRoyaleRPC m_Instance;
 	static BattleRoyaleRPC GetInstance()
@@ -63,6 +82,8 @@ class BattleRoyaleRPC
 		lb_group.Clear();
 		lb_season = 1;
 		leaderboard_seq = 0;
+		resolved_by_uid.Clear();
+		resolved_by_name.Clear();
 		//--- Defaults match BattleRoyaleGameData, so a missed sync leaves shipped behaviour rather
 		//--- than a silently dead feature. The server corrects both on connect.
 		speaking_list_enabled = true;
@@ -139,6 +160,47 @@ class BattleRoyaleRPC
 			speaking_list_enabled = data.param1;
 			speaking_list_during_match = data.param2;
 		}
+	}
+
+	void SetResolvedName(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param3<string, string, string> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SETRESOLVEDNAME RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("SetResolvedName: %1 -> %2", data.param2, data.param3));
+
+			if ( data.param1 != "" )
+				resolved_by_uid.Set( data.param1, data.param3 );
+
+			if ( data.param2 != "" )
+				resolved_by_name.Set( data.param2, data.param3 );
+		}
+	}
+
+	/**
+	 *  The name to render for another player, given their client-side identity. Returns their
+	 *  ordinary name unchanged when nothing was resolved for them, so callers can use it everywhere.
+	 */
+	string ResolveDisplayName(PlayerIdentity identity)
+	{
+		if ( !identity )
+			return "";
+
+		string engine_name = identity.GetName();
+
+		string uid = identity.GetPlainId();
+		if ( uid != "" && resolved_by_uid.Contains( uid ) )
+			return resolved_by_uid.Get( uid );
+
+		if ( resolved_by_name.Contains( engine_name ) )
+			return resolved_by_name.Get( engine_name );
+
+		return engine_name;
 	}
 
 	// Set the fade state

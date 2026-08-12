@@ -174,7 +174,7 @@ class VigridPartyNametags
             }
 
             PlayerBase entity = VigridPartyAPI.FindLocalPlayer(rpc.roster_uids.Get(i));
-            RenderSlot(slot, entity, VigridPartyAPI.ResolveBodyPos(rpc, i, entity), rpc.roster_names.Get(i), parent_w, parent_h, stale, rpc, self_pos);
+            RenderSlot(slot, entity, VigridPartyAPI.ResolveBodyPos(rpc, i, entity), VigridPartyAPI.GetMemberName(i), parent_w, parent_h, stale, rpc, self_pos);
             slot = slot + 1;
         }
 

@@ -228,7 +228,10 @@ class VigridPartyHud
         row.Show(true);
         row.SetPos(0, slot * ROW_HEIGHT);
 
-        string display_name = rpc.roster_names.Get(index);
+        //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
+        //--- stringtable key and only GetMemberName resolves it - and it has to happen before the
+        //--- leader marker is appended, since SetText only localises a string that STARTS with '#'.
+        string display_name = VigridPartyAPI.GetMemberName(index);
         if (index == rpc.leader_index)
             display_name = display_name + " *"; //!< leader marker
 

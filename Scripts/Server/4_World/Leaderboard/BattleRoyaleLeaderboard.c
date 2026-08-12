@@ -202,9 +202,11 @@ class BattleRoyaleLeaderboard
 
         BattleRoyaleLeaderboardEntry entry = GetOrCreate(uid);
 
+        //--- player_name already carries the resolved name when there is one; the identity branch is
+        //--- resolved too, for the case where the cache was never populated.
         string display_name = player.player_name;
         if (display_name == "" && player.GetIdentity())
-            display_name = player.GetIdentity().GetName();
+            display_name = BattleRoyaleNameService.ResolveIdentity(player.GetIdentity());
         if (display_name != "")
             entry.name = display_name;
 

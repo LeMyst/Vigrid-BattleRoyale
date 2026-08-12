@@ -78,6 +78,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+
 		float distExt;
 		float distInt;
 		float angle;
@@ -387,6 +388,13 @@ class BattleRoyaleClient: BattleRoyaleBase
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", NULL, true );
 
     }
+
+    //--- There was a ReportSteamName() here, sending BiosUser.GetName() to the server as a fallback
+    //--- for players the Steam Web API cannot answer for. It was removed after measurement:
+    //--- on PC, BiosUser.GetName() returns the *profile* name, not the Steam persona. Two local
+    //--- clients on one Steam account (persona "ANTHOxY") reported "Client_A" and "Survivor" -
+    //--- their -name= launcher values. So the client has no persona name to offer, and this could
+    //--- only ever have echoed back the placeholder it was meant to replace.
 
     //! Ask the server for one leaderboard ladder. The server rate-limits this per player, so the
     //! menu is free to call it on show, on every tab switch, and on a poll while it is open.

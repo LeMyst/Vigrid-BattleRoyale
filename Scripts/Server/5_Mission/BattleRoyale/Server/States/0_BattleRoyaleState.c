@@ -444,7 +444,7 @@ class BattleRoyaleState: Timeable
         if(!identity)
             return "<null identity>";
 
-        return identity.GetName();
+        return BattleRoyaleNameService.ResolveIdentity(identity);
     }
 
     //--- Whether this state answers an F2 unstuck request at all. False by default, so Prepare, the

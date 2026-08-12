@@ -20,8 +20,13 @@ class VigridPartyStore
      *    - members beyond max_party_size, dropped from the tail so the oldest joiners are kept
      *    - a leader_uid that is not actually in member_uids, repaired to the first member
      *    - duplicate uids, and a uid claimed by more than one party (first party wins)
+     *
+     *  `name_cache` (uid -> last known display name) is filled in place rather than returned. A map
+     *  is a reference type, so the caller sees the writes and neither an `out` parameter - `out` is
+     *  a direction keyword EnfusionScript will not accept as an identifier - nor a second pass over
+     *  the file is needed. Deliberately not named `map`, which collides with the container type.
      */
-    static array<ref VigridParty> Load(VigridPartyData settings)
+    static array<ref VigridParty> Load(VigridPartyData settings, map<string, string> name_cache)
     {
         array<ref VigridParty> result = new array<ref VigridParty>();
 
@@ -116,15 +121,41 @@ class VigridPartyStore
             result.Insert(party);
         }
 
-        VigridPartyLog.Info("Loaded " + result.Count() + " parties from disk");
+        //--- Names are read whatever happened to the parties above: a v1 file has no names key at
+        //--- all and simply yields nothing here, which is the migration.
+        if (store.names)
+        {
+            int name_count = store.names.Count();
+            for (int n = 0; n < name_count; n++)
+            {
+                VigridPartyNameEntry name_entry = store.names.Get(n);
+                if (!name_entry)
+                    continue;
+                if (name_entry.uid == "")
+                    continue;
+                if (name_entry.name == "")
+                    continue;
+                if (settings.party_ttl_hours > 0 && (now_hours - name_entry.seen_hours) > settings.party_ttl_hours)
+                    continue;
+
+                name_cache.Set(name_entry.uid, name_entry.name);
+            }
+        }
+
+        VigridPartyLog.Info("Loaded " + result.Count() + " parties and " + name_cache.Count() + " names from disk");
         return result;
     }
 
-    static void Save(array<ref VigridParty> parties)
+    /**
+     *  `name_cache` is written pruned: only uids that are actually in a party being persisted make
+     *  it to disk, so the file stays bounded by real membership no matter how many players have
+     *  connected this session.
+     */
+    static void Save(array<ref VigridParty> parties, map<string, string> name_cache)
     {
         ref VigridPartyStoreFile store = new VigridPartyStoreFile();
-        store.version = 1;
         store.saved_at = VigridPartyTime.NowSeconds();
+        int now_hours = VigridPartyTime.NowHours();
 
         int count = parties.Count();
         for (int i = 0; i < count; i++)
@@ -145,6 +176,29 @@ class VigridPartyStore
             store.parties.Insert(entry);
         }
 
+        //--- Walk what actually got persisted rather than the cache: a name is only worth keeping
+        //--- for somebody who will still be in a party when the file is read back.
+        int stored_count = store.parties.Count();
+        for (int s = 0; s < stored_count; s++)
+        {
+            VigridPartyStoreEntry stored = store.parties.Get(s);
+
+            int stored_members = stored.member_uids.Count();
+            for (int m = 0; m < stored_members; m++)
+            {
+                string member_uid = stored.member_uids.Get(m);
+                if (!name_cache.Contains(member_uid))
+                    continue;
+
+                ref VigridPartyNameEntry name_entry = new VigridPartyNameEntry();
+                name_entry.uid = member_uid;
+                name_entry.name = name_cache.Get(member_uid);
+                name_entry.seen_hours = now_hours;
+
+                store.names.Insert(name_entry);
+            }
+        }
+
         string error_message;
         if (!JsonFileLoader<VigridPartyStoreFile>.SaveFile(VIGRID_PARTY_STORE_FILE, store, error_message))
         {
@@ -152,7 +206,7 @@ class VigridPartyStore
             return;
         }
 
-        VigridPartyLog.Debug("Wrote " + store.parties.Count() + " parties to disk");
+        VigridPartyLog.Debug("Wrote " + store.parties.Count() + " parties and " + store.names.Count() + " names to disk");
     }
 }
 #endif
