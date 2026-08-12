@@ -53,6 +53,7 @@ enum BattleRoyaleDiagAction
     SET_SPECTATE,      //!< arg_i 0/1 - flip spectate_enabled for this process only
     SPECTATE_TP_TARGET,//!< arg_i = metres; fling the sender's watched target that far from their corpse
     SPECTATE_TP_CORPSE,//!< move the sender's OWN corpse to their watched target - the bubble probe
+    SET_ADMIN_SPECTATE,//!< arg_i 0/1 - flip admin_spectate_enabled for this process only
 
     COUNT //Do not move this
 }

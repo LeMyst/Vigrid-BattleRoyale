@@ -5,6 +5,11 @@
             <input name="UADayZBRReadyUp" loc="BR Ready Up" />
             <input name="UADayZBRUnstuck" loc="BR Unstuck" />
             <input name="UADayZBRLeaderboard" loc="BR Leaderboard" />
+            <input name="UADayZBRAdminSpectate" loc="BR Admin Spectate" />
+            <input name="UADayZBRSpectateMode" loc="BR Spectate Camera Mode" />
+            <input name="UADayZBRSpectateNext" loc="BR Spectate Next Player" />
+            <input name="UADayZBRSpectatePrev" loc="BR Spectate Previous Player" />
+            <input name="UADayZBRSpectateSkeleton" loc="BR Spectate Skeletons" />
             <!--            <input name="UADayZBRToggleMiniMap" loc="BR Mini Map Toggle" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" loc="BR Mini Map Increase Zoom" />-->
             <!--            <input name="UADayZBRMiniMapZoomMinus" loc="BR Mini Map Decrease Zoom" />-->
@@ -14,6 +19,11 @@
             <input name="UADayZBRReadyUp" />
             <input name="UADayZBRUnstuck" />
             <input name="UADayZBRLeaderboard" />
+            <input name="UADayZBRAdminSpectate" />
+            <input name="UADayZBRSpectateMode" />
+            <input name="UADayZBRSpectateNext" />
+            <input name="UADayZBRSpectatePrev" />
+            <input name="UADayZBRSpectateSkeleton" />
             <!--            <input name="UADayZBRToggleMiniMap" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" />-->
             <!--            <input name="UADayZBRMiniMapZoomMinus" />-->
@@ -28,6 +38,29 @@
         </input>
         <input name="UADayZBRLeaderboard">
             <btn name="kF4" />
+        </input>
+        <!-- Admin spectate. F3 is the only free function key below F4; F1/F2/F4 are taken above.
+             The arrows are unbound in vanilla gameplay, and a spectator has no use for them
+             otherwise. All four are refused server-side for anyone not in admins_steamid64, so a
+             non-admin pressing them gets nothing. -->
+        <input name="UADayZBRAdminSpectate">
+            <btn name="kF3" />
+        </input>
+        <input name="UADayZBRSpectateMode">
+            <btn name="kF5" />
+        </input>
+        <input name="UADayZBRSpectateNext">
+            <btn name="kRight" />
+        </input>
+        <input name="UADayZBRSpectatePrev">
+            <btn name="kLeft" />
+        </input>
+        <!-- Skeleton overlay. F6 is the next free function key after F5, and it is bound to nothing
+             in vanilla or in Community-Online-Tools (checked: no kF6 appears in COT's Inputs.xml at
+             all). Client-side only - it flips COT's own ESP skeleton renderer, which is why there is
+             no server RPC behind this one and no server-side refusal to match. -->
+        <input name="UADayZBRSpectateSkeleton">
+            <btn name="kF6" />
         </input>
         <!--        <input name="UADayZBRToggleMiniMap">-->
         <!--            <btn name="kB" />-->

@@ -322,6 +322,32 @@ modded class MissionGameplay
 			if (GetUApi().GetInputByID(UADayZBRUnstuck).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).Unstuck();
 			}
+			//--- Admin spectate. Discrete edges only - the free camera's continuous WASD/mouse axes
+			//--- are read in BattleRoyaleSpectatorCamera.UpdateFreeCamera, which is where the frame
+			//--- time they need lives.
+			//---
+			//--- No client-side admin check gates these. Every one is refused server-side by
+			//--- AdminEligibility, so the worst a non-admin achieves by pressing F3 is one ignored
+			//--- packet and a Warn in the server log. The RPC is only sent at all when the client
+			//--- believes it is an admin, which keeps the ordinary player's keypress entirely local.
+			if (GetUApi().GetInputByID(UADayZBRAdminSpectate).LocalPress()) {
+				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateToggle();
+			}
+			if (GetUApi().GetInputByID(UADayZBRSpectateMode).LocalPress()) {
+				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateCycleMode();
+			}
+			if (GetUApi().GetInputByID(UADayZBRSpectateNext).LocalPress()) {
+				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateCycle( 1 );
+			}
+			if (GetUApi().GetInputByID(UADayZBRSpectatePrev).LocalPress()) {
+				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateCycle( -1 );
+			}
+			//--- The one admin key with no server half at all: the skeleton overlay is COT's own
+			//--- client-side renderer, so there is nothing to authorise on the wire. COT applies its
+			//--- own ESP.View permission check inside the call.
+			if (GetUApi().GetInputByID(UADayZBRSpectateSkeleton).LocalPress()) {
+				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateToggleSkeleton();
+			}
 			//--- Toggle, so the same key closes the board again. Answerable in any state, though it
 			//--- is mostly a lobby feature.
 			if (GetUApi().GetInputByID(UADayZBRLeaderboard).LocalPress()) {

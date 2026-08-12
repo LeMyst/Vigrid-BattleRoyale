@@ -188,6 +188,14 @@ class VigridPartyHud
             return;
         }
 
+        //--- Something else owns the screen (a host game's spectator overlay). Presentation only -
+        //--- the roster and state feed keep running, so un-suppressing shows current data.
+        if (VigridPartyClientAPI.IsHudSuppressed())
+        {
+            m_Root.Show(false);
+            return;
+        }
+
         int member_count = rpc.roster_uids.Count();
         EnsureCapacity(member_count);
 

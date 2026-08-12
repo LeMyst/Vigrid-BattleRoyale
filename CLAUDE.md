@@ -228,7 +228,7 @@ Server-side only (`Scripts/Server/3_Game/Config/`, all `#ifdef SERVER`). `Battle
 
 | File in `$profile:Vigrid-BattleRoyale\` | Class | Registry key | Scope |
 |---|---|---|---|
-| `general_settings.json` | `BattleRoyaleGameData` | `GameData` | general match-flow settings not owned by another file below |
+| `general_settings.json` | `BattleRoyaleGameData` | `GameData` | general match-flow settings not owned by another file below; also `admins_steamid64` (mission-locked) and the two spectate switches |
 | `lobby_settings.json` | `BattleRoyaleLobbyData` | `LobbyData` | pre-match lobby flow: ready-up, autostart, spawn selection |
 | `zone_settings.json` | `BattleRoyaleZoneData` | `ZoneData` | zone geometry, shrink timing, zone damage, shrink-notification timing |
 | `voice_settings.json` | `BattleRoyaleVoiceData` | `VoiceData` | party-only voice while frozen, speaking-list panel |
@@ -446,6 +446,188 @@ but without it the chain is five deep and only inferable from who you end up wat
 very next line; it is a return value in all but name, so **never read it anywhere but immediately
 after a `ResolveTarget` call**.
 
+#### Admin spectate
+
+A second, separate session type on the same machinery: a free camera, target cycling, and a
+name/health overlay, for `admins_steamid64` members only. Gated on `admin_spectate_enabled`
+(`general_settings.json` v5, defaults **on** — membership of the admin list is the real gate, so
+defaulting it off would only mean every operator edits a file before an admin tool works).
+
+**One rule governs the whole feature: admin spectate requires a NON-PARTICIPANT — alive, holding a
+body, and absent from `m_Players`.** A competing admin is refused, because a competitor who can
+freecam the map is indistinguishable from a cheat. There are exactly two ways to be a
+non-participant, and **the admin respawn is the bridge** between them:
+
+```
+Admin competing in the match        F3 -> refused ("still in the match")
+        | dies
+Dead admin: death screen/spectate   F3 or the ADMIN MODE button -> respawn, then camera
+        v
+NON-PARTICIPANT ADMIN               F3 toggles camera <-> body, <-/-> cycle, F5 mode
+   ^
+Admin who connected mid-match       already lands here (OnPlayerConnected)
+```
+
+`BattleRoyaleSpectators.AdminEligibility()` **is** that rule, returning one of four
+`BR_ADMIN_*` verdicts, and every admin RPC consults it rather than re-deriving it. Keys are F3
+(toggle), F5 (mode), ←/→ (cycle), all in `Data/Inputs.xml`.
+
+Five things worth knowing:
+
+- **`AdminRespawn` creates an entity, which invariant 2 otherwise forbids — and does not break it.**
+  The new body is never added to `m_Players`, so the roster count, every `IsComplete()` and
+  `br_position` are untouched; the admin's placement, leaderboard entry, death record and corpse all
+  stand. It mirrors vanilla `MissionServer.CreateCharacter` (`missionserver.c:486-495`) inline rather
+  than calling it, because that writes the mission's `m_player` and because this mod overrides
+  `EquipCharacter` to apply the *lobby* loadout. **The two recorded crashes do not apply**:
+  `CreateObjectEx` faulted at 0x0, and `CreatePlayer` faulted at 0x9 with a **NULL** identity, which
+  is out of contract. This passes a real one. The other recorded objection — "the body would be
+  ALIVE and outside the state, so `OnPlayerTick` force-logs-it-out" — was about the carrier body;
+  here that is the goal, and `IsLateJoinExempt` now covers it.
+- **`IsLateJoinExempt` consults `admins_steamid64` directly**, not just `a_LateJoinExempt`. That
+  array is only populated by `OnPlayerConnected`'s mid-match branch, so an admin who connected during
+  the *lobby* and later held no state was never on it and got kicked. Latent bug, fixed here because
+  the respawn depends on it.
+- **`ResolveAdminTarget` is a separate resolver, not a sixth tier.** `ResolveTarget` opens with
+  `m_Deaths.Get(spectator_uid)` to find the spectator's own party and killer chain; a non-participant
+  admin has no death record, so all five tiers degrade to the T5 orbit **without saying so**. The
+  admin order is: the killer of whoever just died (if alive) → next living player in cycle order →
+  orbit. Cycle order is `GetPlayers()` **sorted by uid**, so it cannot renumber itself under the
+  admin as the roster compacts.
+- **The camera carries the admin's own body under itself** (`CarryAnchorBody`, fed by a 2 Hz
+  `AdminSpectateCamPos` RPC), which is what moves the replication bubble and defeats the ~1 km limit
+  described above. Unlike `CarryCorpse` it skips `DropAllItems` — it is the admin's own gear, handed
+  back on exit. **The push must run in every mode, not just FREE.** It was FREE-only at first, so a
+  following admin never updated `cam_pos`, the carry measured zero drift from the respawn point and
+  never fired, and the bubble stayed where they respawned — the symptom being that the admin opens
+  the camera and sees *no players at all*.
+- ⚠️ **A carried LIVE body is visible and its teleports replicate — AND THIS IS STILL UNSOLVED.**
+  The "a carried body's replicated position does not move" measurement in the section above was
+  taken on a **corpse** and does **not** carry over: a live body is still simulated, so other
+  players watch an admin-shaped character slide across the map with the camera, and the admin sees
+  their own body standing next to whoever they are following (observed 2026-08-11).
+
+  **`SetInvisibleRecursive(true)` called server-side does NOT fix it** — tried, shipped, and
+  measured still visible on 2026-08-11. The likely reason is that `SetInvisible` is a local render
+  flag rather than replicated state: COT only ever calls it **client-side**, on the local player's
+  own model (`JM/COT/.../Player/DayZPlayerImplement.c:208`). It is left in the code because it is
+  harmless, not because it works.
+
+  **The known-good route is COT's `PlayerBase.COTSetInvisibility()`**, whose `JMInvisibilityType`
+  includes `DisableSimulation` as well as `Interactive` (`JMPlayerModule.c:1572-1628`) — i.e. real
+  invisibility needs the simulation disabled, not just a render flag. COT is a hard dependency and
+  this is a plain API call behind `#ifdef JM_COT`, so it carries no licence obligation (COT is
+  CC BY-SA 4.0; *calling* it is not adaptation). Untried as of this writing.
+
+- **A spectating admin is hidden from their own party's state feed**, via
+  `VigridPartyAPI.SetMemberHidden(uid, bool)` — the fix for a leak where a respawned admin showed to
+  their teammates as a live member with a compass caret pointing at wherever the camera had carried
+  their body (observed 2026-08-11, fixed 2026-08-12). Note `SetHudSuppressed` had *looked* like the
+  fix and only ever addressed the **admin's own** screen; the leak was on everyone else's, which
+  nothing client-side can reach because it is the server's push putting the position on the wire.
+  Three things about it:
+  - **A hidden member is presented exactly as an OFFLINE one** — zeroed position, zeroed flags — and
+    that is the whole implementation rather than a new flag. Every consumer already routes through
+    `IsMemberVisible` / `IsMemberOnline`, both keyed off the `ONLINE` bit, so this suppresses the
+    world nametag, the compass caret and the map's team layer at once with no client change. They
+    stay a full member otherwise: on the roster, listed by name, still counted by `GetGroupCount`.
+    The visible cost is that teammates see them as "Offline".
+  - **Party is told nothing about spectating.** The API is documented as "a host mod can put a player
+    somewhere that is not where they are playing from", which keeps the discipline rule intact.
+  - ⚠️ **The clear is the dangerous half** — a member left hidden reads as permanently offline for
+    the rest of the match. Every removal now funnels through `BattleRoyaleSpectators.DropEntry`,
+    which releases it; there were four exit paths and a fifth in `EndAll`, which skips
+    `EndAdminSpectate` for an admin whose identity has already gone and then `Clear()`s the map. Add
+    no sixth: drop entries through `DropEntry` and nowhere else.
+
+  Verified live 2026-08-12, and the useful part is *which* paths were exercised. The hide fires
+  before `BeginAdminSpectate` returns, so the first `VP_TeamState` after a respawn already carries
+  the admin as offline and there is no window for a caret. It also fired on an entry with **no
+  preceding `AdminRespawn`** — the mid-match-joiner branch — which confirms it hangs off the session
+  rather than off the respawn. The release was seen on **two non-clean paths**: a disconnect, and a
+  match end, both landing `SetMemberHidden … visible` immediately before the entry was dropped.
+  Those are the ones that would have stranded a member as permanently offline.
+- ⚠️ **Do not hand the body back in the same frame as the exit teleport.** It crashed the client in
+  vanilla `DayZPlayerCamera1stPerson.UpdateUDAngleUnlocked` (`dayzplayercamera_base.c:132`): the body
+  has never been simulated — created by `CreatePlayer` and dropped from the selection immediately —
+  so vanilla's camera initialises against a player that is still mid-juncture. `SelectPlayer` is
+  deferred `BR_ADMIN_EXIT_SELECT_DELAY_MS` behind the teleport, in `FinishAdminExit`.
+- **Party's HUD is suppressed for an admin session only**, through
+  `VigridPartyClientAPI.SetHudSuppressed()` — a switch the host flips, so `Party/` still names no
+  `BattleRoyale*` symbol. Without it the party nameplates stack with the admin ones over the same
+  character and the roster panel describes a party the admin is not currently playing in. An
+  *ordinary* spectator keeps their party HUD: following a teammate with it live is the wanted
+  behaviour.
+- ⚠️ **The focus counter is the trap.** `EnterSpectate`'s three `ChangeGameFocus(-1)` calls exist to
+  undo the `LockControls(true)` that `SimulateDeath` performed. An admin entering spectate **alive**
+  never ran `SimulateDeath`, so releasing anyway drives the additive counter negative — which breaks
+  input with no error, no log line and nothing on screen. They are gated on `b_DeathLocked`, set by
+  `ShowDeadScreen` via `BattleRoyaleRPC.death_locked` (the same 4_World→5_Mission stage hop
+  `dead_placement` uses) and consumed exactly once. `LeaveSpectate` deliberately adds **no**
+  symmetric `+1`.
+
+The overlay (`BattleRoyaleSpectatorTags.c` + `spectator_tag.layout`) shows name, health bar,
+distance, kills, party colour and a highlight on the current target. It is fed by the
+`SetAdminPlayerList` RPC — **per-identity to registered admin spectators, never broadcast**, because
+it carries SteamID64s, which `SetLeaderboard` deliberately keeps off the wire for exactly that
+reason. That push is also why **tags work at any range while models do not**: positions come from the
+server, bones do not.
+
+**Skeletons are COT's renderer, called rather than copied — but from OUR loop, not COT's.** F6
+(`UADayZBRSpectateSkeleton`) is the one admin key with **no server half**, because it changes only
+what this client draws. `BattleRoyaleClient.UpdateSkeletonOverlay` runs each frame and calls
+`JMESPSkeleton.Draw(human, canvas, thickness)` — a public static that reads bone positions in world
+space and writes into COT's `JMESPCanvas`.
+
+⚠️ **Two builds went into driving COT's own loop instead, and neither drew anything.** The first set
+`JMESPModule.SetDrawPlayerSkeletonsEnabled(true)`; the second added `esp.EnableUpdate()`. Each time
+the log proved the flag was set, the `ESP.View` permission granted and the canvas present — so
+`JMESPModule.OnUpdate`, which is what actually draws, was simply never ticked for us. Do not go back
+to the flag; it is not the mechanism, and the tidy reading of COT's source that says it should be is
+the same reading that cost those two builds.
+
+Four things to keep:
+
+- **Range is ours.** COT culls each subject at `ESPRadius` — 200 m by default, compared against the
+  projection's *depth*, and an admin's own COT setting — which is well inside where a spectating
+  admin watches from and would likely have suppressed everything even had the loop been ticking.
+  `BR_SPECTATE_SKELETON_RANGE_M` is 500. COT's own `ESPRadius` is deliberately **not** written to; it
+  outlives this session and is not ours to change.
+- **Clearing is ours.** A `CanvasWidget` keeps what was drawn until something clears it, so the
+  canvas is cleared every frame *before* the redraw, and again on toggle-off and in `LeaveSpectate`.
+  Skeletons left running would follow the admin back into their own body and give a non-participant
+  an x-ray view of the match — the exact thing the non-participant rule exists to prevent.
+- **The living and the dead are filtered differently, because only one of them can be roster-checked.**
+  A LIVING subject must be on the `admin_uids` roster the server already pushes for the overlay tags,
+  and that is what keeps the admin's **own anchor body** out of it: the body is created server-side
+  and reaches its owner's client as a *remote* entity — the connection's selected object is the
+  spectator camera, not the body — so `ClientData.m_PlayerBaseList` holds it like anybody else, and
+  testing it against `GetGame().GetPlayer()` cannot work, because that inequality is precisely why it
+  was inserted. A non-participant is absent from `admin_uids` by construction. A CORPSE is drawn
+  unconditionally: `admin_uids` carries only the living, so a body fails that test by definition, and
+  there is nothing to gate it on anyway — a corpse marks where a fight happened, which is the point.
+  Corpses do stay in `ClientData.m_PlayerBaseList` (the mod never deletes a body), verified rather
+  than assumed. Measured with one corpse and one live player in view:
+  `population=3 notplaying=1 corpses=1 drawn=2`.
+- ⚠️ **Corpses are drawn by US, and the colour is the whole reason.** `JMESPSkeleton.Draw` takes no
+  colour — it derives one from `GetHealthLevel()`, and a dead body is `STATE_RUINED`, which COT
+  paints `0xFF232323`. Near-black is the worst possible colour for the one job a corpse marker has.
+  `JMESPCanvas.DrawLine` *does* take a colour, so the corpse pass goes straight to the canvas at
+  `BR_SPECTATE_SKELETON_CORPSE_COLOUR` and 2 px (thicker because a body lies flat and foreshortens).
+  Living players still go through COT's renderer, whose health colouring is worth having.
+  **The bone chain is derived from vanilla's rig, not transcribed from COT's `s_Limbs`** — calling
+  `JMESPSkeleton.Draw` is interoperation, copying its table would be adaptation. The pairs come from
+  the bone names vanilla registers per damage zone in `BleedingSourcesManagerBase.Init`
+  (`P:\scripts\4_world\classes\bleedingsources\bleedingsourcesmanagerbase.c:23-61`); it shows, since
+  ours carries the shoulders and the full spine and stops at the toes rather than the finger bones.
+  `BR_SPECTATE_SKELETON_CORPSES` compiles the pass out.
+- **COT's `ESP.View` permission is no longer consulted**, since nothing calls COT's gated setter any
+  more. The gate is this mod's own: `admins_steamid64`, non-participant, and in a spectate session.
+
+This is also the licence answer: porting `JMESPSkeleton` is blocked — COT is CC BY-SA 4.0, this repo
+is DSPL-SA, and BY-SA §3(b) forbids relicensing adapted material under added restrictions — but
+*calling* a published API is interoperation, not adaptation, and carries no obligation at all.
+
 **Testing it needs the diag menu's Spectate submenu** (`DIAG_DEVELOPER`, so both `DayZDiag_x64`
 sides). **Kill Me** is the one that matters: without it, reaching the death screen at all needs a
 second client to land a kill, which made every spectate test a three-client test. It sends
@@ -554,7 +736,61 @@ camera.
 
 Layouts live in `GUI/layouts/`. The dominant pattern is imperative — `GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/....layout")` then `FindAnyWidget("Name")`; most layouts have no `scriptclass`. `SpawnSelectionMenu` is a `UIScriptedMenu` (`MENU_SPAWN_SELECTION = 75` in `Scripts/Client/3_Game/Constants.c`, instantiated in `MissionBase.CreateScriptedMenu`). The only declarative `scriptclass` binding is the COT `master_controls.layout` → `BRMasterControlsForm`.
 
-Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`.
+Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2, `UADayZBRLeaderboard` = F4, plus the admin-spectate set `UADayZBRAdminSpectate` = F3, `UADayZBRSpectateMode` = F5, `UADayZBRSpectateNext`/`Prev` = →/←, `UADayZBRSpectateSkeleton` = F6), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`. The admin keys are refused server-side for anyone outside `admins_steamid64`, so the client-side check on them is presentation only — **except F6, which has no server half at all** and is gated by COT's own `ESP.View` permission instead (see *Spectating → Admin spectate*).
+
+#### Lobby name tags
+
+Every living non-teammate wears their name over their head while the players are still gathered
+before the match — `BattleRoyaleLobbyTags.c` plus `lobby_tags.layout` / `lobby_tag.layout`, driven
+each frame from `BattleRoyaleClient.Update`.
+
+**It replaced a "point at somebody to read their name" tag, and that tag was vanilla's own.**
+`IngameHud.RefreshPlayerTags` / `ShowPlayerTag` ship `#ifdef PLATFORM_PS4` and never run on PC; the
+mod's `modded class IngameHud` used to call them directly whenever `!match_started`, and repaint the
+text with the resolved name. It names one player at a time, chosen by a 25 m raycast down the camera
+axis, and draws it at a fixed spot beside the crosshair rather than over the character.
+
+Four things worth keeping:
+
+- ⚠️ **`!match_started` was the wrong phase test, and this is a general trap.** `match_started` is a
+  one-way latch set by the `StartMatch` **broadcast**, so a client that connects *after* that
+  broadcast never receives it and reads `false` for its whole session. In practice that is always an
+  admin — everyone else is kicked — which is exactly how the lobby-only tag ended up live for an
+  admin spectating a running match. The replacement is `BattleRoyaleRPC.lobby_phase`, a discrete fact
+  pushed **on every state transition** (one call in `BattleRoyaleServer.Update`, so no state has to
+  remember) **and per-identity in `PlayerLoadedIn`**, which is what a late joiner needs. Any
+  broadcast-latched flag has this bug latent in it; check for a per-connect seed before trusting one.
+- The window is `BattleRoyaleServer.IsLobbyPhase()` — the current state casting to
+  `BattleRoyaleDebugState`, which covers the lobby *and* the pre-match countdown and nothing else.
+  Deliberately narrower than `!match_started` was: spawn selection and the drop are outside it, so no
+  name hangs over anybody at their spawn point.
+- **Positions are local, names come over `SetLobbyNames` keyed by network id.** In the lobby everyone
+  is in the same clearing and therefore inside the bubble, so `ClientData.m_PlayerBaseList` gives
+  exact per-frame positions; the server sends who to name and what to call them, with the
+  recipient's own teammates already removed, so no party composition and no SteamID64s go on the wire.
+- ⚠️ **`PlayerBase.GetIdentity()` IS populated client-side for a remote player — measured
+  2026-08-12, `noidentity=0` sustained.** It is written down because the opposite was asserted
+  confidently enough to cause a rewrite: when this overlay was first reported broken, the theory was
+  that remote identities are null client-side and that `VigridPartyAPI.FindLocalPlayer` and
+  `BattleRoyaleSpectatorTags` only appear to work because each falls back to a server-pushed
+  position. That reasoning is tidy and **wrong**. The overlay had never been broken at all — the
+  report was about a different tag. The network-id transport that replaced it works and is what
+  ships, but it is not *needed*; the client-side version is strictly smaller. Do not re-derive the
+  identity claim from the shape of the code.
+- **Party members are excluded server-side**, before the packet is built — they already carry the
+  party's own coloured tags, and two labels over one character is the stacking that had to be fixed
+  once already for the admin overlay. Doing it there means `BattleRoyaleLobbyTags` names no Party
+  symbol at all.
+- **The funnel diagnostic earned its place and is kept.** `[Lobby] tags rows=… noentity=… noidentity=…
+  far=… offscreen=… drawn=…`, 2 s apart while the overlay is active. It is what turned a three-way
+  argument into a one-line answer, and it is what should be reached for first next time.
+
+`IngameHud.BR_SuppressPointTag` now hides the point tag whenever the mod draws its own names — in the
+lobby, and for an admin spectator. **It hides the root `m_PlayerTag`**, which is what makes it work
+against DayZ Expansion's NameTags addon too: Expansion's own `modded IngameHud` drives the same
+vanilla-owned root and parents its icon inside it, and neither vanilla nor Expansion ever calls
+`Show(true)` on that root — they fade the text alpha. So the hide wins whichever order the two modded
+`Update`s run in, which matters because nothing in `requiredAddons` pins that order down.
 
 **The two scrolling lists — `LeaderboardMenu` and `VigridPartyMenu` — share one construct, and all three of its parts are needed.** A `ScrollWidget` owns its child's geometry, so each wraps a `WrapSpacer` carrying `"Size To Content V"` (plus `"Scrollbar V"` on the scroll itself); the script must therefore **never `SetPos` a row**, and must **`Unlink()` surplus rows rather than hide them** — a spacer lays out the children it *has*, so a hidden row keeps its slot and leaves dead scroll below a shorter refresh. Both also implement `OnMouseWheel` → `VScrollStep`, following vanilla's own `ScrollBarContainer`. Note this binds only under a spacer: `VigridPartyHud`, `BattleRoyaleSpeakingList` and `Extra/KillFeed`'s row pools free-position with `SetPos` into plain panels and correctly keep hiding their surplus.
 

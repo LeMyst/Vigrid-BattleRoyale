@@ -285,6 +285,161 @@ static const int BR_SPECTATE_PUSH_MS = 1000;
 static const int BR_SPECTATE_CHAIN_MAX_HOPS = 64;
 static const int BR_SPECTATE_MODE_FOLLOW = 0;
 static const int BR_SPECTATE_MODE_ORBIT = 1;
+//--- Admin free camera. Only ever set for an admin entry; an ordinary spectator can never reach it,
+//--- because nothing client-side chooses the mode - the server pushes it in SetSpectateTarget and
+//--- only ever pushes FREE in response to an admin-gated request.
+static const int BR_SPECTATE_MODE_FREE = 2;
+
+//--- ADMIN SPECTATE. Gated on admins_steamid64 plus admin_spectate_enabled (general_settings.json).
+//---
+//--- The governing rule is that admin spectate requires being a NON-PARTICIPANT: alive, holding a
+//--- body, and absent from m_Players. A competing admin is refused, because a competitor who can
+//--- freecam the map is indistinguishable from a cheat. There are two ways to be a non-participant -
+//--- connect mid-match (OnPlayerConnected already places those at the live circle), or die and take
+//--- the admin respawn, which is the bridge between the two halves of the lifecycle.
+//---
+//--- Character the admin respawn creates. scope=2 in dz/characters/data/config.cpp, so it is
+//--- spawnable; deliberately a fixed type rather than a random one, since this body is carried,
+//--- invisible and never seen by anyone.
+static const string BR_ADMIN_RESPAWN_CHARACTER = "SurvivorM_Mirek";
+//--- ADMIN ANCHOR PLACEMENT. The admin's body is not simply parked on the camera: it is placed to
+//--- put as many players as possible inside the replication bubble, so the admin can see AND HEAR
+//--- the most of the match, while staying off anyone's lap.
+//---
+//--- Radius the body is assumed to cover. Inside DayZ's default 1000 m networkRangePlayers with
+//--- enough margin that a player jogging near the edge does not flicker in and out.
+static const float BR_ADMIN_ANCHOR_COVER_M = 900.0;
+//--- Never place the body closer than this to a living player. It is invisible, but it is still a
+//--- simulated entity that can be bumped into, and an admin materialising in someone's kitchen is
+//--- the thing to avoid. Relaxed automatically when no candidate satisfies it - see ChooseAnchorPosition.
+static const float BR_ADMIN_ANCHOR_MIN_PLAYER_M = 150.0;
+//--- How far the body may sit from the camera. The camera's own surroundings must stay well inside
+//--- the bubble, or the admin optimises coverage of players they cannot see.
+static const float BR_ADMIN_ANCHOR_MAX_OFFSET_M = 400.0;
+//--- Do not bother moving for less than this. Stops the body jittering between two near-equal spots.
+static const float BR_ADMIN_ANCHOR_STEP_M = 150.0;
+//--- Ordinary re-placement cadence. Deliberately lazy: each move is a sync juncture on a live
+//--- entity, and the coverage answer changes slowly while players run around.
+static const int BR_ADMIN_ANCHOR_INTERVAL_MS = 5000;
+//--- ...but a fast free camera outruns that. At the top speed step the camera covers over 200 m/s,
+//--- so past this distance the body is moved immediately regardless of the interval, or the admin
+//--- flies clean out of their own bubble and everything derenders.
+static const float BR_ADMIN_ANCHOR_URGENT_M = 500.0;
+//--- How often the client reports its camera position so the server can carry the body. Twice the
+//--- rate of the keepalive: this one is what keeps the replication bubble under the camera, so it is
+//--- the one that must not lag. Cheap - one vector, and only ever for an admin who is spectating.
+static const int BR_ADMIN_CAMPOS_PUSH_MS = 500;
+//--- Free camera base speed, m/s, before the gear-up/down multiplier and before Shift doubles it.
+//--- Vanilla DayZSpectator uses 5.0; this is faster because the thing an admin flies a camera across
+//--- is a battle royale map, not a room.
+static const float BR_SPECTATE_FREE_SPEED = 12.0;
+//--- Ceiling on the speed multiplier. Vanilla's equivalent is unclamped and goes negative, which
+//--- flies the camera backwards with nothing on screen to say why.
+static const float BR_SPECTATE_FREE_SPEED_MAX_MULT = 16.0;
+//--- Floor. Well below 1, so the wheel can slow the camera right down for precise framing rather
+//--- than only speeding it up.
+static const float BR_SPECTATE_FREE_SPEED_MIN_MULT = 0.15;
+//--- Ratio per wheel notch. Multiplicative rather than vanilla's flat +/-2: a fixed step is a huge
+//--- jump when crawling and imperceptible when flying, so it gives even control across the range.
+//--- 1.3 spans the full 0.15-16 range in about seventeen notches.
+static const float BR_SPECTATE_FREE_SPEED_STEP = 1.3;
+//--- Gap between teleporting the admin's body on exit and handing control of it back. Handing it
+//--- back in the SAME frame crashed the client in vanilla's own first-person camera - the body has
+//--- never been simulated, so the camera initialises against a player that is still mid-juncture.
+//--- Generous rather than minimal: nothing is waiting on it, and one frame would be cutting it fine.
+static const int BR_ADMIN_EXIT_SELECT_DELAY_MS = 400;
+//--- Hard cap on rows in the admin player list. This mod has no RPC chunking anywhere (see the
+//--- leaderboard's own 50-row cap for the same reason), so the payload has to be bounded by
+//--- construction rather than by hoping a match stays small.
+static const int BR_ADMIN_LIST_MAX = 64;
+//--- ADMIN OVERLAY TAGS. Fallback size in pixels, used only on the first frame before the widget
+//--- has been shown and can report a real one. MUST track the root size in spectator_tag.layout.
+static const float BR_SPECTATE_TAG_SIZE_W = 190.0;
+static const float BR_SPECTATE_TAG_SIZE_H = 54.0;
+//--- Gap in pixels between the bottom of the tag and the head it sits above.
+static const float BR_SPECTATE_TAG_GAP_PX = 8.0;
+//--- Metres above the head bone, and above the feet when there is no entity to read a bone from.
+static const float BR_SPECTATE_TAG_HEAD_OFFSET = 0.25;
+static const float BR_SPECTATE_TAG_HEIGHT_OFFSET = 1.9;
+//--- Inset in pixels for a tag clamped to the screen edge.
+static const float BR_SPECTATE_TAG_EDGE_MARGIN = 60.0;
+//--- Off-screen tags are dimmed rather than hidden: an admin wants to know somebody is behind them.
+static const float BR_SPECTATE_TAG_OFFSCREEN_ALPHA = 0.45;
+//--- Name colour for the player the camera is currently following, and for anyone with no party.
+//--- The target colour is deliberately not any VigridPartyPalette slot, so it cannot be mistaken
+//--- for a team colour.
+static const int BR_SPECTATE_TAG_TARGET_COLOUR = 0xFFFFDD44;
+static const int BR_SPECTATE_TAG_SOLO_COLOUR = 0xFFFFFFFF;
+
+//--- LOBBY NAME TAGS. A name over every non-teammate while the players are still gathered in the
+//--- lobby, replacing the "point at somebody to read their name" tag this mod used to re-enable
+//--- there (vanilla's own, which ships #ifdef PLATFORM_PS4 and is dead on PC otherwise).
+//---
+//--- Set false to compile the whole feature out. Client cosmetic, so compile-time: the settings
+//--- files are server-side only and there is nothing here an operator needs to tune per match.
+static const bool BR_LOBBY_TAGS_ENABLED = true;
+//--- Fallback size in pixels, used on the first frame before the widget has been shown and can
+//--- report a real one. MUST track the root size in lobby_tag.layout.
+static const float BR_LOBBY_TAG_SIZE_W = 190.0;
+static const float BR_LOBBY_TAG_SIZE_H = 22.0;
+//--- Gap in pixels between the bottom of the tag and the head it sits above.
+static const float BR_LOBBY_TAG_GAP_PX = 6.0;
+//--- Metres above the head bone. Lower than the spectator tag's, which has a health bar and a
+//--- second line under it and so needs the clearance.
+static const float BR_LOBBY_TAG_HEAD_OFFSET = 0.22;
+//--- Fallback anchor when the head bone will not resolve, measured from the feet.
+static const float BR_LOBBY_TAG_HEIGHT_OFFSET = 1.9;
+//--- Past this there is no tag at all. The lobby is one clearing and everybody in it is within a
+//--- few dozen metres; the cap is what stops the far side of the map filling the screen with names
+//--- during the pre-match countdown, when players have started to spread out.
+static const float BR_LOBBY_TAG_MAX_DISTANCE_M = 80.0;
+//--- Fade over the last stretch of that range, so a tag thins out rather than blinking off.
+static const float BR_LOBBY_TAG_FADE_START_M = 55.0;
+//--- Bound on rows, matching the pooling everywhere else in this mod. A full lobby is 60 players
+//--- and every one of them is in the same clearing.
+static const int BR_LOBBY_TAG_MAX_ROWS = 64;
+//--- How often the server pushes each player their lobby name list. 1 Hz: the contents only change
+//--- when somebody joins, leaves or dies, and the client resolves live entities for the POSITIONS,
+//--- so this carries no motion and does not need to keep up with any.
+static const int BR_LOBBY_NAMES_PUSH_MS = 1000;
+//--- Throttle on the one diagnostic line the tag renderer emits while it is active.
+static const int BR_LOBBY_TAG_DIAG_MS = 2000;
+//--- Plain white. Party members are excluded from this overlay entirely - they already have the
+//--- party's own coloured name tags - so there is no palette slot to honour and a second colour
+//--- here would only invite the two to be confused.
+static const int BR_LOBBY_TAG_COLOUR = 0xFFFFFFFF;
+
+//--- SKELETON OVERLAY. How far from the CAMERA a player is still drawn, in metres of view depth.
+//--- Ours, not COT's: JMESPModule culls at its own ESPRadius (200 m by default and an admin's
+//--- personal COT setting), which is well inside the range a spectating admin watches from and is
+//--- why driving COT's own loop was never going to be enough.
+static const float BR_SPECTATE_SKELETON_RANGE_M = 500.0;
+//--- Line width passed to JMESPSkeleton.Draw. 1 px is COT's own default and reads cleanly at range.
+static const float BR_SPECTATE_SKELETON_THICKNESS = 1.0;
+//--- Corpses too, so a fight can be found afterwards. Set false for living players only.
+static const bool BR_SPECTATE_SKELETON_CORPSES = true;
+//--- ⚠️ CORPSES ARE DRAWN BY US, NOT BY COT, AND THE COLOUR IS THE WHOLE REASON.
+//--- JMESPSkeleton.Draw takes no colour - it derives one from GetHealthLevel(), and a dead body is
+//--- STATE_RUINED, which COT paints 0xFF232323. That is near-black: the worst possible colour for
+//--- the one job corpse skeletons have. JMESPCanvas.DrawLine does take a colour, so the corpse pass
+//--- goes straight to the canvas.
+static const int BR_SPECTATE_SKELETON_CORPSE_COLOUR = 0xFFFF3030;
+//--- Thicker than a living skeleton: a body lies flat and foreshortens to almost nothing at range.
+static const int BR_SPECTATE_SKELETON_CORPSE_THICKNESS = 2;
+
+//--- AdminEligibility verdicts. Every admin RPC consults it, and the whole lifecycle is these four
+//--- values - there is deliberately no fifth "maybe" state to reason about.
+//--- NOT_ADMIN is answered SILENTLY - telling a non-admin that an admin feature exists, and that
+//--- they are not on the list, is information they have no use for. Every other verdict is a real
+//--- admin who deserves to know why their key did nothing.
+static const int BR_ADMIN_REFUSED_NOT_ADMIN = 0;
+static const int BR_ADMIN_REFUSED_COMPETING = 1;
+//--- An admin, in a phase that does not allow spectating (lobby, spawn selection, prepare, warm-up,
+//--- post-match). Split out from NOT_ADMIN so it can be explained: without its own verdict this was
+//--- indistinguishable from a dead key, since the refusal was a server-side Warn and nothing else.
+static const int BR_ADMIN_REFUSED_PHASE = 2;
+static const int BR_ADMIN_OFFER_RESPAWN = 3;
+static const int BR_ADMIN_ALLOW_SPECTATE = 4;
 
 //--- CORPSE CARRY. The replication bubble is centred on the spectator's CORPSE, not on the camera -
 //--- UpdateSpectatorPosition does not move it (measured both directions 2026-08-10). So a target

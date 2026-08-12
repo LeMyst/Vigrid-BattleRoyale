@@ -36,6 +36,34 @@ class VigridPartyClientAPI
     private static vector s_ViewpointPos = "0 0 0";
     private static string s_ViewpointUid = "";
 
+    //! Hide every party HUD layer - the roster panel and the world name tags - without changing any
+    //! party state. See SetHudSuppressed.
+    private static bool s_HudSuppressed = false;
+
+    /**
+     *  Hide the party HUD entirely while some other overlay owns the screen.
+     *
+     *  Exists for a host game whose own spectator UI draws its own name tags: without this the
+     *  player gets two labels stacked over the same character, one from each system, plus a party
+     *  roster panel describing a party they are not currently playing in.
+     *
+     *  Deliberately a switch that the HOST flips rather than anything Party works out for itself -
+     *  Party must not know what a Battle Royale admin is, and this way it does not have to. It is
+     *  presentation only: the roster, the state feed and the pings all keep running underneath, so
+     *  un-suppressing shows a current HUD rather than a stale one.
+     *
+     *  Safe to call every frame with unchanged values.
+     */
+    static void SetHudSuppressed(bool suppressed)
+    {
+        s_HudSuppressed = suppressed;
+    }
+
+    static bool IsHudSuppressed()
+    {
+        return s_HudSuppressed;
+    }
+
     /**
      *  Measure every distance in the party UI from `position` instead of from the local player.
      *

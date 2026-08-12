@@ -85,6 +85,7 @@ modded class PluginDiagMenu
 	//--- Spectate
 	protected int m_BRDiagSpectateMenuID;
 	protected int m_BRDiagSpectateEnabledID;
+	protected int m_BRDiagAdminSpectateID;
 	protected int m_BRDiagKillSelfID;
 	protected int m_BRDiagLogSpectatorsID;
 	protected int m_BRDiagTpTargetDistID;
@@ -161,6 +162,7 @@ modded class PluginDiagMenu
 
 		m_BRDiagSpectateMenuID = GetModdedDiagID();
 		m_BRDiagSpectateEnabledID = GetModdedDiagID();
+		m_BRDiagAdminSpectateID = GetModdedDiagID();
 		m_BRDiagKillSelfID = GetModdedDiagID();
 		m_BRDiagLogSpectatorsID = GetModdedDiagID();
 		m_BRDiagTpTargetDistID = GetModdedDiagID();
@@ -306,6 +308,11 @@ modded class PluginDiagMenu
 				//--- without this entry turning it on means editing a file and restarting the server.
 				//--- The flip is in memory only and is not persisted.
 				DiagMenu.RegisterBool(m_BRDiagSpectateEnabledID, "", "Spectate Enabled", m_BRDiagSpectateMenuID);
+				//--- admin_spectate_enabled ships ON, so this is here to turn it OFF and confirm the
+				//--- kill switch actually refuses - the negative test is the one worth having, since
+				//--- the positive one happens every time F3 is pressed. In memory only, not persisted.
+				//--- Note this does NOT grant admin: the sender must still be in admins_steamid64.
+				DiagMenu.RegisterBool(m_BRDiagAdminSpectateID, "", "Admin Spectate Enabled", m_BRDiagSpectateMenuID);
 				DiagMenu.RegisterBool(m_BRDiagKillSelfID, "", "Kill Me", m_BRDiagSpectateMenuID);
 				//--- Reports the resolved chain tier per spectator, which is the one thing about the
 				//--- five-tier target search that is otherwise only inferable from who you end up

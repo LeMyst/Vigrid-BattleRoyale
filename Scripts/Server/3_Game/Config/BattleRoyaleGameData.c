@@ -9,7 +9,7 @@
 // for any future field that is a server-operator concern rather than mission content.
 class BattleRoyaleGameData: BattleRoyaleDataBase
 {
-	int version = 4;  // Config version
+	int version = 5;  // Config version
 
 	// Allowed admins - Are immune to kick and can go outside the play area
 	// Mission-locked (see class comment above) - never overridable from a mission pack.
@@ -47,6 +47,20 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     // now a real menu with buttons rather than the engine's ScreenFadeIn text, because a proto
     // native fade taking a string and two colours has no widget tree to hang a button on.
     bool spectate_enabled = false;  // follow the action after dying instead of being disconnected
+
+    // Admin spectate: a free camera, target cycling and a name/health overlay, for admins only.
+    //
+    // Independent of spectate_enabled above, which is the player-facing setting - an admin can
+    // moderate a server that never offers spectating to anyone else. Membership of admins_steamid64
+    // is still required, so this is a kill switch rather than a grant.
+    //
+    // The rule it enforces is that admin spectate needs a NON-PARTICIPANT: alive, holding a body,
+    // and absent from the match roster. An admin who is competing is refused - a competitor who can
+    // freecam the map is indistinguishable from a cheat. An admin who died can take the admin
+    // respawn, which produces a fresh body that is deliberately never re-added to the roster, so it
+    // cannot disturb the match they just left: their placement, leaderboard entry and corpse all
+    // stand.
+    bool admin_spectate_enabled = true;
 
 	// Airdrop settings
     bool airdrop_enabled = true;  // Enable airdrops
@@ -165,6 +179,20 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 			// does not apply to scalars.) spectate_enabled defaults to false, so an admin who does
 			// nothing keeps exactly the previous death behaviour.
 			version = 4;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 5)
+		{
+			// admin_spectate_enabled was INTRODUCED in v5. A scalar, so the field initialiser above
+			// survives deserialization of a file that does not carry the key and there is nothing to
+			// migrate; the bump exists so Save() writes it into existing profile JSONs.
+			//
+			// It defaults to TRUE, unlike spectate_enabled - the feature is gated on membership of
+			// admins_steamid64 anyway, so defaulting it off would mean every operator has to edit
+			// their config before an admin tool works at all, while defaulting it on grants nobody
+			// anything they could not already do with COT.
+			version = 5;
 			Save();  // Save the upgraded config
 		}
 	}

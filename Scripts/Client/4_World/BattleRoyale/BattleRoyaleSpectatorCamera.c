@@ -44,6 +44,13 @@ class BattleRoyaleSpectatorCamera extends Camera
     protected float m_OrbitAngle;
     protected bool m_HasSnapped;
 
+    //--- FREE mode (admin only). m_FreeSeeded is what makes entering the free camera continuous
+    //--- rather than a jump: on the first free frame the flying position and angles are taken from
+    //--- wherever the follow camera had got to, so the view does not snap when the mode flips.
+    protected bool m_FreeSeeded;
+    protected float m_FreeSpeedMult;
+    protected float m_CamPosAcc;
+
     //--- Diagnostics for the network-bubble question. m_BubblePushes counts UpdateSpectatorPosition
     //--- calls, so "is it even being called" stops being a matter of opinion.
     protected float m_TraceAcc;
@@ -63,6 +70,9 @@ class BattleRoyaleSpectatorCamera extends Camera
         m_BubbleAcc = 0;
         m_OrbitAngle = 0;
         m_HasSnapped = false;
+        m_FreeSeeded = false;
+        m_FreeSpeedMult = 1.0;
+        m_CamPosAcc = 0;
         m_TraceAcc = 0;
         m_BubblePushes = 0;
 
@@ -88,6 +98,18 @@ class BattleRoyaleSpectatorCamera extends Camera
     {
         m_Target = target;
         m_TargetPos = position;
+
+        //--- Leaving FREE re-arms the seed, so the next entry picks up from wherever the camera has
+        //--- since ended up rather than from a stale free position. Checked against the OLD mode, so
+        //--- it has to happen before the assignment below.
+        if (m_Mode == BR_SPECTATE_MODE_FREE && mode != BR_SPECTATE_MODE_FREE)
+        {
+            m_FreeSeeded = false;
+
+            //--- Coming back to a follow camera from somewhere across the map: snap rather than fly.
+            m_HasSnapped = false;
+        }
+
         m_Mode = mode;
 
         if (uid == m_TargetUid)
@@ -176,8 +198,19 @@ class BattleRoyaleSpectatorCamera extends Camera
                 GetPosition().ToString(), m_TargetPos.ToString(), target_distance, has_entity, m_BubblePushes));
         }
 
+        //--- FREE is a completely different camera: it is flown, not aimed at anything, so none of
+        //--- the anchor / boom / damping machinery below applies to it.
+        if (m_Mode == BR_SPECTATE_MODE_FREE)
+        {
+            UpdateFreeCamera(timeSlice);
+            PushCamPos(timeSlice);
+            return;
+        }
+
         vector anchor = ResolveAnchor(timeSlice);
         float desired_yaw = ResolveYaw();
+
+        PushCamPos(timeSlice);
 
         //--- Shortest-arc yaw damping.
         float delta = Math.NormalizeAngle(desired_yaw - m_Yaw);
@@ -216,6 +249,151 @@ class BattleRoyaleSpectatorCamera extends Camera
 
         SetPosition(final_pos);
         SetOrientation(Vector(m_Yaw, m_Pitch, 0));
+    }
+
+    /**
+     *  Report where the camera is, so the server can keep the admin's body - and therefore the
+     *  replication bubble - underneath it.
+     *
+     *  RUNS IN EVERY MODE, not just FREE, and that is the whole point. It lived inside
+     *  UpdateFreeCamera at first, which meant a FOLLOW-mode admin never reported anything:
+     *  entry.cam_pos stayed at the value BeginAdminSpectate seeded it with (the respawn position),
+     *  CarryAnchorBody measured zero drift from there and never carried, the bubble sat in the map
+     *  corner where the admin respawned, and a target on the far side of the map was simply not
+     *  replicated. The symptom is the one that matters: the admin opens the camera and sees NO
+     *  PLAYERS AT ALL. Observed 2026-08-11.
+     *
+     *  Only sent for an admin - an ordinary spectator's corpse is carried by CarryCorpse, which
+     *  chases the target and needs nothing from the client. The server drops the message for any
+     *  entry that is not an admin anyway, so this gate is bandwidth, not safety.
+     */
+    protected void PushCamPos(float timeSlice)
+    {
+        //--- GUARDED, because THIS FILE HAS NO TOP-LEVEL GUARD - it compiles on the server too, and
+        //--- BattleRoyaleRPC is #ifndef SERVER. Naming it unguarded here took the whole World module
+        //--- down with "Unknown type 'BattleRoyaleRPC'" on the dedicated server, which is the exact
+        //--- hazard the header comment on this class warns about.
+#ifndef SERVER
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if (!br_rpc)
+            return;
+        if (!br_rpc.is_admin)
+            return;
+
+        m_CamPosAcc = m_CamPosAcc + timeSlice;
+        if (m_CamPosAcc * 1000 < BR_ADMIN_CAMPOS_PUSH_MS)
+            return;
+
+        m_CamPosAcc = 0;
+        GetRPCManager().SendRPC(RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCamPos", new Param1<vector>(GetPosition()), true);
+#endif
+    }
+
+    /**
+     *  The admin free camera. WASD to fly, mouse to look, Shift to boost, gear up/down to change
+     *  the base speed.
+     *
+     *  Movement, the speed stepping and the +/-89 pitch clamp are vanilla DayZSpectator's
+     *  (P:\scripts\4_world\entities\dayzspectator.c:12-59), including the `vector.Up * direction`
+     *  cross product for the strafe axis. Two deliberate departures:
+     *
+     *    - SurfaceY rather than vanilla's SurfaceRoadY, matching every other height clamp in this
+     *      mod, and with the same FLOOR_CLEARANCE the follow camera uses so the free camera cannot
+     *      be flown into the dirt either.
+     *
+     *    - The position is reported to the server every BR_ADMIN_CAMPOS_PUSH_MS. That is what keeps
+     *      the admin's own body - and therefore the replication bubble - underneath the camera.
+     *      Without it the free camera flies fine and everything past ~1 km of where the admin
+     *      started is simply not replicated: terrain, no players. UpdateSpectatorPosition above does
+     *      NOT do this; it is measured not to move the bubble at all.
+     *
+     *  Reading input here rather than in MissionGameplay.OnUpdate is deliberate: these are
+     *  continuous per-frame axes, not edge-triggered actions, and they need the frame's timeSlice.
+     *  The discrete keys (toggle, mode, cycle) are edges and do live in the mission update.
+     */
+    protected void UpdateFreeCamera(float timeSlice)
+    {
+        if (!GetUApi())
+            return;
+
+        //--- Continuous from wherever the follow camera was, so flipping into free flight does not
+        //--- teleport the view. GetOrientation rather than m_Yaw/m_Pitch: in FOLLOW those are the
+        //--- damped values that were on their way somewhere, and the rendered orientation is what
+        //--- the admin is actually looking at.
+        if (!m_FreeSeeded)
+        {
+            m_FreeSeeded = true;
+            m_SmoothPos = GetPosition();
+
+            vector current = GetOrientation();
+            m_Yaw = current[0];
+            m_Pitch = current[1];
+        }
+
+        //--- MOUSE WHEEL first, gear keys as a fallback. The wheel is what COT's cinematic camera
+        //--- uses (JMCinematicCamera.c:57) and what an admin coming from COT will reach for.
+        //---
+        //--- Resolved BY NAME and null-checked, deliberately: UACameraToolSpeedIncrease/Decrease
+        //--- appear NOWHERE in P:\scripts - only in COT - so they are engine-registered inputs this
+        //--- repo cannot verify from the vanilla source. A name the engine does not know returns
+        //--- NULL from GetInputByName and would otherwise be a silent no-op, which is exactly the
+        //--- failure mode this codebase has been bitten by before. The gear keys stay wired so the
+        //--- feature degrades to what it did before rather than to nothing.
+        float speed_step = 0;
+
+        UAInput wheel_up = GetUApi().GetInputByName("UACameraToolSpeedIncrease");
+        UAInput wheel_down = GetUApi().GetInputByName("UACameraToolSpeedDecrease");
+        if (wheel_up && wheel_down)
+            speed_step = wheel_up.LocalValue() - wheel_down.LocalValue();
+
+        if (GetUApi().GetInputByID(UACarShiftGearUp).LocalPress())
+            speed_step = 1;
+        if (GetUApi().GetInputByID(UACarShiftGearDown).LocalPress())
+            speed_step = -1;
+
+        //--- MULTIPLICATIVE, not the flat +/-2 vanilla DayZSpectator uses. A fixed step is wrong at
+        //--- both ends of the range: it is a huge jump when crawling and imperceptible when flying.
+        //--- A ratio gives even control across the whole span, which is the point of putting it on
+        //--- the wheel at all.
+        if (speed_step > 0)
+            m_FreeSpeedMult = m_FreeSpeedMult * BR_SPECTATE_FREE_SPEED_STEP;
+        else if (speed_step < 0)
+            m_FreeSpeedMult = m_FreeSpeedMult / BR_SPECTATE_FREE_SPEED_STEP;
+
+        //--- Clamped, unlike vanilla's, which happily goes negative and flies the camera backwards
+        //--- with no way to tell why. The floor is well below 1 so the camera can be slowed for
+        //--- precise framing, which is the other half of what the wheel is for.
+        m_FreeSpeedMult = Math.Clamp(m_FreeSpeedMult, BR_SPECTATE_FREE_SPEED_MIN_MULT, BR_SPECTATE_FREE_SPEED_MAX_MULT);
+
+        float speed = BR_SPECTATE_FREE_SPEED * m_FreeSpeedMult;
+        if (GetUApi().GetInputByID(UATurbo).LocalValue())
+            speed = speed * 2;
+
+        float forward = GetUApi().GetInputByID(UAMoveForward).LocalValue() - GetUApi().GetInputByID(UAMoveBack).LocalValue();
+        float strafe = GetUApi().GetInputByID(UAMoveRight).LocalValue() - GetUApi().GetInputByID(UAMoveLeft).LocalValue();
+
+        //--- Look first, then move, so a frame's movement uses that frame's heading.
+        float yaw_diff = GetUApi().GetInputByID(UAAimLeft).LocalValue() - GetUApi().GetInputByID(UAAimRight).LocalValue();
+        float pitch_diff = GetUApi().GetInputByID(UAAimDown).LocalValue() - GetUApi().GetInputByID(UAAimUp).LocalValue();
+
+        m_Yaw = Math.NormalizeAngle(m_Yaw - Math.RAD2DEG * yaw_diff * timeSlice);
+        m_Pitch = Math.Clamp(m_Pitch - Math.RAD2DEG * pitch_diff * timeSlice, -89, 89);
+
+        SetOrientation(Vector(m_Yaw, m_Pitch, 0));
+
+        //--- GetDirection() after SetOrientation, so it reflects the heading just applied.
+        vector direction = GetDirection();
+        vector direction_aside = vector.Up * direction;
+
+        vector new_pos = m_SmoothPos + (forward * timeSlice * direction * speed) + (strafe * timeSlice * direction_aside * speed);
+
+        float floor_y = GetGame().SurfaceY(new_pos[0], new_pos[2]) + BR_SPECTATE_FLOOR_CLEARANCE;
+        if (new_pos[1] < floor_y)
+            new_pos[1] = floor_y;
+
+        m_SmoothPos = new_pos;
+        SetPosition(new_pos);
+
     }
 
     /**

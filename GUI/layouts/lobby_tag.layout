@@ -1,0 +1,48 @@
+// One name over a player's head in the lobby. Just the name - no health, no distance, no kills:
+// nobody has any of those yet, and the tag exists to answer "who is that" and nothing else.
+//
+// Modelled on spectator_tag.layout, and the same rule applies to the text cell: `"exact text" 1`
+// with a font declared at a concrete size, NOT `scaled 1`. Scaling stretches the glyphs to fill the
+// cell, so a four-letter name renders about twice the height of a twelve-letter one.
+//
+// The root is 190x22. BR_LOBBY_TAG_SIZE_W/H must track it - BattleRoyaleLobbyTags centres the tag
+// above the head by shifting it half its own width, and falls back to those constants on the first
+// frame, before the widget has been shown and can report a real size.
+//
+// The root paints nothing on purpose: it carries `color 0 0 0 0` and no `style`, which in this
+// engine means no fill at all. Contrast comes from the outline and shadow on the text itself, the
+// same way the party name tags do it, because the lobby backdrop is scenery rather than a UI panel.
+PanelWidgetClass TagRoot {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 190 22
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0 0 0 0
+ {
+  TextWidgetClass TagName {
+   inheritalpha 1
+   ignorepointer 1
+   position 0 0
+   size 1 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   text "Survivor"
+   font "gui/fonts/metron-bold22"
+   "outline size" 1
+   "outline color" 0 0 0 0.5
+   "shadow size" 5
+   "shadow color" 0 0 0 0.4
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 16
+   "text halign" center
+   "text valign" center
+  }
+ }
+}

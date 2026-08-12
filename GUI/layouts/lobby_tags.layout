@@ -1,0 +1,25 @@
+// Container for the lobby name tags. One child per visible non-teammate, pooled and repositioned
+// every frame by BattleRoyaleLobbyTags.
+//
+// Full-screen frame with hexactsize 0 / vexactsize 0, which is the ONE container shape whose
+// GetScreenSize reports real pixels - so children SetPos'd in pixels land where they are put. A
+// fixed-pixel container would render at viewport/1920 of its declared width while its children were
+// laid out in the declared units, which shifts the whole group while its spacing stays correct.
+//
+// priority sits below the admin spectator overlay (50) and above the party name tags (none). The
+// three never draw the same character anyway: party members are excluded from this one, and an
+// admin spectator has Party's HUD suppressed - but the ordering makes that a belt as well as braces.
+PanelWidgetClass LobbyTagsRoot {
+ visible 1
+ ignorepointer 1
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ priority 40
+ color 0 0 0 0
+ {
+ }
+}

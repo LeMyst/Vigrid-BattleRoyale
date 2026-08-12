@@ -85,6 +85,7 @@ modded class PluginDiagMenuClient
 #endif
 
 		DiagMenu.BindCallback(m_BRDiagSpectateEnabledID, CBBRDiagSpectateEnabled);
+		DiagMenu.BindCallback(m_BRDiagAdminSpectateID, CBBRDiagAdminSpectate);
 		DiagMenu.BindCallback(m_BRDiagKillSelfID, CBBRDiagKillSelf);
 		DiagMenu.BindCallback(m_BRDiagLogSpectatorsID, CBBRDiagLogSpectators);
 		DiagMenu.BindCallback(m_BRDiagTpTargetDistID, CBBRDiagTpTargetDist);
@@ -553,6 +554,24 @@ modded class PluginDiagMenuClient
 			on = 1;
 
 		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_SPECTATE, on, 0);
+	}
+
+	/**
+	 *  Flip admin_spectate_enabled for this process.
+	 *
+	 *  Registered so the OFF case is reachable: the setting ships on, so the interesting test is that
+	 *  turning it off actually makes AdminEligibility refuse. In memory only - Load() re-saves on the
+	 *  next boot, so a diag toggle must never become a persisted setting.
+	 *
+	 *  Grants nothing on its own: the sender still has to be in admins_steamid64.
+	 */
+	static void CBBRDiagAdminSpectate(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_ADMIN_SPECTATE, on, 0);
 	}
 
 	/**

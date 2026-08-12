@@ -63,6 +63,17 @@ modded class DayZPlayerImplement
 			{
 				br_rpc.dead_placement = placement;
 				br_rpc.dead_flavour = funny_string;
+
+				//--- Record that the DEATH path locked input, travelling by the same route and for
+				//--- the same stage-ordering reason as the two strings above.
+				//---
+				//--- SimulateDeath called LockControls(true) just before this, which is +1 on an
+				//--- ADDITIVE focus counter per device. BattleRoyaleClient.EnterSpectate releases it
+				//--- again - but an ADMIN can now enter spectate while alive, without ever passing
+				//--- through here, and releasing a lock that was never taken drives the counter
+				//--- negative and breaks input with nothing at all in the log to say why. This flag
+				//--- is what tells the two cases apart.
+				br_rpc.death_locked = true;
 			}
 
 			//--- A real menu, not ScreenFadeIn: the engine fade has no widget tree and so cannot

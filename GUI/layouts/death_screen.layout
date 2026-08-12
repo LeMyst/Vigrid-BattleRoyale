@@ -73,7 +73,7 @@ PanelWidgetClass DeathRoot {
     }
     ButtonWidgetClass SpectateButton {
      inheritalpha 0
-     position 260 220
+     position 140 220
      size 220 48
      hexactpos 1
      vexactpos 1
@@ -84,9 +84,26 @@ PanelWidgetClass DeathRoot {
      text_proportion 0.6
      font "gui/fonts/metron"
     }
+    // Admin only, and hidden unless BattleRoyaleRPC.is_admin says so. Sends the same
+    // AdminSpectateToggle the F3 key does - the server reads that as "respawn, then spectate",
+    // because this player is dead. Three 220px buttons at 140/390/640 fit the 1000px dialog, which
+    // is why the two originals moved off 260/520.
+    ButtonWidgetClass AdminButton {
+     inheritalpha 0
+     position 390 220
+     size 220 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_BR_DEAD_ADMIN"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
     ButtonWidgetClass QuitButton {
      inheritalpha 0
-     position 520 220
+     position 640 220
      size 220 48
      hexactpos 1
      vexactpos 1
