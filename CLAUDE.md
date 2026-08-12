@@ -834,6 +834,22 @@ detonates.
 same weapon-not-shooter rule applies, so the cast this replaced could never succeed and shooting an
 armed charge silently kept crediting whoever placed it.
 
+⚠️ **`OnPlacementComplete` must be hooked on the PARENT; `OnActivatedByItem` must be hooked on the
+LEAF. The two sit inches apart and behave oppositely.** Vanilla's four explosives — `Grenade_Base`,
+`ClaymoreMine`, `ImprovisedExplosive`, `Plastic_Explosive` — **none** of which calls
+`super.OnActivatedByItem`, so an override of it on `ExplosivesBase` is dead code for every explosive
+in the game. It was written there first and looked right. The symptom is a device that records its
+owner correctly and still credits `<environment>`.
+
+**A grenade rigged to a tripwire is the case that needs it**, and it is the one real path where the
+device that KILLS is not the device that knew the owner: `TripwireTrap.SetInactive` calls
+`attachment.OnActivatedByItem(this)` and then **drops** the attachment, so the grenade does the
+damage while the trap holds the activator. Vanilla's `Grenade_Base.OnActivatedByItem` answers by
+calling `Unpin()`, which does reach the mod's `OnUnpin` — but the grenade's hierarchy root is the
+*trap* by then, not a player, so it resolves nobody. `BR_InheritActivatorFrom` copies the activator
+across, called before `super` because `super` starts the fuse. Same handoff applies to an IED with
+grenades attached (`ImprovisedExplosive.OnActivatedByItem` activates its own attachments).
+
 **Kill credit lives in `BattleRoyaleKillLedger`, a uid → kills map, and `br_kills` is now a mirror
 of it.** The explosive branch of `0_BattleRoyaleState.OnPlayerKilled` wrote the webhook JSON and then
 fell out of the `if`, so **no grenade or mine kill had ever scored** — not on the HUD counter, the

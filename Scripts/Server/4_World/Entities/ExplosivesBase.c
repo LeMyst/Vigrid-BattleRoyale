@@ -53,6 +53,23 @@ modded class ExplosivesBase
     }
 
     /**
+     *  Inherit the activator from another device that just set this one off.
+     *
+     *  ⚠️ Callers must hook `OnActivatedByItem` on the LEAF class, not here. Vanilla's overrides of
+     *  it - Grenade_Base, ClaymoreMine, ImprovisedExplosive, Plastic_Explosive - none of them call
+     *  super, so an override on ExplosivesBase is dead code for every explosive in the game.
+     */
+    void BR_InheritActivatorFrom(ItemBase item)
+    {
+        string uid = BattleRoyaleKillAttribution.ResolveDeviceActivatorUid(item);
+        if (uid == "")
+            return;
+
+        m_ActivatorId = uid;
+        m_ActivatorName = BattleRoyaleKillAttribution.ResolveDeviceActivatorName(item);
+    }
+
+    /**
      *  Placement AND arming both land here.
      *
      *  ActionArmExplosive.OnFinishProgressServer calls OnPlacementComplete(action_data.m_Player, ...)
