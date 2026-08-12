@@ -95,6 +95,11 @@ class BattleRoyaleRound: BattleRoyaleState
         return "Gameplay State (" + zone_num + ")";
     }
 
+    override bool AllowsSpectate()
+    {
+        return true;
+    }
+
     override void Activate()
     {
         //we just activated this round (players not yet transfered from previous state)
@@ -360,7 +365,12 @@ class BattleRoyaleRound: BattleRoyaleState
         if(Class.CastTo(prev_round, m_PreviousState))
             return prev_round;
 
-        // BattleRoyaleUtils.Trace("Can't cast m_PreviousState to BattleRoyaleRound!");
+        //--- NULL here is the NORMAL case for the first round that runs: its previous state is
+        //--- BattleRoyaleStartMatch, not a round. This used to log a Trace, which was reached once
+        //--- per player per tick through GetActiveZone() -> GetPreviousZone(); on a DIAG server
+        //--- BattleRoyaleUtils.Trace also mirrors every line into in-game chat over an RPC, so it
+        //--- was a per-tick broadcast that visibly lagged the server. The NULL contract is
+        //--- documented on GetPreviousZone() below and every caller already handles it.
         return NULL;
     }
 

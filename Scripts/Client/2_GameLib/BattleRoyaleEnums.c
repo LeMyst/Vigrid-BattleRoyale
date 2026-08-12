@@ -48,6 +48,12 @@ enum BattleRoyaleDiagAction
     SET_CHAT_MIRROR,   //!< arg_i 0/1 - gate the ChatLog RPC
     SET_TRACE_TP,      //!< arg_i 0/1 = on/off, arg_f = tick budget
 
+    KILL_SELF,         //!< kill the sender outright, to reach the death -> spectate path
+    LOG_SPECTATORS,    //!< dump the spectator table, with the resolved chain tier per entry
+    SET_SPECTATE,      //!< arg_i 0/1 - flip spectate_enabled for this process only
+    SPECTATE_TP_TARGET,//!< arg_i = metres; fling the sender's watched target that far from their corpse
+    SPECTATE_TP_CORPSE,//!< move the sender's OWN corpse to their watched target - the bubble probe
+
     COUNT //Do not move this
 }
 

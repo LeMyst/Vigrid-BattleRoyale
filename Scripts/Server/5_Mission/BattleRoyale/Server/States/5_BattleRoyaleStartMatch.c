@@ -44,6 +44,13 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         return "Start Match State";
     }
 
+    //--- Only once the freeze has lifted. Dying during the frozen warmup keeps the old behaviour,
+    //--- because there is nothing to watch yet and the match has not really begun.
+    override bool AllowsSpectate()
+    {
+        return b_IsGameplay;
+    }
+
     override void Activate()
     {
         super.Activate();

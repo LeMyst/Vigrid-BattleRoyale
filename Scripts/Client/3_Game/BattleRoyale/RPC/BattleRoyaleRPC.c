@@ -19,6 +19,9 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLeaderboard", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpeakingPlayers", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpectateOffer", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpectateTarget", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EndSpectate", this );
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
@@ -91,6 +94,16 @@ class BattleRoyaleRPC
 		speaking_names.Clear();
 		speaking_self_index = -1;
 		speaking_seq = 0;
+		dead_placement = "";
+		dead_flavour = "";
+		spectate_offered = false;
+		spectate_active = false;
+		spectate_seq = 0;
+		spectate_target_uid = "";
+		spectate_target_name = "";
+		spectate_target_pos = "0 0 0";
+		spectate_mode = 0;
+		spectate_target_obj = NULL;
 	}
 
 	// Set the number of players and groups
@@ -126,6 +139,99 @@ class BattleRoyaleRPC
 	ref array<string> speaking_names = new array<string>();
 	int speaking_self_index = -1;
 	int speaking_seq = 0;
+
+	// Spectating. Pure field latching, like every other handler here - BattleRoyaleClient.Update()
+	// polls these and does the work.
+	//
+	// spectate_target_obj is CF's `Object target`, marshalled by network id. At the first push the
+	// spectator's network bubble is still at their corpse, so the target entity may not exist on
+	// this client yet and it can arrive NULL. That is expected and handled: spectate_target_pos is
+	// authoritative until an entity can be latched, and the server re-sends both once a second.
+
+	// The two lines the death screen shows. They are NOT sent by the server - they are written
+	// locally by DayZPlayerImplement.ShowDeadScreen and read by DeathScreenMenu.
+	//
+	// They live here, on a 3_Game singleton, purely so the two can talk: ShowDeadScreen compiles in
+	// 4_World and DeathScreenMenu in 5_Mission, so the earlier stage cannot name the later one. That
+	// is the same stage-ordering rule that forces LeaveServer's spectate check to read this class
+	// rather than BattleRoyaleClient.
+	string dead_placement = "";
+	string dead_flavour = "";
+
+	//! The server has decided this player is dead and eligible - the death screen may offer Spectate.
+	bool spectate_offered = false;
+	bool spectate_active = false;
+	int spectate_seq = 0;
+	string spectate_target_uid = "";
+	string spectate_target_name = "";
+	vector spectate_target_pos = "0 0 0";
+	int spectate_mode = 0;
+	Object spectate_target_obj = NULL;
+
+	void SetSpectateOffer(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			BattleRoyaleUtils.Warn("FAILED TO READ SETSPECTATEOFFER RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("[Spectate] SetSpectateOffer: " + data.param1);
+			spectate_offered = data.param1;
+		}
+	}
+
+	void SetSpectateTarget(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param4<string, string, vector, int> data;
+		if( !ctx.Read( data ) )
+		{
+			//--- Warn, not Error: the global Error() halts the script VM, and a malformed push must
+			//--- not take the client's whole mission down.
+			BattleRoyaleUtils.Warn("FAILED TO READ SETSPECTATETARGET RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("[Spectate] SetSpectateTarget: %1 %2 %3 %4", data.param1, data.param2, data.param3, data.param4));
+
+			//--- Only bump the sequence on a real target change, so the camera does not re-snap on
+			//--- every keepalive.
+			if( data.param1 != spectate_target_uid )
+				spectate_seq = spectate_seq + 1;
+
+			spectate_target_uid = data.param1;
+			spectate_target_name = data.param2;
+			spectate_target_pos = data.param3;
+			spectate_mode = data.param4;
+			spectate_target_obj = target;
+			spectate_active = true;
+		}
+	}
+
+	void EndSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace("[Spectate] EndSpectate");
+
+			//--- The camera is deliberately NOT deactivated. With no player entity to fall back to,
+			//--- SetActive(false) renders nothing at all; it keeps orbiting its last anchor while the
+			//--- server shuts the match down.
+			spectate_active = false;
+
+			//--- Withdraw the offer too. EndAll() also reaches spectators who are still sitting on
+			//--- the death screen - anyone who died in the seconds before the last survivor did -
+			//--- and leaving spectate_offered set left them looking at a Spectate button the server
+			//--- had already stopped honouring: RequestSpectate returns at its m_Ended guard without
+			//--- a word, so the click did nothing and the countdown ran down to nothing.
+			//--- Seen live: registered 17:41:35, EndAll the same second, player clicked at 17:41:42
+			//--- and gave up at 17:41:45.
+			spectate_offered = false;
+		}
+	}
 
 	void SetSpeakingPlayers(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{

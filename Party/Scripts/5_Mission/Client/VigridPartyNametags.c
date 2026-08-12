@@ -139,6 +139,18 @@ class VigridPartyNametags
         if (local_player)
             self_pos = local_player.GetPosition();
 
+        //--- Same override as the HUD panel, and for the same reason - see VigridPartyClientAPI.
+        //--- It matters MORE here than there: this origin does not just print a number, it drives
+        //--- nametag_max_distance culling, the alpha fade and the sort order. Measured from a stale
+        //--- body, a teammate standing right next to what this client is actually watching gets
+        //--- faded out or culled entirely, and the tag simply is not there to question.
+        string viewpoint_uid = "";
+        if (VigridPartyClientAPI.HasHudViewpoint())
+        {
+            self_pos = VigridPartyClientAPI.GetHudViewpointPos();
+            viewpoint_uid = VigridPartyClientAPI.GetHudViewpointUid();
+        }
+
         m_Root.Show(true);
 
         int slot = 0;
@@ -174,7 +186,8 @@ class VigridPartyNametags
             }
 
             PlayerBase entity = VigridPartyAPI.FindLocalPlayer(rpc.roster_uids.Get(i));
-            RenderSlot(slot, entity, VigridPartyAPI.ResolveBodyPos(rpc, i, entity), VigridPartyAPI.GetMemberName(i), parent_w, parent_h, stale, rpc, self_pos);
+            bool is_viewpoint = viewpoint_uid != "" && rpc.roster_uids.Get(i) == viewpoint_uid;
+            RenderSlot(slot, entity, VigridPartyAPI.ResolveBodyPos(rpc, i, entity), VigridPartyAPI.GetMemberName(i), parent_w, parent_h, stale, rpc, self_pos, is_viewpoint);
             slot = slot + 1;
         }
 
@@ -213,7 +226,7 @@ class VigridPartyNametags
         return VigridPartyScreen.CrosshairFade(anchor_x, anchor_y, parent_w, parent_h, VIGRID_PARTY_TAG_CENTER_HIDE, VIGRID_PARTY_TAG_CENTER_FADE, VIGRID_PARTY_TAG_CENTER_MIN_ALPHA);
     }
 
-    private void RenderSlot(int slot, PlayerBase entity, vector body_pos, string name, float parent_w, float parent_h, bool stale, VigridPartyRPC rpc, vector self_pos)
+    private void RenderSlot(int slot, PlayerBase entity, vector body_pos, string name, float parent_w, float parent_h, bool stale, VigridPartyRPC rpc, vector self_pos, bool is_viewpoint)
     {
         Widget tag = m_Tags.Get(slot);
 
@@ -294,7 +307,14 @@ class VigridPartyNametags
         tag.SetSort(Math.Round(10000 - Math.Clamp(distance, 0, 9999)));
 
         m_TagNames.Get(slot).SetText(name);
-        m_TagDistances.Get(slot).SetText(Math.Round(distance).ToString() + "m");
+
+        //--- Blank on the viewpoint's own tag, matching the HUD panel: they ARE the origin, so the
+        //--- number is zero by construction and "0m" floating over the person being watched reads
+        //--- as a broken readout. The name still shows, which is the useful half.
+        if (is_viewpoint)
+            m_TagDistances.Get(slot).SetText("");
+        else
+            m_TagDistances.Get(slot).SetText(Math.Round(distance).ToString() + "m");
     }
 }
 #endif

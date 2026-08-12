@@ -127,6 +127,63 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.ShowDistance( false );
 	}
 
+	/**
+	 *  Make sure the death screen never outlives the mission.
+	 *
+	 *  Vanilla's OnMissionFinish does call DestroyAllMenus(), but the death screen was observed still
+	 *  on screen back at the main menu, so it is closed explicitly first rather than relying on the
+	 *  order of that teardown.
+	 */
+	override void OnMissionFinish()
+	{
+		//--- The static reference rather than FindMenu, which returns NULL whenever the engine's
+		//--- current-menu pointer has been nulled - precisely the case where the screen is still on
+		//--- the workspace and most needs closing.
+		DeathScreenMenu death_menu = DeathScreenMenu.GetInstance();
+		if( death_menu )
+		{
+			BattleRoyaleUtils.Trace("[Spectate] closing death screen on mission finish");
+			death_menu.Close();
+		}
+
+		super.OnMissionFinish();
+	}
+
+	/**
+	 *  Show or hide the VANILLA vitals hud - health, hunger, thirst, stamina, badges, quickbar,
+	 *  crosshair, stance icons.
+	 *
+	 *  Vanilla only ever calls m_HudRootWidget.Show(true), and only behind
+	 *  "player && m_LifeState == EPlayerStates.ALIVE && !player.IsUnconscious()"
+	 *  (missiongameplay.c:483), so nothing puts the hud away on death and a spectator would
+	 *  watch the whole match behind their own corpse's zeroed vitals. That same gate is why nothing
+	 *  undoes this from under us - but the load-bearing half is m_LifeState, NOT the null test.
+	 *  GetGame().GetPlayer() keeps returning the CORPSE while spectating (measured), so "player" is
+	 *  perfectly non-null here; it is simply never ALIVE again.
+	 *
+	 *  Hides "HudPanel" rather than m_HudRootWidget itself, because the CHAT FRAME is a sibling
+	 *  under that same root - m_Chat.Init(m_HudRootWidget.FindAnyWidget("ChatFrameWidget")),
+	 *  missiongameplay.c:129 - so hiding the root took chat away from the spectator too. "HudPanel"
+	 *  is exactly what vanilla hands to m_Hud.Init (missiongameplay.c:133), i.e. the vitals tree and
+	 *  nothing else. Falls back to the whole root if that widget ever moves or is renamed.
+	 *
+	 *  The BR hud is a separate widget tree and is untouched either way.
+	 */
+	void SetVanillaHudVisible(bool visible)
+	{
+		if( !m_HudRootWidget )
+			return;
+
+		Widget hud_panel = m_HudRootWidget.FindAnyWidget( "HudPanel" );
+		if( hud_panel )
+		{
+			hud_panel.Show( visible );
+			return;
+		}
+
+		m_HudRootWidget.Show( visible );
+	}
+
 #ifdef BR_MINIMAP
 	void UpdateMiniMap()
 	{

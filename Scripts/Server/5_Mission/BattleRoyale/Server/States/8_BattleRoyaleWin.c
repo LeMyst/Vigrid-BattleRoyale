@@ -23,6 +23,11 @@ class BattleRoyaleWin: BattleRoyaleState
 		KillFeedAPI.SetActive( false );
 #endif
 
+		//--- Tell every spectator the match is done. Idempotent - 9_BattleRoyaleRestart calls it too,
+		//--- in case this state is ever skipped. Spectators are not in m_Players, so this cannot
+		//--- affect the GetPlayers().Count() == 0 condition below or the winner kick.
+		BattleRoyaleSpectators.GetInstance().EndAll();
+
 		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{

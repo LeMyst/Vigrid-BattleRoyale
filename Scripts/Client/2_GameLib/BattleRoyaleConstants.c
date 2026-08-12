@@ -143,6 +143,14 @@ static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not
 static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBRLogo_White";
 
 
+//--- how long -br-autoconnect waits after the main menu finishes building before it connects on its
+//own. Deferred rather than immediate because ConnectFromServerBrowser tears the menu down, and
+//calling it from inside Init() would do that to a widget tree Init() has not finished assembling.
+//Half a second is not a settling delay the connect needs - it is only there to land the call on a
+//later frame - so it is short enough to feel instant. DIAG-only, like the flag it serves.
+static const int BR_AUTOCONNECT_DELAY_MS = 500;
+
+
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
 static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 10; //multiplier from base game values on blood regen speed
@@ -242,6 +250,103 @@ static const int BR_SPEAKING_ROW_HEIGHT = 26;
 //whisper range stays inaudible no matter what the mute matrix says, and the only way party voice
 //works during spawn selection is if the party is physically together.
 static const float BR_PARTY_GATHER_RADIUS = 3.0;
+
+
+//--- spectating
+//the script class SelectSpectator instantiates on the client. It resolves a SCRIPT class name, not
+//a config class - vanilla's own DayZSpectator has no CfgVehicles entry anywhere in P:\dz - so this
+//name must match the class in BattleRoyaleSpectatorCamera.c exactly, and no config.cpp entry exists
+//or is needed for it.
+static const string BR_SPECTATE_CAM_CLASS = "BattleRoyaleSpectatorCamera";
+//how long the death screen stays up before the camera takes over ON ITS OWN. The player can skip
+//this by pressing Spectate; this is only the "did nothing" path, so it is generous rather than
+//snappy - it has to be long enough to read the screen and decide. Compared as a plain deadline in
+//the 10 Hz tick rather than armed as a Timer, so a stalled server delays entry instead of firing a
+//callback at a victim who has since been freed.
+static const int BR_SPECTATE_ENTRY_DELAY_MS = 20000;
+//how long the death screen waits before quitting to the main menu ON ITS OWN, whenever no spectate
+//offer is standing - because spectate_enabled is off, because the player died in a state that does
+//not allow spectating, or because the match ended and the server withdrew the offer. Without it the
+//screen is a dead end on those paths: the only way out is the Quit button, and an AFK player holds
+//their slot forever. 15 s is what the pre-spectate death path used for its unconditional
+//CallLater(LeaveServer), so a server that never turns spectating on keeps the timing it had.
+//Never runs while an offer stands - that case counts down to BR_SPECTATE_ENTRY_DELAY_MS instead.
+static const int BR_DEAD_AUTO_QUIT_MS = 15000;
+//floor between two "running post-process" lines. The set can flip stopped/running every frame while
+//a corpse re-asserts an effect, and logging each flip put fifteen lines in one second.
+static const int BR_SPECTATE_PPE_LOG_MS = 2000;
+//how often the server re-sends the current target. This is a keepalive, not just an edge: a client
+//that missed the first push, or could not resolve the target entity because it was outside their
+//network bubble, simply latches on the next one.
+static const int BR_SPECTATE_PUSH_MS = 1000;
+//hard cap on killer-chain hops, independent of the visited-set cycle guard. A cycle is unreachable
+//in a real match because death is permanent, so both guards are purely defensive - against a
+//corrupted ledger, and against any future revive mechanic.
+static const int BR_SPECTATE_CHAIN_MAX_HOPS = 64;
+static const int BR_SPECTATE_MODE_FOLLOW = 0;
+static const int BR_SPECTATE_MODE_ORBIT = 1;
+
+//--- CORPSE CARRY. The replication bubble is centred on the spectator's CORPSE, not on the camera -
+//--- UpdateSpectatorPosition does not move it (measured both directions 2026-08-10). So a target
+//--- beyond DayZ's default 1000 m networkRangePlayers simply is not replicated, and the spectator
+//--- gets a nametag with no character. Moving the corpse moves the bubble, and needs no entity
+//--- creation, which is what killed the carrier body. See CLAUDE.md -> Spectating.
+//---
+//--- Compile-time on purpose: these are engine-behaviour tuning, not server-operator policy, and a
+//--- wrong value here degrades quietly rather than visibly. Nothing reads them unless spectate_enabled
+//--- is on, so a server that never spectates is unaffected either way.
+//---
+//--- Set false to disable carrying entirely and keep the ~1 km limit. The corpse then never moves.
+static const bool BR_SPECTATE_CARRY_CORPSE = true;
+//--- Carry once the target is this far from the corpse AND nobody is standing near the body. Well
+//--- inside the ~1 km boundary, so the move happens long before anything breaks.
+static const float BR_SPECTATE_CARRY_TRIGGER_M = 250.0;
+//--- Carry regardless of bystanders at this distance. The point of waiting is to let somebody
+//--- actually loot the body; the point of this bound is that a spectator seeing nothing is worse.
+static const float BR_SPECTATE_CARRY_FORCED_M = 750.0;
+//--- After the first carry the corpse is empty and invisible, so it only needs to keep up, not to
+//--- track. Re-carry when the target has drifted this far from it.
+static const float BR_SPECTATE_CARRY_STEP_M = 250.0;
+//--- "Somebody is at the body." Generous compared with looting reach, because the case being avoided
+//--- is a player walking up to a corpse that vanishes as they arrive.
+static const float BR_SPECTATE_CARRY_BYSTANDER_M = 50.0;
+//--- How often the carry pass runs. It resolves bodies by walking every Man in the world, so it is
+//--- deliberately not on the 10 Hz tick.
+static const int BR_SPECTATE_CARRY_INTERVAL_MS = 1000;
+//seconds the dead screen takes to clear once spectating begins.
+static const float BR_SPECTATE_FADE_SECONDS = 1.0;
+//how close a local entity must be to the server-pushed position to be accepted as the target, when
+//the RPC's Object reference arrived NULL. Metres.
+//Was 3.0, which made this fallback dead code for any target who was MOVING: the pushed position is
+//refreshed at 1 Hz, and a sprinting player covers about 6 m in that second, so the entity was
+//essentially never within 3 m of the position being compared against. 15 m is a second of sprint
+//plus margin, and still far tighter than the spacing at which mistaking one player for another
+//becomes plausible - this only runs when CF handed back no entity at all.
+static const float BR_SPECTATE_LATCH_RADIUS = 15.0;
+//camera boom, in metres, measured from the target's HEAD BONE - not their feet. The WIP branch used
+//1.0 back / 1.6 up from the feet, which on a ~1.8 m character sits inside the head and shoulders.
+static const float BR_SPECTATE_BOOM_BACK = 3.5;
+static const float BR_SPECTATE_BOOM_UP = 0.4;
+//sphere radius for the boom's collision trace, and how far to pull back off a contact point.
+static const float BR_SPECTATE_CAM_RADIUS = 0.25;
+static const float BR_SPECTATE_CAM_SKIN = 0.30;
+//minimum clearance above the surface, so the camera never ends up underground behind a prone target.
+static const float BR_SPECTATE_FLOOR_CLEARANCE = 0.35;
+//fixed downward tilt. Deliberately a constant and never the target's own aim angle:
+//GetCommandModifier_Weapons() can be NULL for a remote entity on a client, in which case
+//GetBaseAimingAngleUD() returns 0.0 and the camera silently goes flat with nothing in the log.
+static const float BR_SPECTATE_PITCH = -10.0;
+//damping rates. Higher is snappier; these are multiplied by the frame time and clamped to 1.
+static const float BR_SPECTATE_YAW_DAMP = 6.0;
+static const float BR_SPECTATE_POS_DAMP = 8.0;
+//beyond this distance the camera teleports instead of interpolating, so a retarget across the map
+//does not fly the camera over the terrain. Metres.
+static const float BR_SPECTATE_SNAP_DISTANCE = 30.0;
+//the no-target fallback: a slow orbit of the current play area centre.
+static const float BR_SPECTATE_ORBIT_RADIUS = 120.0;
+static const float BR_SPECTATE_ORBIT_HEIGHT = 60.0;
+static const float BR_SPECTATE_ORBIT_PITCH = -25.0;
+static const float BR_SPECTATE_ORBIT_DEG_PER_SEC = 4.0;
 
 
 //--- zoning subsystem

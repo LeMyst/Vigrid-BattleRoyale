@@ -124,6 +124,12 @@ class BattleRoyaleLastRound: BattleRoyaleState
 		return "Last Gameplay State";
 	}
 
+	//--- Needs its own override: this state extends BattleRoyaleState directly, not BattleRoyaleRound.
+	override bool AllowsSpectate()
+	{
+		return true;
+	}
+
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 		if(IsActive())

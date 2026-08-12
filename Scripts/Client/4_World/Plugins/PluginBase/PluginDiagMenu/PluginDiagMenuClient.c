@@ -80,6 +80,14 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagClearMarkersID, CBBRDiagClearMarkers);
 #endif
 
+		DiagMenu.BindCallback(m_BRDiagSpectateEnabledID, CBBRDiagSpectateEnabled);
+		DiagMenu.BindCallback(m_BRDiagKillSelfID, CBBRDiagKillSelf);
+		DiagMenu.BindCallback(m_BRDiagLogSpectatorsID, CBBRDiagLogSpectators);
+		DiagMenu.BindCallback(m_BRDiagTpTargetDistID, CBBRDiagTpTargetDist);
+		DiagMenu.BindCallback(m_BRDiagTpTargetGoID, CBBRDiagTpTargetGo);
+		DiagMenu.BindCallback(m_BRDiagTpCorpseID, CBBRDiagTpCorpse);
+		DiagMenu.BindCallback(m_BRDiagSpectateTraceID, CBBRDiagSpectateTrace);
+
 		DiagMenu.BindCallback(m_BRDiagTraceTpClientID, CBBRDiagTraceTpClient);
 		DiagMenu.BindCallback(m_BRDiagTraceTpServerID, CBBRDiagTraceTpServer);
 		DiagMenu.BindCallback(m_BRDiagTraceTicksID, CBBRDiagTraceTicks);
@@ -471,6 +479,90 @@ modded class PluginDiagMenuClient
 		DiagMenu.SetValue(id, false);
 	}
 #endif
+
+	//=============================================================================================
+	//--- Spectate. All three are server actions, so all three are no-ops offline.
+	//=============================================================================================
+
+	static void CBBRDiagSpectateEnabled(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_SPECTATE, on, 0);
+	}
+
+	/**
+	 *  Kill the local player, to reach the death screen without a second client.
+	 *
+	 *  Deliberately fires the SERVER action rather than touching the local PlayerBase: health is
+	 *  server-authoritative, and a client-side SetHealth would either be rejected or - worse -
+	 *  produce a local-only death that never reaches EEKilled and so never registers a spectator.
+	 *  The button would look like it worked and test nothing.
+	 *
+	 *  Reset to false immediately, like every other one-shot here, so it can be pressed again next
+	 *  match without having to toggle it off first.
+	 */
+	static void CBBRDiagKillSelf(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.KILL_SELF, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagLogSpectators(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.LOG_SPECTATORS, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagTpTargetDist(float value)
+	{
+		BattleRoyaleDiag.tp_target_distance = (int)value;
+	}
+
+	/**
+	 *  Fling the watched target to the chosen radius from this spectator's corpse.
+	 *
+	 *  The distance rides on the action rather than being pushed by the range callback, so scrubbing
+	 *  the slider from 100 to 3000 does not teleport a live player 59 times on the way.
+	 */
+	static void CBBRDiagTpTargetGo(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SPECTATE_TP_TARGET, BattleRoyaleDiag.tp_target_distance, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	/**
+	 *  Move this spectator's own corpse onto the player they are watching.
+	 *
+	 *  A measurement, not a feature. Press it while the target is out past ~1 km with entity=0: if
+	 *  entity returns to 1, the replication bubble really is centred on the corpse and a proper fix
+	 *  is worth designing. If it stays 0, the assumption is wrong and nothing further should be built
+	 *  on it. The corpse carries the victim's loot with it, which is why this is diag-only.
+	 */
+	static void CBBRDiagTpCorpse(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SPECTATE_TP_CORPSE, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagSpectateTrace(float value)
+	{
+		BattleRoyaleDiag.spectate_trace_interval = value;
+	}
 
 	//=============================================================================================
 	//--- Teleport Trace
