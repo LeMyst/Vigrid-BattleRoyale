@@ -29,17 +29,22 @@ It hooks nothing of the host mod's, so it works on **any** DayZ server — Battl
 Pan and zoom are the engine's own. **You can keep running while the map is open**, and clicking the map
 does not fire the weapon underneath it.
 
+Placing, moving and clearing a marker all take effect **the moment you click**, not when the server
+answers — see *Design notes*. If the server refuses a placement outright, a message says so in the strip
+above the map instead.
+
 ## What is drawn
 
 Every overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen space.
-Canvas offers only `DrawLine` and `Clear`, so there is no text anywhere on the map and every glyph is a
-fan of strokes:
+Canvas offers only `DrawLine` and `Clear`, so there is no text anywhere **on** the map and every glyph
+is a fan of strokes. (The refusal message is the one piece of text, and it is a `TextWidget` sibling of
+the `MapWidget` sitting in the strip above it, not an overlay on it.)
 
 | Glyph | Means |
 |---|---|
 | Ring with a cross | A placed marker — yours in its own colour, a teammate's in their party slot colour |
 | Circle + centre dot | A play-area zone (current and next), pushed in by the host mod |
-| Dashed line | From you to the next zone's centre |
+| Dashed line | From you to the near edge of the zone you have to reach — the next one when there is one, the current one otherwise. Only drawn while you are outside it, so its length is the distance you still have to cover |
 | Hollow triangle | A teammate |
 | Lighter diamond | A party ping |
 | Notched dart | You, on both maps — carries your heading, and the largest glyph on either |
@@ -147,9 +152,42 @@ is pushed as a snapshot rather than deltas (tiny, and idempotent under packet lo
 so joining a party mid-match works. A marker records its placer's **party slot at placement time**, so
 it keeps its colour when the placer disconnects.
 
+**The round trip that costs is hidden by an optimistic prediction, and it covers all three
+interactions.** `VigridMapClient` draws the result of a click immediately and retires the prediction
+when the server's snapshot agrees. It originally covered only *placing on an empty map*, which meant
+the first click of a session was instant and every one after it waited for the wire: a **move** kept
+redrawing the old position, and a **right-click** kept drawing a marker the player had already deleted.
+`m_PendingIntent` is what fixes that — the store keys one marker per owner, so a second click is a move
+and the prediction must *override* the confirmed entry rather than sit beside it, and a removal must
+*suppress* one. All the index arithmetic lives in `ResolveDrawIndex`; the three renderers read the
+merged draw list and needed no changes.
+
+**Retirement is content-based, and must stay that way.** The prediction is dropped when the set
+actually contains what was asked for (a marker within a metre of the requested position; for a removal,
+no marker at all) — not merely when *a* snapshot arrives. The old existence test was right only for a
+first placement: on a move the player already owns a marker, at the old position, so an unrelated bump
+such as the 5 s resync would retire the prediction and rubber-band the marker back.
+
+**Every refusal answers.** `MapMissionServer.RejectRequest` sends `VM_Rejected` for all of them,
+carrying an empty key when there is nothing worth telling the player (the place cooldown, a click off
+the world edge). The signal is that an answer came at all — the client draws optimistically, so silence
+reads as acceptance until the 2 s TTL, and then the marker jumps back unexplained. A **corrective
+snapshot was tried first and cannot work**: a refusal does not bump `m_SetVersion`, so the push is
+indistinguishable from the resync, and the content-based test above correctly reads it as "still
+waiting". `VIGRID_MAP_CLICK_DEBOUNCE_MS` is also deliberately longer than the server's
+`VIGRID_MAP_PLACE_COOLDOWN_MS`, so the client is the stricter gate.
+
 **The repaint gate is split.** Zones and markers are edge-triggered; teammates have no edge — a party's
 roster sequence moves when the party changes shape, never when somebody walks — so that layer repaints
 on a 10 Hz clock. Every canvas must `Clear()` before any early return, or the last frame burns in.
+
+**The marker edge is raised unconditionally from an incoming snapshot** (`VigridMapClient.TrackSnapshot`),
+and that is load-bearing rather than tidy. It used to sit below `ResolvePending`'s early return for
+"nothing pending", so a snapshot arriving with no request outstanding raised no edge and the fullscreen
+map fell back on the **1 s repaint watchdog**. Two common cases landed there: a teammate's marker
+appearing, and the confirmation of your own removal. That second was much larger than the round trip it
+was mistaken for, and the fingerprint is that the minimap (10 Hz) and the world markers (every frame)
+update well before the map does.
 
 **Both maps draw "you" as the same dart.** The fullscreen map used an axis-aligned plus until
 2026-08-11, on the argument that a rotating "you" is harder to *find* on a big map — true, and beside

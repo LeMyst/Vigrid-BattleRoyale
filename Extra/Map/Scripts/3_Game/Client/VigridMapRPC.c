@@ -32,6 +32,15 @@ class VigridMapRPC
     int set_version = -1;
     int marker_seq = 0;
 
+    //--- The last refusal, and a counter so two identical refusals are still two events.
+    //---
+    //--- Two independent watchers consume this, each keeping its own last-seen value: the client
+    //--- controller drops the prediction it was drawing, and the map menu shows the message. Neither
+    //--- clears the fields, because a counter one side has consumed and the other has not must still
+    //--- read as new to the other.
+    string rejected_key = "";
+    int rejected_seq = 0;
+
     void VigridMapRPC()
     {
         GetRPCManager().AddRPC(RPC_VIGRIDMAP_NAMESPACE, VM_RPC_SETTINGS, this);
@@ -68,6 +77,11 @@ class VigridMapRPC
 
         set_version = -1;
         marker_seq = marker_seq + 1;
+
+        //--- The key is cleared but the counter is not rewound: it is monotonic for the life of the
+        //--- process, and rewinding it would make the next refusal on the new server look like one
+        //--- its watchers had already seen.
+        rejected_key = "";
     }
 
     void VM_Settings(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
@@ -130,8 +144,14 @@ class VigridMapRPC
         VigridMapLog.Debug("VM_Markers version=" + set_version + " count=" + count);
     }
 
-    //! A bare stringtable key, localised here rather than on the server - the server has no idea
-    //! what language this client is running.
+    /**
+     *  A bare stringtable key, localised on this side rather than on the server - the server has no
+     *  idea what language this client is running.
+     *
+     *  Stored rather than acted on, like every other handler here. This one used to do nothing but
+     *  write a debug line, so a player on a server with markers switched off clicked, watched a
+     *  marker appear, and watched it evaporate two seconds later with no explanation anywhere.
+     */
     void VM_Rejected(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         Param1<string> data;
@@ -139,6 +159,9 @@ class VigridMapRPC
             return;
         if (type != CallType.Client)
             return;
+
+        rejected_key = data.param1;
+        rejected_seq = rejected_seq + 1;
 
         VigridMapLog.Debug("VM_Rejected " + data.param1);
     }

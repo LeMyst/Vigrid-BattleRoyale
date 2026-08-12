@@ -21,6 +21,37 @@ FrameWidgetClass MapMenuRoot {
    hexactsize 0
    vexactsize 0
   }
+  // Why the server refused a marker, shown for a few seconds. It sits in the strip ABOVE the map -
+  // VigridMap starts at y 0.03 - so it is over the Background panel rather than over the terrain,
+  // which is what makes it readable without a backdrop of its own. The shadow covers the case where
+  // the strip is thinner than the text on an unusual aspect ratio.
+  //
+  // `inheritalpha 0` deliberately: a parent that is ever given an alpha would otherwise multiply
+  // through and take the message with it, silently and with a clean log.
+  TextWidgetClass MarkerToast {
+   visible 0
+   ignorepointer 1
+   inheritalpha 0
+   position 0 0
+   size 1 0.03
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   priority 2000
+   color 1 0.85 0.4 1
+   text ""
+   font "gui/fonts/metron-bold22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 22
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" center
+   "text valign" center
+  }
   MapWidgetClass VigridMap {
    visible 1
    clipchildren 1
