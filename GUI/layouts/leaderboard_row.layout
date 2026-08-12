@@ -1,0 +1,92 @@
+PanelWidgetClass LeaderboardRowRoot {
+ visible 1
+ position 0 0
+ size 820 26
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 1 1 1 0.16
+ style DayZDefaultPanel
+ {
+  TextWidgetClass RowRank {
+   position 8 0
+   size 50 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "1"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" left
+   "text valign" center
+  }
+  TextWidgetClass RowName {
+   position 66 0
+   size 320 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Survivor"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" left
+   "text valign" center
+  }
+  TextWidgetClass RowMatches {
+   position 396 0
+   size 94 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "0"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" center
+   "text valign" center
+  }
+  TextWidgetClass RowWins {
+   position 494 0
+   size 94 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "0"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" center
+   "text valign" center
+  }
+  TextWidgetClass RowKills {
+   position 592 0
+   size 94 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "0"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" center
+   "text valign" center
+  }
+  TextWidgetClass RowPoints {
+   position 690 0
+   size 122 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Bold
+   text "0"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" right
+   "text valign" center
+  }
+ }
+}

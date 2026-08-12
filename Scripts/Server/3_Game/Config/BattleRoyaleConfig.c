@@ -67,6 +67,12 @@ class BattleRoyaleConfig
 		else
 			Error("BattleRoyaleZoneData Setting Constructor Returned NULL");
 
+		BattleRoyaleLeaderboardData p_LeaderboardData = new BattleRoyaleLeaderboardData;
+		if(p_LeaderboardData)
+			m_Configs.Insert("LeaderboardData", p_LeaderboardData);
+		else
+			Error("BattleRoyaleLeaderboardData Setting Constructor Returned NULL");
+
 		//--- adding a new config? copy below
 	}
 
@@ -211,5 +217,12 @@ class BattleRoyaleConfig
 		BattleRoyaleUtils.Trace("Accessing Zone Data Config...");
 
 		return BattleRoyaleZoneData.Cast( GetConfig("ZoneData") );
+	}
+
+	BattleRoyaleLeaderboardData GetLeaderboardData()
+	{
+		BattleRoyaleUtils.Trace("Accessing Leaderboard Data Config...");
+
+		return BattleRoyaleLeaderboardData.Cast( GetConfig("LeaderboardData") );
 	}
 };

@@ -320,6 +320,15 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     }
 
+    //! Ask the server for one leaderboard ladder. The server rate-limits this per player, so the
+    //! menu is free to call it on show, on every tab switch, and on a poll while it is open.
+    void RequestLeaderboard( int board )
+    {
+        ref Param1<int> requested_board = new Param1<int>( board );
+        //--- No target - see ReadyUp above.
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", requested_board, true );
+    }
+
     void StartMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         if ( type == CallType.Client )

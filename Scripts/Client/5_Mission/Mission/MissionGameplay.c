@@ -265,6 +265,15 @@ modded class MissionGameplay
 			if (GetUApi().GetInputByID(UADayZBRUnstuck).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).Unstuck();
 			}
+			//--- Toggle, so the same key closes the board again. Answerable in any state, though it
+			//--- is mostly a lobby feature.
+			if (GetUApi().GetInputByID(UADayZBRLeaderboard).LocalPress()) {
+				if (m_UIManager.IsMenuOpen(MENU_BR_LEADERBOARD)) {
+					m_UIManager.CloseMenu(MENU_BR_LEADERBOARD);
+				} else {
+					GetUIManager().EnterScriptedMenu(MENU_BR_LEADERBOARD, GetUIManager().GetMenu());
+				}
+			}
 #ifdef DIAG
 			// Debug key
 			if (GetUApi().GetInputByID(UADayZBRDebug).LocalPress()) {

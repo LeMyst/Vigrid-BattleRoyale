@@ -11,6 +11,14 @@ modded class MissionBase
 			menu.SetID(id);
 			return menu;
 		}
+
+		if (id == MENU_BR_LEADERBOARD)
+		{
+			BattleRoyaleUtils.Trace("CreateScriptedMenu: MENU_BR_LEADERBOARD");
+			UIScriptedMenu leaderboard_menu = new LeaderboardMenu;
+			leaderboard_menu.SetID(id);
+			return leaderboard_menu;
+		}
 #endif
 		return super.CreateScriptedMenu(id);
 	}

@@ -33,6 +33,39 @@ static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:Vigrid-BattleRoyale
 static const string BATTLEROYALE_SETTINGS_MISSION_FOLDER = "$mission:Vigrid-BattleRoyale\\";
 
 
+//--- leaderboard persistence
+//the leaderboard is player data, not settings, so it lives outside the BattleRoyaleConfig registry
+//(that registry re-Save()s every entry at boot and applies $mission: overrides - both wrong here).
+static const string BATTLEROYALE_LEADERBOARD_FILE = "$profile:Vigrid-BattleRoyale\\leaderboard.json";
+//JsonFileLoader.SaveFile is not atomic, so the previous file is copied aside before every write.
+//A truncated write would otherwise lose all history; the backup bounds the loss to one match.
+static const string BATTLEROYALE_LEADERBOARD_BACKUP = "$profile:Vigrid-BattleRoyale\\leaderboard.json.bak";
+//%1 is the season number being retired.
+static const string BATTLEROYALE_LEADERBOARD_ARCHIVE_FMT = "$profile:Vigrid-BattleRoyale\\leaderboard_s%1.json";
+
+//write debounce while a match is running. Serialising the whole table on every death is pure waste,
+//and a hard process kill can lose at most this much. Match end always forces a flush regardless.
+static const int BR_LEADERBOARD_FLUSH_DEBOUNCE_MS = 15000;
+//per-player floor between leaderboard requests. The client caches each ladder after its first
+//fetch, so in practice this is hit at most twice per session - once per tab. Kept short anyway
+//because a refused request is invisible to the player: at 2000 ms, opening the menu and switching
+//tabs quickly got the second ladder silently dropped and the list rendered empty.
+static const int BR_LEADERBOARD_REQUEST_COOLDOWN_MS = 500;
+//hard cap on rows per RPC, applied regardless of what the JSON asks for. There is no RPC chunking
+//anywhere in this mod, so the payload has to stay small by construction.
+static const int BR_LEADERBOARD_MAX_ROWS = 50;
+
+//which ladder a result lands on, decided by the player's own group size at match start.
+static const int BR_LEADERBOARD_BOARD_SOLO = 0;
+static const int BR_LEADERBOARD_BOARD_GROUP = 1;
+
+//field-size weighting curves for leaderboard_settings.json `field_weight_mode`.
+static const int BR_LEADERBOARD_WEIGHT_FLAT = 0;
+static const int BR_LEADERBOARD_WEIGHT_LOG2 = 1;
+static const int BR_LEADERBOARD_WEIGHT_SQRT = 2;
+static const int BR_LEADERBOARD_WEIGHT_LINEAR = 3;
+
+
 //--- RPC namespaces
 static const string RPC_DAYZBR_NAMESPACE = "RPC-DayZBR"; //BattleRoyaleClient.c RPC calls
 static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRoyaleServer.c RPC calls

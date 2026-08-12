@@ -5,6 +5,7 @@
             <input name="UADayZBRReadyUp" loc="BR Ready Up" />
             <input name="UADayZBRUnstuck" loc="BR Unstuck" />
             <input name="UADayZBRDebug" loc="BR Debug" />
+            <input name="UADayZBRLeaderboard" loc="BR Leaderboard" />
             <!--            <input name="UADayZBRToggleMiniMap" loc="BR Mini Map Toggle" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" loc="BR Mini Map Increase Zoom" />-->
             <!--            <input name="UADayZBRMiniMapZoomMinus" loc="BR Mini Map Decrease Zoom" />-->
@@ -14,6 +15,7 @@
             <input name="UADayZBRReadyUp" />
             <input name="UADayZBRUnstuck" />
             <input name="UADayZBRDebug" />
+            <input name="UADayZBRLeaderboard" />
             <!--            <input name="UADayZBRToggleMiniMap" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" />-->
             <!--            <input name="UADayZBRMiniMapZoomMinus" />-->
@@ -28,6 +30,9 @@
         </input>
         <input name="UADayZBRDebug">
             <btn name="kF3" />
+        </input>
+        <input name="UADayZBRLeaderboard">
+            <btn name="kF4" />
         </input>
         <!--        <input name="UADayZBRToggleMiniMap">-->
         <!--            <btn name="kB" />-->
