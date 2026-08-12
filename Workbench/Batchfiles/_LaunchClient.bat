@@ -24,7 +24,9 @@ if not defined brProfileDir (
 	exit /b 1
 )
 
+REM Refuses to run if the configured profile dir is an unsafe delete target.
 call "%~dp0ClearLogs.bat" "%brProfileDir%"
+if errorlevel 1 exit /b 1
 
 call "%~dp0LaunchSteamClient.bat" %brSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%brProfileDir%" "-name=%brPlayerName%" "-mod=%modList%"
 

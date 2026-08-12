@@ -66,6 +66,33 @@ static const int DAYZBR_DEBUG_HEAL_TICK = 5;
 static const float HEATMAP_GRID_SIZE_MULTIPLIER = 4.0; //multiplier for the heatmap grid size, e.g. 4.0 = 4x the spawn size
 static const int HEATMAP_MAX_DENSITY = 5; //max density for color scaling in the heatmap
 
+//--- spawn selection menu rendering
+//heatmap grid cells are packed into a single int key instead of an "x,z" string,
+//so the density map needs no string building and no Split()/ToInt() round trip.
+//The bias keeps the key positive for negative cell indices and the stride must
+//exceed twice the bias. Together they cover cell indices -16384..16383, which at
+//the default 200 m cell size is +/- 3276 km -- far beyond any DayZ world.
+static const int HEATMAP_KEY_BIAS = 16384;
+static const int HEATMAP_KEY_STRIDE = 32768;
+//distance, in metres, between the two world points probed through MapToScreen
+//once per frame to recover the map's affine world->screen transform. Any pair of
+//distinct points works; shrink it if precision ever suffers at extreme zoom.
+static const float HEATMAP_PROBE_DISTANCE = 1000.0;
+//max stroke width, in pixels, used to fill one heatmap cell. A cell is filled by
+//stacking horizontal lines of this thickness. Raise it to draw a cell in fewer
+//calls; set it to 0 to fill each cell with a single full-height stroke, which is
+//fastest but assumes CanvasWidget.DrawLine centres its stroke on the line -- if
+//the heatmap ends up offset by half a cell vertically, that assumption is wrong.
+static const float HEATMAP_FILL_MAX_STROKE = 4.0;
+//force a full repaint at least this often (ms), even when nothing changed. Bounds
+//the damage if a canvas ever stops retaining its draw list between frames: the
+//map visibly strobes instead of silently going blank.
+static const int HEATMAP_REPAINT_WATCHDOG_MS = 500;
+//segment count bounds for map ovals. n = PI*sqrt(radius_px) keeps the chord
+//deviation at half a pixel for any radius; the bounds just cap the extremes.
+static const int BR_OVAL_MIN_SEGMENTS = 16;
+static const int BR_OVAL_MAX_SEGMENTS = 180;
+
 
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)

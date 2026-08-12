@@ -10,9 +10,13 @@ REM modList must already be in the environment).
 set "brSteamID=%~1"
 if not defined brSteamID set "brSteamID=1"
 
+REM Both refuse to run if the configured path is an unsafe delete target. Abort the
+REM launch rather than starting a server against a misconfigured profile/mission.
 call "%~dp0ClearLogs.bat" "%serverProfileDirectory%"
+if errorlevel 1 exit /b 1
 
 call "%~dp0ClearStorage.bat"
+if errorlevel 1 exit /b 1
 
 call "%~dp0LaunchSteamClient.bat" %brSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" -port=%port% "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
 
