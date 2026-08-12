@@ -98,6 +98,15 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     ref array<string> hot_zone_centers = {};
     ref array<float> hot_zone_radii = {};
 
+    // Only hot zones in or near the STARTING circle are sent to clients - a red ring in the far
+    // corner of the map is noise, since nobody will ever go there. A hot zone is kept when its own
+    // circle touches the starting circle, i.e. when
+    //     distance(centres) <= starting_radius + hot_radius + hot_zone_margin_m
+    // so 0 means "must actually overlap the starting circle" and a positive value widens that.
+    // Filtering happens at send time, not here: the starting circle depends on the player count at
+    // the countdown, so it is not known when this file is read.
+    float hot_zone_margin_m = 0;
+
     override string GetProfilePath()
     {
         return BATTLEROYALE_SETTINGS_FOLDER + "zone_settings.json";

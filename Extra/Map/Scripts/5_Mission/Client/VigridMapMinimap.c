@@ -207,7 +207,7 @@ class VigridMapMinimap
             if (hot_center == vector.Zero)
                 continue;
 
-            VigridMapRender.WorldRenderOval(m_Canvas, m_MapWidget, hot_center, hot_radius, hot_radius, VIGRID_MAP_COLOR_HOT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
+            VigridMapRender.WorldRenderOval(m_Canvas, m_MapWidget, hot_center, hot_radius, hot_radius, VIGRID_MAP_COLOR_HOT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH, VIGRID_MAP_COLOR_HOT_ZONE_FILL);
         }
 
         if (VigridMapAPI.HasCurrentZone())

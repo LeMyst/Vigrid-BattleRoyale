@@ -125,6 +125,10 @@ static const int VIGRID_MAP_COLOR_ZONE_LINE = 0xDC3C82FF;     // ARGB(220, 60, 1
 //--- and drawn UNDER them so a hot zone never obscures the circle a player has to run to. Slightly
 //--- translucent for the same reason.
 static const int VIGRID_MAP_COLOR_HOT_ZONE = 0xC8FF3232;       // ARGB(200, 255, 50, 50)
+//--- Its fill. Low alpha on purpose: this is a tint over terrain the player is still reading, not a
+//--- block of colour. Matches BR_HOT_ZONE_FILL_COLOR on the spawn-selection screen so a circle looks
+//--- the same in both places.
+static const int VIGRID_MAP_COLOR_HOT_ZONE_FILL = 0x3CFF3232;  // ARGB(60, 255, 50, 50)
 static const int VIGRID_MAP_COLOR_OWN_MARKER = 0xFFFFFFFF;
 //--- A teammate's marker normally takes their party slot colour. This is what VigridMapTeam answers
 //--- with when there is no palette to ask at all - Party not installed - so it is the colour every

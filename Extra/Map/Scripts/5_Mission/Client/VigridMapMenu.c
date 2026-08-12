@@ -592,7 +592,7 @@ class VigridMapMenu extends UIScriptedMenu
             if (center == vector.Zero)
                 continue;
 
-            VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, center, radius, radius, VIGRID_MAP_COLOR_HOT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
+            VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, center, radius, radius, VIGRID_MAP_COLOR_HOT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH, VIGRID_MAP_COLOR_HOT_ZONE_FILL);
         }
     }
 
