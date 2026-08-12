@@ -71,6 +71,84 @@ modded class PlayerBase
         return false;
     }
 
+#ifdef DIAG_DEVELOPER
+    //--- Ticks of CommandHandler still to log after a teleport juncture. See BR_LogTeleportState.
+    protected int m_BR_TraceTicksLeft = 0;
+
+    /**
+     *  One line describing this character's command state, for the teleport trace.
+     *
+     *  THIS IS THE MEASUREMENT, not a convenience. Three explanations of the "F2 unstuck on a ladder
+     *  leaves the player pinned in the ladder animation" bug have been wrong, two of them refuted by
+     *  a build each, and CLAUDE.md's standing instruction is to instrument before writing a fourth.
+     *  What it distinguishes is exactly one thing: whether the LADDER COMMAND is still running after
+     *  the juncture (command stuck - HumanCommandLadder.Exit is then the lead) or whether the command
+     *  is already correct and only the animation graph is wedged (in which case every command-level
+     *  lead is dead, which is also why a jump cures it).
+     *
+     *  Lives in the UNGUARDED part of this file on purpose. Only the s_LocalPlayers / OnSyncJuncture
+     *  block above is #ifndef SERVER; everything from here down compiles and runs on both sides,
+     *  because Scripts/Server lists this addon in requiredAddons and mods over it. So this one method
+     *  and the one call in CommandHandler instrument the client AND the server.
+     *
+     *  GetGame().GetTime() is included so the two logs can be aligned afterwards - the two processes
+     *  write separate files and nothing else in the line is comparable between them.
+     */
+    void BR_LogTeleportState(string tag)
+    {
+        if ( !BattleRoyaleDiag.trace_teleport )
+            return;
+
+        string side = "client";
+        if ( GetGame().IsServer() )
+            side = "server";
+
+        string commands = "";
+        if ( GetCommand_Ladder() )
+            commands = commands + "Ladder ";
+        if ( GetCommand_Climb() )
+            commands = commands + "Climb ";
+        if ( GetCommand_Fall() )
+            commands = commands + "Fall ";
+        if ( GetCommand_Move() )
+            commands = commands + "Move ";
+        if ( GetCommand_Script() )
+            commands = commands + "Script ";
+        if ( GetCommand_Vehicle() )
+            commands = commands + "Vehicle ";
+        if ( commands == "" )
+            commands = "none";
+
+        //--- Built one statement at a time: EnfusionScript does not accept an expression continued
+        //--- across lines, the same restriction that forbids a multi-line `if` condition.
+        bool on_ladder = false;
+        if ( GetCommand_Ladder() )
+            on_ladder = true;
+
+        string line = "[TPTrace][" + side + "][" + tag + "] t=" + GetGame().GetTime();
+        line = line + " type=" + Type().ToString();
+        line = line + " cmdID=" + GetCurrentCommandID();
+        line = line + " ladder=" + on_ladder;
+        line = line + " running={" + commands + "}";
+        line = line + " falling=" + PhysicsIsFalling(true);
+        line = line + " pos=" + GetPosition();
+        line = line + " forceMove=" + m_BR_ForceMoveRequested;
+        line = line + " settle=" + m_BR_PostTeleportSettle;
+
+        BattleRoyaleUtils.Debug(line);
+    }
+
+    //! Start (or restart) the post-teleport tick window. Called from BR_NotifyTeleported, so both
+    //! halves of the juncture open the window without either having to remember to.
+    void BR_BeginTeleportTrace()
+    {
+        if ( !BattleRoyaleDiag.trace_teleport )
+            return;
+
+        m_BR_TraceTicksLeft = BattleRoyaleDiag.trace_teleport_ticks;
+    }
+#endif
+
     //--- Pending deferred reset, consumed by CommandHandler below.
     protected bool m_BR_ForceMoveRequested = false;
 
@@ -100,6 +178,14 @@ modded class PlayerBase
      */
     void BR_NotifyTeleported()
     {
+#ifdef DIAG_DEVELOPER
+        //--- Logged BEFORE the two early returns, so a teleport that this method declines to act on
+        //--- is still visible in the trace. Both halves of the juncture funnel through here, so one
+        //--- call covers client and server and the two lines are directly comparable.
+        BR_BeginTeleportTrace();
+        BR_LogTeleportState("juncture");
+#endif
+
         //--- A teleport must not yank somebody out of a vehicle seat or a scripted command; that
         //--- narrowness used to come free from the locking-command gate, so it is stated here
         //--- instead now that the gate is gone.
@@ -144,6 +230,16 @@ modded class PlayerBase
     //--- a frame where it changed command.
     override void CommandHandler(float pDt, int pCurrentCommandID, bool pCurrentCommandFinished)
     {
+#ifdef DIAG_DEVELOPER
+        //--- The "few ticks after" half of the measurement. This override is outside the
+        //--- #ifndef SERVER block above, so this single call instruments both sides.
+        if ( m_BR_TraceTicksLeft > 0 )
+        {
+            m_BR_TraceTicksLeft = m_BR_TraceTicksLeft - 1;
+            BR_LogTeleportState("tick");
+        }
+#endif
+
         if ( m_BR_ForceMoveRequested )
         {
             m_BR_ForceMoveRequested = false;

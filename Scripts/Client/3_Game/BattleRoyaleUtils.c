@@ -44,7 +44,14 @@ class BattleRoyaleUtils: Managed
 
 #ifdef SERVER
 #ifdef DIAG
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", new Param2<string, string>(msg, chat_color), true);
+			//--- Gated so the diag menu can turn it off. At trace level this mirror is most of the
+			//--- chat window on a local server, which is every local run.
+			bool mirror_chat = true;
+#ifdef DIAG_DEVELOPER
+			mirror_chat = BattleRoyaleDiag.chat_mirror;
+#endif
+			if (mirror_chat)
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", new Param2<string, string>(msg, chat_color), true);
 #endif
 #else
 			if ( GetGame() )
@@ -90,6 +97,16 @@ class BattleRoyaleUtils: Managed
 
 	static bool CheckLogLevel(int level)
 	{
+#ifdef DIAG_DEVELOPER
+		// Runtime override from the diag menu's Logging submenu, so the level can be changed
+		// without relaunching with a different -br-* flag. -1 is "not overriding", which is the
+		// value until somebody touches the entry.
+		if (BattleRoyaleDiag.log_level_override >= 0)
+		{
+			return (BattleRoyaleDiag.log_level_override >= level);
+		}
+#endif
+
 		// Check command line params
 		if (IsCLIParam("br-trace")) return (TRACE >= level);
 		if (IsCLIParam("br-debug")) return (DEBUG >= level);

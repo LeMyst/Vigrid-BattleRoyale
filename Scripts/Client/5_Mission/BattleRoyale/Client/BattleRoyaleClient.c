@@ -48,6 +48,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 		br_rpc.Reset();
 
+#ifdef DIAG_DEVELOPER
+		//--- The diag bag is static and outlives a server change, exactly like br_rpc.
+		BattleRoyaleDiag.Reset();
+#endif
+
 		m_SpeakingList = new BattleRoyaleSpeakingList();
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
@@ -63,6 +68,88 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         return m_FuturePlayArea;
     }
+
+#ifdef DIAG_DEVELOPER
+    //--- Diag menu bookkeeping. Counters are compared against BattleRoyaleDiag's monotonic request
+    //--- counters; the zone values exist so the fake circles are rebuilt on an edge rather than
+    //--- allocated fresh every frame.
+    protected float br_diag_zone_radius = -1;
+    protected float br_diag_zone_next_radius = -1;
+    protected vector br_diag_zone_origin;
+    protected int br_diag_req_spawn_menu = 0;
+    protected int br_diag_req_leaderboard = 0;
+
+    /**
+     *  Replace the live play areas with synthetic circles pinned near the player.
+     *
+     *  Feeds the HUD distance arrow and, through the single VigridMapAPI.SetZones call below, the
+     *  map's rings - so both can be looked at in an offline session with no match running.
+     *
+     *  The centre is captured once, on the frame the toggle goes on, and not updated afterwards. A
+     *  circle that follows the player would read "distance 0" for ever and test nothing.
+     */
+    protected void BR_DiagApplyZones()
+    {
+        if ( !BattleRoyaleDiag.zones_fake )
+        {
+            //--- Marks "not currently faking", which is also what makes the next enable re-centre.
+            br_diag_zone_radius = -1;
+            return;
+        }
+
+        bool rebuild = false;
+        if ( br_diag_zone_radius != BattleRoyaleDiag.zone_radius )
+            rebuild = true;
+        if ( br_diag_zone_next_radius != BattleRoyaleDiag.zone_next_radius )
+            rebuild = true;
+
+        if ( !rebuild )
+            return;
+
+        if ( br_diag_zone_radius < 0 )
+        {
+            PlayerBase local_player = PlayerBase.Cast( GetGame().GetPlayer() );
+            if ( local_player )
+                br_diag_zone_origin = local_player.GetPosition();
+        }
+
+        //--- Next circle offset inside the current one rather than concentric: two circles sharing a
+        //--- centre hide every bug in how the pair is drawn and how the arrow picks between them.
+        vector diag_next_center = br_diag_zone_origin;
+        diag_next_center[0] = diag_next_center[0] + (BattleRoyaleDiag.zone_radius * 0.4);
+
+        m_CurrentPlayArea = new BattleRoyalePlayArea( br_diag_zone_origin, BattleRoyaleDiag.zone_radius );
+        m_FuturePlayArea = new BattleRoyalePlayArea( diag_next_center, BattleRoyaleDiag.zone_next_radius );
+
+        br_diag_zone_radius = BattleRoyaleDiag.zone_radius;
+        br_diag_zone_next_radius = BattleRoyaleDiag.zone_next_radius;
+    }
+
+    //! Drain the diag menu's one-shot requests. Counters, so a press is never lost or double-fired.
+    protected void BR_DiagHandleRequests()
+    {
+        if ( br_diag_req_spawn_menu != BattleRoyaleDiag.req_open_spawn_menu )
+        {
+            br_diag_req_spawn_menu = BattleRoyaleDiag.req_open_spawn_menu;
+#ifdef DIAG
+            MissionGameplay diag_gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+            if ( diag_gameplay )
+                diag_gameplay.BR_DiagOpenSpawnSelection();
+#endif
+        }
+
+        if ( br_diag_req_leaderboard != BattleRoyaleDiag.req_open_leaderboard )
+        {
+            br_diag_req_leaderboard = BattleRoyaleDiag.req_open_leaderboard;
+
+            //--- Parentless, on a cleared stack, for the same reason ShowSpawnSelection is.
+            //--- Qualified: the bare GetUIManager() that MissionGameplay uses is a method on
+            //--- Mission, and this class is not one.
+            GetGame().GetUIManager().CloseAll();
+            GetGame().GetUIManager().EnterScriptedMenu( MENU_BR_LEADERBOARD, NULL );
+        }
+    }
+#endif
 
 	// To track changes
     bool br_previous_fade_state = false;
@@ -83,6 +170,12 @@ class BattleRoyaleClient: BattleRoyaleBase
 		float distInt;
 		float angle;
 		bool isInsideZone;
+
+#ifdef DIAG_DEVELOPER
+		// Diag menu, drained first so a forced value cannot be overwritten later in the same frame.
+		BR_DiagApplyZones();
+		BR_DiagHandleRequests();
+#endif
 
 		// First check if player is outside current play area
 		if (m_CurrentPlayArea)
@@ -136,8 +229,25 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 		if( br_rpc )
 		{
+			//--- Everything the HUD shows, taken from the wire unless the diag menu is forcing it.
+			//--- Resolved once, up front, so there is exactly one place the two sources meet.
+			int hud_players = br_rpc.nb_players;
+			int hud_groups = br_rpc.nb_groups;
+			int hud_kills = br_rpc.player_kills;
+			int hud_countdown = br_rpc.countdown_seconds;
+
+#ifdef DIAG_DEVELOPER
+			if ( BattleRoyaleDiag.hud_force )
+			{
+				hud_players = BattleRoyaleDiag.hud_players;
+				hud_groups = BattleRoyaleDiag.hud_groups;
+				hud_kills = BattleRoyaleDiag.hud_kills;
+				hud_countdown = BattleRoyaleDiag.hud_countdown;
+			}
+#endif
+
 			// Update player and group remaining count
-			PlayerCountChanged( br_rpc.nb_players, br_rpc.nb_groups );
+			PlayerCountChanged( hud_players, hud_groups );
 
 			// Fade in/out effect
 			if( br_previous_fade_state != br_rpc.fade_state )
@@ -161,7 +271,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			// Update player kill count
-			gameplay.UpdateKillCount( br_rpc.player_kills );
+			gameplay.UpdateKillCount( hud_kills );
 
 			// Update match start state
 			if( br_rpc.match_started && !b_MatchStarted )
@@ -170,17 +280,32 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			// Update countdown timer and zone distance
-			if ( br_previous_countdown != br_rpc.countdown_seconds )
+			bool countdown_changed = ( br_previous_countdown != hud_countdown );
+#ifdef DIAG_DEVELOPER
+			//--- Re-assert every frame while forcing, or OnSecond ticks the forced value down to
+			//--- zero and hides the widget a minute after it was set.
+			if ( BattleRoyaleDiag.hud_force )
+				countdown_changed = true;
+#endif
+
+			if ( countdown_changed )
 			{
-				i_SecondsRemaining = br_rpc.countdown_seconds;
+				i_SecondsRemaining = hud_countdown;
 				gameplay.UpdateCountdownTimer( i_SecondsRemaining );
-				br_previous_countdown = br_rpc.countdown_seconds;
+				br_previous_countdown = hud_countdown;
 			}
+
+			//--- False while the diag menu owns the circles, so the wire cannot overwrite them.
+			bool zones_from_server = true;
+#ifdef DIAG_DEVELOPER
+			if ( BattleRoyaleDiag.zones_fake )
+				zones_from_server = false;
+#endif
 
 			// Update current play area. Diffed like the future area below, and for the same
 			// reason: without the diff this allocated a fresh BattleRoyalePlayArea every frame
 			// for the entire match.
-			if ( br_previous_current_play_area_center != br_rpc.current_play_area_center || br_previous_current_play_area_radius != br_rpc.current_play_area_radius )
+			if ( zones_from_server && ( br_previous_current_play_area_center != br_rpc.current_play_area_center || br_previous_current_play_area_radius != br_rpc.current_play_area_radius ) )
 			{
 				// "0 0 0" with a zero radius is the server deliberately clearing the area, not an
 				// absent update - 7_BattleRoyaleLastRound sends exactly that. Treating it as
@@ -195,7 +320,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			// Update future play area
-			if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
+			if ( zones_from_server && ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius ) )
 			{
 				if ( br_rpc.future_play_area_center && br_rpc.future_play_area_radius )
 				{

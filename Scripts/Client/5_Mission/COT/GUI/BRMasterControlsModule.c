@@ -72,18 +72,6 @@ class BRMasterControlsModule: JMRenderableModuleBase
         rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.Resume, true, NULL );
     }
 
-    void AddFakePlayer()
-    {
-        ScriptRPC rpc = new ScriptRPC();
-        rpc.Send( GetGame().GetPlayer(), BattleRoyaleCOTStateMachineRPC.AddFakePlayer, true, NULL );
-    }
-
-    void AddFakeGroup()
-    {
-        ScriptRPC rpc = new ScriptRPC();
-        rpc.Send( GetGame().GetPlayer(), BattleRoyaleCOTStateMachineRPC.AddFakeGroup, true, NULL );
-    }
-
     void SpawnAirdrop()
     {
         ScriptRPC rpc = new ScriptRPC();

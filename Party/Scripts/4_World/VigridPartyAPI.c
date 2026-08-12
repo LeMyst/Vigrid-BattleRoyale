@@ -533,6 +533,142 @@ class VigridPartyAPI
         return current;
     }
 
+    //--- debug scaffolding --------------------------------------------------------------------
+
+#ifdef DIAG_DEVELOPER
+    /**
+     *  Fabricate a party of `member_count` teammates around the local player. Diag builds only.
+     *
+     *  A party needs three real clients to exercise properly - two partied plus one solo, because a
+     *  round never advances while everyone is in one group - so every renderer that reads a roster
+     *  (the HUD panel, the world nametags, the map's team layer) is otherwise untestable alone.
+     *  This writes the same fields the VP_Roster and VP_TeamState handlers write, so every consumer
+     *  runs unmodified.
+     *
+     *  Slot 0 is always the local player, exactly as a real roster has it: consumers resolve their
+     *  own position from GetGame().GetPlayer() via GetSelfIndex(), and ClientData excludes the local
+     *  player, so a fabricated self position would be the one value that never updates.
+     *
+     *  Teammates are placed on a ring around the player so they land at different bearings and
+     *  distances - a cluster at one point would not exercise the nametag edge-clamp at all.
+     */
+    static void DebugSetRoster(int member_count)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        Man local_player = GetGame().GetPlayer();
+        vector origin = vector.Zero;
+        if (local_player)
+            origin = local_player.GetPosition();
+
+        rpc.roster_uids.Clear();
+        rpc.roster_names.Clear();
+        rpc.state_positions.Clear();
+        rpc.state_prev_positions.Clear();
+        rpc.state_health_level.Clear();
+        rpc.state_blood_level.Clear();
+        rpc.state_flags.Clear();
+
+        //--- Slot 0: you.
+        rpc.roster_uids.Insert("debug-self");
+        rpc.roster_names.Insert("You");
+        rpc.state_positions.Insert(origin);
+        rpc.state_prev_positions.Insert(origin);
+        rpc.state_health_level.Insert(0);
+        rpc.state_blood_level.Insert(0);
+        rpc.state_flags.Insert(VIGRID_PARTY_FLAG_ONLINE | VIGRID_PARTY_FLAG_ALIVE);
+
+        for (int i = 0; i < member_count; i++)
+        {
+            float bearing = (i * 360.0) / member_count;
+            float distance = 25.0 + (i * 35.0);
+
+            vector offset = vector.Zero;
+            offset[0] = Math.Sin(bearing * Math.DEG2RAD) * distance;
+            offset[2] = Math.Cos(bearing * Math.DEG2RAD) * distance;
+
+            vector member_pos = origin + offset;
+            member_pos[1] = GetGame().SurfaceY(member_pos[0], member_pos[2]);
+
+            rpc.roster_uids.Insert("debug-member-" + i);
+            rpc.roster_names.Insert("Fake " + (i + 1));
+            rpc.state_positions.Insert(member_pos);
+            rpc.state_prev_positions.Insert(member_pos);
+            rpc.state_health_level.Insert(i % 5);
+            rpc.state_blood_level.Insert(i % 5);
+            rpc.state_flags.Insert(VIGRID_PARTY_FLAG_ONLINE | VIGRID_PARTY_FLAG_ALIVE);
+        }
+
+        rpc.party_id = "debug-party";
+        rpc.self_index = 0;
+        rpc.leader_index = 0;
+        rpc.roster_version = rpc.roster_version + 1;
+        rpc.roster_seq = rpc.roster_seq + 1;
+
+        //--- state_version must match roster_version or every member reads as "no usable state".
+        rpc.state_version = rpc.roster_version;
+
+        //--- Freshness. Without these IsStateStale() is true from the first frame and consumers dim
+        //--- or hide the whole fabricated party.
+        rpc.state_recv_ms = GetGame().GetTime();
+        rpc.state_prev_recv_ms = rpc.state_recv_ms;
+
+        VigridPartyLog.Debug("DebugSetRoster " + member_count + " fake members around " + origin);
+    }
+
+    //! Drop the fabricated party. Same shape as VigridPartyRPC.Reset's roster half.
+    static void DebugClearRoster()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        rpc.roster_uids.Clear();
+        rpc.roster_names.Clear();
+        rpc.state_positions.Clear();
+        rpc.state_prev_positions.Clear();
+        rpc.state_health_level.Clear();
+        rpc.state_blood_level.Clear();
+        rpc.state_flags.Clear();
+
+        rpc.party_id = "";
+        rpc.self_index = -1;
+        rpc.leader_index = -1;
+        rpc.roster_version = rpc.roster_version + 1;
+        rpc.roster_seq = rpc.roster_seq + 1;
+        rpc.state_version = rpc.roster_version;
+
+        VigridPartyLog.Debug("DebugClearRoster");
+    }
+
+    /**
+     *  Drop one local ping, owned by whoever sits in slot 0 of the current roster.
+     *
+     *  Local only - the server knows nothing about it, so it disappears on the next real VP_PingSet.
+     *  That is the point: it exercises the renderers (world markers and the map's ping glyph) with
+     *  no second client and no party.
+     *
+     *  ttl_seconds of 0 means permanent, matching the real ping_ttl_seconds semantics.
+     */
+    static void DebugAddPing(vector pos, int ttl_seconds)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        string owner = "debug-self";
+        if (rpc.roster_uids.Count() > 0)
+            owner = rpc.roster_uids.Get(0);
+
+        int expire_ms = 0;
+        if (ttl_seconds > 0)
+            expire_ms = GetGame().GetTime() + (ttl_seconds * 1000);
+
+        rpc.ping_owner_uids.Insert(owner);
+        rpc.ping_positions.Insert(pos);
+        rpc.ping_expire_ms.Insert(expire_ms);
+        rpc.ping_recv_ms = GetGame().GetTime();
+
+        VigridPartyLog.Debug("DebugAddPing at " + pos + " ttl=" + ttl_seconds);
+    }
+#endif // DIAG_DEVELOPER
+
     //--- internals ----------------------------------------------------------------------------
 
     /**

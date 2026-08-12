@@ -275,17 +275,10 @@ modded class MissionGameplay
 				}
 			}
 #ifdef DIAG
-			// Debug key
+			// Debug key. Shares its implementation with the diag menu's "Open Spawn Menu" entry -
+			// two copies of the same hardcoded fake data is how they drift apart.
 			if (GetUApi().GetInputByID(UADayZBRDebug).LocalPress()) {
-				//--- Parentless, same as the real opener - see ShowSpawnSelection for why.
-				GetUIManager().CloseAll();
-				SpawnSelectionMenu m = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, NULL));
-				if (m)
-				{
-					m.SetInitialCountdown(45);
-					m.SetSpawnSize(50);
-					m.SetFirstZone(Vector(6000, 0, 7777), 1500);
-				}
+				BR_DiagOpenSpawnSelection();
 			}
 #endif
 #ifdef BR_MINIMAP
@@ -305,6 +298,31 @@ modded class MissionGameplay
 #endif
 		}
 	}
+
+#ifdef DIAG
+	/**
+	 *  Open spawn selection with plausible made-up data, with no server involved.
+	 *
+	 *  Reached from the F3 key and from the diag menu's "Open Spawn Menu" entry. It is the same
+	 *  opening sequence ShowSpawnSelection uses - parentless, on a cleared stack, for the reason
+	 *  spelled out there - so what is exercised is the real menu, not a lookalike.
+	 */
+	void BR_DiagOpenSpawnSelection()
+	{
+		GetUIManager().CloseAll();
+
+		SpawnSelectionMenu diag_menu = SpawnSelectionMenu.Cast(GetUIManager().EnterScriptedMenu(MENU_SPAWN_SELECTION, NULL));
+		if (!diag_menu)
+		{
+			BattleRoyaleUtils.Warn("BR_DiagOpenSpawnSelection: could not open the spawn selection menu");
+			return;
+		}
+
+		diag_menu.SetInitialCountdown(45);
+		diag_menu.SetSpawnSize(50);
+		diag_menu.SetFirstZone(Vector(6000, 0, 7777), 1500);
+	}
+#endif
 
 	void ShowSpawnSelection(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{

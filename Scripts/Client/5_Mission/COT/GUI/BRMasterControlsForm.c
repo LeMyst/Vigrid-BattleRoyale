@@ -29,12 +29,10 @@ class BRMasterControlsForm: JMFormBase
             UIActionManager.CreateButton( wrapper, "Spawn Airdrop", this, "SpawnAirdrop" );
 #endif
 
-#ifdef DIAG
-        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
-            UIActionManager.CreateText( wrapper, "DIAG DEBUG" );
-            UIActionManager.CreateButton( wrapper, "Add Player", this, "AddFakePlayer" );
-            UIActionManager.CreateButton( wrapper, "Add Group", this, "AddFakeGroup" );
-#endif
+        //--- No DIAG block here on purpose. "Add Player" / "Add Group" used to live here, but
+        //--- BattleRoyaleCOTStateMachineRPC.AddFakePlayer / .AddFakeGroup have no case in the
+        //--- server switch, so both buttons sent an RPC into the void. Fake players and fake
+        //--- parties now come from the diag menu instead - see PluginDiagMenu.c.
 
         m_sclr_MainActions.UpdateScroller();
     }
@@ -60,16 +58,6 @@ class BRMasterControlsForm: JMFormBase
     void StateMachine_Resume(UIEvent eid, UIActionBase action)
     {
         m_Module.StateMachine_Resume();
-    }
-
-    void AddFakePlayer(UIEvent eid, UIActionBase action)
-    {
-        m_Module.AddFakePlayer();
-    }
-
-    void AddFakeGroup(UIEvent eid, UIActionBase action)
-    {
-        m_Module.AddFakeGroup();
     }
 
     void SpawnAirdrop(UIEvent eid, UIActionBase action)

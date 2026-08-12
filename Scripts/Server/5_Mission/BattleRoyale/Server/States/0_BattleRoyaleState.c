@@ -536,6 +536,13 @@ class BattleRoyaleState: Timeable
             return;
         }
 
+#ifdef DIAG_DEVELOPER
+        //--- The one sample the juncture cannot give: what the command state was while the player
+        //--- was still AT the ladder. If it reads Ladder here and not at "juncture", the command was
+        //--- replaced underneath the animation, which is the case HumanCommandLadder.Exit exists for.
+        player.BR_LogTeleportState("pre-unstuck");
+#endif
+
         vector playerDir = vector.YawToVector( Math.RandomFloat(0, 360) );
         vector direction = Vector(playerDir[0], 0, playerDir[1]);
 
@@ -549,6 +556,37 @@ class BattleRoyaleState: Timeable
         //--- Charged only for a teleport that was actually sent - see the note in DeferredUnstuck.
         player.next_unstuck_time = GetGame().GetTickTime() + BR_UNSTUCK_COOLDOWN_SECONDS;
     }
+
+#ifdef DIAG_DEVELOPER
+    /**
+     *  Diag only: put `player` at `position` down the same sync juncture the unstuck path uses.
+     *
+     *  Deliberately NOT a SetPosition. The juncture is what carries the teleport to the client half
+     *  as well, and it is the code path the mod's own teleport bugs live in - a debug teleport that
+     *  went around it would be testing something nobody ships.
+     *
+     *  The height is left alone: the juncture's server half applies BR_TELEPORT_DROP_HEIGHT itself,
+     *  and adding it here as well would stack two seating epsilons.
+     */
+    void BR_DiagTeleport( PlayerBase player, vector position )
+    {
+        if( !player )
+            return;
+
+        position[1] = GetGame().SurfaceY( position[0], position[2] );
+
+        vector playerDir = vector.YawToVector( Math.RandomFloat(0, 360) );
+        vector direction = Vector(playerDir[0], 0, playerDir[1]);
+
+        ScriptJunctureData pCtx = new ScriptJunctureData;
+        pCtx.Write( position );
+        pCtx.Write( direction );
+        player.SendSyncJuncture( BR_SYNC_JUNCTURE_TELEPORT, pCtx );
+        player.SetSynchDirty();
+
+        BattleRoyaleUtils.Info( "[Diag] teleported " + GetPlayerLogName( player ) + " to " + position );
+    }
+#endif
 
 	// Maybe this should be moved to another class, maybe not
     int GetDynamicStartingZone(int num_players)
