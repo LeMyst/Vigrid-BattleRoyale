@@ -10,6 +10,9 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected bool b_IsReady;
 
+    //--- One-shot: we have told the server we finished loading. See SendLoadedInOnce().
+    protected bool b_SentLoadedIn;
+
 #ifdef EXPANSION_MAP_ZONES
     protected ref ExpansionServerMarkerData m_ZoneCenterMapMarker;
 #endif
@@ -21,6 +24,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         BattleRoyaleUtils.Trace("BattleRoyaleClient::BattleRoyaleClient");
 
         b_IsReady = false;
+        b_SentLoadedIn = false;
         b_MatchStarted = false;
         i_Kills = 0;
         i_SecondsRemaining = 0;
@@ -161,10 +165,42 @@ class BattleRoyaleClient: BattleRoyaleBase
     bool br_previous_win_screen = false;
     int br_previous_countdown = 0;
 
+    /**
+     *  Announce, exactly once, that this client has finished loading and is controlling its
+     *  character.
+     *
+     *  The server cannot work this out for itself. Vanilla calls MissionServer.InvokeOnConnect from
+     *  the ClientNew path, which runs the moment the character is created - while the client is
+     *  still loading the world - and for a brand new character ClientReadyEventTypeID never fires at
+     *  all (measured 2026-08-10: ClientPrepare to ClientNew alone took 20 s, and no ready event was
+     *  logged in an entire eight minute run). So a grace period measured from the connect event is
+     *  mostly loading screen.
+     *
+     *  IsPlayerSelected() is the condition rather than a mere non-null player: the entity exists
+     *  client-side before OnSelectPlayer runs, and it is that call which marks the player as
+     *  controlling their character.
+     */
+    protected void SendLoadedInOnce(PlayerBase player)
+    {
+        if(b_SentLoadedIn)
+            return;
+
+        if(!player || !player.IsPlayerSelected())
+            return;
+
+        b_SentLoadedIn = true;
+        BattleRoyaleUtils.Trace("BattleRoyaleClient::SendLoadedInOnce - reporting loaded in");
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", new Param1<bool>( true ), true );
+    }
+
     override void Update(float delta)
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+
+        //--- Tell the server we are actually in the world. Only the late-join kick uses this, but it
+        //--- is sent unconditionally because the client has no idea whether it joined late.
+        SendLoadedInOnce( player );
 
 		float distExt;
 		float distInt;

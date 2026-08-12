@@ -9,7 +9,7 @@
 // for any future field that is a server-operator concern rather than mission content.
 class BattleRoyaleGameData: BattleRoyaleDataBase
 {
-	int version = 3;  // Config version
+	int version = 4;  // Config version
 
 	// Allowed admins - Are immune to kick and can go outside the play area
 	// Mission-locked (see class comment above) - never overridable from a mission pack.
@@ -19,6 +19,16 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 
     int round_duration_minutes = 5;  // round length in minutes
     int time_until_teleport_unlock = 10;  // seconds before unlock after teleporting & preparing
+
+	// Grace period, in seconds, before a player who connected after the match started is disconnected.
+	// They are never part of the match - they have no state, no loadout and take no zone damage - so
+	// this is only how long they get to read the notification explaining why.
+	//   <= 0  disables the timed kick entirely and leaves them connected (debugging escape hatch,
+	//         same spirit as a negative BRLogLevel disabling logging).
+	//   > 0   clamped up to BR_LATE_JOIN_KICK_MIN_SECONDS, because disconnecting an identity whose
+	//         client is still establishing its connection crashes the server.
+	// Players in admins_steamid64 are exempt and are never scheduled for this kick.
+	int late_join_kick_seconds = 15;
 
     bool hide_players_endgame = false;  // Hide the number of players left in the endgame
 
@@ -131,6 +141,16 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 			// them now that this class no longer declares matching fields, and voice_settings.json
 			// starts fresh from BattleRoyaleVoiceData's own defaults.
 			version = 3;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 4)
+		{
+			// late_join_kick_seconds was INTRODUCED in v4. It is a scalar, so the field initialiser
+			// above survives deserialization of a file that does not carry the key - there is nothing
+			// to migrate. The bump exists purely so Save() writes the new key into existing profile
+			// JSONs. (The "refill an empty ref array" rule does not apply to scalars.)
+			version = 4;
 			Save();  // Save the upgraded config
 		}
 	}
