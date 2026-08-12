@@ -172,6 +172,12 @@ IF EXIST "%~dp1IGNORE" IF %noIgnore%==0 (
 	exit /B
 )
 
+REM A path is added to the list ONLY by the parent-check below. Do not append it here as well:
+REM the entry would be duplicated, every PBO would be built twice, and with rebuildAll (which packs
+REM unconditionally rather than only on change) the second pass repacks after the temp config.bin
+REM has already been deleted - shipping a PBO with no config, hence no CfgPatches, hence a mod that
+REM silently does not load at all.
+
 IF NOT EXIST "%~dp1..\config.cpp" (
 	IF NOT EXIST "%~dp1..\..\config.cpp" (
 		IF NOT EXIST "%~dp1..\..\..\config.cpp" (
