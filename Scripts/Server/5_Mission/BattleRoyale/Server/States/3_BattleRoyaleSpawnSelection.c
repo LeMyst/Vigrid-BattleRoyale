@@ -14,6 +14,12 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
 	ref map<string, vector> spawnpoints;
 
+	//--- Zone number Activate() advertised to the clients. Cached so the server validates incoming
+	//--- selections against exactly the circle it told players about - GetDynamicStartingZone() is
+	//--- called with m_Players.Count() here but with i_NumStartingPlayers elsewhere, and the two
+	//--- can disagree.
+	private int i_SpawnZoneNumber;
+
     void BattleRoyaleSpawnSelection()
     {
     	m_Config = BattleRoyaleConfig.GetConfig();
@@ -54,7 +60,8 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         super.Activate();
 
         // Send RPC to all players to show spawn selection UI
-        ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(GetDynamicStartingZone(m_Players.Count())).GetArea();
+        i_SpawnZoneNumber = GetDynamicStartingZone(m_Players.Count());
+        ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_SpawnZoneNumber).GetArea();
         vector v_FirstZoneCenter = spawn_area.GetCenter();
         float f_FirstZoneRadius = spawn_area.GetRadius();
         float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
@@ -159,6 +166,52 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		Deactivate();
 	}
 
+	//--- Server-side validation of a client-submitted spawn point.
+	//--- Mirrors the checks in SpawnSelectionMenu.SelectSpawnPoint() - those run on the client only,
+	//--- so a modified client can otherwise submit any coordinate on the map.
+	//--- Deliberately does NOT call IsSafeForTeleport(): that runs a sphere cast plus a geometry box
+	//--- test and is far too heavy for a per-click RPC. 4_BattleRoyalePrepare already runs
+	//--- GetRandomSafePosition() around the chosen point to handle actual placement safety.
+	private bool IsValidSpawnSelection(vector position)
+	{
+		int world_size = GetGame().GetWorld().GetWorldSize();
+
+		if(position[0] < 0 || position[2] < 0 || position[0] > world_size || position[2] > world_size)
+			return false;
+
+		if(GetGame().SurfaceIsSea(position[0], position[2]))
+			return false;
+
+		if(GetGame().SurfaceIsPond(position[0], position[2]))
+			return false;
+
+		BattleRoyaleZone spawn_zone = BattleRoyaleZone.GetZone(i_SpawnZoneNumber);
+		if(!spawn_zone)
+			return true;
+
+		BattleRoyalePlayArea spawn_area = spawn_zone.GetArea();
+		if(!spawn_area)
+			return true;
+
+		// The client only applies its zone test when it received a usable circle. Match that, so a
+		// degenerate zone makes the server permissive rather than rejecting every selection.
+		float radius = spawn_area.GetRadius();
+		if(radius <= 0)
+			return true;
+
+		// 2D distance, and the same 25 m tolerance the client applies, so that no selection the
+		// client considered legitimate is rejected here.
+		vector center = spawn_area.GetCenter();
+		float dx = position[0] - center[0];
+		float dz = position[2] - center[2];
+		if(Math.Sqrt((dx * dx) + (dz * dz)) > (radius + 25))
+			return false;
+
+		return true;
+	}
+
+	//--- NOTE: `target` is deliberately ignored - it is client-chosen and could name any other
+	//--- player. The subject is resolved from the engine-supplied `sender` instead.
 	void OnPlayerSpawnSelected(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<vector> data;
@@ -170,15 +223,24 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		if ( type == CallType.Server )
 		{
 			BattleRoyaleUtils.Trace("Player selected spawn point: " + data.param1.ToString());
-			PlayerBase pbTarget = PlayerBase.Cast(target);
+			PlayerBase pbTarget = GetPlayerFromIdentity(sender);
 			if(pbTarget)
 			{
-				BattleRoyaleUtils.Trace("Player " + pbTarget.GetIdentity().GetName() + " selected spawn point: " + data.param1.ToString());
+				BattleRoyaleUtils.Trace("Player " + sender.GetName() + " selected spawn point: " + data.param1.ToString());
+
+				// Reject out-of-bounds / sea / out-of-zone selections. Returning without calling
+				// SetSpawnPos leaves spawn_pos at the vector.Zero sentinel, so Deactivate() assigns
+				// a fallback spawn exactly as it does for a player who never picked one.
+				if(!IsValidSpawnSelection(data.param1))
+				{
+					BattleRoyaleUtils.Warn("Rejected invalid spawn selection " + data.param1.ToString() + " from " + sender.GetName() + " (" + sender.GetPlainId() + ")");
+					return;
+				}
 
 				if (b_ShowHeatMap)
 				{
 					// Add the spawn point to the player's spawnpoints map
-					spawnpoints.Set(pbTarget.GetIdentity().GetId(), data.param1);
+					spawnpoints.Set(sender.GetId(), data.param1);
 
 					// Update the heatmap for the players
 					array<vector> heatmap_points = new array<vector>;
@@ -192,19 +254,19 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 				pbTarget.SetSpawnPos(data.param1); // Set the spawn position for the player
 
 #ifdef Carim
-				int own_color = GetSpawnColor(pbTarget.GetIdentity().GetId());
+				int own_color = GetSpawnColor(sender.GetId());
 #else
 				int own_color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));
 #endif
 
 				// Set the spawn position and color for the player
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, own_color), true, pbTarget.GetIdentity(), pbTarget);
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, own_color), true, sender, pbTarget);
 
 #ifdef Carim
 				BattleRoyaleUtils.Trace("Test if player is in a group");
 				if(GetGroup(pbTarget))
 				{
-					BattleRoyaleUtils.Trace("Player " + pbTarget.GetIdentity().GetName() + " is in a group, sharing spawn point with group");
+					BattleRoyaleUtils.Trace("Player " + sender.GetName() + " is in a group, sharing spawn point with group");
 
 					set<PlayerBase> groupMembers = GetGroup(pbTarget);
 					foreach (PlayerBase member : groupMembers)
@@ -212,19 +274,19 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 						BattleRoyaleUtils.Trace("Sharing spawn point with " + member.GetIdentity().GetName());
 						if (member != pbTarget)
 						{
-							GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, GetSpawnColor(pbTarget.GetIdentity().GetId())), true, member.GetIdentity(), member);
+							GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, GetSpawnColor(sender.GetId())), true, member.GetIdentity(), member);
 						}
 					}
 				}
 				else
 				{
-					BattleRoyaleUtils.Trace("Player " + pbTarget.GetIdentity().GetName() + " is not in a group, not sharing spawn point");
+					BattleRoyaleUtils.Trace("Player " + sender.GetName() + " is not in a group, not sharing spawn point");
 				}
 #endif
 			}
 			else
 			{
-				BattleRoyaleUtils.Trace("Player is NULL in OnPlayerSpawnSelected");
+				BattleRoyaleUtils.Warn("Rejected spawn selection from an identity not tracked by the spawn selection state: " + BattleRoyaleServer.GetIdentityLogName(sender));
 			}
 		}
 	}

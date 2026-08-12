@@ -435,16 +435,50 @@ class BattleRoyaleServer: BattleRoyaleBase
         return -1;
     }
 
+    //--- Null-safe identity description for rejection logs. `sender` may legitimately be NULL,
+    //--- so it must never be dereferenced directly inside a log string.
+    static string GetIdentityLogName(PlayerIdentity identity)
+    {
+        if(!identity)
+            return "<null identity>";
+
+        return identity.GetName() + " (" + identity.GetPlainId() + ")";
+    }
+
+    //--- Authorization gate for admin-only RPCs.
+    //--- `sender` is supplied by the engine and cannot be forged by the client, unlike the
+    //--- `Object target` these handlers used to trust. Uses the same admins_steamid64 list that
+    //--- OnPlayerConnected() already consults to let admins join outside the lobby state.
+    //--- Static so the COT module (BRMasterControlsModule) can share it.
+    static bool IsAdminIdentity(PlayerIdentity identity)
+    {
+        if(!identity)
+            return false;
+
+        string steamid = identity.GetPlainId();
+        if(steamid == "")
+            return false;
+
+        BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
+        if(!config_data)
+            return false;
+
+        BattleRoyaleGameData game_settings = config_data.GetGameData();
+        if(!game_settings)
+            return false;
+
+        if(!game_settings.admins_steamid64)
+            return false;
+
+        return (game_settings.admins_steamid64.Find(steamid) != -1);
+    }
+
+    //--- NOTE: `target` is deliberately ignored here - it is client-chosen and could name any
+    //--- other player. The subject is always resolved from `sender` instead.
     void PlayerReadyUp(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         Param1< bool > data;
         if( !ctx.Read( data ) ) return;
-
-        if(!target) return;
-
-        PlayerBase targetBase = PlayerBase.Cast(target);
-
-        if(!targetBase) return;
 
         if(type == CallType.Server)
         {
@@ -452,7 +486,8 @@ class BattleRoyaleServer: BattleRoyaleBase
             if(!Class.CastTo(m_DebugStateObj, GetCurrentState())) //this ensures we can only ready up during the debug state
                 return;
 
-            if(!m_DebugStateObj.ContainsPlayer(targetBase))
+            PlayerBase senderBase = m_DebugStateObj.GetPlayerFromIdentity(sender);
+            if(!senderBase)
             {
                 Error("Debug state does not contain player requesting ready up!");
                 return;
@@ -460,7 +495,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
             if(data.param1)
             {
-                m_DebugStateObj.ReadyUp(targetBase);
+                m_DebugStateObj.ReadyUp(senderBase);
             }
             else
             {
@@ -470,28 +505,24 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 
+    //--- NOTE: `target` is deliberately ignored here - see PlayerReadyUp above.
     void PlayerUnstuck(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
-		if(!target) return;
-
-		PlayerBase targetBase = PlayerBase.Cast(target);
-
-		if(!targetBase) return;
-
 		if(type == CallType.Server)
 		{
 			BattleRoyaleStartMatch m_StartMatchStateObj;
 			if(!Class.CastTo(m_StartMatchStateObj, GetCurrentState()))
 				return;
 
-            if(!m_StartMatchStateObj.ContainsPlayer(targetBase))
+            PlayerBase senderBase = m_StartMatchStateObj.GetPlayerFromIdentity(sender);
+            if(!senderBase)
             {
                 Error("StartMatch state does not contain player requesting unstuck!");
                 return;
             }
 
-			m_StartMatchStateObj.DeferredUnstuck( targetBase );
-			targetBase.SetSynchDirty();
+			m_StartMatchStateObj.DeferredUnstuck( senderBase );
+			senderBase.SetSynchDirty();
 		}
     }
 
@@ -537,6 +568,17 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         BattleRoyaleUtils.Trace("BattleRoyaleManager NextState");
 #ifdef SERVER
+        if(type != CallType.Server)
+            return;
+
+        //--- Skipping a match phase is an admin action. The VPP "MenuBattleRoyaleManager" permission
+        //--- only decides whether the client renders the button, so it is no protection at all here.
+        if(!IsAdminIdentity(sender))
+        {
+            BattleRoyaleUtils.Warn("Rejected unauthorized NextState request from " + GetIdentityLogName(sender));
+            return;
+        }
+
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
         {

@@ -397,8 +397,10 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint: %1", tempPosition));
 
-		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( tempPosition ), true, NULL, player );
+		//--- No target: the server resolves the subject from the RPC sender identity and re-runs the
+		//--- checks above. Sending one would be ignored - it was how a client could set another
+		//--- player's spawn point.
+		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( tempPosition ), true );
 	}
 
 	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1)
