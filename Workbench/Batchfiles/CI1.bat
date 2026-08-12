@@ -172,12 +172,6 @@ IF EXIST "%~dp1IGNORE" IF %noIgnore%==0 (
 	exit /B
 )
 
-echo "%~dp1..\..\..\config.cpp"
-echo "%~dp1..\..\config.cpp"
-echo "%~dp1..\config.cpp"
-echo "%date% %time% ERROR: dp1 %~dp1"
-echo "%~1">>"%workDrive%Temp\%modName%-configpaths.list"
-
 IF NOT EXIST "%~dp1..\config.cpp" (
 	IF NOT EXIST "%~dp1..\..\config.cpp" (
 		IF NOT EXIST "%~dp1..\..\..\config.cpp" (
