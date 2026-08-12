@@ -171,3 +171,27 @@ static const int VIGRID_PARTY_PING_MAX_RENDERED = 160;
 //--- with ARGB() so the marker's opacity can be baked into them - an ImageWidget ignores its
 //--- parent's alpha, and a CanvasWidget has no alpha to inherit at all.
 static const int VIGRID_PARTY_PING_PALETTE_SIZE = 8;
+
+//--- HUD panel geometry, in pixels. These MUST track party_hud_row.layout: VigridPartyHud.LayoutRow
+//--- measures the text and repositions every cell from these numbers, so a size changed in the
+//--- layout alone silently mis-places the row rather than failing.
+//---
+//--- A row is two lines - the name over the condition icons and the distance - and hugs its content
+//--- horizontally, so the width below is only the fixed part. The name line no longer scales its
+//--- glyphs to the box (`scaled 1`), which is what used to render a short name enormous.
+static const int VIGRID_PARTY_HUD_ROW_HEIGHT = 38;   // one row, both lines
+static const int VIGRID_PARTY_HUD_ROW_GAP = 3;       // vertical gap; pitch = height + gap
+static const int VIGRID_PARTY_HUD_NAME_TOP = 2;      // y of the first line
+static const int VIGRID_PARTY_HUD_NAME_HEIGHT = 18;  // first line
+static const int VIGRID_PARTY_HUD_STAT_HEIGHT = 16;  // second line
+static const int VIGRID_PARTY_HUD_STAT_TOP = 20;     // y of the second line
+static const int VIGRID_PARTY_HUD_ACCENT_W = 3;      // slot-colour bar down the left edge
+static const int VIGRID_PARTY_HUD_PAD_L = 8;         // x of the first cell, clear of the accent bar
+static const int VIGRID_PARTY_HUD_PAD_R = 6;
+static const int VIGRID_PARTY_HUD_ICON = 15;         // one condition badge, square
+static const int VIGRID_PARTY_HUD_ICON_GAP = 4;      // between the two badges
+static const int VIGRID_PARTY_HUD_STAT_GAP = 8;      // between the badges and the distance
+
+//--- Backdrop opacity is NOT here: it lives on RowBackdrop in party_hud_row.layout and nothing in
+//--- script touches it. Setting it from here would mean SetColor or SetAlpha on that widget, and
+//--- either one overwrites the declared alpha - see the header comment on the layout.
