@@ -47,7 +47,7 @@ If the whitelist ends up empty, 3PP is allowed for everything.
   depends on that mod's `GetVehicle3PPConfig()`.
 - The two files are byte-identical apart from the class name and the vehicle list, and each is a ~45
   line copy of Vehicle3PP's own `EEInit`. If that mod changes its implementation, this copy will
-  silently diverge. Tracked in `TODO.md`.
+  silently diverge.
 - The whitelist is dereferenced (`Find` / `Insert`) *before* the code's own `if (!vehicles || ...)`
   null check, so a null return from `GetWhitelist()` would crash before reaching the guard.
   `GetVehicle3PPConfig()` is likewise unchecked.

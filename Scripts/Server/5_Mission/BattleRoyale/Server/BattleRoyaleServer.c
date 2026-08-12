@@ -446,7 +446,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 			//--- Warn, NOT Error. BattleRoyaleUtils.Error and the global Error() both end in Error2(),
 			//--- which raises a VM exception and unwinds the stack - which is why the kick that used
-			//--- to be scheduled on the line below this one never ran even once. See TODO.md.
+			//--- to be scheduled on the line below this one never ran even once.
 			BattleRoyaleUtils.Warn("Player " + player.GetIdentity().GetName() + " connected during non-debug state `" + GetCurrentState().GetName() + "`, scheduling disconnect.");
 			ScheduleLateJoinKick( player );
 
