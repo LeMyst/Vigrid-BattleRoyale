@@ -1,24 +1,31 @@
 @echo off
+REM Launches the dedicated server plus N local clients.
+REM
+REM Usage: LaunchLocalMP.bat [1|2|3]   (defaults to 1)
+
 setlocal
 
-CALL "%~dp0SetupLaunch.bat"
+set "clientCount=%~1"
+if not defined clientCount set "clientCount=1"
+if %clientCount% LSS 1 set "clientCount=1"
+if %clientCount% GTR 3 set "clientCount=3"
 
-if not defined AdditionalMPMods (
-    echo AdditionalMPMods parameter was not set in the project.cfg, ignoring.
-) else (
-    set mods=%mods%;%AdditionalMPMods%
-)
+call "%~dp0SetupLaunch.bat" MP
+if errorlevel 1 exit /b 1
 
-CALL "%~dp0SetupModList.bat"
+call "%~dp0_LaunchServer.bat" %PlayerSteamID%
 
-call "%~dp0ClearLogs.bat" "%serverProfileDirectory%"
+REM Give the server a head start before the first client connects.
+timeout /t 5 /nobreak >nul
 
-call "%~dp0ClearStorage.bat"
+for /L %%i in (1,1,%clientCount%) do call :client %%i
 
-call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" -port=%port% "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
+exit /b 0
 
-PING 127.0.0.1 -n 5 > nul
-
-call "%~dp0ClearLogs.bat" "%ClientProfileDirectory%"
-
-call "%~dp0LaunchSteamClient.bat" %PlayerSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%ClientProfileDirectory%" "-name=%playerName%" %password% "-mod=%modList%"
+:client
+if "%~1"=="1" set "slot=A"
+if "%~1"=="2" set "slot=B"
+if "%~1"=="3" set "slot=C"
+call "%~dp0_LaunchClient.bat" %slot%
+timeout /t 2 /nobreak >nul
+exit /b 0

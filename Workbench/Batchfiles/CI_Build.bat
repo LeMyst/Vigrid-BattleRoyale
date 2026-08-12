@@ -1,8 +1,9 @@
 @echo off
 setlocal
 
-set modName=%~n0
-set modName=%modName:~3%
+REM Names the log file and the marker files: Logs\Build.log, Build.success,
+REM Build.failure, Build.tmp. CI1.bat also uses it as the mod's folder name.
+set "modName=Build"
 
 set exitCmd=0
 
