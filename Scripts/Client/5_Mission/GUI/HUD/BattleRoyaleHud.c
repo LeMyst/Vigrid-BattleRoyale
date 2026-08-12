@@ -154,26 +154,28 @@ class BattleRoyaleHud
 
     void SetCount(int nb_players, int nb_groups)
     {
-        if(!m_GroupTextWidget || !m_GroupTextWidget)
+        //--- Both widgets, not m_GroupTextWidget twice: the player one is dereferenced unconditionally
+        //--- below, so a layout that failed to resolve it reached a null call rather than this guard.
+        if(!m_PlayerTextWidget || !m_GroupTextWidget)
         {
             Error("Called SetCount but widget is null!");
             return;
         }
 
         //BattleRoyaleUtils.Trace(string.Format("SetCount: %1 %2", nb_players, nb_groups));
-        
+
         m_PlayerTextWidget.SetText( nb_players.ToString() );
 
-        if ( nb_groups == -1 )
+        if ( nb_groups == BR_HUD_GROUPS_CONCEALED )
         {
             //--- Endgame concealment: the count exists but is deliberately hidden.
             m_GroupTextWidget.SetText( "???" );
             m_GroupCountPanel.Show( true );
             m_GroupTextWidget.Show( true );
         }
-        else if ( nb_groups == -2 )
+        else if ( nb_groups == BR_HUD_GROUPS_NONE )
 		{
-            //--- No party system at all, so a group count would be meaningless.
+            //--- No groups in play, so a group count would be meaningless.
             m_GroupCountPanel.Show( false );
             m_GroupTextWidget.Show( false );
 		}

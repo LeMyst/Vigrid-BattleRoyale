@@ -523,6 +523,30 @@ static const float BR_HUD_BADGES_SPACER_X = 70.0;
 static const float BR_HUD_BADGES_PANEL_X = 109.0;
 
 
+//--- THE PLAYERS/GROUPS COUNTER. The SetPlayerCount RPC carries two plain integers, and the group
+//--- one doubles as a two-value enum for the cases where there is no number to show. The contract
+//--- lived as a pair of bare literals in the sender (0_BattleRoyaleState.OnPlayerCountChanged) and
+//--- the reader (BattleRoyaleHud.SetCount) with a comment in each, which is how -2 came to be
+//--- unreachable without anyone noticing - see the note on BR_HUD_GROUPS_NONE.
+//
+//there is no group figure to show, so the client hides the group panel outright. Reached whenever
+//the party system is not in play: the addon compiled out, or its manager disabled in
+//party_settings.json. **That second case used to be missed**, and it is the reason this sentinel
+//needs a name: the sender only ever produced -2 under #ifdef !VIGRID_PARTY, and since Party ships
+//in this repo that branch is always compiled out. A server that turned parties off at runtime got
+//VigridPartyAPI.GetGroupCount()'s solo-groups fallback instead - one group per player, i.e. a
+//figure always identical to the player count - presented under a group icon as if it meant
+//something. Ask VigridPartyAPI.IsReady() before believing a group count.
+static const int BR_HUD_GROUPS_NONE = -2;
+//the figure exists but is deliberately withheld: the client shows "???" in its place. Driven by
+//hide_players_endgame (general_settings.json) once the match is down to BR_HUD_ENDGAME_PLAYERS.
+static const int BR_HUD_GROUPS_CONCEALED = -1;
+//what counts as "the endgame" for that concealment. Deliberately a player count rather than a state
+//or a round index: the point is to stop the last few survivors reading the exact team composition
+//off the HUD, and that becomes possible at a population, not at a phase.
+static const int BR_HUD_ENDGAME_PLAYERS = 10;
+
+
 //--- zoning subsystem
 //
 //Circles are generated SMALLEST FIRST: index 0 is the tight final circle and each later one must

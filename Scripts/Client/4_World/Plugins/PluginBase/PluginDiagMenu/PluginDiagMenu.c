@@ -224,7 +224,12 @@ modded class PluginDiagMenu
 			{
 				DiagMenu.RegisterBool(m_BRDiagHudForceID, "", "Force HUD", m_BRDiagHudMenuID);
 				DiagMenu.RegisterRange(m_BRDiagHudPlayersID, "", "Fake Players", m_BRDiagHudMenuID, "0, 100, 60, 1");
-				DiagMenu.RegisterRange(m_BRDiagHudGroupsID, "", "Fake Groups", m_BRDiagHudMenuID, "0, 40, 20, 1");
+				//--- Starts at -2, not 0: the group figure doubles as a two-value enum, and the two
+				//--- sentinel renders are the only part of this counter that has ever been wrong.
+				//--- -2 (BR_HUD_GROUPS_NONE) hides the group panel, -1 (BR_HUD_GROUPS_CONCEALED)
+				//--- shows "???" for the endgame. A 0-40 range could reach neither, so both had to be
+				//--- provoked with a real ten-player endgame and a settings edit.
+				DiagMenu.RegisterRange(m_BRDiagHudGroupsID, "", "Fake Groups", m_BRDiagHudMenuID, "-2, 40, 20, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudKillsID, "", "Fake Kills", m_BRDiagHudMenuID, "0, 20, 3, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudCountdownID, "", "Fake Countdown", m_BRDiagHudMenuID, "0, 300, 60, 1");
 				DiagMenu.RegisterBool(m_BRDiagOpenSpawnMenuID, "", "Open Spawn Menu", m_BRDiagHudMenuID);
