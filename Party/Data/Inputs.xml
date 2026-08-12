@@ -3,15 +3,25 @@
     <inputs>
         <actions>
             <input name="UAVigridPartyMenu" loc="Party Menu" />
+            <input name="UAVigridPartyPing" loc="Place Party Ping" />
+            <input name="UAVigridPartyPingClear" loc="Clear Your Party Pings" />
         </actions>
 
         <sorting name="vigridparty" loc="PARTY">
             <input name="UAVigridPartyMenu" />
+            <input name="UAVigridPartyPing" />
+            <input name="UAVigridPartyPingClear" />
         </sorting>
     </inputs>
     <preset>
         <input name="UAVigridPartyMenu">
             <btn name="kP" />
+        </input>
+        <input name="UAVigridPartyPing">
+            <btn name="kT" />
+        </input>
+        <input name="UAVigridPartyPingClear">
+            <btn name="kY" />
         </input>
     </preset>
 </modded_inputs>

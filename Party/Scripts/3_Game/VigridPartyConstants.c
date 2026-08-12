@@ -42,6 +42,8 @@ static const string VP_RPC_INVITE_RECEIVED = "VP_InviteReceived";
 static const string VP_RPC_INVITE_CANCELLED = "VP_InviteCancelled";
 static const string VP_RPC_PLAYERLIST = "VP_PlayerList";
 static const string VP_RPC_NOTIFY = "VP_Notify";
+static const string VP_RPC_PING_SETTINGS = "VP_PingSettings";
+static const string VP_RPC_PING_SET = "VP_PingSet";
 
 //--- Client -> server message names.
 static const string VP_RPC_CREATE = "VP_Create";
@@ -53,6 +55,8 @@ static const string VP_RPC_DISBAND = "VP_Disband";
 static const string VP_RPC_TRANSFER_LEADER = "VP_TransferLeader";
 static const string VP_RPC_REQUEST_PLAYERLIST = "VP_RequestPlayerList";
 static const string VP_RPC_REQUEST_SYNC = "VP_RequestSync";
+static const string VP_RPC_PING_ADD = "VP_PingAdd";
+static const string VP_RPC_PING_CLEAR = "VP_PingClear";
 
 //--- Menu id. Vanilla stops at 46 and the Battle Royale spawn selection uses 75.
 static const int MENU_VIGRID_PARTY = 176;
@@ -60,6 +64,8 @@ static const int MENU_VIGRID_PARTY = 176;
 //--- Keybind action name. Read with GetUApi().GetInputByName() rather than the generated
 //--- UAVigridPartyMenu constant, so nothing here depends on a symbol produced by another PBO.
 static const string VIGRID_PARTY_INPUT_MENU = "UAVigridPartyMenu";
+static const string VIGRID_PARTY_INPUT_PING = "UAVigridPartyPing";
+static const string VIGRID_PARTY_INPUT_PING_CLEAR = "UAVigridPartyPingClear";
 
 //--- Member state flags carried by VP_TeamState.
 static const int VIGRID_PARTY_FLAG_ONLINE = 1;      // bit0
@@ -102,3 +108,53 @@ static const float VIGRID_PARTY_TAG_HEAD_OFFSET = 0.25;    // m above the Head b
 static const float VIGRID_PARTY_TAG_CENTER_HIDE = 0.05;      // fraction of screen height, floor alpha
 static const float VIGRID_PARTY_TAG_CENTER_FADE = 0.13;      // fraction of screen height, full alpha
 static const float VIGRID_PARTY_TAG_CENTER_MIN_ALPHA = 0.15; // opacity right under the crosshair
+
+//--- Ping defaults. Mirrored by VigridPartyData; only ping_enabled and ping_cooldown_ms are sent to
+//--- the client. The cap is learned by watching a marker get evicted and the lifetime arrives per
+//--- ping as milliseconds remaining, so neither needs to travel as a setting.
+static const bool VIGRID_PARTY_DEF_PING_ENABLED = true;
+static const int VIGRID_PARTY_DEF_PING_MAX = 3;            // per owner, FIFO - Carim's maxPings
+static const int VIGRID_PARTY_DEF_PING_TTL_SECONDS = 30;   // 0 = permanent, which is what Carim did
+static const int VIGRID_PARTY_DEF_PING_COOLDOWN_MS = 700;
+
+//--- Placement. The ray matches Carim's reach; the bound is what the server checks a reported
+//--- position against, and is deliberately looser than the ray so a legitimate long shot survives
+//--- the round trip.
+static const float VIGRID_PARTY_PING_RAY_LENGTH = 8000.0;
+static const float VIGRID_PARTY_PING_MAX_PLACE_DIST = 9000.0;
+
+//--- Ping rendering.
+static const float VIGRID_PARTY_PING_HEIGHT_OFFSET = 0.2;  // m above the contact point
+static const float VIGRID_PARTY_PING_EDGE_MARGIN = 40.0;   // px inset when clamped to the edge
+static const float VIGRID_PARTY_PING_SIZE_W = 90.0;        // fallback if GetScreenSize returns 0
+static const float VIGRID_PARTY_PING_SIZE_H = 36.0;        // must track party_ping.layout
+
+//--- A marker is a hint, not a HUD element: it never draws at full opacity, and it carries no owner
+//--- name - who placed it is read from the colour instead.
+static const float VIGRID_PARTY_PING_BASE_ALPHA = 0.75;
+static const float VIGRID_PARTY_PING_FADE_DISTANCE = 1000.0;
+static const float VIGRID_PARTY_PING_MIN_ALPHA = 0.45;
+static const float VIGRID_PARTY_PING_KM_THRESHOLD = 1000.0; // m, above which distance reads in km
+
+//--- Crosshair fade, matching the name tags: a marker must not sit on top of whatever the player is
+//--- aiming at. The floor is higher than the tags' because you place a ping by looking straight at
+//--- it, so this is the alpha it settles to for the second or two right after placement.
+static const float VIGRID_PARTY_PING_CENTER_HIDE = 0.05;      // fraction of screen height
+static const float VIGRID_PARTY_PING_CENTER_FADE = 0.13;      // fraction of screen height
+static const float VIGRID_PARTY_PING_CENTER_MIN_ALPHA = 0.25;
+
+//--- Ceiling on pooled marker widgets: the largest party times the largest legal cap.
+static const int VIGRID_PARTY_PING_MAX_RENDERED = 160;
+
+//--- Marker colours, one per party slot rather than Carim's own-vs-teammate split: with a single
+//--- shade for every teammate you can see that somebody called something out but not who, which is
+//--- the thing worth knowing when two people are marking at once. member_uids is join-ordered and
+//--- never reshuffled (see VigridPartyAPI), so a member's slot - and therefore their colour - is
+//--- stable for the life of the party.
+//---
+//--- Nothing is special-cased for the local player: your own markers use your own slot colour, so
+//--- what you see is what your team sees.
+//---
+//--- The colours themselves live in VigridPartyPings.ColourForSlot, built with ARGB() so the
+//--- marker's opacity can be baked into them - an ImageWidget ignores its parent's alpha.
+static const int VIGRID_PARTY_PING_PALETTE_SIZE = 8;

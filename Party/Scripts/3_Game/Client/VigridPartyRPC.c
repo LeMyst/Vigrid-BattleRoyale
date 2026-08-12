@@ -34,12 +34,29 @@ class VigridPartyRPC
     //--- roster_version.
     int state_version = 0;
     ref array<vector> state_positions = new array<vector>();
-    ref array<int> state_health = new array<int>();
-    ref array<int> state_blood = new array<int>();
+
+    //--- Vanilla EStatLevels, 0 (GREAT) to 4 (CRITICAL), decided server-side by the same
+    //--- PlayerBase calls that drive the player's own HUD badge. Not a percentage - do not
+    //--- compare these against health values.
+    ref array<int> state_health_level = new array<int>();
+    ref array<int> state_blood_level = new array<int>();
     ref array<int> state_flags = new array<int>();
     int state_recv_ms = 0;
     int state_prev_recv_ms = 0;
     ref array<vector> state_prev_positions = new array<vector>();
+
+    //--- Ping settings, mirrored from the server on VP_PingSettings. Only the two the client
+    //--- actually consumes are sent: this one gates the keybind and hides the layer, and the
+    //--- cooldown lets a mashed key be refused without generating traffic.
+    bool ping_enabled = VIGRID_PARTY_DEF_PING_ENABLED;
+    int ping_cooldown_ms = VIGRID_PARTY_DEF_PING_COOLDOWN_MS;
+
+    //--- The party's world markers. Parallel arrays, but self-describing: every entry names its
+    //--- owner, so unlike state_* they never have to line up with the roster.
+    ref array<string> ping_owner_uids = new array<string>();
+    ref array<vector> ping_positions = new array<vector>();
+    ref array<int> ping_expire_ms = new array<int>(); //!< local clock, absolute; 0 = never
+    int ping_recv_ms = 0;
 
     //--- Pending invitation, if any.
     string invite_id = "";
@@ -67,6 +84,8 @@ class VigridPartyRPC
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_INVITE_CANCELLED, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PLAYERLIST, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_NOTIFY, this);
+        GetRPCManager().AddRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PING_SETTINGS, this);
+        GetRPCManager().AddRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_PING_SET, this);
     }
 
     static VigridPartyRPC GetInstance()
@@ -101,12 +120,19 @@ class VigridPartyRPC
 
         state_version = 0;
         state_positions.Clear();
-        state_health.Clear();
-        state_blood.Clear();
+        state_health_level.Clear();
+        state_blood_level.Clear();
         state_flags.Clear();
         state_prev_positions.Clear();
         state_recv_ms = 0;
         state_prev_recv_ms = 0;
+
+        ping_enabled = VIGRID_PARTY_DEF_PING_ENABLED;
+        ping_cooldown_ms = VIGRID_PARTY_DEF_PING_COOLDOWN_MS;
+        ping_owner_uids.Clear();
+        ping_positions.Clear();
+        ping_expire_ms.Clear();
+        ping_recv_ms = 0;
 
         ClearInvite();
         invite_seq = 0;
@@ -194,8 +220,8 @@ class VigridPartyRPC
         //--- index a stale array against a new roster for one interval.
         state_version = 0;
         state_positions.Clear();
-        state_health.Clear();
-        state_blood.Clear();
+        state_health_level.Clear();
+        state_blood_level.Clear();
         state_flags.Clear();
         state_prev_positions.Clear();
 
@@ -229,8 +255,8 @@ class VigridPartyRPC
 
         state_version = data.param1;
         state_positions.Copy(data.param2);
-        state_health.Copy(data.param3);
-        state_blood.Copy(data.param4);
+        state_health_level.Copy(data.param3);
+        state_blood_level.Copy(data.param4);
         state_flags.Copy(data.param5);
         state_recv_ms = GetGame().GetTime();
 
@@ -291,6 +317,72 @@ class VigridPartyRPC
             list_flags.Copy(data.param3);
 
         list_seq = list_seq + 1;
+    }
+
+    void VP_PingSettings(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param2<bool, int> data;
+        if (!ctx.Read(data))
+            return;
+        if (type != CallType.Client)
+            return;
+
+        ping_enabled = data.param1;
+        ping_cooldown_ms = data.param2;
+
+        VigridPartyLog.Debug("VP_PingSettings enabled=" + ping_enabled + " cooldown=" + ping_cooldown_ms);
+    }
+
+    /**
+     *  The party's whole ping set, replacing whatever was held. Idempotent by design, so there is
+     *  nothing to reconcile and no sequence number to track.
+     */
+    void VP_PingSet(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param3<array<string>, array<vector>, array<int>> data;
+        if (!ctx.Read(data))
+            return;
+        if (type != CallType.Client)
+            return;
+
+        //--- Cleared first: an empty set is how the server says "you have no markers", and it
+        //--- arrives as three empty arrays rather than as a distinct message.
+        ping_owner_uids.Clear();
+        ping_positions.Clear();
+        ping_expire_ms.Clear();
+        ping_recv_ms = GetGame().GetTime();
+
+        if (!data.param1)
+            return;
+        if (!data.param2)
+            return;
+        if (!data.param3)
+            return;
+
+        //--- The renderer indexes all three with one counter, so a length disagreement is dropped
+        //--- rather than half-applied. Same guard VP_TeamState uses.
+        if (data.param1.Count() != data.param2.Count())
+            return;
+        if (data.param1.Count() != data.param3.Count())
+            return;
+
+        ping_owner_uids.Copy(data.param1);
+        ping_positions.Copy(data.param2);
+
+        //--- Milliseconds remaining arrive, not an absolute time: the server's clock and ours are
+        //--- unrelated. Converted against the local clock here, exactly as VP_InviteReceived does.
+        //--- 0 travels as "never expires".
+        int count = data.param3.Count();
+        for (int i = 0; i < count; i++)
+        {
+            int remaining = data.param3.Get(i);
+            if (remaining <= 0)
+                ping_expire_ms.Insert(0);
+            else
+                ping_expire_ms.Insert(ping_recv_ms + remaining);
+        }
+
+        VigridPartyLog.Debug("VP_PingSet count=" + ping_owner_uids.Count());
     }
 
     void VP_Notify(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)

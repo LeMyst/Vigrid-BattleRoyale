@@ -14,9 +14,8 @@
  *    - the *body* position, at ground level, which is what distance is measured to;
  *    - the *anchor* position, at head height, which is what gets projected to the screen.
  *
- *  Off-screen teammates are clamped to the screen edge. That path deliberately does NOT reuse the
- *  projection: GetScreenPosRelative mirrors x/y for anything behind the camera, so a clamped
- *  projected point would sit on the wrong side. The bearing is computed from world-space yaw.
+ *  Off-screen teammates are clamped to the screen edge by VigridPartyScreen.EdgeClampedPos, which
+ *  the ping renderer shares - see there for why that path cannot just clamp the projection.
  *
  *  Widgets are pooled: created once, then shown/hidden and rebound. Nothing is allocated per frame.
  */
@@ -252,27 +251,12 @@ class VigridPartyNametags
 
     /**
      *  Opacity multiplier for a tag sitting near the crosshair, so it cannot hide an enemy standing
-     *  between the player and a teammate.
-     *
-     *  Worked in pixels rather than normalised coordinates: on a 16:9 screen the normalised form
-     *  would give an elliptical dead zone, wider than it is tall.
+     *  between the player and a teammate. Shared with the ping renderer; the floor is deliberately
+     *  non-zero so a distant teammate is not lost at the moment the player looks for them.
      */
     private float GetCrosshairFade(float anchor_x, float anchor_y, float parent_w, float parent_h)
     {
-        float dx = anchor_x - (parent_w * 0.5);
-        float dy = anchor_y - (parent_h * 0.5);
-        float from_center = Math.Sqrt((dx * dx) + (dy * dy));
-
-        float hide_radius = parent_h * VIGRID_PARTY_TAG_CENTER_HIDE;
-        float fade_radius = parent_h * VIGRID_PARTY_TAG_CENTER_FADE;
-        if (fade_radius <= hide_radius)
-            return 1.0;
-
-        float ramp = Math.Clamp((from_center - hide_radius) / (fade_radius - hide_radius), 0, 1);
-
-        //--- Floors at MIN_ALPHA rather than zero: fading out completely would lose a distant
-        //--- teammate at the exact moment the player looks for them.
-        return Math.Lerp(VIGRID_PARTY_TAG_CENTER_MIN_ALPHA, 1.0, ramp);
+        return VigridPartyScreen.CrosshairFade(anchor_x, anchor_y, parent_w, parent_h, VIGRID_PARTY_TAG_CENTER_HIDE, VIGRID_PARTY_TAG_CENTER_FADE, VIGRID_PARTY_TAG_CENTER_MIN_ALPHA);
     }
 
     private void RenderSlot(int slot, PlayerBase entity, vector body_pos, string name, float parent_w, float parent_h, bool stale, VigridPartyRPC rpc, vector self_pos)
@@ -299,14 +283,7 @@ class VigridPartyNametags
         }
 
         vector screen_pos = GetGame().GetScreenPosRelative(ResolveAnchorPos(entity, body_pos));
-
-        bool on_screen = true;
-        if (screen_pos[2] <= 0)
-            on_screen = false;
-        else if (screen_pos[0] < 0 || screen_pos[0] > 1)
-            on_screen = false;
-        else if (screen_pos[1] < 0 || screen_pos[1] > 1)
-            on_screen = false;
+        bool on_screen = VigridPartyScreen.IsOnScreen(screen_pos);
 
         //--- Shown before being measured: a widget that has never been displayed can report a zero
         //--- size, and the offsets below are derived from that size.
@@ -340,23 +317,10 @@ class VigridPartyNametags
         else
         {
             //--- Bearing from world-space yaw, because the projection is mirrored behind the
-            //--- camera and cannot simply be clamped.
-            vector camera_pos = GetGame().GetCurrentCameraPosition();
-            vector to_mate = vector.Direction(camera_pos, body_pos);
-            to_mate[1] = 0;
-
-            float camera_yaw = GetGame().GetCurrentCameraDirection().VectorToAngles()[0];
-            float mate_yaw = to_mate.VectorToAngles()[0];
-            float angle = Math.NormalizeAngle(mate_yaw - camera_yaw);
-
-            float radians = angle * Math.DEG2RAD;
-            float rx = (parent_w * 0.5) - VIGRID_PARTY_TAG_EDGE_MARGIN;
-            float ry = (parent_h * 0.5) - VIGRID_PARTY_TAG_EDGE_MARGIN;
-
-            //--- No character to sit above out here, so centre the tag on the clamped point. The
-            //--- tag sliding around the edge is what conveys direction; there is no arrow.
-            px = (parent_w * 0.5) + (rx * Math.Sin(radians)) - (tag_w * 0.5);
-            py = (parent_h * 0.5) - (ry * Math.Cos(radians)) - (tag_h * 0.5);
+            //--- camera and cannot simply be clamped. Shared with the ping renderer.
+            vector clamped = VigridPartyScreen.EdgeClampedPos(body_pos, parent_w, parent_h, tag_w, tag_h, VIGRID_PARTY_TAG_EDGE_MARGIN);
+            px = clamped[0];
+            py = clamped[1];
         }
 
         tag.SetPos(px, py);

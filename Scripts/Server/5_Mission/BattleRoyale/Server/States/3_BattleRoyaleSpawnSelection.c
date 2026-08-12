@@ -90,8 +90,8 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
     {
 		//--- Deliberately FIRST, not last, unlike every sibling state.
 		//---
-		//--- Everything below can throw: a null list entry, a null identity, an RPC call,
-		//--- AssignRandomSpawnPoint. EnfusionScript has no try/catch, so a throw simply abandons the
+		//--- Everything below can throw: a null list entry, a null identity, an RPC call, the party
+		//--- resolution. EnfusionScript has no try/catch, so a throw simply abandons the
 		//--- rest of the method. While this ran last, any such throw left b_IsActive true - and
 		//--- IsComplete() returns !IsActive(), so the state could never report itself done and the
 		//--- match hung in spawn selection until someone restarted the server process. Running it
@@ -122,63 +122,111 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		// Send RPC to all players to hide spawn selection UI
 		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "HideSpawnSelection", NULL, true);
 
-		// Check for every party for player who didn't select a spawn point and assign them a random one from their party members
-		// If no party members selected a spawn point, assign them a random spawn point from the spawnpoints map
-		// If a solo player didn't select a spawn point, assign them a random spawn point from the spawnpoints map
-		// If no spawn points are available, the next state will randomly teleport them
-		BattleRoyaleUtils.Trace("Check for players who didn't select a spawn point and assign them a random one from their party members");
+		//--- Give every party ONE drop point and hand it to the members who did not pick one, so a
+		//--- player who was AFK or undecided lands with their squad instead of somewhere across the
+		//--- circle. Ordered by intent, and resolved per party rather than per player - the previous
+		//--- version asked each undecided member for "the first teammate who picked", which had no
+		//--- notion of a leader and could in principle answer differently for two members of the
+		//--- same party.
+		//---
+		//--- When nobody in a party picked at all, this deliberately assigns NOTHING. Leaving the
+		//--- whole group on the vector.Zero sentinel is what routes it into
+		//--- 4_BattleRoyalePrepare.TeleportGroup(), which searches one village-or-safe position for
+		//--- the party and scatters them within 5 m of it. Inventing a point here would only get in
+		//--- the way of that, and would skip the village preference entirely.
+		//---
+		//--- Solo players are untouched: GetGroups() is a partition that returns them as groups of
+		//--- one, the Count() < 2 test skips them, and Prepare gives them the ordinary random spawn.
+		//---
 		//--- Every dereference below is guarded. A null list entry is possible, and PlayerIdentity
 		//--- can be null while the PlayerBase is still alive - the workaround comment at
 		//--- BattleRoyaleServer.c:238-239 documents exactly that case.
 		//---
 		//--- Hoisting super.Deactivate() to the top of this method already means a throw here can no
 		//--- longer strand the match, so these guards are no longer load-bearing for that. They still
-		//--- matter: a throw would abandon the loop, and every player after the faulty entry would
-		//--- lose the teammate-spawn inheritance this whole state exists to provide.
-		ref array<PlayerBase> players = GetPlayers();
-		foreach (PlayerBase player : players)
-		{
-			if( !player )
-				continue;
-			if( player.GetSpawnPos() != vector.Zero ) // Player already selected a spawn point
-				continue;
-
-			//--- Resolved into a local instead of being inlined into the Trace calls: arguments are
-			//--- evaluated whatever the log level, so an inlined GetIdentity().GetName() threw even
-			//--- with logging switched off.
-			string player_name = "<no identity>";
-			if( player.GetIdentity() )
-				player_name = player.GetIdentity().GetName();
-
-			BattleRoyaleUtils.Trace("Player " + player_name + " didn't select a spawn point, checking party members");
-
-			//--- Empty when the player has no teammates, so the loop below simply does not run
-			//--- and the random fallback takes over. One code path either way.
-			array<PlayerBase> groupMembers = new array<PlayerBase>();
+		//--- matter: a throw would abandon the loop, and every party after the faulty entry would
+		//--- lose the spawn inheritance this whole block exists to provide.
 #ifdef VIGRID_PARTY
-			groupMembers = VigridPartyAPI.GetTeammates(player, players);
-#endif
+		BattleRoyaleUtils.Trace("Resolving a shared spawn point for every party with undecided members");
 
-			foreach (PlayerBase member : groupMembers)
+		ref array<PlayerBase> players = GetPlayers();
+		array<ref array<PlayerBase>> groups = VigridPartyAPI.GetGroups(players);
+
+		for(int g = 0; g < groups.Count(); g++)
+		{
+			array<PlayerBase> group = groups.Get(g);
+			if( group.Count() < 2 )
+				continue;
+
+			vector anchor = ResolvePartyAnchor(group, players);
+			if( anchor == vector.Zero )
 			{
+				BattleRoyaleUtils.Info("Spawn selection: no member of a party of " + group.Count() + " picked a spawn point - the whole party will be dropped together at random.");
+				continue;
+			}
+
+			int inherited = 0;
+			for(int m = 0; m < group.Count(); m++)
+			{
+				PlayerBase member = group.Get(m);
 				if( !member )
 					continue;
-				if( member.GetSpawnPos() == vector.Zero )
+				if( member.GetSpawnPos() != vector.Zero ) // Member already picked their own
 					continue;
 
-				// Found a party member who selected a spawn point
-				BattleRoyaleUtils.Trace("Assigning spawn point of a party member to " + player_name);
-				player.SetSpawnPos(member.GetSpawnPos());
-				break;
+				member.SetSpawnPos(anchor);
+				inherited++;
 			}
 
-			// If still no spawn point assigned, use a random one from the map
-			if( player.GetSpawnPos() == vector.Zero )
-			{
-				AssignRandomSpawnPoint(player, groupMembers);
-			}
+			if( inherited > 0 )
+				BattleRoyaleUtils.Info("Spawn selection: " + inherited + " member(s) of a party of " + group.Count() + " inherited the spawn point " + anchor.ToString());
 		}
+#endif
     }
+
+#ifdef VIGRID_PARTY
+	/**
+	 * The single drop point a party shares, or vector.Zero when nobody in it picked one.
+	 *
+	 * Only ever reads GetSpawnPos(), never writes - the caller decides who inherits, so that
+	 * "nobody picked" stays distinguishable from "everybody already has a point".
+	 */
+	private vector ResolvePartyAnchor(array<PlayerBase> group, array<PlayerBase> population)
+	{
+		//--- The leader speaks for the party. GetLeader() answers null when the leader is offline or
+		//--- otherwise absent from the roster - which is exactly when the party should fall back to
+		//--- its own members rather than be given a stand-in. Passing group.Get(0) is the idiom
+		//--- GatherPartiesOnLeader() uses; the returned leader may well be that same player.
+		PlayerBase leader = VigridPartyAPI.GetLeader(group.Get(0), population);
+		if( leader && leader.GetSpawnPos() != vector.Zero )
+		{
+			BattleRoyaleUtils.Trace("Party anchor is the leader's own pick: " + leader.GetSpawnPos().ToString());
+			return leader.GetSpawnPos();
+		}
+
+		//--- No leader pick. Draw at random among the picks the party did make, so a party that
+		//--- disagreed does not systematically favour whoever happens to sit first in the roster.
+		array<vector> picks = new array<vector>();
+		for(int i = 0; i < group.Count(); i++)
+		{
+			PlayerBase member = group.Get(i);
+			if( !member )
+				continue;
+			if( member.GetSpawnPos() == vector.Zero )
+				continue;
+
+			picks.Insert(member.GetSpawnPos());
+		}
+
+		if( picks.Count() == 0 )
+			return vector.Zero;
+
+		vector anchor = picks.GetRandomElement();
+		BattleRoyaleUtils.Trace("Party anchor drawn at random from " + picks.Count() + " member pick(s): " + anchor.ToString());
+
+		return anchor;
+	}
+#endif
 
     override bool IsComplete()
     {
@@ -447,36 +495,11 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		return color;
 	}
 
-	/**
-	 * Assigns a random spawn point to a player and optionally to their group members
-	 * @param player The player to assign a spawn point to
-	 * @param groupMembers Optional group members to also assign the spawn point to
-	 */
-	private void AssignRandomSpawnPoint(PlayerBase player, array<PlayerBase> groupMembers)
-	{
-		BattleRoyaleUtils.Trace("Assigning random spawn point");
-		// Get a random spawn point from the spawnpoints map
-		array<vector> heatmap_points = spawnpoints.GetValueArray();
-		if( heatmap_points.Count() > 0 )
-		{
-			// Get a random spawn point
-			vector random_spawn = heatmap_points.GetRandomElement();
-			// Assign it to the player
-			BattleRoyaleUtils.Trace("Assigning random spawn point to " + player.GetIdentity().GetName());
-			player.SetSpawnPos(random_spawn);
-
-			// If in a group, assign to all group members who haven't selected a spawn
-			if(groupMembers)
-			{
-				foreach (PlayerBase member : groupMembers)
-				{
-					if( member != player && member.GetSpawnPos() == vector.Zero ) // Found a party member who didn't select a spawn point
-					{
-						BattleRoyaleUtils.Trace("Assigning random spawn point to " + member.GetIdentity().GetName());
-						member.SetSpawnPos(random_spawn);
-					}
-				}
-			}
-		}
-	}
+	//--- AssignRandomSpawnPoint() used to sit here. It copied a random entry out of `spawnpoints`,
+	//--- i.e. some *stranger's* chosen drop, onto anyone left undecided - which put an AFK player
+	//--- right on top of whoever picked that spot, and did nothing at all when the map was empty
+	//--- (nobody in the match picked) or never filled (b_ShowHeatMap off, see OnPlayerSpawnSelected).
+	//--- Parties are now resolved from their own members in Deactivate(), and an undecided solo or
+	//--- an undecided whole party is handed to 4_BattleRoyalePrepare, which gives them a proper
+	//--- village spawn instead. `spawnpoints` is now purely the heatmap feed.
 }
