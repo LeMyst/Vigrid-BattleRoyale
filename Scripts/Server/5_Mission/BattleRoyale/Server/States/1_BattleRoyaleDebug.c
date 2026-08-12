@@ -35,11 +35,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //returns true when this state is complete
     override bool IsComplete()
     {
-#ifdef Carim
-        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime && GetGroupsCount() > 1 )
-#else
-        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime )
+        //--- Hoisted into a local because EnfusionScript has no multi-line if conditions, so the
+        //--- guarded term cannot simply be appended to the condition below.
+        bool enough_groups = true;
+#ifdef VIGRID_PARTY
+        enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
 #endif
+
+        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime && enough_groups )
         {
             Deactivate();
         }
@@ -65,6 +68,18 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         	AddTimer(2.0, this, "CheckReadyState", NULL, true);
 
         super.Activate();
+    }
+
+    override void Deactivate()
+    {
+        super.Deactivate();
+
+#ifdef VIGRID_PARTY
+        //--- The lobby is the last moment party composition may change. Freezing it here stops a
+        //--- player splitting off mid-match, which would raise the group count and stall the
+        //--- round-end condition that waits for a single group to remain.
+        VigridPartyAPI.SetFormationLocked( true );
+#endif
     }
 
     void CheckReadyState()
@@ -139,8 +154,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		if( player_count <= i_MinPlayers ) // need more than the minimum player
 			return false;
 
-#ifdef Carim
-		if( GetGroupsCount() <= 1 ) // need more than one group
+#ifdef VIGRID_PARTY
+		if( VigridPartyAPI.GetGroupCount( GetPlayers() ) <= 1 ) // need more than one group
 			return false;
 #endif
 

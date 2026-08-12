@@ -29,6 +29,23 @@ modded class LoadingScreen
 
 	void UpdateLoadingBackground()
 	{
+		//--- The first call comes from inside the DayZGame constructor: dayzgame.c:1065 does
+		//--- `m_loading.ShowEx(this)`, and CreateGame only assigns g_Game once that constructor
+		//--- has returned (game.c:5). GetGame() is therefore still null here, and GetWorldName()
+		//--- below threw "NULL pointer to instance" on every single client launch. It survived
+		//--- unnoticed because clients run with -newErrorsAreWarnings, which downgrades the
+		//--- exception - the loading screen just silently kept the vanilla background.
+		//---
+		//--- Bail before touching the static timing state, so the next call still behaves as the
+		//--- first one and picks a background immediately rather than waiting out the 5 s hold.
+		//--- OnUpdate calls this again on the very next frame while IsLoading(), so nothing is lost.
+		if (!GetGame())
+			return;
+		if (!m_DayZGame)
+			return;
+		if (!m_Backgrounds)
+			return;
+
 		float loadingTime = f_LoadingTime;
 		float tickTime = m_DayZGame.GetTickTime();
 

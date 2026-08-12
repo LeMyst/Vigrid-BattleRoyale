@@ -110,18 +110,25 @@ class BattleRoyaleWin: BattleRoyaleState
 
     void KickWinner()
     {
-		if(GetPlayers().Count() > 0)
+		//--- Walked backwards because RemovePlayer() mutates the very array being indexed:
+		//--- m_Players.RemoveItem() is the unordered variant, so it swaps the last element into the
+		//--- freed slot. Going forwards that moved an unvisited winner into an already-passed index
+		//--- while the loop kept advancing, so part of a winning team never reached DisconnectPlayer
+		//--- and stayed connected until the process exited. Iterating from the end makes every
+		//--- removal target the current last element, which is a plain shrink.
+		//---
+		//--- This was near-unreachable while only a solo player could win. Parties ship with the mod
+		//--- now, so every team victory goes through it.
+		for ( int k = GetPlayers().Count() - 1; k >= 0; k-- )
 		{
-			for ( int k = 0; k < GetPlayers().Count(); k++ )
-			{
-				PlayerBase winner = GetPlayers()[k];
-				if(winner && winner.GetIdentity() )
-				{
-					RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
-					GetGame().DisconnectPlayer( winner.GetIdentity() );
-				}
+			PlayerBase winner = GetPlayers()[k];
+			if( !winner )
+				continue;
+			if( !winner.GetIdentity() )
+				continue;
 
-			}
+			RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
+			GetGame().DisconnectPlayer( winner.GetIdentity() );
 		}
 
         Deactivate();

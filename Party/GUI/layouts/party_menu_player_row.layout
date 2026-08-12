@@ -1,0 +1,38 @@
+PanelWidgetClass PlayerRowRoot {
+ visible 1
+ position 0 0
+ size 400 40
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 1 1 1 0.25
+ style DayZDefaultPanel
+ {
+  TextWidgetClass PlayerRowName {
+   position 8 0
+   size 250 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Survivor"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" left
+   "text valign" center
+  }
+  ButtonWidgetClass PlayerRowInviteButton {
+   position 268 4
+   size 124 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   text "#STR_PARTY_INVITE"
+   text_proportion 0.6
+   font "gui/fonts/metron"
+  }
+ }
+}

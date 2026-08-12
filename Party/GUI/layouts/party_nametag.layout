@@ -1,0 +1,56 @@
+PanelWidgetClass TagRoot {
+ visible 0
+ ignorepointer 1
+ position 0 0
+ size 170 40
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0 0 0 0
+ {
+  TextWidgetClass TagName {
+   inheritalpha 1
+   ignorepointer 1
+   position 0 0
+   size 1 0.58
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   scaled 1
+   style Bold
+   text "Survivor"
+   font "gui/fonts/metron"
+   "outline size" 1
+   "outline color" 0 0 0 0.5
+   "shadow size" 5
+   "shadow color" 0 0 0 0.4
+   "shadow offset" 1 1
+   "exact text" 0
+   "text halign" center
+   "text valign" center
+  }
+  TextWidgetClass TagDistance {
+   inheritalpha 1
+   ignorepointer 1
+   position 0 0.58
+   size 1 0.42
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   scaled 1
+   text "0m"
+   font "gui/fonts/metron"
+   "outline size" 1
+   "outline color" 0 0 0 0.5
+   "shadow size" 5
+   "shadow color" 0 0 0 0.4
+   "shadow offset" 1 1
+   "exact text" 0
+   "text halign" center
+   "text valign" center
+  }
+ }
+}

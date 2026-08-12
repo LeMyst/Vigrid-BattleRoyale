@@ -1,0 +1,50 @@
+PanelWidgetClass MemberRowRoot {
+ visible 1
+ position 0 0
+ size 400 40
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 1 1 1 0.25
+ style DayZDefaultPanel
+ {
+  TextWidgetClass MemberRowName {
+   position 8 0
+   size 160 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text "Survivor"
+   font "gui/fonts/metron"
+   "exact text" 0
+   "text halign" left
+   "text valign" center
+  }
+  ButtonWidgetClass MemberRowPromoteButton {
+   position 172 4
+   size 110 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   text "#STR_PARTY_PROMOTE"
+   text_proportion 0.6
+   font "gui/fonts/metron"
+  }
+  ButtonWidgetClass MemberRowKickButton {
+   position 288 4
+   size 104 32
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Editor
+   text "#STR_PARTY_KICK"
+   text_proportion 0.6
+   font "gui/fonts/metron"
+  }
+ }
+}

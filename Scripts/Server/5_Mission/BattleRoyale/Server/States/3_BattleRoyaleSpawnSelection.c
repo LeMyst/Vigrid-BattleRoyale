@@ -83,6 +83,28 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
     override void Deactivate()
     {
+		//--- Deliberately FIRST, not last, unlike every sibling state.
+		//---
+		//--- Everything below can throw: a null list entry, a null identity, an RPC call,
+		//--- AssignRandomSpawnPoint. EnfusionScript has no try/catch, so a throw simply abandons the
+		//--- rest of the method. While this ran last, any such throw left b_IsActive true - and
+		//--- IsComplete() returns !IsActive(), so the state could never report itself done and the
+		//--- match hung in spawn selection until someone restarted the server process. Running it
+		//--- first makes that failure mode structurally impossible rather than merely guarded
+		//--- against: the worst a throw can now cost is some players' spawn assignments, and the
+		//--- next state teleports those at random anyway.
+		//---
+		//--- Safe to hoist, on three counts:
+		//---   - the base does nothing but StopTimers() and b_IsActive = false
+		//---     (0_BattleRoyaleState.c:56-64). It never touches m_Players - its own comment says it
+		//---     runs "BEFORE players are removed" - so GetPlayers() below is unaffected;
+		//---   - nothing in this method reads b_IsActive, and Deactivate() runs to completion inside
+		//---     a single call, so BattleRoyaleServer.Update() cannot see the flag mid-method;
+		//---   - it does not cause a double Deactivate. The driver guards its own call with
+		//---     `if(GetCurrentState().IsActive())` (BattleRoyaleServer.c:206-207), so once this has
+		//---     run the driver skips straight to migrating players into the next state.
+		super.Deactivate();
+
         // Stop the spawn selection timer if it's running
         if (m_SpawnSelectionTimer && m_SpawnSelectionTimer.IsRunning())
 		{
@@ -100,41 +122,57 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		// If a solo player didn't select a spawn point, assign them a random spawn point from the spawnpoints map
 		// If no spawn points are available, the next state will randomly teleport them
 		BattleRoyaleUtils.Trace("Check for players who didn't select a spawn point and assign them a random one from their party members");
+		//--- Every dereference below is guarded. A null list entry is possible, and PlayerIdentity
+		//--- can be null while the PlayerBase is still alive - the workaround comment at
+		//--- BattleRoyaleServer.c:238-239 documents exactly that case.
+		//---
+		//--- Hoisting super.Deactivate() to the top of this method already means a throw here can no
+		//--- longer strand the match, so these guards are no longer load-bearing for that. They still
+		//--- matter: a throw would abandon the loop, and every player after the faulty entry would
+		//--- lose the teammate-spawn inheritance this whole state exists to provide.
 		ref array<PlayerBase> players = GetPlayers();
 		foreach (PlayerBase player : players)
 		{
-			if( player.GetSpawnPos() == vector.Zero ) // Player didn't select a spawn point
-			{
-				BattleRoyaleUtils.Trace("Player " + player.GetIdentity().GetName() + " didn't select a spawn point, checking party members");
-#ifdef Carim
-				set<PlayerBase> groupMembers = GetGroup(player);
-				if(groupMembers)
-				{
-					foreach (PlayerBase member : groupMembers)
-					{
-						if( member != player && member.GetSpawnPos() != vector.Zero ) // Found a party member who selected a spawn point
-						{
-							BattleRoyaleUtils.Trace("Assigning spawn point of " + member.GetIdentity().GetName() + " to " + player.GetIdentity().GetName());
-							player.SetSpawnPos(member.GetSpawnPos());
-							break;
-						}
-					}
-				}
+			if( !player )
+				continue;
+			if( player.GetSpawnPos() != vector.Zero ) // Player already selected a spawn point
+				continue;
 
-				// If still no spawn point assigned, use a random one from the map
-				if( player.GetSpawnPos() == vector.Zero )
-				{
-					AssignRandomSpawnPoint(player, groupMembers);
-				}
-#else
-				// No party mod - just assign a random spawn point from the map
-				BattleRoyaleUtils.Trace("No party system available, assigning random spawn point");
-				AssignRandomSpawnPoint(player, null);
+			//--- Resolved into a local instead of being inlined into the Trace calls: arguments are
+			//--- evaluated whatever the log level, so an inlined GetIdentity().GetName() threw even
+			//--- with logging switched off.
+			string player_name = "<no identity>";
+			if( player.GetIdentity() )
+				player_name = player.GetIdentity().GetName();
+
+			BattleRoyaleUtils.Trace("Player " + player_name + " didn't select a spawn point, checking party members");
+
+			//--- Empty when the player has no teammates, so the loop below simply does not run
+			//--- and the random fallback takes over. One code path either way.
+			array<PlayerBase> groupMembers = new array<PlayerBase>();
+#ifdef VIGRID_PARTY
+			groupMembers = VigridPartyAPI.GetTeammates(player, players);
 #endif
+
+			foreach (PlayerBase member : groupMembers)
+			{
+				if( !member )
+					continue;
+				if( member.GetSpawnPos() == vector.Zero )
+					continue;
+
+				// Found a party member who selected a spawn point
+				BattleRoyaleUtils.Trace("Assigning spawn point of a party member to " + player_name);
+				player.SetSpawnPos(member.GetSpawnPos());
+				break;
+			}
+
+			// If still no spawn point assigned, use a random one from the map
+			if( player.GetSpawnPos() == vector.Zero )
+			{
+				AssignRandomSpawnPoint(player, groupMembers);
 			}
 		}
-
-        super.Deactivate();
     }
 
     override bool IsComplete()
@@ -253,34 +291,22 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 
 				pbTarget.SetSpawnPos(data.param1); // Set the spawn position for the player
 
-#ifdef Carim
-				int own_color = GetSpawnColor(sender.GetId());
-#else
-				int own_color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));
-#endif
+				int own_color = GetSpawnColor(pbTarget);
 
 				// Set the spawn position and color for the player
 				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, own_color), true, sender, pbTarget);
 
-#ifdef Carim
-				BattleRoyaleUtils.Trace("Test if player is in a group");
-				if(GetGroup(pbTarget))
+#ifdef VIGRID_PARTY
+				//--- Resolve the teammates once and reuse own_color. The previous version called
+				//--- GetGroup() twice - each call rebuilt every group in the match - and recomputed
+				//--- the colour for every member it sent to.
+				array<PlayerBase> spawnMates = VigridPartyAPI.GetTeammates(pbTarget, GetPlayers());
+				foreach (PlayerBase member : spawnMates)
 				{
-					BattleRoyaleUtils.Trace("Player " + sender.GetName() + " is in a group, sharing spawn point with group");
+					if (!member.GetIdentity())
+						continue;
 
-					set<PlayerBase> groupMembers = GetGroup(pbTarget);
-					foreach (PlayerBase member : groupMembers)
-					{
-						BattleRoyaleUtils.Trace("Sharing spawn point with " + member.GetIdentity().GetName());
-						if (member != pbTarget)
-						{
-							GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, GetSpawnColor(sender.GetId())), true, member.GetIdentity(), member);
-						}
-					}
-				}
-				else
-				{
-					BattleRoyaleUtils.Trace("Player " + sender.GetName() + " is not in a group, not sharing spawn point");
+					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnPoint", new Param3<PlayerBase, vector, int>(pbTarget, data.param1, own_color), true, member.GetIdentity(), member);
 				}
 #endif
 			}
@@ -291,70 +317,51 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 		}
 	}
 
-#ifdef Carim
-	int GetSpawnColor(string playerId)
+	/**
+	 * Spawn marker colour for a player, memoised so it stays stable for the whole selection.
+	 *
+	 * Party members are given a deterministic colour from their stable slot in the party, so two
+	 * teammates can never collide and no retry loop is needed. The previous implementation looked
+	 * the player up in the party mod's map keyed by leader, which meant every non-leader silently
+	 * fell through to the random branch; and its retry loop tested the attempt counter after
+	 * picking, so the eleventh failure could store -1 as the colour.
+	 */
+	int GetSpawnColor(PlayerBase player)
 	{
+		if(!player)
+			return spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));
+		if(!player.GetIdentity())
+			return spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));
+
+		string playerId = player.GetIdentity().GetPlainId();
 		if(player_spawn_colors.Contains(playerId))
 		{
 			return player_spawn_colors.Get(playerId);  // Return the color if already assigned
 		}
 
-		int color = -1;  // Declare color variable
+		int color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));
 
-		if(MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals.Get(playerId) == NULL)
+#ifdef VIGRID_PARTY
+		int slot = VigridPartyAPI.GetMemberIndex(player);
+		if(slot >= 0)
 		{
-			BattleRoyaleUtils.Trace("Player " + playerId + " is not in a group, assigning random color");
-			color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));  // Get a random color
-			player_spawn_colors.Set(playerId, color);
-			return color;
+			// Collision-free while max_party_size stays within the palette size; several extra
+			// colours sit commented out above if the party size is ever raised past it.
+			color = spawn_colors.Get(slot % spawn_colors.Count());
 		}
+#endif
 
-		// Get the others teammates
-		array<string> teammates = MissionServer.Cast(GetGame().GetMission()).carimModelPartyParties.mutuals.Get(playerId).ToArray();
-
-		// Find a color that is not already used by the teammates
-		int try_count = 0;
-		while(true)
-		{
-			color = spawn_colors.Get(Math.RandomInt(0, spawn_colors.Count()));  // Get a random color
-
-			if(try_count > 10)
-			{
-				BattleRoyaleUtils.Trace("Failed to find a unique spawn color after 10 tries");
-				break;  // Break the loop if we can't find a unique color
-			}
-			try_count++;
-
-			// Check if the color is already used by a teammate
-			foreach(string teammateId : teammates)
-			{
-				if(player_spawn_colors.Contains(teammateId))
-				{
-					if(player_spawn_colors.Get(teammateId) == color)
-					{
-						color = -1;  // Color is already used by a teammate, try again
-						break;
-					}
-				}
-			}
-			if(color != -1)
-			{
-				break;  // Color is not used by any teammate, break the loop
-			}
-		}
-
-		// Store the color for the player
 		player_spawn_colors.Set(playerId, color);
 
 		return color;
 	}
-#endif
+
 	/**
 	 * Assigns a random spawn point to a player and optionally to their group members
 	 * @param player The player to assign a spawn point to
 	 * @param groupMembers Optional group members to also assign the spawn point to
 	 */
-	private void AssignRandomSpawnPoint(PlayerBase player, set<PlayerBase> groupMembers)
+	private void AssignRandomSpawnPoint(PlayerBase player, array<PlayerBase> groupMembers)
 	{
 		BattleRoyaleUtils.Trace("Assigning random spawn point");
 		// Get a random spawn point from the spawnpoints map

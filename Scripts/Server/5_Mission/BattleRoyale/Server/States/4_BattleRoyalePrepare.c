@@ -442,7 +442,35 @@ class BattleRoyalePrepare: BattleRoyaleState
         TeleportPlayer(process_player, position, village);
     }
 
-    protected void TeleportGroup(set<PlayerBase> group)
+    /**
+     * Groups of the current roster, largest concept first: a party is one group, and a player with
+     * no party is a group of one. Without the party addon compiled in every player is their own
+     * group, which lets the teleport and reporting paths share a single loop instead of carrying a
+     * mirrored #else branch each.
+     */
+    protected array<ref array<PlayerBase>> BuildPartyGroups()
+    {
+#ifdef VIGRID_PARTY
+        return VigridPartyAPI.GetGroups( GetPlayers() );
+#else
+        array<ref array<PlayerBase>> groups = new array<ref array<PlayerBase>>();
+        ref array<PlayerBase> roster = GetPlayers();
+
+        foreach (PlayerBase roster_player : roster)
+        {
+            if (!roster_player)
+                continue;
+
+            ref array<PlayerBase> solo = new array<PlayerBase>();
+            solo.Insert(roster_player);
+            groups.Insert(solo);
+        }
+
+        return groups;
+#endif
+    }
+
+    protected void TeleportGroup(array<PlayerBase> group)
     {
         ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
         vector position = random_pos.param1;
@@ -571,22 +599,19 @@ class BattleRoyalePrepare: BattleRoyaleState
 		else
 		{
 			BattleRoyaleUtils.Trace("Spawn selection menu disabled");
-			// Check if mod party is present
-#ifdef Carim
-			BattleRoyaleUtils.Trace("Mod party present");
 
-			// ref array ref set, what in the seven fucks is this ?
-			ref array<ref set<PlayerBase>> teleport_groups = GetGroups();
-
-			// Teleport groups
+			//--- Solo players come back as groups of one, so this one loop replaces the pair of
+			//--- mirrored branches that used to sit here.
+			array<ref array<PlayerBase>> teleport_groups = BuildPartyGroups();
 			int pGroupCount = teleport_groups.Count();
-			ref set<PlayerBase> group;
 
 			teleport_groups.ShuffleArray();
 			BattleRoyaleUtils.Trace("Groups: " + pGroupCount);
+
 			for (i = 0; i < pGroupCount; i++) {
 				BattleRoyaleUtils.Trace("Teleport group " + i);
-				group = teleport_groups.Get(i);
+				array<PlayerBase> group = teleport_groups.Get(i);
+
 				if ( group.Count() > 1 )
 				{
 					TeleportGroup( group );
@@ -596,62 +621,45 @@ class BattleRoyalePrepare: BattleRoyaleState
 				}
 				Sleep(100);
 			}
-#else
-			BattleRoyaleUtils.Trace("Mod party absent");
-			for (i = 0; i < pCount; i++) {
-				process_player = a_PlayerList[i];
-				if (process_player)
-				{
-					Teleport(process_player);
-					Sleep(100);
-				}
-			}
-#endif
 		}
         BattleRoyaleUtils.Trace("Teleported players");
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
-#ifdef Carim
-			teleport_groups = GetGroups();
+			//--- One map per group, keyed by SteamID64. Without parties every group holds one
+			//--- player, which reproduces exactly what the non-party branch used to send - so the
+			//--- payload shape is identical either way and there is a single encoding loop.
+			array<ref array<PlayerBase>> api_groups = BuildPartyGroups();
+			int apiGroupCount = api_groups.Count();
 
-			// Teleport groups
-			pGroupCount = teleport_groups.Count();
-
-			// Send parties list to API server
-			for (i = 0; i < pGroupCount; i++) {
-				group = teleport_groups.Get(i);
+			for (i = 0; i < apiGroupCount; i++) {
+				array<PlayerBase> api_group = api_groups.Get(i);
 				map<string, string> party = new map<string, string>();
-				int tmpNbPlayers = group.Count();
+
+				int tmpNbPlayers = api_group.Count();
 				for(int j = 0; j < tmpNbPlayers; j++)
 				{
-					process_player = group.Get(j);
-					if ( process_player && process_player.GetIdentity() )
-					{
-						BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
-						CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
-						CF_Base16Stream base16_stream = CF_Base16Stream();
-						string_stream.CopyTo( base16_stream );
-						party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
-					}
-				}
-				parties_list.Insert( party );
-			}
-#else
-			for (i = 0; i < pCount; i++) {
-				process_player = a_PlayerList[i];
-				if (process_player)
-				{
-					map<string, string> party = new map<string, string>();
-					// Encode player ID to Base16
+					process_player = api_group.Get(j);
+
+					//--- The identity guard used to be missing on the non-party path, where a
+					//--- player disconnecting mid-preparation would dereference null.
+					if ( !process_player )
+						continue;
+					if ( !process_player.GetIdentity() )
+						continue;
+
+					BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
+
+					// Encode player name to Base16
 					CF_StringStream string_stream = CF_StringStream( process_player.GetIdentity().GetPlainName() );
 					CF_Base16Stream base16_stream = CF_Base16Stream();
 					string_stream.CopyTo( base16_stream );
 					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
-					parties_list.Insert( party );
 				}
+
+				if ( party.Count() > 0 )
+					parties_list.Insert( party );
 			}
-#endif
 
 #ifdef BR_TRACE_ENABLED
 			Print( parties_list );

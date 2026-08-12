@@ -166,10 +166,14 @@ class BattleRoyaleHud
 
         if ( nb_groups == -1 )
         {
+            //--- Endgame concealment: the count exists but is deliberately hidden.
             m_GroupTextWidget.SetText( "???" );
+            m_GroupCountPanel.Show( true );
+            m_GroupTextWidget.Show( true );
         }
         else if ( nb_groups == -2 )
 		{
+            //--- No party system at all, so a group count would be meaningless.
             m_GroupCountPanel.Show( false );
             m_GroupTextWidget.Show( false );
 		}
@@ -177,7 +181,9 @@ class BattleRoyaleHud
         {
             m_GroupTextWidget.SetText( nb_groups.ToString() );
             m_GroupCountPanel.Show( true );
-            //m_GroupCountPanel.Show(nb_groups > 0);
+            //--- Show the text widget again too: the -2 branch above hides it, and nothing else
+            //--- ever restored it, so a single -2 left the panel blank for the rest of the session.
+            m_GroupTextWidget.Show( true );
         }
     }
 

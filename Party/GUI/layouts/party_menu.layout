@@ -1,0 +1,204 @@
+PanelWidgetClass PartyMenuRoot {
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ color 0 0 0 0.69
+ style DayZDefaultPanel
+ {
+  PanelWidgetClass Dialog {
+   position 0 0
+   size 920 600
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.102 0.102 0.102 0.94
+   style DayZDefaultPanel
+   {
+    TextWidgetClass Title {
+     position 24 16
+     size 872 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_PARTY_MENU_TITLE"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" left
+     "text valign" center
+    }
+    PanelWidgetClass InviteBanner {
+     visible 0
+     position 24 62
+     size 872 48
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.188 0.188 0.188 0.94
+     style DayZDefaultPanel
+     {
+      TextWidgetClass InviteText {
+       position 12 0
+       size 560 48
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       text ""
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" left
+       "text valign" center
+      }
+      ButtonWidgetClass InviteAcceptButton {
+       position 590 6
+       size 130 36
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Editor
+       text "#STR_PARTY_ACCEPT"
+       text_proportion 0.6
+       font "gui/fonts/metron"
+      }
+      ButtonWidgetClass InviteDeclineButton {
+       position 730 6
+       size 130 36
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Editor
+       text "#STR_PARTY_DECLINE"
+       text_proportion 0.6
+       font "gui/fonts/metron"
+      }
+     }
+    }
+    TextWidgetClass OnlineTitle {
+     position 24 124
+     size 420 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_PARTY_ONLINE_PLAYERS"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" left
+     "text valign" center
+    }
+    TextWidgetClass PartyTitle {
+     position 476 124
+     size 420 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_PARTY_YOUR_PARTY"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" left
+     "text valign" center
+    }
+    ScrollWidgetClass OnlineScroll {
+     position 24 158
+     size 420 360
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     {
+      PanelWidgetClass OnlineRows {
+       position 0 0
+       size 400 360
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0 0 0 0
+      }
+     }
+    }
+    ScrollWidgetClass PartyScroll {
+     position 476 158
+     size 420 360
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     {
+      PanelWidgetClass MemberRows {
+       position 0 0
+       size 400 360
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0 0 0 0
+      }
+     }
+    }
+    ButtonWidgetClass CreateButton {
+     position 24 536
+     size 180 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_PARTY_CREATE"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+    ButtonWidgetClass LeaveButton {
+     position 216 536
+     size 180 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_PARTY_LEAVE"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+    ButtonWidgetClass DisbandButton {
+     position 408 536
+     size 180 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_PARTY_DISBAND"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+    ButtonWidgetClass CloseButton {
+     position 716 536
+     size 180 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_PARTY_CLOSE"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+   }
+  }
+ }
+}
