@@ -83,16 +83,26 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 	{
 		if (version < 2)
 		{
-			// Add default items to the lobby items
-			player_lobby_items.Insert("TShirt_DBR");
-			player_lobby_items.Insert("Jeans_Black");
-			player_lobby_items.Insert("Sneakers_Black");
-			player_lobby_items.Insert("Apple");
-			player_lobby_items.Insert("Zucchini");
-			player_lobby_items.Insert("Apple");
+			// Both keys were INTRODUCED in v2, so a v1 file has neither and deserialization leaves the
+			// field initialisers above untouched - there is nothing to add. Only fill an array that
+			// genuinely came back empty; inserting unconditionally is what used to double the loadout
+			// to 12 items and give a shortcut array of [4, 4], which Save() then made permanent.
+			if (!player_lobby_items || player_lobby_items.Count() == 0)
+			{
+				player_lobby_items = new array<string>();
+				player_lobby_items.Insert("TShirt_DBR");
+				player_lobby_items.Insert("Jeans_Black");
+				player_lobby_items.Insert("Sneakers_Black");
+				player_lobby_items.Insert("Apple");
+				player_lobby_items.Insert("Zucchini");
+				player_lobby_items.Insert("Apple");
+			}
 
-			// Set default shortcut to the Zucchini
-			player_lobby_items_shortcut.Insert(4);  // Zucchini
+			if (!player_lobby_items_shortcut || player_lobby_items_shortcut.Count() == 0)
+			{
+				player_lobby_items_shortcut = new array<int>();
+				player_lobby_items_shortcut.Insert(4);  // Zucchini
+			}
 
 			version = 2;
 			Save();
