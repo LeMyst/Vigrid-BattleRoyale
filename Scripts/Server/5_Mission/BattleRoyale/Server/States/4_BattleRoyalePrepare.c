@@ -306,6 +306,13 @@ class BattleRoyalePrepare: BattleRoyaleState
 			{
 				BattleRoyaleUtils.Trace("- " + village.Name + " (" + village.Type + ")");
 			}
+
+			//--- The list is built once and cached, and the starting-zone filter above is applied
+			//--- during that build. If it removed everything, the list stays empty for the rest of
+			//--- the match and every later call can only return NULL - so say so once, here, rather
+			//--- than letting the caller rediscover it 200 times per player.
+			if(villages.Count() == 0)
+				BattleRoyaleUtils.Warn("No town survived the spawn filters, village spawning is unavailable for this match. Falling back to random positions inside the zone.");
         }
 
         if(villages.Count() > 0)
@@ -317,6 +324,14 @@ class BattleRoyalePrepare: BattleRoyaleState
         }
         else
             return NULL;
+    }
+
+    //--- True once the cached village list has been built and came out empty. NULL from
+    //--- GetRandomVillage() means exactly this and nothing else, and it can never recover within a
+    //--- match, so it is a reason to stop retrying rather than to try again.
+    protected bool HasNoUsableVillages()
+    {
+        return villages && villages.Count() == 0;
     }
 
     protected vector GetRandomVillagePosition(NamedLocation village)
@@ -354,12 +369,13 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         vector random_pos = "0 0 0";
         NamedLocation village;
+        int spawn_zone_number = GetDynamicStartingZone(i_NumStartingPlayers);
 
         if (m_SpawnsSettings.spawn_in_villages)
         {
             vector village_pos = "0 0 0";
-            BattleRoyaleUtils.Trace("Spawn in zone " + GetDynamicStartingZone(i_NumStartingPlayers));
-            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers)).GetArea();
+            BattleRoyaleUtils.Trace("Spawn in zone " + spawn_zone_number);
+            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(spawn_zone_number).GetArea();
             for(int village_spawn_try = 1; village_spawn_try <= 200; village_spawn_try++)
             {
                 BattleRoyaleUtils.Trace("Try to spawn in village " + village_spawn_try);
@@ -415,6 +431,13 @@ class BattleRoyalePrepare: BattleRoyaleState
                     	last_village_spawn = village.Name; // Save last village spawn to avoid it next time
                     break;
                 } else {
+                    //--- GetRandomVillage() returns NULL only when the cached list is empty, and the
+                    //--- list is built once per match - so no further attempt can succeed. Stop here
+                    //--- and let the random-position fallback below run, instead of burning the
+                    //--- remaining attempts. This was costing 200 guaranteed failures per player.
+                    if(HasNoUsableVillages())
+                        break;
+
                     BattleRoyaleUtils.Trace("Another fucked up village!");
                 }
             }
@@ -424,28 +447,89 @@ class BattleRoyalePrepare: BattleRoyaleState
         if( random_pos == "0 0 0" )
         {
         	BattleRoyaleUtils.Trace("Trying to spawn at a random position");
-            int random_spawn_try = 1;
-            while(true)
+
+            //--- Sample INSIDE the starting circle rather than sampling the whole map and rejecting
+            //--- what falls outside it. The old form drew from the full world and then asked
+            //--- IsInZone, but the circle is a tiny fraction of the map - zone 3 at radius 562.5 on
+            //--- Sakhal covers well under 1% of the sampled area - so a hit needed ~100-200 draws and
+            //--- roughly one player in six exhausted the budget entirely. Measured on two live runs:
+            //--- 164 and ~120 draws when it worked, and one player stranded 4.4 km outside the zone
+            //--- when it did not. Drawing from the disc makes every draw a candidate, so the only
+            //--- thing that can still fail is a circle with no safe ground in it.
+            int max_random_spawn_try = 200;
+            vector out_of_zone_fallback = "0 0 0";
+            float x;
+            float y;
+            float z;
+
+            //--- A failed generation leaves a zero-radius placeholder rather than NULL, and both
+            //--- shapes would make the disc draw meaningless - so fall straight through to the
+            //--- map-wide search instead of dereferencing or sampling a point.
+            ref BattleRoyalePlayArea start_area = BattleRoyaleZone.GetZone(spawn_zone_number).GetArea();
+            vector zone_center = "0 0 0";
+            float zone_radius = 0.0;
+            if(start_area)
+            {
+                zone_center = start_area.GetCenter();
+                zone_radius = start_area.GetRadius();
+            }
+            else
+                BattleRoyaleUtils.Warn("Starting zone " + spawn_zone_number + " has no play area, falling back to a map-wide spawn search.");
+
+            for(int random_spawn_try = 1; zone_radius > 0.0 && random_spawn_try <= max_random_spawn_try; random_spawn_try++)
             {
                 BattleRoyaleUtils.Trace("Try to spawn at random position " + random_spawn_try);
-                random_spawn_try++;
-                float edge_pad = 0.1;
 
-                int world_size = GetGame().GetWorld().GetWorldSize();
+                //--- Uniform over the disc's *area*: the sqrt is what stops draws bunching up around
+                //--- the centre, which a plain uniform radius would do. YawToVector gives the unit
+                //--- direction, matching how the rest of this file builds a heading.
+                float spawn_angle = Math.RandomFloatInclusive(0.0, 360.0);
+                float spawn_dist = zone_radius * Math.Sqrt(Math.RandomFloatInclusive(0.0, 1.0));
+                vector spawn_dir = vector.YawToVector(spawn_angle);
 
-                float x = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
-                float z = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
-                float y = GetGame().SurfaceY(x, z);
+                x = zone_center[0] + (spawn_dir[0] * spawn_dist);
+                z = zone_center[2] + (spawn_dir[1] * spawn_dist);
+                y = GetGame().SurfaceY(x, z);
 
                 random_pos[0] = x;
                 random_pos[1] = y;
                 random_pos[2] = z;
 
-                if(!IsSafeForTeleport(random_pos[0], random_pos[1], random_pos[2], true))
+                //--- check_zone is off because the draw is inside the circle by construction; asking
+                //--- again would only pay for the test twice.
+                if(IsSafeForTeleport(x, y, z, false))
+                    return new Param2<vector, NamedLocation>(random_pos, village);
+            }
+
+            //--- Nothing safe inside the circle at all - it is all water, ice or blocked. Widen to
+            //--- the whole map and take the first safe spot, accepting a spawn outside the zone:
+            //--- neither caller checks the returned vector, so giving up with "0 0 0" would teleport
+            //--- the player to the map origin, which is worse than a long run inward.
+            float edge_pad = 0.1;
+            int world_size = GetGame().GetWorld().GetWorldSize();
+
+            for(int wide_spawn_try = 1; wide_spawn_try <= max_random_spawn_try; wide_spawn_try++)
+            {
+                x = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
+                z = Math.RandomFloatInclusive((world_size * edge_pad), world_size - (world_size * edge_pad));
+                y = GetGame().SurfaceY(x, z);
+
+                if(!IsSafeForTeleport(x, y, z, false))
                     continue;
 
+                out_of_zone_fallback[0] = x;
+                out_of_zone_fallback[1] = y;
+                out_of_zone_fallback[2] = z;
                 break;
             }
+
+            //--- random_pos still holds the last candidate tried, which failed. Discard it.
+            random_pos = out_of_zone_fallback;
+
+            if(random_pos == "0 0 0")
+                BattleRoyaleUtils.Warn("Found no safe position inside zone " + spawn_zone_number + " and none anywhere on the map after " + max_random_spawn_try + " attempts each. The player will not be moved.");
+            else
+                BattleRoyaleUtils.Warn("Found no safe position inside zone " + spawn_zone_number + " after " + max_random_spawn_try + " attempts - the circle has no usable ground. Spawning outside the zone at " + random_pos + " instead.");
         }
 
         return new Param2<vector, NamedLocation>(random_pos, village);
@@ -477,6 +561,22 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 		return random_pos;
 	}
+
+    //--- Identity-safe name for logging. A PlayerBase can outlive its PlayerIdentity across one of
+    //--- the ProcessPlayers coroutine's yields, and a Trace argument is evaluated whatever the log
+    //--- level - so an inlined GetIdentity().GetName() throws from inside a disabled log call and
+    //--- takes the whole coroutine with it.
+    protected string GetPlayerLogName(PlayerBase player)
+    {
+        if(!player)
+            return "<null player>";
+
+        PlayerIdentity identity = player.GetIdentity();
+        if(!identity)
+            return "<null identity>";
+
+        return identity.GetName();
+    }
 
     protected void Teleport(PlayerBase process_player)
     {
@@ -521,13 +621,22 @@ class BattleRoyalePrepare: BattleRoyaleState
         vector position = random_pos.param1;
         NamedLocation village = random_pos.param2;
 
+        //--- A zero vector means the spawn search failed outright. The per-player scatter below
+        //--- would turn it into a position *near* the origin, which TeleportPlayer's own zero guard
+        //--- would then not recognise - so stop here instead and leave the group where it is.
+        if(position == "0 0 0")
+        {
+            BattleRoyaleUtils.Warn("TeleportGroup got a zero position, leaving the group where they are.");
+            return;
+        }
+
         int tmpNbPlayers = group.Count();
         for(int i = 0; i < tmpNbPlayers; i++)
         {
             PlayerBase player = group.Get(i);
             if(player)
             {
-                BattleRoyaleUtils.Trace("Teleport player " + player.GetIdentity().GetName() + " to position " + position);
+                BattleRoyaleUtils.Trace("Teleport player " + GetPlayerLogName(player) + " to position " + position);
 
                 int spawn_try = 1;
                 while(true)
@@ -552,7 +661,25 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected void TeleportPlayer(PlayerBase player, vector position, NamedLocation village = NULL)
     {
-        BattleRoyaleUtils.Trace("Spawn player " + player.GetIdentity().GetName() + " at " + position);
+        //--- Runs inside the ProcessPlayers coroutine, which yields between players. A player can
+        //--- disconnect across a yield and leave a live PlayerBase with a null PlayerIdentity, and
+        //--- an exception here aborts the coroutine before Deactivate() - stranding the match in
+        //--- Prepare for good. Same reason the webhook loop below guards both.
+        if(!player)
+        {
+            BattleRoyaleUtils.Warn("TeleportPlayer called with no player, skipping.");
+            return;
+        }
+
+        //--- The spawn search reports total failure as a zero vector. Teleporting there would drop
+        //--- the player at the map origin, so leave them where they are instead.
+        if(position == "0 0 0")
+        {
+            BattleRoyaleUtils.Warn("TeleportPlayer got a zero position for " + GetPlayerLogName(player) + ", leaving them where they are.");
+            return;
+        }
+
+        BattleRoyaleUtils.Trace("Spawn player " + GetPlayerLogName(player) + " at " + position);
 
         //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
         //TODO: force stand up
@@ -580,7 +707,14 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Starting to process players...");
         int i;
         PlayerBase process_player;
-        int pCount = GetPlayers().Count();
+
+        //--- Counted from the snapshot, not from the live roster. Activate() states the rule: "we
+        //--- process on a static list so when players possibly disconnect during this phase we
+        //--- don't error out or skip any clients". Taking the bound from GetPlayers() broke it in
+        //--- both directions - a disconnect before this line made the loops skip the tail of the
+        //--- snapshot, and the spawn-selection loop below indexed the live array, which shrinks
+        //--- across every Sleep(100) yield and so read out of range.
+        int pCount = a_PlayerList.Count();
 
         for (i = 0; i < pCount; i++) {
             process_player = a_PlayerList[i];
@@ -608,21 +742,24 @@ class BattleRoyalePrepare: BattleRoyaleState
 		{
 			BattleRoyaleUtils.Trace("Spawn selection menu enabled");
 			for (i = 0; i < pCount; i++) {
-				process_player = GetPlayers()[i];
+				//--- The snapshot, like every other loop in this method. This was the one place
+				//--- that indexed the live roster.
+				process_player = a_PlayerList[i];
 				if (process_player)
 				{
 					float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
 					vector position = process_player.GetSpawnPos();
+					string player_name = GetPlayerLogName(process_player);
 
 					if( position == vector.Zero )
 					{
-						BattleRoyaleUtils.Trace("Player " + process_player.GetIdentity().GetName() + " didn't select a spawn point, we randomly teleport them");
+						BattleRoyaleUtils.Trace("Player " + player_name + " didn't select a spawn point, we randomly teleport them");
 						Teleport(process_player);
 						Sleep(100);
 						continue;
 					}
 
-					BattleRoyaleUtils.Trace("Try to spawn player " + process_player.GetIdentity().GetName() + " at " + position + " with a radius of " + f_SpawnSelectionRadius);
+					BattleRoyaleUtils.Trace("Try to spawn player " + player_name + " at " + position + " with a radius of " + f_SpawnSelectionRadius);
 
 					vector random_position = GetRandomSafePosition(position, f_SpawnSelectionRadius);
 
@@ -753,11 +890,18 @@ class BattleRoyalePrepare: BattleRoyaleState
         super.AddPlayer(player);
     }
 
+    //--- Index loop with a null check, not a foreach - see the note on the BattleRoyaleDebugState
+    //--- override this mirrors. m_Players is already cleared by the time this runs, so a throw
+    //--- here loses the roster during state migration.
     override ref array<PlayerBase> RemoveAllPlayers()
     {
         ref array<PlayerBase> players = super.RemoveAllPlayers();
-        foreach(PlayerBase player: players)
+        for(int i = 0; i < players.Count(); i++)
         {
+            PlayerBase player = players[i];
+            if(!player)
+                continue;
+
             player.SetAllowDamage(true); //leaving debug state = disable god mode
             player.Heal();
         }

@@ -159,7 +159,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		if( player_count <= 1 ) // need more than 1 player
 			return false;
 
-		if( player_count <= i_MinPlayers ) // need more than the minimum player
+		//--- At least the minimum, matching the non-vote path in IsComplete() which starts on
+		//--- `Count() >= i_MinPlayers`. This used to demand strictly more, so a lobby sitting at
+		//--- exactly minimum_players could never vote-start however many players readied up.
+		if( player_count < i_MinPlayers )
 			return false;
 
 #ifdef VIGRID_PARTY
@@ -167,7 +170,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			return false;
 #endif
 
-        float percent = (ready_count / player_count);
+        //--- Cast before dividing. Both operands are int, so this truncated to 0 for any partial
+        //--- readiness and to 1 only at 100% - which made ready_up_percent dead config, the vote
+        //--- passing only when every single player had readied up.
+        float percent = ready_count / (float)player_count;
         return (percent >= f_VoteThreshold);
     }
 
