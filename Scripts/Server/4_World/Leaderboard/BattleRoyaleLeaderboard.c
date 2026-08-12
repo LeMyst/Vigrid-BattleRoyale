@@ -30,6 +30,22 @@
  *    - PlayerIdentity is already NULL on a disconnect, so uid and name come from the cached
  *      PlayerBase fields.
  */
+/**
+ *  What RecordExit awarded one player for THIS match.
+ *
+ *  Kept only so AmendKills can revise an award instead of adding a second one: entries are
+ *  cumulative across matches, so a posthumous kill has to apply the delta against what was already
+ *  paid out. Per-match and never persisted - it is not a DTO.
+ */
+class BattleRoyaleMatchRecord
+{
+    int   board;
+    int   rank;
+    bool  ranked;
+    int   kills;
+    float points;
+}
+
 class BattleRoyaleLeaderboard
 {
     static ref BattleRoyaleLeaderboard m_Instance;
@@ -42,6 +58,7 @@ class BattleRoyaleLeaderboard
 
     //--- Per-match state, all reset by BeginMatch.
     protected ref set<string> m_Recorded;
+    protected ref map<string, ref BattleRoyaleMatchRecord> m_MatchRecords;
     protected ref map<string, int> m_GroupSizes;
     protected int m_FieldSize;
     protected bool m_Ranking;
@@ -64,6 +81,7 @@ class BattleRoyaleLeaderboard
         m_Entries = new array<ref BattleRoyaleLeaderboardEntry>();
         m_ByUid = new map<string, BattleRoyaleLeaderboardEntry>();
         m_Recorded = new set<string>();
+        m_MatchRecords = new map<string, ref BattleRoyaleMatchRecord>();
         m_GroupSizes = new map<string, int>();
         m_RequestCooldowns = new map<string, int>();
         m_SortedSolo = new array<BattleRoyaleLeaderboardEntry>();
@@ -122,7 +140,13 @@ class BattleRoyaleLeaderboard
         m_FieldSize = field_groups;
         m_Ranking = true;
         m_Recorded.Clear();
+        m_MatchRecords.Clear();
         m_GroupSizes.Clear();
+
+        //--- The kill tally shares this match boundary exactly, and this is the only place that
+        //--- boundary is known. Cleared unconditionally, ahead of the settings check below, because
+        //--- br_kills mirrors the ledger whether or not the ladder is enabled.
+        BattleRoyaleKillLedger.GetInstance().BeginMatch();
 
         if (group_sizes)
         {
@@ -194,7 +218,9 @@ class BattleRoyaleLeaderboard
 
         int board = BattleRoyaleScoring.BoardForGroupSize(group_size);
         int rank = player.GetBRPosition();
-        int kills = player.br_kills;
+        //--- From the ledger, not player.br_kills: a kill landing after this player left the match
+        //--- has nowhere to write br_kills, and AmendKills below revises this award when it does.
+        int kills = BattleRoyaleKillLedger.GetInstance().GetKills(uid);
 
         float points = 0.0;
         if (ranked)
@@ -235,7 +261,80 @@ class BattleRoyaleLeaderboard
                 entry.solo_wins = entry.solo_wins + 1;
         }
 
+        //--- What was awarded, so a later kill can revise it rather than double-pay.
+        BattleRoyaleMatchRecord record = new BattleRoyaleMatchRecord();
+        record.board = board;
+        record.rank = rank;
+        record.ranked = ranked;
+        record.kills = kills;
+        record.points = points;
+        m_MatchRecords.Set(uid, record);
+
         BattleRoyaleUtils.Debug(string.Format("[Leaderboard] %1 finished at %2/%3 with %4 kills for %5 points (board %6)", uid, rank, m_FieldSize, kills, points, board));
+
+        m_SortValid = false;
+        MarkDirty(false);
+    }
+
+    /**
+     *  Revise an already-recorded player's kill count.
+     *
+     *  Exists for one case: a kill credited to somebody who has ALREADY left the match - killed by
+     *  their own grenade's victim, or simply disconnected - after RecordExit fired and locked their
+     *  uid into m_Recorded. Without this the trap they armed scores nothing.
+     *
+     *  A uid with no match record needs nothing done: either RecordExit has not run yet, in which
+     *  case it reads the ledger and gets the right answer by itself, or it ran and deliberately
+     *  awarded nothing (an unranked match with count_unranked_matches off).
+     */
+    void AmendKills(string uid, int new_total)
+    {
+        BattleRoyaleMatchRecord record = NULL;
+        BattleRoyaleLeaderboardEntry entry = NULL;
+        float points = 0.0;
+        float points_delta = 0.0;
+        int kills_delta = 0;
+
+        if (!m_Settings)
+            return;
+        if (!m_Settings.enable_leaderboard)
+            return;
+        if (uid == "")
+            return;
+        if (!m_MatchRecords.Contains(uid))
+            return;
+
+        record = m_MatchRecords.Get(uid);
+        if (!record)
+            return;
+        if (!record.ranked)
+            return;
+
+        entry = m_ByUid.Get(uid);
+        if (!entry)
+            return;
+
+        //--- Rank is fixed the moment they left; only the kill term of the curve moves.
+        points = BattleRoyaleScoring.MatchPoints(record.rank, m_FieldSize, new_total, m_Settings);
+
+        kills_delta = new_total - record.kills;
+        points_delta = points - record.points;
+
+        if (record.board == BR_LEADERBOARD_BOARD_GROUP)
+        {
+            entry.group_kills = entry.group_kills + kills_delta;
+            entry.group_points = entry.group_points + points_delta;
+        }
+        else
+        {
+            entry.solo_kills = entry.solo_kills + kills_delta;
+            entry.solo_points = entry.solo_points + points_delta;
+        }
+
+        record.kills = new_total;
+        record.points = points;
+
+        BattleRoyaleUtils.Debug(string.Format("[Leaderboard] %1 amended to %2 kills, %3 points", uid, new_total, points));
 
         m_SortValid = false;
         MarkDirty(false);

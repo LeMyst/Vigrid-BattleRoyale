@@ -694,10 +694,11 @@ net zero. The death menu therefore adds **no** focus calls of its own. Note `Lea
 add `ChangeGameFocus(1)` / `ResetGameFocus()` on top of `super`; do not copy that pattern, since
 `ResetGameFocus` zeroes the counter rather than decrementing it.
 
-Killer attribution goes through `ResolveKillerUid`, because **`EEKilled`'s `Object source` is the
-weapon** for every gun and melee kill — the hierarchy-parent step is the same idiom the webhook code
-uses at `0_BattleRoyaleState.c:545-550`. `RecordDeath` is **first-write-wins**, which is what makes
-the documented double `RemovePlayer` and the unconscious-disconnect path harmless.
+Killer attribution goes through `BattleRoyaleKillAttribution` — see *Kill attribution* below.
+`BattleRoyaleSpectators.ResolveKillerUid` is now a one-line delegate to it. `RecordDeath` is
+**first-write-wins**, which is what makes the documented double `RemovePlayer` and the
+unconscious-disconnect path harmless; `RecordDeathWithKillerUid` is its general form, because a
+killer known only as a uid may have no `PlayerBase` left at all.
 
 One driver: `BattleRoyaleSpectators.Tick()`, from the existing 10 Hz block in
 `BattleRoyaleServer.Update()`. Its four passes are liveness sweep (the *primary* disconnect
@@ -816,11 +817,84 @@ Three things about that hook are load-bearing:
 - **The hook is `InitBadgesAndNotifiers()`, not `Init()`.** `Init()` calls it once at startup and `respawndialogue.c` calls it again after a respawn, so one override covers both. That is also why the badge reposition uses **absolute** x (`BR_HUD_BADGES_SPACER_X` / `_PANEL_X`) rather than a delta — a second pass must be a no-op.
 - Everything under `HudPanel` is `halign right_ref`, so `position x` is the distance from the parent's **right** edge and hiding a middle widget leaves a hole rather than reflowing. Vanilla's right-to-left order is `Health` 0, `Blood` 43, `NotifierDivider` 86, `Temperature` 96, `Hungry` 139, `Thirsty` 182, `BadgesSpacer` 213, `BadgesPanel` 252. The badge group moves right by 143 so its divider lands on the old 86.
 
+### Kill attribution
+
+**One resolver answers "whose kill was this": `BattleRoyaleKillAttribution`
+(`Scripts/Server/4_World/Entities/`).** Four consumers used to derive it independently and disagreed
+— the spectator killer chain, the `player.kill` webhook, the kill credit, and
+`PlayerBase.EEHitBy`'s `last_unconscious_source`. Two facts drive it, and both have caused bugs:
+
+- **`EEKilled`'s `source` is the WEAPON** for every gun and melee kill. `ResolvePlayerSource` does
+  the hierarchy-parent step, with the `EntityAI.Cast` **null-checked** — a source that is not an
+  `EntityAI` (a building, a vehicle part) used to dereference NULL at two separate call sites.
+- **For an explosive or a trap the source is the DEVICE**, which has no hierarchy parent once armed.
+  The responsible player is knowable only because the device recorded them at arm time, as a **plain
+  string** — which is exactly what lets a kill outlive its owner's death *and* their disconnect.
+
+**Devices are modded at the vanilla PARENTS, `ExplosivesBase` and `TrapBase`.** Naming the leaves
+(`Grenade_Base`, `LandMineTrap`) meant Claymore, IED and Plastic Explosive — the archetypal traps —
+credited their classname instead of their owner. `ExplosivesBase.OnPlacementComplete` is the one hook
+that covers arming as well as placement: `ActionArmExplosive.OnFinishProgressServer` calls
+`OnPlacementComplete(action_data.m_Player, …)`. `Grenade_Base` therefore carries **only `OnUnpin`**;
+re-declaring `m_ActivatorId` on it would shadow the parent's. `ActionTriggerRemotely` re-attributes
+to whoever pressed the detonator, and **sets the activator before `super`**, since `super` is what
+detonates.
+
+⚠️ **The `EEKilled(Object killer)` override on a device cannot use a bare `PlayerBase` cast** — the
+same weapon-not-shooter rule applies, so the cast this replaced could never succeed and shooting an
+armed charge silently kept crediting whoever placed it.
+
+⚠️ **`OnPlacementComplete` must be hooked on the PARENT; `OnActivatedByItem` must be hooked on the
+LEAF. The two sit inches apart and behave oppositely.** Vanilla's four explosives — `Grenade_Base`,
+`ClaymoreMine`, `ImprovisedExplosive`, `Plastic_Explosive` — **none** of which calls
+`super.OnActivatedByItem`, so an override of it on `ExplosivesBase` is dead code for every explosive
+in the game. It was written there first and looked right. The symptom is a device that records its
+owner correctly and still credits `<environment>`.
+
+**A grenade rigged to a tripwire is the case that needs it**, and it is the one real path where the
+device that KILLS is not the device that knew the owner: `TripwireTrap.SetInactive` calls
+`attachment.OnActivatedByItem(this)` and then **drops** the attachment, so the grenade does the
+damage while the trap holds the activator. Vanilla's `Grenade_Base.OnActivatedByItem` answers by
+calling `Unpin()`, which does reach the mod's `OnUnpin` — but the grenade's hierarchy root is the
+*trap* by then, not a player, so it resolves nobody. `BR_InheritActivatorFrom` copies the activator
+across, called before `super` because `super` starts the fuse. Same handoff applies to an IED with
+grenades attached (`ImprovisedExplosive.OnActivatedByItem` activates its own attachments).
+
+**Kill credit lives in `BattleRoyaleKillLedger`, a uid → kills map, and `br_kills` is now a mirror
+of it.** The explosive branch of `0_BattleRoyaleState.OnPlayerKilled` wrote the webhook JSON and then
+fell out of the `if`, so **no grenade or mine kill had ever scored** — not on the HUD counter, the
+admin spectator tags, or the ladder. Both branches funnel through `CreditKill` now, which is a no-op
+on an empty uid. A **corpse** still resolves through `FindPlayerByUid` (the mod never deletes bodies),
+so a dead-but-connected killer watches their own counter tick.
+
+**A posthumous kill has to AMEND the ladder, not add to it.** `RecordExit` fires and locks the uid
+into `m_Recorded` the moment its owner leaves the match — which is before their grenade lands.
+`BattleRoyaleLeaderboard.AmendKills` recomputes `MatchPoints` against the stored
+`BattleRoyaleMatchRecord` (board, rank, ranked, kills, points) and applies the **deltas**; entries are
+cumulative across matches, so re-adding would double-pay. A uid with no match record needs nothing —
+`RecordExit` reads the ledger itself and gets the right answer.
+
+**The `AddPlayerKill` RPC now carries the authoritative TOTAL, not an increment.** The client handler
+ignored its payload and did a local `+= 1`, which drifts the moment a kill is scored while that client
+controls no entity — a spectating killer whose grenade landed after they died.
+
+⚠️ **`EnScript.GetClassVar` DOES reach a var declared on a modded PARENT class — measured 2026-08-12
+— but its return code is meaningless.** This matters because `Extra/KillFeed` reads the activator
+reflectively (the discipline rule forbids it naming a BattleRoyale symbol), and those vars now live on
+`ExplosivesBase` rather than on `Grenade_Base`. A round-trip through a `Grenade_Base` instance
+returned `PROBE-OK`, so the seam is sound. The return code was **0 for all four cases**: a var
+declared directly on the class, a var that exists nowhere, a successful `SetClassVar`, and a
+successful `GetClassVar`. Never branch on it — the same trap as `DiagMenu.BindCallback`. An empty
+string back is *not* evidence of failure, which is why the first probe (a bare read of a fresh
+grenade) was ambiguous and had to be redone as a round-trip.
+
 ### Kill feed (`Extra/KillFeed/`)
 
 A standalone addon replacing the third-party `nulledkillfeed.pbo`. It builds into `extra_killfeed.pbo` and defines `KILLFEED`. It hooks vanilla `PlayerBase.EEKilled` itself, so it works on any DayZ server — Battle Royale is not required.
 
 **Same discipline rule as `Party/`: nothing under `Extra/KillFeed/` may reference a `BattleRoyale*` symbol.** It carries its own logger (`KillFeedLog`), settings (`$profile:KillFeed\killfeed_settings.json`), `stringtable.csv` (`STR_KF_*`), layouts and RPC namespace (`RPC-KillFeed`). `KILLFEED_PREFIX` in `KillFeedConstants.c` is the single place the asset path appears.
+
+**`ResolveActivatorName` asks for the recorded NAME first, and that ordering is the point.** Mapping the activator's uid back to a name by scanning `GetGame().GetPlayers()` can only answer for somebody still connected and still holding an identity — but an explosive routinely outlives its owner, which is the one case worth naming. A thrower who died or left yielded `""`, degrading their kill to an environmental death that `show_environment_deaths` could then suppress outright. `IsExplosive` tests the vanilla parents `ExplosivesBase` / `TrapBase`, not two concrete classes. Both reads stay defensive `EnScript.GetClassVar` calls — see *Kill attribution* for why that works and why its return code must not be checked.
 
 The Battle Royale mod talks to it **only** through `KillFeedAPI` (`Extra/KillFeed/Scripts/4_World/KillFeedAPI.c`), five call sites, each wrapped in `#ifdef KILLFEED`:
 

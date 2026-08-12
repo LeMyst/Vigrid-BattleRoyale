@@ -817,22 +817,35 @@ class BattleRoyaleServer: BattleRoyaleBase
                 // We add a kill to the last damage source
                 if ( player.last_unconscious_source )
                 {
-                    if ( player.last_unconscious_source.IsInherited( PlayerBase ) )
-                    {
-                        BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, adding kill to last damage source.");
+                    BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, adding kill to last damage source.");
 
-                        PlayerBase killer = PlayerBase.Cast( player.last_unconscious_source );
+                    PlayerBase killer = player.last_unconscious_source;
 
-                        //--- Record the attribution NOW, while we still have the real killer. The
-                        //--- health zeroing below fires a second EEKilled whose source is the victim
-                        //--- themself; RecordDeath is first-write-wins, so that later call cannot
-                        //--- overwrite this with "environment" and break other players' chains.
-                        BattleRoyaleSpectators.GetInstance().RecordDeathWithKiller( player, killer );
+                    //--- Record the attribution NOW, while we still have the real killer. The
+                    //--- health zeroing below fires a second EEKilled whose source is the victim
+                    //--- themself; RecordDeath is first-write-wins, so that later call cannot
+                    //--- overwrite this with "environment" and break other players' chains.
+                    BattleRoyaleSpectators.GetInstance().RecordDeathWithKiller( player, killer );
 
-                        GetCurrentState().OnPlayerKilled( player, killer );
-                    } else {
-                        BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but the last damage source is not a player.");
-                    }
+                    GetCurrentState().OnPlayerKilled( player, killer );
+                }
+                else if ( player.last_unconscious_source_uid != "" )
+                {
+                    //--- Downed by an explosive or a trap: there is no object to point at, because a
+                    //--- device has no hierarchy parent and its owner may already be dead or gone.
+                    //--- The uid the device recorded at arm time is all that is left, and it is enough
+                    //--- to credit the kill and to seed other players' killer chains.
+                    //---
+                    //--- Deliberately does NOT route through GetCurrentState().OnPlayerKilled: that
+                    //--- takes an Object, and the device is typically already deleted (a grenade
+                    //--- removes itself a quarter-second after detonating). Removal and the leaderboard
+                    //--- still happen, via the SetHealth(0) below firing EEKilled. The one thing lost is
+                    //--- that the player.kill webhook records this rare case as environmental.
+                    BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, crediting the recorded device owner.");
+
+                    BattleRoyaleSpectators.GetInstance().RecordDeathWithKillerUid( player, player.last_unconscious_source_uid );
+
+                    BattleRoyaleKillLedger.GetInstance().CreditKill( player.last_unconscious_source_uid );
                 } else {
                     BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but there is no last damage source.");
                 }

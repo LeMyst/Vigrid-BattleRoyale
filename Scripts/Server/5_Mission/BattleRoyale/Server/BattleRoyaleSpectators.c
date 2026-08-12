@@ -269,63 +269,13 @@ class BattleRoyaleSpectators
     /**
      *  Resolve the PLAYER responsible for a death to a uid, or "" when nothing player-shaped is.
      *
-     *  EEKilled's `source` is the WEAPON for every gun and melee kill, not the shooter - which is
-     *  exactly the bug that left the WIP branch's chain resolving NULL on every real kill. The
-     *  hierarchy-parent step is the fix, and it is the same idiom the webhook code already uses at
-     *  0_BattleRoyaleState.c:545-550.
+     *  Kept as a method here because the killer chain's call sites read better for it, but the logic
+     *  lives in BattleRoyaleKillAttribution - it is shared with the webhook, the kill credit and
+     *  PlayerBase.EEHitBy, and those four used to disagree with each other about grenades and traps.
      */
     static string ResolveKillerUid(PlayerBase victim, Object source)
     {
-        string victim_uid = "";
-        string result = "";
-        PlayerBase killer_player = NULL;
-        EntityAI source_entity = NULL;
-
-        if (!victim)
-            return "";
-        if (!victim.GetIdentity())
-            return "";
-
-        victim_uid = victim.GetIdentity().GetPlainId();
-
-        if (!source)
-            return "";
-        //--- zone damage, starvation, dehydration, fall, drowning: the victim is their own source
-        if (source == victim)
-            return "";
-
-        //--- explosives carry the activator's SteamID64 directly
-        if (source.IsInherited(Grenade_Base) || source.IsInherited(LandMineTrap))
-        {
-            EnScript.GetClassVar(source, "m_ActivatorId", -1, result);
-            if (result == victim_uid)
-                result = "";
-
-            return result;
-        }
-
-        //--- gun or melee: the weapon's hierarchy parent is the shooter
-        source_entity = EntityAI.Cast(source);
-        if (source_entity)
-            killer_player = PlayerBase.Cast(source_entity.GetHierarchyParent());
-
-        //--- fists, or a direct player source
-        if (!killer_player)
-            killer_player = PlayerBase.Cast(source);
-
-        //--- anything else (infected, animal, vehicle, world object) is environmental to us
-        if (!killer_player)
-            return "";
-        if (killer_player == victim)
-            return "";
-        if (!killer_player.GetIdentity())
-            return "";
-
-        result = killer_player.GetIdentity().GetPlainId();
-        if (result == victim_uid)
-            result = "";
-
-        return result;
+        return BattleRoyaleKillAttribution.ResolveKillerUid(victim, source);
     }
 
     /**
@@ -382,6 +332,22 @@ class BattleRoyaleSpectators
      */
     void RecordDeathWithKiller(PlayerBase victim, PlayerBase killer)
     {
+        string resolved = "";
+        if (killer && killer.GetIdentity())
+            resolved = killer.GetIdentity().GetPlainId();
+
+        RecordDeathWithKillerUid(victim, resolved);
+    }
+
+    /**
+     *  Record a death whose killer the caller has already resolved to a UID.
+     *
+     *  The uid form is the general one: a killer downed by an explosive may have no PlayerBase left
+     *  at all, since a device records its owner as a string precisely so the attribution can outlive
+     *  them. RecordDeathWithKiller is the object-shaped convenience wrapper over this.
+     */
+    void RecordDeathWithKillerUid(PlayerBase victim, string killer_uid)
+    {
         if (!victim)
             return;
         if (!victim.GetIdentity())
@@ -394,9 +360,6 @@ class BattleRoyaleSpectators
         if (m_Deaths.Contains(uid))
             return;  //--- first write wins
 
-        string killer_uid = "";
-        if (killer && killer.GetIdentity())
-            killer_uid = killer.GetIdentity().GetPlainId();
         if (killer_uid == uid)
             killer_uid = "";
 

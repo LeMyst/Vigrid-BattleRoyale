@@ -791,36 +791,35 @@ class BattleRoyaleState: Timeable
 				scoreWebhook.Send( br_instance.match_uuid, player.GetIdentity().GetPlainId(), player.GetBRPosition() );
 			}
 
-			// Does the source is a carrier and the carrier a Player?
-			PlayerBase playerSource = PlayerBase.Cast( EntityAI.Cast( source ).GetHierarchyParent() );
-			if (!playerSource)
-			{
-				// If not, does the source is a Player?
-				playerSource = PlayerBase.Cast( source );
-			}
+			//--- One resolver for every consumer - see BattleRoyaleKillAttribution. It null-checks the
+			//--- EntityAI cast, which the two-line version this replaced did not: a source that is not
+			//--- an EntityAI (a building, a vehicle part) dereferenced NULL.
+			PlayerBase playerSource = BattleRoyaleKillAttribution.ResolvePlayerSource( source );
+
+			//--- The uid is what gets CREDITED, and it is deliberately not derived from playerSource:
+			//--- for a grenade or a trap the responsible player may be dead or gone, so only the uid
+			//--- the device recorded at arm time still exists.
+			string killer_uid = BattleRoyaleKillAttribution.ResolveKillerUid( player, source );
 
 			if (player == source)	// deaths not caused by another object (starvation, dehydration)
 			{
 				// Killed by environmental causes but the the player directly
 				json_data.Insert( "killer", "environment" );
 			}
-			else if ( source.IsInherited(Grenade_Base) || source.IsInherited(LandMineTrap) )
+			else if ( BattleRoyaleKillAttribution.IsProxyDevice( source ) )
 			{
-				string killer = "";
-				EnScript.GetClassVar(source, "m_ActivatorId", -1, killer);
-				json_data.Insert( "killer", killer );
+				//--- A grenade, a mine, a claymore, an IED, a placed charge. Covers every vanilla
+				//--- explosive and trap now, where this used to name only two concrete classes.
+				json_data.Insert( "killer", killer_uid );
 				json_data.Insert( "weapon", source.GetType() );
+				json_data.Insert( "killer_position", source.GetPosition().ToString() );
 			}
 			else {
 				json_data.Insert( "killer_position", source.GetPosition().ToString() );
 
 				if (playerSource)
 				{
-					json_data.Insert( "killer", playerSource.GetIdentity().GetPlainId() );
-					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, playerSource.GetIdentity(), playerSource);
-					//--- Server-side tally for the leaderboard. The RPC above only ever told the
-					//--- killer's own client, so nothing on this side could score kills before.
-					playerSource.br_kills = playerSource.br_kills + 1;
+					json_data.Insert( "killer", killer_uid );
 					if (source.IsWeapon() || source.IsMeleeWeapon())
 					{
 						json_data.Insert( "weapon", source.GetType() );
@@ -840,6 +839,12 @@ class BattleRoyaleState: Timeable
 					json_data.Insert( "killer", source.GetType() );
 				}
 			}
+
+			//--- The single credit point, deliberately outside the branches above: a grenade kill used
+			//--- to fall out of its branch without ever scoring, so no explosive kill has ever reached
+			//--- the HUD counter, the spectator overlay tags or the ladder. CreditKill is a no-op on an
+			//--- empty uid, which is what an environmental or animal death resolves to.
+			BattleRoyaleKillLedger.GetInstance().CreditKill( killer_uid );
 
 			if ( m_ServerData.enable_vigrid_api )
 			{
