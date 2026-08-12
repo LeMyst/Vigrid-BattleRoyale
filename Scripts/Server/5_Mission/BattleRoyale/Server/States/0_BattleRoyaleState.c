@@ -430,6 +430,126 @@ class BattleRoyaleState: Timeable
         return true;
     }
 
+    //--- Identity-safe name for logging. A PlayerBase can outlive its PlayerIdentity across a
+    //--- coroutine yield or a deferred call, and a Trace argument is evaluated whatever the log
+    //--- level - so an inlined GetIdentity().GetName() throws from inside a disabled log call and
+    //--- takes the caller with it. Lives here rather than in one state because both the Prepare
+    //--- coroutine and the unstuck path below need it.
+    protected string GetPlayerLogName(PlayerBase player)
+    {
+        if(!player)
+            return "<null player>";
+
+        PlayerIdentity identity = player.GetIdentity();
+        if(!identity)
+            return "<null identity>";
+
+        return identity.GetName();
+    }
+
+    //--- Whether this state answers an F2 unstuck request at all. False by default, so Prepare, the
+    //--- rounds and Win keep refusing exactly as they always have; only the lobby and the warm-up
+    //--- opt in. The client sends the RPC unconditionally (BattleRoyaleClient.Unstuck), so this is
+    //--- the only gate.
+    bool AllowsUnstuck()
+    {
+        return false;
+    }
+
+    //--- Where an unstuck request may drop this player. Ring search outward from where they stand,
+    //--- which is what keeps the teleport short enough to read as "shoved free" rather than as a
+    //--- relocation. check_zone is off because an unstuck must work wherever the player currently
+    //--- is - refusing to free somebody because they are already outside the circle is backwards.
+    protected bool FindUnstuckPosition(PlayerBase player, out vector position)
+    {
+        position = "0 0 0";
+
+        if(!player)
+            return false;
+
+        vector player_position = player.GetPosition();
+
+        for(int search_pos = 0; search_pos < 50; search_pos++)
+        {
+            float radius = 10.0 + (search_pos * 0.5);
+            float angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+            float x = player_position[0] + ( radius * Math.Cos(angle) );
+            float z = player_position[2] + ( radius * Math.Sin(angle) );
+            float y = GetGame().SurfaceY(x, z);
+
+            if( !IsSafeForTeleport(x, y, z, false) )
+                continue;
+
+            position = Vector(x, y, z);
+            return true;
+        }
+
+        return false;
+    }
+
+    //--- Cooldown gate, so F2 cannot be held down as free fast-travel. wait_unstuck alone is not
+    //--- enough: it is cleared the moment the teleport lands, which was fine while unstuck only
+    //--- existed during the warm-up but is not once the lobby - where players idle for minutes -
+    //--- can answer it too.
+    void DeferredUnstuck( PlayerBase player )
+    {
+        //--- Reached from an RPC handler, so the subject may already be gone.
+        if( !player )
+            return;
+
+        if( player.wait_unstuck )
+        {
+            MessagePlayerUntranslated( player, "STR_BR_ALREADY_REQUESTED_UNSTUCK" );
+            return;
+        }
+
+        if( GetGame().GetTickTime() < player.next_unstuck_time )
+        {
+            MessagePlayerUntranslated( player, "STR_BR_ALREADY_REQUESTED_UNSTUCK" );
+            return;
+        }
+
+        //--- Note the cooldown is NOT started here. A request that finds nowhere to land refuses and
+        //--- leaves the player exactly as stuck as they were, so charging them 30 s for it would
+        //--- punish the one case where retrying immediately is the right thing to do. Unstuck()
+        //--- starts the clock once a teleport has actually been sent.
+        player.wait_unstuck = true;
+
+        MessagePlayerUntranslated( player, "STR_BR_UNSTUCK_TELEPORTATION" );
+        BattleRoyaleUtils.Trace( GetPlayerLogName( player ) + " asked for an unstuck teleportation." );
+        GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
+    }
+
+    void Unstuck( PlayerBase player )
+    {
+        //--- 1-3 seconds have passed since DeferredUnstuck queued this, and a player can disconnect
+        //--- inside that window. The failure branch below used to dereference GetIdentity() with no
+        //--- guard on either, which was survivable while only the warm-up could reach it.
+        if( !player )
+            return;
+
+        vector unstuck_position;
+        if( !FindUnstuckPosition( player, unstuck_position ) )
+        {
+            BattleRoyaleUtils.Warn( GetPlayerLogName( player ) + " unstuck failed at " + player.GetPosition() );
+            player.wait_unstuck = false;
+            return;
+        }
+
+        vector playerDir = vector.YawToVector( Math.RandomFloat(0, 360) );
+        vector direction = Vector(playerDir[0], 0, playerDir[1]);
+
+        ScriptJunctureData pCtx = new ScriptJunctureData;
+        pCtx.Write( unstuck_position );
+        pCtx.Write( direction );
+        player.SendSyncJuncture( BR_SYNC_JUNCTURE_TELEPORT, pCtx );
+        player.SetSynchDirty();
+        player.wait_unstuck = false;
+
+        //--- Charged only for a teleport that was actually sent - see the note in DeferredUnstuck.
+        player.next_unstuck_time = GetGame().GetTickTime() + BR_UNSTUCK_COOLDOWN_SECONDS;
+    }
+
 	// Maybe this should be moved to another class, maybe not
     int GetDynamicStartingZone(int num_players)
     {
@@ -441,7 +561,6 @@ class BattleRoyaleState: Timeable
 		int resolved_zone = 1;  // Default to 1 if dynamic zones are not enabled
 
     	BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
-		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
 		if ( m_ZoneSettings.use_dynamic_zones )
 		{
 			// Return the first zone based on number of registered players
@@ -451,10 +570,10 @@ class BattleRoyaleState: Timeable
 			//--- Solving for min_zone_num gives Z = num_zones - min_zone_num + 1; the old test
 			//--- omitted the +1 and so guaranteed one zone more than configured. Clamped so a
 			//--- min_zone_num >= num_zones still means "play them all" rather than never matching.
-			int floor_zone = Math.Max(1, m_GameSettings.num_zones - m_ZoneSettings.min_zone_num + 1);
+			int floor_zone = Math.Max(1, m_ZoneSettings.num_zones - m_ZoneSettings.min_zone_num + 1);
 
 			BattleRoyaleUtils.Trace("Number of players registered: " + num_players);
-			for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
+			for(int i_zone = 1; i_zone < m_ZoneSettings.num_zones; i_zone++)
 			{
 				BattleRoyaleUtils.Trace("Try zone: " + i_zone);
 				last_try_zone = i_zone;
@@ -613,6 +732,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
     {
         BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        BattleRoyaleLobbyData m_LobbySettings = BattleRoyaleConfig.GetConfig().GetLobbyData();
 
         if(m_SpawnsSettings && m_GameSettings)
         {
@@ -626,13 +746,13 @@ class BattleRoyaleDebugState: BattleRoyaleState
             GetGame().RequestExit(0);  // Exit the game
         }
 
-        if(m_GameSettings)
+        if(m_LobbySettings)
         {
-            i_HealTickTime = m_GameSettings.debug_heal_tick_seconds;
+            i_HealTickTime = m_LobbySettings.debug_heal_tick_seconds;
         }
         else
         {
-            Error("GAME SETTINGS IS NULL");
+            Error("LOBBY SETTINGS IS NULL");
             i_HealTickTime = DAYZBR_DEBUG_HEAL_TICK;
         }
     }
@@ -743,6 +863,82 @@ class BattleRoyaleDebugState: BattleRoyaleState
         }
 
         return (a_AdminsList.Find(steamid) != -1);
+    }
+
+    //--- Same ring search as the base state, but no candidate outside the lobby disc is allowed, and
+    //--- there is always an answer.
+    //---
+    //--- Two reasons the clamp is here rather than left to OnPlayerTick's containment above. It
+    //--- would catch an escapee anyway, but only by yanking them back to the centre a frame later -
+    //--- a visible double teleport. More importantly it exempts admins (CanGoOutsideLobby), so for
+    //--- an admin nothing would catch it at all and an unstuck could quietly drop them into the
+    //--- world mid-lobby. Making "cannot leave the lobby" a property of this method covers both.
+    //---
+    //--- 2D distance, matching OnPlayerTick and for the same reason its comment gives.
+    override protected bool FindUnstuckPosition(PlayerBase player, out vector position)
+    {
+        position = "0 0 0";
+
+        if(!player)
+            return false;
+
+        vector player_position = player.GetPosition();
+
+        for(int search_pos = 0; search_pos < 50; search_pos++)
+        {
+            float radius = 10.0 + (search_pos * 0.5);
+            float angle = Math.RandomFloat(0, 360) * Math.DEG2RAD;
+            float x = player_position[0] + ( radius * Math.Cos(angle) );
+            float z = player_position[2] + ( radius * Math.Sin(angle) );
+            float y = GetGame().SurfaceY(x, z);
+
+            //--- The ring grows to 34.5 m, so on a small lobby most of it lies outside. Reject
+            //--- before the expensive geometry test in IsSafeForTeleport, not after.
+            if( vector.Distance( Vector( x, 0, z ), Vector( v_Center[0], 0, v_Center[2] ) ) > f_Radius )
+                continue;
+
+            if( !IsSafeForTeleport(x, y, z, false) )
+                continue;
+
+            position = Vector(x, y, z);
+            return true;
+        }
+
+        //--- Nothing safe inside the disc. Fall back to the placement OnPlayerTick already uses to
+        //--- put an escapee back, so a lobby unstuck never fails: being shoved to the middle of the
+        //--- lobby is the correct outcome for a player who cannot otherwise move.
+        //---
+        //--- Vetted first, though, which it never used to be. This is where a lobby unstuck almost
+        //--- always lands - the ring search above only tends to succeed on a wide open lobby - and
+        //--- the position was taken raw from SurfaceY with no geometry test of any kind. A centre
+        //--- that happens to sit under a prop seats the capsule inside it, and the player is freed
+        //--- from being stuck into being stuck. That is the fault BR_TELEPORT_DROP_HEIGHT spent a
+        //--- metre of clearance hiding.
+        float centre_x = v_Center[0];
+        float centre_z = v_Center[2];
+        float centre_y = GetGame().SurfaceY(centre_x, centre_z);
+
+        for(int centre_try = 0; centre_try < 10; centre_try++)
+        {
+            centre_x = Math.RandomFloatInclusive((v_Center[0] - 5), (v_Center[0] + 5));
+            centre_z = Math.RandomFloatInclusive((v_Center[2] - 5), (v_Center[2] + 5));
+            centre_y = GetGame().SurfaceY(centre_x, centre_z);
+
+            if( !IsSafeForTeleport(centre_x, centre_y, centre_z, false) )
+                continue;
+
+            BattleRoyaleUtils.Trace("No safe unstuck spot inside the lobby, falling back to a vetted position near the centre.");
+
+            position = Vector(centre_x, centre_y, centre_z);
+            return true;
+        }
+
+        //--- Even the centre is obstructed. Land there regardless: refusing outright would leave a
+        //--- genuinely stuck player with no way out at all, and that is the worse of the two.
+        BattleRoyaleUtils.Warn("No safe unstuck spot anywhere in the lobby, including around the centre. Using the last centre candidate unvetted.");
+
+        position = Vector(centre_x, centre_y, centre_z);
+        return true;
     }
 
     //TODO:

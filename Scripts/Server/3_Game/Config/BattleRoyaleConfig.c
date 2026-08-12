@@ -31,9 +31,9 @@ class BattleRoyaleConfig
 	{
 		BattleRoyaleUtils.Trace("Initializing Settings...");
 
-		BattleRoyaleLobbyData p_DebugData = new BattleRoyaleLobbyData;
-		if(p_DebugData)
-			m_Configs.Insert("DebugData", p_DebugData);
+		BattleRoyaleLobbyData p_LobbyData = new BattleRoyaleLobbyData;
+		if(p_LobbyData)
+			m_Configs.Insert("LobbyData", p_LobbyData);
 		else
 			Error("BattleRoyaleLobbyData Setting Constructor Returned NULL");
 
@@ -72,6 +72,12 @@ class BattleRoyaleConfig
 			m_Configs.Insert("LeaderboardData", p_LeaderboardData);
 		else
 			Error("BattleRoyaleLeaderboardData Setting Constructor Returned NULL");
+
+		BattleRoyaleVoiceData p_VoiceData = new BattleRoyaleVoiceData;
+		if(p_VoiceData)
+			m_Configs.Insert("VoiceData", p_VoiceData);
+		else
+			Error("BattleRoyaleVoiceData Setting Constructor Returned NULL");
 
 		//--- adding a new config? copy below
 	}
@@ -177,11 +183,11 @@ class BattleRoyaleConfig
 		return m_Configs.Get(key);
 	}
 
-	BattleRoyaleLobbyData GetDebugData()
+	BattleRoyaleLobbyData GetLobbyData()
 	{
-		BattleRoyaleUtils.Trace("Accessing Debug Data Config...");
+		BattleRoyaleUtils.Trace("Accessing Lobby Data Config...");
 
-		return BattleRoyaleLobbyData.Cast( GetConfig("DebugData") );
+		return BattleRoyaleLobbyData.Cast( GetConfig("LobbyData") );
 	}
 
 	BattleRoyaleGameData GetGameData()
@@ -224,5 +230,12 @@ class BattleRoyaleConfig
 		BattleRoyaleUtils.Trace("Accessing Leaderboard Data Config...");
 
 		return BattleRoyaleLeaderboardData.Cast( GetConfig("LeaderboardData") );
+	}
+
+	BattleRoyaleVoiceData GetVoiceData()
+	{
+		BattleRoyaleUtils.Trace("Accessing Voice Data Config...");
+
+		return BattleRoyaleVoiceData.Cast( GetConfig("VoiceData") );
 	}
 };

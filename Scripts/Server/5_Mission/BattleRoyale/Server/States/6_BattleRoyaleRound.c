@@ -28,18 +28,19 @@ class BattleRoyaleRound: BattleRoyaleState
 
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleGameData m_GameSettings = m_Config.GetGameData();
+        BattleRoyaleZoneData m_ZoneSettings = m_Config.GetZoneData();
         i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
 
-        lock_notif_min = m_GameSettings.zone_notification_minutes;
-        lock_notif_sec = m_GameSettings.zone_notification_seconds;
+        lock_notif_min = m_ZoneSettings.zone_notification_minutes;
+        lock_notif_sec = m_ZoneSettings.zone_notification_seconds;
 
-        i_DamageTickTime = m_GameSettings.zone_damage_tick_seconds;
-        f_Damage = m_GameSettings.zone_damage_delta;
-        i_NumZones = m_GameSettings.num_zones;
+        i_DamageTickTime = m_ZoneSettings.zone_damage_tick_seconds;
+        f_Damage = m_ZoneSettings.zone_damage_delta;
+        i_NumZones = m_ZoneSettings.num_zones;
 
         b_ArtillerySound = m_GameSettings.artillery_sound;
 
-        b_DoZoneDamage = m_GameSettings.enable_zone_damage;
+        b_DoZoneDamage = m_ZoneSettings.enable_zone_damage;
 
         m_MessageTimers = new array<ref Timer>;
 
@@ -359,7 +360,7 @@ class BattleRoyaleRound: BattleRoyaleState
         if(Class.CastTo(prev_round, m_PreviousState))
             return prev_round;
 
-        BattleRoyaleUtils.Trace("Can't cast m_PreviousState to BattleRoyaleRound!");
+        // BattleRoyaleUtils.Trace("Can't cast m_PreviousState to BattleRoyaleRound!");
         return NULL;
     }
 

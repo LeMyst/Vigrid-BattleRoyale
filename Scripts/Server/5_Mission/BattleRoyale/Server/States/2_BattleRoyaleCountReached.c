@@ -6,8 +6,8 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 
     void BattleRoyaleCountReached()
     {
-        BattleRoyaleLobbyData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
-		i_TimeToStart = m_DebugSettings.time_to_start_match_seconds;
+        BattleRoyaleLobbyData m_LobbySettings = BattleRoyaleConfig.GetConfig().GetLobbyData();
+		i_TimeToStart = m_LobbySettings.time_to_start_match_seconds;
     }
 
     override string GetName()

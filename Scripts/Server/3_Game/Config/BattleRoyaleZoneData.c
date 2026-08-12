@@ -1,7 +1,17 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 2;  // Config version
+	int version = 3;  // Config version
+
+    int num_zones = 6;  // number of zones
+
+    ref array<int> zone_notification_minutes = { 1, 2 };  // minutes when notification about the zone shrinking will be displayed
+    ref array<int> zone_notification_seconds = { 30, 10 };  // seconds when notification about the zone shrinking will be displayed, when under the minute
+
+    // Zone damage settings
+    int zone_damage_tick_seconds = 5;  // seconds between zone damage ticks
+    float zone_damage_delta = 0.1;  // damage per tick
+    bool enable_zone_damage = true;  // enable zone damage
 
     bool end_in_villages = true;  // The final zone will end in a village/city/town
     ref array<string> end_avoid_type = {"DeerStand", "FeedShack", "Marine"};  // Types to avoid in the final zone (Only if end_in_villages is true)
@@ -30,8 +40,8 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
 	// Static
 	// SMALLEST ZONE FIRST: index 0 describes the tight final circle, the last index the widest
-	// opening one. num_zones (general_settings.json) picks that many tiers from the small end, so
-	// lowering it shortens a match by dropping the LARGEST circles and always keeps the endgame one.
+	// opening one. num_zones (above) picks that many tiers from the small end, so lowering it
+	// shortens a match by dropping the LARGEST circles and always keeps the endgame one.
 	// At the defaults below, num_zones = 6 plays 3375 down to 35 and leaves index 6 (4500) unused.
 	// Entries past num_zones are ignored on purpose; FEWER entries than num_zones is a misconfiguration.
     ref array<float> static_sizes = { 35, 140, 562, 1125, 2250, 3375, 4500 };
@@ -105,6 +115,33 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			first_zone_polygon = new array<string>();
 
 			version = 2;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 3)
+		{
+			// zone_notification_minutes/_seconds were INTRODUCED in v3 (moved here from
+			// general_settings.json). Unlike a missing scalar key, which leaves the field initialiser
+			// above in place, a missing array key deserializes to an EMPTY array - confirmed against a
+			// pre-v3 zone_settings.json, which naturally has neither key. Left unguarded, every server
+			// upgrading to v3 would silently lose the zone-shrink countdown notifications. Only fill an
+			// array that came back genuinely empty, so an admin who deliberately empties it later (to
+			// turn notifications off) stays empty on the next boot.
+			if (!zone_notification_minutes || zone_notification_minutes.Count() == 0)
+			{
+				zone_notification_minutes = new array<int>();
+				zone_notification_minutes.Insert(1);
+				zone_notification_minutes.Insert(2);
+			}
+
+			if (!zone_notification_seconds || zone_notification_seconds.Count() == 0)
+			{
+				zone_notification_seconds = new array<int>();
+				zone_notification_seconds.Insert(30);
+				zone_notification_seconds.Insert(10);
+			}
+
+			version = 3;
 			Save();  // Save the upgraded config
 		}
 	}

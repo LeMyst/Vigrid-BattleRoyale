@@ -144,7 +144,11 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 
 class BattleRoyaleOverridePOIPosition
 {
+    // CfgWorlds class name of the POI being overridden - see the example in the class comment above.
     string poi_name;
+
+    // [x, z] world position to use instead of the POI's real one. Y (height) is resolved at read
+    // time via GetGame().SurfaceY() rather than stored, so this only ever needs the two values.
     // Must be `ref`: without it nothing strongly holds the array the ctor (or JSON deserialization)
     // assigns, and GetOverrodePosition() reads a destroyed object.
     ref array<int> new_position;

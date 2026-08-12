@@ -55,7 +55,7 @@ static const string VM_RPC_REQUEST_SYNC = "VM_RequestSync";
 
 //--- Server settings defaults, mirrored on the client until the first VM_Settings push arrives.
 static const bool VIGRID_MAP_DEF_MARKERS_ENABLED = true;
-static const bool VIGRID_MAP_DEF_MINIMAP_ALLOWED = true;
+static const bool VIGRID_MAP_DEF_MINIMAP_ALLOWED = false;
 static const int VIGRID_MAP_DEF_LABEL_MAX = 32;
 static const int VIGRID_MAP_PLACE_COOLDOWN_MS = 250;
 

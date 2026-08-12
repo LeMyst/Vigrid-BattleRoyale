@@ -71,10 +71,10 @@ modded class MissionServer
 
 	override void EquipCharacter(MenuDefaultCharacterData char_data)
 	{
-		BattleRoyaleLobbyData m_DebugSettings = BattleRoyaleConfig.GetConfig().GetDebugData();
+		BattleRoyaleLobbyData m_LobbySettings = BattleRoyaleConfig.GetConfig().GetLobbyData();
 
-		array<string> player_lobby_items = m_DebugSettings.player_lobby_items;
-		array<int> player_lobby_items_shortcut = m_DebugSettings.player_lobby_items_shortcut;
+		array<string> player_lobby_items = m_LobbySettings.player_lobby_items;
+		array<int> player_lobby_items_shortcut = m_LobbySettings.player_lobby_items_shortcut;
 
 		for(int i = 0; i < player_lobby_items.Count(); i++)
 		{

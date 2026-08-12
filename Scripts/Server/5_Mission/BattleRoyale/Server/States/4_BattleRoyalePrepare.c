@@ -10,6 +10,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 	private BattleRoyaleConfig m_Config;
     private BattleRoyaleGameData m_GameSettings;
+    private BattleRoyaleLobbyData m_LobbySettings;
     private BattleRoyaleSpawnsData m_SpawnsSettings;
     private BattleRoyaleServerData m_ServerData;
     private BattleRoyalePOIsData m_POIsSettings;
@@ -26,6 +27,7 @@ class BattleRoyalePrepare: BattleRoyaleState
     	m_Config = BattleRoyaleConfig.GetConfig();
 
         m_GameSettings = m_Config.GetGameData();
+        m_LobbySettings = m_Config.GetLobbyData();
         m_SpawnsSettings = m_Config.GetSpawnsData();
         m_ServerData = m_Config.GetServerData();
         m_POIsSettings = m_Config.GetPOIsData();
@@ -33,7 +35,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 		a_StartingClothes = m_GameSettings.player_starting_clothes;
 		a_StartingItems = m_GameSettings.player_starting_items;
 		a_AvoidCitySpawn = m_SpawnsSettings.avoid_city_spawn;
-		b_EnableSpawnSelectionMenu = m_GameSettings.enable_spawn_selection_menu;
+		b_EnableSpawnSelectionMenu = m_LobbySettings.enable_spawn_selection_menu;
 
         a_PlayerList = new array<PlayerBase>();
 
@@ -149,6 +151,59 @@ class BattleRoyalePrepare: BattleRoyaleState
         return true;
     }
 
+    /**
+     *  Undo whatever movement command has the player's inventory locked, so they can be dressed.
+     *
+     *  Vanilla PlayerBase.OnCommandFallStart, OnCommandClimbStart, OnCommandLadderStart and
+     *  OnCommandSwimStart each take a LOCK_FROM_SCRIPT lock on the character's inventory
+     *  (playerbase.c:3964-4085) and only release it in the matching ...Finish callback. A player
+     *  wedged inside a prop mid-jump never finishes the fall command, so the lock is still held when
+     *  this state runs - and a locked inventory refuses CreateAttachment *silently*, returning NULL.
+     *
+     *  LocalDestroyEntity is a local destroy rather than an inventory move and ignores the lock, so
+     *  the symptom is not "still in lobby clothes" but the far worse "stripped and never
+     *  re-dressed". Observed 2026-08-08: Client_B logged five inventory removals and zero additions
+     *  while Client_A, 90 ms later through the same code, logged five and eight.
+     */
+    protected void ClearStuckMovementState(PlayerBase process_player)
+    {
+        if(!process_player)
+            return;
+
+        //--- Note this only has to hold long enough to create the items. If the player is still
+        //--- physically on a ladder the engine re-enters the command on the next tick, which is
+        //--- fine here and is why the teleport clears it a second time - see the note on
+        //--- BR_ForceMoveCommand in PlayerBase.OnSyncJuncture.
+        if(process_player.BR_IsInLockingMovementCommand())
+        {
+            BattleRoyaleUtils.Warn("Player " + GetPlayerLogName(process_player) + " is in a movement command that locks their inventory; forcing a move command before dressing them.");
+            process_player.BR_ForceMoveCommandImmediate();
+        }
+
+        GameInventory inventory = process_player.GetInventory();
+        if(!inventory)
+            return;
+
+        //--- Order matters. Ending the command above is what lets vanilla release its own lock, so
+        //--- anything still held here is a leaked count. It also means no ...Finish callback is
+        //--- still pending that would unlock a second time, which is what keeps this drain from
+        //--- underflowing the count later. Bounded because this runs inside the ProcessPlayers
+        //--- coroutine and a runaway count must not hang the whole match in Prepare.
+        int guard = 0;
+        while(inventory.IsInventoryLockedForLockType(LOCK_FROM_SCRIPT) && guard < 8)
+        {
+            inventory.UnlockInventory(LOCK_FROM_SCRIPT);
+            guard++;
+        }
+
+        //--- Some other lock type, i.e. a cause we have not seen. Their loadout is about to fail the
+        //--- same way, so say so here rather than leaving it to be rediscovered from a naked player.
+        if(inventory.IsInventoryLocked())
+            BattleRoyaleUtils.Warn("Player " + GetPlayerLogName(process_player) + " still has a locked inventory after unlocking; their loadout will probably fail.");
+    }
+
+    //--- Returns false if anything the config asked for could not be created. Every failure used to
+    //--- be swallowed - that is the whole reason a naked player shipped instead of an error.
     protected bool AddStartItems(PlayerBase process_player)
     {
         DeleteAllItems(process_player);
@@ -157,11 +212,19 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         int cCount = a_StartingClothes.Count();
         bool item_spawned = false;
+        bool all_created = true;
         EntityAI new_item;
         for (int i = 0; i < cCount; i++)
         {
             EntityAI clothes = process_player.GetInventory().CreateAttachment(a_StartingClothes[i]);
-            if(!item_spawned && clothes && clothes.GetInventory() && clothes.GetInventory().GetCargo())
+            if(!clothes)
+            {
+                BattleRoyaleUtils.Warn("Failed to create starting clothing '" + a_StartingClothes[i] + "' on " + GetPlayerLogName(process_player));
+                all_created = false;
+                continue;
+            }
+
+            if(!item_spawned && clothes.GetInventory() && clothes.GetInventory().GetCargo())
             {
                 int iCount = a_StartingItems.Count();
                 for (int j = 0; j < iCount; j++)
@@ -179,16 +242,36 @@ class BattleRoyalePrepare: BattleRoyaleState
 							process_player.SetQuickBarEntityShortcut(new_item, shortcut_index);
 						}
 					}
+					else
+					{
+						BattleRoyaleUtils.Warn("Failed to create starting item '" + a_StartingItems[j] + "' for " + GetPlayerLogName(process_player));
+						all_created = false;
+					}
                 }
                 item_spawned = true;
             }
         }
 
-        return true;
+        //--- Clothing was created but none of it could hold the starting items, so the player has no
+        //--- knife and no bandage. Worth reporting even though every CreateAttachment succeeded.
+        if(!item_spawned && a_StartingItems.Count() > 0)
+        {
+            BattleRoyaleUtils.Warn("No starting clothing with cargo for " + GetPlayerLogName(process_player) + "; they received none of the starting items.");
+            all_created = false;
+        }
+
+        return all_created;
     }
 
-    protected void GiveStartingItems(PlayerBase process_player)
+    protected bool GiveStartingItems(PlayerBase process_player)
     {
+        if(!process_player)
+            return false;
+
+        //--- Before anything else: a locked inventory refuses every creation below while still
+        //--- allowing the deletions, which strips the player and leaves them stripped.
+        ClearStuckMovementState(process_player);
+
         //drop the item out of the player's hands before we delete it
         if(process_player.GetItemInHands())
         {
@@ -198,7 +281,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             GetGame().ObjectDelete( item_inhands );
         }
         DeleteAllItems(process_player);
-        AddStartItems(process_player);
+        return AddStartItems(process_player);
     }
 
     protected void DisablePlayerInput(PlayerBase process_player)
@@ -562,22 +645,6 @@ class BattleRoyalePrepare: BattleRoyaleState
 		return random_pos;
 	}
 
-    //--- Identity-safe name for logging. A PlayerBase can outlive its PlayerIdentity across one of
-    //--- the ProcessPlayers coroutine's yields, and a Trace argument is evaluated whatever the log
-    //--- level - so an inlined GetIdentity().GetName() throws from inside a disabled log call and
-    //--- takes the whole coroutine with it.
-    protected string GetPlayerLogName(PlayerBase player)
-    {
-        if(!player)
-            return "<null player>";
-
-        PlayerIdentity identity = player.GetIdentity();
-        if(!identity)
-            return "<null identity>";
-
-        return identity.GetName();
-    }
-
     protected void Teleport(PlayerBase process_player)
     {
         ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
@@ -705,7 +772,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 		ScriptJunctureData pCtx = new ScriptJunctureData;
 		pCtx.Write( position );
 		pCtx.Write( direction );
-		player.SendSyncJuncture( 88, pCtx );
+		player.SendSyncJuncture( BR_SYNC_JUNCTURE_TELEPORT, pCtx );
     }
 
     void ProcessPlayers()
@@ -733,9 +800,17 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         a_PlayerList.ShuffleArray();
 
+        //--- Players whose loadout did not come out whole. Retried after the teleport below, because
+        //--- the teleport is what actually frees somebody wedged in geometry.
+        array<PlayerBase> loadout_failed = new array<PlayerBase>();
+
         for (i = 0; i < pCount; i++) {
             process_player = a_PlayerList[i];
-            if (process_player) GiveStartingItems(process_player);
+            if (process_player)
+            {
+                if (!GiveStartingItems(process_player))
+                    loadout_failed.Insert(process_player);
+            }
 
             Sleep(100);
         }
@@ -776,7 +851,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 					if (!process_player)
 						continue;
 
-					float f_SpawnSelectionRadius = m_GameSettings.spawn_selection_radius;
+					float f_SpawnSelectionRadius = m_LobbySettings.spawn_selection_radius;
 					vector position = process_player.GetSpawnPos();
 					string player_name = GetPlayerLogName(process_player);
 
@@ -898,6 +973,39 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         // plz fix this
         Sleep(1000);
+
+        //--- Second chance, now that the teleport has landed. A player who was wedged in the
+        //--- scenery when the loop above ran is standing on open ground by this point, so whatever
+        //--- had their inventory locked is gone and the same call simply works.
+        //---
+        //--- Verified rather than trusted: the recorded failure list is checked, but so is
+        //--- "has no attachments at all", which is the reported symptom itself and does not care
+        //--- which config entry or which cause produced it.
+        for (i = 0; i < pCount; i++) {
+            process_player = a_PlayerList[i];
+            if (!process_player)
+                continue;
+
+            bool needs_repair = false;
+            if (loadout_failed.Find(process_player) != -1)
+                needs_repair = true;
+
+            //--- Guarded on the config asking for clothes at all: with an empty
+            //--- player_starting_clothes, zero attachments is the correct outcome and this would
+            //--- otherwise warn about, and pointlessly retry, every player every match.
+            if (a_StartingClothes.Count() > 0 && process_player.GetInventory() && process_player.GetInventory().AttachmentCount() == 0)
+                needs_repair = true;
+
+            if (!needs_repair)
+                continue;
+
+            BattleRoyaleUtils.Warn("Re-applying the loadout for " + GetPlayerLogName(process_player) + " after the teleport.");
+
+            if (!GiveStartingItems(process_player))
+                BattleRoyaleUtils.Warn("Loadout for " + GetPlayerLogName(process_player) + " failed a second time - they start the match short of gear.");
+
+            Sleep(100);
+        }
 
         for (i = 0; i < pCount; i++) {
             process_player = a_PlayerList[i];
