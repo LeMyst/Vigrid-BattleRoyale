@@ -1,4 +1,20 @@
 #ifdef SERVER
+//--- One player who connected after the match left the lobby, waiting to be disconnected.
+//
+//--- `player` is deliberately a weak reference and is null-checked on every sweep: the player can
+//--- quit on their own before the deadline, and PlayerIdentity is destroyed with them. `plain_id` is
+//--- kept alongside so the entry can still be matched and logged after that happens - the same
+//--- reason OnPlayerConnected caches player_steamid onto PlayerBase.
+class BattleRoyaleLateJoiner
+{
+    PlayerBase player;
+    string plain_id;
+    int connect_ms;      //when OnPlayerConnected saw them (GetGame().GetTime() basis)
+    bool armed;          //their client reported itself loaded in, so the grace period is running
+    int deadline_ms;     //only meaningful once armed
+    bool warned_final;
+}
+
 class BattleRoyaleServer: BattleRoyaleBase
 {
 	protected static BattleRoyaleServer m_Instance;
@@ -11,7 +27,15 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     string match_uuid;
 
-    protected ref Timer m_Timer;
+    //--- Players connected after the lobby ended, each with their own deadline. This used to be one
+    //--- shared `ref Timer` on which every late joiner scheduled the same "Disconnect" callback, so a
+    //--- second one inside the window silently replaced the first and the first was never kicked.
+    protected ref array<ref BattleRoyaleLateJoiner> a_LateJoiners;
+    //--- PlainIds (SteamID64) of admins allowed to stay connected mid-match. Checked by
+    //--- ScheduleLateJoinKick, which is the only path that can schedule a kick - OnPlayerConnected
+    //--- alone was not enough, because OnPlayerTick re-evicts anyone the current state does not hold
+    //--- and an exempt admin is, by construction, in no state.
+    protected ref array<string> a_LateJoinExempt;
 
     void BattleRoyaleServer()
     {
@@ -19,6 +43,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
@@ -34,12 +59,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void ~BattleRoyaleServer()
     {
-        if ( m_Timer && m_Timer.IsRunning() )
-        {
-            m_Timer.Stop();
-        }
-
-        delete m_Timer;
+        //--- Nothing to stop: the pending kicks are swept from Update(), not from engine timers, so
+        //--- they die with the object. Clearing them is bookkeeping, not teardown.
+        if ( a_LateJoiners )
+            a_LateJoiners.Clear();
     }
 
     void Init()
@@ -88,7 +111,8 @@ class BattleRoyaleServer: BattleRoyaleBase
         	match_uuid = "";  // No API, no match to register
         }
 
-        m_Timer = new Timer;
+        a_LateJoiners = new array<ref BattleRoyaleLateJoiner>;
+        a_LateJoinExempt = new array<string>;
 
         //load config (this may error because GetBattleRoyale would return false)
         BattleRoyaleZoneData m_ZoneData = config_data.GetZoneData();
@@ -224,6 +248,11 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- in a burst costs one request rather than one per player. Two comparisons when idle.
 			BattleRoyaleNameService.Tick();
 
+			//--- Warn and then disconnect anyone who joined after the lobby ended. Two integer
+			//--- comparisons per pending player, and the list is empty in the overwhelming majority
+			//--- of ticks.
+			UpdateLateJoiners();
+
 #ifdef VIGRID_PARTY
 			//--- A resolved name is not a party composition change, so Party has no reason to re-send
 			//--- its rosters and its HUD row would keep rendering "Survivor". Consume-once flag, so
@@ -311,13 +340,41 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleVoiceData voice_settings = config_data.GetVoiceData();
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", new Param2<bool, bool>( voice_settings.show_speaking_players, voice_settings.speaking_list_during_match ), true, player.GetIdentity() );
 
-        BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
-        vector debug_pos = m_Debug.GetCenter();
+        BattleRoyaleDebugState m_DebugStateObj;
+
+        //--- Note this tests BattleRoyaleDebugState, not BattleRoyaleDebug: BattleRoyaleCountReached
+        //--- derives from it too, so joining during the pre-match countdown is accepted and the
+        //--- player is added normally. Rejection genuinely begins at the state after that.
+        bool in_lobby_state = Class.CastTo(m_DebugStateObj, GetCurrentState());
+
+        //--- Resolved before the placement below, because an admin joining mid-match is not sent to
+        //--- the lobby at all.
+        BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
+        bool is_admin = (m_GameSettings.admins_steamid64.Find( player.GetIdentity().GetPlainId() ) != -1);
 
         vector spawn_pos = "0 0 0";
-        spawn_pos[0] = Math.RandomFloatInclusive((debug_pos[0] - 5), (debug_pos[0] + 5));
-        spawn_pos[2] = Math.RandomFloatInclusive((debug_pos[2] - 5), (debug_pos[2] + 5));
-        spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
+        bool placed_at_zone = false;
+
+        if(!in_lobby_state && is_admin)
+        {
+            //--- Admins are documented as "immune to kick and can go outside the play area", and they
+            //--- already were free to roam - nothing leashes a player the current state does not hold
+            //--- (the lobby clamp lives in BattleRoyaleDebugState.OnPlayerTick, which only runs for
+            //--- state members). What they could not do was get anywhere: dropped at the lobby centre,
+            //--- which is nowhere near the fight and is a long walk with no vehicle. So put them where
+            //--- the match actually is.
+            placed_at_zone = GetAdminJoinPosition( spawn_pos );
+        }
+
+        if(!placed_at_zone)
+        {
+            BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
+            vector debug_pos = m_Debug.GetCenter();
+
+            spawn_pos[0] = Math.RandomFloatInclusive((debug_pos[0] - 5), (debug_pos[0] + 5));
+            spawn_pos[2] = Math.RandomFloatInclusive((debug_pos[2] - 5), (debug_pos[2] + 5));
+            spawn_pos[1] = GetGame().SurfaceY(spawn_pos[0], spawn_pos[2]);
+        }
 
         player.SetPosition( spawn_pos );
 
@@ -325,27 +382,33 @@ class BattleRoyaleServer: BattleRoyaleBase
 		vector playerDir = vector.YawToVector(dir);
 		player.SetDirection( Vector(playerDir[0], 0, playerDir[1]) );
 
-        BattleRoyaleDebugState m_DebugStateObj;
-
-        if(!Class.CastTo(m_DebugStateObj, GetCurrentState()))
+        if(!in_lobby_state)
         {
-			//BAD VERY BAD!
-			//This gives the player 15 seconds to finish his setup before we boot him. There may still be a chance it crashes.
-			//Ideally the player should notify us when he is "ready" to be disconnected (I have no idea when that would be)
+			//--- The player cannot be disconnected here. Their client has not finished establishing
+			//--- its connection yet and GetGame().DisconnectPlayer on that identity crashes the
+			//--- server, so the kick is deferred to UpdateLateJoiners.
 
-			//NOTE: calling this will immediately crash the server (as the player hasn't fully established his connection yet) GetGame().DisconnectPlayer(player.GetIdentity());
-
-			BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
-			ref array<string> a_AdminsList = m_GameSettings.admins_steamid64;
-
-			if ( a_AdminsList.Find( player.GetIdentity().GetPlainId() ) != -1 )
+			if ( is_admin )
 			{
-				BattleRoyaleUtils.Info("Admin " + player.GetIdentity().GetName() + " has connected during non-debug state, allowing connection.");
+				//--- Remembered rather than just returned. The exemption used to be this bare return,
+				//--- which lasted exactly one scheduled tick: an admin who is in no state fails
+				//--- OnPlayerTick's ContainsPlayer test and got evicted by the branch down there.
+				//--- ScheduleLateJoinKick consults this list, so both entry points now honour it.
+				a_LateJoinExempt.Insert( player.GetIdentity().GetPlainId() );
+
+				if ( placed_at_zone )
+					BattleRoyaleUtils.Info("Admin " + player.GetIdentity().GetName() + " has connected during non-debug state, placed at the active circle " + spawn_pos + ".");
+				else
+					BattleRoyaleUtils.Info("Admin " + player.GetIdentity().GetName() + " has connected during non-debug state, no circle in play yet so placed at the lobby.");
+
 				return; //allow admins to connect during non-debug state
 			}
 
-			Error("PLAYER CONNECTED DURING NON-DEBUG ZONE STATE!");
-			m_Timer.Run( 30.0, this, "Disconnect", new Param1<PlayerIdentity>( player.GetIdentity() ), false);
+			//--- Warn, NOT Error. BattleRoyaleUtils.Error and the global Error() both end in Error2(),
+			//--- which raises a VM exception and unwinds the stack - which is why the kick that used
+			//--- to be scheduled on the line below this one never ran even once. See TODO.md.
+			BattleRoyaleUtils.Warn("Player " + player.GetIdentity().GetName() + " connected during non-debug state `" + GetCurrentState().GetName() + "`, scheduling disconnect.");
+			ScheduleLateJoinKick( player );
 
             return;
         }
@@ -360,9 +423,262 @@ class BattleRoyaleServer: BattleRoyaleBase
         	GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
     }
 
-    void Disconnect(PlayerIdentity identity)
+    //--- Where to drop an admin who connected mid-match: the centre of the circle currently in play,
+    //--- jittered a little so two admins joining together do not land inside each other.
+    //---
+    //--- Returns false when no circle is in play yet - the pre-match states (Prepare, StartMatch) and
+    //--- the post-match ones - and the caller falls back to the lobby, which is where everyone else
+    //--- is at that point anyway.
+    //---
+    //--- Two casts rather than one because GetActiveZone is not on the base state: BattleRoyaleRound
+    //--- has it, and BattleRoyaleLastRound is a sibling of Round (not a subclass) that exposes
+    //--- GetPreviousZone instead. Note "active" is the skip-aware, currently-damaging circle, not the
+    //--- one being shrunk towards - which is exactly the one an admin wants to be standing in.
+    protected bool GetAdminJoinPosition(out vector position)
     {
-        GetGame().DisconnectPlayer( identity ); //can't directly call disconnectplayer with timer, so we use this method
+        BattleRoyaleState state = GetCurrentState();
+        if(!state)
+            return false;
+
+        BattleRoyaleZone zone;
+
+        BattleRoyaleRound round_state;
+        if(Class.CastTo(round_state, state))
+            zone = round_state.GetActiveZone();
+
+        BattleRoyaleLastRound last_round_state;
+        if(!zone && Class.CastTo(last_round_state, state))
+            zone = last_round_state.GetPreviousZone();
+
+        if(!zone || !zone.GetArea())
+            return false;
+
+        vector center = zone.GetArea().GetCenter();
+        float radius = zone.GetArea().GetRadius();
+
+        //--- Jitter is capped so it stays well inside even the smallest final circle.
+        float jitter = 5.0;
+        if(radius < 50.0)
+            jitter = radius * 0.1;
+
+        position[0] = Math.RandomFloatInclusive((center[0] - jitter), (center[0] + jitter));
+        position[2] = Math.RandomFloatInclusive((center[2] - jitter), (center[2] + jitter));
+        position[1] = GetGame().SurfaceY(position[0], position[2]);
+
+        return true;
+    }
+
+    //--- True if this player is allowed to stay connected while holding no state (admins only).
+    bool IsLateJoinExempt(PlayerBase player)
+    {
+        if(!player)
+            return false;
+
+        //--- player_steamid is cached onto PlayerBase in OnPlayerConnected precisely because
+        //--- PlayerIdentity can be gone by the time we want to identify someone.
+        if(player.player_steamid != "" && a_LateJoinExempt.Find( player.player_steamid ) != -1)
+            return true;
+
+        PlayerIdentity identity = player.GetIdentity();
+        if(!identity)
+            return false;
+
+        return (a_LateJoinExempt.Find( identity.GetPlainId() ) != -1);
+    }
+
+    //--- Schedule a player who holds no state to be disconnected. Idempotent: safe to call every
+    //--- tick, which is exactly what OnPlayerTick does.
+    void ScheduleLateJoinKick(PlayerBase player)
+    {
+        if(!player || !player.GetIdentity())
+            return;
+
+        if(IsLateJoinExempt( player ))
+            return;
+
+        //--- The last two states are Win and Restart. 8_BattleRoyaleWin.KickWinner calls RemovePlayer
+        //--- and DisconnectPlayer back to back, so between them a winner legitimately holds no state
+        //--- and OnPlayerTick's not-in-state branch can see them - scheduling a kick there would flash
+        //--- "a match is already in progress" at the player who just won it. Nothing is lost by
+        //--- skipping the window: 9_BattleRoyaleRestart calls RequestExit a few seconds later anyway.
+        //--- Same bound the scoring guards in OnPlayerDisconnected/OnPlayerKilled use.
+        if(i_CurrentStateIndex >= m_States.Count() - 2)
+            return;
+
+        int configured = BattleRoyaleConfig.GetConfig().GetGameData().late_join_kick_seconds;
+        if(configured <= 0)
+            return; //--- admin opted out of the timed kick entirely
+
+        for(int i = 0; i < a_LateJoiners.Count(); ++i)
+        {
+            if(a_LateJoiners[i] && a_LateJoiners[i].player == player)
+                return; //--- already pending
+        }
+
+        //--- Not Math.Max: it is declared float/float, and rounding an int through a float to clamp
+        //--- two ints is a narrowing conversion for no reason.
+        int seconds = configured;
+        if(seconds < BR_LATE_JOIN_KICK_MIN_SECONDS)
+            seconds = BR_LATE_JOIN_KICK_MIN_SECONDS;
+
+        //--- Recorded, but NOT armed: the countdown starts when their client says it is loaded in
+        //--- (PlayerLoadedIn), not now. Vanilla reaches InvokeOnConnect from the ClientNew path while
+        //--- the client is still loading the world, so arming here spends the grace period on a
+        //--- loading screen - the player is disconnected without ever seeing why, and the disconnect
+        //--- itself lands on a half-established connection, which is what the original code feared.
+        BattleRoyaleLateJoiner entry = new BattleRoyaleLateJoiner();
+        entry.player = player;
+        entry.plain_id = player.GetIdentity().GetPlainId();
+        entry.connect_ms = GetGame().GetTime();
+        entry.armed = false;
+        entry.warned_final = false;
+        a_LateJoiners.Insert( entry );
+
+        BattleRoyaleUtils.Info("Late joiner " + player.GetIdentity().GetName() + " (" + entry.plain_id + ") recorded, waiting for their client to load in before starting the " + seconds + "s countdown");
+    }
+
+    //--- Start the grace period for one pending late joiner and tell them why.
+    protected void ArmLateJoiner(BattleRoyaleLateJoiner entry, string reason)
+    {
+        if(!entry || entry.armed)
+            return;
+
+        int configured = BattleRoyaleConfig.GetConfig().GetGameData().late_join_kick_seconds;
+        int seconds = configured;
+        if(seconds < BR_LATE_JOIN_KICK_MIN_SECONDS)
+            seconds = BR_LATE_JOIN_KICK_MIN_SECONDS;
+
+        entry.armed = true;
+        entry.deadline_ms = GetGame().GetTime() + (seconds * 1000);
+
+        BattleRoyaleUtils.Info("Late-join countdown started for " + entry.plain_id + " (" + reason + "), disconnecting in " + seconds + "s");
+
+        //--- Sent now rather than at connect, so it lands on a player who can actually read it.
+        NotifyLateJoiner( entry.player, seconds );
+    }
+
+    //--- Client -> server: "I have finished loading and I am controlling my character."
+    //--- Registered in the constructor. CF dispatches by method name, so this must keep its name.
+    void PlayerLoadedIn(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if(type != CallType.Server || !sender)
+            return;
+
+        string sender_id = sender.GetPlainId();
+        if(sender_id == "")
+            return;
+
+        for(int i = 0; i < a_LateJoiners.Count(); ++i)
+        {
+            BattleRoyaleLateJoiner entry = a_LateJoiners[i];
+            //--- Matched on the sender's own id, never on anything the client chose.
+            if(entry && entry.plain_id == sender_id)
+            {
+                ArmLateJoiner( entry, "client reported loaded in" );
+                return;
+            }
+        }
+    }
+
+    protected void NotifyLateJoiner(PlayerBase player, int seconds_left)
+    {
+        //--- MessagePlayerUntranslated does not require the player to belong to the state - it only
+        //--- needs an identity to address the RPC to. Same call shape as the match-uuid warning in
+        //--- OnPlayerConnected above.
+        BattleRoyaleState state = GetCurrentState();
+        if(state)
+            state.MessagePlayerUntranslated( player, "STR_BR_LATE_JOIN_KICK", seconds_left.ToString() );
+    }
+
+    //--- Swept at 10 Hz from Update(). Walks backwards so a removal cannot move an unvisited entry
+    //--- into an index that has already been passed (array.Remove is the unordered variant - it
+    //--- swaps in the last element).
+    protected void UpdateLateJoiners()
+    {
+        if(!a_LateJoiners || a_LateJoiners.Count() == 0)
+            return;
+
+        int now = GetGame().GetTime();
+
+        for(int i = a_LateJoiners.Count() - 1; i >= 0; --i)
+        {
+            BattleRoyaleLateJoiner entry = a_LateJoiners[i];
+
+            if(!entry || !entry.player || !entry.player.GetIdentity())
+            {
+                //--- They left on their own, which is the outcome we were after anyway.
+                a_LateJoiners.Remove(i);
+                continue;
+            }
+
+            //--- Insurance against a future state that adopts joiners: if somebody put this player
+            //--- into the running state, they are a participant and must not be disconnected.
+            if(GetCurrentState() && GetCurrentState().ContainsPlayer( entry.player ))
+            {
+                BattleRoyaleUtils.Info("Cancelling late-join disconnect for " + entry.plain_id + ", the current state now holds them.");
+                a_LateJoiners.Remove(i);
+                continue;
+            }
+
+            if(!entry.armed)
+            {
+                //--- Their client has not reported in. Normally PlayerLoadedIn arms this within a few
+                //--- seconds of the loading screen ending; the ceiling is only here so a client that
+                //--- never reports (older build, wedged load) is still removed eventually.
+                if((now - entry.connect_ms) >= (BR_LATE_JOIN_READY_TIMEOUT_SECONDS * 1000))
+                    ArmLateJoiner( entry, "no load-in report after " + BR_LATE_JOIN_READY_TIMEOUT_SECONDS + "s" );
+
+                continue;
+            }
+
+            int remaining_ms = entry.deadline_ms - now;
+
+            if(remaining_ms <= 0)
+            {
+                BattleRoyaleUtils.Info("Disconnecting late joiner " + entry.player.GetIdentity().GetName() + " (" + entry.plain_id + ")");
+                GetGame().DisconnectPlayer( entry.player.GetIdentity() );
+                a_LateJoiners.Remove(i);
+                continue;
+            }
+
+            if(!entry.warned_final && remaining_ms <= (BR_LATE_JOIN_FINAL_WARN_SECONDS * 1000))
+            {
+                entry.warned_final = true;
+                //--- Rounded up, so "1" is shown rather than "0" on the last second of the window.
+                NotifyLateJoiner( entry.player, (remaining_ms + 999) / 1000 );
+            }
+        }
+    }
+
+    //--- Drop every record of a player who has left, so neither list grows across a session.
+    protected void ForgetLateJoiner(PlayerBase player, PlayerIdentity identity)
+    {
+        string plain_id = "";
+        if(identity)
+            plain_id = identity.GetPlainId();
+        if(plain_id == "" && player)
+            plain_id = player.player_steamid;
+
+        for(int i = a_LateJoiners.Count() - 1; i >= 0; --i)
+        {
+            if(!a_LateJoiners[i])
+            {
+                a_LateJoiners.Remove(i);
+                continue;
+            }
+
+            if(a_LateJoiners[i].player == player)
+                a_LateJoiners.Remove(i);
+            else if(plain_id != "" && a_LateJoiners[i].plain_id == plain_id)
+                a_LateJoiners.Remove(i);
+        }
+
+        if(plain_id != "")
+        {
+            int exempt_index = a_LateJoinExempt.Find( plain_id );
+            if(exempt_index != -1)
+                a_LateJoinExempt.Remove( exempt_index );
+        }
     }
 
     void OnPlayerDisconnect(PlayerBase player, PlayerIdentity identity)
@@ -397,6 +713,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     void OnPlayerDisconnected(PlayerBase player, PlayerIdentity identity)
     {
+        //--- Unconditional: a late joiner is by definition not in any state, so doing this inside the
+        //--- ContainsPlayer branch below would never fire for the players it exists for.
+        ForgetLateJoiner(player, identity);
+
         if(GetCurrentState().ContainsPlayer(player))
         {
             //if we are in a round, then we need to call OnPlayerDisconnected (since it's not a state based function we must cast)
@@ -438,35 +758,37 @@ class BattleRoyaleServer: BattleRoyaleBase
             //when invalid, height gets fucked, lets check that (others are NaN & may cause errors)
             if(pos[1] > bigNum || pos[1] < (-1 * bigNum))
             {
-                if(temp_disconnecting.Find(player) == -1)
+                if(temp_disconnecting.Find(player) == -1 && player.GetIdentity())
                 {
+                    //--- This ensures we only disconnect this player once.
                     temp_disconnecting.Insert(player);
-                    //GetGame().DisconnectPlayer( player.GetIdentity() );
-                    GetGame().SendLogoutTime(player, 0);
-                    //BattleRoyaleUtils.Trace(pos);
-                    //Error("PLAYER FOUND IN INVALID POSITION!");
+
+                    //--- Was SendLogoutTime(player, 0), which removed nobody: client-side that only
+                    //--- updates an already-open logout menu, and a player who has not pressed
+                    //--- Esc -> Exit has none. So a player whose position went to +/-1e6 stayed on the
+                    //--- server in that state indefinitely. Unlike the late-join kick there is no
+                    //--- grace period to observe here - this player is long past connection setup.
+                    BattleRoyaleUtils.Warn("Player " + player.GetIdentity().GetName() + " found at invalid position " + pos + ", disconnecting.");
+                    GetGame().DisconnectPlayer( player.GetIdentity() );
                 }
             }
         }
         else
         {
-            //current state does not contain player, wtf is going on
+            //--- Current state does not hold this player. Either they connected mid-match and
+            //--- OnPlayerConnected already scheduled them, or they got here some other way - either
+            //--- way they cannot participate, so schedule the disconnect. ScheduleLateJoinKick is
+            //--- idempotent and honours the admin exemption, so calling it every tick is fine and the
+            //--- temp_disconnecting bookkeeping this branch used to need is gone.
+            //---
+            //--- This used to call GetGame().SendLogoutTime(player, 0), which does NOTHING here:
+            //--- client-side it lands in MissionGameplay.StartLogoutMenu, whose whole body is guarded
+            //--- on an m_Logout that only exists once the player has opened Esc -> Exit themselves.
             int life_state = player.GetPlayerState();
             if(life_state == EPlayerStates.ALIVE)
             {
                 if(player && player.GetIdentity())
-                {
-					if ( temp_disconnecting.Find(player) == -1 )
-					{
-						//this ensures we only call disconnect on this player once
-						temp_disconnecting.Insert(player);
-
-						GetGame().SendLogoutTime(player, 0);
-						//GetGame().DisconnectPlayer( player.GetIdentity() );
-						//Error("GetCurrentState() DOES NOT CONTAIN PLAYER TICKING!");
-					}
-                }
-
+                    ScheduleLateJoinKick(player);
             }
             //any other case here, the player is dead & therefore shouldn't count towards any state
         }

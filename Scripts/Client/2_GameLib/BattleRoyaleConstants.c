@@ -103,6 +103,25 @@ static const float BR_TELEPORT_SETTLE_SECONDS = 0.75;
 //fast-travel around the lobby. Measured against GetTickTime(), which is in seconds.
 static const int BR_UNSTUCK_COOLDOWN_SECONDS = 30;
 
+//floor applied to general_settings.json `late_join_kick_seconds`. A player who connects mid-match is
+//scheduled for a disconnect rather than dropped on the spot, and this is how short that grace period
+//is allowed to get. The reason is on record in BattleRoyaleServer.OnPlayerConnected: calling
+//GetGame().DisconnectPlayer on an identity whose client has not finished establishing its connection
+//crashes the server. Do not lower this to "make the kick snappier" - the seconds are load-bearing.
+static const int BR_LATE_JOIN_KICK_MIN_SECONDS = 5;
+//ceiling, in seconds from the connect event, after which a late joiner is kicked even though their
+//client never reported itself loaded in. The grace period normally starts at that report rather than
+//at connect - see BattleRoyaleServer.PlayerLoadedIn - because vanilla calls InvokeOnConnect from the
+//ClientNew path, which fires while the client is still loading the world. Measured 2026-08-10: for a
+//new character ClientReadyEventTypeID never fires at all, and ClientPrepare -> ClientNew alone took
+//20 s, so the whole grace period could be spent on a loading screen the player cannot read.
+//This ceiling only exists so a client that never reports in is still removed eventually.
+static const int BR_LATE_JOIN_READY_TIMEOUT_SECONDS = 90;
+//seconds remaining at which the "you are about to be disconnected" notification is repeated once.
+//The first one fires as soon as the kick is scheduled, which is while the player is still staring at
+//a loading screen on a slow client, so a single notification is easy to miss entirely.
+static const int BR_LATE_JOIN_FINAL_WARN_SECONDS = 5;
+
 //field-size weighting curves for leaderboard_settings.json `field_weight_mode`.
 static const int BR_LEADERBOARD_WEIGHT_FLAT = 0;
 static const int BR_LEADERBOARD_WEIGHT_LOG2 = 1;
