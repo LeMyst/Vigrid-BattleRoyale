@@ -691,6 +691,10 @@ class BattleRoyaleServer: BattleRoyaleBase
         ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true, sender );
 
+        //--- And the hot zones, for the same reason and to the same client. Static config, so this is
+        //--- the only send that is strictly required - everything else is a re-assert.
+        SendHotZones( sender );
+
         for(int i = 0; i < a_LateJoiners.Count(); ++i)
         {
             BattleRoyaleLateJoiner entry = a_LateJoiners[i];
@@ -988,6 +992,47 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleDebugState lobby = BattleRoyaleDebugState.Cast( state );
 
         return lobby != NULL;
+    }
+
+    /**
+     *  Push the configured hot zones - static, purely cosmetic circles marking regions of interest.
+     *
+     *  Lives here rather than on BattleRoyaleState because it is server-wide config that never
+     *  changes within a process: no state owns it, and hanging it off one meant every other state
+     *  had to remember to re-send.
+     *
+     *  Pass an identity to seed one client, or NULL to broadcast. The primary call is per-identity
+     *  from PlayerLoadedIn, which is the first moment a client is provably listening AND covers a
+     *  mid-match joiner for free. A broadcast alone cannot: it reaches only whoever is connected at
+     *  the instant it fires, which is the same trap that left the lobby name tags live for an admin
+     *  watching a running match.
+     *
+     *  BattleRoyaleZoneData.Validate() has already truncated the two arrays to equal length and
+     *  dropped anything undrawable, so this sends whatever survived and does not re-check it.
+     */
+    void SendHotZones( PlayerIdentity recipient = NULL )
+    {
+        BattleRoyaleZoneData zone_data = BattleRoyaleConfig.GetConfig().GetZoneData();
+        if( !zone_data || !zone_data.hot_zone_centers )
+            return;
+
+        int count = zone_data.hot_zone_centers.Count();
+        if( count == 0 )
+            return;  //--- nothing configured; the client's default empty state is already correct
+
+        //--- Built on its own line, never nested inside the SendRPC call. A constructor wrapping an
+        //--- array read inside another call is the shape that threw "NULL pointer to instance" for
+        //--- every client in PlayerLoadedIn above - and a VM exception unwinds the stack, so it
+        //--- would take the caller's remaining work with it.
+        //--- Plain array<T>, NOT ref array<T>, matching SetLobbyNames above - the send and the read
+        //--- side have to spell the type the same way, and this is the pair that is known to work.
+        ref Param2<array<string>, array<float>> payload = new Param2<array<string>, array<float>>( zone_data.hot_zone_centers, zone_data.hot_zone_radii );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", payload, true, recipient );
+
+        if( recipient )
+            BattleRoyaleUtils.Trace( "SendHotZones " + count + " zone(s) to " + recipient.GetName() );
+        else
+            BattleRoyaleUtils.Trace( "SendHotZones " + count + " zone(s) broadcast" );
     }
 
     /**

@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 4;  // Config version
+	int version = 5;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -81,6 +81,22 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // 200 runs inside one boot answers "can this configuration ever dead-end here", which relaunching
     // the server twenty times never could. Costs a few hundred ms.
     int zone_selftest_runs = 0;
+
+    // --- Hot zones (v5) ---
+
+    // Static circles drawn on the map, the minimap and the spawn-selection screen to mark regions
+    // of interest. PURELY COSMETIC: nothing reads these but the renderers, so a hot zone changes no
+    // loot, no damage and no placement. Two parallel arrays - entry i is a circle of hot_zone_radii[i]
+    // metres centred on hot_zone_centers[i].
+    //
+    // Centres are "x y z" strings rather than a vector array, matching final_zone_polygon above:
+    // that is how this file has always spelled a list of world positions, and JsonFileLoader handles
+    // strings without surprises. The y component is ignored.
+    //
+    // Validate() below truncates the pair to the shorter array and drops entries that cannot be
+    // drawn, so a half-edited config degrades to fewer circles instead of a bad read.
+    ref array<string> hot_zone_centers = {};
+    ref array<float> hot_zone_radii = {};
 
     override string GetProfilePath()
     {
@@ -193,6 +209,18 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			version = 4;
 			Save();  // Save the upgraded config
 		}
+
+		if (version < 5)
+		{
+			// hot_zone_centers/hot_zone_radii were INTRODUCED in v5. NOTE this branch deliberately
+			// refills NOTHING, unlike the three above it. The array-initialiser trap they guard
+			// against - a missing key deserializing to an empty array instead of keeping the field
+			// initialiser - only bites a field whose default is non-empty. These two default to {},
+			// so "loaded empty" and "shipped empty" are the same state and there is nothing to
+			// restore. The branch exists only to move the version number.
+			version = 5;
+			Save();  // Save the upgraded config
+		}
 	}
 
 	//--- Clamp anything internally inconsistent so a misconfiguration degrades into a shorter but
@@ -214,6 +242,16 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		float world_size = 0;
 		float factor;
 		float smallest;
+
+		//--- Hot zone locals. Same reason: one declaration per name per method scope.
+		int hz;
+		int hz_count;
+		int hz_dropped;
+		string hz_raw;
+		vector hz_center;
+		float hz_radius;
+		ref array<string> hz_centers_kept;
+		ref array<float> hz_radii_kept;
 
 		if (GetGame() && GetGame().GetWorld())
 			world_size = GetGame().GetWorld().GetWorldSize();
@@ -303,5 +341,72 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] min_zone_num (" + min_zone_num + ") exceeds num_zones (" + num_zones + ") - clamping it.");
 			min_zone_num = num_zones;
 		}
+
+		//--- (5) Hot zones. Two parallel arrays edited by hand, so the failure mode is a half-finished
+		//--- edit: three centres and two radii, or a centre with a typo in it. Both are silent
+		//--- otherwise - the mismatch reads past the end of the shorter array, and ToVector() answers
+		//--- "0 0 0" for anything it cannot parse, which draws a circle on the map corner. Filter here
+		//--- so every consumer downstream can trust the pair, and warn per entry so the admin can see
+		//--- which line of their JSON is wrong.
+		if (!hot_zone_centers)
+			hot_zone_centers = new array<string>();
+		if (!hot_zone_radii)
+			hot_zone_radii = new array<float>();
+
+		hz_count = hot_zone_centers.Count();
+		if (hot_zone_radii.Count() < hz_count)
+			hz_count = hot_zone_radii.Count();
+
+		if (hz_count < hot_zone_centers.Count() || hz_count < hot_zone_radii.Count())
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] hot_zone_centers has " + hot_zone_centers.Count() + " entries but hot_zone_radii has " + hot_zone_radii.Count() + " - using the first " + hz_count + ". The two arrays are parallel: entry i is a circle of hot_zone_radii[i] metres centred on hot_zone_centers[i].");
+
+		hz_centers_kept = new array<string>();
+		hz_radii_kept = new array<float>();
+		hz_dropped = 0;
+
+		for (hz = 0; hz < hz_count; hz++)
+		{
+			//--- Every array read on its own line, never nested inside a call. A read sharing an
+			//--- expression with a call has been measured in this codebase to return another array's
+			//--- contents entirely.
+			hz_raw = hot_zone_centers[hz];
+			hz_radius = hot_zone_radii[hz];
+			hz_center = hz_raw.ToVector();
+
+			if (hz_radius <= 0)
+			{
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] hot zone " + hz + " has radius " + hz_radius + " - dropping it. A radius must be greater than zero.");
+				hz_dropped++;
+				continue;
+			}
+
+			//--- ToVector() does not report failure, so an unparseable string is indistinguishable
+			//--- from a deliberate "0 0 0". Neither is usable - the map corner is not a region of
+			//--- interest - so both are rejected under one test.
+			if (hz_center == vector.Zero)
+			{
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] hot zone " + hz + " has centre \"" + hz_raw + "\", which reads as 0 0 0 - dropping it. Expected three space-separated numbers, e.g. \"6000 0 7000\".");
+				hz_dropped++;
+				continue;
+			}
+
+			if (world_size > 0 && (hz_center[0] < 0 || hz_center[0] > world_size || hz_center[2] < 0 || hz_center[2] > world_size))
+			{
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] hot zone " + hz + " is centred at " + hz_center + ", outside this " + world_size + " m world - dropping it.");
+				hz_dropped++;
+				continue;
+			}
+
+			hz_centers_kept.Insert(hz_raw);
+			hz_radii_kept.Insert(hz_radius);
+		}
+
+		hot_zone_centers = hz_centers_kept;
+		hot_zone_radii = hz_radii_kept;
+
+		if (hot_zone_centers.Count() > 0)
+			BattleRoyaleUtils.Info("[BattleRoyaleZoneData] " + hot_zone_centers.Count() + " hot zone(s) will be drawn, " + hz_dropped + " dropped.");
+		else if (hz_dropped > 0)
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] all " + hz_dropped + " configured hot zone(s) were unusable - none will be drawn.");
 	}
 };

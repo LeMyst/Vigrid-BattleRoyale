@@ -194,6 +194,22 @@ class VigridMapMinimap
 
     private void DrawZones()
     {
+        //--- Hot zones first: they are decoration, and the play-area rings must draw over them. This
+        //--- also has to precede the early return below, which is only about the NEXT circle.
+        int hot_count = VigridMapAPI.GetHotZoneCount();
+        for (int i = 0; i < hot_count; i++)
+        {
+            float hot_radius = VigridMapAPI.GetHotZoneRadius(i);
+            if (hot_radius <= 0)
+                continue;
+
+            vector hot_center = VigridMapAPI.GetHotZoneCenter(i);
+            if (hot_center == vector.Zero)
+                continue;
+
+            VigridMapRender.WorldRenderOval(m_Canvas, m_MapWidget, hot_center, hot_radius, hot_radius, VIGRID_MAP_COLOR_HOT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
+        }
+
         if (VigridMapAPI.HasCurrentZone())
         {
             VigridMapRender.WorldRenderOval(m_Canvas, m_MapWidget, VigridMapAPI.GetCurrentCenter(), VigridMapAPI.GetCurrentRadius(), VigridMapAPI.GetCurrentRadius(), VIGRID_MAP_COLOR_CURRENT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);

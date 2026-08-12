@@ -121,6 +121,10 @@ static const int VIGRID_MAP_REPAINT_WATCHDOG_MS = 1000;
 static const int VIGRID_MAP_COLOR_CURRENT_ZONE = 0xFF3C82FF;  // ARGB(255, 60, 130, 255)
 static const int VIGRID_MAP_COLOR_NEXT_ZONE = 0xFFFFFFFF;     // ARGB(255, 255, 255, 255)
 static const int VIGRID_MAP_COLOR_ZONE_LINE = 0xDC3C82FF;     // ARGB(220, 60, 130, 255)
+//--- Hot zones. Red, because it is the one hue the play-area blue and white cannot be confused with,
+//--- and drawn UNDER them so a hot zone never obscures the circle a player has to run to. Slightly
+//--- translucent for the same reason.
+static const int VIGRID_MAP_COLOR_HOT_ZONE = 0xC8FF3232;       // ARGB(200, 255, 50, 50)
 static const int VIGRID_MAP_COLOR_OWN_MARKER = 0xFFFFFFFF;
 //--- A teammate's marker normally takes their party slot colour. This is what VigridMapTeam answers
 //--- with when there is no palette to ask at all - Party not installed - so it is the colour every

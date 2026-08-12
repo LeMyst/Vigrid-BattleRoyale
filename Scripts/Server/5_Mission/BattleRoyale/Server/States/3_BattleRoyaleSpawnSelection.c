@@ -66,6 +66,14 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         float f_FirstZoneRadius = spawn_area.GetRadius();
         float f_SpawnSelectionRadius = m_LobbySettings.spawn_selection_radius;
 
+        //--- Re-assert the hot zones BEFORE the menu opens. Every client already got them from
+        //--- PlayerLoadedIn, so this is belt and braces - but ordered this way the data is on the
+        //--- client when SpawnSelectionMenu builds its first frame, rather than arriving after it and
+        //--- relying on the repaint edge to catch up.
+        BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+        if (br_instance)
+            br_instance.SendHotZones();
+
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowSpawnSelection", new Param4<int, float, vector, float>(i_SpawnSelectionDuration, f_SpawnSelectionRadius, v_FirstZoneCenter, f_FirstZoneRadius), true);
 
         // Add timer to deactivate this state after a certain time
