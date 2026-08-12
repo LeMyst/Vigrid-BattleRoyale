@@ -37,6 +37,7 @@ static const string VIGRID_MAP_PREFS_FILE = "$profile:Vigrid-Map\\map_client.jso
 //--- constants, which come from another PBO's Inputs.xml and may not exist at compile time.
 static const string VIGRID_MAP_INPUT_TOGGLE = "UAVigridMapToggle";
 static const string VIGRID_MAP_INPUT_MINIMAP = "UAVigridMapMinimapToggle";
+static const string VIGRID_MAP_INPUT_COMPASS = "UAVigridMapCompassToggle";
 
 //--- There is deliberately NO input exclude group here, and adding one is a trap - see
 //--- VigridMapMenu.SuppressGameplayInputs for the whole story. The map suppresses individual UApi
@@ -57,6 +58,10 @@ static const string VM_RPC_REQUEST_SYNC = "VM_RequestSync";
 static const bool VIGRID_MAP_DEF_MARKERS_ENABLED = true;
 static const bool VIGRID_MAP_DEF_MINIMAP_ALLOWED = false;
 static const int VIGRID_MAP_DEF_LABEL_MAX = 32;
+//--- Unlike the minimap's, this default is permissive: the compass is meant to be there unless an
+//--- admin takes it away, so a client that has not yet had VM_Settings shows it rather than
+//--- flickering it in a second later.
+static const bool VIGRID_MAP_DEF_COMPASS_ALLOWED = true;
 static const int VIGRID_MAP_PLACE_COOLDOWN_MS = 250;
 
 //--- How long an optimistically-drawn marker survives without the server echoing it back. Two
@@ -214,5 +219,122 @@ static const float VIGRID_MAP_MINIMAP_ARROW_PX = 14.0;
 //--- ring closes into a blob and the cross reads as noise.
 static const float VIGRID_MAP_MINIMAP_MARKER_PX = 7.0;
 
+//--- Compass strip. Every length here is in SCREEN PIXELS - the strip annotates the camera, not the
+//--- world, so nothing about it scales with zoom or distance.
+//---
+//--- The window is what makes the strip readable: 90 degrees across 620 px is ~6.9 px per degree, so
+//--- a 15-degree tick spacing lands them ~103 px apart and the eight named directions are never all
+//--- on screen at once. Widening the window (or narrowing the strip) crowds them; narrowing it makes
+//--- the strip swing alarmingly fast for a small turn.
+//---
+//--- The height is three stacked lanes and they are packed tight: ticks 0-10, labels 10-38, carets
+//--- 38-42. There is deliberately NO slack at the bottom - an earlier 40 px strip left 11 px of empty
+//--- backdrop under the labels, which reads as a misaligned box whenever no caret happens to be up.
+//--- The label lane is the one that sets the height, so raising the cardinal text size grows it.
+//---
+//--- TOP is 0 so the strip sits flush against the top of the screen. Nothing may overhang above it
+//--- any more, which is why the cursor's overhang is gone.
+//---
+//--- These are the AUTHORITY, not the layout. Every widget in compass.layout is positioned and sized
+//--- from script against the measured root size, so the numbers declared there are placeholders that
+//--- only have to look right in Workbench. See compass.layout's header for why it works that way.
+//--- The screen width every constant in this block is authored against. VigridMapCompass divides the
+//--- measured viewport by it and scales everything through, so the strip is the same fraction of the
+//--- display at 1280 as at 2560. 1920 is chosen because it is also the reference the ENGINE uses when
+//--- it scales a widget's declared geometry, so the two agree.
+static const float VIGRID_MAP_COMPASS_REFERENCE_W = 1920.0;
+
+static const float VIGRID_MAP_COMPASS_WIDTH = 620.0;
+static const float VIGRID_MAP_COMPASS_HEIGHT = 42.0;
+static const float VIGRID_MAP_COMPASS_TOP = 0.0;
+static const float VIGRID_MAP_COMPASS_WINDOW_DEG = 90.0;
+
+//--- The reading edge, and the furniture under it.
+//---
+//--- The cursor deliberately stops at the LABEL LANE rather than spanning the strip. A full-height
+//--- bar is more striking, and it draws straight through the label of whichever mark is currently
+//--- under it - so the one label the player is actually reading is the one the cursor obscures. It
+//--- only ever has to mark a position among the TICKS, which is where the precision is. It is a
+//--- pixel wider and two taller than a major tick, which is what separates it from one.
+static const float VIGRID_MAP_COMPASS_CURSOR_W = 3.0;
+static const float VIGRID_MAP_COMPASS_CURSOR_H = 12.0;
+static const float VIGRID_MAP_COMPASS_READOUT_W = 120.0;
+static const float VIGRID_MAP_COMPASS_READOUT_H = 22.0;
+static const float VIGRID_MAP_COMPASS_READOUT_GAP = 4.0;
+
+//--- The entry pool is indexed BY BEARING, not by visible slot: entry i is permanently the
+//--- i*15-degree mark. That is why its label is set once at creation and never again - only SetPos,
+//--- SetAlpha and Show run per frame. A slot pool would have to re-localise a stringtable key for
+//--- every visible tick, every frame, for no gain.
+static const int VIGRID_MAP_COMPASS_STEP_DEG = 15;
+static const int VIGRID_MAP_COMPASS_ENTRY_COUNT = 24;  // 360 / STEP_DEG
+static const float VIGRID_MAP_COMPASS_ENTRY_W = 48.0;
+static const float VIGRID_MAP_COMPASS_ENTRY_H = 42.0;
+
+//--- Three tick weights for the three kinds of mark: a named direction every 45 degrees, a numeric
+//--- degree label every 30, and an unlabelled tick every 15.
+static const float VIGRID_MAP_COMPASS_TICK_MAJOR_H = 10.0;
+static const float VIGRID_MAP_COMPASS_TICK_MEDIUM_H = 7.0;
+static const float VIGRID_MAP_COMPASS_TICK_MINOR_H = 4.0;
+static const float VIGRID_MAP_COMPASS_TICK_W = 2.0;
+
+//--- The label lane inside an entry, below the tallest tick. It is sized to the LARGEST text tier
+//--- below, since the label is vertically centred in it - undersize it and the cardinals clip.
+static const float VIGRID_MAP_COMPASS_LABEL_Y = 10.0;
+static const float VIGRID_MAP_COMPASS_LABEL_H = 28.0;
+
+//--- THE THREE TEXT SIZES ARE NOT HERE, AND CANNOT BE. A widget's glyph size is fixed by the FONT
+//--- FACE it declares, and there is no SetFont to change one from script - so the tiers live in
+//--- compass_entry.layout as three separate label widgets (metron-bold28 / -bold22 / -bold14), of
+//--- which VigridMapCompass.PickLabel shows exactly one per entry.
+//---
+//--- MEASURED 2026-08-11, DO NOT RETRY: TextWidget.SetTextExactSize does nothing here. Asking for
+//--- 28 / 18 / 13 on a single widget rendered 28 / 28 / 28 under GetTextSize, so all three tiers came
+//--- out identical in game. The tell was there beforehand and was missed - SetTextExactSize has ONE
+//--- call site in all of P:\scripts (tutorialsmenu.c:291), the same shape as OverrideAimChangeX/Y,
+//--- which also compiled, ran and silently did nothing.
+
+//--- An unlabelled tick is scenery, not information, so it sits back from the ones that are read.
+static const float VIGRID_MAP_COMPASS_MINOR_ALPHA = 0.55;
+
+//--- Everything fades out over the last few degrees of the window rather than relying on the strip
+//--- to clip it. `clipchildren 1` IS set on the container, but clipping of absolutely-positioned
+//--- children is unproven on this codebase - the fade makes it cosmetic, so a clip that turns out
+//--- not to work costs nothing visible instead of leaving labels hanging past the backdrop.
+static const float VIGRID_MAP_COMPASS_FADE_DEG = 8.0;
+
+//--- Carets: where the next zone, a teammate and a party ping sit on the strip. Unlike the entries
+//--- these are a slot pool - the set changes as people move, ping and die.
+//---
+//--- Teammate and ping necessarily share a colour, since both are the owner's party slot, so they
+//--- are separated the same two ways the map's triangle and diamond are: height and opacity. Do not
+//--- collapse those without giving one of them a different silhouette.
+static const int VIGRID_MAP_COMPASS_MAX_CARETS = 12;
+static const float VIGRID_MAP_COMPASS_CARET_W = 12.0;
+static const float VIGRID_MAP_COMPASS_CARET_H = 5.0;
+static const float VIGRID_MAP_COMPASS_CARET_ZONE_W = 3.0;
+static const float VIGRID_MAP_COMPASS_CARET_TEAM_W = 2.0;
+static const float VIGRID_MAP_COMPASS_CARET_FULL_H = 5.0;
+static const float VIGRID_MAP_COMPASS_CARET_PING_H = 3.0;
+
+//--- The caret lane is the bottom of the strip, below the labels. Both caret heights are measured
+//--- DOWN from this line, so a full and a half caret start together and only their length differs -
+//--- which is what makes the difference readable without a baseline to compare against.
+static const float VIGRID_MAP_COMPASS_CARET_LANE_Y = 38.0;
+
+static const int VIGRID_MAP_COLOR_COMPASS_TICK = 0xFFFFFFFF;
+
 //--- Stringtable keys. Held with the leading '#' so a widget localises them itself.
 static const string STR_VIGRID_MAP_MARKERS_OFF = "#STR_MAP_MARKERS_OFF";
+
+//--- The eight named directions, in strip order (0, 45, 90 ... 315 degrees). Localised because the
+//--- letters genuinely differ - German uses O for east, French O for west, Russian a Cyrillic set -
+//--- and resolved once per entry at pool creation, never per frame.
+static const string STR_VIGRID_MAP_COMPASS_N = "#STR_MAP_COMPASS_N";
+static const string STR_VIGRID_MAP_COMPASS_NE = "#STR_MAP_COMPASS_NE";
+static const string STR_VIGRID_MAP_COMPASS_E = "#STR_MAP_COMPASS_E";
+static const string STR_VIGRID_MAP_COMPASS_SE = "#STR_MAP_COMPASS_SE";
+static const string STR_VIGRID_MAP_COMPASS_S = "#STR_MAP_COMPASS_S";
+static const string STR_VIGRID_MAP_COMPASS_SW = "#STR_MAP_COMPASS_SW";
+static const string STR_VIGRID_MAP_COMPASS_W = "#STR_MAP_COMPASS_W";
+static const string STR_VIGRID_MAP_COMPASS_NW = "#STR_MAP_COMPASS_NW";

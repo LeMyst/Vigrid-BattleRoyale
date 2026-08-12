@@ -23,11 +23,13 @@
         <actions>
             <input name="UAVigridMapToggle" loc="Open Map" />
             <input name="UAVigridMapMinimapToggle" loc="Toggle Minimap" />
+            <input name="UAVigridMapCompassToggle" loc="Toggle Compass" />
         </actions>
 
         <sorting name="vigridmap" loc="MAP">
             <input name="UAVigridMapToggle" />
             <input name="UAVigridMapMinimapToggle" />
+            <input name="UAVigridMapCompassToggle" />
         </sorting>
     </inputs>
     <preset>
@@ -36,6 +38,14 @@
         </input>
         <input name="UAVigridMapMinimapToggle">
             <btn name="kN" />
+        </input>
+        <!--
+            K is unbound in vanilla DayZ and in this mod's other two Inputs.xml files (Battle Royale
+            takes F1/F2, Party takes P/T/Y). Community-Online-Tools is the one to check if it ever
+            does two things at once - its own Inputs.xml is what collided with Party's Y.
+        -->
+        <input name="UAVigridMapCompassToggle">
+            <btn name="kK" />
         </input>
     </preset>
 </modded_inputs>

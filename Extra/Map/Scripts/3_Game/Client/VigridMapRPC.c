@@ -17,6 +17,7 @@ class VigridMapRPC
     //--- received the push behaves like a normal server rather than a locked-down one.
     bool markers_enabled = VIGRID_MAP_DEF_MARKERS_ENABLED;
     bool minimap_allowed = VIGRID_MAP_DEF_MINIMAP_ALLOWED;
+    bool compass_allowed = VIGRID_MAP_DEF_COMPASS_ALLOWED;
     int label_max_length = VIGRID_MAP_DEF_LABEL_MAX;
 
     //--- The visible marker set: mine plus my teammates'. Parallel arrays, matching how the party
@@ -57,6 +58,7 @@ class VigridMapRPC
     {
         markers_enabled = VIGRID_MAP_DEF_MARKERS_ENABLED;
         minimap_allowed = VIGRID_MAP_DEF_MINIMAP_ALLOWED;
+        compass_allowed = VIGRID_MAP_DEF_COMPASS_ALLOWED;
         label_max_length = VIGRID_MAP_DEF_LABEL_MAX;
 
         marker_owner_uids.Clear();
@@ -70,7 +72,7 @@ class VigridMapRPC
 
     void VM_Settings(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
-        Param3<bool, bool, int> data;
+        Param4<bool, bool, bool, int> data;
         if (!ctx.Read(data))
             return;
         if (type != CallType.Client)
@@ -78,9 +80,10 @@ class VigridMapRPC
 
         markers_enabled = data.param1;
         minimap_allowed = data.param2;
-        label_max_length = data.param3;
+        compass_allowed = data.param3;
+        label_max_length = data.param4;
 
-        VigridMapLog.Debug("VM_Settings enabled=" + markers_enabled + " minimap=" + minimap_allowed);
+        VigridMapLog.Debug("VM_Settings enabled=" + markers_enabled + " minimap=" + minimap_allowed + " compass=" + compass_allowed);
     }
 
     /**

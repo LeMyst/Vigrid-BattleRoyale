@@ -32,7 +32,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [DisableFogChernarusPlus](DisableFogChernarusPlus/README.md) | *disabled* | — | Removes fog on Chernarus+. Parked: it does nothing on Vigrid |
 | [KillFeed](KillFeed/README.md) | `extra_killfeed.pbo` | both | On-screen death feed with weapon models, attachments and range |
 | [LimitUnconsciousTime](LimitUnconsciousTime/README.md) | `extra_limitunconscioustime.pbo` | server | Force-wakes an unconscious player after 5 seconds. **Not standalone** |
-| [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, party-shared markers and zone circles |
+| [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, HUD compass, party-shared markers and zone circles |
 | [MapSatellite](MapSatellite/README.md) | `extra_mapsatellite.pbo` | both | Config only — switches the map to satellite imagery, retunes its overlay layers and makes place names legible over it |
 | [PreventPlayerModifiers](PreventPlayerModifiers/README.md) | `extra_preventplayermodifiers.pbo` | both | Disables hunger, thirst, broken legs and four diseases |
 | [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | client | Stops the weapon being forced up against walls |
@@ -68,10 +68,12 @@ Only four addons declare a `defines[]`, which is what lets the mod guard its cal
 | `VIGRID_SAFEZONE` | SafeZone | yes — 2 call sites |
 | `VIGRID_MAP` | Map | yes — client zone pushes and two server calls |
 | `VIGRID_MAP_MINIMAP` | Map | no — read only by Map itself, as a build switch |
+| `VIGRID_MAP_COMPASS` | Map | no — read only by Map itself, as a build switch |
 | `RANDOM_MENU_GEAR` | RandomMenuGear | no — declared for consistency only |
 
-`VIGRID_MAP_MINIMAP` is the odd one out: it is not there for the host mod to guard against, it is there
-so a build can ship with **no minimap at all**. Comment it out of `Extra/Map/config.cpp` and the minimap
-class, its widgets and its keybind handler leave the PBO, while the fullscreen map is untouched.
+`VIGRID_MAP_MINIMAP` and `VIGRID_MAP_COMPASS` are the odd ones out: they are not there for the host mod
+to guard against, they are there so a build can ship with **no minimap** or **no compass** at all.
+Comment either out of `Extra/Map/config.cpp` and that feature's class, its widgets and its keybind
+handler leave the PBO, while the fullscreen map is untouched.
 
 The other twelve declare none, so nothing can `#ifdef`-guard against them.

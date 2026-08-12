@@ -6,9 +6,10 @@
  *  They all chain through super, so application order does not matter - but every override here
  *  must keep calling super, or it silently cuts the others out of the chain.
  *
- *  Every minimap reference in this file is behind VIGRID_MAP_MINIMAP, declared in Extra/Map/config.cpp
- *  - comment that define out and the minimap is gone from the build entirely, keybind handler
- *  included. See VigridMapMinimap.c for what stays behind on purpose.
+ *  Every minimap reference in this file is behind VIGRID_MAP_MINIMAP and every compass reference
+ *  behind VIGRID_MAP_COMPASS, both declared in Extra/Map/config.cpp - comment either define out and
+ *  that feature is gone from the build entirely, keybind handler included. See VigridMapMinimap.c
+ *  and VigridMapCompass.c for what stays behind on purpose.
  */
 modded class MissionGameplay
 {
@@ -19,6 +20,10 @@ modded class MissionGameplay
 
 #ifdef VIGRID_MAP_MINIMAP
     protected ref VigridMapMinimap m_VigridMinimap;
+#endif
+
+#ifdef VIGRID_MAP_COMPASS
+    protected ref VigridMapCompass m_VigridCompass;
 #endif
 
     override void OnInit()
@@ -40,6 +45,12 @@ modded class MissionGameplay
             m_VigridMinimap = new VigridMapMinimap();
 #endif
 
+#ifdef VIGRID_MAP_COMPASS
+        //--- Same deferral as the minimap: nothing is built until its first Update.
+        if (!m_VigridCompass)
+            m_VigridCompass = new VigridMapCompass();
+#endif
+
         VigridMapLog.Debug("MissionGameplay::OnInit done");
     }
 
@@ -49,6 +60,10 @@ modded class MissionGameplay
 
 #ifdef VIGRID_MAP_MINIMAP
         m_VigridMinimap = NULL;
+#endif
+
+#ifdef VIGRID_MAP_COMPASS
+        m_VigridCompass = NULL;
 #endif
 
         super.OnMissionFinish();
@@ -78,6 +93,13 @@ modded class MissionGameplay
             m_VigridMinimap.Update(timeslice);
 #endif
 
+#ifdef VIGRID_MAP_COMPASS
+        //--- Every frame, with no timer in front of it, unlike the minimap. The strip slides under a
+        //--- fixed cursor, which is exactly where a 10 Hz update reads as stutter.
+        if (m_VigridCompass)
+            m_VigridCompass.Update(timeslice);
+#endif
+
         if (!GetUApi())
             return;
         if (m_UIManager.IsMenuOpen(MENU_CHAT_INPUT))
@@ -85,6 +107,10 @@ modded class MissionGameplay
 
 #ifdef VIGRID_MAP_MINIMAP
         HandleMinimapToggle();
+#endif
+
+#ifdef VIGRID_MAP_COMPASS
+        HandleCompassToggle();
 #endif
 
         if (HandleMapClose())
@@ -245,6 +271,29 @@ modded class MissionGameplay
 
         bool enabled = VigridMapPrefs.ToggleMinimap();
         VigridMapLog.Debug("Minimap toggled to " + enabled);
+    }
+#endif
+
+#ifdef VIGRID_MAP_COMPASS
+    /**
+     *  Show or hide the compass strip, and remember the choice.
+     *
+     *  Same shape as HandleMinimapToggle, including the silent no-op when the server has switched the
+     *  compass off entirely: the preference is still stored, so it comes back on a server that allows
+     *  it, but toggling something invisible would just look broken.
+     */
+    protected void HandleCompassToggle()
+    {
+        UAInput compass_input = GetUApi().GetInputByName(VIGRID_MAP_INPUT_COMPASS);
+        if (!compass_input)
+            return;
+        if (!compass_input.LocalPress())
+            return;
+        if (!VigridMapRPC.GetInstance().compass_allowed)
+            return;
+
+        bool compass_enabled = VigridMapPrefs.ToggleCompass();
+        VigridMapLog.Debug("Compass toggled to " + compass_enabled);
     }
 #endif
 }

@@ -65,10 +65,16 @@ class CfgMods
         //--- because a client build flag must not change the wire format; and the N entry in
         //--- Data/Inputs.xml, because XML cannot be conditional, so it still lists under
         //--- Options > Controls doing nothing.
+        //---
+        //--- TO BUILD WITHOUT THE COMPASS: comment out the "VIGRID_MAP_COMPASS" line below. Same
+        //--- shape as the minimap switch and with the same two exceptions - compass_allowed stays on
+        //--- the wire and in map_settings.json, and the K entry stays in Data/Inputs.xml. The
+        //--- fullscreen map and the minimap are untouched either way.
         defines[] =
         {
             "VIGRID_MAP",
-            "VIGRID_MAP_MINIMAP"
+            "VIGRID_MAP_MINIMAP",
+            "VIGRID_MAP_COMPASS"
         };
 
         //--- Only declare a script module once its folder actually exists: the engine registers

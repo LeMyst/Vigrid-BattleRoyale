@@ -1,0 +1,103 @@
+// The compass strip's frame. Ticks, labels and carets are created from script as children of this
+// root - see VigridMapCompass.
+//
+// EVERY CHILD HERE IS POSITIONED AND SIZED FROM SCRIPT, and that is the point of the layout's shape.
+// The first version wrapped them in a fixed 620x40 `hexactsize 1` panel and let `halign center_ref`
+// place it. MEASURED, DO NOT RETRY: the container did not share a coordinate space with the children
+// script placed inside it. Tick SPACING came out exactly right - 103 px for 15 degrees, which is the
+// 620/90 px-per-degree the script computed - while the whole group sat 95 px right of the cursor,
+// i.e. the container rendered ~430 px wide while its children were laid out in 620-px units. A
+// uniform offset with correct spacing is the fingerprint of a coordinate-space mismatch, not of an
+// angle bug, which is what made it look like a heading error for a while.
+//
+// So the root is the only container, and it is `size 1 1` with `hexactsize 0`. That is the one case
+// this repo has already proven: VigridMapMarkers3D and VigridPartyNametags both read
+// m_Root.GetScreenSize() and SetPos children in those same pixels, and their markers land where they
+// should. VigridMapCompass does exactly that.
+//
+// The cost is that there is no clipping container any more. That is deliberate and costs nothing:
+// VigridMapCompass fades every element out over the last few degrees of the window, so nothing ever
+// reaches the edge at a visible alpha. The fade was always the mechanism; `clipchildren` was only
+// ever belt and braces.
+//
+// THREE ALPHA/STYLE TRAPS ARE ANSWERED BELOW, all of which fail silently with a clean .rpt:
+//
+//  1. `color` on a PanelWidget TINTS ITS STYLE TEXTURE - it is not a fill. With no `style` line the
+//     panel draws nothing at all, colour and all. Every visible fill therefore carries
+//     `style rover_sim_colorable`, vanilla's flat tintable surface (day_z_chat_input.layout:21).
+//     DayZDefaultPanel is the wrong one: a bordered 9-slice whose texture swallows the alpha.
+//  2. A widget's COLOUR ALPHA AND ITS WIDGET ALPHA ARE THE SAME VALUE, and every `inheritalpha 1`
+//     child multiplies by its parent's. The root is therefore `color 1 1 1 1` - a pure alpha carrier
+//     that renders nothing - so the backdrop can be faint while the text stays readable.
+//  3. Following from 2: the root must never be given alpha 0 to hide the compass. Show(false) it.
+FrameWidgetClass CompassRoot {
+ visible 1
+ ignorepointer 1
+ clipchildren 0
+ color 1 1 1 1
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ priority 40
+ {
+  // Declared first so it draws behind the ticks. Position and width are overwritten every frame from
+  // the measured root size; only the colour here is real.
+  PanelWidgetClass CompassBackdrop {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 620 42
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.35
+   style rover_sim_colorable
+  }
+  // Spans the tick lane only, and is a pixel wider and two taller than a major tick. It must NOT be
+  // given the strip's full height: it would then draw through the label of whichever mark is under
+  // it, which is the one label the player is reading.
+  PanelWidgetClass CompassCursor {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 3 12
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   style rover_sim_colorable
+  }
+  // The exact bearing under the cursor. Bold and shadowed because it sits directly on the world -
+  // the backdrop stops above it.
+  TextWidgetClass CompassReadout {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 44
+   size 120 22
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   text "000"
+   font "gui/fonts/metron-bold22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 18
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" center
+   "text valign" center
+  }
+ }
+}

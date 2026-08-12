@@ -12,10 +12,11 @@
  */
 class VigridMapData
 {
-    int version = 1;
+    int version = 2;
 
     bool enabled = true;                    //!< master switch for marker placement
     bool minimap_allowed = true;            //!< may clients show the HUD minimap at all
+    bool compass_allowed = true;            //!< may clients show the HUD compass strip at all
     int label_max_length = 32;              //!< marker labels are truncated to this server-side
 
     //--- A teammate logging out should not erase the objective the squad is walking to, so their
@@ -47,10 +48,15 @@ class VigridMapData
             ErrorEx(error_message);
     }
 
-    //! Nothing to migrate yet - version 1 is the first shipped shape. The branch is here so the
-    //! first field added later has an obvious home.
+    /**
+     *  Version 2 added `compass_allowed`, and needs no branch: it is a scalar with an initialiser,
+     *  so an existing file that lacks the key deserializes to the default, and Load()'s unconditional
+     *  re-save then writes it out. A `ref array` would be the case that DOES need a branch - an array
+     *  initialiser does not survive deserialization and would load back empty.
+     */
     void Upgrade()
     {
+        version = 2;
     }
 }
 #endif

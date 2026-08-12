@@ -284,7 +284,7 @@ class VigridMapMarkerStore
 
         VigridMapData settings = VigridMapConfig.GetConfig().GetSettings();
 
-        GetRPCManager().SendRPC(RPC_VIGRIDMAP_NAMESPACE, VM_RPC_SETTINGS, new Param3<bool, bool, int>(IsActive(), settings.minimap_allowed, settings.label_max_length), true, identity);
+        GetRPCManager().SendRPC(RPC_VIGRIDMAP_NAMESPACE, VM_RPC_SETTINGS, new Param4<bool, bool, bool, int>(IsActive(), settings.minimap_allowed, settings.compass_allowed, settings.label_max_length), true, identity);
     }
 
     /**
