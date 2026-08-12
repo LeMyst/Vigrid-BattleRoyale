@@ -314,6 +314,11 @@ class BattleRoyaleRound: BattleRoyaleState
 				    player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_LIGHT);
                     //TODO: determine if this last health tick will kill the player
                     player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
+#ifdef KILLFEED
+                    //--- Scripted damage reaches EEKilled with the player as their own killer, so
+                    //--- without this the kill feed cannot tell a zone death from starvation.
+                    KillFeedAPI.NoteEnvironmentalDamage( player, KillFeedCause.ZONE );
+#endif
                     player.time_until_damage = i_DamageTickTime; //reset timer
                 }
                 player.time_until_damage -= timeslice;

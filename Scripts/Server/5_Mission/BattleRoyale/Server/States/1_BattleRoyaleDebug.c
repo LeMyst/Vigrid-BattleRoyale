@@ -67,6 +67,12 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         if( b_UseVoteSystem )
         	AddTimer(2.0, this, "CheckReadyState", NULL, true);
 
+#ifdef KILLFEED
+        //--- Nothing that happens in the lobby belongs in the feed, and a feed running here would
+        //--- just advertise who is fighting whom before the match has started.
+        KillFeedAPI.SetActive( false );
+#endif
+
         super.Activate();
     }
 

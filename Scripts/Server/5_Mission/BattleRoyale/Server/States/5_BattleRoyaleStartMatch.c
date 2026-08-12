@@ -51,6 +51,11 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         //send start match RPC (this will enable UI such as kill count)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", new Param1<bool>(true), true); //don't need a param, but id rather keep it just so i know nothing wierd occurs (eventually find out if we can remove it)
 
+#ifdef KILLFEED
+        //--- Kills count from here on, so the feed goes live with the match.
+        KillFeedAPI.SetActive( true );
+#endif
+
         int max_time = i_TimeToUnlock - 1;
         for(int i = max_time; i > 0; i--)
         {
