@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
-	int version = 1;  // Config version
+	int version = 2;  // Config version
 
 	// Enable Vigrid API support
 	bool enable_vigrid_api = false;
@@ -17,7 +17,8 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
     bool force_match_uuid = false;
 
     // If the server should warn the players if no UUID is received
-    bool warning_no_uuid = false;
+    // Only has an effect when enable_vigrid_api is true
+    bool warning_no_uuid = true;
 
 	// Autolock the server when a match starts
 	// Gonna make a POST request to the autolock URL at the start of the match
@@ -57,5 +58,18 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 		string errorMessage;
 		if (!JsonFileLoader<BattleRoyaleServerData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
+	}
+
+	override void Upgrade()
+	{
+		if (version < 2)
+		{
+			// warning_no_uuid was never read before v2, the warning was always shown.
+			// Enable it so the behaviour is unchanged for existing servers.
+			warning_no_uuid = true;
+
+			version = 2;
+			Save();  // Save the upgraded config
+		}
 	}
 };

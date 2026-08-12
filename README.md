@@ -2,6 +2,18 @@
 
 Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/BattleRoyale
 
+## Dependencies
+
+This mod requires the following mods. Their source code is available on GitHub — useful when
+checking a dependency's API:
+
+| Mod                      | Source                                                    |
+|--------------------------|-----------------------------------------------------------|
+| CF (Community Framework) | https://github.com/Arkensor/DayZ-CommunityFramework        |
+| Dabs Framework           | https://github.com/InclementDab/DayZ-Dabs-Framework        |
+| Community Online Tools   | https://github.com/Jacob-Mango/DayZ-CommunityOnlineTools   |
+| DayZ Expansion           | https://github.com/salutesh/DayZ-Expansion-Scripts         |
+
 ## LICENSE
 
 This work is licensed under the [DAYZ STANDALONE PUBLIC LICENSE SHARE ALIKE (DSPL-SA)](LICENSE).  

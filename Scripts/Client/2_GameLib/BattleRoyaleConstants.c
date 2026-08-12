@@ -93,6 +93,20 @@ static const int HEATMAP_REPAINT_WATCHDOG_MS = 500;
 static const int BR_OVAL_MIN_SEGMENTS = 16;
 static const int BR_OVAL_MAX_SEGMENTS = 180;
 
+//--- spawn selection snapping
+//a click on water or outside the first zone is snapped to the nearest valid point
+//by walking from the click towards the zone centre. Distance, in metres, between
+//two samples along that line: fine enough not to step over a beach, coarse enough
+//that a 1500 m radius costs ~60 iterations of two native surface calls -- all
+//inside a single mouse-up.
+static const float BR_SPAWN_SNAP_STEP = 25.0;
+//runaway guard on that walk. At the step above this covers 12.8 km, more than any
+//zone radius, so it should never be the reason a search stops.
+static const int BR_SPAWN_SNAP_MAX_STEPS = 512;
+//how far inside the circle a click from outside it lands, in metres. Keeps the
+//snapped point clear of the boundary rather than sitting exactly on it.
+static const float BR_SPAWN_SNAP_INSET = 25.0;
+
 
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)

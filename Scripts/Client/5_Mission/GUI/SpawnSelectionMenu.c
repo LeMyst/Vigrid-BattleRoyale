@@ -594,6 +594,133 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		}
 	}
 
+	// Client mirror of 3_BattleRoyaleSpawnSelection.IsValidSpawnSelection(). Keep the two in step:
+	// the server is the authority and silently drops anything it disagrees with, so a point this
+	// accepts but the server does not costs the player their pick with no feedback at all.
+	bool IsSpawnPositionValid(vector p)
+	{
+		float half_spawn = GetSpawnSize() / 2;
+		int worldSize = GetGame().GetWorld().GetWorldSize();
+
+		if (p[0] < half_spawn || p[2] < half_spawn || p[0] > (worldSize - half_spawn) || p[2] > (worldSize - half_spawn))
+			return false;
+
+		if (GetGame().SurfaceIsSea(p[0], p[2]))
+			return false;
+
+		// The server rejects ponds as well. Without this the walk below happily stops on a lake and
+		// the selection is thrown away server-side.
+		if (GetGame().SurfaceIsPond(p[0], p[2]))
+			return false;
+
+		if (v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
+		{
+			// 2D, like the server. vector.Distance would fold in the y that ScreenToMap returns and
+			// make the client stricter than the authority for no reason.
+			float dx = p[0] - v_FirstZoneCenter[0];
+			float dz = p[2] - v_FirstZoneCenter[2];
+			// Add a small tolerance (25 meters) to account for precision errors
+			if (Math.Sqrt((dx * dx) + (dz * dz)) > (f_FirstZoneRadius + 25))
+				return false;
+		}
+
+		return true;
+	}
+
+	// One extra step inland from a point that just passed validation. A snapped point sitting right
+	// on a shoreline leaves the server's GetRandomSafePosition(pos, spawn_selection_radius) ball
+	// mostly water, and when that search gives up the player is teleported somewhere random instead
+	// of anywhere near what they clicked.
+	vector NudgeInland(vector pos, vector step_dir, float remaining)
+	{
+		if (remaining <= 0)
+			return pos;
+
+		float travel = BR_SPAWN_SNAP_STEP;
+		if (travel > remaining)
+			travel = remaining;
+
+		vector nudged = pos + (step_dir * travel);
+		nudged[1] = 0;
+
+		if (IsSpawnPositionValid(nudged))
+			return nudged;
+
+		return pos;
+	}
+
+	// Resolve a clicked point to something the player can actually spawn on, by walking from the
+	// click towards the zone centre and taking the first valid sample. Searching that one direction
+	// is enough: for a click outside the circle the nearest in-circle point IS on the line to the
+	// centre, and for a click on water that same line heads inland on any sensibly placed zone.
+	// Returns vector.Zero only when the whole line is unusable - a zone centred on open water.
+	vector FindNearestValidSpawn(vector pos)
+	{
+		int worldSize = GetGame().GetWorld().GetWorldSize();
+		float half_spawn = GetSpawnSize() / 2;
+
+		vector candidate = pos;
+		candidate[1] = 0;
+		candidate[0] = Math.Clamp(candidate[0], half_spawn, worldSize - half_spawn);
+		candidate[2] = Math.Clamp(candidate[2], half_spawn, worldSize - half_spawn);
+
+		// Where to walk towards. Without a usable zone the menu still needs a direction, and the
+		// middle of the map is the only landmark it has.
+		vector target = Vector(worldSize / 2, 0, worldSize / 2);
+		if (v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
+		{
+			target = Vector(v_FirstZoneCenter[0], 0, v_FirstZoneCenter[2]);
+
+			// A click outside the circle is resolved by this projection alone: drop it onto the
+			// boundary, a little inside it, and let the walk below deal with water from there.
+			vector from_center = candidate - target;
+			float center_distance = from_center.Length();
+			if (center_distance > f_FirstZoneRadius)
+			{
+				float inset_radius = f_FirstZoneRadius - BR_SPAWN_SNAP_INSET;
+				if (inset_radius < 0)
+					inset_radius = 0;
+
+				candidate = target + (from_center.Normalized() * inset_radius);
+				candidate[1] = 0;
+				candidate[0] = Math.Clamp(candidate[0], half_spawn, worldSize - half_spawn);
+				candidate[2] = Math.Clamp(candidate[2], half_spawn, worldSize - half_spawn);
+			}
+		}
+
+		// The common case - a click on open ground inside the circle - costs one validity test and
+		// no walking.
+		if (IsSpawnPositionValid(candidate))
+			return candidate;
+
+		vector to_target = target - candidate;
+		float remaining = to_target.Length();
+		if (remaining <= 0)
+			return vector.Zero;
+
+		vector step_dir = to_target.Normalized();
+
+		int steps = Math.Ceil(remaining / BR_SPAWN_SNAP_STEP);
+		if (steps > BR_SPAWN_SNAP_MAX_STEPS)
+			steps = BR_SPAWN_SNAP_MAX_STEPS;
+
+		for (int i = 1; i <= steps; i++)
+		{
+			float travelled = i * BR_SPAWN_SNAP_STEP;
+			// The last sample is the target itself rather than a point beyond it.
+			if (travelled > remaining)
+				travelled = remaining;
+
+			vector probe = candidate + (step_dir * travelled);
+			probe[1] = 0;
+
+			if (IsSpawnPositionValid(probe))
+				return NudgeInland(probe, step_dir, remaining - travelled);
+		}
+
+		return vector.Zero;
+	}
+
 	void SelectSpawnPoint(vector pos)
 	{
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SelectSpawnPoint");
@@ -607,40 +734,23 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 		vector tempPosition = m_MapWidget.ScreenToMap(pos);
 
-		// Check if the position is valid, e.g. within the world bounds
-		int worldSize = GetGame().GetWorld().GetWorldSize();  // Get the world size
-		if (tempPosition[0] < (GetSpawnSize()/2) || tempPosition[2] < (GetSpawnSize()/2) || tempPosition[0] > (worldSize-(GetSpawnSize()/2)) || tempPosition[2] > (worldSize-(GetSpawnSize()/2)))
+		// Water, out of bounds and outside the first zone are no longer rejected outright - the click
+		// is snapped to the nearest point the server will accept. Zero comes back only when no such
+		// point exists along the line to the zone centre.
+		vector spawnPosition = FindNearestValidSpawn(tempPosition);
+
+		if (spawnPosition == vector.Zero)
 		{
-			BattleRoyaleUtils.Trace("SpawnSelectionMenu::SelectSpawnPoint Invalid Position (out of world bounds)");
-			BattleRoyaleUtils.Trace(string.Format("X: %1 Y: %2", (GetSpawnSize()/2), worldSize-(GetSpawnSize()/2)));
+			BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint No valid spawn near %1", tempPosition));
 			return;
 		}
 
-		// Check if the position is valid, e.g. not in sea
-		if(GetGame().SurfaceIsSea(tempPosition[0], tempPosition[2]))
-		{
-			BattleRoyaleUtils.Trace("SpawnSelectionMenu::SelectSpawnPoint Invalid Position (in sea)");
-			return;
-		}
-
-		// Check if the position is valid, e.g. within the first zone
-		if (v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
-		{
-			float distance = vector.Distance(tempPosition, v_FirstZoneCenter);
-			// Add a small tolerance (25 meters) to account for precision errors
-			if (distance > (f_FirstZoneRadius + 25))
-			{
-				BattleRoyaleUtils.Trace("SpawnSelectionMenu::SelectSpawnPoint Invalid Position (out of first zone)");
-				return;
-			}
-		}
-
-		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint: %1", tempPosition));
+		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint: click %1 -> spawn %2", tempPosition, spawnPosition));
 
 		//--- No target: the server resolves the subject from the RPC sender identity and re-runs the
 		//--- checks above. Sending one would be ignored - it was how a client could set another
 		//--- player's spawn point.
-		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( tempPosition ), true );
+		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( spawnPosition ), true );
 	}
 
 	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1)
