@@ -534,7 +534,7 @@ class VigridMapCompass
         if (VigridMapAPI.HasNextZone())
         {
             vector zone_center = VigridMapAPI.GetNextCenter();
-            AddCaret(eye, zone_center, VIGRID_MAP_COMPASS_CARET_ZONE_W, VIGRID_MAP_COMPASS_CARET_FULL_H, VIGRID_MAP_COLOR_NEXT_LINE);
+            AddCaret(eye, zone_center, VIGRID_MAP_COMPASS_CARET_ZONE_W, VIGRID_MAP_COMPASS_CARET_FULL_H, VIGRID_MAP_COLOR_ZONE_LINE);
         }
 
         if (VigridMapTeam.IsAvailable())

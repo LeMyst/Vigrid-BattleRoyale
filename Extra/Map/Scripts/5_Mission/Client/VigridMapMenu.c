@@ -26,6 +26,12 @@ class VigridMapMenu extends UIScriptedMenu
     protected ref VigridMapMenuHandler m_Handler;
     protected IngameHud m_Hud;
 
+    //--- The refusal message and its own timer. m_LastRejectSeq is re-baselined on every OnShow, so
+    //--- opening the map cannot surface a refusal that happened while it was closed.
+    protected TextWidget m_ToastText;
+    protected int m_LastRejectSeq;
+    protected int m_ToastUntilMs;
+
     //--- Transform probe results from the previous frame, used both as the projection basis and as
     //--- the change detector.
     protected vector m_PrevProbeOrigin;
@@ -46,6 +52,8 @@ class VigridMapMenu extends UIScriptedMenu
         m_LastMarkerSeq = -1;
         m_LastZoneSeq = -1;
         m_LastTeamRepaintMs = 0;
+        m_LastRejectSeq = -1;
+        m_ToastUntilMs = 0;
     }
 
     void ~VigridMapMenu()
@@ -92,6 +100,12 @@ class VigridMapMenu extends UIScriptedMenu
         m_TeamCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("TeamCanvas"));
         if (!m_TeamCanvas)
             VigridMapLog.Error("map_menu.layout has no TeamCanvas - teammates and pings disabled");
+
+        //--- Found on layoutRoot, not on m_MapWidget: the toast sits in the strip above the map, so
+        //--- it is a sibling of the MapWidget rather than a child of it.
+        m_ToastText = TextWidget.Cast(layoutRoot.FindAnyWidget("MarkerToast"));
+        if (m_ToastText)
+            m_ToastText.Show(false);
 
         m_Handler = new VigridMapMenuHandler(m_MapWidget);
 
@@ -181,6 +195,14 @@ class VigridMapMenu extends UIScriptedMenu
         m_RenderDirty = true;
         m_LastMarkerSeq = -1;
         m_LastZoneSeq = -1;
+
+        //--- Baselined rather than reset to -1, unlike the two above. A refusal is an event, not a
+        //--- state: catching up on one the player could not have caused - the map was shut - would
+        //--- pop a message about a click they made a minute ago.
+        m_LastRejectSeq = VigridMapRPC.GetInstance().rejected_seq;
+        m_ToastUntilMs = 0;
+        if (m_ToastText)
+            m_ToastText.Show(false);
 
         //--- The team layer needs no equivalent reset: it repaints on its own clock within 100 ms
         //--- of the map appearing.
@@ -313,6 +335,55 @@ class VigridMapMenu extends UIScriptedMenu
         return mission.GetVigridMapClient();
     }
 
+    /**
+     *  Show why the server refused a marker, and take it away again a few seconds later.
+     *
+     *  Watches VigridMapRPC's refusal counter directly rather than going through VigridMapClient.
+     *  Both watch it, independently, each keeping its own last-seen value - the client stops DRAWING
+     *  the prediction, this says why. Routing one through the other would have made the message
+     *  depend on a prediction still being outstanding, which it need not be.
+     */
+    protected void UpdateToast()
+    {
+        if (!m_ToastText)
+            return;
+
+        VigridMapRPC rpc = VigridMapRPC.GetInstance();
+        if (rpc.rejected_seq != m_LastRejectSeq)
+        {
+            m_LastRejectSeq = rpc.rejected_seq;
+            ShowToast(rpc.rejected_key);
+        }
+
+        if (m_ToastUntilMs == 0)
+            return;
+        if (GetGame().GetTime() < m_ToastUntilMs)
+            return;
+
+        m_ToastUntilMs = 0;
+        m_ToastText.Show(false);
+    }
+
+    /**
+     *  An EMPTY key is a refusal with nothing worth saying - the place cooldown, or a click outside
+     *  the world. It is still a refusal and still cancels the prediction over in VigridMapClient; it
+     *  just does not interrupt the player to report a click that will feel like it simply missed.
+     *
+     *  The key arrives bare and is localised here, with the '#' the widget needs. The server cannot
+     *  do it: it has no idea what language this client is running.
+     */
+    protected void ShowToast(string key)
+    {
+        if (key == "")
+            return;
+
+        m_ToastText.SetText("#" + key);
+        m_ToastText.Show(true);
+        m_ToastUntilMs = GetGame().GetTime() + VIGRID_MAP_TOAST_MS;
+
+        VigridMapLog.Debug("Toast: " + key);
+    }
+
     override void Update(float timeslice)
     {
         super.Update(timeslice);
@@ -320,6 +391,10 @@ class VigridMapMenu extends UIScriptedMenu
         //--- Before the early return: a frame that finds no map widget is still a frame in which the
         //--- player must not swing at whatever is in front of them.
         SuppressGameplayInputs();
+
+        //--- Also before it, and for the same shape of reason: a map that failed to find its widget
+        //--- is exactly the situation in which an explanation is worth the most.
+        UpdateToast();
 
         if (!m_MapWidget)
             return;
@@ -423,11 +498,16 @@ class VigridMapMenu extends UIScriptedMenu
     }
 
     /**
-     *  The two play areas, their centres, and a dashed line to where the next one is.
+     *  The two play areas, their centres, and a dashed line to the one the player has to be inside.
      *
      *  Both canvases are cleared first: a CanvasWidget keeps its draw list between frames, so
      *  without the Clear every repaint stacks another ring on top of the last one and a zone that
-     *  shrank leaves its old outline behind for ever.
+     *  shrank leaves its old outline behind for ever. The clears also have to happen before every
+     *  early return below, which is why they are not folded into the two drawing branches.
+     *
+     *  The line targets the NEXT circle while there is one and the current circle otherwise, which
+     *  is always the circle that has to be reached: between shrink phases, and for the whole of the
+     *  last round, there is no next one and the current ring is what damage is measured against.
      */
     protected void RenderZones()
     {
@@ -439,37 +519,80 @@ class VigridMapMenu extends UIScriptedMenu
         if (!m_ZoneCanvas)
             return;
 
-        if (VigridMapAPI.HasCurrentZone())
-        {
-            vector current_center = VigridMapAPI.GetCurrentCenter();
-            float current_radius = VigridMapAPI.GetCurrentRadius();
+        bool has_current = VigridMapAPI.HasCurrentZone();
+        bool has_next = VigridMapAPI.HasNextZone();
 
+        vector current_center = VigridMapAPI.GetCurrentCenter();
+        float current_radius = VigridMapAPI.GetCurrentRadius();
+        vector next_center = VigridMapAPI.GetNextCenter();
+        float next_radius = VigridMapAPI.GetNextRadius();
+
+        if (has_current)
+        {
             VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, current_center, current_radius, current_radius, VIGRID_MAP_COLOR_CURRENT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
             VigridMapRender.WorldRenderDot(m_ZoneCanvas, m_MapWidget, current_center, VIGRID_MAP_CENTER_DOT_PX, VIGRID_MAP_COLOR_CURRENT_ZONE);
         }
 
-        if (!VigridMapAPI.HasNextZone())
+        if (has_next)
+        {
+            VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, next_center, next_radius, next_radius, VIGRID_MAP_COLOR_NEXT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
+            VigridMapRender.WorldRenderDot(m_ZoneCanvas, m_MapWidget, next_center, VIGRID_MAP_CENTER_DOT_PX, VIGRID_MAP_COLOR_NEXT_ZONE);
+        }
+
+        //--- The circle to point at, and only one of them is ever pointed at: reaching the next one
+        //--- implies reaching the current one, since the circles are nested.
+        if (has_next)
+        {
+            RenderZoneLine(next_center, next_radius);
             return;
+        }
 
-        vector next_center = VigridMapAPI.GetNextCenter();
-        float next_radius = VigridMapAPI.GetNextRadius();
+        if (has_current)
+            RenderZoneLine(current_center, current_radius);
+    }
 
-        VigridMapRender.WorldRenderOval(m_ZoneCanvas, m_MapWidget, next_center, next_radius, next_radius, VIGRID_MAP_COLOR_NEXT_ZONE, VIGRID_MAP_ZONE_LINE_WIDTH);
-        VigridMapRender.WorldRenderDot(m_ZoneCanvas, m_MapWidget, next_center, VIGRID_MAP_CENTER_DOT_PX, VIGRID_MAP_COLOR_NEXT_ZONE);
+    /**
+     *  A dashed line from the player to the near edge of one circle, drawn only from outside it.
+     *
+     *  Both halves of that are the point. A player already inside the circle has nothing to do about
+     *  it, so a line pointing at its centre is noise laid over the part of the map they are actually
+     *  reading; and a line that runs to the centre crosses the ring it is telling them to reach, so
+     *  the one number they want - how far is left - is mixed in with the radius. Stopping at the
+     *  edge makes the drawn length the remaining distance and nothing else.
+     */
+    protected void RenderZoneLine(vector center, float radius)
+    {
+        if (!m_LineCanvas)
+            return;
 
         //--- The line is drawn from the player, not the camera: in third person the camera sits a
         //--- couple of metres back, which would make the line start off the player icon.
         PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
         if (!player)
             return;
-        if (!m_LineCanvas)
+
+        vector player_pos = player.GetPosition();
+
+        //--- Flat distance, on XZ. A zone is a disc rather than a sphere, so a player standing on a
+        //--- hill inside the circle must not read as further out than one standing in a field.
+        float dx = center[0] - player_pos[0];
+        float dz = center[2] - player_pos[2];
+        float distance = Math.Sqrt((dx * dx) + (dz * dz));
+
+        //--- Inside means no line. It also guards the division below: a live circle always has a
+        //--- radius above zero - VigridMapAPI rejects anything else - so passing this test means
+        //--- distance is above zero too.
+        if (distance <= radius)
             return;
+
+        float travel = (distance - radius) / distance;
+        vector edge = Vector(player_pos[0] + (dx * travel), 0, player_pos[2] + (dz * travel));
 
         float canvas_w;
         float canvas_h;
         m_LineCanvas.GetScreenSize(canvas_w, canvas_h);
 
-        VigridMapRender.WorldRenderDashedLine(m_LineCanvas, m_MapWidget, player.GetPosition(), next_center, canvas_w, canvas_h, VIGRID_MAP_COLOR_NEXT_LINE);
+        VigridMapRender.WorldRenderDashedLine(m_LineCanvas, m_MapWidget, player_pos, edge, canvas_w, canvas_h, VIGRID_MAP_COLOR_ZONE_LINE);
     }
 
     /**

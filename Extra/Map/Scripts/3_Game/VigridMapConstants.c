@@ -67,7 +67,34 @@ static const int VIGRID_MAP_PLACE_COOLDOWN_MS = 250;
 //--- How long an optimistically-drawn marker survives without the server echoing it back. Two
 //--- seconds is long enough for a round trip on a bad connection and short enough that a rejected
 //--- placement does not linger looking accepted.
+//---
+//--- It is a BACKSTOP, not the normal exit. Every refusal the server can reach now answers with a
+//--- VM_Rejected (see MapMissionServer.RejectRequest), so reaching this timeout means the request
+//--- went unanswered entirely.
 static const int VIGRID_MAP_PENDING_TTL_MS = 2000;
+
+//--- What the client has asked the server for and is drawing ahead of the answer.
+//---
+//--- Plain ints rather than an enum to match the rest of this file, and because the values are only
+//--- ever compared - nothing switches on them.
+//---
+//--- PLACE covers both placing and MOVING: the store keys one marker per owner, so a second click is
+//--- a move, and the optimistic draw has to override the confirmed position rather than sit beside
+//--- it. REMOVE is the mirror - it suppresses a confirmed marker that the server has not dropped
+//--- yet. Without those two the only interaction that felt instant was the very first click of a
+//--- session, which is the one a player makes least often.
+static const int VIGRID_MAP_PENDING_NONE = 0;
+static const int VIGRID_MAP_PENDING_PLACE = 1;
+static const int VIGRID_MAP_PENDING_REMOVE = 2;
+
+//--- How close the server's echo must be to the position we asked for before a pending PLACE counts
+//--- as confirmed, in metres.
+//---
+//--- A tolerance rather than equality only because the position makes a float round trip; the server
+//--- does not adjust it. VigridMapMarkerStore.Place REJECTS a position outside the world rather than
+//--- clamping it, so the echo is arithmetically the same value that was sent. A metre is far below
+//--- the distance between two distinguishable clicks at any zoom.
+static const float VIGRID_MAP_PENDING_MATCH_EPSILON_M = 1.0;
 
 //--- How often the server recomputes every player's visible marker set. This is what makes a
 //--- player who joined a party mid-match start seeing their teammates' markers without Party
@@ -93,7 +120,7 @@ static const int VIGRID_MAP_REPAINT_WATCHDOG_MS = 1000;
 //--- invisible to players who were already reading those circles.
 static const int VIGRID_MAP_COLOR_CURRENT_ZONE = 0xFF3C82FF;  // ARGB(255, 60, 130, 255)
 static const int VIGRID_MAP_COLOR_NEXT_ZONE = 0xFFFFFFFF;     // ARGB(255, 255, 255, 255)
-static const int VIGRID_MAP_COLOR_NEXT_LINE = 0xDC3C82FF;     // ARGB(220, 60, 130, 255)
+static const int VIGRID_MAP_COLOR_ZONE_LINE = 0xDC3C82FF;     // ARGB(220, 60, 130, 255)
 static const int VIGRID_MAP_COLOR_OWN_MARKER = 0xFFFFFFFF;
 //--- A teammate's marker normally takes their party slot colour. This is what VigridMapTeam answers
 //--- with when there is no palette to ask at all - Party not installed - so it is the colour every
@@ -106,9 +133,12 @@ static const int VIGRID_MAP_COLOR_TEAM_MARKER = 0xFF7FD4FF;
 static const float VIGRID_MAP_ZONE_LINE_WIDTH = 2.0;
 static const float VIGRID_MAP_CENTER_DOT_PX = 6.0;
 
-//--- Dashed line from the player to the next zone centre. The period is in screen pixels so the
-//--- dashes stay the same size at every zoom; the line is clipped to the canvas before being
-//--- dashed, because at maximum zoom-in an unclipped 5 km line is ~50 000 px.
+//--- Dashed line from the player to the near edge of the circle they have to reach - the next zone
+//--- when there is one, the current zone otherwise - and drawn only while they are outside it. It
+//--- stops at the ring rather than running on to the centre, so its length IS the distance still to
+//--- cover. The period is in screen pixels so the dashes stay the same size at every zoom; the line
+//--- is clipped to the canvas before being dashed, because at maximum zoom-in an unclipped 5 km
+//--- line is ~50 000 px.
 static const float VIGRID_MAP_DASH_ON_PX = 12.0;
 static const float VIGRID_MAP_DASH_OFF_PX = 8.0;
 static const float VIGRID_MAP_DASH_WIDTH = 2.0;
@@ -123,7 +153,21 @@ static const float VIGRID_MAP_DEF_SCALE = 0.20;
 //--- Raise the floor to allow less zoom-in, lower it to allow more.
 static const float VIGRID_MAP_MIN_SCALE = 0.06;
 static const float VIGRID_MAP_MAX_SCALE = 1.0;
-static const int VIGRID_MAP_CLICK_DEBOUNCE_MS = 250;
+
+//--- Deliberately LONGER than VIGRID_MAP_PLACE_COOLDOWN_MS, so the client is the stricter of the two
+//--- gates and a click that survives it is one the server will accept.
+//---
+//--- They used to be equal, which made the ordering depend on latency: the server measures the gap
+//--- between ARRIVALS, so two clicks 250 ms apart arrive 250 + (rtt2 - rtt1) apart and any jitter
+//--- towards zero put the second one inside the cooldown. It was then dropped silently, and the only
+//--- exit was the pending TTL. The margin does not make that impossible - a 50 ms swing still
+//--- inverts it - so it is a reduction in frequency, not a fix. The fix is that a refused place now
+//--- answers with a VM_Rejected the client can act on.
+static const int VIGRID_MAP_CLICK_DEBOUNCE_MS = 300;
+
+//--- How long a refusal stays on screen. Long enough to read a sentence without hunting for it,
+//--- short enough that it is gone before the player wonders whether it is stuck.
+static const int VIGRID_MAP_TOAST_MS = 4000;
 
 //--- The MapWidget ignores SetMapPos until it has been laid out, so the initial centring is
 //--- re-issued from the call queue one frame batch later. Copied from the spawn-selection menu,
