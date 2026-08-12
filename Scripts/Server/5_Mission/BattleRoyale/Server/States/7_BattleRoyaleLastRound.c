@@ -180,6 +180,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
                 MessagePlayerUntranslated(player, "STR_BR_TAKING_DAMAGE");
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
                 player.DecreaseHealthCoef( f_Damage );
+#ifdef KILLFEED
+                //--- Scripted damage reaches EEKilled with the player as their own killer, so
+                //--- without this the kill feed cannot tell a zone death from starvation.
+                KillFeedAPI.NoteEnvironmentalDamage( player, KillFeedCause.ZONE );
+#endif
                 player.time_until_damage = i_DamageTickTime; //reset timer
             }
             player.time_until_damage -= timeslice;

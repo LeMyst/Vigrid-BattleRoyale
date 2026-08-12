@@ -17,7 +17,12 @@ class BattleRoyaleWin: BattleRoyaleState
 	override void Activate()
 	{
 		super.Activate();
-	
+
+#ifdef KILLFEED
+		//--- The match is over; anything that dies from here on is not part of the story.
+		KillFeedAPI.SetActive( false );
+#endif
+
 		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{

@@ -1,0 +1,129 @@
+PanelWidgetClass RowRoot {
+ visible 1
+ ignorepointer 1
+ position 0 0
+ size 470 56
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 0 0 0 0.4
+ style DayZDefaultPanel
+ {
+  TextWidgetClass RowKiller {
+   inheritalpha 1
+   ignorepointer 1
+   position 8 0
+   size 140 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Bold
+   text "Killer"
+   font "gui/fonts/etelkatextpro"
+   "exact text" 0
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" right
+   "text valign" center
+  }
+  PanelWidgetClass RowMiddle {
+   visible 1
+   ignorepointer 1
+   position 156 0
+   size 140 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0
+   {
+    ItemPreviewWidgetClass RowWeapon {
+     visible 1
+     clipchildren 0
+     inheritalpha 1
+     ignorepointer 1
+     position 0 0
+     size 140 56
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 151
+     draggable 0
+     "force flip enable" 1
+    }
+    ImageWidgetClass RowCauseIcon {
+     visible 0
+     inheritalpha 1
+     ignorepointer 1
+     position 0 12
+     size 32 32
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     image0 "set:dayz_gui image:iconSkull"
+     mode blend
+     "src alpha" 1
+     "no wrap" 1
+     stretch 1
+    }
+    TextWidgetClass RowCauseText {
+     visible 0
+     inheritalpha 1
+     ignorepointer 1
+     position 38 0
+     size 102 56
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     font "gui/fonts/etelkatextpro"
+     "exact text" 0
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" left
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass RowVictim {
+   inheritalpha 1
+   ignorepointer 1
+   position 304 0
+   size 106 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   style Bold
+   text "Victim"
+   font "gui/fonts/etelkatextpro"
+   "exact text" 0
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" left
+   "text valign" center
+  }
+  TextWidgetClass RowDistance {
+   inheritalpha 1
+   ignorepointer 1
+   position 414 0
+   size 48 56
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/etelkatextpro"
+   "exact text" 0
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" right
+   "text valign" center
+  }
+ }
+}
