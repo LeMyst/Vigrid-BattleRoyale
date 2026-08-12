@@ -16,8 +16,12 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLeaderboard", this );
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
+
+		lb_solo = new BattleRoyaleLeaderboardBoard();
+		lb_group = new BattleRoyaleLeaderboardBoard();
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
@@ -53,6 +57,10 @@ class BattleRoyaleRPC
 		future_play_area_radius = 0.0;
 		top_position = 0;
 		winner_screen = false;
+		lb_solo.Clear();
+		lb_group.Clear();
+		lb_season = 1;
+		leaderboard_seq = 0;
 	}
 
 	// Set the number of players and groups
@@ -245,6 +253,76 @@ class BattleRoyaleRPC
 		{
 			BattleRoyaleUtils.Trace("ShowWinScreen");
 			winner_screen = true;
+		}
+	}
+
+	// The leaderboard, one ladder at a time
+	//
+	// Sent only in answer to a RequestLeaderboard, never broadcast. Parallel primitive arrays rather
+	// than an array of structs, matching every other list this mod puts on the wire. No uids: the
+	// menu renders names only, so shipping SteamID64s to every client would be pure liability.
+
+	// Each ladder is cached separately and kept for the rest of the session - see
+	// BattleRoyaleLeaderboardBoard for why that is correctness, not just an optimisation.
+
+	ref BattleRoyaleLeaderboardBoard lb_solo;
+	ref BattleRoyaleLeaderboardBoard lb_group;
+
+	// Which season the ladders belong to. Bumping `season` server-side archives the old ladder and
+	// starts an empty one, so showing this makes a sudden reset self-explanatory.
+	int lb_season = 1;
+
+	// Bumped on every payload; the menu repaints when it changes rather than every frame.
+	int leaderboard_seq = 0;
+
+	//! Never returns NULL - anything that is not the group ladder is the solo ladder.
+	BattleRoyaleLeaderboardBoard GetLeaderboardBoard(int board)
+	{
+		if ( board == BR_LEADERBOARD_BOARD_GROUP )
+			return lb_group;
+
+		return lb_solo;
+	}
+
+	void SetLeaderboard(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param10<array<string>, array<int>, array<int>, array<int>, array<int>, int, int, int, int, int> data;
+		if( !ctx.Read( data ) )
+		{
+			Error("FAILED TO READ SETLEADERBOARD RPC");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			//--- Routed by the board the SERVER answered for, never by whichever tab happens to be on
+			//--- screen. A reply that arrives after the player switched tabs still lands in its own
+			//--- cache slot instead of being dropped or painted under the wrong header.
+			BattleRoyaleLeaderboardBoard target_board = GetLeaderboardBoard( data.param6 );
+			target_board.Clear();
+
+			//--- Copy rather than adopt the param's array: the Param is transient and reusing its
+			//--- reference leaves these fields dangling once it goes away.
+			if ( data.param1 )
+				target_board.names.Copy( data.param1 );
+			if ( data.param2 )
+				target_board.matches.Copy( data.param2 );
+			if ( data.param3 )
+				target_board.wins.Copy( data.param3 );
+			if ( data.param4 )
+				target_board.kills.Copy( data.param4 );
+			if ( data.param5 )
+				target_board.points.Copy( data.param5 );
+
+			target_board.self_rank = data.param7;
+			target_board.self_wins = data.param8;
+			target_board.self_points = data.param9;
+			target_board.valid = true;
+
+			lb_season = data.param10;
+
+			leaderboard_seq = leaderboard_seq + 1;
+
+			BattleRoyaleUtils.Trace(string.Format("SetLeaderboard: board %1, %2 rows, self rank %3", data.param6, target_board.Count(), target_board.self_rank));
 		}
 	}
 

@@ -43,6 +43,11 @@ class BattleRoyaleWin: BattleRoyaleState
 			}
 		}
 
+		//--- Opportunistic: get the match on disk before the 15s kick window, in case the process
+		//--- dies during it. The guaranteed flush is in 9_BattleRoyaleRestart. Flush() is a no-op
+		//--- when nothing is pending, so the several call sites need no coordination.
+		BattleRoyaleLeaderboard.GetInstance().Flush();
+
 		m_KickTimer = AddTimer(i_SecondsTillKick, this, "KickWinner", NULL, false);
 	}
 
@@ -135,6 +140,10 @@ class BattleRoyaleWin: BattleRoyaleState
 			RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
 			GetGame().DisconnectPlayer( winner.GetIdentity() );
 		}
+
+		//--- The RemovePlayer calls above are what actually record the winners, so this is the first
+		//--- point their results exist. Still only an optimisation over the restart-state flush.
+		BattleRoyaleLeaderboard.GetInstance().Flush();
 
         Deactivate();
     }

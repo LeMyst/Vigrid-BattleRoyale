@@ -155,6 +155,47 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", 90 );
 
         b_IsGameplay = true;
+
+        OpenLeaderboardMatch();
+    }
+
+    /**
+     *  Snapshot the field for the leaderboard, at the exact instant deaths begin to count.
+     *
+     *  Taken here rather than at lobby lock on purpose: a lobby that fills to 16 groups and then
+     *  loses 14 of them during the countdown is a 2-group match, and must not pay out like a
+     *  16-group one.
+     *
+     *  Both the field size and each player's own group size are resolved here, in 5_Mission, and
+     *  handed down as plain data - VigridPartyAPI lives in Party's 4_World and the leaderboard code
+     *  sits in this mod's 4_World, which has no declared dependency on that PBO.
+     */
+    void OpenLeaderboardMatch()
+    {
+        int field_size = GetPlayers().Count();
+        ref map<string, int> group_sizes = new map<string, int>();
+
+#ifdef VIGRID_PARTY
+        array<ref array<PlayerBase>> groups = VigridPartyAPI.GetGroups( GetPlayers() );
+        field_size = groups.Count();
+
+        for (int g = 0; g < groups.Count(); g++)
+        {
+            array<PlayerBase> party_group = groups.Get(g);
+            for (int p = 0; p < party_group.Count(); p++)
+            {
+                PlayerBase member = party_group.Get(p);
+                if (!member)
+                    continue;
+                if (member.player_steamid == "")
+                    continue;
+
+                group_sizes.Set(member.player_steamid, party_group.Count());
+            }
+        }
+#endif
+
+        BattleRoyaleLeaderboard.GetInstance().BeginMatch( field_size, group_sizes );
     }
 
     void StartZoning()

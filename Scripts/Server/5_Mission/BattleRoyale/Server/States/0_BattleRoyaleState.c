@@ -127,6 +127,17 @@ class BattleRoyaleState: Timeable
     void RemovePlayer(PlayerBase player)
     {
     	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::RemovePlayer: %1", player.GetIdentityName()));
+
+        //--- The single leaderboard recording point. Every way out of a match funnels through here -
+        //--- killed, disconnected, disconnected while unconscious, force-logged out, or kicked as
+        //--- the winner - and all three subclass overrides chain to this. RemoveAllPlayers()
+        //--- deliberately does not, so state migration never scores.
+        //---
+        //--- RecordExit is safe to call unconditionally: it gates on its own ranking latch and
+        //--- dedupes by SteamID64, which matters because a kill reaches this twice (once from
+        //--- OnPlayerKilled, once from BattleRoyaleServer).
+        BattleRoyaleLeaderboard.GetInstance().RecordExit(player);
+
         m_Players.RemoveItem(player);
         OnPlayerCountChanged();
     }
@@ -502,6 +513,9 @@ class BattleRoyaleState: Timeable
 				{
 					json_data.Insert( "killer", playerSource.GetIdentity().GetPlainId() );
 					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", new Param1<int>(1), true, playerSource.GetIdentity(), playerSource);
+					//--- Server-side tally for the leaderboard. The RPC above only ever told the
+					//--- killer's own client, so nothing on this side could score kills before.
+					playerSource.br_kills = playerSource.br_kills + 1;
 					if (source.IsWeapon() || source.IsMeleeWeapon())
 					{
 						json_data.Insert( "weapon", source.GetType() );

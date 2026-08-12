@@ -18,6 +18,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
@@ -195,6 +196,10 @@ class BattleRoyaleServer: BattleRoyaleBase
         {
         	m_TimeSinceLastTick = 0;
 
+			//--- Debounced leaderboard write. Cheap when nothing changed, and match end forces its
+			//--- own flush, so this only ever catches mid-match progress.
+			BattleRoyaleLeaderboard.GetInstance().Tick();
+
 			if (GetCurrentState().IsComplete()) //current state is complete
 			{
 				int next_index = GetNextStateIndex();
@@ -237,6 +242,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         //Copy PlainID (steamid) to PlayerBase to avoid the disparition of PlayerIdentity (OnPlayerDisconnected)
         player.player_steamid = player.GetIdentity().GetPlainId();
+        //Same reason: the leaderboard has to render a name for someone who already left.
+        player.player_name = player.GetIdentity().GetName();
 
         //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
@@ -528,6 +535,21 @@ class BattleRoyaleServer: BattleRoyaleBase
 			m_StartMatchStateObj.DeferredUnstuck( senderBase );
 			senderBase.SetSynchDirty();
 		}
+    }
+
+    //--- NOTE: `target` is deliberately ignored here - see PlayerReadyUp above.
+    //--- Unlike the other handlers this one is answerable in ANY state: the leaderboard is mostly a
+    //--- lobby feature, and there is nothing state-sensitive about reading it.
+    void RequestLeaderboard(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param1< int > data;
+        if( !ctx.Read( data ) ) return;
+
+        if(type == CallType.Server)
+        {
+            //--- Rate limiting and board validation both live in ServeRequest.
+            BattleRoyaleLeaderboard.GetInstance().ServeRequest( sender, data.param1 );
+        }
     }
 
     //TODO: This will need a rework!

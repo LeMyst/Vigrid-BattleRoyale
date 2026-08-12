@@ -17,6 +17,14 @@ modded class PlayerBase
 
 	int br_position = -1;
 	string player_steamid = "";
+	//--- Cached alongside player_steamid because PlayerIdentity is already NULL by the time the
+	//--- leaderboard records a disconnect, and the ladder has to render a name for someone who is
+	//--- no longer on the server.
+	string player_name = "";
+
+	//--- Server-side kill tally for the current match. Kills were previously only ever pushed to the
+	//--- owning client over the AddPlayerKill RPC, so nothing on the server could score them.
+	int br_kills = 0;
 
 	vector spawn_pos = vector.Zero;
 

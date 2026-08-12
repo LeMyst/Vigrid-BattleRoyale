@@ -1,0 +1,255 @@
+PanelWidgetClass LeaderboardRoot {
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ color 0 0 0 0.69
+ style DayZDefaultPanel
+ {
+  PanelWidgetClass Dialog {
+   position 0 0
+   size 920 700
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.102 0.102 0.102 0.94
+   style DayZDefaultPanel
+   {
+    TextWidgetClass Title {
+     position 24 16
+     size 520 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_TITLE"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" left
+     "text valign" center
+    }
+    TextWidgetClass SeasonText {
+     position 560 16
+     size 336 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text ""
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" right
+     "text valign" center
+    }
+    ButtonWidgetClass SoloTabButton {
+     position 24 64
+     size 160 36
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_BR_LEADERBOARD_SOLO"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+    ButtonWidgetClass GroupTabButton {
+     position 192 64
+     size 160 36
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_BR_LEADERBOARD_GROUP"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+    PanelWidgetClass SoloTabAccent {
+     visible 1
+     position 24 100
+     size 160 4
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.85 0.62 0.16 1
+     style DayZDefaultPanel
+    }
+    PanelWidgetClass GroupTabAccent {
+     visible 0
+     position 192 100
+     size 160 4
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.85 0.62 0.16 1
+     style DayZDefaultPanel
+    }
+    TextWidgetClass HeaderRank {
+     position 32 116
+     size 50 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_RANK"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" left
+     "text valign" center
+    }
+    TextWidgetClass HeaderPlayer {
+     position 90 116
+     size 320 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_PLAYER"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" left
+     "text valign" center
+    }
+    TextWidgetClass HeaderMatches {
+     position 420 116
+     size 94 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_MATCHES"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" center
+     "text valign" center
+    }
+    TextWidgetClass HeaderWins {
+     position 518 116
+     size 94 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_WINS"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" center
+     "text valign" center
+    }
+    TextWidgetClass HeaderKills {
+     position 616 116
+     size 94 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_KILLS"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" center
+     "text valign" center
+    }
+    TextWidgetClass HeaderPoints {
+     position 714 116
+     size 122 24
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Bold
+     text "#STR_BR_LEADERBOARD_POINTS"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" right
+     "text valign" center
+    }
+    ScrollWidgetClass LeaderboardScroll {
+     position 24 144
+     size 872 440
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     "Scrollbar V" 1
+     {
+      WrapSpacerWidgetClass LeaderboardRows {
+       position 0 0
+       size 1 26
+       hexactpos 1
+       vexactpos 1
+       hexactsize 0
+       vexactsize 1
+       "Size To Content V" 1
+      }
+     }
+    }
+    TextWidgetClass EmptyText {
+     visible 0
+     position 24 340
+     size 872 40
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     text "#STR_BR_LEADERBOARD_EMPTY"
+     font "gui/fonts/metron"
+     "exact text" 0
+     "text halign" center
+     "text valign" center
+    }
+    PanelWidgetClass SelfBanner {
+     position 24 596
+     size 872 44
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.188 0.188 0.188 0.94
+     style DayZDefaultPanel
+     {
+      TextWidgetClass SelfText {
+       position 12 0
+       size 848 44
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text ""
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    ButtonWidgetClass CloseButton {
+     position 766 652
+     size 130 36
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_BR_LEADERBOARD_CLOSE"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
+   }
+  }
+ }
+}

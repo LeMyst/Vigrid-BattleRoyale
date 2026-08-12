@@ -374,10 +374,7 @@ class BattleRoyaleRound: BattleRoyaleState
             return NULL;
 
         if(prev_round.WasSkipped())
-        {
-            BattleRoyaleUtils.Trace("Previous round was skipped - no previous zone.");
             return NULL;
-        }
 
         return prev_round.GetZone();
     }
