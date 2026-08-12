@@ -258,20 +258,40 @@ class BattleRoyaleState: Timeable
 
 			nb_players = GetPlayers().Count();
 
-			//--- Sentinels the client decodes in BattleRoyaleHud.SetCount: -2 hides the group
-			//--- panel entirely (no party system), -1 shows "???" (endgame concealment).
-			nb_groups = -2;
+			//--- Sentinels the client decodes in BattleRoyaleHud.SetCount, named in
+			//--- BattleRoyaleConstants.c: _NONE hides the group panel outright, _CONCEALED shows "???".
+			nb_groups = BR_HUD_GROUPS_NONE;
 			int groups_count = nb_players;
 
 #ifdef VIGRID_PARTY
-			groups_count = VigridPartyAPI.GetGroupCount( GetPlayers() );
-			nb_groups = groups_count;
+			//--- IsReady() rather than the bare GetGroupCount(), because that call degrades to one
+			//--- group per player when the party manager is disabled in party_settings.json - a
+			//--- figure identical to the player count, which is no information at all and is exactly
+			//--- what the _NONE sentinel exists to suppress. Compiling Party in is not the same thing
+			//--- as parties being in play, and since Party ships in this repo the #ifdef alone made
+			//--- _NONE unreachable on every server.
+			//---
+			//--- Deliberately NOT extended to "groups == players", which is the same figure twice and
+			//--- looks like the same redundancy: with parties enabled that equality is real
+			//--- information (everyone left is solo), it would blink the panel out mid-match as the
+			//--- last duo dies, and blinking it out is itself a composition tell - the exact thing
+			//--- hide_players_endgame exists to prevent.
+			if( VigridPartyAPI.IsReady() )
+			{
+				groups_count = VigridPartyAPI.GetGroupCount( GetPlayers() );
+				nb_groups = groups_count;
 
-			if(nb_players < 10 && hide_players_endgame && !b_IsDebug)
-				nb_groups = -1;
+				//--- Endgame concealment. Only ever applied to a group count that means something:
+				//--- with no parties in play there is no composition to hide, and withholding a
+				//--- figure the client is not being shown anyway would just re-show an empty panel.
+				if(nb_players < BR_HUD_ENDGAME_PLAYERS && hide_players_endgame && !b_IsDebug)
+					nb_groups = BR_HUD_GROUPS_CONCEALED;
+			}
 #endif
 
-			//--- Placement follows groups when parties exist and raw player count otherwise.
+			//--- Placement follows groups when parties are in play and raw player count otherwise.
+			//--- Note this is the TRUE count either way: concealment is a display choice and must
+			//--- never reach br_position, which is the player's finishing place.
 			UpdateTopPosition( groups_count );
 
 			//BattleRoyaleUtils.Trace(string.Format("OnPlayerCountChanged: %1 %2", nb_players, nb_groups));
