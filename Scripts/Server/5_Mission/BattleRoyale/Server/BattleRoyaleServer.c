@@ -691,6 +691,10 @@ class BattleRoyaleServer: BattleRoyaleBase
         ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true, sender );
 
+        //--- And the hot zones, for the same reason and to the same client. Static config, so this is
+        //--- the only send that is strictly required - everything else is a re-assert.
+        SendHotZones( sender );
+
         for(int i = 0; i < a_LateJoiners.Count(); ++i)
         {
             BattleRoyaleLateJoiner entry = a_LateJoiners[i];
@@ -988,6 +992,113 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleDebugState lobby = BattleRoyaleDebugState.Cast( state );
 
         return lobby != NULL;
+    }
+
+    //--- The circle hot zones are filtered against, and the gate on whether they are sent at all.
+    //--- Unset until a state calls SetHotZoneReference, which is what keeps hot zones off every
+    //--- client's map for the whole lobby without a single phase test at the draw sites.
+    protected vector v_HotZoneRefCenter = "0 0 0";
+    protected float f_HotZoneRefRadius = 0;
+    protected bool b_HotZoneRefSet = false;
+
+    /**
+     *  Publish the circle hot zones are measured against - the starting play area.
+     *
+     *  Called by the first state that knows it (spawn selection, or start match when the spawn
+     *  selection menu is disabled), and re-asserted harmlessly by the later one. Setting it is ALSO
+     *  what opens the gate: before the first call nothing is sent to anybody, which is how hot zones
+     *  stay invisible for the whole lobby.
+     *
+     *  Cached here rather than re-derived per send because the two things it needs -
+     *  GetDynamicStartingZone and i_NumStartingPlayers - both live on BattleRoyaleState, and
+     *  PlayerLoadedIn has no state to ask.
+     */
+    void SetHotZoneReference( vector center, float radius )
+    {
+        v_HotZoneRefCenter = center;
+        f_HotZoneRefRadius = radius;
+        b_HotZoneRefSet = true;
+
+        BattleRoyaleUtils.Trace( "SetHotZoneReference centre " + center + " radius " + radius );
+
+        SendHotZones();
+    }
+
+    /**
+     *  Push the hot zones near the starting circle - static, purely cosmetic markers.
+     *
+     *  Lives here rather than on BattleRoyaleState because it is server-wide config that never
+     *  changes within a process: no state owns it, and hanging it off one meant every other state
+     *  had to remember to re-send.
+     *
+     *  Pass an identity to seed one client, or NULL to broadcast. The primary call is per-identity
+     *  from PlayerLoadedIn, which is the first moment a client is provably listening AND covers a
+     *  mid-match joiner for free. A broadcast alone cannot: it reaches only whoever is connected at
+     *  the instant it fires, which is the same trap that left the lobby name tags live for an admin
+     *  watching a running match.
+     *
+     *  TWO filters, and they are different things. The gate below - no reference circle yet - is the
+     *  PHASE test: it is false for the whole lobby and the pre-match countdown, so nothing is drawn
+     *  then. The distance test is the RELEVANCE one: a hot zone on the far side of the map from the
+     *  starting circle is noise, because nobody will ever be there.
+     *
+     *  BattleRoyaleZoneData.Validate() has already truncated the two arrays to equal length and
+     *  dropped anything undrawable, so this only applies the distance test.
+     */
+    void SendHotZones( PlayerIdentity recipient = NULL )
+    {
+        //--- The phase gate. Nothing has been sent yet, so a client's default empty state is already
+        //--- what we want it to have - there is nothing to clear and nothing to send.
+        if( !b_HotZoneRefSet )
+            return;
+
+        BattleRoyaleZoneData zone_data = BattleRoyaleConfig.GetConfig().GetZoneData();
+        if( !zone_data || !zone_data.hot_zone_centers || !zone_data.hot_zone_radii )
+            return;
+
+        int configured = zone_data.hot_zone_centers.Count();
+        if( configured == 0 )
+            return;  //--- nothing configured
+
+        ref array<string> near_centers = new array<string>();
+        ref array<float> near_radii = new array<float>();
+
+        //--- Flattened to the ground plane: these are 2D circles, and a play area's centre carries a
+        //--- terrain height that would otherwise inflate every distance.
+        vector ref_flat = Vector( v_HotZoneRefCenter[0], 0, v_HotZoneRefCenter[2] );
+
+        for( int i = 0; i < configured; i++ )
+        {
+            //--- One array read per line, never nested inside a call.
+            string raw = zone_data.hot_zone_centers[i];
+            float radius = zone_data.hot_zone_radii[i];
+            vector hot_flat = raw.ToVector();
+            hot_flat[1] = 0;
+
+            float gap = vector.Distance( ref_flat, hot_flat );
+            float reach = f_HotZoneRefRadius + radius + zone_data.hot_zone_margin_m;
+
+            if( gap > reach )
+                continue;
+
+            near_centers.Insert( raw );
+            near_radii.Insert( radius );
+        }
+
+        //--- Built on its own line, never nested inside the SendRPC call. A constructor wrapping an
+        //--- array read inside another call is the shape that threw "NULL pointer to instance" for
+        //--- every client in PlayerLoadedIn above - and a VM exception unwinds the stack, so it
+        //--- would take the caller's remaining work with it.
+        //--- Plain array<T>, NOT ref array<T>, matching SetLobbyNames above - the send and the read
+        //--- side have to spell the type the same way, and this is the pair that is known to work.
+        ref Param2<array<string>, array<float>> payload = new Param2<array<string>, array<float>>( near_centers, near_radii );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", payload, true, recipient );
+
+        string who = "broadcast";
+        if( recipient )
+            who = "to " + recipient.GetName();
+
+        BattleRoyaleUtils.Trace( "SendHotZones " + near_centers.Count() + " of " + configured + " zone(s) near the starting circle, " + who );
     }
 
     /**

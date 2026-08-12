@@ -78,7 +78,7 @@ class VigridMapRender
      *  fixed count while costing far less on small circles: a 400 px zone ring gets 63 segments, a
      *  10 px dot gets the 16 floor.
      */
-    static void WorldRenderOval(CanvasWidget canvas, MapWidget map_widget, vector center, float radius_x, float radius_z, int color, float width)
+    static void WorldRenderOval(CanvasWidget canvas, MapWidget map_widget, vector center, float radius_x, float radius_z, int color, float width, int fill_color = 0)
     {
         if (!canvas || !map_widget)
             return;
@@ -109,6 +109,33 @@ class VigridMapRender
             segments = VIGRID_MAP_OVAL_MIN_SEGMENTS;
         if (segments > VIGRID_MAP_OVAL_MAX_SEGMENTS)
             segments = VIGRID_MAP_OVAL_MAX_SEGMENTS;
+
+        //--- Optional fill, under the outline. Horizontal bands sized from the stroke width, exactly
+        //--- like RenderFilledRect below - NOT one stroke per screen pixel row, which costs 2*radius
+        //--- native calls for a shape a few dozen will cover. The half-width is sampled at each
+        //--- band's centre, so the fill is short by at most half a band at the very top and bottom;
+        //--- the outline is what defines the edge, and a fill worth using is translucent anyway.
+        if (fill_color != 0)
+        {
+            float fill_stroke = 2.0;
+            int fill_bands = Math.Ceil((2 * pixel_radius_y) / fill_stroke);
+            if (fill_bands < 1)
+                fill_bands = 1;
+
+            float fill_band_h = (2 * pixel_radius_y) / fill_bands;
+
+            for (int b = 0; b < fill_bands; b++)
+            {
+                float band_y = (cy - pixel_radius_y) + (fill_band_h * (b + 0.5));
+                float band_dy = (band_y - cy) / pixel_radius_y;
+                float band_span = 1 - (band_dy * band_dy);
+                if (band_span <= 0)
+                    continue;
+
+                float band_half_w = pixel_radius_x * Math.Sqrt(band_span);
+                canvas.DrawLine(cx - band_half_w, band_y, cx + band_half_w, band_y, fill_band_h, fill_color);
+            }
+        }
 
         float angle_increment = 360.0 / segments;
 

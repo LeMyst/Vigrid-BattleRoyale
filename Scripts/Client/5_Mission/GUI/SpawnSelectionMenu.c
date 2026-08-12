@@ -60,6 +60,9 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	// set this to false to fall back to redrawing every frame.
 	protected bool b_SkipStaticRedraw = true;
 	protected int i_LastRepaintTime = 0;
+	//--- Starts at -1 so the first frame always repaints, even if the hot zones landed
+	//--- before this menu was built and the sequence has not moved since.
+	protected int i_LastHotZoneSeq = -1;
 	protected int i_LastTransformCheck = 0;
 
 	// Countdown text only changes once a second; avoid rebuilding it per frame.
@@ -167,6 +170,16 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 		bool transform_moved = (probe_origin != br_previous_probe_origin) || (probe_far != br_previous_probe_far);
 
+		// Hot zones arrive over their own RPC and can land after this menu is already
+		// open, so they need an edge of their own. Without it the circles would not
+		// appear until the watchdog fired, which reads as the server being slow.
+		BattleRoyaleRPC hot_zone_rpc = BattleRoyaleRPC.GetInstance();
+		if (hot_zone_rpc && hot_zone_rpc.hot_zone_seq != i_LastHotZoneSeq)
+		{
+			i_LastHotZoneSeq = hot_zone_rpc.hot_zone_seq;
+			b_RenderDirty = true;
+		}
+
 		// Watchdog: repaint periodically even when nothing changed. If a canvas
 		// ever stops retaining its draw list between frames the map strobes at
 		// 2 Hz -- obvious on the first launch -- rather than silently blanking.
@@ -271,6 +284,11 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	{
 		m_SpawnCanvas.Clear();
 
+		// Hot zones first, so the teammate markers and the first-zone ring draw over
+		// them. They are the only filled shape on this canvas, and a fill laid over a
+		// marker would swallow it.
+		RenderHotZones();
+
 		// Show the teammates zones
 		foreach (string playerId, vector spawn_point : m_TeammateSpawnPoints)
 		{
@@ -284,6 +302,40 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		if(v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
 		{
 			WorldRenderOval(m_SpawnCanvas, m_MapWidget, v_FirstZoneCenter[0], v_FirstZoneCenter[2], f_FirstZoneRadius, f_FirstZoneRadius, ARGB(255, 255, 255, 255));
+		}
+	}
+
+	/**
+	 * Draws the server's hot zones as filled red discs.
+	 *
+	 * Filled here and outline-only on the in-game map: this screen is one zoomed-out
+	 * decision, where a wash of colour reads at a glance, and it is drawn once per
+	 * repaint rather than panned around.
+	 *
+	 * The pair is already length-matched and sanity-checked server-side in
+	 * BattleRoyaleZoneData.Validate(), so this only skips the degenerate cases that
+	 * would draw nothing anyway.
+	 */
+	protected void RenderHotZones()
+	{
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+		if (!br_rpc || !br_rpc.hot_zone_centers || !br_rpc.hot_zone_radii)
+			return;
+
+		int count = br_rpc.hot_zone_centers.Count();
+		if (br_rpc.hot_zone_radii.Count() < count)
+			count = br_rpc.hot_zone_radii.Count();
+
+		for (int i = 0; i < count; i++)
+		{
+			// One array read per line, never nested inside the call below.
+			vector center = br_rpc.hot_zone_centers[i];
+			float radius = br_rpc.hot_zone_radii[i];
+
+			if (radius <= 0 || center == vector.Zero)
+				continue;
+
+			WorldRenderOval(m_SpawnCanvas, m_MapWidget, center[0], center[2], radius, radius, BR_HOT_ZONE_OUTLINE_COLOR, BR_HOT_ZONE_FILL_COLOR);
 		}
 	}
 
@@ -753,7 +805,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( spawnPosition ), true );
 	}
 
-	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1)
+	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1, int fill_color = 0)
 	{
 		if (!world_map || radius_x <= 0 || radius_z <= 0 || !canvas)
 		{
@@ -783,6 +835,38 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		// Calculate the center of the oval in screen space
 		float cx = screenCenter[0] - screen_x;
 		float cy = screenCenter[1] - screen_y;
+
+		// Optional fill, drawn under the outline. Horizontal bands of up to
+		// HEATMAP_FILL_MAX_STROKE pixels, exactly like RenderFilledRect -- NOT one
+		// stroke per screen pixel row, which is what the heat map used to do and
+		// costs 2*radius native calls for a shape that needs a few dozen. The
+		// half-width is sampled at each band's centre, so the fill is off by at
+		// most half a band at the very top and bottom of the ellipse; the outline
+		// below is what defines the edge, and the fill is translucent anyway.
+		if (fill_color != 0)
+		{
+			float fill_step = 2 * screenHeight;
+			if (HEATMAP_FILL_MAX_STROKE > 0)
+				fill_step = Math.Min(fill_step, HEATMAP_FILL_MAX_STROKE);
+
+			int fill_bands = Math.Ceil((2 * screenHeight) / fill_step);
+			if (fill_bands < 1)
+				fill_bands = 1;
+
+			float fill_band_h = (2 * screenHeight) / fill_bands;
+
+			for (int band = 0; band < fill_bands; band++)
+			{
+				float band_y = (cy - screenHeight) + (fill_band_h * (band + 0.5));
+				float band_dy = (band_y - cy) / screenHeight;
+				float band_span = 1 - (band_dy * band_dy);
+				if (band_span <= 0)
+					continue;
+
+				float band_half_w = screenWidth * Math.Sqrt(band_span);
+				canvas.DrawLine(cx - band_half_w, band_y, cx + band_half_w, band_y, fill_band_h, fill_color);
+			}
+		}
 
 		// Draw the oval. Scale the segment count to the on-screen size instead of
 		// forcing a floor of 360 segments regardless of radius. n = PI*sqrt(r)

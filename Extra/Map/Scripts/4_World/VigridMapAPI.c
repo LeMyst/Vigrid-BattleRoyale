@@ -118,6 +118,114 @@ class VigridMapAPI
     {
         return s_ZoneSeq;
     }
+
+    //--- Hot zones: static circles the host marks as regions of interest. Purely decoration as far
+    //--- as this addon is concerned - it draws them and knows nothing else about them. Held as a
+    //--- copy rather than the caller's arrays, which are owned by the host and may be cleared under
+    //--- us between frames.
+    private static ref array<vector> s_HotZoneCenters = new array<vector>();
+    private static ref array<float> s_HotZoneRadii = new array<float>();
+    private static int s_HotZoneSeq;
+
+    /**
+     *  Publish the hot zones to draw.
+     *
+     *  Safe to call every frame, like SetZones: the incoming pair is compared against the stored copy
+     *  and s_HotZoneSeq only moves when something really changed. Passing empty or NULL arrays clears
+     *  them. A radius of 0 or a centre of "0 0 0" is skipped at draw time rather than rejected here,
+     *  so the host's indices and this addon's stay aligned.
+     */
+    static void SetHotZones(array<vector> centers, array<float> radii)
+    {
+        int count = 0;
+        if (centers && radii)
+        {
+            count = centers.Count();
+            if (radii.Count() < count)
+                count = radii.Count();
+        }
+
+        bool changed = false;
+
+        if (s_HotZoneCenters.Count() != count)
+            changed = true;
+
+        //--- Only worth walking when the counts already agree; a length change is decisive on its own.
+        if (!changed)
+        {
+            for (int c = 0; c < count; c++)
+            {
+                //--- One array read per line. A read sharing an expression with a call has been
+                //--- measured in this codebase to return another array's contents entirely.
+                vector incoming_center = centers[c];
+                vector stored_center = s_HotZoneCenters[c];
+                if (incoming_center != stored_center)
+                {
+                    changed = true;
+                    break;
+                }
+
+                float incoming_radius = radii[c];
+                float stored_radius = s_HotZoneRadii[c];
+                if (incoming_radius != stored_radius)
+                {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        if (!changed)
+            return;
+
+        s_HotZoneCenters.Clear();
+        s_HotZoneRadii.Clear();
+
+        for (int i = 0; i < count; i++)
+        {
+            vector center = centers[i];
+            float radius = radii[i];
+            s_HotZoneCenters.Insert(center);
+            s_HotZoneRadii.Insert(radius);
+        }
+
+        s_HotZoneSeq = s_HotZoneSeq + 1;
+
+        VigridMapLog.Debug("SetHotZones " + s_HotZoneCenters.Count() + " zone(s), seq " + s_HotZoneSeq);
+    }
+
+    //! Equivalent to SetHotZones with nothing in it. Call on teardown, for the same reason
+    //! ClearZones exists: this state is static and outlives the object that pushed it.
+    static void ClearHotZones()
+    {
+        SetHotZones(NULL, NULL);
+    }
+
+    static int GetHotZoneCount()
+    {
+        return s_HotZoneCenters.Count();
+    }
+
+    static vector GetHotZoneCenter(int index)
+    {
+        if (index < 0 || index >= s_HotZoneCenters.Count())
+            return vector.Zero;
+
+        return s_HotZoneCenters[index];
+    }
+
+    static float GetHotZoneRadius(int index)
+    {
+        if (index < 0 || index >= s_HotZoneRadii.Count())
+            return 0;
+
+        return s_HotZoneRadii[index];
+    }
+
+    static int GetHotZoneSeq()
+    {
+        return s_HotZoneSeq;
+    }
 #endif
 
 #ifdef SERVER

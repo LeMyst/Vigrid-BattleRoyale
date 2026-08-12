@@ -52,7 +52,7 @@ Files are saved in the `Vigrid-BattleRoyale` folder inside the profile directory
 |-------------------------|----------------------------------------------------------------------------|
 | `pois_settings.json`    | Overriding spawn points                                                    |
 | `spawns_settings.json`  | Lobby spawn point, player spawn points, city avoidance settings            |
-| `zone_settings.json`    | Number of zones, zone size and duration, end zone configuration            |
+| `zone_settings.json`    | Number of zones, zone size and duration, end zone configuration, hot zones |
 | `lobby_settings.json`   | Lobby configuration                                                        |
 | `general_settings.json` | Notification, zone damage, airdrop settings, etc.                          |
 | `server_settings.json`  | Vigrid API configuration (optional, cannot be overridden by mission files) |

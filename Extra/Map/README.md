@@ -44,6 +44,7 @@ the `MapWidget` sitting in the strip above it, not an overlay on it.)
 |---|---|
 | Ring with a cross | A placed marker — yours in its own colour, a teammate's in their party slot colour |
 | Circle + centre dot | A play-area zone (current and next), pushed in by the host mod |
+| Filled red circle | A hot zone — a static region of interest, pushed in by the host mod. Drawn under the play-area rings, so it never obscures the circle you have to reach. The host decides when to publish them and which ones are worth showing; this addon just draws what it is given |
 | Dashed line | From you to the near edge of the zone you have to reach — the next one when there is one, the current one otherwise. Only drawn while you are outside it, so its length is the distance you still have to cover |
 | Hollow triangle | A teammate |
 | Lighter diamond | A party ping |
@@ -130,6 +131,12 @@ The host mod talks to this addon **only** through `VigridMapAPI`, every call sit
 // client - push, not pull; the addon may not reach into the host mod
 static void VigridMapAPI.SetZones(vector cur_center, float cur_radius, vector next_center, float next_radius)
 static void VigridMapAPI.ClearZones()
+
+// client - static circles marking regions of interest. Decoration only: this addon draws
+// them and knows nothing else about them. Safe to call every frame, like SetZones - the pair
+// is diffed internally and only walked when it actually changed.
+static void VigridMapAPI.SetHotZones(array<vector> centers, array<float> radii)
+static void VigridMapAPI.ClearHotZones()
 
 // server
 static void VigridMapAPI.ClearAllMarkers()

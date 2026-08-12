@@ -197,6 +197,14 @@ static const int HEATMAP_REPAINT_WATCHDOG_MS = 500;
 static const int BR_OVAL_MIN_SEGMENTS = 16;
 static const int BR_OVAL_MAX_SEGMENTS = 180;
 
+//--- hot zones on the spawn selection map. The same red as VIGRID_MAP_COLOR_HOT_ZONE on the
+//--- in-game map, so a circle a player picked their drop against looks the same once they land.
+//--- Filled here and outline-only there on purpose: this screen is a one-off decision made from a
+//--- zoomed-out view, where a wash of colour reads at a glance, while the in-game map is something
+//--- a player pans around and a filled disc would hide the terrain they are reading.
+static const int BR_HOT_ZONE_OUTLINE_COLOR = 0xC8FF3232;  // ARGB(200, 255, 50, 50)
+static const int BR_HOT_ZONE_FILL_COLOR = 0x3CFF3232;     // ARGB(60, 255, 50, 50)
+
 //--- spawn selection snapping
 //a click on water or outside the first zone is snapped to the nearest valid point
 //by walking from the click towards the zone centre. Distance, in metres, between
