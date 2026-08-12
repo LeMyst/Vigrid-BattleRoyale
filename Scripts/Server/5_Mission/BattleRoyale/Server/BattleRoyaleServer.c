@@ -74,7 +74,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 			}
 			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
         } else {
-        	match_uuid = "disabled";  // Set a string to disable the ingame error message if no uuid is set
+        	match_uuid = "";  // No API, no match to register
         }
 
         m_Timer = new Timer;
@@ -240,6 +240,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         //Dirty way to sync server settings with the client | this should be converted into a generic "sync settings" function
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleServerData m_ServerData = config_data.GetServerData();
 
         BattleRoyaleDebug m_Debug = BattleRoyaleDebug.Cast( GetState(0) );
         vector debug_pos = m_Debug.GetCenter();
@@ -286,7 +287,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
         GetCurrentState().AddPlayer(player);
 
-        if( match_uuid == "" )
+        if( m_ServerData.enable_vigrid_api && m_ServerData.warning_no_uuid && match_uuid == "" )
         	GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
     }
 
