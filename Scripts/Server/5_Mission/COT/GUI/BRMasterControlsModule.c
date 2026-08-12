@@ -25,23 +25,51 @@ modded class BRMasterControlsModule
         }
     }
 
+    //--- These RPCs drive the match state machine and are reachable by ANY connected client that
+    //--- sends the right ScriptRPC id - the COT "BattleRoyale.StateMachine.View" permission only
+    //--- gates whether the client renders the module, so it is no protection server-side.
+    //--- Authorize against the same admin list BattleRoyaleServer uses.
     private void RPC_Next( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
+        if(!BattleRoyaleServer.IsAdminIdentity(senderRPC))
+        {
+            BattleRoyaleUtils.Warn("[DayZBR COT] Rejected unauthorized Next request from " + BattleRoyaleServer.GetIdentityLogName(senderRPC));
+            return;
+        }
+
         Server_Next(); //Server received next command
     }
 
     private void RPC_Pause( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
+        if(!BattleRoyaleServer.IsAdminIdentity(senderRPC))
+        {
+            BattleRoyaleUtils.Warn("[DayZBR COT] Rejected unauthorized Pause request from " + BattleRoyaleServer.GetIdentityLogName(senderRPC));
+            return;
+        }
+
         Server_Pause(); //Server received next command
     }
 
     private void RPC_Resume( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
+        if(!BattleRoyaleServer.IsAdminIdentity(senderRPC))
+        {
+            BattleRoyaleUtils.Warn("[DayZBR COT] Rejected unauthorized Resume request from " + BattleRoyaleServer.GetIdentityLogName(senderRPC));
+            return;
+        }
+
         Server_Resume(); //Server received next command
     }
 
     private void RPC_SpawnAirdrop( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
     {
+        if(!BattleRoyaleServer.IsAdminIdentity(senderRPC))
+        {
+            BattleRoyaleUtils.Warn("[DayZBR COT] Rejected unauthorized SpawnAirdrop request from " + BattleRoyaleServer.GetIdentityLogName(senderRPC));
+            return;
+        }
+
 #ifdef EXPANSIONMODMISSIONS
 		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "Airdrop sent." ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
 		ExpansionMissionModule.s_Instance.CallAirdrop(senderRPC.GetPlayer().GetPosition());

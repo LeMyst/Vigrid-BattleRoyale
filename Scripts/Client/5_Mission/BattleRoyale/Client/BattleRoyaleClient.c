@@ -306,16 +306,17 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         b_IsReady = true; //this only runs once
 
-        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
-        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false , NULL, player);
+        //--- No target: the server resolves the subject from the RPC sender identity. Sending one
+        //--- would be ignored, and inviting it back is how the ready-up-anyone exploit worked.
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false );
 
     }
 
     void Unstuck()
     {
-        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
-        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", NULL, true , NULL, player);
+        //--- No target - see ReadyUp above.
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", NULL, true );
 
     }
 

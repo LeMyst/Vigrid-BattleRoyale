@@ -130,6 +130,37 @@ class BattleRoyaleState: Timeable
         return (m_Players.Find(player) >= 0);
     }
 
+    //--- Resolve the engine-supplied RPC `sender` to a player tracked by THIS state.
+    //--- Server RPC handlers must use this instead of the `Object target` they receive:
+    //--- `target` is chosen by the client and can name any other player, `sender` cannot be spoofed.
+    //--- Returns NULL when the identity is unusable or the sender is not part of this state,
+    //--- so the membership test that ContainsPlayer used to provide is inherent here.
+    PlayerBase GetPlayerFromIdentity(PlayerIdentity identity)
+    {
+        if(!identity)
+            return NULL;
+
+        string sender_id = identity.GetId();
+        if(sender_id == "")
+            return NULL;
+
+        for(int i = 0; i < m_Players.Count(); ++i)
+        {
+            PlayerBase candidate = m_Players.Get(i);
+            if(!candidate)
+                continue;
+
+            PlayerIdentity candidate_identity = candidate.GetIdentity();
+            if(!candidate_identity)
+                continue;
+
+            if(candidate_identity.GetId() == sender_id)
+                return candidate;
+        }
+
+        return NULL;
+    }
+
 	void OnPlayerTick(PlayerBase player, float timeslice)
 	{
 	}
