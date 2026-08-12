@@ -73,6 +73,13 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         KillFeedAPI.SetActive( false );
 #endif
 
+#ifdef VIGRID_SAFEZONE
+        //--- Lobby truce: the trigger does nothing and nothing another player does can hurt you.
+        //--- Aiming and melee swings still work, so players can still punch each other while they
+        //--- wait - which is the point, and the reason this is not Expansion's safezone.
+        VigridSafeZoneAPI.SetActive( true );
+#endif
+
         super.Activate();
     }
 
