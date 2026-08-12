@@ -80,6 +80,13 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         VigridSafeZoneAPI.SetActive( true );
 #endif
 
+#ifdef VIGRID_MAP
+        //--- Markers do not expire, so any left from an earlier match in this same process would
+        //--- still be on the map when the next lobby opens. A real process restart clears them
+        //--- anyway; this covers the in-process reset.
+        VigridMapAPI.ClearAllMarkers();
+#endif
+
         super.Activate();
     }
 

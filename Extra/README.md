@@ -4,7 +4,7 @@
 be lifted out of this repository and shipped on its own; none is required for the Battle Royale mod to
 function.
 
-**14 folders, 13 of which build** — `DisableFogChernarusPlus` is currently parked.
+**16 folders, 15 of which build** — `DisableFogChernarusPlus` is currently parked.
 
 ## How this folder works
 
@@ -32,6 +32,8 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [DisableFogChernarusPlus](DisableFogChernarusPlus/README.md) | *disabled* | — | Removes fog on Chernarus+. Parked: it does nothing on Vigrid |
 | [KillFeed](KillFeed/README.md) | `extra_killfeed.pbo` | both | On-screen death feed with weapon models, attachments and range |
 | [LimitUnconsciousTime](LimitUnconsciousTime/README.md) | `extra_limitunconscioustime.pbo` | server | Force-wakes an unconscious player after 5 seconds. **Not standalone** |
+| [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, party-shared markers and zone circles |
+| [MapSatellite](MapSatellite/README.md) | `extra_mapsatellite.pbo` | both | Config only — switches the map to satellite imagery and retunes its colours |
 | [PreventPlayerModifiers](PreventPlayerModifiers/README.md) | `extra_preventplayermodifiers.pbo` | both | Disables hunger, thirst, broken legs and four diseases |
 | [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | client | Stops the weapon being forced up against walls |
 | [RandomMenuGear](RandomMenuGear/README.md) | `extra_randommenugear.pbo` | client | Re-dresses the main-menu character randomly on every menu show |
@@ -49,19 +51,27 @@ Most of these have no settings at all. The ones that do:
 | Addon | Where |
 |---|---|
 | KillFeed | `$profile:KillFeed\killfeed_settings.json` — 4 options |
+| Map | `$profile:Vigrid-Map\map_settings.json` (server) and `map_client.json` (per player) |
+| MapSatellite | none, and it cannot have any — `MapWidget` exposes no satellite API, so the `config.cpp` rename is the whole control surface |
 | SpawnWithAmmoAndMagazine | `serverDZ.cfg`: `BRDisableSpawnWithAmmo`, `BRMinSpawnAmmo`, `BRMaxSpawnAmmo` |
 | LimitUnconsciousTime | `serverDZ.cfg`: `BRDisableUnconsciousness`, or `-br-disable-unconsciousness` on the command line |
 | SafeZone | none — controlled entirely through its API |
 
 ## Compile-time defines
 
-Only three addons declare a `defines[]`, which is what lets the mod guard its call sites with
+Only four addons declare a `defines[]`, which is what lets the mod guard its call sites with
 `#ifdef`:
 
 | Define | Addon | Used by the mod? |
 |---|---|---|
 | `KILLFEED` | KillFeed | yes — 5 call sites |
 | `VIGRID_SAFEZONE` | SafeZone | yes — 2 call sites |
+| `VIGRID_MAP` | Map | yes — client zone pushes and two server calls |
+| `VIGRID_MAP_MINIMAP` | Map | no — read only by Map itself, as a build switch |
 | `RANDOM_MENU_GEAR` | RandomMenuGear | no — declared for consistency only |
 
-The other eleven declare none, so nothing can `#ifdef`-guard against them.
+`VIGRID_MAP_MINIMAP` is the odd one out: it is not there for the host mod to guard against, it is there
+so a build can ship with **no minimap at all**. Comment it out of `Extra/Map/config.cpp` and the minimap
+class, its widgets and its keybind handler leave the PBO, while the fullscreen map is untouched.
+
+The other twelve declare none, so nothing can `#ifdef`-guard against them.

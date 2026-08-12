@@ -36,7 +36,14 @@ class CfgMods
 		defines[]=
 		{
 			"DAYZ_BATTLEROYALE",
+			//--- Draw the zone circles into DayZ Expansion's map as well as this mod's own.
+			//--- Requires @DayZ-Expansion-Navigation to be loaded: ExpansionMapMenu lives in that
+			//--- PBO, and with it absent the guarded code fails to compile the Mission module
+			//--- outright rather than degrading. Off because the Vigrid map addon replaces it.
+			//"EXPANSION_MAP_ZONES",
 			//"BR_TRACE_ENABLED",
+			//--- Note the missing trailing comma below: uncommenting MOVING_ZONE and the line after
+			//--- it together is a rapify syntax error, not just a dead define.
 			//"MOVING_ZONE"
 			//"BR_MINIMAP",
 			//"BLUE_ZONE"

@@ -1,6 +1,17 @@
-#ifdef SERVER
 /**
  *  Vigrid Party - the public API. THIS IS THE ENTIRE CONTRACT with the host game.
+ *
+ *  TWO-SIDED. The server half answers questions about party composition; the client half answers
+ *  questions about what the local player can currently see of their party. They share a name and
+ *  nothing else - there is no method that exists on both sides, deliberately (see IsClientReady).
+ *  The file carries no top-level guard; each half is guarded inside the class body instead, so both
+ *  are visible in one place and neither can be added to without the other being read.
+ *
+ *  The server block is written first, which is the opposite order from VigridMapAPI. That is not an
+ *  oversight and should not be "fixed": putting it first is what let the guards be introduced around
+ *  148 lines of shipped, working code without re-indenting or moving any of it.
+ *
+ *  --- server half -------------------------------------------------------------------------------
  *
  *  Consumers pass PlayerBase and get PlayerBase back; no caller ever handles a party key, which is
  *  what lets the identity scheme stay an implementation detail (it is PlayerIdentity.GetPlainId()
@@ -14,6 +25,16 @@
  *  Every method is safe to call before the manager exists - the addon degrades to "everyone is
  *  solo" rather than throwing, so a host game never has to null-check.
  *
+ *  --- client half -------------------------------------------------------------------------------
+ *
+ *  Reads VigridPartyRPC, the bag the server pushes into, and hides three things every consumer would
+ *  otherwise have to know: that state_* is only valid while state_version == roster_version, that a
+ *  teammate inside the network bubble has a better position than the pushed one, and that a ping
+ *  can be locally expired before the server's next sweep removes it.
+ *
+ *  Every method is total: an out-of-range index yields "", vector.Zero, the off-white no-slot colour,
+ *  0 or -1 rather than throwing. Same promise as the server half - no caller ever null-checks.
+ *
  *  Usage from the host game (guard every call site, so removing party.pbo still builds):
  *
  *      #ifdef VIGRID_PARTY
@@ -22,6 +43,7 @@
  */
 class VigridPartyAPI
 {
+#ifdef SERVER
     static bool IsReady()
     {
         VigridPartyManager manager = VigridPartyManager.GetInstance();
@@ -168,5 +190,346 @@ class VigridPartyAPI
 
         return groups;
     }
-}
 #endif
+
+#ifndef SERVER
+
+    //--- readiness ---------------------------------------------------------------------------
+
+    /**
+     *  Whether the party system is switched on for this server.
+     *
+     *  Named apart from the server block's IsReady() on purpose, even though the two guards are
+     *  mutually exclusive and one name would compile. They do not mean the same thing: the server's
+     *  answers "the manager exists and is enabled", while this one leans on a setting that defaults
+     *  TRUE before any VP_Settings arrives - so during the first moments of a session the two would
+     *  be wrong in opposite directions. Worse, an unguarded 4_World or 5_Mission caller would compile
+     *  against both and silently mean something different per side, which no build would catch.
+     */
+    static bool IsClientReady()
+    {
+        return VigridPartyRPC.GetInstance().enabled;
+    }
+
+    //! The gate every consumer wants: switched on AND actually in a party. One call, not two.
+    static bool HasParty()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        if (!rpc.enabled)
+            return false;
+
+        return rpc.HasParty();
+    }
+
+    /**
+     *  Whether the pushed member state is old enough to be worth flagging. Consumers dim rather than
+     *  hide - IsMemberVisible owns the harder cutoff at which a member disappears entirely.
+     */
+    static bool IsStateStale()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        return (GetGame().GetTime() - rpc.state_recv_ms) > (3 * VIGRID_PARTY_DEF_STATE_INTERVAL_MS);
+    }
+
+    //--- roster ------------------------------------------------------------------------------
+
+    static int GetMemberCount()
+    {
+        return VigridPartyRPC.GetInstance().roster_uids.Count();
+    }
+
+    //! Your own slot, or -1. Note this is a roster index, not a player id.
+    static int GetSelfIndex()
+    {
+        return VigridPartyRPC.GetInstance().self_index;
+    }
+
+    static string GetMemberUid(int index)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        if (index < 0)
+            return "";
+        if (index >= rpc.roster_uids.Count())
+            return "";
+
+        return rpc.roster_uids.Get(index);
+    }
+
+    static string GetMemberName(int index)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        if (index < 0)
+            return "";
+        if (index >= rpc.roster_names.Count())
+            return "";
+
+        return rpc.roster_names.Get(index);
+    }
+
+    /**
+     *  Whether slot `index` has state fresh and complete enough to draw.
+     *
+     *  Three separate reasons to say no, and they are not interchangeable: the state arrays belong to
+     *  a different roster than the one we hold (state_version != roster_version), the last push is
+     *  old enough to be meaningless, or the member is flagged offline or dead.
+     *
+     *  Deliberately does NOT exclude the local player - a caller that wants to skip itself compares
+     *  against GetSelfIndex(), and the map wants a self entry while the nametags do not.
+     *
+     *  A member with no flags entry yet counts as visible, matching the nametag renderer: the flags
+     *  array can legitimately be shorter than the roster for a push or two after somebody joins.
+     */
+    static bool IsMemberVisible(int index)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        if (index < 0)
+            return false;
+        if (index >= rpc.roster_uids.Count())
+            return false;
+        if (rpc.state_version != rpc.roster_version)
+            return false;
+        if ((GetGame().GetTime() - rpc.state_recv_ms) > VIGRID_PARTY_STALE_HIDE_MS)
+            return false;
+        if (index >= rpc.state_flags.Count())
+            return true;
+
+        //--- Compared against 0 rather than negated: `!` on an int result is not something
+        //--- EnfusionScript can be relied on to convert.
+        int member_flags = rpc.state_flags.Get(index);
+        if ((member_flags & VIGRID_PARTY_FLAG_ONLINE) == 0)
+            return false;
+        if ((member_flags & VIGRID_PARTY_FLAG_ALIVE) == 0)
+            return false;
+
+        return true;
+    }
+
+    /**
+     *  Ground-level world position of roster slot `index`, or vector.Zero when there is no data.
+     *
+     *  This is the method the whole client block exists for: it owns the choice between a live entity
+     *  and an interpolated push, so state_prev_positions stays an implementation detail and two
+     *  consumers cannot disagree about where a teammate is.
+     *
+     *  CAVEAT for `index == GetSelfIndex()`: ClientData.m_PlayerBaseList never contains the local
+     *  player, so your own slot always falls through to the interpolated push and lags by up to an
+     *  interval. Draw yourself from GetGame().GetPlayer() instead - do not ask this.
+     */
+    static vector GetMemberPosition(int index)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        if (index < 0)
+            return vector.Zero;
+        if (index >= rpc.roster_uids.Count())
+            return vector.Zero;
+
+        PlayerBase entity = FindLocalPlayer(rpc.roster_uids.Get(index));
+        return ResolveBodyPos(rpc, index, entity);
+    }
+
+    //! Slot colour for a member of the CURRENT roster, at opacity `alpha` (0..1).
+    static int GetMemberColour(int index, float alpha)
+    {
+        if (index < 0)
+            return VigridPartyPalette.ColourForSlot(-1, alpha);
+        if (index >= VigridPartyRPC.GetInstance().roster_uids.Count())
+            return VigridPartyPalette.ColourForSlot(-1, alpha);
+
+        return VigridPartyPalette.ColourForSlot(index, alpha);
+    }
+
+    /**
+     *  Raw palette lookup, NOT roster-indexed.
+     *
+     *  For a slot that was recorded elsewhere and at another time - a marker stores the placer's slot
+     *  server-side at placement. Resolving that through GetMemberColour would turn the marker
+     *  off-white the moment its owner disconnects, and could differ between two clients whose rosters
+     *  arrived in a different order. This returns the same colour on every client, for ever.
+     */
+    static int GetColourForSlot(int slot, float alpha)
+    {
+        return VigridPartyPalette.ColourForSlot(slot, alpha);
+    }
+
+    /**
+     *  Bumps when the party's COMPOSITION changes - not when anybody moves. A renderer can use it to
+     *  drop cached per-member state, but it is useless as a repaint trigger for positions.
+     */
+    static int GetRosterSeq()
+    {
+        return VigridPartyRPC.GetInstance().roster_seq;
+    }
+
+    //--- pings, read-only ---------------------------------------------------------------------
+    //
+    //  `index` here is COMPACTED: it runs 0..GetPingCount()-1 over the live pings only, so an
+    //  expired one never surfaces to a caller. That costs an O(n) walk per accessor, with n capped
+    //  at a handful, and buys not having to invalidate a cache on both a new push and a clock
+    //  crossing an expiry.
+
+    static int GetPingCount()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        int raw = RawPingCount();
+        int now_ms = GetGame().GetTime();
+
+        int live = 0;
+        for (int i = 0; i < raw; i++)
+        {
+            int expire_ms = rpc.ping_expire_ms.Get(i);
+            if (expire_ms > 0 && now_ms >= expire_ms)
+                continue;
+
+            live = live + 1;
+        }
+
+        return live;
+    }
+
+    static vector GetPingPos(int index)
+    {
+        int raw_index = RawPingIndex(index);
+        if (raw_index < 0)
+            return vector.Zero;
+
+        return VigridPartyRPC.GetInstance().ping_positions.Get(raw_index);
+    }
+
+    static string GetPingOwnerUid(int index)
+    {
+        int raw_index = RawPingIndex(index);
+        if (raw_index < 0)
+            return "";
+
+        return VigridPartyRPC.GetInstance().ping_owner_uids.Get(raw_index);
+    }
+
+    static int GetPingColour(int index, float alpha)
+    {
+        int raw_index = RawPingIndex(index);
+        if (raw_index < 0)
+            return VigridPartyPalette.ColourForSlot(-1, alpha);
+
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        //--- Find returns -1 for an owner not on our roster, which the palette reads as off-white.
+        //--- That happens for a frame or two when a ping set arrives before the roster explaining it.
+        int owner_slot = rpc.roster_uids.Find(rpc.ping_owner_uids.Get(raw_index));
+        return VigridPartyPalette.ColourForSlot(owner_slot, alpha);
+    }
+
+    //--- position resolution, shared with VigridPartyNametags ----------------------------------
+
+    //! Locate a teammate's entity in the local network bubble. Null is normal, not an error.
+    static PlayerBase FindLocalPlayer(string uid)
+    {
+        if (uid == "")
+            return null;
+        if (!ClientData.m_PlayerBaseList)
+            return null;
+
+        int count = ClientData.m_PlayerBaseList.Count();
+        for (int i = 0; i < count; i++)
+        {
+            PlayerBase candidate = PlayerBase.Cast(ClientData.m_PlayerBaseList.Get(i));
+            if (!candidate)
+                continue;
+            if (!candidate.GetIdentity())
+                continue;
+            if (candidate.GetIdentity().GetPlainId() != uid)
+                continue;
+
+            return candidate;
+        }
+
+        return null;
+    }
+
+    /**
+     *  Ground-level world position for roster slot `index` - what distance is measured to.
+     *
+     *  Keeps the `rpc` parameter it had as a private method of the nametag renderer, rather than
+     *  fetching the singleton itself. Tidier the other way, but an unchanged body is what makes the
+     *  move to this class provably behaviour-neutral. Taking a VigridPartyRPC also pins this method
+     *  inside the client block, since that class does not exist on a server build.
+     */
+    static vector ResolveBodyPos(VigridPartyRPC rpc, int index, PlayerBase entity)
+    {
+        if (entity)
+            return entity.GetPosition();
+
+        if (index >= rpc.state_positions.Count())
+            return vector.Zero;
+
+        vector current = rpc.state_positions.Get(index);
+
+        //--- Interpolate between the last two pushes so a distant teammate glides instead of
+        //--- stepping once per interval.
+        if (index < rpc.state_prev_positions.Count())
+        {
+            float span = rpc.state_recv_ms - rpc.state_prev_recv_ms;
+            if (span > 0)
+            {
+                float t = Math.Clamp((GetGame().GetTime() - rpc.state_recv_ms) / span, 0, 1);
+                current = vector.Lerp(rpc.state_prev_positions.Get(index), current, t);
+            }
+        }
+
+        return current;
+    }
+
+    //--- internals ----------------------------------------------------------------------------
+
+    /**
+     *  How many raw ping entries are safe to index, live or not.
+     *
+     *  Shortest of the three parallel arrays, because a truncated RPC can leave them out of step, and
+     *  capped at the same ceiling the world-marker renderer uses so the two agree on what exists.
+     */
+    private static int RawPingCount()
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int count = rpc.ping_owner_uids.Count();
+        if (rpc.ping_positions.Count() < count)
+            count = rpc.ping_positions.Count();
+        if (rpc.ping_expire_ms.Count() < count)
+            count = rpc.ping_expire_ms.Count();
+        if (count > VIGRID_PARTY_PING_MAX_RENDERED)
+            count = VIGRID_PARTY_PING_MAX_RENDERED;
+
+        return count;
+    }
+
+    /**
+     *  Raw array index of the `visible_index`-th live ping, or -1.
+     *
+     *  Expiry is honoured locally, to the frame, rather than waiting for the server's once-a-second
+     *  sweep - the same rule VigridPartyPings applies, so a ping leaves the map and the world at the
+     *  same moment. ping_expire_ms is already on the local clock; 0 means never.
+     */
+    private static int RawPingIndex(int visible_index)
+    {
+        if (visible_index < 0)
+            return -1;
+
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+        int raw = RawPingCount();
+        int now_ms = GetGame().GetTime();
+
+        int seen = 0;
+        for (int i = 0; i < raw; i++)
+        {
+            int expire_ms = rpc.ping_expire_ms.Get(i);
+            if (expire_ms > 0 && now_ms >= expire_ms)
+                continue;
+            if (seen == visible_index)
+                return i;
+
+            seen = seen + 1;
+        }
+
+        return -1;
+    }
+#endif
+}

@@ -97,31 +97,6 @@ class VigridPartyNametags
             m_Root.Show(false);
     }
 
-    //! Locate a teammate's entity in the local network bubble. Null is normal, not an error.
-    private PlayerBase FindLocalPlayer(string uid)
-    {
-        if (uid == "")
-            return null;
-        if (!ClientData.m_PlayerBaseList)
-            return null;
-
-        int count = ClientData.m_PlayerBaseList.Count();
-        for (int i = 0; i < count; i++)
-        {
-            PlayerBase candidate = PlayerBase.Cast(ClientData.m_PlayerBaseList.Get(i));
-            if (!candidate)
-                continue;
-            if (!candidate.GetIdentity())
-                continue;
-            if (candidate.GetIdentity().GetPlainId() != uid)
-                continue;
-
-            return candidate;
-        }
-
-        return null;
-    }
-
     void Update(float timeslice)
     {
         if (!EnsureRoot())
@@ -140,6 +115,13 @@ class VigridPartyNametags
         EnsureCapacity(member_count);
 
         //--- Anything older than this is treated as unreliable and dimmed, then hidden.
+        //---
+        //--- These two expressions, and the flag test in the loop below, duplicate what
+        //--- VigridPartyAPI.IsStateStale() and IsMemberVisible() now compute. That is deliberate and
+        //--- not an oversight: position resolution moved to the API because two consumers must not
+        //--- disagree about where a teammate is, whereas this is presentation for one renderer.
+        //--- Keeping it here is what made the move a two-identifier diff instead of a rewrite of the
+        //--- visibility logic.
         int now_ms = GetGame().GetTime();
         int age_ms = now_ms - rpc.state_recv_ms;
         bool have_state = rpc.state_version == rpc.roster_version;
@@ -191,8 +173,8 @@ class VigridPartyNametags
                 continue;
             }
 
-            PlayerBase entity = FindLocalPlayer(rpc.roster_uids.Get(i));
-            RenderSlot(slot, entity, ResolveBodyPos(rpc, i, entity), rpc.roster_names.Get(i), parent_w, parent_h, stale, rpc, self_pos);
+            PlayerBase entity = VigridPartyAPI.FindLocalPlayer(rpc.roster_uids.Get(i));
+            RenderSlot(slot, entity, VigridPartyAPI.ResolveBodyPos(rpc, i, entity), rpc.roster_names.Get(i), parent_w, parent_h, stale, rpc, self_pos);
             slot = slot + 1;
         }
 
@@ -201,34 +183,6 @@ class VigridPartyNametags
         {
             m_Tags.Get(j).Show(false);
         }
-    }
-
-    /**
-     *  Ground-level world position for roster slot `index` - what distance is measured to.
-     */
-    private vector ResolveBodyPos(VigridPartyRPC rpc, int index, PlayerBase entity)
-    {
-        if (entity)
-            return entity.GetPosition();
-
-        if (index >= rpc.state_positions.Count())
-            return vector.Zero;
-
-        vector current = rpc.state_positions.Get(index);
-
-        //--- Interpolate between the last two pushes so a distant teammate glides instead of
-        //--- stepping once per interval.
-        if (index < rpc.state_prev_positions.Count())
-        {
-            float span = rpc.state_recv_ms - rpc.state_prev_recv_ms;
-            if (span > 0)
-            {
-                float t = Math.Clamp((GetGame().GetTime() - rpc.state_recv_ms) / span, 0, 1);
-                current = vector.Lerp(rpc.state_prev_positions.Get(index), current, t);
-            }
-        }
-
-        return current;
     }
 
     /**

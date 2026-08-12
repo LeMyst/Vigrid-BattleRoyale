@@ -10,7 +10,9 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected bool b_IsReady;
 
+#ifdef EXPANSION_MAP_ZONES
     protected ref ExpansionServerMarkerData m_ZoneCenterMapMarker;
+#endif
 
     protected ref BattleRoyaleSpeakingList m_SpeakingList;
 
@@ -29,6 +31,12 @@ class BattleRoyaleClient: BattleRoyaleBase
     void ~BattleRoyaleClient()
     {
     	BattleRoyaleUtils.Trace("BattleRoyaleClient::~BattleRoyaleClient");
+
+#ifdef VIGRID_MAP
+        // The map addon's zone state is static and outlives this object, so without this the
+        // previous match's circles would still be drawn after a server change.
+        VigridMapAPI.ClearZones();
+#endif
     }
 
     void Init()
@@ -59,6 +67,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 	// To track changes
     bool br_previous_fade_state = false;
     bool br_previous_input_state = false;
+    vector br_previous_current_play_area_center;
+    float br_previous_current_play_area_radius;
     vector br_previous_future_play_area_center;
     float br_previous_future_play_area_radius;
     bool br_previous_win_screen = false;
@@ -166,9 +176,22 @@ class BattleRoyaleClient: BattleRoyaleBase
 				br_previous_countdown = br_rpc.countdown_seconds;
 			}
 
-			// Update current play area
-			if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
-				m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
+			// Update current play area. Diffed like the future area below, and for the same
+			// reason: without the diff this allocated a fresh BattleRoyalePlayArea every frame
+			// for the entire match.
+			if ( br_previous_current_play_area_center != br_rpc.current_play_area_center || br_previous_current_play_area_radius != br_rpc.current_play_area_radius )
+			{
+				// "0 0 0" with a zero radius is the server deliberately clearing the area, not an
+				// absent update - 7_BattleRoyaleLastRound sends exactly that. Treating it as
+				// "nothing to do" left the final circle on the client for ever.
+				if ( br_rpc.current_play_area_center != "0 0 0" && br_rpc.current_play_area_radius != 0.0 )
+					m_CurrentPlayArea = new BattleRoyalePlayArea( br_rpc.current_play_area_center, br_rpc.current_play_area_radius );
+				else
+					m_CurrentPlayArea = NULL;
+
+				br_previous_current_play_area_center = br_rpc.current_play_area_center;
+				br_previous_current_play_area_radius = br_rpc.current_play_area_radius;
+			}
 
 			// Update future play area
 			if ( br_previous_future_play_area_center != br_rpc.future_play_area_center || br_previous_future_play_area_radius != br_rpc.future_play_area_radius )
@@ -177,7 +200,9 @@ class BattleRoyaleClient: BattleRoyaleBase
 				{
 					m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
 
+#ifdef EXPANSION_MAP_ZONES
 					UpdateZoneCenterMaker( br_rpc.future_play_area_center );
+#endif
 
 					if ( br_rpc.b_ArtillerySound )
 					{
@@ -188,6 +213,31 @@ class BattleRoyaleClient: BattleRoyaleBase
 				br_previous_future_play_area_center = br_rpc.future_play_area_center;
 				br_previous_future_play_area_radius = br_rpc.future_play_area_radius;
 			}
+
+#ifdef VIGRID_MAP
+			// Hand the two circles to the map addon. Push rather than pull: the addon may not
+			// reference a BattleRoyale* symbol, so it cannot come and fetch these itself.
+			// Called unconditionally - VigridMapAPI diffs internally and only does work when a
+			// circle has actually moved, so this costs four comparisons on a normal frame.
+			vector map_current_center = "0 0 0";
+			float map_current_radius = 0;
+			vector map_next_center = "0 0 0";
+			float map_next_radius = 0;
+
+			if ( m_CurrentPlayArea )
+			{
+				map_current_center = m_CurrentPlayArea.GetCenter();
+				map_current_radius = m_CurrentPlayArea.GetRadius();
+			}
+
+			if ( m_FuturePlayArea )
+			{
+				map_next_center = m_FuturePlayArea.GetCenter();
+				map_next_radius = m_FuturePlayArea.GetRadius();
+			}
+
+			VigridMapAPI.SetZones( map_current_center, map_current_radius, map_next_center, map_next_radius );
+#endif
 
 			// Set top position
 			if ( player )
@@ -215,6 +265,9 @@ class BattleRoyaleClient: BattleRoyaleBase
 		}
     }
 
+#ifdef EXPANSION_MAP_ZONES
+    //! Red dot at the next zone centre, on DayZ Expansion's map and in its 3D marker layer.
+    //! Superseded by Extra/Map/, which draws both without needing Expansion at all.
     protected void UpdateZoneCenterMaker(vector center)
     {
         if (!m_ZoneCenterMapMarker)
@@ -230,6 +283,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         m_ZoneCenterMapMarker.SetPosition( center + "0 5 0" );
     }
+#endif
 
     protected bool GetZoneDistance(BattleRoyalePlayArea play_area, out float distExt, out float distInt, out float angle)
     {
