@@ -1,29 +1,92 @@
+// Two lines: the name, then the condition badges and the distance sharing the second line.
+//
+// Every position and size here is a placeholder. VigridPartyHud.LayoutRow() measures the bound text
+// with GetTextSize() and overwrites them, so the row hugs its content instead of reserving a fixed
+// slab for the longest name it might ever hold. Keep them plausible anyway so the layout still reads
+// correctly in Workbench, and keep them in step with the VIGRID_PARTY_HUD_* constants.
+//
+// No `scaled 1`: it stretches the glyphs to fill the box, so the SHORTER the name the bigger it
+// rendered. A fixed glyph size needs `"exact text" 1` plus a font declared at a concrete size.
+//
+// Two facts about PanelWidget alpha, both learned the hard way here, and together they are why the
+// backdrop is a CHILD rather than the root's own fill:
+//
+//  1. `color` TINTS THE STYLE TEXTURE - it is not a fill on its own. With no `style` line the panel
+//     draws nothing at all, colour and all. Every vanilla panel with a visible background pairs the
+//     two. `rover_sim_colorable` is vanilla's flat tintable fill (day_z_chat_input.layout:21,
+//     day_z_hud.layout:750). `DayZDefaultPanel`, which this used to carry, is a bordered 9-slice
+//     whose texture swallowed the declared alpha and read as a solid black slab.
+//  2. A widget's COLOUR ALPHA AND ITS WIDGET ALPHA ARE THE SAME VALUE. SetAlpha overwrites what the
+//     layout declared, and it is also what every `inheritalpha 1` child multiplies by. So a root
+//     that both draws the backdrop and carries the row's alpha cannot have a faint background and
+//     readable text at once - dimming one dims the other.
+//
+// RowRoot is therefore a pure alpha carrier: no style, so it renders nothing, and alpha 1 so its
+// children are undimmed. It must NOT be given alpha 0 to make it invisible - that would take every
+// child down with it. RowBackdrop does the drawing, and only it is faint.
 PanelWidgetClass RowRoot {
  visible 1
  ignorepointer 1
  position 0 0
- size 256 64
+ size 168 38
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 0 0 0 0.4
- style DayZDefaultPanel
+ color 1 1 1 1
  {
+  // The faint fill. Light on purpose: it only has to lift the text off a busy background, and the
+  // readability is carried by the 3px shadow on each cell. Nothing calls SetAlpha on this widget,
+  // so the alpha declared here is the one that renders - VigridPartyHud only resizes it.
+  PanelWidgetClass RowBackdrop {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 168 38
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.25
+   style rover_sim_colorable
+  }
+  // Identity, in the member's party-slot colour - the same palette their pings and map markers use.
+  // Condition is carried by the name tint instead, so the two signals never compete for one channel.
+  //
+  // Needs `style rover_sim_colorable` for the same reason RowRoot does: without a style there is no
+  // texture for SetColor to tint, and the bar renders nothing at all.
+  PanelWidgetClass RowAccent {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 3 38
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   style rover_sim_colorable
+  }
   TextWidgetClass RowName {
    inheritalpha 1
    ignorepointer 1
-   position 0 0
-   size 1 0.36
-   hexactpos 0
-   vexactpos 0
-   hexactsize 0
-   vexactsize 0
-   scaled 1
-   style Bold
+   position 8 2
+   size 140 18
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
    text "Survivor"
-   font "gui/fonts/metron"
-   "exact text" 0
+   font "gui/fonts/metron-bold22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 17
+   "size to text h" 0
+   "size to text v" 0
    "text halign" left
    "text valign" center
   }
@@ -34,8 +97,8 @@ PanelWidgetClass RowRoot {
    visible 1
    ignorepointer 1
    inheritalpha 1
-   position 2 25
-   size 18 18
+   position 8 21
+   size 15 15
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -54,8 +117,8 @@ PanelWidgetClass RowRoot {
    visible 1
    ignorepointer 1
    inheritalpha 1
-   position 26 25
-   size 18 18
+   position 27 21
+   size 15 15
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -67,18 +130,24 @@ PanelWidgetClass RowRoot {
    "no wrap" 1
    stretch 1
   }
+  // Shares the second line with the badges and is mutually exclusive with them: it only carries the
+  // states no icon can express (offline, dead, no data yet), so it starts where RowHealthIcon does.
   TextWidgetClass RowStatusText {
    inheritalpha 1
    ignorepointer 1
-   position 0 0.36
-   size 1 0.32
-   hexactpos 0
-   vexactpos 0
-   hexactsize 0
-   vexactsize 0
+   position 8 20
+   size 140 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
    text ""
-   font "gui/fonts/metron"
-   "exact text" 0
+   font "gui/fonts/metron16"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 14
    "size to text h" 0
    "size to text v" 0
    "text halign" left
@@ -87,15 +156,19 @@ PanelWidgetClass RowRoot {
   TextWidgetClass RowDistanceText {
    inheritalpha 1
    ignorepointer 1
-   position 0 0.68
-   size 1 0.32
-   hexactpos 0
-   vexactpos 0
-   hexactsize 0
-   vexactsize 0
+   position 50 20
+   size 60 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
    text "0m"
-   font "gui/fonts/metron"
-   "exact text" 0
+   font "gui/fonts/metron16"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 14
    "size to text h" 0
    "size to text v" 0
    "text halign" left

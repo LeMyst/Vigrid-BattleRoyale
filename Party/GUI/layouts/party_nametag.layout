@@ -1,3 +1,9 @@
+// The two text cells are `"exact text" 1` with a font declared at a concrete size, NOT `scaled 1`.
+// Scaling stretches the glyphs to fill the cell, so the shorter the name the bigger it rendered -
+// a four-letter name came out roughly twice the height of a twelve-letter one.
+//
+// The root stays 170x40: VIGRID_PARTY_TAG_SIZE_W/H must track it, and VigridPartyNametags.RenderSlot
+// centres the tag above the head by shifting it half its own width.
 PanelWidgetClass TagRoot {
  visible 0
  ignorepointer 1
@@ -18,16 +24,15 @@ PanelWidgetClass TagRoot {
    vexactpos 0
    hexactsize 0
    vexactsize 0
-   scaled 1
-   style Bold
    text "Survivor"
-   font "gui/fonts/metron"
+   font "gui/fonts/metron-bold22"
    "outline size" 1
    "outline color" 0 0 0 0.5
    "shadow size" 5
    "shadow color" 0 0 0 0.4
    "shadow offset" 1 1
-   "exact text" 0
+   "exact text" 1
+   "exact text size" 16
    "text halign" center
    "text valign" center
   }
@@ -40,15 +45,15 @@ PanelWidgetClass TagRoot {
    vexactpos 0
    hexactsize 0
    vexactsize 0
-   scaled 1
    text "0m"
-   font "gui/fonts/metron"
+   font "gui/fonts/metron16"
    "outline size" 1
    "outline color" 0 0 0 0.5
    "shadow size" 5
    "shadow color" 0 0 0 0.4
    "shadow offset" 1 1
-   "exact text" 0
+   "exact text" 1
+   "exact text size" 13
    "text halign" center
    "text valign" center
   }

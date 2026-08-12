@@ -1,19 +1,46 @@
 /**
- *  Vigrid Map Satellite - turns on the satellite layer of the in-game map.
+ *  Vigrid Map Satellite - turns on the satellite layer of the in-game map, retunes the overlay
+ *  layers so they work over photographic imagery, and makes place names legible over it.
  *
- *  This is Expansion Navigation's map-control block, copied into `class MapDefaults` and nowhere
- *  else. THE ONE RULE: do not add a `class RscMapControl` here. Doing that is what hard-froze every
- *  client on 2026-08-07 - proven by bisection, see below - and it is the only thing about this file
- *  that is dangerous. The values themselves are not.
+ *  THE ONE RULE: do not add a `class RscMapControl` here. Doing that is what hard-froze every client
+ *  on 2026-08-07 - proven by bisection, see below - and it is the only thing about this file that is
+ *  dangerous. The values themselves are not.
  *
  *  WHY THIS EXISTS. The satellite map everyone was used to came from @DayZ-Expansion-Navigation, not
  *  from the terrain. Vanilla ships maxSatelliteAlpha = 0, which disables the satellite layer outright
  *  and leaves the procedurally drawn contour map. So unloading Navigation, which the Extra/Map addon
- *  makes possible, silently swapped the map back to topo. This file is those numbers.
+ *  makes possible, silently swapped the map back to topo.
  *
  *  Note the satellite imagery is the TERRAIN's own, already shipped with the world
- *  (dz\worlds\<world>\data\layers\s_XXX_YYY_lco.paa). Nothing is bundled here: this is ten numbers,
- *  not a gigabyte of tiles.
+ *  (dz\worlds\<world>\data\layers\s_XXX_YYY_lco.paa). Nothing is bundled here.
+ *
+ *  ------------------------------------------------------------------------------------------------
+ *  PROVENANCE - READ BEFORE ADDING A VALUE
+ *  ------------------------------------------------------------------------------------------------
+ *
+ *  EVERY VALUE IN THIS FILE IS DERIVED FROM VANILLA, NOT FROM EXPANSION. Earlier revisions of this
+ *  file were Expansion Navigation's block "copied whole". Expansion's source is licensed
+ *  CC BY-NC-ND 4.0 ((c) DayZ Expansion Mod Team) - the NoDerivatives term is squarely at odds with
+ *  copying their config and altering values in it, and NonCommercial matters the moment a server
+ *  takes donations. So the block was re-derived from Bohemia's own config in 2026-08-09.
+ *
+ *  None of Expansion's values were needed. What was actually wanted from them was a FACT about the
+ *  engine - where the place-name shadow key lives - and a TECHNIQUE, "zero the alpha on the fill
+ *  layers that fight a photo, keep the linear features that still read". Neither is anyone's
+ *  expression. Both are applied below to vanilla's own hues.
+ *
+ *  THE DERIVATION RULE, which every colour below obeys:
+ *
+ *      KEEP BOHEMIA'S RGB. CHANGE ONLY THE ALPHA, AND ONLY WHERE A LAYER OCCLUDES THE IMAGERY.
+ *
+ *  Follow it if you add one. It is what keeps this file ours, and it makes the diff against
+ *  P:\DZ\data\config.cpp:1717 reviewable at a glance - every line here should differ from vanilla in
+ *  the fourth component and nowhere else.
+ *
+ *  Anything vanilla already gets right is simply NOT RESTATED. Roads, tracks, rails, power lines,
+ *  the grid, colorOutside, colorMountPoint, the ptsPerSquare* tessellation densities, the fonts, the
+ *  Legend block and the icon subclasses are all absent on purpose - they are inherited untouched.
+ *  A shorter file is a safer one here.
  *
  *  ------------------------------------------------------------------------------------------------
  *  THE 2026-08-07 FREEZE, AND WHAT ACTUALLY CAUSED IT
@@ -58,41 +85,33 @@
  *      scaleMin/scaleMax/scaleDefault absent               REFUTED - no freeze
  *      parentless class RscMapControl re-added             *** FREEZE REPRODUCED ***
  *
- *  So the "curated subset" theory was a red herring: BOTH keys the first attempt omitted are
- *  individually harmless. They are kept below anyway because they are Expansion's shipping values
- *  and there is no reason to deviate - but they were never the bug.
+ *  That second refutation is why scaleMin/scaleMax/scaleDefault are no longer set at all: vanilla
+ *  does not declare them, VigridMapMenu.ClampZoom() re-clamps GetScale() to 0.06 .. 1.0 every frame
+ *  regardless, and a build has already proven their absence harmless. Three keys we do not have to
+ *  own.
  *
  *  Also ruled out: raw data volume (Sakhal has the SMALLEST satellite set of the three terrains -
  *  1024 tiles / 90.6 MB vs Chernarus 1849 / 232.5 MB, all the same DXT1 .paa format); Sakhal being
- *  special; and DayZDiag being special. Expansion ships Navigation/Worlds/sakhal/config.cpp with
- *  only CfgWorlds location names in it, so it runs this exact global block on Sakhal for everyone.
+ *  special; and DayZDiag being special.
  *
  *  ------------------------------------------------------------------------------------------------
  *  WHERE THE SETTINGS LIVE
  *  ------------------------------------------------------------------------------------------------
  *
- *  In P:\dz\data\config.cpp, at file top level and *outside* CfgWorlds:
+ *  Two global, top-level classes, both OUTSIDE CfgWorlds:
  *
- *      class MapDefaults              { maxSatelliteAlpha = 0; alphaFadeStartScale = 1; ... }
- *      class RscMapControl: MapDefaults { };          //--- empty body, inherits everything
+ *      P:\DZ\data\config.cpp:1717            class MapDefaults        - the raster and vector layers
+ *      P:\DZ\gear\navigation\config.cpp:14   class CfgLocationTypes   - the place-name labels
  *
- *  Both are GLOBAL. Nothing in a CfgWorlds entry names a map-control class, so there is no per-world
- *  variant to override - the block below covers every terrain, and reaches every MapWidget in the
- *  game: this mod's fullscreen map, its minimap, and the spawn-selection screen. Expansion agrees:
- *  it moved this block out of Navigation/Worlds/ChernarusPlus/ into Navigation/Worlds/config.cpp
- *  between v1.8.55 and v1.9.49, and declares requiredAddons[] = {"DZ_Data"}.
+ *  Nothing in a CfgWorlds entry names a map-control class, so there is no per-world variant to
+ *  override: the blocks below cover EVERY terrain, and reach every MapWidget in the game - this
+ *  mod's fullscreen map, its HUD minimap, the BR HUD minimap and the spawn-selection screen.
  *
  *  (An even earlier version of this file patched CfgWorlds <World> instead. That was inert - it wrote
  *  keys nothing reads. Recorded so it is not rediscovered.)
  *
- *  ONLY MapDefaults IS PATCHED, and after the bisection above that is not a style preference but the
- *  one hard requirement of this file. Vanilla's RscMapControl derives from MapDefaults with an empty
- *  body, so it inherits everything below for free. Expansion's own `class RscMapControl: MapDefaults`
- *  overrides a handful of COLOURS and no satellite key at all - so the earlier claim here that
- *  "Expansion patches both" was simply false, and acting on it is what froze the client.
- *
  *  WHY IT IS A RENAME AND NOT A SETTING. There is no script access to any of this. MapWidget exposes
- *  no satellite API, and maxSatelliteAlpha / userMapPath appear nowhere in P:\scripts - they are
+ *  no satellite API and maxSatelliteAlpha / userMapPath appear nowhere in P:\scripts - they are
  *  static config read at world load. So this cannot be a runtime server setting, only a config
  *  override shipped in a PBO. Rename config.cpp -> config.cpp.disabled to turn it off; _EnumPaths.bat
  *  only ever sees config.cpp, so the rename is the whole control surface. Same kill switch
@@ -116,129 +135,169 @@ class CfgPatches
         units[] = {};
         weapons[] = {};
         requiredVersion = 0.1;
-        //--- DZ_Data is where MapDefaults is declared. No world PBO is needed: the class is global,
-        //--- not per-terrain. Same requiredAddons Expansion's own Worlds/config.cpp uses.
+        //--- DZ_Data declares MapDefaults; DZ_Gear_Navigation declares CfgLocationTypes. Both are
+        //--- global classes, not per-terrain, so no world PBO is needed. DZ_Gear_Navigation itself
+        //--- requires only DZ_Data (P:\DZ\gear\navigation\config.cpp:1-12).
         requiredAddons[] =
         {
-            "DZ_Data"
+            "DZ_Data",
+            "DZ_Gear_Navigation"
         };
     };
 };
 
 /**
- *  Expansion Navigation v1.9.49, DayZExpansion/Navigation/Worlds/config.cpp:29-38, copied whole.
+ *  THE RASTER AND VECTOR LAYERS.
  *
- *  DO NOT CHERRY-PICK FROM THIS BLOCK. That is precisely what broke it last time. These ten values
- *  are the only combination anyone has ever shipped working; treat them as one unit. If a value here
- *  needs to change, change exactly one, rebuild, and test - see the freeze notes in the header.
- *
- *  Not copied from Expansion, because none of it is about the satellite layer: x/y/w/h (map-control
- *  geometry - our layouts declare their own) and the ptsPerSquare* / colour / font / Legend blocks
- *  (Expansion's cartographic restyle of the topo map).
+ *  Diff this against P:\DZ\data\config.cpp:1717. Every colour below is vanilla's RGB with only its
+ *  alpha moved - see the derivation rule in the header.
  */
 class MapDefaults
 {
-    //--- Vanilla MapDefaults declares none of these three. Expansion adds all three, and the map's
-    //--- zoom range being undefined is live hypothesis H2 for the freeze - so they stay, as a set.
-    //--- scaleMin = 0.001 is why Expansion's own map zoomed in absurdly far; it cannot do that here,
-    //--- because VigridMapMenu.ClampZoom() re-clamps GetScale() to 0.06 .. 1.0 every frame.
-    scaleMin = 0.001;
-    scaleMax = 1;
-    scaleDefault = 0.16;
+    //--- ---------------------------------------------------------------------------------------
+    //--- The satellite layer itself. This is the whole feature.
+    //--- ---------------------------------------------------------------------------------------
 
-    //--- 0 in vanilla, which is what disables the satellite layer entirely. This is the whole point
-    //--- of the addon.
+    //--- Vanilla is 0, which disables the satellite layer outright. This single value is the addon.
     maxSatelliteAlpha = 1;
 
-    //--- Vanilla is 1. At 2 the fade is pushed past the top of the scale range, so the satellite
-    //--- layer never fades out at any zoom. Expansion's value, kept for now because this file is a
-    //--- verbatim copy first; dropping to 1 (satellite up close, contour map when zoomed out) is the
-    //--- look actually wanted here and is the FIRST single-variable change to try.
+    //--- Vanilla is 1, which fades satellite out as you zoom out and falls back to the contour map.
+    //--- 2 pushes the fade past the top of the scale range, so satellite renders at every zoom.
+    //--- THIS IS A PACKAGE WITH THE COLOUR BLOCK BELOW: those alphas are dialled down on the
+    //--- assumption that imagery is always underneath, so a fade-out would fade to a near-blank map.
+    //--- Change both or neither.
     alphaFadeStartScale = 2;
     alphaFadeEndScale = 2;
 
-    //--- The usermap is the hand-drawn paper map the terrain ships. Turning it OFF alongside
-    //--- satellite ON is Expansion's pairing and live hypothesis H1: the version that froze left
-    //--- this at vanilla's 1, so the engine was asked to composite satellite over an active usermap.
-    //--- Consequence to accept: when satellite fades out, the fallback is the procedurally drawn
-    //--- contour map, NOT the paper map. Satellite and usermap are alternatives here, not layers.
-    userMapPath = "";
+    //--- The usermap is the hand-drawn paper map the terrain ships. Vanilla leaves it on at alpha 1;
+    //--- compositing it under satellite gains nothing and muddies the imagery, so it is off. The
+    //--- consequence to accept: satellite and usermap are alternatives here, not layers.
+    //--- (userMapPath and the alphaUserMapFade* pair are already "" / 0.34 in vanilla - not restated.)
     maxUserMapAlpha = 0;
-    alphaUserMapFadeStartScale = 0.34;
-    alphaUserMapFadeEndScale = 0.34;
 
     //--- ---------------------------------------------------------------------------------------
-    //--- The overlay colours. NOT decoration - these are why the satellite layer is legible.
+    //--- The overlay layers. NOT decoration - these are why the satellite layer is legible.
     //--- ---------------------------------------------------------------------------------------
     //---
-    //--- The map draws its procedural vector layers (forest, rocks, contours, sea, roads) ON TOP
-    //--- of whatever raster layer is underneath. Vanilla tuned them to sit over the contour map,
-    //--- so several are opaque or near-opaque and simply hide the satellite imagery:
+    //--- The map draws its procedural vector layers (forest, rocks, contours, sea) ON TOP of
+    //--- whatever raster layer is underneath. Vanilla tuned them to sit over a pale contour drawing,
+    //--- so several are opaque or near-opaque and simply hide the photograph. The green blocks over
+    //--- forest reported 2026-08-08, on the first look at a working satellite map, were colorForest.
     //---
-    //---     colorForest       vanilla {0.36, 0.78, 0.08, 0.5}   bright green at 50% alpha
-    //---     colorForestBorder vanilla {0.40, 0.80, 0.00, 1.0}   solid green outline
-    //---     colorSea          vanilla {0.64, 0.76, 0.89, 1.0}   OPAQUE - hides the sea entirely
-    //---     colorCountlines   vanilla {0.85, 0.80, 0.65, 1.0}   opaque contour lines
+    //--- Fill layers that duplicate what the imagery already shows are taken to alpha 0 or near it.
+    //--- Linear features that still read usefully over a photo - roads, tracks, rails, power lines,
+    //--- the grid - are LEFT AT VANILLA and are not restated below.
     //---
-    //--- The green blocks over forest when zoomed in (reported 2026-08-08, first look at a working
-    //--- satellite map) are colorForest. Expansion zeroes its alpha, and does the same for the
-    //--- other overlays that compete with imagery, keeping only what still reads as useful over a
-    //--- photo: main contours at half alpha, roads, rails, power lines, grid and place names.
-    //---
-    //--- Copied as a block for the same reason as the ten values above. These are draw-time tints
-    //--- and cannot hang anything - unlike the alpha gates and the scale range, which govern how
-    //--- the engine LOADS the layer - so the "do not cherry-pick" rule is about those, not these.
-    //--- Still copied whole: picking one colour out leaves the rest fighting the imagery, which is
-    //--- how the green got noticed in the first place.
-    //---
-    //--- Expansion's `Legend` icon subclasses and its `text` / `textureComboBoxColor` keys are NOT
-    //--- copied - those restyle the map's icon set and have nothing to do with the raster layer.
-    showCountourInterval = 1;
-    colorBackground[] = {0.969, 0.957, 0.949, 1};
-    colorSea[] = {0.467, 0.631, 0.851, 0.5};
-    colorForest[] = {0.38, 0.47, 0.23, 0};
-    colorForestBorder[] = {0, 0, 0, 0};
-    colorRocks[] = {0, 0, 0, 0.3};
-    colorRocksBorder[] = {0, 0, 0, 0};
-    colorLevels[] = {0.286, 0.177, 0.094, 0.5};
-    colorMainCountlines[] = {0.572, 0.354, 0.188, 0.5};
-    colorCountlines[] = {0.572, 0.354, 0.188, 0};
-    colorMainCountlinesWater[] = {0.491, 0.577, 0.702, 0.6};
-    colorCountlinesWater[] = {0.491, 0.577, 0.702, 0.3};
-    colorPowerLines[] = {0.1, 0.1, 0.1, 1};
-    colorRailWay[] = {0.8, 0.2, 0, 1};
-    //--- colorNames is Expansion's one value NOT copied here - it is near-black {0.1,0.1,0.1,0.9}
-    //--- and unreadable over imagery. Set at the bottom of this class instead, with the reasoning.
-    colorInactive[] = {1, 1, 1, 0};
-    colorOutside[] = {0, 0, 0, 1};
-    colorTracks[] = {0.84, 0.76, 0.65, 0.15};
-    colorTracksFill[] = {0.84, 0.76, 0.65, 1};
-    colorRoads[] = {0.7, 0.7, 0.7, 1};
-    colorRoadsFill[] = {1, 1, 1, 1};
-    colorMainRoads[] = {0.9, 0.5, 0.3, 1};
-    colorMainRoadsFill[] = {1, 0.6, 0.4, 1};
-    colorGrid[] = {0.1, 0.1, 0.1, 0.6};
-    colorGridMap[] = {0.1, 0.1, 0.1, 0.6};
-    colorTrails[] = {0.84, 0.76, 0.65, 0.15};
-    colorTrailsFill[] = {0.84, 0.76, 0.65, 0.65};
-    colorMountPoint[] = {0.45, 0.4, 0.25, 1};
-    widthRailWay = 4;
+    //--- These are draw-time tints and cannot hang anything, unlike the alpha gates above which
+    //--- govern how the engine LOADS a layer. Tune them freely; just keep the RGB.
 
-    //--- Place names. Vanilla is near-black {0, 0, 0, 1} and Expansion barely changes it
-    //--- ({0.1, 0.1, 0.1, 0.9}) - both are tuned for a pale contour map and are hard to read over
-    //--- satellite imagery, which was the second thing reported once satellite worked.
+    //--- Forest: vanilla {0.36, 0.78, 0.08, 0.5}, bright green at half alpha, plus a solid green
+    //--- outline. Both gone - the imagery shows the treeline far better than a flat green polygon.
+    colorForest[] = {0.36, 0.78, 0.08, 0};
+    colorForestBorder[] = {0.4, 0.8, 0, 0};
+
+    //--- Rocks: vanilla fills at 0.5 and outlines at 1. Keep a hint of the fill, drop the outline.
+    colorRocks[] = {0.5, 0.5, 0.5, 0.25};
+    colorRocksBorder[] = {0.5, 0.5, 0.5, 0};
+
+    //--- Sea: vanilla is FULLY OPAQUE and hides the water entirely. Enough tint left to read as
+    //--- water at a glance without flattening the coastline detail.
+    colorSea[] = {0.64, 0.76, 0.89, 0.4};
+
+    //--- Contours: the minor lines are noise over a photograph, the major ones still carry the
+    //--- terrain shape. Vanilla has both fully opaque.
+    colorCountlines[] = {0.85, 0.8, 0.65, 0};
+    colorMainCountlines[] = {0.45, 0.4, 0.25, 0.5};
+    colorMainCountlinesWater[] = {0.25, 0.4, 0.5, 0.6};
+    colorLevels[] = {0.65, 0.6, 0.45, 0.5};
+
+    //--- ---------------------------------------------------------------------------------------
+    //--- Grid and mountpoint labels.
+    //--- ---------------------------------------------------------------------------------------
     //---
-    //--- Amber, because MapDefaults exposes NO outline or shadow key for names - only fontNames,
-    //--- sizeExNames and colorNames - so the usual dark-halo-on-light-text trick is unavailable and
-    //--- contrast has to come from the colour alone. Neither black nor white survives Sakhal, which
-    //--- has both snowfields and dark volcanic rock and forest. Amber separates by HUE instead of
-    //--- brightness: nothing in natural satellite imagery is saturated amber, so it holds up over
-    //--- snow, forest, rock and sea alike. Slightly larger for the same reason.
+    //--- NOTE WHAT THESE DO NOT DO. colorNames / sizeExNames do NOT style town, city or village
+    //--- names - those come from CfgLocationTypes below, and for a long time this file assumed
+    //--- otherwise, which is why the names stayed unreadable no matter what was set here.
     //---
-    //--- If this ever still reads badly, the only remaining levers are size and alpha. Do not reach
-    //--- for an outline; there isn't one.
+    //--- Amber for the same reason as the place names: it separates by HUE, not brightness, so it
+    //--- survives snow, forest, rock and sea alike. Vanilla is pure black, tuned for a pale map.
     colorNames[] = {1, 0.82, 0.35, 1};
     sizeExNames = 0.045;
+	class Bush
+	{
+		icon="\dz\gear\navigation\data\map_bush_ca.paa";
+		color[]={0.14,0.25,0.09,0.80000001};
+		size=14;
+		importance="0.2 * 14 * 0.05";
+		coefMin=0.25;
+		coefMax=4;
+	};
+	class SmallTree
+	{
+		icon="\dz\gear\navigation\data\map_smalltree_ca.paa";
+		color[]={0.14,0.25,0.09,0.80000001};
+		size=12;
+		importance="0.6 * 12 * 0.05";
+		coefMin=0.25;
+		coefMax=4;
+	};
+	class Tree
+	{
+		icon="\dz\gear\navigation\data\map_tree_ca.paa";
+		color[]={0.14,0.25,0.09,0.80000001};
+		size=12;
+		importance="0.9 * 16 * 0.05";
+		coefMin=0.25;
+		coefMax=4;
+	};
+};
+
+/**
+ *  THE PLACE-NAME LABELS - town, city, village, and the icon markers.
+ *
+ *  This class is where map label styling actually lives, and finding that is what made the map
+ *  readable. MapDefaults has no shadow key; CfgLocationTypes::Name does, and a drop shadow is worth
+ *  more over photographic imagery than any colour choice, because it works against a light
+ *  background and a dark one at the same time.
+ *
+ *  ONLY `Name` AND `NameIcon` ARE PATCHED, and that scoping is deliberate: both are PARENTLESS in
+ *  vanilla, so there is no parent to accidentally drop - the defect that froze the client. Every
+ *  other class in CfgLocationTypes derives from one of these two and inherits the changes for free.
+ *
+ *  IF YOU EVER TOUCH A DERIVED CLASS, RESTATE ITS PARENT - `class Village: Name`, not `class
+ *  Village`. Omitting it replaces rather than merge-patches and silently strips drawStyle, texture
+ *  and name. Vanilla's per-tier sizes (Capital 0.06 / City 0.05 / Village 0.04 / Local 0.03) and its
+ *  importance values (7 / 6 / 5 / 2, which gate what appears at which zoom) are already sensible and
+ *  are left alone.
+ */
+class CfgLocationTypes
+{
+    //--- Settlement names. Vanilla: black, no shadow, MetronBook-Bold28.
+    class Name
+    {
+        //--- Amber, matching colorNames above so every label on the map is one colour. Neither black
+        //--- nor white survives Sakhal, which has snowfields AND dark volcanic rock and forest;
+        //--- nothing in natural satellite imagery is saturated amber.
+        color[] = {1, 0.82, 0.35, 1};
+
+        //--- The key this file spent a long time believing did not exist. Contrast now comes from
+        //--- the shadow, and the amber above is free to be a colour rather than a contrast hack.
+        shadow = 1;
+
+        //--- Metron is a BITMAP font: raising textSize on the 28px face scales a small bitmap and
+        //--- goes soft. The 58px face is the correct way to draw larger text, and it is a vanilla
+        //--- asset (P:\gui\fonts\metronbook-bold58). Per-tier textSize values are inherited.
+        font = "gui/fonts/MetronBook-Bold58";
+    };
+
+    //--- Icon markers (ruins, camps, hills, viewpoints, ...). Same treatment, no shadow - these are
+    //--- glyphs rather than text. Note most derived classes set their own colour, so in practice
+    //--- this base colour reaches `Ruin`; the font and any future key reach all of them.
+    class NameIcon
+    {
+        color[] = {1, 0.82, 0.35, 1};
+        font = "gui/fonts/MetronBook-Bold58";
+    };
 };
 
 //--- NOTHING BELOW THIS LINE. In particular, DO NOT ADD `class RscMapControl`.

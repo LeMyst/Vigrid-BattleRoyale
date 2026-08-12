@@ -18,13 +18,24 @@
  *  The one vanilla behaviour deliberately left out is the blink on the worst level - vanilla blinks
  *  a CRITICAL badge, which is tolerable for one badge of your own but not for a column of rows.
  *
+ *  Two lines per member, not three: the badges share the second line with the distance. This is a
+ *  HUD element a player reads mid-firefight, so it owes the screen as little space as it can get
+ *  away with.
+ *
  *  Rows are pooled and positioned manually rather than through a spacer widget, so the layout
- *  behaves identically regardless of how many rows are live.
+ *  behaves identically regardless of how many rows are live - and LayoutRow() shrinks each row to
+ *  the text it actually holds. A spacer cannot do that job: it can only collapse to the sum of its
+ *  children, and these children are fixed-width boxes, so it has nothing to collapse to and the
+ *  background stretches the full declared width. KillFeedUI.LayoutRow solves the same problem the
+ *  same way.
+ *
+ *  Two colour channels, deliberately kept apart. The accent bar down the left edge is the member's
+ *  party-slot colour and answers WHO - it matches their pings and their map markers, and it does not
+ *  change when they are hurt or offline. The name tint answers HOW BAD. Neither reading has to share
+ *  a channel with the other.
  */
 class VigridPartyHud
 {
-    private static const int ROW_HEIGHT = 70;
-
     private static const int COLOR_HEALTHY = 0xFF6ECF6E;
     private static const int COLOR_HURT = 0xFFE8A33D;
     private static const int COLOR_CRITICAL = 0xFFD64545;
@@ -51,6 +62,8 @@ class VigridPartyHud
     private bool m_RootFailed;
 
     private ref array<Widget> m_RowWidgets;
+    private ref array<Widget> m_RowBackdrops;
+    private ref array<Widget> m_RowAccents;
     private ref array<TextWidget> m_RowNames;
     private ref array<ImageWidget> m_RowHealthIcons;
     private ref array<ImageWidget> m_RowBloodIcons;
@@ -60,6 +73,8 @@ class VigridPartyHud
     void VigridPartyHud()
     {
         m_RowWidgets = new array<Widget>();
+        m_RowBackdrops = new array<Widget>();
+        m_RowAccents = new array<Widget>();
         m_RowNames = new array<TextWidget>();
         m_RowHealthIcons = new array<ImageWidget>();
         m_RowBloodIcons = new array<ImageWidget>();
@@ -124,6 +139,12 @@ class VigridPartyHud
         }
     }
 
+    //! Vertical distance between two rows' top edges.
+    private int RowPitch()
+    {
+        return VIGRID_PARTY_HUD_ROW_HEIGHT + VIGRID_PARTY_HUD_ROW_GAP;
+    }
+
     private void EnsureCapacity(int wanted)
     {
         if (!m_Rows)
@@ -135,7 +156,7 @@ class VigridPartyHud
             if (!row)
                 return;
 
-            row.SetPos(0, m_RowWidgets.Count() * ROW_HEIGHT);
+            row.SetPos(0, m_RowWidgets.Count() * RowPitch());
 
             ImageWidget health_icon = ImageWidget.Cast(row.FindAnyWidget("RowHealthIcon"));
             ImageWidget blood_icon = ImageWidget.Cast(row.FindAnyWidget("RowBloodIcon"));
@@ -143,6 +164,8 @@ class VigridPartyHud
             LoadIconFrames(blood_icon, "iconBlood");
 
             m_RowWidgets.Insert(row);
+            m_RowBackdrops.Insert(row.FindAnyWidget("RowBackdrop"));
+            m_RowAccents.Insert(row.FindAnyWidget("RowAccent"));
             m_RowNames.Insert(TextWidget.Cast(row.FindAnyWidget("RowName")));
             m_RowHealthIcons.Insert(health_icon);
             m_RowBloodIcons.Insert(blood_icon);
@@ -226,7 +249,29 @@ class VigridPartyHud
     {
         Widget row = m_RowWidgets.Get(slot);
         row.Show(true);
-        row.SetPos(0, slot * ROW_HEIGHT);
+        row.SetPos(0, slot * RowPitch());
+
+        //--- Dim the whole row when the data behind it has gone quiet.
+        //---
+        //--- Safe on the root only because the root draws nothing: it is a pure alpha carrier, and
+        //--- RowBackdrop holds the fill. A widget's colour alpha and its widget alpha are one value,
+        //--- so while the root drew the backdrop itself this line could not exist - the unconditional
+        //--- SetAlpha(1.0) it replaced was forcing the fill fully opaque every frame, which is why
+        //--- the row rendered pitch black at 0.4, 0.45 and 0.25 alike. Setting the root's colour
+        //--- instead only moved the problem: the faint backdrop then took the text down with it.
+        //---
+        //--- Set here rather than at the end because every branch below returns early: a row that
+        //--- dimmed once would otherwise never brighten again.
+        if (stale)
+            row.SetAlpha(0.5);
+        else
+            row.SetAlpha(1.0);
+
+        //--- Identity, not condition: the slot colour is the member's for the life of the party, so
+        //--- it is set the same way in every branch - offline and dead included.
+        Widget accent = m_RowAccents.Get(slot);
+        if (accent)
+            accent.SetColor(VigridPartyAPI.GetMemberColour(index, 1.0));
 
         //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
         //--- stringtable key and only GetMemberName resolves it - and it has to happen before the
@@ -245,6 +290,7 @@ class VigridPartyHud
             m_RowStatusTexts.Get(slot).SetText("--");
             m_RowDistances.Get(slot).SetText("");
             m_RowNames.Get(slot).SetColor(COLOR_INACTIVE);
+            LayoutRow(slot, false);
             return;
         }
 
@@ -259,6 +305,7 @@ class VigridPartyHud
             m_RowStatusTexts.Get(slot).SetText("#STR_PARTY_HUD_OFFLINE");
             m_RowDistances.Get(slot).SetText("");
             m_RowNames.Get(slot).SetColor(COLOR_INACTIVE);
+            LayoutRow(slot, false);
             return;
         }
 
@@ -268,6 +315,7 @@ class VigridPartyHud
             m_RowStatusTexts.Get(slot).SetText("#STR_PARTY_HUD_DEAD");
             m_RowDistances.Get(slot).SetText("");
             m_RowNames.Get(slot).SetColor(COLOR_CRITICAL);
+            LayoutRow(slot, false);
             return;
         }
 
@@ -294,15 +342,109 @@ class VigridPartyHud
 
         vector member_pos = rpc.state_positions.Get(index);
         if (self_pos != vector.Zero && member_pos != vector.Zero)
-            m_RowDistances.Get(slot).SetText(Math.Round(vector.Distance(self_pos, member_pos)).ToString() + "m");
+            m_RowDistances.Get(slot).SetText(VigridPartyScreen.FormatDistance(vector.Distance(self_pos, member_pos)));
         else
             m_RowDistances.Get(slot).SetText("");
 
-        //--- Dim the whole row when the data behind it has gone quiet.
-        if (stale)
-            row.SetAlpha(0.5);
+        LayoutRow(slot, true);
+    }
+
+    /**
+     *  Place both lines and shrink the row to fit the wider of them.
+     *
+     *  Done in script rather than with a spacer's "Size To Content H": a spacer can only collapse to
+     *  the sum of its children, and these children are fixed-width boxes, so it has nothing to
+     *  collapse to and the background stretches the full declared width. This is the same problem
+     *  KillFeedUI.LayoutRow solves, and the same answer.
+     *
+     *  GetTextSize reports the currently set text in pixels and is valid in the same frame as
+     *  SetText - vanilla measures exactly this way in actiontargetscursor.c:1141-1153.
+     *
+     *  `icons` mirrors the SetIcons() call the caller just made. It is passed rather than read back
+     *  off the widget because IsVisible() also answers for the parent chain, and the second line is
+     *  laid out completely differently depending on which of the two occupies it.
+     */
+    private void LayoutRow(int slot, bool icons)
+    {
+        Widget row = m_RowWidgets.Get(slot);
+        if (!row)
+            return;
+
+        int text_w;
+        int text_h;
+        int name_w = 0;
+        int stats_w = 0;
+
+        //--- Update() before every read-back: the row may only just have been shown, and a stale
+        //--- layout measures as zero. TabberUI.c:126 and sizetochild.c:35 do the same.
+        TextWidget name_text = m_RowNames.Get(slot);
+        if (name_text)
+        {
+            name_text.Update();
+            name_text.GetTextSize(text_w, text_h);
+            name_text.SetPos(VIGRID_PARTY_HUD_PAD_L, VIGRID_PARTY_HUD_NAME_TOP);
+            name_text.SetSize(text_w, VIGRID_PARTY_HUD_NAME_HEIGHT);
+            name_w = text_w;
+        }
+
+        if (icons)
+        {
+            m_RowHealthIcons.Get(slot).SetPos(VIGRID_PARTY_HUD_PAD_L, VIGRID_PARTY_HUD_STAT_TOP);
+            m_RowBloodIcons.Get(slot).SetPos(VIGRID_PARTY_HUD_PAD_L + VIGRID_PARTY_HUD_ICON + VIGRID_PARTY_HUD_ICON_GAP, VIGRID_PARTY_HUD_STAT_TOP);
+
+            stats_w = (2 * VIGRID_PARTY_HUD_ICON) + VIGRID_PARTY_HUD_ICON_GAP;
+
+            //--- Blank while a teammate's position is unknown, and then the badges are the whole
+            //--- line - no trailing gap reserved for a distance that is not there.
+            TextWidget distance_text = m_RowDistances.Get(slot);
+            if (distance_text)
+            {
+                //--- Shown BEFORE it is measured. GetTextSize only measures a laid-out widget, so a
+                //--- cell hidden on the previous frame would measure zero, be hidden again on the
+                //--- strength of that, and never come back - vanilla shows first for the same reason
+                //--- (actiontargetscursor.c:1148-1151).
+                distance_text.Show(true);
+                distance_text.Update();
+                distance_text.GetTextSize(text_w, text_h);
+                distance_text.Show(text_w > 0);
+
+                if (text_w > 0)
+                {
+                    distance_text.SetPos(VIGRID_PARTY_HUD_PAD_L + stats_w + VIGRID_PARTY_HUD_STAT_GAP, VIGRID_PARTY_HUD_STAT_TOP);
+                    distance_text.SetSize(text_w, VIGRID_PARTY_HUD_STAT_HEIGHT);
+                    stats_w = stats_w + VIGRID_PARTY_HUD_STAT_GAP + text_w;
+                }
+            }
+        }
         else
-            row.SetAlpha(1.0);
+        {
+            TextWidget status_text = m_RowStatusTexts.Get(slot);
+            if (status_text)
+            {
+                status_text.Update();
+                status_text.GetTextSize(text_w, text_h);
+                status_text.SetPos(VIGRID_PARTY_HUD_PAD_L, VIGRID_PARTY_HUD_STAT_TOP);
+                status_text.SetSize(text_w, VIGRID_PARTY_HUD_STAT_HEIGHT);
+                stats_w = text_w;
+            }
+        }
+
+        int content_w = name_w;
+        if (stats_w > content_w)
+            content_w = stats_w;
+
+        int row_w = VIGRID_PARTY_HUD_PAD_L + content_w + VIGRID_PARTY_HUD_PAD_R;
+        row.SetSize(row_w, VIGRID_PARTY_HUD_ROW_HEIGHT);
+
+        //--- The backdrop is a sibling of the cells rather than the root itself, so it does not
+        //--- follow the root's size and has to be resized alongside it.
+        Widget backdrop = m_RowBackdrops.Get(slot);
+        if (backdrop)
+            backdrop.SetSize(row_w, VIGRID_PARTY_HUD_ROW_HEIGHT);
+
+        Widget accent = m_RowAccents.Get(slot);
+        if (accent)
+            accent.SetSize(VIGRID_PARTY_HUD_ACCENT_W, VIGRID_PARTY_HUD_ROW_HEIGHT);
     }
 }
 #endif

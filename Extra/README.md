@@ -33,7 +33,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [KillFeed](KillFeed/README.md) | `extra_killfeed.pbo` | both | On-screen death feed with weapon models, attachments and range |
 | [LimitUnconsciousTime](LimitUnconsciousTime/README.md) | `extra_limitunconscioustime.pbo` | server | Force-wakes an unconscious player after 5 seconds. **Not standalone** |
 | [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, party-shared markers and zone circles |
-| [MapSatellite](MapSatellite/README.md) | `extra_mapsatellite.pbo` | both | Config only — switches the map to satellite imagery and retunes its colours |
+| [MapSatellite](MapSatellite/README.md) | `extra_mapsatellite.pbo` | both | Config only — switches the map to satellite imagery, retunes its overlay layers and makes place names legible over it |
 | [PreventPlayerModifiers](PreventPlayerModifiers/README.md) | `extra_preventplayermodifiers.pbo` | both | Disables hunger, thirst, broken legs and four diseases |
 | [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | client | Stops the weapon being forced up against walls |
 | [RandomMenuGear](RandomMenuGear/README.md) | `extra_randommenugear.pbo` | client | Re-dresses the main-menu character randomly on every menu show |
