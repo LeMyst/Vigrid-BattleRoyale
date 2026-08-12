@@ -53,7 +53,7 @@ Build result: `Workbench/Logs/Build.log`, plus marker files `Build.success` / `B
 | `_LaunchServer.bat <SteamID>` | Clear logs + storage, then start the dedicated server. |
 | `SetupLaunch.bat <MP\|SP>` | Preamble for every `Launch*.bat`: config, validation, mod list, kill running game. Deliberately no `setlocal` — it exports into the caller. |
 
-Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`, `Party`) plus 12 `Extra_*`. Renaming a top-level folder renames its PBO.
+Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`, `Party`) plus 13 `extra_*`. Renaming a top-level folder renames its PBO. PBO names are lowercased by the build, so `Extra/KillFeed` packs as `extra_killfeed.pbo`.
 
 ## Testing
 
@@ -274,7 +274,7 @@ Note the imageset's internal name is `battleroyale_gui`, not the filename `dayzb
 
 ## Notes
 
-- `Extra/` holds 14 independent single-purpose sub-addons, each its own PBO, all built unconditionally. All are small script tweaks except `Extra/KillFeed/` and `Extra/SafeZone/`, self-contained addons documented under *Architecture → Kill feed* and *Architecture → Safe zone / lobby truce*.
+- `Extra/` holds 14 independent single-purpose sub-addons, each its own PBO. 13 are built; `Extra/DisableFogChernarusPlus/` is parked as `config.cpp.disabled` and produces no PBO. All are small script tweaks except `Extra/KillFeed/` and `Extra/SafeZone/`, self-contained addons documented under *Architecture → Kill feed* and *Architecture → Safe zone / lobby truce*. Each folder carries its own `README.md`, indexed by `Extra/README.md`.
 - `Extra/RandomMenuGear/` re-dresses the main-menu intro character in a random outfit plus a slung rifle and a melee weapon, re-rolled on every menu show. It hooks vanilla `IntroSceneCharacter.CreateNewCharacterById` (creation, prev/next arrows) and `MainMenu.OnShow` (returning from a submenu — that path calls `OnChangeCharacter(false)` and never recreates the character). It is **not** a fix for the broken character save that makes the menu character render naked; it only decorates the spawned object. Gear is applied with `GameInventory.CreateAttachmentEx` and deliberately never written into `MenuDefaultCharacterData` — that map is serialized to the server on connect and saved locally, so writing to it would leak menu gear into the real spawn loadout. Same discipline rule as `Party/` and `Extra/KillFeed/`: no `BattleRoyale*` symbol may be referenced.
 - Spectating is not implemented — `GUI/layouts/hud/spectator/player.layout` exists but nothing references it. Death shows a screen, then forces disconnect.
 - `Workbench/version` (`0.8.100368`) is a DayZ build number read by nothing. The mod version is `BATTLEROYALE_VERSION`.
