@@ -171,20 +171,34 @@ class KillFeedDeath
         return result;
     }
 
+    //--- The vanilla parents, not two concrete classes: ExplosivesBase covers grenades, claymores,
+    //--- IEDs and placed charges, TrapBase covers landmines and every other trap. Naming the leaves
+    //--- meant every explosive but a grenade rendered as an environmental death.
     private static bool IsExplosive(EntityAI source)
     {
-        if (source.IsInherited(Grenade_Base))
+        if (source.IsInherited(ExplosivesBase))
             return true;
 
-        return source.IsInherited(LandMineTrap);
+        return source.IsInherited(TrapBase);
     }
 
     /**
-     *  Who armed the grenade or mine. Read defensively: the host mod records m_ActivatorId on its
-     *  own modded Grenade_Base, a bare DayZ server does not, and the row still renders without it.
+     *  Who armed the grenade, mine or charge. Read defensively: the host mod records these on its own
+     *  modded ExplosivesBase/TrapBase, a bare DayZ server does not, and the row still renders without.
+     *
+     *  The NAME is asked for first, and that ordering is the whole point. The uid scan below can only
+     *  answer for somebody still connected and still holding an identity - but an explosive routinely
+     *  outlives its owner, which is the one case worth naming. A thrower who died or left used to
+     *  yield "", degrading their kill to an environmental death that show_environment_deaths could
+     *  then suppress outright.
      */
     private static string ResolveActivatorName(EntityAI source)
     {
+        string name = "";
+        EnScript.GetClassVar(source, "m_ActivatorName", -1, name);
+        if (name != "")
+            return name;
+
         string uid = "";
         EnScript.GetClassVar(source, "m_ActivatorId", -1, uid);
         if (uid == "")

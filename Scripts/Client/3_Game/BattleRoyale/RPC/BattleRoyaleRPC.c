@@ -534,7 +534,11 @@ class BattleRoyaleRPC
 		if ( type == CallType.Client )
 		{
 			BattleRoyaleUtils.Trace("AddPlayerKill");
-			player_kills += 1;
+			//--- The payload is the server's AUTHORITATIVE running total, not an increment. It used to
+			//--- be ignored in favour of a local +1, which drifted from the server the moment a kill
+			//--- was scored while this client had no entity to receive it - a spectating killer whose
+			//--- grenade landed after they died.
+			player_kills = data.param1;
 		}
 	}
 

@@ -43,6 +43,10 @@ modded class PlayerBase
 	vector spawn_pos = vector.Zero;
 
 	PlayerBase last_unconscious_source;
+	//--- SteamID64 of whoever is responsible for the hit that downed this player, which is NOT always
+	//--- expressible as an object: an explosive's owner may already be dead or disconnected. Set
+	//--- alongside last_unconscious_source and used when that reference is NULL.
+	string last_unconscious_source_uid = "";
 	float m_UnconsciousStartTime;
 
 	void SetBRPosition( int position )
@@ -77,31 +81,33 @@ modded class PlayerBase
 	{
 		super.EEHitBy(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef);
 
-		PlayerBase playerSource;
-
-		if ( source.IsPlayer() )  // Fists
-			playerSource = PlayerBase.Cast( source );
-		else
-			playerSource = PlayerBase.Cast( source.GetHierarchyParent() );
-
-		// Test if the source is a player
-		if ( playerSource )
+		//--- Guarded: not every hit carries a source, and both dereferences below were unguarded.
+		if ( !source )
 		{
-			last_unconscious_source = playerSource;
-		} else {
 			last_unconscious_source = NULL;
-			BattleRoyaleUtils.Info("Player " + GetIdentity().GetName() + " was hit by an unknown source.");
+			last_unconscious_source_uid = "";
+			return;
 		}
+
+		PlayerBase playerSource = BattleRoyaleKillAttribution.ResolvePlayerSource( source );
+
+		//--- The uid is the one that survives an explosive. A free-standing grenade has NO hierarchy
+		//--- parent, so playerSource is NULL for it and the object reference could never credit
+		//--- anybody - which is why being downed by a grenade and then disconnecting scored nothing.
+		//--- ResolveKillerUid reads the activator the device recorded when it was armed.
+		last_unconscious_source = playerSource;
+		last_unconscious_source_uid = BattleRoyaleKillAttribution.ResolveKillerUid( this, source );
+
+		if ( !playerSource && last_unconscious_source_uid == "" )
+			BattleRoyaleUtils.Trace("Player " + GetCachedName() + " was hit by an unknown source.");
 	}
 
 	override void OnUnconsciousStop(int pCurrentCommandID)
 	{
 		super.OnUnconsciousStop(pCurrentCommandID);
 
-		if (last_unconscious_source)
-		{
-			last_unconscious_source = NULL;
-		}
+		last_unconscious_source = NULL;
+		last_unconscious_source_uid = "";
 	}
 
 	override void OnSyncJuncture( int pJunctureID, ParamsReadContext pCtx )

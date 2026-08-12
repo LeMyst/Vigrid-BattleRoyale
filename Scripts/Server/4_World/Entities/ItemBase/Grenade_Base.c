@@ -1,42 +1,19 @@
 #ifdef SERVER
+/**
+ *  Grenade_Base : ExplosivesBase, so the activator fields, the getters and the placement/destruction
+ *  hooks are all inherited - see ExplosivesBase.c. Only the pin is specific to a grenade.
+ *
+ *  Do NOT re-declare m_ActivatorId here: it would shadow the parent's, and the shared resolver reads
+ *  the parent's through the getter.
+ */
 modded class Grenade_Base
 {
-	protected string m_ActivatorId = "";
+    //! Pulling the pin is what makes a grenade somebody's grenade.
+    override void OnUnpin()
+    {
+        super.OnUnpin();
 
-	string GetActivatorId()
-	{
-		return m_ActivatorId;
-	}
-
-	// Someone destroyed the grenade and made it explode
-	override void EEKilled(Object killer)
-	{
-		PlayerBase pbKiller;
-		if( Class.CastTo( pbKiller, killer ) )
-		{
-			if( pbKiller.GetIdentity() )
-			{
-				m_ActivatorId = pbKiller.GetIdentity().GetPlainId();
-			}
-		}
-		super.EEKilled( killer );
-	}
-
-	// Someone unpin the grenade
-	override void OnUnpin()
-	{
-		super.OnUnpin();
-		if( GetHierarchyRootPlayer() )
-		{
-			PlayerBase pbUser;
-			if( Class.CastTo( pbUser, GetHierarchyRootPlayer() ) )
-			{
-				if( pbUser.GetIdentity() )
-				{
-					m_ActivatorId = pbUser.GetIdentity().GetPlainId();
-				}
-			}
-		}
-	}
+        BR_SetActivator(GetHierarchyRootPlayer());
+    }
 }
 #endif
