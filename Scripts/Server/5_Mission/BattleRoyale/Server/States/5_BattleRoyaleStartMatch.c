@@ -127,7 +127,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         // Show first circle
         BattleRoyaleUtils.Trace("[BattleRoyaleStartMatch] Show first circle");
         BattleRoyaleZone m_Zone = new BattleRoyaleZone;
-        m_Zone = m_Zone.GetZone(GetDynamicStartingZone(m_Players.Count()));
+        //--- i_NumStartingPlayers, not the live count: the rounds decide which zone to skip to from
+        //--- the countdown snapshot, so using the live count here can advertise a different circle.
+        m_Zone = m_Zone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers));
         m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
         ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
 

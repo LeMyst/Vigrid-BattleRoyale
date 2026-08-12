@@ -15,8 +15,12 @@ class BattleRoyaleZone
     protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
-    protected float f_durationOffset;
     protected ref array<int> a_MinPlayers;
+
+    //--- Scratch slot written by GetValidPositionNewCircle and read by the generation loop on the
+    //--- very next line. It is NOT the offset for this zone - the loop files it into
+    //--- s_PlayAreaDurationOffsets at the right index. Reset at the top of every placement call.
+    protected float f_PendingDurationOffset;
 
     protected bool b_EndInVillages;
 
@@ -58,17 +62,53 @@ class BattleRoyaleZone
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
-		// Convert first_zone_polygon strings to vectors and check if position is inside the polygon
-		if (m_ZoneSettings.restrict_first_zone)
+		// Convert final_zone_polygon strings to vectors and check if position is inside the polygon
+		if (m_ZoneSettings.restrict_final_zone)
 		{
 			polygon_vertices = new array<vector>();
-			foreach(string v : m_ZoneSettings.first_zone_polygon)
+			foreach(string v : m_ZoneSettings.final_zone_polygon)
 			{
 				polygon_vertices.Insert(v.ToVector());
 			}
 		}
 
-        m_PlayArea = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
+        LogConfiguredZoneWindow();
+
+        //--- Generation can abort (see GetBattleRoyalePlayAreas); keep the placeholder area above
+        //--- rather than storing NULL, so nothing null-derefs while the server shuts down.
+        BattleRoyalePlayArea generated_area = GetBattleRoyalePlayAreas( i_NumRounds - GetZoneNumber() );
+        if(generated_area)
+            m_PlayArea = generated_area;
+    }
+
+    //--- The three static_* arrays are ordered SMALLEST ZONE FIRST: index 0 is the tiny final circle
+    //--- and the last index is the widest opening circle. num_zones therefore selects that many
+    //--- tiers from the small end, so lowering it shortens a match by dropping the LARGEST circles
+    //--- while always keeping the tight endgame one. Trailing entries being unused is by design;
+    //--- an array SHORTER than num_zones is a real misconfiguration and is caught per-lookup.
+    static bool s_LoggedZoneWindow;
+
+    protected void LogConfiguredZoneWindow()
+    {
+        //--- Init() runs once per zone object; the settings are process-wide, so say this once.
+        if(s_LoggedZoneWindow)
+            return;
+
+        s_LoggedZoneWindow = true;
+
+        BattleRoyaleUtils.Info("[BattleRoyaleZone] num_zones = " + i_NumRounds + " -> using zone_settings entries [0.." + (i_NumRounds - 1) + "] (smallest zone first).");
+
+        LogUnusedTail("static_sizes", a_StaticSizes.Count());
+        LogUnusedTail("static_timers", a_StaticTimers.Count());
+        LogUnusedTail("min_players", a_MinPlayers.Count());
+    }
+
+    protected void LogUnusedTail(string setting_name, int entry_count)
+    {
+        if(entry_count > i_NumRounds)
+            BattleRoyaleUtils.Info("[BattleRoyaleZone] zone_settings." + setting_name + " has " + entry_count + " entries; [" + i_NumRounds + ".." + (entry_count - 1) + "] are unused at num_zones = " + i_NumRounds + ". Raise num_zones to play them.");
+        else if(entry_count < i_NumRounds)
+            BattleRoyaleUtils.Error("[BattleRoyaleZone] zone_settings." + setting_name + " has only " + entry_count + " entries but num_zones is " + i_NumRounds + "! Zones beyond entry " + (entry_count - 1) + " have no configuration.");
     }
 
     static ref BattleRoyaleZone GetZone(int x = 1)
@@ -133,17 +173,27 @@ class BattleRoyaleZone
         return number;
     }
 
+    //--- Index into the smallest-zone-first settings arrays for this zone. Zone 1 (the widest,
+    //--- first-played circle) maps to the highest index; the last zone maps to index 0.
+    protected int GetZoneSettingsIndex()
+    {
+        return i_NumRounds - GetZoneNumber();
+    }
+
     int GetZoneTimer()
     {
         if (i_ShrinkType ==  3)
         {
-            float x = GetZoneNumber();
-            if(x > a_StaticTimers.Count())
+            //--- Range-check the index we actually use, not the 1-based zone number: any
+            //--- static_timers shorter than num_zones used to pass the old guard and read out of range.
+            int timer_index = GetZoneSettingsIndex();
+            if(timer_index < 0 || timer_index >= a_StaticTimers.Count())
             {
-                BattleRoyaleUtils.Error("Not enough static timers! (want " + x + " have " + a_StaticTimers.Count() + ")");
+                BattleRoyaleUtils.Error("Not enough static timers! (zone " + GetZoneNumber() + " wants index " + timer_index + ", have " + a_StaticTimers.Count() + ")");
                 return 300;
             }
-            return a_StaticTimers[i_NumRounds - x] + f_durationOffset;
+
+            return a_StaticTimers[timer_index] + GetDurationOffset(timer_index);
         }
 
         return 60 * i_RoundDurationMinutes;
@@ -151,7 +201,29 @@ class BattleRoyaleZone
 
     int GetZoneMinPlayers()
     {
-        return a_MinPlayers[i_NumRounds - GetZoneNumber()];
+        int min_players_index = GetZoneSettingsIndex();
+        if(min_players_index < 0 || min_players_index >= a_MinPlayers.Count())
+        {
+            //--- 0 makes GetDynamicStartingZone settle on zone 1, so a short min_players degrades
+            //--- to a full-length match instead of an arbitrary one.
+            BattleRoyaleUtils.Error("Not enough min players! (zone " + GetZoneNumber() + " wants index " + min_players_index + ", have " + a_MinPlayers.Count() + ")");
+            return 0;
+        }
+
+        return a_MinPlayers[min_players_index];
+    }
+
+    //--- Extra seconds granted to a round whose circle sits far from the one before it, so players
+    //--- can actually cross the gap. Indexed exactly like the settings arrays.
+    protected float GetDurationOffset(int play_area_index)
+    {
+        if(!s_PlayAreaDurationOffsets)
+            return 0;
+
+        if(play_area_index < 0 || play_area_index >= s_PlayAreaDurationOffsets.Count())
+            return 0;
+
+        return s_PlayAreaDurationOffsets[play_area_index];
     }
 
     bool IsInZone(float x, float z)
@@ -185,12 +257,25 @@ class BattleRoyaleZone
 
     static ref array<ref BattleRoyalePlayArea> m_PlayAreas;
 
+    //--- Parallel to m_PlayAreas: extra round seconds earned by the travel into each circle.
+    //--- Static for the same reason m_PlayAreas is - the circles are generated once per process and
+    //--- every zone object reads the same set.
+    static ref array<float> s_PlayAreaDurationOffsets;
+
+    //--- Set when circle placement gives up. Generation is not retried after that: the server is
+    //--- already exiting, and re-entering would burn 500 placement attempts per zone on the way out.
+    static bool s_GenerationFailed;
+
 	BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)
 	{
+		if(s_GenerationFailed)
+			return NULL;
+
 		// If we don't have the play areas, we generate them
 		if(!m_PlayAreas)
 		{
 			m_PlayAreas = new array<ref BattleRoyalePlayArea>();
+			s_PlayAreaDurationOffsets = new array<float>();
 
 			// Initialize bounding box variables at the method level
 			float min_x = float.MAX;
@@ -199,7 +284,7 @@ class BattleRoyaleZone
 			float max_z = float.LOWEST;
 
 			// Calculate the bounding box of the polygon if restriction is enabled
-			if (m_ZoneSettings.restrict_first_zone && m_ZoneSettings.first_zone_polygon && m_ZoneSettings.first_zone_polygon.Count() >= 3)
+			if (m_ZoneSettings.restrict_final_zone && m_ZoneSettings.final_zone_polygon && m_ZoneSettings.final_zone_polygon.Count() >= 3)
 			{
 				// Iterate through all vertices to find the bounding box
 				foreach(vector vtx : polygon_vertices)
@@ -216,9 +301,11 @@ class BattleRoyaleZone
 			for(int i = 0; i < i_NumRounds; i++)
 			{
 				BattleRoyaleUtils.Trace("Generate Area " + i);
-				if(i > a_StaticSizes.Count())
+				//--- Was `i > Count()`, which let i == Count() through and then indexed anyway.
+				if(i >= a_StaticSizes.Count())
 				{
-					BattleRoyaleUtils.Error("Not enough static sizes for static zone sizes! (want " + i + " have " + a_StaticSizes.Count() + ")");
+					BattleRoyaleUtils.Error("Not enough static sizes for static zone sizes! (want index " + i + " have " + a_StaticSizes.Count() + ")");
+					return AbortGeneration();
 				}
 				BattleRoyalePlayArea playArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 				float radius = a_StaticSizes[i];
@@ -226,9 +313,11 @@ class BattleRoyaleZone
 				playArea.SetRadius(radius);
 				vector area_center;
 
-				if(i == 0)  // First zone
+				//--- Generation runs smallest-first, so i == 0 is the tightest circle: the LAST one
+				//--- played. Both the polygon restriction and end_in_villages constrain the endgame.
+				if(i == 0)  // Final zone
 				{
-					BattleRoyaleUtils.Trace("Generate first zone");
+					BattleRoyaleUtils.Trace("Generate final zone");
 
 					// Get world size
 					int world_size = GetGame().GetWorld().GetWorldSize();
@@ -240,10 +329,10 @@ class BattleRoyaleZone
 						InitializePOIs();
 					}
 
-					// Check if first zone polygon restriction is enabled
-					if(m_ZoneSettings.restrict_first_zone && m_ZoneSettings.first_zone_polygon && m_ZoneSettings.first_zone_polygon.Count() >= 3)
+					// Check if final zone polygon restriction is enabled
+					if(m_ZoneSettings.restrict_final_zone && m_ZoneSettings.final_zone_polygon && m_ZoneSettings.final_zone_polygon.Count() >= 3)
 					{
-						BattleRoyaleUtils.Trace("First zone restricted to polygon with " + m_ZoneSettings.first_zone_polygon.Count() + " vertices");
+						BattleRoyaleUtils.Trace("Final zone restricted to polygon with " + m_ZoneSettings.final_zone_polygon.Count() + " vertices");
 
 						bool found_valid_position = false;
 
@@ -275,7 +364,7 @@ class BattleRoyaleZone
 										test_poi[0] = x_poi;
 										test_poi[2] = z_poi;
 
-										if(IsValidFirstZonePosition(test_poi) && IsSafeZoneCenter(test_poi[0], test_poi[2]))
+										if(IsValidFinalZonePosition(test_poi) && IsSafeZoneCenter(test_poi[0], test_poi[2]))
 										{
 											area_center = test_poi;
 											area_center[1] = GetGame().SurfaceY(area_center[0], area_center[2]);
@@ -308,9 +397,9 @@ class BattleRoyaleZone
 								test_pos[0] = Math.RandomFloat(min_x, max_x);
 								test_pos[2] = Math.RandomFloat(min_z, max_z);
 
-								// Use the IsValidFirstZonePosition helper method to check if position is valid
+								// Use the IsValidFinalZonePosition helper method to check if position is valid
 								// Also check if it's a safe zone (not in water, etc.)
-								if(IsValidFirstZonePosition(test_pos) && IsSafeZoneCenter(test_pos[0], test_pos[2]))
+								if(IsValidFinalZonePosition(test_pos) && IsSafeZoneCenter(test_pos[0], test_pos[2]))
 								{
 									area_center = test_pos;
 									area_center[1] = GetGame().SurfaceY(area_center[0], area_center[2]);
@@ -343,6 +432,23 @@ class BattleRoyaleZone
 				} else {  // Next zones
 					BattleRoyalePlayArea previous_area = m_PlayAreas[i - 1];
 					area_center = GetValidPositionNewCircle(previous_area.GetCenter(), previous_area.GetRadius(), radius);
+
+					if(area_center == "0 0 0")
+					{
+						//--- Placement gave up and has already asked the game to exit. A placed
+						//--- circle can never sit at the origin (its centre must clear its own
+						//--- radius), so this is unambiguous.
+						BattleRoyaleUtils.Error("Zone generation aborted at area " + i + " - could not place a circle inside area " + (i - 1) + ".");
+						return AbortGeneration();
+					}
+
+					//--- The travel this circle demands belongs to the round that moves players INTO
+					//--- circle i-1, i.e. play area index i-1, not to this one.
+					if(f_PendingDurationOffset > 0)
+					{
+						BattleRoyaleUtils.Trace("Duration offset " + f_PendingDurationOffset + " applied to area " + (i - 1));
+						s_PlayAreaDurationOffsets[i - 1] = f_PendingDurationOffset;
+					}
 				}
 
 				BattleRoyaleUtils.Trace("area_center x: " + area_center[0]);
@@ -355,11 +461,29 @@ class BattleRoyaleZone
 				BattleRoyaleUtils.Trace(playArea.GetRadius());
 
 				m_PlayAreas.Insert(playArea);
+				s_PlayAreaDurationOffsets.Insert(0);  //--- kept parallel to m_PlayAreas
 			}
 		}
 
 		BattleRoyaleUtils.Trace("Return zone number: " + zone_number);
+		if(zone_number < 0 || zone_number >= m_PlayAreas.Count())
+		{
+			BattleRoyaleUtils.Error("Asked for play area " + zone_number + " but only " + m_PlayAreas.Count() + " were generated!");
+			return NULL;
+		}
+
 		return m_PlayAreas[zone_number];
+	}
+
+	//--- Zone generation is unrecoverable: without a full set of circles a match cannot be played.
+	//--- Drop the partial registry so it can never be mistaken for a complete one, and latch the
+	//--- failure so no later GetZone() restarts the search while the server is shutting down.
+	protected BattleRoyalePlayArea AbortGeneration()
+	{
+		s_GenerationFailed = true;
+		m_PlayAreas = NULL;
+		s_PlayAreaDurationOffsets = NULL;
+		return NULL;
 	}
 
     vector GetValidPositionSquare(float min_x, float max_x, float min_z, float max_z)
@@ -381,8 +505,12 @@ class BattleRoyaleZone
         return new_center;
     }
 
+    //--- Returns "0 0 0" if no circle could be placed. The caller must treat that as fatal; the game
+    //--- has already been asked to exit by then.
     vector GetValidPositionNewCircle(vector circle_center, float old_radius, float new_radius)
     {
+        f_PendingDurationOffset = 0;  //--- never carry an offset over from the previous circle
+
         float max_distance = new_radius - old_radius;
         vector new_center = "0 0 0";
         vector potentialpos = "0 0 0";
@@ -417,38 +545,19 @@ class BattleRoyaleZone
 
                 if(max_try <= 0)
                 {
+                    //--- One good candidate is enough - take it rather than failing the match.
                     if ( potentialpos != "0 0 0" )
+                    {
+                        potentialpos[1] = GetGame().SurfaceY(potentialpos[0], potentialpos[2]);
                         return potentialpos;
+                    }
 
-                    if(new_center[0] < new_radius)
-                        new_center[0] = new_radius;
-
-                    if(new_center[2] < new_radius)
-                        new_center[2] = new_radius;
-
-                    if((new_center[0] + new_radius) > world_size)
-                        new_center[0] = world_size - new_radius;
-
-                    if((new_center[2] + new_radius) > world_size)
-                        new_center[2] = world_size - new_radius;
-
-					if ( (new_radius - old_radius) < vector.Distance( Vector( new_center[0], 0, new_center[2] ), Vector( circle_center[0], 0, circle_center[2] ) ) )
-					{
-						BattleRoyaleUtils.Trace("try to find the maximum distance we can use to have circle inside one another");
-						distance = new_radius - old_radius; // We take the maximum distance we should have
-						moveDir = Math.Atan2( (world_size / 2) - circle_center[0], (world_size / 2) - circle_center[2] ); // We got the direction to the center of the map, we can improve this
-
-						dX = distance * Math.Sin(moveDir);
-						dZ = distance * Math.Cos(moveDir);
-
-						new_center[0] = oldX + dX;
-						new_center[2] = oldZ + dZ;
-					}
-
-                    BattleRoyaleUtils.Trace("max_try for finding new_center, sad...");
-                    // TODO: crash the server if no good zone found?
+                    //--- Nothing at all was found. Clamping the last rejected position into the
+                    //--- world would hand back a circle that is not contained by its parent, so the
+                    //--- match would be unplayable anyway - fail loudly instead.
+                    BattleRoyaleUtils.Error("Could not place a zone circle of radius " + new_radius + " around " + circle_center + " (radius " + old_radius + ") after 500 attempts. Shutting the server down - a match cannot be played without a full set of circles.");
                     GetGame().RequestExit(0);
-                    break;
+                    return "0 0 0";  //--- sentinel: caller aborts generation
                 }
 
                 continue;
@@ -471,7 +580,9 @@ class BattleRoyaleZone
                 float distance_B = Math.AbsFloat(vector.Distance(circle_center, new_center));
                 float dist;
 
-                if ( distance_A > distance_B )
+                //--- Was `distance_A > distance_B`, which kept A when A was the farther one and kept
+                //--- B otherwise - the farther candidate won either way, against the comment above.
+                if ( distance_A < distance_B )
                 {
                     new_center = potentialpos;
                     dist = distance_A;
@@ -481,8 +592,9 @@ class BattleRoyaleZone
                     dist = distance_B;
                 }
 
+                //--- Reported to the caller, which files it against the circle players travel FROM.
                 if ( dist > 1500 )
-                    f_durationOffset = dist / 6;
+                    f_PendingDurationOffset = dist / 6;
 
                 break;
             }
@@ -527,7 +639,9 @@ class BattleRoyaleZone
 			vector override_position = m_Config.GetPOIsData().GetOverrodePosition( city );
 			if( override_position != "0 0 0" )
 			{
-				city_position = {override_position[0], 0, override_position[2]};
+				//--- s_POI holds CfgWorlds' 2-element [x, z] pairs, read back as poi[0]/poi[1].
+				//--- Writing a 3-element vector here put every overridden POI at z = 0 (the sea).
+				city_position = {override_position[0], override_position[2]};
 				BattleRoyaleUtils.Trace("Override " + city + " position!");
 			}
 
@@ -610,10 +724,10 @@ class BattleRoyaleZone
 		return result;
 	}
 
-	bool IsValidFirstZonePosition(vector position)
+	bool IsValidFinalZonePosition(vector position)
 	{
 		// If restriction is not enabled or no polygon is defined, any position is valid
-		if (!m_ZoneSettings.restrict_first_zone || !m_ZoneSettings.first_zone_polygon || m_ZoneSettings.first_zone_polygon.Count() < 3)
+		if (!m_ZoneSettings.restrict_final_zone || !m_ZoneSettings.final_zone_polygon || m_ZoneSettings.final_zone_polygon.Count() < 3)
 			return true;
 
 		// Check if the position is within the defined polygon

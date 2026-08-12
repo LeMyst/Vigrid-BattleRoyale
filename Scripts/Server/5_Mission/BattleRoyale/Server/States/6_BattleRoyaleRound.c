@@ -55,9 +55,12 @@ class BattleRoyaleRound: BattleRoyaleState
         b_ZoneLocked = false;
         m_Zone = new BattleRoyaleZone;
 
-        if(GetPreviousZone())
+        //--- Chaining, NOT the played order: use the round we were constructed against even if it
+        //--- later gets skipped, or every round after a skip would collapse onto zone 1.
+        BattleRoyaleRound chained_round = GetChainedPreviousRound();
+        if(chained_round && chained_round.GetZone())
         {
-            int previous_zone_number = Math.Floor(GetPreviousZone().GetZoneNumber());
+            int previous_zone_number = Math.Floor(chained_round.GetZone().GetZoneNumber());
             m_Zone = m_Zone.GetZone(previous_zone_number + 1);
         } else {
             BattleRoyaleUtils.Trace("No previous zone, default to 1");
@@ -68,8 +71,8 @@ class BattleRoyaleRound: BattleRoyaleState
         i_RoundTimeInSeconds = m_Zone.GetZoneTimer();
         BattleRoyaleUtils.Trace("Create round " + GetName());
 
-        if( GetPreviousZone() )
-            BattleRoyaleUtils.Trace("- Previous zone number: " + Math.Floor(GetPreviousZone().GetZoneNumber()));
+        if( chained_round && chained_round.GetZone() )
+            BattleRoyaleUtils.Trace("- Previous zone number: " + Math.Floor(chained_round.GetZone().GetZoneNumber()));
 
         BattleRoyaleUtils.Trace("- Duration: " + i_RoundTimeInSeconds);
 
@@ -168,10 +171,14 @@ class BattleRoyaleRound: BattleRoyaleState
 
 			//send play area to clients
 			ref BattleRoyalePlayArea m_PreviousArea = NULL;
-            m_PreviousArea = GetPreviousZone().GetArea();
+			if(GetPreviousZone())
+				m_PreviousArea = GetPreviousZone().GetArea();
 
 			//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
+			//--- Nothing to re-send when no round has played yet: the clients were never given a
+			//--- current area, and the circle of a skipped round must not be advertised as one.
+			if(m_PreviousArea)
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
         }
 
         ref BattleRoyalePlayArea m_ThisArea = NULL;
@@ -343,21 +350,36 @@ class BattleRoyaleRound: BattleRoyaleState
         return m_Zone;
     }
 
-    BattleRoyaleZone GetPreviousZone()
+    //--- The round this one was chained to when the state list was built. NOT skip-aware, and must
+    //--- not become so: chaining happens at construction, before any state can be skipped, and it
+    //--- is what tells this round which zone number it owns.
+    BattleRoyaleRound GetChainedPreviousRound()
     {
         BattleRoyaleRound prev_round;
         if(Class.CastTo(prev_round, m_PreviousState))
+            return prev_round;
+
+        BattleRoyaleUtils.Trace("Can't cast m_PreviousState to BattleRoyaleRound!");
+        return NULL;
+    }
+
+    //--- The circle that was actually in play before this round, or NULL when this is the first
+    //--- round that ran. With dynamic starting zones the rounds ahead of the starting one are
+    //--- skipped, yet they were still constructed with a fully generated zone - so the cast used to
+    //--- succeed and hand back a circle that never activated and was never sent to any client.
+    BattleRoyaleZone GetPreviousZone()
+    {
+        BattleRoyaleRound prev_round = GetChainedPreviousRound();
+        if(!prev_round)
+            return NULL;
+
+        if(prev_round.WasSkipped())
         {
-            return prev_round.GetZone();
-//            if( m_Zone.GetZoneNumber() > m_PreviousState.i_StartingZone )
-//                return prev_round.GetZone();
-//            else
-//                BattleRoyaleUtils.Trace(m_Zone.GetZoneNumber() + " <= " + m_PreviousState.i_StartingZone);
-        } else {
-            BattleRoyaleUtils.Trace("Can't cast m_PreviousState to BattleRoyaleRound!");
+            BattleRoyaleUtils.Trace("Previous round was skipped - no previous zone.");
+            return NULL;
         }
 
-        return NULL;
+        return prev_round.GetZone();
     }
 
     BattleRoyaleZone GetActiveZone() //returns NULL if first zone & not locked

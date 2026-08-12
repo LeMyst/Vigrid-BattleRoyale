@@ -112,9 +112,15 @@ Long-running work uses script coroutines — `GetGame().GameScript.Call(this, "M
 
 ### Zones
 
-`BattleRoyaleZone` (server, `BattleRoyaleZone.c`) is a static registry; all play areas are generated **once per process** into `static ref array<ref BattleRoyalePlayArea> m_PlayAreas`, largest first. **Zone 1 is the largest** and the last zone is the smallest — `BattleRoyaleZone.c:71` indexes with `i_NumRounds - GetZoneNumber()`. Radii come from `zone_settings.json` `static_sizes`; the other `shrink_type` values are declared but marked unused.
+`BattleRoyaleZone` (server, `BattleRoyaleZone.c`) is a static registry; all play areas are generated **once per process** into `static ref array<ref BattleRoyalePlayArea> m_PlayAreas`. **Zone 1 is the largest** and the last zone is the smallest — `BattleRoyaleZone.c:71` indexes with `i_NumRounds - GetZoneNumber()`. Radii come from `zone_settings.json` `static_sizes`; the other `shrink_type` values are declared but marked unused.
+
+**Generation runs smallest first, and this is the single most surprising fact in the subsystem.** `m_PlayAreas[i]` is built from `static_sizes[i]`, so index 0 is the tight final circle and each later index is a bigger circle *containing* the one before it — the `i == 0` branch is the **last-played** zone, which is why `end_in_villages` and `restrict_final_zone` both live there. Consequently `static_sizes`, `static_timers` and `min_players` are all ordered smallest-zone-first, and `num_zones` selects that many tiers **from the small end**: lowering it shortens a match by dropping the *largest* circles while always keeping the tight endgame one. Entries past `num_zones` are unused by design (at the defaults, `static_sizes[6] = 4500` never plays); an array *shorter* than `num_zones` is a misconfiguration and is caught per-lookup. `Init()` logs the window in use.
+
+Round duration comes from `static_timers` plus a per-circle offset in `s_PlayAreaDurationOffsets`, filled during generation when a circle lands far from its parent so players have time to cross. It is indexed exactly like the settings arrays and is a static parallel to `m_PlayAreas` — it must not become an instance field again, since the circles are shared by every zone object.
 
 Within a round, the new circle only becomes the damaging boundary at 80% of the round timer (`LockNewZone`); before that `GetActiveZone()` returns the previous zone. Damage is applied per player from `PlayerBase.OnScheduledTick` → `BattleRoyaleServer.OnPlayerTick` → `GetCurrentState().OnPlayerTick`, scaled by zone index.
+
+With dynamic starting zones the rounds ahead of the starting one are **skipped**, but they were still constructed and still hold a fully generated circle. `BattleRoyaleState.b_WasSkipped` (set by `BattleRoyaleServer.GetNextStateIndex()`) is what keeps that never-played circle out of the damage tick and off the wire. Note the two distinct meanings of "previous round" in `6_BattleRoyaleRound.c`: `GetChainedPreviousRound()` is the construction-time chain and is deliberately **not** skip-aware (it is how a round derives its own zone number), while `GetPreviousZone()` is skip-aware and answers "the circle actually in play".
 
 `BattleRoyaleZone.OnActivate(array<PlayerBase>)` is an intentionally empty hook for player-count-driven zone sizing.
 

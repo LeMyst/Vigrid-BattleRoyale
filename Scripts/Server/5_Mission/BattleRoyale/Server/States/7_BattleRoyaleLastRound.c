@@ -153,8 +153,10 @@ class BattleRoyaleLastRound: BattleRoyaleState
         bool do_damage = b_IsZoneLocked;
         if(!do_damage)
         {
+            //--- NULL when no round actually played before this one - there is no boundary to be
+            //--- outside of yet, so nobody takes damage until the final zone locks.
             BattleRoyaleZone current_zone = GetPreviousZone();
-            if(b_DoZoneDamage)
+            if(b_DoZoneDamage && current_zone && current_zone.GetArea())
             {
                 float radius = current_zone.GetArea().GetRadius();
                 vector center = current_zone.GetArea().GetCenter();
@@ -210,11 +212,16 @@ class BattleRoyaleLastRound: BattleRoyaleState
         b_IsZoneLocked = true;
     }
 
+    //--- The circle actually in play before the final round. A skipped round's zone was generated
+    //--- but never activated and never sent to a client, so it must not be treated as a boundary.
     BattleRoyaleZone GetPreviousZone()
     {
         BattleRoyaleRound prev_round;
         if(Class.CastTo(prev_round, m_PreviousState))
         {
+            if(prev_round.WasSkipped())
+                return NULL;
+
             return prev_round.GetZone();
         }
 

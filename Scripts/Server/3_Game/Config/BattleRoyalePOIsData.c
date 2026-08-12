@@ -65,6 +65,12 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 
 			foreach(BattleRoyaleOverridePOIPosition position: override_poi_positions)
 			{
+				if( !position || !position.new_position || position.new_position.Count() < 2 )
+				{
+					BattleRoyaleUtils.Error("Skipping malformed override_poi_positions entry - expected a [x, z] pair.");
+					continue;
+				}
+
 				BattleRoyaleUtils.Trace(position.poi_name + " " + position.new_position);
 				vector temp_pos;
 				temp_pos[0] = position.new_position[0];
@@ -87,7 +93,9 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 class BattleRoyaleOverridePOIPosition
 {
     string poi_name;
-    array<int> new_position;
+    // Must be `ref`: without it nothing strongly holds the array the ctor (or JSON deserialization)
+    // assigns, and GetOverrodePosition() reads a destroyed object.
+    ref array<int> new_position;
 
     void BattleRoyaleOverridePOIPosition(string in_poi_name, array<int> in_new_position)
 	{
