@@ -274,13 +274,6 @@ modded class MissionGameplay
 					GetUIManager().EnterScriptedMenu(MENU_BR_LEADERBOARD, GetUIManager().GetMenu());
 				}
 			}
-#ifdef DIAG
-			// Debug key. Shares its implementation with the diag menu's "Open Spawn Menu" entry -
-			// two copies of the same hardcoded fake data is how they drift apart.
-			if (GetUApi().GetInputByID(UADayZBRDebug).LocalPress()) {
-				BR_DiagOpenSpawnSelection();
-			}
-#endif
 #ifdef BR_MINIMAP
 			if (GetUApi().GetInputByID(UADayZBRToggleMiniMap).LocalPress()) {
 				b_MiniMapShow = !b_MiniMapShow;
@@ -303,7 +296,7 @@ modded class MissionGameplay
 	/**
 	 *  Open spawn selection with plausible made-up data, with no server involved.
 	 *
-	 *  Reached from the F3 key and from the diag menu's "Open Spawn Menu" entry. It is the same
+	 *  Reached from the diag menu's "Open Spawn Menu" entry. It is the same
 	 *  opening sequence ShowSpawnSelection uses - parentless, on a cleared stack, for the reason
 	 *  spelled out there - so what is exercised is the real menu, not a lookalike.
 	 */

@@ -4,7 +4,6 @@
         <actions>
             <input name="UADayZBRReadyUp" loc="BR Ready Up" />
             <input name="UADayZBRUnstuck" loc="BR Unstuck" />
-            <input name="UADayZBRDebug" loc="BR Debug" />
             <input name="UADayZBRLeaderboard" loc="BR Leaderboard" />
             <!--            <input name="UADayZBRToggleMiniMap" loc="BR Mini Map Toggle" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" loc="BR Mini Map Increase Zoom" />-->
@@ -14,7 +13,6 @@
         <sorting name="dayzbr" loc="BATTLE ROYALE">
             <input name="UADayZBRReadyUp" />
             <input name="UADayZBRUnstuck" />
-            <input name="UADayZBRDebug" />
             <input name="UADayZBRLeaderboard" />
             <!--            <input name="UADayZBRToggleMiniMap" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" />-->
@@ -27,9 +25,6 @@
         </input>
         <input name="UADayZBRUnstuck">
             <btn name="kF2" />
-        </input>
-        <input name="UADayZBRDebug">
-            <btn name="kF3" />
         </input>
         <input name="UADayZBRLeaderboard">
             <btn name="kF4" />
