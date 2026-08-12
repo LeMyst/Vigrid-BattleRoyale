@@ -14,6 +14,14 @@ class BattleRoyaleState: Timeable
 	// Track the number of players in the game when the game starts - shared between all states
     static int i_NumStartingPlayers = 0;
 
+    //--- Memo for GetDynamicStartingZone(). Its answer depends only on num_players plus config and
+    //--- the generated circles, and both are fixed for the life of the process, so recomputing it is
+    //--- pure waste. It was being called once per spawn candidate through IsSafeForTeleport, which
+    //--- meant two config fetches and a zone scan several hundred times per player.
+    //--- -1 means "nothing memoized yet"; a real player count is never negative.
+    protected int i_DynamicZoneMemoPlayers = -1;
+    protected int i_DynamicZoneMemoResult = 1;
+
     //static int i_StartingZone = 1; // Default zone is the biggest one
 
     //--- Plain game setting, unrelated to whether parties exist. It used to sit behind the party
@@ -335,17 +343,11 @@ class BattleRoyaleState: Timeable
 	    }
 	}
 
+    //--- Ordered cheapest test first. Spawn searches call this hundreds of times per player, so a
+    //--- candidate that is in the sea must be thrown out before anything expensive runs. The zone
+    //--- test used to come first even though it is the costliest check in here.
     protected bool IsSafeForTeleport(float x, float y, float z, bool check_zone = true)
     {
-        BattleRoyaleSpawnsData m_SpawnsSettings = BattleRoyaleConfig.GetConfig().GetSpawnsData();
-
-    	// Check if in zone (if needed)
-        if(check_zone)
-        {
-            if(!BattleRoyaleZone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers)).IsInZone(x, z))
-                return false;
-        }
-
         // Avoid the sea
         if(GetGame().SurfaceIsSea(x, z))
             return false;
@@ -353,6 +355,13 @@ class BattleRoyaleState: Timeable
 		// Avoid the ponds
         if(GetGame().SurfaceIsPond(x, z))
             return false;
+
+    	// Check if in zone (if needed)
+        if(check_zone)
+        {
+            if(!BattleRoyaleZone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers)).IsInZone(x, z))
+                return false;
+        }
 
 		// Avoid the roads
 //        if(GetGame().SurfaceRoadY(x, z) != y)
@@ -424,6 +433,13 @@ class BattleRoyaleState: Timeable
 	// Maybe this should be moved to another class, maybe not
     int GetDynamicStartingZone(int num_players)
     {
+		//--- Answer the memo before touching config. Same num_players always gives the same zone, so
+		//--- the repeated calls from the spawn search cost nothing after the first.
+		if ( num_players == i_DynamicZoneMemoPlayers )
+			return i_DynamicZoneMemoResult;
+
+		int resolved_zone = 1;  // Default to 1 if dynamic zones are not enabled
+
     	BattleRoyaleZoneData m_ZoneSettings = BattleRoyaleConfig.GetConfig().GetZoneData();
 		BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
 		if ( m_ZoneSettings.use_dynamic_zones )
@@ -442,8 +458,12 @@ class BattleRoyaleState: Timeable
 			{
 				BattleRoyaleUtils.Trace("Try zone: " + i_zone);
 				last_try_zone = i_zone;
-				BattleRoyaleUtils.Trace("Min player for zone: " + BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers());
-				if(BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers() < num_players)
+
+				//--- Resolved once: this used to be evaluated twice per iteration, once for the
+				//--- trace and once for the test, and each call re-enters the zone registry.
+				int zone_min_players = BattleRoyaleZone.GetZone(i_zone).GetZoneMinPlayers();
+				BattleRoyaleUtils.Trace("Min player for zone: " + zone_min_players);
+				if(zone_min_players < num_players)
 				{
 					BattleRoyaleUtils.Trace("It's a match! " + i_zone);
 					break;
@@ -456,10 +476,13 @@ class BattleRoyaleState: Timeable
 				BattleRoyaleUtils.Trace("No chance we continue...");
 			}
 
-			return last_try_zone;
+			resolved_zone = last_try_zone;
 		}
 
-		return 1;  // Default to 1 if dynamic zones are not enabled
+		i_DynamicZoneMemoPlayers = num_players;
+		i_DynamicZoneMemoResult = resolved_zone;
+
+		return resolved_zone;
 	}
 
 	void OnPlayerDisconnected(PlayerBase player)
@@ -638,11 +661,20 @@ class BattleRoyaleDebugState: BattleRoyaleState
         super.AddPlayer(player);
     }
 
+    //--- Index loop with a null check, not a foreach. The only caller (BattleRoyaleServer.Update)
+    //--- already walks the result this way and logs "null player in RemoveAllPlayers result!", so
+    //--- nulls demonstrably occur. super.RemoveAllPlayers() has already cleared m_Players by the
+    //--- time this runs, so a throw here loses the whole roster mid-migration: the next state
+    //--- activates empty and OnPlayerTick force-logs-out every survivor.
     override ref array<PlayerBase> RemoveAllPlayers()
     {
         ref array<PlayerBase> players = super.RemoveAllPlayers();
-        foreach(PlayerBase player: players)
+        for(int i = 0; i < players.Count(); i++)
         {
+            PlayerBase player = players[i];
+            if(!player)
+                continue;
+
             player.SetAllowDamage(true); //leaving debug state = disable god mode
             player.Heal();
         }

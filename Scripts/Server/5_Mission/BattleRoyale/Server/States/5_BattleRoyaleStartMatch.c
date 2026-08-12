@@ -156,7 +156,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         }
 
         MessagePlayersUntranslated( "STR_BR_MATCH_STARTED" );
-        MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", 90 );
+        MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", i_FirstRoundDelay );
 
         b_IsGameplay = true;
 

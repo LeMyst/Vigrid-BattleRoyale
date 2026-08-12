@@ -274,12 +274,6 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override bool SkipState(BattleRoyaleState _previousState)
     {
-        if( GetDynamicStartingZone(i_NumStartingPlayers) > zone_num )
-        {
-            BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + GetDynamicStartingZone(i_NumStartingPlayers) + "` > `" + zone_num + "`");
-            return true;
-        }
-
         //only one (or less) players remaining, must skip to win state
         // TODO: toggle to debug game
         if(_previousState.GetPlayers().Count() <= 1)
@@ -289,6 +283,12 @@ class BattleRoyaleRound: BattleRoyaleState
         if(VigridPartyAPI.GetGroupCount( _previousState.GetPlayers() ) <= 1)
             return true;
 #endif
+
+        if( GetDynamicStartingZone(i_NumStartingPlayers) > zone_num )
+        {
+            BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + GetDynamicStartingZone(i_NumStartingPlayers) + "` > `" + zone_num + "`");
+            return true;
+        }
 
         return false;
     }
