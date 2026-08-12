@@ -36,6 +36,18 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 
     bool artillery_sound = true;  // Play the artillery sound when the zone shrinks
 
+    // Spectate settings
+    // On death the player stays connected and the camera follows a living teammate, then the killer
+    // of the last teammate to die, then that killer's killer.
+    //
+    // Off by default. With this false nobody is ever offered spectating: the death screen shows the
+    // placement line and "Quit to menu" alone, and takes that exit on the player's behalf after
+    // BR_DEAD_AUTO_QUIT_MS - the same 15 s the pre-spectate death path used for its unconditional
+    // CallLater(LeaveServer). The one thing that IS different either way is the screen itself: it is
+    // now a real menu with buttons rather than the engine's ScreenFadeIn text, because a proto
+    // native fade taking a string and two colours has no widget tree to hang a button on.
+    bool spectate_enabled = false;  // follow the action after dying instead of being disconnected
+
 	// Airdrop settings
     bool airdrop_enabled = true;  // Enable airdrops
     int airdrop_ignore_last_zones = 3;  // Number of last zones to ignore for airdrops
@@ -146,10 +158,12 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 
 		if (version < 4)
 		{
-			// late_join_kick_seconds was INTRODUCED in v4. It is a scalar, so the field initialiser
-			// above survives deserialization of a file that does not carry the key - there is nothing
-			// to migrate. The bump exists purely so Save() writes the new key into existing profile
-			// JSONs. (The "refill an empty ref array" rule does not apply to scalars.)
+			// late_join_kick_seconds and spectate_enabled were both INTRODUCED in v4. Both are
+			// scalars, so the field initialisers above survive deserialization of a file that does
+			// not carry the keys - there is nothing to migrate. The bump exists purely so Save()
+			// writes the new keys into existing profile JSONs. (The "refill an empty ref array" rule
+			// does not apply to scalars.) spectate_enabled defaults to false, so an admin who does
+			// nothing keeps exactly the previous death behaviour.
 			version = 4;
 			Save();  // Save the upgraded config
 		}

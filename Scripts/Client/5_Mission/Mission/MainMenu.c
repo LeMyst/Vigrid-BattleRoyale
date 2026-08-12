@@ -17,6 +17,11 @@ modded class MainMenu
 
 	protected int m_MatchMakingTryCount;
 
+#ifdef DIAG
+	//--- one-shot for the whole client process, not per menu instance - see TryAutoConnect.
+	protected static bool s_AutoConnectDone;
+#endif
+
 	override Widget Init()
 	{
 		layoutRoot = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/MainMenu/main_menu.layout");
@@ -158,10 +163,12 @@ modded class MainMenu
 		}
 		else
 		{
-			//TODO: If there's parameters from the CLI, use them to connect to the server automatically
-			//TODO: Must test if it's the first time the main menu is loaded, to avoid an infinite loop
 			m_PlayButtonLabel.SetText("#main_menu_play");
 		}
+
+#ifdef DIAG
+		TryAutoConnect();
+#endif
 
 		return layoutRoot;
 	}
@@ -338,14 +345,7 @@ modded class MainMenu
 
 					return true;
 				} else {
-					string m_ConnectAddress;
-					string m_ConnectPort;
-					string m_ConnectPassword;
-					GetCLIParam("connect", m_ConnectAddress);
-					GetCLIParam("port", m_ConnectPort);
-					GetCLIParam("password", m_ConnectPassword);
-
-					g_Game.ConnectFromServerBrowser( m_ConnectAddress, m_ConnectPort.ToInt(), m_ConnectPassword );
+					ConnectFromCLI();
 
 					return true;
 				}
@@ -381,6 +381,66 @@ modded class MainMenu
 
 		return super.OnMouseEnter(w, x, y);
 	}
+
+	/**
+	 *  Connect straight to whatever -connect/-port/-password the client was launched with. This is
+	 *  the non-matchmaking half of the Play button, factored out so -br-autoconnect goes through the
+	 *  exact same call the button does rather than a parallel copy of it.
+	 */
+	void ConnectFromCLI()
+	{
+		string connect_address;
+		string connect_port;
+		string connect_password;
+		GetCLIParam("connect", connect_address);
+		GetCLIParam("port", connect_port);
+		GetCLIParam("password", connect_password);
+
+		g_Game.ConnectFromServerBrowser( connect_address, connect_port.ToInt(), connect_password );
+	}
+
+#ifdef DIAG
+	/**
+	 *  -br-autoconnect presses Play for you, so a local test run goes from launch to in-game with no
+	 *  input. Diag-only on purpose: a retail client that reconnected on its own could never reach
+	 *  its own main menu.
+	 *
+	 *  The latch is the whole point, and it is what the TODO this replaces warned about. Init() runs
+	 *  again every time the menu is rebuilt - including the return from a disconnect - so firing on
+	 *  each Init() would bounce the client back into the server the instant it left, with no way out
+	 *  but killing the process. Static, so it survives the menu object and means "once per client
+	 *  process" rather than "once per menu instance".
+	 */
+	void TryAutoConnect()
+	{
+		if (s_AutoConnectDone)
+			return;
+
+		if (!IsCLIParam("br-autoconnect"))
+			return;
+
+		//--- Matchmaking owns the button when it is available, and it resolves its own address, so
+		//--- there is nothing here to skip past - let the normal path run.
+		if (b_MatchMakingAvailable)
+			return;
+
+		//--- Nothing to connect TO. The flag can outlive the -connect it was paired with, in a
+		//--- ClientLaunchParams line shared with LaunchOffline.bat, and firing anyway would hand
+		//--- ConnectFromServerBrowser an empty address instead of leaving the menu alone.
+		string autoconnect_address;
+		if (!GetCLIParam("connect", autoconnect_address) || autoconnect_address == "")
+		{
+			BattleRoyaleUtils.Warn("[AutoConnect] -br-autoconnect set but no -connect address; staying on the menu");
+			return;
+		}
+
+		s_AutoConnectDone = true;
+
+		BattleRoyaleUtils.Info("[AutoConnect] -br-autoconnect set, connecting without the Play button");
+
+		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "ConnectFromCLI", BR_AUTOCONNECT_DELAY_MS, false);
+	}
+#endif
 
 	void StartMatchMaking()
 	{

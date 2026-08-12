@@ -14,6 +14,12 @@ class BattleRoyaleRestart: BattleRoyaleState
         //--- over this one.
         BattleRoyaleLeaderboard.GetInstance().EndMatch();
 
+        //--- Same reasoning for spectators: 8_BattleRoyaleWin normally gets here first, but this
+        //--- state is reached by every match end. EndAll() latches, so the second call is a no-op.
+        //--- Nothing here can delay the shutdown - IsComplete() is unconditionally false and the
+        //--- 10 s timer below holds no spectator state.
+        BattleRoyaleSpectators.GetInstance().EndAll();
+
         BattleRoyaleUtils.Trace("[Restart State] Restarting!");
 
         m_ShutdownTimer = AddTimer(10.0, this, "Shutdown", NULL, false);

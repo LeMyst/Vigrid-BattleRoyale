@@ -197,6 +197,22 @@ class BattleRoyaleState: Timeable
         return (m_Players.Find(player) >= 0);
     }
 
+    /**
+     *  May a player who dies while THIS state is running enter spectate?
+     *
+     *  Default no. The lobby, countdown, spawn selection and prepare phases have no match to watch,
+     *  and the win/restart states are past the point where a new spectator makes sense - a death in
+     *  any of them keeps the pre-existing behaviour exactly.
+     *
+     *  A dedicated predicate rather than reusing BattleRoyaleServer's
+     *  `i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2` range test, which
+     *  shifts by one depending on whether enable_spawn_selection_menu inserted state 3.
+     */
+    bool AllowsSpectate()
+    {
+        return false;
+    }
+
     //--- Resolve the engine-supplied RPC `sender` to a player tracked by THIS state.
     //--- Server RPC handlers must use this instead of the `Object target` they receive:
     //--- `target` is chosen by the client and can name any other player, `sender` cannot be spoofed.
@@ -585,6 +601,63 @@ class BattleRoyaleState: Timeable
         player.SetSynchDirty();
 
         BattleRoyaleUtils.Info( "[Diag] teleported " + GetPlayerLogName( player ) + " to " + position );
+    }
+
+    /**
+     *  Put `player` exactly `radius` metres from `origin`, for the spectator range test.
+     *
+     *  The bearing is not the caller's business - only the distance is - so this walks a ring of
+     *  candidate bearings and takes the first that survives IsSafeForTeleport, which already knows
+     *  about sea, ponds and bad surfaces. Starting from the player's CURRENT bearing relative to
+     *  origin keeps the teleport as short as it can be, so the camera's jump is the distance change
+     *  and not a jump across the map as well.
+     *
+     *  Two passes. The first keeps check_zone, because a target dumped outside the circle starts
+     *  taking zone damage immediately and a range test wants the target alive for the 20-30 s the
+     *  measurement needs. The second drops it, since at 1200 m from a corpse there frequently IS no
+     *  in-circle answer - that pass warns, because a target quietly bleeding out changes what the
+     *  trace means.
+     */
+    bool BR_DiagTeleportRing( PlayerBase player, vector origin, float radius )
+    {
+        if( !player )
+            return false;
+
+        vector offset = player.GetPosition() - origin;
+        offset[1] = 0;
+
+        float start_yaw = 0;
+        if( offset.LengthSq() > 1.0 )
+            start_yaw = offset.VectorToAngles()[0];
+
+        int step = 0;
+        int pass = 0;
+        //--- 24 bearings, 15 degrees apart. Enough to find a gap around a lake without making this a
+        //--- search: the spawn code's hundreds-of-candidates approach is not warranted for a button.
+        for( pass = 0; pass < 2; pass++ )
+        {
+            bool check_zone = ( pass == 0 );
+
+            for( step = 0; step < 24; step++ )
+            {
+                float yaw = start_yaw + ( step * 15.0 );
+                vector dir = vector.YawToVector( yaw );
+                vector candidate = origin + ( Vector( dir[0], 0, dir[1] ) * radius );
+                candidate[1] = GetGame().SurfaceY( candidate[0], candidate[2] );
+
+                if( !IsSafeForTeleport( candidate[0], candidate[1], candidate[2], check_zone ) )
+                    continue;
+
+                if( !check_zone )
+                    BattleRoyaleUtils.Warn( "[Diag] TP Target: no in-circle spot at " + radius + " m, using one OUTSIDE the zone - the target will take zone damage" );
+
+                BR_DiagTeleport( player, candidate );
+                return true;
+            }
+        }
+
+        BattleRoyaleUtils.Warn( "[Diag] TP Target: no safe spot at " + radius + " m from " + origin + " on any of 24 bearings" );
+        return false;
     }
 #endif
 

@@ -44,6 +44,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestSpectate", this);
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
@@ -275,6 +276,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 					GetCurrentState().Deactivate();
 			}
 #endif
+			//--- The ONLY driver for spectating: liveness sweep, deferred entry, retarget and the
+			//--- 1 Hz keepalive push. Returns immediately when nobody is spectating, and only ever
+			//--- touches uid strings, so it cannot fire against a freed player object.
+			BattleRoyaleSpectators.GetInstance().Tick();
 
 			if (GetCurrentState().IsComplete()) //current state is complete
 			{
@@ -695,6 +700,13 @@ class BattleRoyaleServer: BattleRoyaleBase
                         BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, adding kill to last damage source.");
 
                         PlayerBase killer = PlayerBase.Cast( player.last_unconscious_source );
+
+                        //--- Record the attribution NOW, while we still have the real killer. The
+                        //--- health zeroing below fires a second EEKilled whose source is the victim
+                        //--- themself; RecordDeath is first-write-wins, so that later call cannot
+                        //--- overwrite this with "environment" and break other players' chains.
+                        BattleRoyaleSpectators.GetInstance().RecordDeathWithKiller( player, killer );
+
                         GetCurrentState().OnPlayerKilled( player, killer );
                     } else {
                         BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but the last damage source is not a player.");
@@ -716,6 +728,12 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- Unconditional: a late joiner is by definition not in any state, so doing this inside the
         //--- ContainsPlayer branch below would never fire for the players it exists for.
         ForgetLateJoiner(player, identity);
+        //--- Cache the uid before anything can free the identity.
+        string leaving_uid = "";
+        if(player && player.player_steamid != "")
+            leaving_uid = player.player_steamid;
+        else if(identity)
+            leaving_uid = identity.GetPlainId();
 
         if(GetCurrentState().ContainsPlayer(player))
         {
@@ -725,10 +743,30 @@ class BattleRoyaleServer: BattleRoyaleBase
 
             GetCurrentState().RemovePlayer(player);
         }
+
+        if(leaving_uid != "")
+        {
+            //--- Belt-and-braces only: this event is not reliable for a client that controls no
+            //--- entity, which is exactly what a spectator is. Tick()'s identity sweep is the
+            //--- primary detector and catches it within a second regardless.
+            BattleRoyaleSpectators.GetInstance().Remove(leaving_uid);
+
+            //--- Anyone watching the player who just left needs a new target.
+            BattleRoyaleSpectators.GetInstance().RetargetAfterLoss(leaving_uid);
+        }
     }
 
     override void OnPlayerKilled(PlayerBase killed, Object killer)
     {
+        //--- The ordering below is load-bearing.
+        //--- 1 must precede RemovePlayer: the ledger needs the victim's identity and party id.
+        //--- 3 must follow it, or the victim is still on the roster and resolves themselves.
+        //--- 4 runs last, so existing spectators re-resolve against a roster without the victim.
+
+        //--- 1. Record the death. Cheap, and it runs whether or not spectating is enabled, so the
+        //--- killer chain is already populated if an admin turns the feature on mid-match.
+        BattleRoyaleSpectators.GetInstance().RecordDeath(killed, killer);
+
         if(GetCurrentState().ContainsPlayer(killed))
         {
             //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
@@ -737,7 +775,14 @@ class BattleRoyaleServer: BattleRoyaleBase
 
             //remove player from the state (this would take place in on-disconnect, but some players would choose not to disconnect)
             GetCurrentState().RemovePlayer(killed);
+
+            //--- 3. Register the victim as a spectator, now that they are off the roster.
+            BattleRoyaleSpectators.GetInstance().OnDeath(killed);
         }
+
+        //--- 4. Anyone watching the victim needs a new target.
+        if(killed && killed.GetIdentity())
+            BattleRoyaleSpectators.GetInstance().RetargetAfterLoss(killed.GetIdentity().GetPlainId());
     }
 
     ref array<PlayerBase> temp_disconnecting;
@@ -931,6 +976,22 @@ class BattleRoyaleServer: BattleRoyaleBase
     //--- NOTE: `target` is deliberately ignored here - see PlayerReadyUp above.
     //--- Unlike the other handlers this one is answerable in ANY state: the leaderboard is mostly a
     //--- lobby feature, and there is nothing state-sensitive about reading it.
+    /**
+     *  The dead player pressed "Spectate" instead of waiting out the timeout.
+     *
+     *  Carries NO payload on purpose. The actor is the engine-supplied `sender`, so there is nothing
+     *  a client can put on the wire to make this act on anybody else - which is the rule the comment
+     *  on GetPlayerFromIdentity in 0_BattleRoyaleState.c lays down, and the rule the abandoned
+     *  VPP port broke by trusting the client-supplied `Object target`.
+     */
+    void RequestSpectate(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if(type == CallType.Server)
+        {
+            BattleRoyaleSpectators.GetInstance().RequestSpectate( sender );
+        }
+    }
+
     void RequestLeaderboard(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         Param1< int > data;
@@ -1216,6 +1277,137 @@ class BattleRoyaleServer: BattleRoyaleBase
                 BattleRoyaleDiag.trace_teleport = (data.param2 != 0);
                 BattleRoyaleDiag.trace_teleport_ticks = (int)data.param3;
                 BattleRoyaleUtils.Info("[Diag] teleport trace -> " + BattleRoyaleDiag.trace_teleport + " for " + BattleRoyaleDiag.trace_teleport_ticks + " ticks");
+                break;
+            }
+
+            case BattleRoyaleDiagAction.KILL_SELF:
+            {
+                //--- The entry point to the entire spectate feature. Without this, dying needs a
+                //--- SECOND client to shoot you or a slow wait on zone damage, so every spectate test
+                //--- was a three-client test - the same cost the kill feed pays.
+                //---
+                //--- SetHealth to zero rather than any scripted kill helper, because the ONLY path
+                //--- worth exercising is vanilla's: it is EEKilled that BattleRoyaleSpectators hooks,
+                //--- and a shortcut that reached RecordDeath directly would test the parts that were
+                //--- never in doubt. The killer therefore resolves to the victim themselves, which is
+                //--- how a zone death or a suicide already surfaces - so this reproduces the T4
+                //--- (nearest living player) tier specifically. A real kill by another player is
+                //--- still the only way to exercise T1/T2.
+                if(!sender_player)
+                {
+                    BattleRoyaleUtils.Warn("[Diag] KILL_SELF: sender is not in the current state");
+                    break;
+                }
+
+                if(BattleRoyaleSpectators.GetInstance().IsRegistered(sender.GetPlainId()))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] KILL_SELF: already a spectator, ignoring");
+                    break;
+                }
+
+                BattleRoyaleUtils.Info("[Diag] KILL_SELF for " + GetIdentityLogName(sender));
+                sender_player.SetHealth("", "Health", 0.0);
+                break;
+            }
+
+            case BattleRoyaleDiagAction.LOG_SPECTATORS:
+            {
+                BattleRoyaleSpectators.GetInstance().LogSpectators();
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SPECTATE_TP_TARGET:
+            {
+                //--- The range test the whole bubble question turns on. Walking a target out past
+                //--- 1 km takes minutes and usually ends early - the 2026-08-10 run stopped at 929 m
+                //--- because a wolf finished the target off - so this puts them at an exact radius
+                //--- from the spectator's corpse in one press.
+                //---
+                //--- Note the sender here is the SPECTATOR, who has no body: sender_player is NULL
+                //--- for them by construction (they are in no state), so this deliberately does not
+                //--- use it. Everything is resolved from the spectator table instead.
+                //---
+                //--- READ THE TRACE AS SUSTAINED STATE, NOT AS THE NEXT SAMPLE. A teleported target
+                //--- is one of the three documented causes of a transient entity=0 - it is what the
+                //--- 4005d62 windows actually were - so the answer is whether entity returns to 1
+                //--- and STAYS there at the new distance. Turn Trace Interval down first.
+                if(!state || !state.AllowsSpectate())
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP Target: the current state does not allow spectating");
+                    break;
+                }
+
+                vector spectator_death_pos;
+                PlayerBase watched_player;
+                if(!BattleRoyaleSpectators.GetInstance().GetRangeTestSubject(sender.GetPlainId(), spectator_death_pos, watched_player))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP Target: " + GetIdentityLogName(sender) + " is not spectating a living target");
+                    break;
+                }
+
+                float tp_radius = data.param2;
+                if(tp_radius < 1)
+                    tp_radius = 1;
+
+                //--- GetIdentityLogName, not the state's GetPlayerLogName - that one is protected on
+                //--- BattleRoyaleState and is not reachable from here.
+                BattleRoyaleUtils.Info(string.Format("[Diag] TP Target: %1 -> %2 m from %3", GetIdentityLogName(watched_player.GetIdentity()), tp_radius, spectator_death_pos.ToString()));
+                state.BR_DiagTeleportRing(watched_player, spectator_death_pos, tp_radius);
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SPECTATE_TP_CORPSE:
+            {
+                //--- THE BUBBLE PROBE, and the whole point of it is that it is a probe and not a fix.
+                //---
+                //--- Established 2026-08-10: UpdateSpectatorPosition does not move the replication
+                //--- bubble, so a spectator sees nothing past ~1 km of where they died. The bubble is
+                //--- assumed to sit on the connection's own entity, which is still the corpse - but
+                //--- ASSUMED is the operative word, and three explanations have already been wrong in
+                //--- this subsystem. If moving the corpse restores replication, that assumption is
+                //--- confirmed and a real fix becomes worth designing; if it does not, a whole
+                //--- drop-the-inventory-then-carry-the-body design is saved from being built on sand.
+                //---
+                //--- Why this is safe where the CARRIER was not: nothing is created. The corpse
+                //--- already exists, and it moves through BR_SYNC_JUNCTURE_TELEPORT, the same path
+                //--- every match-start teleport uses. Both carrier attempts died inside entity
+                //--- creation - CreateObjectEx at 0x0, CreatePlayer at 0x9 - neither catchable.
+                //---
+                //--- It DOES drag the victim's gear along, which is exactly why this is DIAG_DEVELOPER
+                //--- only and must not become the shipped behaviour without solving the loot first.
+                vector corpse_death_pos;
+                PlayerBase corpse_target;
+                if(!BattleRoyaleSpectators.GetInstance().GetRangeTestSubject(sender.GetPlainId(), corpse_death_pos, corpse_target))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP Corpse: " + GetIdentityLogName(sender) + " is not spectating a living target");
+                    break;
+                }
+
+                PlayerBase own_corpse = BattleRoyaleSpectators.GetInstance().FindBodyByUid(sender.GetPlainId());
+                if(!own_corpse)
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP Corpse: could not find a body for " + GetIdentityLogName(sender) + " - it may already have been cleaned up");
+                    break;
+                }
+
+                //--- Log what we found BEFORE moving it. If the probe comes back negative, the first
+                //--- question is going to be whether this was really the corpse, and "alive=0" plus a
+                //--- position matching the death position is what answers it.
+                BattleRoyaleUtils.Info(string.Format("[Diag] TP Corpse: body alive=%1 at %2 (died at %3) -> target at %4",
+                    own_corpse.IsAlive(), own_corpse.GetPosition().ToString(), corpse_death_pos.ToString(), corpse_target.GetPosition().ToString()));
+
+                state.BR_DiagTeleport(own_corpse, corpse_target.GetPosition());
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_SPECTATE:
+            {
+                //--- In memory only. BattleRoyaleConfig holds the deserialized instance, so writing
+                //--- the field flips the feature for this process without touching the admin's
+                //--- general_settings.json - deliberately, because Load() re-saves on next boot and a
+                //--- diag toggle must not become a persisted setting.
+                BattleRoyaleConfig.GetConfig().GetGameData().spectate_enabled = (data.param2 != 0);
+                BattleRoyaleUtils.Info("[Diag] spectate_enabled -> " + BattleRoyaleConfig.GetConfig().GetGameData().spectate_enabled + " (this process only)");
                 break;
             }
 

@@ -229,6 +229,261 @@ Slot colours live in `Party/Scripts/3_Game/VigridPartyPalette.c`, unguarded, so 
 
 **Pings.** World markers, ported in spirit from Carim: T places one where you are looking (8 km camera raycast), Y clears all of yours. Server-authoritative, unlike Carim's client-owned list — `VP_PingAdd` carries a position and nothing else, and owner, timestamps and expiry are minted from `sender`. `VP_PingSet` pushes the party's whole set back down (owner uids, positions, **ms remaining** — never an absolute expiry, since the two clocks are unrelated), which makes it idempotent and removes the need for Carim's 60 s heartbeat. Four settings in `party_settings.json` (`version` 2): `ping_enabled`, `ping_max_per_player` (3, FIFO-evicts the owner's oldest), `ping_ttl_seconds` (30; **0 = permanent**, Carim's behaviour) and `ping_cooldown_ms`. Two deliberate choices worth not undoing: the handlers **skip `RejectIfUnavailable`**, because it also refuses while the formation is locked and the lock is on for the whole match — the only time markers are useful; and pings are **session-scoped**, never written to `parties.json`. Rendering is `VigridPartyPings`, sharing `VigridPartyScreen`'s projection and edge-clamp geometry with the name tags. Pings also appear on the in-game map (see *Map*), drawn read-only through the client API — Party itself still knows nothing about the map.
 
+### Spectating
+
+Entered **in place at the moment of death** — the client never disconnects. Gated on
+`spectate_enabled` in `general_settings.json`, which defaults **off**; with it off nobody is ever
+offered spectating and the death screen keeps the old timing, quitting to the menu on its own after
+`BR_DEAD_AUTO_QUIT_MS` (15 s, the same figure the pre-spectate `CallLater(LeaveServer)` used). The
+death *screen* itself replaces the engine fade unconditionally — see below.
+
+Two earlier attempts entered spectate on *reconnect* (the system removed in `e6a0e1b`, and the
+unmerged `test-vpp-spectate` branch). That can never work here: `2_BattleRoyaleCountReached` locks
+the server through the autolock webhook, and vanilla `MissionServer` calls `InvokeOnConnect` only
+from `ClientNewEvent`/`ClientReadyEvent`, never from `ClientRespawnEvent`.
+
+The mechanism is DayZ's own **`GetGame().SelectSpectator(identity, "BattleRoyaleSpectatorCamera", pos)`**
+(`game.c:378`), called server-side. It resolves a **script class name, not a config class** —
+vanilla's own `DayZSpectator` has no `CfgVehicles` entry anywhere in `P:\dz` — so
+`BattleRoyaleSpectatorCamera` needs **no `config.cpp` entry**. (Contrast `CreateObject`, which *does*
+resolve through config.) There is **no client → server spectate RPC at all**: targeting is automatic,
+so there is no client request to authenticate.
+
+**⚠️ KNOWN LIMITATION: a spectator can only see targets within roughly 1 km of their own corpse.**
+`UpdateSpectatorPosition()` does **not** move the replication bubble for player entities. The camera
+pushes it at vanilla's 0.5 s cadence and `BeginSpectate` calls `SelectPlayer(identity, NULL)` before
+`SelectSpectator`, and neither re-centres anything: the bubble stays on the connection's own entity,
+which is still the corpse (`GetGame().GetPlayer()` keeps returning it — see below).
+
+**Established 2026-08-10 by deliberate, bidirectional measurement**, using the diag `TP Target` entry
+to place the watched player at an exact radius. Exactly two `entity` transitions in the whole run,
+each coincident with a teleport across the boundary:
+
+| | |
+|---|---|
+| TP to **1200 m** | `entity 1 → 0`, sustained **100+ samples over 90 s** |
+| target walks back to **1122 m** | still `entity=0` — no recovery |
+| TP to **700 m** | `entity 0 → 1`, sustained |
+
+Throughout all of it `UpdateSpectatorPosition` ran continuously (507 pushes) and the camera sat
+within **4 m** of the pushed position — the exact condition that means "the push runs and has no
+effect". `networkRangePlayers` is unset in `serverDZ.cfg`, so DayZ's default **1000 m** applies.
+
+Client-side the symptoms are: **no character, no camera pan, but the nametag is still there** — the
+name is a string from the `SetSpectateTarget` RPC, not from the entity, so it survives the dropout
+and is the tell that this is replication rather than targeting.
+
+**The bubble is centred on the corpse, and moving the corpse moves it.** Also measured, with the
+diag `TP Corpse to Target` probe, and this one is a controlled experiment rather than a correlation:
+
+```
+20:26:38  TP Target -> 1200 m      corpse still at the death spot
+20:26:41  entity 1 -> 0            target 1200 m from the death spot
+20:27:06  TP Corpse -> target      corpse moves 1160 m, alive=0 (it is the body)
+20:27:13  entity 0 -> 1            target STILL 1155 m from the death spot
+```
+
+The target never moved closer to where the player died — only the corpse moved — so distance-to-
+corpse is the variable and nothing else is. Recovery took ~7 s, which is the juncture plus
+re-establishing replication; a real implementation that moved the corpse *continuously* would never
+cross the boundary and never pay it.
+
+**A carried corpse leaves the world visually, and that is the cost to design around.** Tested on
+ChernarusPlus: with the corpse moved 1200 m to the target, a second player sent back to the death
+position found **no body there** — correctly, since it really did move — and had not seen it at the
+carried position either. So the server's authoritative position moves (which is why the bubble
+follows) while the entity's *replicated* position does not, and no client renders the body anywhere.
+
+That is convenient in one way — nothing skates across the map for bystanders to see, so the 50 m
+burial the removed carrier plan used is unnecessary — and fatal in another: **the victim's body and
+its gear leave the match.** Any shipped version must therefore drop the inventory at the death
+position *before* the body is ever moved. Vanilla `PlayerBase.DropAllItems()` (`playerbase.c:6681`)
+is the tool: it walks the inventory and `ServerDropEntity`s each item, so it **creates nothing** —
+the items already exist and are only moved out of the corpse. Called before the first carry, they
+land at the death position for free, with no position arithmetic. It excludes anything inheriting
+`SurvivorBase`, i.e. the body itself, and it does drop clothing too — harmless, since the corpse is
+invisible.
+
+The trade that leaves is presentational and is a **gameplay decision, not a technical one**: the
+victim's loot becomes a pile on the ground rather than a lootable body. Nothing is destroyed and
+nothing is created; it is only how the loot presents.
+
+**This is implemented and validated live (2026-08-10).** `BattleRoyaleSpectators.CarryCorpse`, run
+from the 1 Hz block in `Tick()`, tuned by six compile-time constants in `BattleRoyaleConstants.c`
+(`BR_SPECTATE_CARRY_*`); set `BR_SPECTATE_CARRY_CORPSE` false to disable it and keep the old limit.
+The first carry waits until the target is `TRIGGER_M` (250) away *and* nobody is within
+`BYSTANDER_M` (50) of the body, with `FORCED_M` (750) as the backstop so camping a corpse cannot
+hold a spectator's view hostage; the gear drops via vanilla `DropAllItems` before the body ever
+moves, then it re-carries every `STEP_M` (250) of drift. Measured: carry fired at 252 m with
+`0 left` on the body, and the target then tracked to **1237 m with `entity=1`** — past the old wall.
+
+**A teleported target still derenders, and that is now the only way to see the old symptom.** The
+same run shows a 19 s `entity=0` window immediately after a diag `TP Target` moved the watched
+player 1136 m — and it happened while the target was *99 m* from the death spot, i.e. the opposite
+of a range problem. Real players run rather than teleport, so the only production path that
+reproduces it is the watched player taking an F2 unstuck. It self-corrects. Do not read such a
+window as the carry failing.
+
+There is **hysteresis**, which is what made this so hard to pin down: approaching from inside, a
+target stays replicated out to ~1068–1200 m; once dropped, it does not return until well inside
+(somewhere between 700 and 1122 m). That is why an early trace read "out at 1068, back at 720", and
+why a session that never crossed the boundary — 39 clean samples to 929 m — looks like proof that
+nothing is wrong. **A run that stops short of ~1100 m proves nothing.**
+
+Two other things produce `entity=0` and must not be mistaken for this: a *retarget* to somebody far
+away lands as one huge single-sample step, and *the match ending* freezes every field to identical
+values while `pushes` keeps climbing (`EndSpectate` deliberately leaves the camera running).
+
+**Do not "fix" this by creating a body to carry the bubble.** The diagnosis above is right; the
+carrier is still wrong, and every part of *it* failed:
+
+- `4005d62` retracted the original ~1000 m reading, on the grounds that the `entity=0` windows were
+  *intermittent* and tracked camera movement of 450 m in 6 s — a target being **teleported**. **That
+  retraction was itself an error**, and it is the reason this went round three more times: a
+  teleporting target and a range cutoff produce the same `entity=0`, and the observation that one
+  exists is not evidence the other does not. The tidy ~1000 m number was never a coincidence.
+- **Neither way of creating that body survives a dedicated server.** `CreateObjectEx` gives
+  *"Access violation. Illegal read … at 0x0"* in the engine's object setup, identical with and
+  without `ECE_INITAI`. `CreatePlayer` then crashed on the first real spectate with
+  *"Illegal write … at 0x9"* — fault bytes `F0 44 0F C1 71 08`, a `lock xadd [rcx+8]` refcount on a
+  garbage pointer with `rcx = 1`. Neither is catchable in script. The classname is not the problem;
+  `SurvivorM_Mirek` is `scope=2` in `dz/characters/data/config.cpp`.
+- **`CreatePlayer`'s contract is the explanation**: its doc is *"Assign player entity to client (in
+  multiplayer)"*, and vanilla's only `null`-identity call site is `missionbenchmark.c:366`, which has
+  no clients. A NULL identity on a live MP server is out of contract. A *non*-NULL one is not an
+  option either — the body would then be `ALIVE` and outside the current state, so `OnPlayerTick`'s
+  force-logout kicks the very spectator it exists to serve.
+- A boot-time probe reported `CreatePlayer` as safe and **that probe proved nothing**: it ran before
+  any client existed, which is precisely the condition that makes the call legal. When a failure mode
+  is a crash rather than an exception, the probe has to reproduce the real calling context.
+
+`BattleRoyaleSpectators` (`Scripts/Server/5_Mission/BattleRoyale/Server/`) owns it. Three invariants:
+
+- **It holds no object reference at all — only SteamID64 strings**, re-resolved at the moment of use,
+  so a freed `PlayerBase` is never a failure mode. This is why the killer is stored as a uid: it must
+  survive the killer's own death and disconnect. There are no exceptions to this.
+- **A spectator is never revived and never re-added to `m_Players`.** `BattleRoyaleServer.OnPlayerTick`
+  force-logs-out anyone outside the current state *and* `EPlayerStates.ALIVE`, and re-adding them
+  would stall every `IsComplete()` and corrupt `br_position`.
+- **The corpse is never deleted** — it *is* the `PlayerBase`, and it is the victim's loot. Vanilla
+  `HandleBody` only deletes a body when the player was alive. The removed `e6a0e1b` implementation
+  did `ObjectDelete(player)` with the comment *"this is for network bubble fix"* — destroying the
+  victim's gear to solve a problem `UpdateSpectatorPosition` already solves for free.
+
+Target selection is automatic and chained, resolved **at the moment spectating begins** (not at
+death, so the chain reflects who is alive when you actually start watching) and re-resolved whenever
+the target dies or disconnects:
+**T1** a living teammate → **T2** the killer chain seeded at the last teammate to die (a solo player
+seeds at themselves, so hop 0 is their own killer), walking `killer_uid` through dead killers →
+**T3** the most recent kill whose killer is still alive → **T4** the living player nearest to where
+this spectator fell → **T5** orbit the final circle. A `visited` set plus
+`BR_SPECTATE_CHAIN_MAX_HOPS` guard the walk. T4 exists because a suicide or a pure zone death with
+no kills anywhere otherwise resolved straight to an orbit of an empty circle.
+
+Which tier fired is recorded on the entry as `resolved_tier` and appears as `(T1)`…`(T5)` on every
+`Registered` / `Retarget` / `BeginSpectate` line. It is diagnostics only — nothing branches on it —
+but without it the chain is five deep and only inferable from who you end up watching.
+`m_LastResolveTier` is written at each of `ResolveTarget`'s five exits and read by the caller on the
+very next line; it is a return value in all but name, so **never read it anywhere but immediately
+after a `ResolveTarget` call**.
+
+**Testing it needs the diag menu's Spectate submenu** (`DIAG_DEVELOPER`, so both `DayZDiag_x64`
+sides). **Kill Me** is the one that matters: without it, reaching the death screen at all needs a
+second client to land a kill, which made every spectate test a three-client test. It sends
+`KILL_SELF`, and the server does `SetHealth("", "Health", 0)` on the sender rather than calling
+`RecordDeath` directly — `EEKilled` is the hook under test, so a shortcut would exercise only the
+parts that were never in doubt. That also means the killer resolves to the victim themselves, so
+**Kill Me reproduces T4 specifically**; a real kill by another player is still the only way to reach
+T1 or T2. **Log Spectators** dumps the table with each entry's tier and whether its identity still
+resolves ("registered but gone" is the shape of a leak). **Spectate Enabled** flips
+`spectate_enabled` in memory only — `Load()` re-saves on next boot, so a diag toggle must never
+become a persisted setting.
+
+**The death screen is a `UIScriptedMenu`** (`MENU_BR_DEAD`, `Scripts/Client/5_Mission/GUI/DeathScreenMenu.c`
++ `GUI/layouts/death_screen.layout`), not `UIManager.ScreenFadeIn` — the engine fade is a proto
+native taking a string and two colours and has no widget tree, so it cannot carry buttons. It offers
+**Spectate** (only once the server has sent `SetSpectateOffer`) and **Quit to menu** (always, so a
+server with `spectate_enabled` off still has an exit). Pressing Spectate sends the one client→server
+RPC in the feature, `RequestSpectate`, which carries **no payload**: the server resolves the actor
+from `sender` and will only act on a uid that is already a registered, still-pending spectator.
+Pressing nothing lets `BR_SPECTATE_ENTRY_DELAY_MS` start it anyway.
+
+The screen runs **one of two countdowns**, and which one is the whole of its state machine. While an
+offer stands it mirrors the server's `BR_SPECTATE_ENTRY_DELAY_MS`; with **no** offer standing it runs
+`BR_DEAD_AUTO_QUIT_MS` and quits to the menu itself. The second case is not just `spectate_enabled`
+being off — `EndSpectate` **withdraws** a standing offer, because `EndAll()` also reaches players who
+are still sitting on the death screen. Without that withdrawal they were left pressing a Spectate
+button the server had already stopped honouring (`RequestSpectate` returns at its `m_Ended` guard
+silently), watching a countdown to an entry that would never happen.
+
+**The death screen is driven from `BattleRoyaleClient.Update()`, not from `UIScriptedMenu.Update()`.**
+The engine calls `UIScriptedMenu.Update()` exactly **once** for this menu — established by logging
+the first five frames and never seeing more than one. Anything per-frame (the countdown, holding the
+cursor) therefore has to hang off `BattleRoyaleClient.Update()`, which runs unconditionally from
+`MissionGameplay.OnUpdate` outside vanilla's `m_LifeState == ALIVE` gate. Its `Tick()` is the entry
+point. Three traps in the layout, all of them about the backdrop:
+
+- **A `PanelWidgetClass` with no `style` paints nothing.** `color` alone is not a fill — the widget
+  still lays out and still hosts its children, so the buttons and text draw perfectly over a
+  completely transparent background, which is exactly how it presents live. `style DayZDefaultPanel`
+  is what gives a panel its fill; `leaderboard.layout` is the working reference in this mod, same
+  construct. Removing that style to chase the edge gap below cost the whole backdrop.
+- **Widgets inset themselves to the safe zone**, so a `size 1 1` backdrop leaves a gap at the screen
+  edge unless it sets `keepsafezone 0` — and even then an edge or two can survive. The backdrop is
+  therefore deliberately **overscanned**: `position -0.02 -0.02`, `size 1.04 1.04`. Symmetric, so
+  `halign/valign center_ref` on the child dialog still centres it on screen.
+- The HUD (party nametags, POI markers) **draws over it** unless it claims a high `priority`.
+
+**Focus accounting is the trap here.** Input focus is an additive counter:
+`SimulateDeath` → `LockControls(true)` (+1/device), the menu's `super.OnShow()` → `LockControls()`
+(+1/device), `super.OnHide()` (−1/device), `EnterSpectate()`'s single explicit release (−1/device) —
+net zero. The death menu therefore adds **no** focus calls of its own. Note `LeaderboardMenu` *does*
+add `ChangeGameFocus(1)` / `ResetGameFocus()` on top of `super`; do not copy that pattern, since
+`ResetGameFocus` zeroes the counter rather than decrementing it.
+
+Killer attribution goes through `ResolveKillerUid`, because **`EEKilled`'s `Object source` is the
+weapon** for every gun and melee kill — the hierarchy-parent step is the same idiom the webhook code
+uses at `0_BattleRoyaleState.c:545-550`. `RecordDeath` is **first-write-wins**, which is what makes
+the documented double `RemovePlayer` and the unconscious-disconnect path harmless.
+
+One driver: `BattleRoyaleSpectators.Tick()`, from the existing 10 Hz block in
+`BattleRoyaleServer.Update()`. Its four passes are liveness sweep (the *primary* disconnect
+detector — `PlayerDisconnected` is unreliable for a client controlling no entity), deferred entry,
+target liveness (the catch-all), and a 1 Hz keepalive push.
+
+Which states allow it is a `BattleRoyaleState.AllowsSpectate()` virtual, default `false`, overridden
+in `6_BattleRoyaleRound`, `7_BattleRoyaleLastRound` and `5_BattleRoyaleStartMatch` (on `b_IsGameplay`).
+
+`BeginSpectate` calls **`SelectPlayer(identity, NULL)` before `SelectSpectator`**, dropping the
+corpse from the connection's selection. Only the *selection* goes; the corpse itself is never
+deleted, so it stays in the world, replicated and lootable. What actually keeps the watched player
+replicated is the camera's `UpdateSpectatorPosition` pushes — see the top of this section, and do not
+re-derive the "bubble is pinned to the selected object" theory from the shape of this call.
+
+Client side, **`GetGame().GetPlayer()` does NOT go NULL while spectating** — it keeps returning the
+**corpse**, a perfectly valid `PlayerBase` that simply is no longer simulated. (Measured: the tint
+trace reads `spectating=1, player=1`.) This was assumed the other way round for most of the feature's
+life and it is the trap here, because it makes "is there a player object" a silently wrong test for
+"is this an ordinary living client" — no error, no log line, just an effect queued onto a corpse
+whose `m_ProcessAddGlassesEffects` nothing ever drains. **Ask `BattleRoyaleClient.IsSpectating()`**;
+`GetReferencePosition()`, `GetSubjectPosition()` and `ApplyOutOfZoneTint()` all do.
+
+`BattleRoyaleClient` routes position reads through `GetReferencePosition()`, and
+`EnterSpectate()` undoes what `SimulateDeath`
+did — the death screen, the five zeroed sound buses, the additive input-focus lock (exactly one
+release, behind a latch) and the vanilla HUD. It also calls
+`PPEManagerStatic.GetPPEManager().StopAllEffects(PPERequesterCategory.GAMEPLAY_EFFECTS)`: dying
+*while unconscious* leaves `PPERequester_UnconEffects` running forever, because `CommandHandler` only
+reaches `OnUnconsciousStop()` through an `IsAlive()` branch a corpse never takes — that was a black
+halo around the spectator's screen for the whole match. `GAMEPLAY_EFFECTS` rather than `ALL`, so the
+ESC-menu and spawn-selection blur survive. The paired half is in `ShowDeadScreen`, which writes full
+`m_CurrentShock` on the dying body so `ShockHandler` stops re-asserting tunnel vision every frame,
+and clears `"UnconsciousAttenuation"` so the spectator does not hear the match muffled. `BattleRoyaleSpectatorCamera`
+(`Scripts/Client/4_World/BattleRoyale/`, **unguarded**, like vanilla's `dayzspectator.c`) anchors on
+the target's **head bone** rather than a stance offset, and never reads the target's aim angle —
+`GetCommandModifier_Weapons()` can be NULL for a remote entity, which would silently flatten the
+camera.
+
 ### Localization
 
 `LanguageCore/stringtable.csv`, keys prefixed `STR_BR_`. The `Party/` addon carries its own `stringtable.csv` at its PBO root with `STR_PARTY_*` keys — the engine loads one per addon — so party strings do not go here. Three reference styles:
@@ -372,5 +627,5 @@ Note the imageset's internal name is `battleroyale_gui`, not the filename `dayzb
 - `Extra/` holds 16 independent single-purpose sub-addons, each its own PBO. 15 are built; `Extra/DisableFogChernarusPlus/` is parked as `config.cpp.disabled` and produces no PBO. Most are small script tweaks; the exceptions are `Extra/KillFeed/`, `Extra/SafeZone/` and `Extra/Map/`, self-contained addons documented under *Architecture → Kill feed*, *→ Safe zone / lobby truce* and *→ Map*. Each folder carries its own `README.md`, indexed by `Extra/README.md`.
 - **An incremental `Deploy.bat` does not always delete the PBO of an addon you just disabled.** It cleans orphans only sometimes, so a `config.cpp` → `.disabled` rename can leave the previous PBO in `%ModBuildDirectory%` and the addon still loads — which silently invalidates a discipline negative-build. Check the output folder and delete the `.pbo` plus its `.bisign` by hand.
 - `Extra/RandomMenuGear/` re-dresses the main-menu intro character in a random outfit plus a slung rifle and a melee weapon, re-rolled on every menu show. It hooks vanilla `IntroSceneCharacter.CreateNewCharacterById` (creation, prev/next arrows) and `MainMenu.OnShow` (returning from a submenu — that path calls `OnChangeCharacter(false)` and never recreates the character). It is **not** a fix for the broken character save that makes the menu character render naked; it only decorates the spawned object. Gear is applied with `GameInventory.CreateAttachmentEx` and deliberately never written into `MenuDefaultCharacterData` — that map is serialized to the server on connect and saved locally, so writing to it would leak menu gear into the real spawn loadout. Same discipline rule as `Party/` and `Extra/KillFeed/`: no `BattleRoyale*` symbol may be referenced.
-- Spectating is not implemented — `GUI/layouts/hud/spectator/player.layout` exists but nothing references it. Death shows a screen, then forces disconnect.
+- Spectating is entered **in place on death** — no disconnect, no reconnect — behind `spectate_enabled` in `general_settings.json`, which defaults **off**. **It has a known ~1 km limitation**: the network bubble stays on the spectator's corpse, so a target further than that is not replicated and the spectator sees a nametag with no character. Measured both directions 2026-08-10. See *Architecture → Spectating*. The orphaned `GUI/layouts/hud/spectator/player.layout` is still unreferenced: there is no spectator HUD, only a notification naming the current target.
 - `Workbench/version` (`0.8.100368`) is a DayZ build number read by nothing. The mod version is `BATTLEROYALE_VERSION`.

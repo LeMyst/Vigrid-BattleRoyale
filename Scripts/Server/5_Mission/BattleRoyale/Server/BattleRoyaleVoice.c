@@ -326,6 +326,13 @@ class BattleRoyaleVoice
         string listener_uid = listener.GetIdentity().GetPlainId();
         string speaker_uid = speaker.GetIdentity().GetPlainId();
 
+        //--- A spectator hears nobody. UpdateSpeakers walks every player entity in the world, which
+        //--- still includes a spectator's corpse, so without this their panel would name whoever
+        //--- happens to be standing near the body they left behind - both wrong and a position leak.
+        //--- The engine-level deafening is done separately by MuteAllPlayers at death.
+        if (BattleRoyaleSpectators.GetInstance().IsSpectator(listener_uid))
+            return false;
+
         if (s_PartyOnlyActive)
         {
             if (!s_GroupIndex)

@@ -62,6 +62,22 @@ modded class InGameMenu
 		super.UpdateGUI();
 		m_RespawnButton.Show( false );  // Hide the respawn button
 		m_RestartButton.Show( false );  // Hide the restart button
+
+		//--- Vanilla hides Continue unless the player is ALIVE (ingamemenu.c:335), and a spectator
+		//--- never is - so without this the menu has no ordinary way out.
+		BattleRoyaleClient br_client = BattleRoyaleClient.Cast( GetBR() );
+		if( br_client && br_client.IsSpectating() )
+			m_ContinueButton.Show( true );
+	}
+
+	/**
+	 *  Defence in depth. The respawn button is already hidden, but vanilla's OnClick_Respawn calls
+	 *  GameRespawn() -> g_Game.RespawnPlayer(), which would drop a fresh, untracked, zone-immune
+	 *  character into a running match. Deliberately does NOT chain super.
+	 */
+	override protected void OnClick_Respawn()
+	{
+		BattleRoyaleUtils.Trace("InGameMenu: respawn suppressed");
 	}
 }
 #endif

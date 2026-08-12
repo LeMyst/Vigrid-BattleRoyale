@@ -195,10 +195,26 @@ class VigridPartyHud
         int age_ms = GetGame().GetTime() - rpc.state_recv_ms;
         bool stale = age_ms > (3 * VIGRID_PARTY_DEF_STATE_INTERVAL_MS);
 
-        vector self_pos = vector.Zero;
+        //--- Fall back to the camera, not vector.Zero, exactly as the nametags do. There is no local
+        //--- player during the ordinary load and teardown windows, nor while the host game has the
+        //--- client watching through a detached camera - and measuring every row's distance from the
+        //--- map origin prints thousands of metres instead of a useful number.
+        vector self_pos = GetGame().GetCurrentCameraPosition();
         PlayerBase local_player = PlayerBase.Cast(GetGame().GetPlayer());
         if (local_player)
             self_pos = local_player.GetPosition();
+
+        //--- ...and the local player is not always the right origin either. The host game can leave
+        //--- this client watching somebody else while GetPlayer() still hands back a body that is no
+        //--- longer where the client is looking, which is not distinguishable from here - the object
+        //--- is valid, it is just stale. Every row would then read its distance from that stale
+        //--- point. VigridPartyClientAPI is how the host game says where to measure from instead.
+        string viewpoint_uid = "";
+        if (VigridPartyClientAPI.HasHudViewpoint())
+        {
+            self_pos = VigridPartyClientAPI.GetHudViewpointPos();
+            viewpoint_uid = VigridPartyClientAPI.GetHudViewpointUid();
+        }
 
         m_Root.Show(true);
 
@@ -210,7 +226,7 @@ class VigridPartyHud
             if (slot >= m_RowWidgets.Count())
                 break;
 
-            RenderRow(slot, i, rpc, have_state, stale, self_pos);
+            RenderRow(slot, i, rpc, have_state, stale, self_pos, viewpoint_uid);
             slot = slot + 1;
         }
 
@@ -245,7 +261,7 @@ class VigridPartyHud
         m_RowStatusTexts.Get(slot).Show(!show);
     }
 
-    private void RenderRow(int slot, int index, VigridPartyRPC rpc, bool have_state, bool stale, vector self_pos)
+    private void RenderRow(int slot, int index, VigridPartyRPC rpc, bool have_state, bool stale, vector self_pos, string viewpoint_uid)
     {
         Widget row = m_RowWidgets.Get(slot);
         row.Show(true);
@@ -341,7 +357,16 @@ class VigridPartyHud
         m_RowNames.Get(slot).SetColor(color);
 
         vector member_pos = rpc.state_positions.Get(index);
-        if (self_pos != vector.Zero && member_pos != vector.Zero)
+
+        //--- This member IS the origin, so their distance from it is zero by construction. Blank
+        //--- rather than "0m", which reads as a broken readout rather than as "you are looking at
+        //--- them". Everyone else on the panel is then measured from here, which is the useful
+        //--- question while watching somebody: how far is the rest of the team from THEM.
+        bool is_viewpoint = viewpoint_uid != "" && rpc.roster_uids.Get(index) == viewpoint_uid;
+
+        if (is_viewpoint)
+            m_RowDistances.Get(slot).SetText("");
+        else if (self_pos != vector.Zero && member_pos != vector.Zero)
             m_RowDistances.Get(slot).SetText(VigridPartyScreen.FormatDistance(vector.Distance(self_pos, member_pos)));
         else
             m_RowDistances.Get(slot).SetText("");

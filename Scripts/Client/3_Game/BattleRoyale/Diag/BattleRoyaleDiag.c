@@ -37,6 +37,12 @@ class BattleRoyaleDiag
     //! How many CommandHandler ticks to keep logging for after a teleport juncture arrives.
     static int trace_teleport_ticks = 20;
 
+    //! Seconds between "[Spectate] cam=..." samples. Vanilla-ish 5 s is right for a background
+    //! sanity check and far too coarse for a deliberate range test, where the interesting window is
+    //! the 20-30 s after the target is flung out - 5 samples is not enough to tell a sustained
+    //! entity=0 from the transient one every teleport produces. Client-side, read by the camera.
+    static float spectate_trace_interval = 5.0;
+
 #ifndef SERVER
     //=========================================================================================
     //--- Client only.
@@ -64,6 +70,11 @@ class BattleRoyaleDiag
     //--- Party roster size to fabricate.
     static int party_size = 3;
 
+    //--- Spectate range test: how far from the spectator's corpse to fling the watched target.
+    //--- Held client-side and sent only when "TP Target: Go" is pressed, for the same reason
+    //--- goto_state is - a range callback plausibly fires on every step while scrubbing.
+    static int tp_target_distance = 1200;
+
     //--- Match Flow's "Jump To State" target. Held client-side and sent only when "Jump: Go" is
     //--- pressed: a range callback plausibly fires on every step while scrubbing, and nothing here
     //--- should be able to fire ten RPCs on the way to state 10.
@@ -82,6 +93,7 @@ class BattleRoyaleDiag
         chat_mirror = true;
         trace_teleport = false;
         trace_teleport_ticks = 20;
+        spectate_trace_interval = 5.0;
 
         hud_force = false;
         hud_players = 60;
@@ -96,6 +108,7 @@ class BattleRoyaleDiag
         kf_cause = 0;
         kf_with_weapon = true;
         party_size = 3;
+        tp_target_distance = 1200;
 
         goto_state = 0;
 

@@ -18,7 +18,8 @@
  *  is compiled at all, so Match Flow and Spawn / Teleport doing nothing there is expected.
  *
  *  ID BUDGET. Ids come from GetModdedDiagID(), which counts up from DiagMenuIDs.MODDED_MENU (~235)
- *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 47. Do
+ *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 56,
+ *  measured from the canary line rather than counted by hand (the previous "47" was one short). Do
  *  not allocate an id for something a bag field can carry: an entry whose value is only ever read
  *  when another entry fires does not need its id kept.
  */
@@ -76,6 +77,16 @@ modded class PluginDiagMenu
 	protected int m_BRDiagZoneNextRadiusID;
 	protected int m_BRDiagLogZoneTableID;
 	protected int m_BRDiagClearMarkersID;
+
+	//--- Spectate
+	protected int m_BRDiagSpectateMenuID;
+	protected int m_BRDiagSpectateEnabledID;
+	protected int m_BRDiagKillSelfID;
+	protected int m_BRDiagLogSpectatorsID;
+	protected int m_BRDiagTpTargetDistID;
+	protected int m_BRDiagTpTargetGoID;
+	protected int m_BRDiagTpCorpseID;
+	protected int m_BRDiagSpectateTraceID;
 
 	//--- Teleport Trace
 	protected int m_BRDiagTraceMenuID;
@@ -139,6 +150,15 @@ modded class PluginDiagMenu
 		m_BRDiagZoneNextRadiusID = GetModdedDiagID();
 		m_BRDiagLogZoneTableID = GetModdedDiagID();
 		m_BRDiagClearMarkersID = GetModdedDiagID();
+
+		m_BRDiagSpectateMenuID = GetModdedDiagID();
+		m_BRDiagSpectateEnabledID = GetModdedDiagID();
+		m_BRDiagKillSelfID = GetModdedDiagID();
+		m_BRDiagLogSpectatorsID = GetModdedDiagID();
+		m_BRDiagTpTargetDistID = GetModdedDiagID();
+		m_BRDiagTpTargetGoID = GetModdedDiagID();
+		m_BRDiagTpCorpseID = GetModdedDiagID();
+		m_BRDiagSpectateTraceID = GetModdedDiagID();
 
 		m_BRDiagTraceMenuID = GetModdedDiagID();
 		m_BRDiagTraceTpClientID = GetModdedDiagID();
@@ -248,6 +268,37 @@ modded class PluginDiagMenu
 			//--- Teleport Trace. The measurement CLAUDE.md asks for before any more code goes near
 			//--- the ladder / F2-unstuck bug: command id and ladder-command state, both sides, at
 			//--- juncture receipt and for a few ticks after.
+			//--- Spectate. Server-side, and the whole point of it is Kill Me: without that, reaching
+			//--- the death screen at all needs a SECOND client to land a kill, so verifying the
+			//--- feature cost a three-client session every time.
+			DiagMenu.RegisterMenu(m_BRDiagSpectateMenuID, "Spectate", m_BRDiagRootMenuID);
+			{
+				//--- spectate_enabled ships OFF and lives in the PROFILE general_settings.json, so
+				//--- without this entry turning it on means editing a file and restarting the server.
+				//--- The flip is in memory only and is not persisted.
+				DiagMenu.RegisterBool(m_BRDiagSpectateEnabledID, "", "Spectate Enabled", m_BRDiagSpectateMenuID);
+				DiagMenu.RegisterBool(m_BRDiagKillSelfID, "", "Kill Me", m_BRDiagSpectateMenuID);
+				//--- Reports the resolved chain tier per spectator, which is the one thing about the
+				//--- five-tier target search that is otherwise only inferable from who you end up
+				//--- watching.
+				DiagMenu.RegisterBool(m_BRDiagLogSpectatorsID, "", "Log Spectators", m_BRDiagSpectateMenuID);
+
+				//--- The range test. Walking a target past 1 km takes minutes and usually ends
+				//--- early - one measured run stopped at 929 m because a wolf killed the target -
+				//--- so this puts them at an exact radius from the spectator's corpse in one press.
+				//--- Target and trigger are two entries for the same reason Jump To State is.
+				DiagMenu.RegisterRange(m_BRDiagTpTargetDistID, "", "TP Target: metres", m_BRDiagSpectateMenuID, "100, 3000, 1200, 50");
+				DiagMenu.RegisterBool(m_BRDiagTpTargetGoID, "", "TP Target: Go", m_BRDiagSpectateMenuID);
+				//--- The bubble probe. Press it while the target is out past ~1 km and entity=0: if
+				//--- entity comes back, the bubble really is on the corpse and a fix is worth
+				//--- designing. It drags the victim's gear along, so it is a MEASUREMENT, not a fix.
+				DiagMenu.RegisterBool(m_BRDiagTpCorpseID, "", "TP Corpse to Target", m_BRDiagSpectateMenuID);
+				//--- Turn this down BEFORE pressing Go: a teleport always produces a transient
+				//--- entity=0, so the answer is whether it returns to 1 and stays, and 5 s sampling
+				//--- cannot tell those apart.
+				DiagMenu.RegisterRange(m_BRDiagSpectateTraceID, "", "Trace Interval (s)", m_BRDiagSpectateMenuID, "0.5, 10, 5, 0.5");
+			}
+
 			DiagMenu.RegisterMenu(m_BRDiagTraceMenuID, "Teleport Trace", m_BRDiagRootMenuID);
 			{
 				DiagMenu.RegisterBool(m_BRDiagTraceTpClientID, "", "Trace TP (Client)", m_BRDiagTraceMenuID);
