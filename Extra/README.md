@@ -35,7 +35,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, HUD compass, party-shared markers and zone circles |
 | [MapSatellite](MapSatellite/README.md) | `extra_mapsatellite.pbo` | both | Config only — switches the map to satellite imagery, retunes its overlay layers and makes place names legible over it |
 | [PreventPlayerModifiers](PreventPlayerModifiers/README.md) | `extra_preventplayermodifiers.pbo` | both | Disables hunger, thirst, broken legs and four diseases |
-| [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | client | Stops the weapon being forced up against walls |
+| [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | both | Stops the weapon being forced up against walls |
 | [RandomMenuGear](RandomMenuGear/README.md) | `extra_randommenugear.pbo` | client | Re-dresses the main-menu character randomly on every menu show |
 | [SafeZone](SafeZone/README.md) | `extra_safezone.pbo` | both | Lobby truce — no firing, no player-inflicted damage |
 | [SpawnCarFull](SpawnCarFull/README.md) | `extra_spawncarfull.pbo` | server | Vehicles spawn with 30–100 % fuel, plus full coolant and oil |
@@ -55,6 +55,7 @@ Most of these have no settings at all. The ones that do:
 | MapSatellite | none, and it cannot have any — `MapWidget` exposes no satellite API, so the `config.cpp` rename is the whole control surface |
 | SpawnWithAmmoAndMagazine | `serverDZ.cfg`: `BRDisableSpawnWithAmmo`, `BRMinSpawnAmmo`, `BRMaxSpawnAmmo` |
 | LimitUnconsciousTime | `serverDZ.cfg`: `BRDisableUnconsciousness`, or `-br-disable-unconsciousness` on the command line |
+| PreventWeaponRaise | `serverDZ.cfg`: `BRDisablePreventWeaponRaise` — server-read, mirrored to each client as a netsync bool |
 | SafeZone | none — controlled entirely through its API |
 
 ## Compile-time defines
