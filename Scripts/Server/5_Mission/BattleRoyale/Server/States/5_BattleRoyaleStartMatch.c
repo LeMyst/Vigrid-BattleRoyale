@@ -160,6 +160,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
         b_IsGameplay = true;
 
+#ifdef VIGRID_SAFEZONE
+        //--- Lift the lobby truce here rather than in Activate(): input is still locked through the
+        //--- warm-up countdown, so this is the first instant a player could actually shoot back.
+        VigridSafeZoneAPI.SetActive( false );
+#endif
+
         OpenLeaderboardMatch();
     }
 
