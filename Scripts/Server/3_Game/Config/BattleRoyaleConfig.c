@@ -4,11 +4,13 @@ class BattleRoyaleConfig
 	static ref BattleRoyaleConfig m_Instance;
 	ref map<string, ref BattleRoyaleDataBase> m_Configs;
 	//ref array<string> m_ConfigNames;
-	bool b_HasLoaded;
+	bool b_HasLoaded;  // set only once Load() has actually completed - see Load()
+	bool b_IsLoading;  // re-entrancy guard while Load() is in flight
 
 	void BattleRoyaleConfig()
 	{
 		b_HasLoaded = false;
+		b_IsLoading = false;
 		m_Configs = new map<string, ref BattleRoyaleDataBase>();
 		Init();
 	}
@@ -70,72 +72,89 @@ class BattleRoyaleConfig
 
 	void Load()
 	{
-		if ( !b_HasLoaded )
+		//--- b_HasLoaded means "a load COMPLETED", not "a load was attempted". It used to be set as the
+		//--- very first statement here, which made the !b_HasLoaded guard in GetConfig(string) unable to
+		//--- detect an aborted load - the early-out below left the singleton flagged loaded with zero
+		//--- configs and every accessor silently returning NULL. b_IsLoading takes over the re-entrancy
+		//--- job that flag-first assignment was doing.
+		if ( b_HasLoaded || b_IsLoading )
+			return;
+
+		b_IsLoading = true;
+
+		//load JSON data (or create it)
+		if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER) )
 		{
-			b_HasLoaded = true;
+			BattleRoyaleUtils.Trace("Creating BattleRoyale Settings Folder");
+			MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
+		}
 
-			//load JSON data (or create it)
-			if( !FileExist(BATTLEROYALE_SETTINGS_FOLDER) )
-			{
-				BattleRoyaleUtils.Trace("Creating BattleRoyale Settings Folder");
-				MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
-			}
+		if( !FileExist(BATTLEROYALE_SETTINGS_MISSION_FOLDER) )
+		{
+			Print("Creating BattleRoyale Mission Settings Folder");
+			MakeDirectory(BATTLEROYALE_SETTINGS_MISSION_FOLDER);
+		}
 
-			if( !FileExist(BATTLEROYALE_SETTINGS_MISSION_FOLDER) )
-			{
-				Print("Creating BattleRoyale Mission Settings Folder");
-				MakeDirectory(BATTLEROYALE_SETTINGS_MISSION_FOLDER);
-			}
+		if(!m_Configs)
+		{
+			//--- Kept Warn + return rather than the old fatal Error(): m_Configs is built in the ctor
+			//--- and never cleared, so this is a can't-happen guard, and the useful behaviour if it ever
+			//--- did happen is to leave b_HasLoaded false and let GetConfig(string) report it - which a
+			//--- VM-halting Error() would make unreachable, since the return below would never run.
+			BattleRoyaleUtils.Warn("FAILED TO LOAD CONFIG DATA - m_Configs is NULL");
+			b_IsLoading = false;
+			return;  //--- deliberately leaves b_HasLoaded false so the failure stays detectable
+		}
 
-			if(!m_Configs)
+		//iterate over internal data in the dictionary
+		for(int i = 0; i < m_Configs.Count(); i++)
+		{
+			string key = m_Configs.GetKey(i);
+			BattleRoyaleDataBase config = m_Configs.GetElement(i);
+			if(config)
 			{
-				Error("FAILED TO LOAD CONFIG DATA");
-				return;
-			}
-
-			//iterate over internal data in the dictionary
-			for(int i = 0; i < m_Configs.Count(); i++)
-			{
-				string key = m_Configs.GetKey(i);
-				BattleRoyaleDataBase config = m_Configs.GetElement(i);
-				if(config)
+				string path = config.GetProfilePath();
+				if(path != "")
 				{
-					string path = config.GetProfilePath();
-					if(path != "")
+					if(FileExist( path ))
 					{
-						if(FileExist( path ))
-						{
-							BattleRoyaleUtils.Trace("Loading Config: " + path);
-							config.Load();
-							config.Save(); //re-save (if there are new config values that need added to the json file)
-						}
-						else
-						{
-							BattleRoyaleUtils.Trace("Creating Config: " + path);
-							config.Save();
-						}
+						BattleRoyaleUtils.Trace("Loading Config: " + path);
+						config.Load();
+						config.Save(); //re-save (if there are new config values that need added to the json file)
 					}
 					else
 					{
-						Error("Config with invalid path in BattleRoyale Configs");
-					}
-
-					string mission_path = config.GetMissionPath();
-					if(mission_path != "")
-					{
-						if(FileExist( mission_path ))
-						{
-							BattleRoyaleUtils.Trace("Loading Mission Config: " + mission_path);
-							config.LoadMission();
-						}
+						BattleRoyaleUtils.Trace("Creating Config: " + path);
+						config.Save();
 					}
 				}
 				else
 				{
-					Error("NULL CONFIG `" + key + "` IN CONFIG MAP");
+					//--- Warn, not Error: the global Error() is Error2() (endebug.c:90), which raises a
+					//--- VM exception and stops the script VM - it would take the server down over one
+					//--- misdeclared data class instead of skipping it and loading the other five.
+					BattleRoyaleUtils.Warn("Config with invalid path in BattleRoyale Configs");
+				}
+
+				string mission_path = config.GetMissionPath();
+				if(mission_path != "")
+				{
+					if(FileExist( mission_path ))
+					{
+						BattleRoyaleUtils.Trace("Loading Mission Config: " + mission_path);
+						config.LoadMission();
+					}
 				}
 			}
+			else
+			{
+				//--- Same reasoning as above - skip the bad entry, keep the rest of the configs.
+				BattleRoyaleUtils.Warn("NULL CONFIG `" + key + "` IN CONFIG MAP");
+			}
 		}
+
+		b_IsLoading = false;
+		b_HasLoaded = true;
 	}
 
 	//if a 3rd party needs to get config by string, it can do so here
@@ -143,7 +162,9 @@ class BattleRoyaleConfig
 	{
 		if(!b_HasLoaded)
 		{
-			Error("Requesting Config (" + key + ") Data from Unloaded Config?");
+			//--- Warn, not Error: this branch exists to RECOVER by loading, and the global Error() halts
+			//--- the VM (endebug.c:90 -> Error2), so the Load() below would never have been reached.
+			BattleRoyaleUtils.Warn("Requesting Config (" + key + ") Data from Unloaded Config?");
 			Load();
 		}
 

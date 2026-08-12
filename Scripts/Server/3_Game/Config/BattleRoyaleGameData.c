@@ -106,10 +106,17 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 	override void Upgrade()
 	{
 		// Future upgrades will be handled here
-		if (version == 1)
+		if (version < 2)
 		{
-			// Set default shortcut for the first item (HuntingKnife) if not set
-			player_starting_items_shortcut.Insert(0);
+			// The key was INTRODUCED in v2, so a v1 file does not carry it and the field initialiser
+			// above survives deserialization - there is nothing to set. Only fill an array that
+			// genuinely came back empty; inserting unconditionally produced [0, 0], binding the knife
+			// to two hotbar slots, which Save() then made permanent.
+			if (!player_starting_items_shortcut || player_starting_items_shortcut.Count() == 0)
+			{
+				player_starting_items_shortcut = new array<int>();
+				player_starting_items_shortcut.Insert(0);  // HuntingKnife
+			}
 
 			version = 2;
 			Save();  // Save the upgraded config
