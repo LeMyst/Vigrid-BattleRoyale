@@ -139,9 +139,15 @@ static const float VIGRID_PARTY_PING_KM_THRESHOLD = 1000.0; // m, above which di
 //--- Crosshair fade, matching the name tags: a marker must not sit on top of whatever the player is
 //--- aiming at. The floor is higher than the tags' because you place a ping by looking straight at
 //--- it, so this is the alpha it settles to for the second or two right after placement.
+//---
+//--- The floor was 0.25 and that was too aggressive: it MULTIPLIES with BASE_ALPHA, so looking
+//--- straight at a nearby ping gave 0.75 x 0.25 = 0.19 - nearly invisible at exactly the moment you
+//--- most want to see it, which is the one reported in testing on 2026-08-08. At 0.55 the same case
+//--- lands at 0.41, still clearly dimmed out of the way of the crosshair but actually readable.
+//--- Keep this ABOVE the name tags' floor; a tag is a label you can ignore, a ping is a callout.
 static const float VIGRID_PARTY_PING_CENTER_HIDE = 0.05;      // fraction of screen height
 static const float VIGRID_PARTY_PING_CENTER_FADE = 0.13;      // fraction of screen height
-static const float VIGRID_PARTY_PING_CENTER_MIN_ALPHA = 0.25;
+static const float VIGRID_PARTY_PING_CENTER_MIN_ALPHA = 0.55;
 
 //--- Ceiling on pooled marker widgets: the largest party times the largest legal cap.
 static const int VIGRID_PARTY_PING_MAX_RENDERED = 160;
@@ -155,6 +161,7 @@ static const int VIGRID_PARTY_PING_MAX_RENDERED = 160;
 //--- Nothing is special-cased for the local player: your own markers use your own slot colour, so
 //--- what you see is what your team sees.
 //---
-//--- The colours themselves live in VigridPartyPings.ColourForSlot, built with ARGB() so the
-//--- marker's opacity can be baked into them - an ImageWidget ignores its parent's alpha.
+//--- The colours themselves live in VigridPartyPalette.ColourForSlot, in this same stage, built
+//--- with ARGB() so the marker's opacity can be baked into them - an ImageWidget ignores its
+//--- parent's alpha, and a CanvasWidget has no alpha to inherit at all.
 static const int VIGRID_PARTY_PING_PALETTE_SIZE = 8;

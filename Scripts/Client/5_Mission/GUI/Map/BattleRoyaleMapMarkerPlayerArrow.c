@@ -1,3 +1,7 @@
+#ifdef EXPANSION_MAP_ZONES
+//--- Zone circles drawn into DayZ Expansion's own map. Requires @DayZ-Expansion-Navigation:
+//--- ExpansionMapMenu and ExpansionMapWidgetBase live there, and without that PBO this does
+//--- not degrade, it fails to compile the whole Mission module. Superseded by Extra/Map/.
 #ifndef SERVER
 class BattleRoyaleMapMarkerPlayerArrow: ExpansionMapMarker
 {
@@ -47,4 +51,5 @@ class BattleRoyaleMapMarkerPlayerArrow: ExpansionMapMarker
         GetLayoutRoot().Show(show);
     }
 }
+#endif
 #endif

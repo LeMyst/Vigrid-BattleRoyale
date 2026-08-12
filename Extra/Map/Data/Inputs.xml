@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!--
+    No <exclude> group here, deliberately, and adding one is a trap.
+
+    The map has to stop gameplay actions firing underneath it - it leaves the KEYBOARD focus with
+    the game so the player can keep running, so a left click to place a marker also swung the melee
+    weapon. An exclude group is the mechanism vanilla points you at for that, and it works, but
+    both AddActiveInputExcludes and RemoveActiveInputExcludes end in GetUApi().UpdateControls() -
+    "call this on each change of exclusion" - which rebuilds the whole control state and drops the
+    held state of every input, UATurbo included. Closing the map mid-sprint therefore dumped the
+    player out of sprint until Shift was released and re-pressed. It is the same reason vanilla
+    knocks you down to a walk when you open the inventory.
+
+    VigridMapMenu.SuppressGameplayInputs suppresses the individual inputs per frame instead, which
+    touches nothing global and needs no teardown.
+
+    For the record, if an exclude group is ever wanted here anyway: it cannot be vanilla's "map"
+    group, which is nothing but <include name="menu" />, and "menu" includes "movement". The vanilla
+    groups live in P:\bin\specific.xml, not in any inputs.xml.
+-->
+<modded_inputs>
+    <inputs>
+        <actions>
+            <input name="UAVigridMapToggle" loc="Open Map" />
+            <input name="UAVigridMapMinimapToggle" loc="Toggle Minimap" />
+        </actions>
+
+        <sorting name="vigridmap" loc="MAP">
+            <input name="UAVigridMapToggle" />
+            <input name="UAVigridMapMinimapToggle" />
+        </sorting>
+    </inputs>
+    <preset>
+        <input name="UAVigridMapToggle">
+            <btn name="kM" />
+        </input>
+        <input name="UAVigridMapMinimapToggle">
+            <btn name="kN" />
+        </input>
+    </preset>
+</modded_inputs>

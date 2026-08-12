@@ -1,3 +1,4 @@
+#ifndef SERVER
 modded class DayZGame
 {
     string GetBattleRoyaleClientVersion()
@@ -7,8 +8,15 @@ modded class DayZGame
 
     override void ConnectFromCLI()
     {
-        // Avoid connecting to the server from the CLI
+        // Retail: avoid connecting to the server from the CLI, so a player always
+        // arrives through the mod's own main menu (which does the matchmaking).
         // TODO: Allow if it's not a VIGRID server
+        //
+        // Diag: honour it, so LaunchClient*.bat / LaunchLocalMP*.bat auto-join
+        // 127.0.0.1 instead of parking every test client on the main menu.
+#ifdef DIAG
+        super.ConnectFromCLI();
+#endif
     }
 
     override void ConnectLaunch()
@@ -139,3 +147,4 @@ modded class DayZGame
         super.OnEvent(eventTypeId, params);
     }
 }
+#endif

@@ -1,0 +1,58 @@
+PanelWidgetClass MarkerRoot {
+ visible 1
+ ignorepointer 1
+ clipchildren 0
+ color 0 0 0 0
+ position 0 0
+ size 90 36
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ {
+  ImageWidgetClass MarkerIcon {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 33 0
+   size 24 24
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   mode blend
+   "src alpha" 1
+   image0 "set:dayz_gui image:icon_pin"
+  }
+  PanelWidgetClass MarkerTextBack {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   color 0 0 0 0.55
+   position 0 23
+   size 90 14
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass MarkerDistance {
+     visible 1
+     ignorepointer 1
+     inheritalpha 1
+     color 1 1 1 1
+     position 0 0
+     size 90 14
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     font "gui/fonts/metron"
+     "text horizontal align" center
+     "text vertical align" center
+     text ""
+    }
+   }
+  }
+ }
+}

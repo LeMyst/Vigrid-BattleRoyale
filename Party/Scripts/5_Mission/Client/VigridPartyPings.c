@@ -171,44 +171,14 @@ class VigridPartyPings
     /**
      *  Colour for the member in party slot `owner_slot`, at opacity `alpha` (0..1).
      *
-     *  The slot is the owner's position in the roster, which is join-ordered and never reshuffled,
-     *  so a member keeps one colour for the life of the party. Nothing is special-cased for the
-     *  local player: your markers are drawn in your own slot colour, so what you see is what your
-     *  team sees. A negative slot means the owner is not on the roster - which happens for a frame
-     *  or two when a ping set arrives just before the roster that explains it - and reads off-white.
-     *
-     *  The opacity is baked into the colour rather than left to the widget hierarchy because an
-     *  ImageWidget takes its alpha from its own colour and ignores the parent's: setting the icon
-     *  to a fully opaque tint is exactly what pinned it at full brightness while the text around it
-     *  faded. PingIcon carries `inheritalpha 0` to match, so this value is the whole story.
+     *  The values moved to VigridPartyPalette (3_Game) once the map addon needed them too - a
+     *  4_World API cannot reach a 5_Mission class. This stays as a delegate rather than having the
+     *  two call sites below reach across directly, so the diff that moved them is provably
+     *  behaviour-neutral inside this file.
      */
     private int ColourForSlot(int owner_slot, float alpha)
     {
-        int a = Math.Round(Math.Clamp(alpha, 0, 1) * 255);
-
-        if (owner_slot < 0)
-            return ARGB(a, 232, 228, 220); // off-white
-
-        //--- Wraps rather than running out: max_party_size goes to 16, and two members sharing a
-        //--- colour in a party that large is better than a marker with no colour at all.
-        int index = owner_slot % VIGRID_PARTY_PING_PALETTE_SIZE;
-
-        if (index == 0)
-            return ARGB(a, 242, 199, 68);  // amber
-        if (index == 1)
-            return ARGB(a, 79, 195, 232);  // cyan
-        if (index == 2)
-            return ARGB(a, 181, 123, 232); // violet
-        if (index == 3)
-            return ARGB(a, 123, 216, 123); // green
-        if (index == 4)
-            return ARGB(a, 232, 130, 46);  // orange
-        if (index == 5)
-            return ARGB(a, 232, 123, 181); // pink
-        if (index == 6)
-            return ARGB(a, 123, 155, 232); // blue
-
-        return ARGB(a, 199, 232, 123);     // lime
+        return VigridPartyPalette.ColourForSlot(owner_slot, alpha);
     }
 
     private void RenderSlot(int slot, vector world_pos, int owner_slot, float parent_w, float parent_h, vector self_pos)
