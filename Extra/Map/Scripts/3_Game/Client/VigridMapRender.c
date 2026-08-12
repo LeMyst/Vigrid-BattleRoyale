@@ -243,7 +243,7 @@ class VigridMapRender
     }
 
     /**
-     *  A heading dart - the local player on the MINIMAP, pointing where the camera looks.
+     *  A heading dart - the local player, pointing where the camera looks. Used by BOTH maps.
      *
      *  Four strokes: tip, two swept-back corners, and a notch in the tail. The notch is the whole
      *  point. A plain isoceles triangle is genuinely ambiguous at this size - both ends read as a
@@ -259,7 +259,11 @@ class VigridMapRender
      *  `heading_deg` is a compass bearing: 0 = north, increasing clockwise. Screen y grows downward,
      *  hence sin for x and MINUS cos for y.
      *
-     *  The fullscreen map deliberately does NOT use this - see WorldRenderCross below.
+     *  The fullscreen map drew an axis-aligned plus until 2026-08-11, on the argument that a rotating
+     *  "you" is harder to FIND on a big map than a fixed one. True as far as it goes, and beside the
+     *  point: the question a player opens a map to ask is which way they are facing, and a glyph that
+     *  cannot answer it is not paying for its findability. Size carries that instead - see
+     *  VIGRID_MAP_SELF_PX, which is now the largest glyph on the map.
      */
     static void WorldRenderHeadingArrow(CanvasWidget canvas, MapWidget map_widget, vector world_pos, float heading_deg, float size_px, int color, float width)
     {
@@ -296,28 +300,6 @@ class VigridMapRender
         canvas.DrawLine(right_x, right_y, tail_x, tail_y, width, color);
         canvas.DrawLine(tail_x, tail_y, left_x, left_y, width, color);
         canvas.DrawLine(left_x, left_y, tip_x, tip_y, width, color);
-    }
-
-    /**
-     *  An axis-aligned plus - the local player.
-     *
-     *  Two strokes and no enclosed area, which is what makes it unmistakable against every other
-     *  glyph on the map at any size. Not rotated to heading: the fullscreen map is north-up and a
-     *  rotating "you" is harder to find than a fixed one.
-     */
-    static void WorldRenderCross(CanvasWidget canvas, MapWidget map_widget, vector world_pos, float size_px, int color, float width)
-    {
-        if (!canvas || !map_widget)
-            return;
-
-        float cx;
-        float cy;
-        WorldToCanvas(map_widget, Vector(world_pos[0], 0, world_pos[2]), cx, cy);
-
-        float r = size_px * 0.5;
-
-        canvas.DrawLine(cx - r, cy, cx + r, cy, width, color);
-        canvas.DrawLine(cx, cy - r, cx, cy + r, width, color);
     }
 
     /**
