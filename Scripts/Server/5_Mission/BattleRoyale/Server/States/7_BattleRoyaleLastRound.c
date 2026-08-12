@@ -34,10 +34,21 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
         m_MessageTimers = new array<ref Timer>;
 
+        //--- static_timers[0] is the final circle's timer, which this state re-uses. It was read
+        //--- unguarded, so an empty array indexed out of range in a constructor that runs inside
+        //--- MissionServer.OnInit - i.e. it killed boot rather than degrading. Its sibling in
+        //--- BattleRoyaleZone.GetZoneTimer() bounds-checks; this one did not.
+        bool have_static_timer = false;
         if (m_ZoneSettings.shrink_type == 3)
+            have_static_timer = (m_ZoneSettings.static_timers && m_ZoneSettings.static_timers.Count() > 0);
+
+        if (have_static_timer)
         {
             i_RoundTimeInSeconds = m_ZoneSettings.static_timers[0];
         } else {
+            if (m_ZoneSettings.shrink_type == 3)
+                BattleRoyaleUtils.Warn("[BattleRoyaleLastRound] zone_settings.static_timers is empty - falling back to round_duration_minutes for the final round.");
+
             i_RoundTimeInSeconds = 60 * m_GameSettings.round_duration_minutes;
         }
     }
@@ -78,7 +89,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
             m_PreviousArea = GetPreviousZone().GetArea();
 
         //tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
+        //--- The comment above acknowledges the NULL case and the code then dereferenced it anyway.
+        //--- Guarded exactly as the sibling in 6_BattleRoyaleRound.Activate() already is; skipping
+        //--- the send is correct, since "no current area" IS "no boundary yet" on the client.
+        if(m_PreviousArea)
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
 
         //tell the client the future zone is NULL (no future zone)
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( "0 0 0", 0.0, false ), true);
@@ -162,7 +177,15 @@ class BattleRoyaleLastRound: BattleRoyaleState
             //--- NULL when no round actually played before this one - there is no boundary to be
             //--- outside of yet, so nobody takes damage until the final zone locks.
             BattleRoyaleZone current_zone = GetPreviousZone();
-            if(b_DoZoneDamage && current_zone && current_zone.GetArea())
+
+            //--- A zero-radius area is the placeholder circle at the world origin left behind when
+            //--- generation could not produce a real one; treating it as a boundary damages every
+            //--- player on the map. Same guard as 6_BattleRoyaleRound.OnPlayerTick.
+            bool zone_is_real = false;
+            if(current_zone && current_zone.GetArea())
+                zone_is_real = (current_zone.GetArea().GetRadius() > 0);
+
+            if(b_DoZoneDamage && zone_is_real)
             {
                 float radius = current_zone.GetArea().GetRadius();
                 vector center = current_zone.GetArea().GetCenter();

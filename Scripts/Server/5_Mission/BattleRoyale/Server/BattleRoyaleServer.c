@@ -121,6 +121,14 @@ class BattleRoyaleServer: BattleRoyaleBase
         i_NumRounds = m_ZoneData.num_zones;
         b_EnableSpawnSelectionMenu = m_LobbyData.enable_spawn_selection_menu;
 
+        //--- Build every play-area circle here, as an explicit and logged boot step. It used to
+        //--- happen invisibly inside the FIRST BattleRoyaleRound's constructor further down, which
+        //--- put the generation log in the middle of the state-machine setup and made it look like a
+        //--- per-round cost. Note i_NumRounds is read above and the state list below is sized from
+        //--- it, so generation has to observe the same already-validated num_zones - it does, both
+        //--- read it through GetZoneData().
+        BattleRoyaleZone.PrepareGeneration();
+
         //--- initialize all states (in order from start to finish)
         m_States = new array<ref BattleRoyaleState>;
 
