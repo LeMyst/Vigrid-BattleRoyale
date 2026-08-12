@@ -15,9 +15,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 	ref map<string, vector> spawnpoints;
 
 	//--- Zone number Activate() advertised to the clients. Cached so the server validates incoming
-	//--- selections against exactly the circle it told players about - GetDynamicStartingZone() is
-	//--- called with m_Players.Count() here but with i_NumStartingPlayers elsewhere, and the two
-	//--- can disagree.
+	//--- selections against exactly the circle it told players about.
 	private int i_SpawnZoneNumber;
 
     void BattleRoyaleSpawnSelection()
@@ -60,7 +58,9 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         super.Activate();
 
         // Send RPC to all players to show spawn selection UI
-        i_SpawnZoneNumber = GetDynamicStartingZone(m_Players.Count());
+        //--- i_NumStartingPlayers, not the live count: the rounds decide which zone to skip to from
+        //--- the countdown snapshot, so using the live count here can advertise a different circle.
+        i_SpawnZoneNumber = GetDynamicStartingZone(i_NumStartingPlayers);
         ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_SpawnZoneNumber).GetArea();
         vector v_FirstZoneCenter = spawn_area.GetCenter();
         float f_FirstZoneRadius = spawn_area.GetRadius();

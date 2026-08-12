@@ -6,6 +6,11 @@ class BattleRoyaleState: Timeable
     protected bool b_IsPaused;
     protected bool b_IsDebug;
 
+    //--- Set by the state machine when this state is passed over entirely. A skipped state never
+    //--- activates, so anything it owns - a round's circle above all - was never in play and was
+    //--- never sent to a client. Distinct from b_IsActive, which only says "not running *now*".
+    protected bool b_WasSkipped;
+
 	// Track the number of players in the game when the game starts - shared between all states
     static int i_NumStartingPlayers = 0;
 
@@ -66,6 +71,16 @@ class BattleRoyaleState: Timeable
     bool IsActive()
     {
         return b_IsActive;
+    }
+
+    void SetSkipped(bool skipped)
+    {
+        b_WasSkipped = skipped;
+    }
+
+    bool WasSkipped()
+    {
+        return b_WasSkipped;
     }
 
     bool IsPaused()
@@ -372,6 +387,13 @@ class BattleRoyaleState: Timeable
 		{
 			// Return the first zone based on number of registered players
 			int last_try_zone = 1;
+
+			//--- Starting at zone Z plays zones Z..num_zones, i.e. (num_zones - Z + 1) of them.
+			//--- Solving for min_zone_num gives Z = num_zones - min_zone_num + 1; the old test
+			//--- omitted the +1 and so guaranteed one zone more than configured. Clamped so a
+			//--- min_zone_num >= num_zones still means "play them all" rather than never matching.
+			int floor_zone = Math.Max(1, m_GameSettings.num_zones - m_ZoneSettings.min_zone_num + 1);
+
 			BattleRoyaleUtils.Trace("Number of players registered: " + num_players);
 			for(int i_zone = 1; i_zone < m_GameSettings.num_zones; i_zone++)
 			{
@@ -383,7 +405,7 @@ class BattleRoyaleState: Timeable
 					BattleRoyaleUtils.Trace("It's a match! " + i_zone);
 					break;
 				}
-				if(i_zone == m_GameSettings.num_zones - m_ZoneSettings.min_zone_num)
+				if(i_zone == floor_zone)
 				{
 					BattleRoyaleUtils.Trace("Reach the minimum! " + i_zone);
 					break;

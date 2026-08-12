@@ -430,6 +430,9 @@ class BattleRoyaleServer: BattleRoyaleBase
                 return i;
             } else {
                 BattleRoyaleUtils.Trace("[State Machine] Skipping State `" + state.GetName() + "`");
+                //--- Record it: a skipped round still holds a fully constructed zone, and without
+                //--- this the next round would treat that never-played circle as the live boundary.
+                state.SetSkipped(true);
             }
         }
 
