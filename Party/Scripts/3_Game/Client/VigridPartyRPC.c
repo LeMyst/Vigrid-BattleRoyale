@@ -74,6 +74,11 @@ class VigridPartyRPC
     //--- Notifications the controller has not surfaced yet.
     ref array<string> pending_notifications = new array<string>();
 
+#ifdef DIAG_DEVELOPER
+    //--- Set while the diag menu is driving a fabricated party. See DebugSuppressesPush.
+    bool debug_fake_session = false;
+#endif
+
     void VigridPartyRPC()
     {
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_NAMESPACE, VP_RPC_SETTINGS, this);
@@ -143,6 +148,35 @@ class VigridPartyRPC
         list_seq = 0;
 
         pending_notifications.Clear();
+
+#ifdef DIAG_DEVELOPER
+        debug_fake_session = false;
+#endif
+    }
+
+    /**
+     *  Whether an incoming server push should be discarded rather than applied.
+     *
+     *  True only while the diag menu is driving a fabricated party. The menu polls the server for
+     *  the online player list every three seconds and VP_PlayerList clears the list arrays
+     *  unconditionally, so without this a fabricated list survives at most one poll on a live
+     *  server - and a real VP_Roster would do the same to a fabricated roster.
+     *
+     *  Guarded inside the body rather than at every call site: the handlers must read identically
+     *  in both builds, and a release build compiles this down to a constant false.
+     *
+     *  Deliberately NOT consulted by VP_Settings, VP_PingSettings or VP_Notify - none of them
+     *  carries roster or list state, and keeping VP_Settings live is what makes max_party_size
+     *  truthful while faking, so "party full hides the Invite button" stays reachable.
+     */
+    bool DebugSuppressesPush()
+    {
+#ifdef DIAG_DEVELOPER
+        if (debug_fake_session)
+            return true;
+#endif
+
+        return false;
     }
 
     bool HasParty()
@@ -189,6 +223,8 @@ class VigridPartyRPC
             return;
         if (type != CallType.Client)
             return;
+        if (DebugSuppressesPush())
+            return;
 
         locked = data.param1;
     }
@@ -199,6 +235,8 @@ class VigridPartyRPC
         if (!ctx.Read(data))
             return;
         if (type != CallType.Client)
+            return;
+        if (DebugSuppressesPush())
             return;
 
         roster_version = data.param1;
@@ -236,6 +274,9 @@ class VigridPartyRPC
         if (!ctx.Read(data))
             return;
         if (type != CallType.Client)
+            return;
+
+        if (DebugSuppressesPush())
             return;
 
         //--- Sent unguaranteed and possibly in flight across a roster change, so anything built
@@ -276,6 +317,9 @@ class VigridPartyRPC
         if (type != CallType.Client)
             return;
 
+        if (DebugSuppressesPush())
+            return;
+
         invite_id = data.param1;
         invite_inviter_uid = data.param2;
         invite_inviter_name = data.param3;
@@ -292,6 +336,8 @@ class VigridPartyRPC
             return;
         if (data.param1 != invite_id)
             return;
+        if (DebugSuppressesPush())
+            return;
 
         ClearInvite();
         invite_seq = invite_seq + 1;
@@ -303,6 +349,9 @@ class VigridPartyRPC
         if (!ctx.Read(data))
             return;
         if (type != CallType.Client)
+            return;
+
+        if (DebugSuppressesPush())
             return;
 
         list_uids.Clear();
@@ -343,6 +392,9 @@ class VigridPartyRPC
         if (!ctx.Read(data))
             return;
         if (type != CallType.Client)
+            return;
+
+        if (DebugSuppressesPush())
             return;
 
         //--- Cleared first: an empty set is how the server says "you have no markers", and it

@@ -21,7 +21,22 @@ class BattleRoyaleNameService
 	//--- Steam persona names cap at 32; anything longer is not a name, it is an attack on a widget.
 	static const int BR_NAME_MAX_LENGTH = 32;
 
+	//--- Two maps, and the split is the whole point of this class.
+	//---
+	//---   s_Overrides is what is IN FORCE: the uids whose name the mod is currently replacing. Every
+	//---   Resolve*() reads this and nothing else, so a uid that is not in it is shown under the name
+	//---   they connected with, full stop.
+	//---
+	//---   s_Cache is what we KNOW: every persona ever resolved on this server, with the hour it was
+	//---   resolved, loaded from and saved to steam_names.json.
+	//---
+	//--- They were one map until it was noticed that a player who once connected as "Survivor" and has
+	//--- since set a name of their own in the launcher was still being shown the resolved one - the
+	//--- warm-cache branch of RequestForPlayer ran before the placeholder test, so "we have an answer
+	//--- for this uid" was silently standing in for "this uid still needs one". A cache entry is
+	//--- promoted into s_Overrides only by a connect that is actually wearing a placeholder name.
 	static ref map<string, string> s_Overrides;
+	static ref map<string, ref BattleRoyaleNameCacheEntry> s_Cache;
 
 	//--- There was an s_ClientReported map here, holding names clients read from their own Steam
 	//--- session as a fallback for players the Web API could not answer for. Removed after
@@ -46,6 +61,8 @@ class BattleRoyaleNameService
 	{
 		if (!s_Overrides)
 			s_Overrides = new map<string, string>();
+		if (!s_Cache)
+			s_Cache = new map<string, ref BattleRoyaleNameCacheEntry>();
 		if (!s_Pending)
 			s_Pending = new array<string>();
 		if (!s_Requested)
@@ -135,6 +152,30 @@ class BattleRoyaleNameService
 	// ---------------------------------------------------------------- requesting
 
 	/**
+	 *  Is this cache entry old enough to be worth asking Steam about again?
+	 */
+	static bool IsCacheStale(BattleRoyaleNameCacheEntry entry)
+	{
+		if (!entry)
+			return true;
+
+		BattleRoyaleServerData server_data = BattleRoyaleConfig.GetConfig().GetServerData();
+		if (!server_data)
+			return false;
+		if (server_data.steam_name_cache_max_age_hours <= 0)
+			return false;
+
+		//--- No timestamp at all: a v1 cache file, written before entries were dated. Its age is not
+		//--- knowable, so refresh it once - after which it carries a stamp like everything else.
+		if (entry.resolved_at_hours <= 0)
+			return true;
+
+		int age = BattleRoyaleTime.NowHours() - entry.resolved_at_hours;
+
+		return (age > server_data.steam_name_cache_max_age_hours);
+	}
+
+	/**
 	 *  Queue a lookup for this player if - and only if - they connected without a name of their own.
 	 */
 	static void RequestForPlayer(PlayerBase player)
@@ -152,24 +193,48 @@ class BattleRoyaleNameService
 		if (uid == "")
 			return;
 
+		//--- First question, and it has to be first: are they still wearing a placeholder name? A
+		//--- player who has since set one of their own in the launcher gets to keep it, and whatever
+		//--- we resolved for them before stops applying this instant. The cache entry itself is left
+		//--- alone - it is still a true steamid -> persona record, and it costs nothing sitting there.
+		if (!IsPlaceholder(player.GetIdentity().GetPlainName()))
+		{
+			ClearOverride(uid);
+			return;
+		}
+
 		//--- Already answered, from this process or from the cache file. Once the cache is warm this
 		//--- is the common path, so it has to do everything Apply() does short of the lookup itself:
 		//--- the players already in the lobby need telling about this one just as much.
-		if (s_Overrides.Contains(uid))
+		BattleRoyaleNameCacheEntry cached = NULL;
+		if (s_Cache.Contains(uid))
+			cached = s_Cache.Get(uid);
+
+		if (cached)
 		{
-			WriteThrough(uid, s_Overrides.Get(uid));
-			BroadcastResolvedName(uid, s_Overrides.Get(uid));
+			string cached_name = cached.name;
+
+			s_Overrides.Set(uid, cached_name);
+			WriteThrough(uid, cached_name);
+			BroadcastResolvedName(uid, cached_name);
 			s_PartyRefreshPending = true;
 
 			//--- Logged because this path is otherwise completely silent, and once the cache is warm
 			//--- it is the path every connect takes - leaving it unlogged means the common case is the
 			//--- one with no evidence in the log at all.
-			BattleRoyaleUtils.Info("BattleRoyaleNameService: applied cached name \"" + s_Overrides.Get(uid) + "\".");
-			return;
-		}
+			BattleRoyaleUtils.Info("BattleRoyaleNameService: applied cached name \"" + cached_name + "\".");
 
-		if (!IsPlaceholder(player.GetIdentity().GetPlainName()))
-			return;
+			if (!IsCacheStale(cached))
+				return;
+
+			//--- Old enough to be worth re-asking. Deliberately applied first and refreshed second: the
+			//--- player is not left as "Survivor" for the length of the batch window, and Apply() will
+			//--- overwrite and re-broadcast if the persona has actually changed. Falls through into the
+			//--- queueing below, whose s_Requested guard is exactly right here too - it lets the
+			//--- refresh out once and stops a permanently unanswerable one (a private profile) going
+			//--- again on every reconnect for the life of the process.
+			BattleRoyaleUtils.Info("BattleRoyaleNameService: that name is stale, refreshing it from Steam.");
+		}
 
 		if (s_Requested.Find(uid) != -1)
 			return;
@@ -236,7 +301,10 @@ class BattleRoyaleNameService
 
 		clean = Deduplicate(uid, clean);
 
+		//--- Apply() only ever runs off a lookup RequestForPlayer already gated on the placeholder
+		//--- test, so this uid is by construction one whose name we are meant to be replacing.
 		s_Overrides.Set(uid, clean);
+		RememberInCache(uid, clean);
 		WriteThrough(uid, clean);
 		SaveCache();
 
@@ -256,6 +324,54 @@ class BattleRoyaleNameService
 		s_PartyRefreshPending = true;
 
 		BattleRoyaleUtils.Info("BattleRoyaleNameService: resolved a placeholder name to \"" + clean + "\".");
+	}
+
+	/**
+	 *  Record a resolved name against the hour it was resolved, so IsCacheStale() has something to
+	 *  measure. Updating an existing entry in place rather than replacing it keeps the map's element
+	 *  identity stable for anything holding the reference - RequestForPlayer does, briefly.
+	 */
+	static void RememberInCache(string uid, string name)
+	{
+		Init();
+
+		BattleRoyaleNameCacheEntry entry = NULL;
+		if (s_Cache.Contains(uid))
+			entry = s_Cache.Get(uid);
+
+		if (!entry)
+		{
+			entry = new BattleRoyaleNameCacheEntry();
+			entry.uid = uid;
+			s_Cache.Set(uid, entry);
+		}
+
+		entry.name = name;
+		entry.resolved_at_hours = BattleRoyaleTime.NowHours();
+	}
+
+	/**
+	 *  Stop replacing this player's name: they have one of their own now.
+	 *
+	 *  Only the override goes. The cache entry stays - the persona we resolved is still theirs, and if
+	 *  they ever go back to connecting as "Survivor" it applies again for free.
+	 */
+	static void ClearOverride(string uid)
+	{
+		if (!s_Overrides)
+			return;
+		if (!s_Overrides.Contains(uid))
+			return;
+
+		string dropped = s_Overrides.Get(uid);
+
+		s_Overrides.Remove(uid);
+		BroadcastClearedName(uid);
+
+		//--- Party bakes names into its roster message - same reason as Apply(), in reverse.
+		s_PartyRefreshPending = true;
+
+		BattleRoyaleUtils.Info("BattleRoyaleNameService: dropped the resolved name \"" + dropped + "\", that player set their own.");
 	}
 
 	/**
@@ -299,6 +415,23 @@ class BattleRoyaleNameService
 		}
 
 		GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetResolvedName", new Param3<string, string, string>(uid, engine_name, name), true);
+	}
+
+	/**
+	 *  Tell every client to forget whatever they hold for this uid.
+	 *
+	 *  Reuses SetResolvedName rather than adding a message: an EMPTY third parameter is the wire
+	 *  contract for "drop any override for this uid" - see BattleRoyaleRPC.SetResolvedName, which
+	 *  reads it the same way. The engine-name field is left empty because it only ever feeds the
+	 *  client's secondary key, and the client finds the stale entries there from the value it is
+	 *  already holding.
+	 *
+	 *  A client that connects AFTER this needs nothing: SendAllResolvedNames walks the online players
+	 *  against s_Overrides, which no longer has the uid. This exists for the ones already here.
+	 */
+	static void BroadcastClearedName(string uid)
+	{
+		GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetResolvedName", new Param3<string, string, string>(uid, "", ""), true);
 	}
 
 	/**
@@ -475,9 +608,9 @@ class BattleRoyaleNameService
 		s_CacheLoaded = true;
 
 		//--- Deliberately gated on the feature too, not just on the cache switch: with the lookup
-		//--- off, s_Overrides stays empty and every Resolve*() falls straight through to the vanilla
-		//--- name. That is what makes "disabled" mean genuinely unchanged behaviour rather than
-		//--- "still serving names it resolved last week".
+		//--- off, s_Cache stays empty, nothing is ever promoted into s_Overrides, and every Resolve*()
+		//--- falls straight through to the vanilla name. That is what makes "disabled" mean genuinely
+		//--- unchanged behaviour rather than "still serving names it resolved last week".
 		if (!IsEnabled())
 			return;
 
@@ -498,15 +631,42 @@ class BattleRoyaleNameService
 			return;
 		}
 
-		if (!cache.names)
-			return;
-
-		for (int i = 0; i < cache.names.Count(); i++)
+		if (cache.entries)
 		{
-			s_Overrides.Set(cache.names.GetKey(i), cache.names.GetElement(i));
+			for (int i = 0; i < cache.entries.Count(); i++)
+			{
+				BattleRoyaleNameCacheEntry entry = cache.entries.Get(i);
+				if (!entry)
+					continue;
+				if (entry.uid == "")
+					continue;
+				if (entry.name == "")
+					continue;
+
+				s_Cache.Set(entry.uid, entry);
+			}
 		}
 
-		BattleRoyaleUtils.Info("BattleRoyaleNameService: loaded " + s_Overrides.Count() + " cached name(s).");
+		//--- v1 held a bare uid -> name map with no dates on it. Import those, undated: IsCacheStale
+		//--- treats an entry with no timestamp as stale, so each one is re-asked once and then carries
+		//--- a stamp like everything written since. The old key is not written back out.
+		if (s_Cache.Count() == 0 && cache.names)
+		{
+			for (int j = 0; j < cache.names.Count(); j++)
+			{
+				BattleRoyaleNameCacheEntry migrated = new BattleRoyaleNameCacheEntry();
+				migrated.uid = cache.names.GetKey(j);
+				migrated.name = cache.names.GetElement(j);
+				migrated.resolved_at_hours = 0;
+
+				s_Cache.Set(migrated.uid, migrated);
+			}
+
+			if (s_Cache.Count() > 0)
+				BattleRoyaleUtils.Info("BattleRoyaleNameService: migrated " + s_Cache.Count() + " undated name(s) from a v1 cache file.");
+		}
+
+		BattleRoyaleUtils.Info("BattleRoyaleNameService: loaded " + s_Cache.Count() + " cached name(s).");
 	}
 
 	static void SaveCache()
@@ -516,11 +676,16 @@ class BattleRoyaleNameService
 			return;
 		if (!server_data.cache_steam_names)
 			return;
-		if (!s_Overrides)
+		if (!s_Cache)
 			return;
 
 		BattleRoyaleNameCache cache = new BattleRoyaleNameCache();
-		cache.names = s_Overrides;
+		cache.saved_at = BattleRoyaleTime.NowSeconds();
+
+		for (int i = 0; i < s_Cache.Count(); i++)
+		{
+			cache.entries.Insert(s_Cache.GetElement(i));
+		}
 
 		string error_message;
 		if (!JsonFileLoader<BattleRoyaleNameCache>.SaveFile(GetCachePath(), cache, error_message))
@@ -528,9 +693,39 @@ class BattleRoyaleNameService
 	}
 };
 
+/**
+ *  One cached persona. Dated, so a name that has had years to go stale can be re-asked rather than
+ *  served forever - see BattleRoyaleNameService.IsCacheStale.
+ */
+class BattleRoyaleNameCacheEntry
+{
+	string uid;                //!< SteamID64, from PlayerIdentity.GetPlainId(). Never GetPlayerId().
+	string name;               //!< the resolved persona, already sanitized and deduplicated
+	int    resolved_at_hours;  //!< BattleRoyaleTime.NowHours() when Steam answered; 0 = unknown (v1)
+};
+
+/**
+ *  On-disk shape of $profile:Vigrid-BattleRoyale\steam_names.json.
+ *
+ *  An array of records rather than the uid -> name map v1 used, because each entry now carries its
+ *  own date. Note every array member needs `ref`: a missing `ref` on a JSON-deserialised array is a
+ *  live bug class in this repo.
+ */
 class BattleRoyaleNameCache
 {
-	int version = 1;
-	ref map<string, string> names = new map<string, string>();
+	int version = 2;
+	int saved_at;  //!< BattleRoyaleTime.NowSeconds(), so a human reading the file can date it
+	ref array<ref BattleRoyaleNameCacheEntry> entries;
+
+	//--- The v1 shape, still declared purely so an existing file deserialises and can be migrated.
+	//--- SaveCache never fills it, but note the serialiser writes a null ref map out as "names": {}
+	//--- rather than omitting the key - verified in a written file. Harmless: LoadCache only consults
+	//--- it when entries came back empty, and an empty map migrates nothing.
+	ref map<string, string> names;
+
+	void BattleRoyaleNameCache()
+	{
+		entries = new array<ref BattleRoyaleNameCacheEntry>();
+	}
 };
 #endif

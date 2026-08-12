@@ -1,30 +1,100 @@
+// One party member in the menu's right column.
+//
+// Same construct and the same reasoning as party_menu_player_row.layout - read that header, and
+// party_hud_row.layout's, before changing anything about the panels or the fonts.
+//
+// Two lines, matching the HUD panel: the name, then the member's state underneath it. That is what
+// replaced appending " *" and " (Offline)" to the name string - suffixes that had to be built after
+// GetMemberName() had already localised the name, could not be styled separately from it, and grew
+// the one cell that was already the tightest.
+//
+// The accent bar carries the member's PARTY SLOT COLOUR, from the same VigridPartyPalette entry
+// their nametag, their HUD row, their map marker and their pings use. It is what makes "who is who"
+// one glance in every surface rather than a name comparison in each.
 PanelWidgetClass MemberRowRoot {
  visible 1
  position 0 0
- size 400 40
+ size 384 44
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 1 1 1 0.25
- style DayZDefaultPanel
+ color 1 1 1 1
  {
+  PanelWidgetClass MemberRowBackdrop {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 384 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 0.07
+   style rover_sim_colorable
+  }
+  PanelWidgetClass MemberRowAccent {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 3 40
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   style rover_sim_colorable
+  }
   TextWidgetClass MemberRowName {
-   position 8 0
-   size 160 40
+   inheritalpha 1
+   ignorepointer 1
+   position 12 2
+   size 152 22
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
    text "Survivor"
-   font "gui/fonts/metron"
-   "exact text" 0
+   font "gui/fonts/metron-bold22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 18
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" left
+   "text valign" center
+  }
+  // Leader / Offline. Empty and invisible for an ordinary online member, so a plain row is a single
+  // line of name with nothing under it rather than a blank reserved strip.
+  TextWidgetClass MemberRowStatus {
+   visible 0
+   inheritalpha 1
+   ignorepointer 1
+   position 12 22
+   size 152 16
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   text ""
+   font "gui/fonts/metron16"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 14
+   "size to text h" 0
+   "size to text v" 0
    "text halign" left
    "text valign" center
   }
   ButtonWidgetClass MemberRowPromoteButton {
-   position 172 4
-   size 110 32
+   position 170 4
+   size 100 32
    hexactpos 1
    vexactpos 1
    hexactsize 1
@@ -35,8 +105,8 @@ PanelWidgetClass MemberRowRoot {
    font "gui/fonts/metron"
   }
   ButtonWidgetClass MemberRowKickButton {
-   position 288 4
-   size 104 32
+   position 276 4
+   size 100 32
    hexactpos 1
    vexactpos 1
    hexactsize 1

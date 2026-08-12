@@ -14,16 +14,25 @@
  */
 class VigridPartyMenu extends UIScriptedMenu
 {
-    private static const int ROW_HEIGHT = 44;
-
     //--- Row name colours. The grey matches VigridPartyHud.COLOR_INACTIVE, so a member reads the
     //--- same way in the panel and in this list; the white is the layout's own default, restated
     //--- here because rows are pooled and a recycled row keeps whatever colour it was last given.
     private static const int COLOR_MEMBER = 0xFFFFFFFF;
     private static const int COLOR_MEMBER_OFFLINE = 0xFF787878;
 
+    //--- Left-column accent bar. Availability only - these players are not in YOUR party, so they
+    //--- have no slot colour to show. Members get theirs from VigridPartyPalette instead.
+    private static const int COLOR_ACCENT_FREE = 0xFF8CA3B0;
+    private static const int COLOR_ACCENT_TAKEN = 0xFF4A4A4A;
+
+    //--- There is no ROW_HEIGHT any more. The WrapSpacer in party_menu.layout derives the pitch from
+    //--- the rows' own declared height, which is what keeps it correct at every resolution - see
+    //--- EnsureRow.
+
     private Widget m_OnlineRows;
     private Widget m_MemberRows;
+    private ScrollWidget m_OnlineScroll;
+    private ScrollWidget m_PartyScroll;
     private Widget m_InviteBanner;
     private TextWidget m_InviteText;
     private ButtonWidget m_InviteAccept;
@@ -66,6 +75,8 @@ class VigridPartyMenu extends UIScriptedMenu
 
         m_OnlineRows = layoutRoot.FindAnyWidget("OnlineRows");
         m_MemberRows = layoutRoot.FindAnyWidget("MemberRows");
+        m_OnlineScroll = ScrollWidget.Cast(layoutRoot.FindAnyWidget("OnlineScroll"));
+        m_PartyScroll = ScrollWidget.Cast(layoutRoot.FindAnyWidget("PartyScroll"));
         m_InviteBanner = layoutRoot.FindAnyWidget("InviteBanner");
         m_InviteText = TextWidget.Cast(layoutRoot.FindAnyWidget("InviteText"));
         m_InviteAccept = ButtonWidget.Cast(layoutRoot.FindAnyWidget("InviteAcceptButton"));
@@ -174,6 +185,17 @@ class VigridPartyMenu extends UIScriptedMenu
         m_DisbandButton.Show(in_party && is_leader && !rpc.locked);
     }
 
+    /**
+     *  The `index`-th row, created if the pool is not that long yet.
+     *
+     *  DELIBERATELY DOES NOT SetPos THE ROW. The rows hang off a WrapSpacer, which lays its own
+     *  children out in creation order; positioning them by hand fights it. The previous version did
+     *  `SetPos(0, index * ROW_HEIGHT)`, and that was wrong twice over - it fought a spacer that was
+     *  not there yet, and it mixed unit systems. SetPos takes REAL SCREEN PIXELS while a layout's
+     *  declared geometry is scaled by viewport/1920, so on any client that was not 1920 wide the
+     *  44 px pitch and the ~30 px rendered row height disagreed and the list spread out or
+     *  overlapped. That is the "bad scaling": the spacing was right only at one resolution.
+     */
     private Widget EnsureRow(array<Widget> pool, Widget parent, string layout_name, int index)
     {
         while (pool.Count() <= index)
@@ -186,16 +208,27 @@ class VigridPartyMenu extends UIScriptedMenu
         }
 
         Widget row = pool.Get(index);
-        row.SetPos(0, index * ROW_HEIGHT);
         row.Show(true);
         return row;
     }
 
-    private void HideFrom(array<Widget> pool, int first)
+    /**
+     *  Destroy every pooled row from `first` on.
+     *
+     *  Unlink, not Show(false), which is what this used to do: a spacer lays out the children it
+     *  HAS, so a hidden row still reserves its slot - leaving a gap in the middle of the list and a
+     *  scroll range longer than the content. Unlink() destroys the widget and all its children.
+     *
+     *  Walked backwards so each removal is of the last element and cannot renumber an index still to
+     *  be visited. RemoveOrdered rather than Remove for the same reason it is used everywhere else
+     *  here: vanilla's Remove() fills the hole with the LAST element.
+     */
+    private void TrimPool(array<Widget> pool, int first)
     {
-        for (int i = first; i < pool.Count(); i++)
+        for (int i = pool.Count() - 1; i >= first; i--)
         {
-            pool.Get(i).Show(false);
+            pool.Get(i).Unlink();
+            pool.RemoveOrdered(i);
         }
     }
 
@@ -219,20 +252,43 @@ class VigridPartyMenu extends UIScriptedMenu
                 break;
 
             TextWidget name_widget = TextWidget.Cast(row.FindAnyWidget("PlayerRowName"));
+            TextWidget status_widget = TextWidget.Cast(row.FindAnyWidget("PlayerRowStatus"));
+            Widget accent_widget = row.FindAnyWidget("PlayerRowAccent");
             ButtonWidget invite_button = ButtonWidget.Cast(row.FindAnyWidget("PlayerRowInviteButton"));
 
             name_widget.SetText(rpc.list_names.Get(i));
 
             //--- bit0 means the server already has them in a party.
             bool already_in_party = (rpc.list_flags.Get(i) & 1) != 0;
+
+            //--- The button and the status label share the right-hand cell and are mutually
+            //--- exclusive. Saying WHY there is no button is the point: a row that simply lost its
+            //--- button reads as a rendering fault, not as "this player already has a party".
             invite_button.Show(can_invite && !already_in_party);
+            status_widget.Show(already_in_party);
+
+            if (already_in_party)
+            {
+                status_widget.SetText("#STR_PARTY_IN_PARTY");
+                accent_widget.SetColor(COLOR_ACCENT_TAKEN);
+            }
+            else
+            {
+                accent_widget.SetColor(COLOR_ACCENT_FREE);
+            }
+
+            //--- Set on both branches, like every other per-row property here: rows are pooled, so
+            //--- one left tinted by an earlier refresh keeps that tint otherwise.
+            name_widget.SetColor(COLOR_MEMBER);
+            if (already_in_party)
+                name_widget.SetColor(COLOR_MEMBER_OFFLINE);
 
             m_InviteTargets.Set(invite_button, rpc.list_uids.Get(i));
 
             shown = shown + 1;
         }
 
-        HideFrom(m_OnlineRowPool, shown);
+        TrimPool(m_OnlineRowPool, shown);
     }
 
     private void RefreshMembers(VigridPartyRPC rpc)
@@ -252,31 +308,39 @@ class VigridPartyMenu extends UIScriptedMenu
                 break;
 
             TextWidget name_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowName"));
+            TextWidget status_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowStatus"));
+            Widget accent_widget = row.FindAnyWidget("MemberRowAccent");
             ButtonWidget promote_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowPromoteButton"));
             ButtonWidget kick_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowKickButton"));
 
             //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
-            //--- stringtable key and only GetMemberName resolves it. It has to happen before the
-            //--- suffixes below, since SetText only localises a string that STARTS with '#'.
-            string display_name = VigridPartyAPI.GetMemberName(i);
-            if (i == rpc.leader_index)
-                display_name = display_name + " *";
+            //--- stringtable key and only GetMemberName resolves it.
+            name_widget.SetText(VigridPartyAPI.GetMemberName(i));
 
-            //--- Say so when the name is a remembered one rather than a live player, matching what
-            //--- the HUD panel already does. The colour is set on BOTH branches on purpose: rows
-            //--- are pooled, so a row left grey by an earlier refresh stays grey otherwise.
+            //--- The member's party slot colour - the same palette entry their nametag, HUD row, map
+            //--- marker and pings use, so identity is one glance in every surface.
+            accent_widget.SetColor(VigridPartyAPI.GetMemberColour(i, 1.0));
+
+            //--- Leader and Offline now live on their own line rather than being appended to the
+            //--- name. Appending had to happen after GetMemberName had already localised the name,
+            //--- could not be styled apart from it, and lengthened the tightest cell in the row.
+            //--- Offline wins when a member is both: it is the more actionable of the two.
             bool online = VigridPartyAPI.IsMemberOnline(i);
-            if (online)
-            {
-                name_widget.SetColor(COLOR_MEMBER);
-            }
-            else
-            {
-                display_name = display_name + " (" + Widget.TranslateString("#STR_PARTY_HUD_OFFLINE") + ")";
-                name_widget.SetColor(COLOR_MEMBER_OFFLINE);
-            }
+            bool is_row_leader = (i == rpc.leader_index);
 
-            name_widget.SetText(display_name);
+            status_widget.Show(!online || is_row_leader);
+
+            if (!online)
+                status_widget.SetText("#STR_PARTY_HUD_OFFLINE");
+            else if (is_row_leader)
+                status_widget.SetText("#STR_PARTY_LEADER_TAG");
+
+            //--- The colour is set on BOTH branches on purpose: rows are pooled, so a row left grey
+            //--- by an earlier refresh stays grey otherwise.
+            if (online)
+                name_widget.SetColor(COLOR_MEMBER);
+            else
+                name_widget.SetColor(COLOR_MEMBER_OFFLINE);
 
             //--- Never offer to promote or kick yourself; leaving is what that button is for.
             bool actionable = is_leader && !rpc.locked && i != rpc.self_index;
@@ -289,7 +353,75 @@ class VigridPartyMenu extends UIScriptedMenu
             shown = shown + 1;
         }
 
-        HideFrom(m_MemberRowPool, shown);
+        TrimPool(m_MemberRowPool, shown);
+    }
+
+    /**
+     *  Scroll whichever column the pointer is over.
+     *
+     *  A ScrollWidget does NOT scroll itself on the mouse wheel - nothing in the engine converts the
+     *  wheel into a scroll, and no vanilla script calls VScrollStep at all. Vanilla's own
+     *  ScrollBarContainer implements the wheel by hand (scrollbarcontainer.c:220) and that is the
+     *  precedent being followed here.
+     *
+     *  This is a SEPARATE defect from the one that made the list clip, and fixing that one is what
+     *  exposed it: with a correct WrapSpacer the content really is taller than the viewport and the
+     *  scrollbar really does appear, so the list looks scrollable and simply is not. Both halves are
+     *  needed. `GetContentHeight()` and `IsScrollbarVisible()` cannot see this - they were already
+     *  reporting 556 px against a 360 px viewport with the bar shown.
+     *
+     *  Which column is decided from the pointer's screen rect rather than from `w`, because `w` is
+     *  whatever child happens to be under the cursor - a row, a text cell, a button, or the empty
+     *  spacer below the last row - and walking its parents is one more thing to get wrong.
+     *
+     *  Sign follows vanilla's convention in the same method: a positive wheel scrolls UP.
+     */
+    override bool OnMouseWheel(Widget w, int x, int y, int wheel)
+    {
+        ScrollWidget target = ScrollUnderPointer(x, y);
+        if (!target)
+            return super.OnMouseWheel(w, x, y, wheel);
+
+        target.VScrollStep(-wheel);
+        return true;
+    }
+
+    private ScrollWidget ScrollUnderPointer(int x, int y)
+    {
+        if (IsPointerOver(m_OnlineScroll, x, y))
+            return m_OnlineScroll;
+
+        if (IsPointerOver(m_PartyScroll, x, y))
+            return m_PartyScroll;
+
+        return null;
+    }
+
+    //! Screen-space hit test. GetScreenPos/GetScreenSize report real pixels, which is the same space
+    //! the wheel event's x/y arrive in.
+    private bool IsPointerOver(Widget target, int x, int y)
+    {
+        if (!target)
+            return false;
+
+        float px;
+        float py;
+        target.GetScreenPos(px, py);
+
+        float sw;
+        float sh;
+        target.GetScreenSize(sw, sh);
+
+        if (x < px)
+            return false;
+        if (y < py)
+            return false;
+        if (x > px + sw)
+            return false;
+        if (y > py + sh)
+            return false;
+
+        return true;
     }
 
     override bool OnClick(Widget w, int x, int y, int button)

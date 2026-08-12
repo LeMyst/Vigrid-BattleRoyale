@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
-	int version = 3;  // Config version
+	int version = 4;  // Config version
 
 	// Enable Vigrid API support
 	bool enable_vigrid_api = false;
@@ -48,6 +48,13 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	// Persist resolved names to steam_names.json. Worth leaving on: the server process restarts
 	// between matches, so without it every match re-queries every returning player.
 	bool cache_steam_names = true;
+
+	// How long a cached name stays trusted. Past this, the next time that player connects with a
+	// placeholder name their persona is looked up again - the cached name is still applied
+	// immediately, so nobody waits on the request. 0 or less = never expires.
+	// This only ever costs a lookup on a connect that was going to use the cache anyway: a player
+	// who set a name of their own in the launcher never triggers one.
+	int steam_name_cache_max_age_hours = 168;  // 7 days
 
     override string GetProfilePath()
     {
@@ -105,6 +112,16 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 			}
 
 			version = 3;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 4)
+		{
+			// steam_name_cache_max_age_hours was introduced in v4. It is a scalar, so unlike the
+			// array above its field initialiser DOES survive deserialization of an existing file -
+			// there is nothing to refill here. The bump exists only so the Save() below writes the
+			// new key into server_settings.json, where an admin can find it.
+			version = 4;
 			Save();  // Save the upgraded config
 		}
 	}

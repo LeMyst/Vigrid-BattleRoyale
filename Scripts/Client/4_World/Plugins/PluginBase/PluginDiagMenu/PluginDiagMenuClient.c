@@ -68,6 +68,10 @@ modded class PluginDiagMenuClient
 #ifdef VIGRID_PARTY
 		DiagMenu.BindCallback(m_BRDiagPartySizeID, CBBRDiagPartySize);
 		DiagMenu.BindCallback(m_BRDiagPartyApplyID, CBBRDiagPartyApply);
+		DiagMenu.BindCallback(m_BRDiagPartyOnlineCountID, CBBRDiagPartyOnlineCount);
+		DiagMenu.BindCallback(m_BRDiagPartyOnlineApplyID, CBBRDiagPartyOnlineApply);
+		DiagMenu.BindCallback(m_BRDiagPartyInviteMeID, CBBRDiagPartyInviteMe);
+		DiagMenu.BindCallback(m_BRDiagPartyOfflineID, CBBRDiagPartyOffline);
 		DiagMenu.BindCallback(m_BRDiagPartyPingID, CBBRDiagPartyPing);
 		DiagMenu.BindCallback(m_BRDiagPartyClearID, CBBRDiagPartyClear);
 #endif
@@ -253,9 +257,13 @@ modded class PluginDiagMenuClient
 		if ( !enabled )
 			return;
 
+		//--- Both counts deliberately OVERFLOW the list. The scroll viewport is 440 px against 26 px
+		//--- rows, so it holds about 16: at the old 12 and 8 neither ladder ever needed a scrollbar,
+		//--- which made scrolling untestable here and left the shorter-refresh case unexercised.
+		//--- They stay different so that switching Solo -> Group is still a shrink.
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
-		BRDiagFillBoard( br_rpc.GetLeaderboardBoard(BR_LEADERBOARD_BOARD_SOLO), 12 );
-		BRDiagFillBoard( br_rpc.GetLeaderboardBoard(BR_LEADERBOARD_BOARD_GROUP), 8 );
+		BRDiagFillBoard( br_rpc.GetLeaderboardBoard(BR_LEADERBOARD_BOARD_SOLO), 40 );
+		BRDiagFillBoard( br_rpc.GetLeaderboardBoard(BR_LEADERBOARD_BOARD_GROUP), 25 );
 
 		br_rpc.lb_season = 1;
 		br_rpc.leaderboard_seq = br_rpc.leaderboard_seq + 1;
@@ -270,13 +278,15 @@ modded class PluginDiagMenuClient
 
 		board.Clear();
 
+		//--- Clamped at zero. The old figures went negative past about a dozen rows, so a longer
+		//--- ladder rendered "-38 wins" and read as a formatting bug rather than as fake data.
 		for ( int i = 0; i < rows; i++ )
 		{
 			board.names.Insert("Fake Player " + (i + 1));
-			board.matches.Insert(40 - i);
-			board.wins.Insert(12 - i);
-			board.kills.Insert(180 - (i * 11));
-			board.points.Insert(2400 - (i * 137));
+			board.matches.Insert(Math.Max(1, 120 - (i * 2)));
+			board.wins.Insert(Math.Max(0, 40 - i));
+			board.kills.Insert(Math.Max(0, 620 - (i * 14)));
+			board.points.Insert(Math.Max(0, 7800 - (i * 178)));
 		}
 
 		//--- Mid-table on purpose: a self rank of 1 hides every bug in how the row is highlighted.
@@ -410,12 +420,64 @@ modded class PluginDiagMenuClient
 		DiagMenu.SetValue(id, false);
 	}
 
+	static void CBBRDiagPartyOnlineCount(float value)
+	{
+		BattleRoyaleDiag.party_online_count = (int)value;
+	}
+
+	/**
+	 *  Fabricate the party menu's left column - the connected players you can invite.
+	 *
+	 *  The half "Apply Fake Party" never covered. That one builds the roster; this one builds the
+	 *  list of people to build a roster FROM, which on a one-client session is empty because it only
+	 *  ever comes from a real server reply. With it applied every button in the menu has a target
+	 *  and acts locally, so the whole screen is reachable alone.
+	 */
+	static void CBBRDiagPartyOnlineApply(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		VigridPartyAPI.DebugSetPlayerList( BattleRoyaleDiag.party_online_count );
+		DiagMenu.SetValue(id, false);
+	}
+
+	//! Fabricate an invitation addressed to you, so the banner and its Accept / Decline are
+	//! reachable. Accepting deliberately lands you in a party you do NOT lead - the branch that
+	//! hides Promote, Kick and every Invite button.
+	static void CBBRDiagPartyInviteMe(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		VigridPartyAPI.DebugReceiveInvite();
+		DiagMenu.SetValue(id, false);
+	}
+
+	//! Flip the last teammate between online and offline, for the grey "(Offline)" row. Resets on
+	//! the next roster change, which is a deliberate simplification rather than a bug.
+	static void CBBRDiagPartyOffline(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		VigridPartyAPI.DebugToggleMemberOffline();
+		DiagMenu.SetValue(id, false);
+	}
+
+	/**
+	 *  Drop every fabrication AND the latch that has been discarding server pushes.
+	 *
+	 *  Must be pressed before reading anything real off this client: while the latch is down the
+	 *  party state is frozen, which on a live server presents as a broken connection rather than as
+	 *  a debug switch left on.
+	 */
 	static void CBBRDiagPartyClear(bool enabled, int id)
 	{
 		if ( !enabled )
 			return;
 
-		VigridPartyAPI.DebugClearRoster();
+		VigridPartyAPI.DebugClearFakes();
 		DiagMenu.SetValue(id, false);
 	}
 
