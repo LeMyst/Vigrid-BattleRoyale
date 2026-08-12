@@ -157,6 +157,11 @@ class BattleRoyaleConfig
 						config.LoadMission();
 					}
 				}
+
+				//--- After BOTH passes, so a mission override is validated too. Deliberately after
+				//--- the Save() above as well: Validate() clamps in memory only and must never
+				//--- persist, or an admin's deliberate setting would be rewritten in their profile.
+				config.Validate();
 			}
 			else
 			{

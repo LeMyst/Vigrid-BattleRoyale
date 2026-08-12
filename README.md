@@ -78,6 +78,67 @@ To override the `avoid_city_spawn` setting from `spawns_settings.json`, create t
 
 This will override only the `avoid_city_spawn` setting while preserving other settings from the profile folder's configuration.
 
+## Zone sizes and round timers
+
+`static_sizes`, `static_timers` and `min_players` in `zone_settings.json` are **ordered smallest zone
+first**: index 0 is the tight final circle, the last index is the widest opening one. `num_zones`
+picks that many entries **from the small end**, so lowering it drops the *largest* circles and always
+keeps the endgame.
+
+### Sizing the opening circle to your map
+
+Aim for `r_max ≈ 0.22 × world_size`. PUBG's Erangel is 8 km across with a first circle of about 2 km
+radius, and past `0.25 × world_size` the opening circle has so little room inside the map that its
+centre lands in the same place every match — the server warns when you cross that line.
+
+| Map | World size | Suggested `r_max` |
+|---|---|---|
+| ChernarusPlus | 15360 | 3375 (the shipped default is already right) |
+| Sakhal | 15360 | 3375 |
+| Livonia | 12800 | 2800 |
+
+Because `zone_settings.json` supports a mission override and the mission is per-map, per-map sizes
+need nothing but a `zone_settings.json` in the mission folder. Setting `scale_sizes_to_world` to `1`
+does it automatically instead: it holds the final circle fixed and scales only the span above it, so
+the endgame stays the size you tuned while the opening circle follows the map.
+
+**Validate your config before you ship it.** Set `zone_selftest_runs` to `200` and boot once — the
+server generates 200 throwaway sets of circles, reports how many failed, how much backtracking and
+tier escalation each needed, and how widely the final circle moves, then plays normally. That answers
+"can this configuration ever get stuck on this map" in one boot.
+
+### Two curves worth considering
+
+Both are alternatives to the shipped values, not new defaults — copy one in if you want it. Timers
+come from `travel / (0.8 × 4.5 m/s)` with a 120 s floor, where `travel` is the distance from the far
+edge of the current circle to the new one; 4.5 m/s is sustained cross-country speed, not the 6.5 m/s
+sprint. The shipped timers already sit within 2% of that formula for the two longest rounds.
+
+**A — smoothed, `num_zones` 6, ~34.6 min.** Minimal change. The shipped curve has a cliff at
+562 → 140 that deletes 94% of the play area in a single round; this moves the sharpest compression to
+the last round, where the travel is only 110 m and it is cheap.
+
+```json
+"num_zones": 6,
+"static_sizes":  [40, 150, 450, 1050, 2200, 3375, 4500],
+"static_timers": [120, 150, 260, 495, 510, 420, 495],
+"min_players":   [10, 10, 10, 11, 22, 33, 44]
+```
+
+**B — PUBG-styled, `num_zones` 8, ~32.4 min.** A steady ~0.6 shrink ratio through the mid-game, so
+more rounds that are each shorter — more rotations, less waiting. Costs two extra round states.
+
+```json
+"num_zones": 8,
+"static_sizes":  [60, 170, 320, 540, 880, 1400, 2200, 3375],
+"static_timers": [90, 90, 90, 150, 225, 345, 505, 360],
+"min_players":   [10, 10, 10, 10, 14, 22, 33, 44]
+```
+
+Note the total number of circles does **not** change how far the zone can travel — the per-step
+budgets telescope, so total reach depends only on `r_max − r_min`. Extra circles change pacing, not
+reachability.
+
 ## Matchmaking and Vigrid Network
 
 The Vigrid Network provides matchmaking services for this mod. It's an **optional feature** that allows players to join matches directly from the main menu without searching the server browser.

@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 3;  // Config version
+	int version = 4;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -50,6 +50,37 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
     // Constant (NOT USED ANYMORE)
     float constant_scale = 0.65;
+
+    // --- Generation tuning (v4) ---
+
+    // 0 = derive a seed, log it, and leave the engine RNG alone. Set it to a value printed in a
+    // previous boot's log to replay that exact layout. NOTE this reseeds the GLOBAL RNG, so a
+    // non-zero value also fixes loot, weather and spawn placement - it is a debugging tool.
+    int zone_generation_seed = 0;
+
+    // Fraction of a large circle that must be dry land for it to be accepted at the normal search
+    // tier. Sampled on rings inside the circle rather than testing the centre pixel, so a big circle
+    // that is mostly land is no longer rejected for being centred 20 m offshore. Per-map tuning
+    // without a rebuild; the relaxed tiers below it are compile-time constants.
+    float zone_min_land_fraction = 0.6;
+
+    // Surface types a circle centre may never sit on, beyond sea and pond. Shared with the airdrop
+    // placement, which used to hardcode this list.
+    ref array<string> avoid_surface_types = { "nam_seaice", "nam_lakeice_ext" };
+
+    // Scale static_sizes to this map. The final circle is held fixed and every larger circle's
+    // distance from it is scaled by world_size / reference_world_size, so the endgame stays the size
+    // you tuned it to while the opening circle follows the map. Off by default: the mission override
+    // ($mission:Vigrid-BattleRoyale\zone_settings.json) is per-map already and is the explicit way to
+    // do this. Turn it on when one config has to serve several maps.
+    bool scale_sizes_to_world = false;
+    int reference_world_size = 15360;  // the world static_sizes was tuned against (ChernarusPlus)
+
+    // Generate this many throwaway chains at boot, report the failure/backtrack/tier distribution,
+    // then play normally. 0 = off. This is the acceptance gate for a new map or a new static_sizes:
+    // 200 runs inside one boot answers "can this configuration ever dead-end here", which relaunching
+    // the server twenty times never could. Costs a few hundred ms.
+    int zone_selftest_runs = 0;
 
     override string GetProfilePath()
     {
@@ -143,6 +174,134 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
 			version = 3;
 			Save();  // Save the upgraded config
+		}
+
+		if (version < 4)
+		{
+			// avoid_surface_types was INTRODUCED in v4. Same trap as the notification arrays above:
+			// a missing array key deserializes to an EMPTY array rather than keeping the field
+			// initialiser, so without this every existing server would load it empty and the
+			// surface-type rejection would silently do nothing. Only refill an array that came back
+			// genuinely empty, so an admin who deliberately clears it stays cleared.
+			if (!avoid_surface_types || avoid_surface_types.Count() == 0)
+			{
+				avoid_surface_types = new array<string>();
+				avoid_surface_types.Insert("nam_seaice");
+				avoid_surface_types.Insert("nam_lakeice_ext");
+			}
+
+			version = 4;
+			Save();  // Save the upgraded config
+		}
+	}
+
+	//--- Clamp anything internally inconsistent so a misconfiguration degrades into a shorter but
+	//--- playable match instead of halting boot. This runs after BOTH the profile and the mission
+	//--- pass (see BattleRoyaleConfig.Load), and deliberately NEVER calls Save() - the clamp is for
+	//--- this boot only and must not rewrite the admin's file.
+	//---
+	//--- It has to live here rather than in the generator: BattleRoyaleServer.Init() reads num_zones
+	//--- to build the state list BEFORE any circle is generated, so every reader must already agree
+	//--- on the clamped number. They all go through GetZoneData(), so they do.
+	override void Validate()
+	{
+		//--- EnfusionScript allows one declaration per name per method scope, so every local the
+		//--- checks below need is declared here rather than at first use.
+		int limit = num_zones;
+		int i;
+		int shortest;
+		int limit_before_fit;
+		float world_size = 0;
+		float factor;
+		float smallest;
+
+		if (GetGame() && GetGame().GetWorld())
+			world_size = GetGame().GetWorld().GetWorldSize();
+
+		//--- (0) Optional per-map scaling, before every check below, so the clamps see real sizes.
+		//--- The FINAL circle is held fixed and each larger circle's distance from it is scaled: a
+		//--- flat multiply would shrink the endgame too, and the endgame size is a function of how
+		//--- many players are left, not of how big the map is.
+		if (scale_sizes_to_world && world_size > 0 && reference_world_size > 0 && static_sizes && static_sizes.Count() > 0)
+		{
+			factor = world_size / reference_world_size;
+			smallest = static_sizes[0];
+
+			for (i = 1; i < static_sizes.Count(); i++)
+			{
+				static_sizes[i] = smallest + ((static_sizes[i] - smallest) * factor);
+			}
+
+			BattleRoyaleUtils.Info("[BattleRoyaleZoneData] scale_sizes_to_world: world " + world_size + " / reference " + reference_world_size + " = x" + factor + " on the span above the final circle. Largest circle is now " + static_sizes[static_sizes.Count() - 1] + ".");
+		}
+
+		//--- (1) num_zones may not exceed the shortest of the three parallel settings arrays. This
+		//--- replaces the fatal Error that used to fire from BattleRoyaleZone.LogUnusedTail before
+		//--- generation had even started.
+		shortest = limit;
+		if (static_sizes && static_sizes.Count() < shortest)
+			shortest = static_sizes.Count();
+		if (static_timers && static_timers.Count() < shortest)
+			shortest = static_timers.Count();
+		if (min_players && min_players.Count() < shortest)
+			shortest = min_players.Count();
+
+		if (shortest < limit)
+		{
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] num_zones is " + limit + " but the shortest of static_sizes/static_timers/min_players has only " + shortest + " entries - clamping num_zones to " + shortest + " for this boot. Add the missing entries to play a full-length match.");
+			limit = shortest;
+		}
+
+		//--- (2) Each circle must be strictly LARGER than the one before it: the span r_i - r_{i-1}
+		//--- is that step's entire travel budget, so a non-increasing pair makes it <= 0 and silently
+		//--- produces a circle that does not contain its parent. Nothing checked this before.
+		if (static_sizes)
+		{
+			for (i = 1; i < limit; i++)
+			{
+				if (static_sizes[i] > static_sizes[i - 1])
+					continue;
+
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] static_sizes is not strictly increasing at index " + i + " (" + static_sizes[i - 1] + " -> " + static_sizes[i] + ") - clamping num_zones to " + i + ". The array is SMALLEST ZONE FIRST: index 0 is the final circle.");
+				limit = i;
+				break;
+			}
+		}
+
+		//--- (3) The opening circle must fit the world box [r, W-r]^2, which is empty unless
+		//--- 2*r <= W. A circle larger than that can never be placed anywhere at all.
+		if (static_sizes && world_size > 0)
+		{
+			limit_before_fit = limit;
+			while (limit > 1 && (2 * static_sizes[limit - 1]) > world_size)
+			{
+				limit--;
+			}
+
+			if (limit < limit_before_fit)
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] a circle of radius " + static_sizes[limit_before_fit - 1] + " cannot fit in a " + world_size + " m world - clamping num_zones from " + limit_before_fit + " to " + limit + ". Lower static_sizes for this map, or turn on scale_sizes_to_world.");
+		}
+
+		//--- (4) Advisory. Past a quarter of the map width the opening circle leaves so little room
+		//--- inside the world box that its centre is pinned near the map centre every match - the
+		//--- same opening every time, and the tightest possible funnel for the rest of the chain.
+		//--- PUBG's Erangel is 8 km with a ~2 km first circle, i.e. exactly 0.25.
+		if (static_sizes && world_size > 0 && limit > 0)
+		{
+			if (static_sizes[limit - 1] > (world_size * 0.25))
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] the opening circle (" + static_sizes[limit - 1] + " m) is more than a quarter of this " + world_size + " m map, leaving only " + ((world_size / 2) - static_sizes[limit - 1]) + " m of freedom for its centre. Expect the same opening every match. A radius near " + (world_size * 0.22) + " m suits this map.");
+		}
+
+		if (limit < 1)
+			limit = 1;
+
+		num_zones = limit;
+
+		//--- min_zone_num indexes the same window, so it cannot exceed it either.
+		if (min_zone_num > num_zones)
+		{
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] min_zone_num (" + min_zone_num + ") exceeds num_zones (" + num_zones + ") - clamping it.");
+			min_zone_num = num_zones;
 		}
 	}
 };

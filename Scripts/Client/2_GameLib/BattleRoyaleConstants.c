@@ -369,10 +369,94 @@ static const float BR_HUD_BADGES_PANEL_X = 109.0;
 
 
 //--- zoning subsystem
+//
+//Circles are generated SMALLEST FIRST: index 0 is the tight final circle and each later one must
+//CONTAIN it, so a step may move the centre by at most (r_i - r_{i-1}) and still stay contained.
+//
+//The whole search rests on one geometric fact: the world-fit boxes [r_i, W - r_i]^2 are nested and
+//all share the map centre, so stepping the maximum allowed straight toward that centre is provably
+//the optimal chain, not a heuristic. That makes "can this position still be extended to a full set
+//of circles" answerable in pure arithmetic (BattleRoyaleZone.CanChainComplete), and it means every
+//accepted circle has a guaranteed next step available - the witness step. Placement therefore
+//cannot dead-end, and the old RequestExit-the-server failure path is gone rather than made rarer.
+//
+//Reach the oracle and the witness step plan on. Containment only needs d <= r_i - r_{i-1}; this is
+//how much of that legal reach the chain is allowed to count on. It is the single biggest lever on
+//how many POIs are usable as a final zone: raising it 0.75 -> 0.95 grows the usable-POI disc on an
+//8192 m map from 3559 m to 3895 m of radius.
+static const float BR_ZONE_REACH_PERCENT = 0.95;
+
+//Tier 1 is the normal match, and a healthy generation never leaves it. MAX raised 0.75 -> 0.85:
+//a quarter of the legal reach was being discarded for free, and circles sitting further off-centre
+//inside their parent is better battle-royale design anyway - it creates rotation pressure. Kept
+//below BR_ZONE_REACH_PERCENT so an ordinary step never hugs the containment boundary.
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
-static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.75; //max next zone distance as a percent of maximum distance (1 => 100%)
-static const float DAYZBR_ZS_MIN_ANGLE = 0; //degrees
-static const float DAYZBR_ZS_MAX_ANGLE = 360; //non-inclusive
+static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.85; //max next zone distance as a percent of maximum distance (1 => 100%)
+static const float BR_ZONE_T1_ARC_DEG  = 45.0;  //half-width of the cone pointed at the map centre
+static const float BR_ZONE_T1_LAND_MIN = 0.60;  //overridden per-map by zone_settings.zone_min_land_fraction
+static const int   BR_ZONE_T1_ROLLS    = 24;
+
+//Tier 2 unlocks only when tier 1 found nothing at all, so a normal match never sees it.
+static const float BR_ZONE_T2_MIN_PCT  = 0.35;
+static const float BR_ZONE_T2_MAX_PCT  = 0.95;
+static const float BR_ZONE_T2_ARC_DEG  = 90.0;
+static const float BR_ZONE_T2_LAND_MIN = 0.35;
+static const int   BR_ZONE_T2_ROLLS    = 24;
+
+//Tier 3 is "anywhere legal at all" - any direction, almost any distance, barely any land.
+static const float BR_ZONE_T3_MIN_PCT  = 0.05;
+static const float BR_ZONE_T3_MAX_PCT  = 0.99;
+static const float BR_ZONE_T3_ARC_DEG  = 180.0;
+static const float BR_ZONE_T3_LAND_MIN = 0.10;
+static const int   BR_ZONE_T3_ROLLS    = 24;
+static const int   BR_ZONE_TIER_COUNT  = 3;
+
+//One deterministic sweep after the random tiers. This is NOT the primary mechanism and must not
+//become it: accept-first pays ~2 rolls in the common case where a sweep pays all 96 every time,
+//determinism would remove the match-to-match variety, and a deterministic best-pick would break
+//backtracking outright - re-rolling a parent only makes progress if it can return something else.
+//It is a completeness oracle, so that backtracking is triggered by evidence that the parent really
+//is a dead end rather than by another few hundred random rolls proving the same thing slowly.
+static const int   BR_ZONE_SWEEP_ANGLES    = 24;
+static const int   BR_ZONE_SWEEP_DISTANCES = 4;
+
+//Land sampling. Rings sit at equal-AREA radii, so the outer band - which is most of a big circle -
+//is not under-sampled. 1 + 2*6 = 13 SurfaceIsSea calls per large candidate.
+static const int   BR_ZONE_LAND_RINGS    = 2;
+static const int   BR_ZONE_LAND_PER_RING = 6;
+//At or below this radius the strict single-point test is kept instead: a 35 m circle centred 20 m
+//offshore really is unplayable, where a 3375 m one that is 90% dry is completely fine.
+static const float BR_ZONE_SMALL_CIRCLE_R = 200.0;
+
+//How far a final circle may sit from the village it was seeded on, in metres. end_in_villages means
+//"centred within this of the town's CfgWorlds point", not "somewhere in the town".
+static const float BR_ZONE_POI_JITTER_M = 10.0;
+
+//Search budgets. Every one of these bounds WORK only - none of them can cause a failure, because
+//the witness step at the end of TryPlaceLevel cannot be rejected.
+static const int   BR_ZONE_LEVEL_RETRIES = 3;   //attempts at a level before it takes the witness step
+static const int   BR_ZONE_SEED_WORK     = 40;  //placements before abandoning a POI for a different one
+static const int   BR_ZONE_MAX_SEEDS     = 8;
+static const int   BR_ZONE_SEED_ROLLS    = 64;
+
+//Adaptive draw. pressure = (centre-ward travel this step MUST make) / (reach available to it).
+//0 keeps the original spread; 1 pins the draw to the top of the tier's window and narrows the cone.
+//Reach is spent only when the chain still owes ground, so the common case is unchanged.
+static const float BR_ZONE_PRESSURE_BIAS        = 1.0;
+static const float BR_ZONE_PRESSURE_ARC_TIGHTEN = 0.7;
+
+//Extra round seconds granted when a circle lands far from its parent. NOTE the old threshold of
+//1500 m was DEAD at the shipped sizes: the longest possible step is 0.85 * 1175 = 999 m, so
+//s_PlayAreaDurationOffsets has always been all zeros and the feature never once fired. 600 m makes
+//it real; the cap stops a single long step adding minutes to a round.
+static const float BR_ZONE_OFFSET_MIN_DISTANCE = 600.0;
+static const float BR_ZONE_OFFSET_SPEED_MPS    = 6.0;
+static const float BR_ZONE_OFFSET_MAX_SECONDS  = 120.0;
+
+//Self test. Generates full chains headlessly and reports the failure/backtrack/tier distribution,
+//which is what turns "relaunch the server twenty times and hope" into a number.
+static const int   BR_ZONE_SELFTEST_DEFAULT_RUNS = 50;
+static const int   BR_ZONE_SELFTEST_WORK_CAP     = 20000;
 
 
 //---- DayZ Expansion Loading Screens

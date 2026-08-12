@@ -195,7 +195,10 @@ class BattleRoyaleRound: BattleRoyaleState
         }
 
         //tell the client the next play area and play artillery sound
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+        //--- Guarded for the same reason the m_PreviousArea send above is: GetZone() may hand back
+        //--- nothing, and this used to dereference it unconditionally.
+        if(m_ThisArea)
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
 
         //end state event
         m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
@@ -204,7 +207,7 @@ class BattleRoyaleRound: BattleRoyaleState
         for(i = 0; i < GetPlayers().Count(); i++)
         {
             PlayerBase player = GetPlayers()[i];
-            if(player)
+            if(player && m_ThisArea)
             {
                 vector playerPos = player.GetPosition();
                 playerPos[1] = 0;
@@ -307,7 +310,16 @@ class BattleRoyaleRound: BattleRoyaleState
     override void OnPlayerTick(PlayerBase player, float timeslice)
     {
         BattleRoyaleZone current_zone = GetActiveZone();
-        if(current_zone && b_DoZoneDamage)
+
+        //--- A zero-radius area is the placeholder circle at the world origin that a zone falls back
+        //--- to when generation could not produce a real one. Without this guard `distance >= radius`
+        //--- is true for every player on the map, so the entire lobby takes zone damage from the
+        //--- first round onward - which is the loudest symptom a broken generation ever had.
+        bool zone_is_real = false;
+        if(current_zone && current_zone.GetArea())
+            zone_is_real = (current_zone.GetArea().GetRadius() > 0);
+
+        if(zone_is_real && b_DoZoneDamage)
         {
             float radius = current_zone.GetArea().GetRadius();
             vector center = current_zone.GetArea().GetCenter();
@@ -416,10 +428,14 @@ class BattleRoyaleRound: BattleRoyaleState
         if(GetZone())
             m_ThisArea = GetZone().GetArea();
 
-        //tell the client the current area is now this area
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() ), true);
-        //tell the client we don't know the next play area
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+        //--- Both sends dereference m_ThisArea, which the block above is allowed to leave NULL.
+        if(m_ThisArea)
+        {
+            //tell the client the current area is now this area
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() ), true);
+            //tell the client we don't know the next play area
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+        }
         //tell the client how much time until the next zone appears
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( seconds ) , true);
     }
@@ -470,14 +486,10 @@ class BattleRoyaleRound: BattleRoyaleState
             return false;
 
 		// Avoid namalsk ice (and others)
-        ref array<string> bad_surface_types = {
-            "nam_seaice",
-            "nam_lakeice_ext"
-        };
-
-        string surface_type;
-        GetGame().SurfaceGetType(x, z, surface_type);
-        if(bad_surface_types.Find(surface_type) != -1)
+        //--- The list used to be hardcoded here. It now comes from zone_settings.avoid_surface_types,
+        //--- shared with the zone generator so an admin adding a bad surface for their map fixes both
+        //--- at once rather than only one of them.
+        if(BattleRoyaleZone.IsBadSurfaceType(x, z))
             return false;
 
         return true;
