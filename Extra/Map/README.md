@@ -41,8 +41,7 @@ fan of strokes:
 | Dashed line | From you to the next zone's centre |
 | Hollow triangle | A teammate |
 | Lighter diamond | A party ping |
-| Axis-aligned plus | You, on the fullscreen map — deliberately does **not** rotate |
-| Notched dart | You, on the minimap — carries your heading |
+| Notched dart | You, on both maps — carries your heading, and the largest glyph on either |
 
 ## Settings
 
@@ -99,10 +98,15 @@ it keeps its colour when the placer disconnects.
 roster sequence moves when the party changes shape, never when somebody walks — so that layer repaints
 on a 10 Hz clock. Every canvas must `Clear()` before any early return, or the last frame burns in.
 
-**The two "you" glyphs differ on purpose.** The fullscreen map's plus does not rotate, because a
-rotating "you" is harder to *find* on a big map; the minimap's dart carries heading, which is the whole
-reason to glance at it. The dart's angle is the **camera** bearing, never `GetYawPitchRoll()` — body yaw
-snaps in steps and does not return to its start after a 360.
+**Both maps draw "you" as the same dart.** The fullscreen map used an axis-aligned plus until
+2026-08-11, on the argument that a rotating "you" is harder to *find* on a big map — true, and beside
+the point, since the question a map gets opened for is which way you are facing. Findability is carried
+by size instead: 16 px against the teammate triangle's 14, in white, which no party slot colour is. The
+dart's angle is the **camera** bearing, never `GetYawPitchRoll()` — body yaw snaps in steps and does not
+return to its start after a 360. The two call sites differ only in what they anchor to: the minimap
+re-centres on the camera and passes it for both, while the fullscreen map takes the position from the
+body and only the angle from the camera. With the `"aiming"` exclude group active, the fullscreen dart
+holds the heading you had when you opened the map.
 
 **The fullscreen map does not stop the player.** `VigridMapMenu` declares `UseKeyboard() == false`, so
 only the mouse focus is taken. Do **not** add `AddActiveInputRestriction(EInputRestrictors.MAP)`: it

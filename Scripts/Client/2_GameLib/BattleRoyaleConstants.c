@@ -349,6 +349,25 @@ static const float BR_SPECTATE_ORBIT_PITCH = -25.0;
 static const float BR_SPECTATE_ORBIT_DEG_PER_SEC = 4.0;
 
 
+//--- VANILLA HUD NOTIFIERS. Extra/PreventPlayerModifiers already neuters ThirstMdfr, HungerMdfr and
+//--- the heat-comfort/disease modifiers - their OnTick bodies return immediately - so the thirst,
+//--- hunger and temperature notifiers never move for the whole match. They are pinned decoration,
+//--- so IngameHud hides them along with the divider that would be left dangling beside Blood.
+//---
+//--- Compile-time on purpose: this is a client-side cosmetic choice, and the settings files are
+//--- server-side only, so an admin toggle would need a new field, an RPC and a BattleRoyaleRPC
+//--- member for something a rebuild flips in one line. Set false to get vanilla's HUD back.
+static const bool BR_HIDE_SURVIVAL_NOTIFIERS = true;
+//--- Where the badge group goes once the three notifiers are gone. Vanilla puts BadgesSpacer at 213
+//--- and BadgesPanel at 252, measured from the RIGHT edge of HudPanel (everything there is
+//--- halign right_ref), which leaves a ~174 px hole between Blood and the first badge. Both are
+//--- shifted right by 143 px, which lands BadgeNotifierDivider exactly on the x of 86 that the
+//--- hidden NotifierDivider used to occupy and preserves vanilla's 4 px spacer-to-panel gap.
+//--- Absolute rather than a delta so re-applying them after a respawn is idempotent.
+static const float BR_HUD_BADGES_SPACER_X = 70.0;
+static const float BR_HUD_BADGES_PANEL_X = 109.0;
+
+
 //--- zoning subsystem
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
 static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.75; //max next zone distance as a percent of maximum distance (1 => 100%)

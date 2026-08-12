@@ -153,7 +153,14 @@ static const float VIGRID_MAP_PING_PX = 12.0;
 //--- other two axes still carry the distinction - 4 vertices vs 3, and 0.75 alpha vs 1.0 - so do
 //--- NOT also raise VIGRID_MAP_PING_ALPHA, which is now the only non-shape separator left.
 static const float VIGRID_MAP_PING_LINE_WIDTH = 2.0;
-static const float VIGRID_MAP_SELF_PX = 10.0;
+//--- The local player, drawn as the same heading dart the minimap uses (was an axis-aligned plus at
+//--- 10 px until 2026-08-11 - it could not answer "which way am I facing", which is the question a
+//--- map gets opened for). Raised to 16 for two reasons: a dart needs more pixels than a plus before
+//--- its direction is readable, and "you" should stay the easiest glyph to find on a big map, which
+//--- was the plus's one real virtue. 16 also keeps it clear of VIGRID_MAP_TEAM_PX (14), now the
+//--- closest silhouette on the map - colour separates them independently, since VIGRID_MAP_COLOR_SELF
+//--- is white and VigridPartyPalette contains no white.
+static const float VIGRID_MAP_SELF_PX = 16.0;
 static const float VIGRID_MAP_SELF_LINE_WIDTH = 2.0;
 static const int VIGRID_MAP_COLOR_SELF = 0xFFFFFFFF;
 
@@ -198,10 +205,9 @@ static const float VIGRID_MAP_KM_THRESHOLD = 1000.0;
 static const int VIGRID_MAP_MINIMAP_TICK_MS = 100;
 static const float VIGRID_MAP_MINIMAP_SCALE = 0.10;
 
-//--- The heading dart marking the local player. Drawn on the canvas rather than being a rotated
-//--- ImageWidget, so there is no icon rest-angle constant to get wrong - see WorldRenderHeadingArrow.
-//--- Larger than VIGRID_MAP_SELF_PX because the minimap is only 200 px across and this is the one
-//--- glyph the player looks for.
+//--- The same heading dart as the fullscreen map's, and the same drawn-not-rotated reasoning - see
+//--- WorldRenderHeadingArrow. SMALLER than VIGRID_MAP_SELF_PX only because the minimap is 200 px
+//--- across: 16 px of dart on it would crowd out the zone rings it is meant to be read against.
 static const float VIGRID_MAP_MINIMAP_ARROW_PX = 14.0;
 
 //--- Markers on the minimap are plain dots, not the fullscreen map's ring-and-cross: at this size a

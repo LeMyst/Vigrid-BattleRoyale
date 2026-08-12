@@ -567,11 +567,23 @@ class VigridMapMenu extends UIScriptedMenu
     }
 
     /**
-     *  The local player.
+     *  The local player: where you are, and which way you are facing.
      *
-     *  Taken straight from GetGame().GetPlayer() and never through the team API. The client entity
-     *  list does not contain the local player, so asking Party for your own slot returns the
+     *  Position taken straight from GetGame().GetPlayer() and never through the team API. The client
+     *  entity list does not contain the local player, so asking Party for your own slot returns the
      *  interpolated server push and your glyph would trail you by up to half a second.
+     *
+     *  POSITION FROM THE BODY, ANGLE FROM THE CAMERA - and the split is deliberate. The minimap
+     *  passes the camera position for both only because it re-centres its map on the camera every
+     *  tick; here the map is panned by the player, so the glyph has to sit on the character, who in
+     *  third person is several metres in front of the camera. The angle is the camera's for the
+     *  reason written up at length in VigridMapMinimap.DrawHeadingArrow: body yaw is the animated
+     *  leg orientation, which snaps in steps and does not return to its start after a full 360.
+     *
+     *  Note the aim axes are excluded while the map is open (MapMissionGameplay.UpdateAimSuppression),
+     *  so this reads as the heading you had when you opened the map and holds still while you pan.
+     *  That is the intent - it answers "which way was I facing", not "which way am I turning" - but
+     *  it does mean the live turning behaviour can only be tested on the minimap.
      */
     protected void RenderSelfGlyph()
     {
@@ -579,7 +591,9 @@ class VigridMapMenu extends UIScriptedMenu
         if (!player)
             return;
 
-        VigridMapRender.WorldRenderCross(m_TeamCanvas, m_MapWidget, player.GetPosition(), VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
+        float heading = Math.NormalizeAngle(GetGame().GetCurrentCameraDirection().VectorToAngles()[0]);
+
+        VigridMapRender.WorldRenderHeadingArrow(m_TeamCanvas, m_MapWidget, player.GetPosition(), heading, VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
     }
 
     protected void RenderTeammates()
