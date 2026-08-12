@@ -1,34 +1,41 @@
 @echo off
+REM Clears game logs (.rpt / .log / .mdmp / .ADM / EXTrace_Profiling_*.csv).
+REM
+REM Usage: ClearLogs.bat "<profile directory>"   clears just that directory
+REM        ClearLogs.bat                         clears every known profile directory
+REM
+REM Every directory is guarded and quoted - an unset variable used to degrade to
+REM "del /s /q /f \*.log" at the root of the current drive.
 
-call "..\project.cfg.bat"
-call "..\user.cfg.bat"
+setlocal
 
-del /s /q /f %serverProfileDirectory%\*.rpt
-del /s /q /f %serverProfileDirectory%\*.log
-del /s /q /f %serverProfileDirectory%\*.mdmp
-del /s /q /f %serverProfileDirectory%\*.ADM
-del /s /q /f %serverProfileDirectory%\EXTrace_Profiling_*.csv
+if not "%~1"=="" (
+	call :clear "%~1"
+	exit /b 0
+)
 
-del /s /q /f %ClientProfileDirectory%\*.rpt
-del /s /q /f %ClientProfileDirectory%\*.log
-del /s /q /f %ClientProfileDirectory%\*.mdmp
-del /s /q /f %ClientProfileDirectory%\*.ADM
-del /s /q /f %ClientProfileDirectory%\EXTrace_Profiling_*.csv
+if not defined ClientProfileDirectory (
+	call "%~dp0_Config.bat" ClearLogs
+	if errorlevel 1 exit /b 1
+)
 
-del /s /q /f %ClientBProfileDirectory%\*.rpt
-del /s /q /f %ClientBProfileDirectory%\*.log
-del /s /q /f %ClientBProfileDirectory%\*.mdmp
-del /s /q /f %ClientBProfileDirectory%\*.ADM
-del /s /q /f %ClientBProfileDirectory%\EXTrace_Profiling_*.csv
+for %%d in (
+	"%serverProfileDirectory%"
+	"%ClientProfileDirectory%"
+	"%ClientBProfileDirectory%"
+	"%ClientCProfileDirectory%"
+	"%localappdata%\DayZ"
+) do call :clear %%d
 
-del /s /q /f %ClientCProfileDirectory%\*.rpt
-del /s /q /f %ClientCProfileDirectory%\*.log
-del /s /q /f %ClientCProfileDirectory%\*.mdmp
-del /s /q /f %ClientCProfileDirectory%\*.ADM
-del /s /q /f %ClientCProfileDirectory%\EXTrace_Profiling_*.csv
+exit /b 0
 
-del /s /q /f %localappdata%\DayZ\*.rpt
-del /s /q /f %localappdata%\DayZ\*.log
-del /s /q /f %localappdata%\DayZ\*.mdmp
-del /s /q /f %localappdata%\DayZ\*.ADM
-del /s /q /f %localappdata%\DayZ\EXTrace_Profiling_*.csv
+:clear
+set "logDir=%~1"
+if not defined logDir exit /b 0
+if not exist "%logDir%\" (
+	echo Skipping "%logDir%" - not a directory.
+	exit /b 0
+)
+echo Clearing logs in "%logDir%"
+for %%e in (*.rpt *.log *.mdmp *.ADM EXTrace_Profiling_*.csv) do del /s /q /f "%logDir%\%%e" >nul 2>&1
+exit /b 0

@@ -1,1 +1,0 @@
-*.emat;*.edds;*.meta;*.ptc;*.c;*.imageset;*.layout;*.ogg;*.json;*.rtm;*.xml;*.csv;*.html;*.paa;*.txt;*.rvmat;*.*;

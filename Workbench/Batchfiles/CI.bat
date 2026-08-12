@@ -3,7 +3,6 @@ setlocal enabledelayedexpansion
 
 set skipPboCleanup=0
 set skipEnumSpecialPaths=0
-set modsToBuild=Main
 set killGame=1
 set killWorkbench=0
 
@@ -32,12 +31,10 @@ goto OPTIONS
 
 :MAIN
 
-if %killGame%==1 CALL KillGame.bat
-if %killWorkbench%==1 taskkill /F /IM workbenchApp.exe /T
-
-set "modsToCheck=%modsToBuild%"
-
 cd /D "%~dp0"
+
+if %killGame%==1 CALL "%~dp0KillGame.bat"
+if %killWorkbench%==1 taskkill /F /IM workbenchApp.exe /T
 
 set success=1
 
@@ -46,39 +43,24 @@ if not exist "P:\" (
 	exit /b 1
 )
 
-if exist "..\project.cfg.bat" del "..\project.cfg.bat"
-
-for /f "usebackq delims=" %%a in ( ../project.cfg ) do (
-    echo %%a | findstr "^#" >nul
-    if errorlevel 1 (
-		echo set %%a>>"..\project.cfg.bat"
-	)
-)
-
-call "..\project.cfg.bat"
-
-if exist "..\user.cfg.bat" del "..\user.cfg.bat"
-
-for /f "usebackq delims=" %%a in ( ../user.cfg ) do (
-    echo %%a | findstr "^#" >nul
-    if errorlevel 1 (
-		echo set %%a>>"..\user.cfg.bat"
-	)
-)
-
-call "..\user.cfg.bat"
+call "%~dp0_Config.bat" CI
+if errorlevel 1 exit /b 1
 
 pushd "%workDrive%%prefixLinkRoot%\"
 
 echo %date% %time% Getting config paths...
-dir /B /S config.cpp > "%workDrive%Temp\%PrefixLinkRoot%-ALL-configpaths-unfiltered.list"
+call "%~dp0_EnumPaths.bat" config.cpp "%workDrive%Temp\%PrefixLinkRoot%-ALL-configpaths-unfiltered.list"
 echo %date% %time% ...got config paths
 
 if %skipEnumSpecialPaths% NEQ 1 (
-	call "%~dp0CI0_EnumSpecialPaths.bat" ALL
+	call "%~dp0CI0_EnumSpecialPaths.bat" "%PrefixLinkRoot%-ALL"
 )
 
 popd
+
+REM Logs\ is gitignored, so it does not exist in a fresh checkout - create it
+REM before writing the marker files.
+if not exist "%~dp0..\Logs" mkdir "%~dp0..\Logs"
 
 if exist "%~dp0..\Logs\*.failure" del "%~dp0..\Logs\*.failure"
 if exist "%~dp0..\Logs\*.tmp" del "%~dp0..\Logs\*.tmp"

@@ -40,26 +40,6 @@ echo %time% > %~dp0..\Logs\Build.tmp
 
 set /a failed=0
 
-if exist ../project.cfg (
-	echo Found the project.cfg
-) else (
-	echo Failed to find the project.cfg file, exitting.
-	set /a failed=1
-)
-
-if exist ../user.cfg (
-	echo Found the user.cfg
-) else (
-	echo Failed to find the user.cfg file, exitting.
-	set /a failed=1
-)
-
-if %failed%==1 goto ABORT
-
-set githubDirectory=%cd%\
-set workbenchDataDirectory=%githubDirectory%Workbench\
-set toolsDirectory=%workbenchDataDirectory%Tools\
-
 set workDrive=
 set modName=
 set clientModName=
@@ -68,65 +48,14 @@ set prefixLinkRoot=
 set keyDirectory=
 set keyName=
 
-if exist "..\project.cfg.bat" del "..\project.cfg.bat"
+call "%~dp0_Config.bat" Build
+if errorlevel 1 goto ABORT
 
-for /f "usebackq delims=" %%a in ( ../project.cfg ) do (
-    echo %%a | findstr "^#" >nul
-    if errorlevel 1 (
-		echo set %%a>>"..\project.cfg.bat"
-	)
-)
-
-call "..\project.cfg.bat"
-
-if exist "..\user.cfg.bat" del "..\user.cfg.bat"
-
-for /f "usebackq delims=" %%a in ( ../user.cfg ) do (
-    echo %%a | findstr "^#" >nul
-    if errorlevel 1 (
-		echo set %%a>>"..\user.cfg.bat"
-	)
-)
-
-call "..\user.cfg.bat"
-
-set modName=%modName%
 set clientModName=%modName%
 
-echo KeyDirectory is: "%keyDirectory%"
-if "%keyDirectory%"=="" (
-	set /a failed=1
-	echo KeyDirectory parameter was not set in the project.cfg
-)
-
-echo KeyName is: "%keyName%"
-if "%keyName%"=="" (
-	set /a failed=1
-	echo KeyName parameter was not set in the project.cfg
-)
-
-echo ModName is: "%modName%"
-if "%modName%"=="" (
-	set /a failed=1
-	echo %modName% parameter was not set in the project.cfg
-)
-
-echo WorkDrive is: "%workDrive%"
-if "%workDrive%"=="" (
-	set /a failed=1
-	echo WorkDrive parameter was not set in the project.cfg
-)
-
-echo ModBuildDirectory is: "%modBuildDirectory%"
-if "%modBuildDirectory%"=="" (
-	set /a failed=1
-	echo ModBuildDirectory parameter was not set in the project.cfg
-)
-
-echo PrefixLinkRoot is: "%prefixLinkRoot%"
-if "%prefixLinkRoot%"=="" (
-	set /a failed=1
-	echo PrefixLinkRoot parameter was not set in the project.cfg
+for %%k in (KeyDirectory KeyName ModName WorkDrive ModBuildDirectory PrefixLinkRoot) do (
+	call "%~dp0_Require.bat" %%k
+	if errorlevel 1 set /a failed=1
 )
 
 if %failed%==1 goto ABORT
@@ -192,7 +121,7 @@ IF EXIST "%workDrive%Temp\%modName%-configpaths-unfiltered.list" (
 )
 
 echo %date% %time% Getting config paths...
-dir /B /S config.cpp > "%workDrive%Temp\%modName%-configpaths-unfiltered.list"
+call "%~dp0_EnumPaths.bat" config.cpp "%workDrive%Temp\%modName%-configpaths-unfiltered.list"
 echo %date% %time% ...got config paths
 
 REM Check if config paths changed from previous run
@@ -228,9 +157,7 @@ for /F "usebackq delims=" %%D in ( "%workDrive%Temp\%modName%-configpaths-unfilt
 echo %date% %time% ...checked config paths
 
 IF !configcpps!==0 (
-	echo /////////////////////////////////////////////////////////////
-	echo %date% %time% ERROR: Found no config.cpp files for %modName% in "%workDrive%%prefixLinkRoot%"
-	echo /////////////////////////////////////////////////////////////
+	call :banner %date% %time% ERROR: Found no config.cpp files for %modName% in "%workDrive%%prefixLinkRoot%"
 	GOTO ABORT
 )
 
@@ -275,9 +202,7 @@ exit /B
 :BUILD
 
 IF NOT EXIST "%workDrive%Temp\%modName%-configpaths.list" (
-	echo /////////////////////////////////////////////////////////////
-	echo %date% %time% ERROR: "%workDrive%Temp\%modName%-configpaths.list" could not be created or was deleted behind our back
-	echo /////////////////////////////////////////////////////////////
+	call :banner %date% %time% ERROR: "%workDrive%Temp\%modName%-configpaths.list" could not be created or was deleted behind our back
 	GOTO ABORT
 )
 
@@ -373,9 +298,7 @@ robocopy "%workDrive%%prefixName%" "%workDrive%Temp\%prefixName%" /MIR /XF *.bak
 IF ERRORLEVEL 8 (
 	REM Copy error
 
-	echo /////////////////////////////////////////////////////////////
-	echo %date% %time% RoboCopy could not mirror "%workDrive%%prefixName%" to "%workDrive%Temp\%prefixName%"
-	echo /////////////////////////////////////////////////////////////
+	call :banner %date% %time% RoboCopy could not mirror "%workDrive%%prefixName%" to "%workDrive%Temp\%prefixName%"
 
 	endlocal
 	exit /B 2
@@ -412,9 +335,7 @@ IF "%toUpdate%" NEQ "0" (
 	del "%workDrive%Temp\%prefixName%\config.cpp"
 	popd
 	IF !failed!==1 (
-		echo /////////////////////////////////////////////////////////////
-		echo !date! !time! Rapify failed on "%workDrive%Temp\%prefixName%\config.cpp"
-		echo /////////////////////////////////////////////////////////////
+		call :banner !date! !time! Rapify failed on "%workDrive%Temp\%prefixName%\config.cpp"
 
 		endlocal
 		exit /B 2
@@ -439,9 +360,7 @@ IF "%toUpdate%" NEQ "0" (
 		)
 		popd
 		IF !failed!==1 (
-			echo /////////////////////////////////////////////////////////////
-			echo !date! !time! Something went wrong with %prefixName% during binarizing
-			echo /////////////////////////////////////////////////////////////
+			call :banner !date! !time! Something went wrong with %prefixName% during binarizing
 
 			endlocal
 			exit /B 2
@@ -499,9 +418,7 @@ IF %binarizeCache%==1 (
 	IF ERRORLEVEL 8 (
 		REM Copy error
 
-		echo /////////////////////////////////////////////////////////////
-		echo !date! !time! RoboCopy could not copy *.p3d or *.wrp from "%workDrive%Temp\BinarizeCache\%modName%\%prefixName%" to "%workDrive%Temp\%prefixName%"
-		echo /////////////////////////////////////////////////////////////
+		call :banner !date! !time! RoboCopy could not copy *.p3d or *.wrp from "%workDrive%Temp\BinarizeCache\%modName%\%prefixName%" to "%workDrive%Temp\%prefixName%"
 
 		endlocal
 		exit /B 1
@@ -528,9 +445,7 @@ IF NOT ERRORLEVEL 1 move /Y "%workDrive%Temp\%modName%\addons\%currentFolder%.pb
 IF ERRORLEVEL 1 (
 	set failed=1
 
-	echo /////////////////////////////////////////////////////////////
-	echo %date% %time% Something went wrong with packing %pboName%.pbo for %modName%
-	echo /////////////////////////////////////////////////////////////
+	call :banner %date% %time% Something went wrong with packing %pboName%.pbo for %modName%
 
 	IF EXIST "%workDrive%Temp\%prefixName%\config.cpp" (
 		REM So we detect changes again on next build attempt
@@ -566,9 +481,7 @@ IF %failed%==1 (
 )
 
 IF NOT EXIST "%workDrive%Temp\%modName%\addons\%pboName%.pbo" (
-	echo /////////////////////////////////////////////////////////////
-	echo %date% %time% Something went wrong with %pboName%.pbo for %modName%, "%workDrive%Temp\%modName%\addons\%pboName%.pbo" doesn't exist
-	echo /////////////////////////////////////////////////////////////
+	call :banner %date% %time% Something went wrong with %pboName%.pbo for %modName%, "%workDrive%Temp\%modName%\addons\%pboName%.pbo" doesn't exist
 
 	endlocal
 	exit /B 1
@@ -578,9 +491,7 @@ IF NOT EXIST "%workDrive%Temp\%modName%\addons\%pboName%.pbo" (
 echo Moving "%workDrive%Temp\%modName%\addons\%pboName%.pbo" to "%modBuildDirectory%%modName%\addons\"
 move /Y "%workDrive%Temp\%modName%\addons\%pboName%.pbo" "%modBuildDirectory%%modName%\addons\"
 IF ERRORLEVEL 1 (
-	echo /////////////////////////////////////////////////////////////
-	echo %date% %time% Something went wrong with %pboName%.pbo for %modName%, it could not be moved to "%modBuildDirectory%%modName%\addons\"
-	echo /////////////////////////////////////////////////////////////
+	call :banner %date% %time% Something went wrong with %pboName%.pbo for %modName%, it could not be moved to "%modBuildDirectory%%modName%\addons\"
 
 	endlocal
 	exit /B 1
@@ -598,17 +509,6 @@ if !deploy! NEQ 0 (
 endlocal
 exit /B 0
 REM End :PACK
-
-:LINKERROR fileName modName destFolder
-setlocal enableextensions enabledelayedexpansion
-set "fileName=%~1"
-set modName=%2
-set "destFolder=%~3"
-echo /////////////////////////////////////////////////////////////
-echo %date% %time% Something went wrong with %fileName% for %modName%, it could not be hardlinked to "%destFolder%%fileName%"
-echo /////////////////////////////////////////////////////////////
-endlocal
-exit /B 1
 
 :SIGN
 
@@ -635,3 +535,12 @@ del "%~dp0..\Logs\Build.tmp"
 echo %date% %time% Failed to package %modName%.
 endlocal
 exit /B 1
+
+REM Prints a message framed by separator lines. Everything after the label name
+REM is echoed verbatim, so callers pass the message unquoted:
+REM     call :banner %date% %time% Something went wrong with %pboName%.pbo
+:banner
+echo /////////////////////////////////////////////////////////////
+echo %*
+echo /////////////////////////////////////////////////////////////
+exit /B 0

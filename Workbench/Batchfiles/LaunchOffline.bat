@@ -1,15 +1,12 @@
 @echo off
+REM Launches a single-player session with SPMission.
+REM Deliberately bypasses LaunchSteamClient.bat - no Steam emulation is needed
+REM for offline play.
+
 setlocal
 
-CALL "%~dp0SetupLaunch.bat"
-
-if not defined AdditionalSPMods (
-    echo AdditionalSPMods parameter was not set in the project.cfg, ignoring.
-) else (
-    set mods=%mods%;%AdditionalSPMods%
-)
-
-CALL "%~dp0SetupModList.bat"
+call "%~dp0SetupLaunch.bat" SP
+if errorlevel 1 exit /b 1
 
 @echo on
 start /D "%gameDirectory%" %clientEXE% %clientLaunchParams% "-mod=%modList%" "-profiles=%ClientProfileDirectory%" "-name=%playerName%" "-mission=%SPMission%"

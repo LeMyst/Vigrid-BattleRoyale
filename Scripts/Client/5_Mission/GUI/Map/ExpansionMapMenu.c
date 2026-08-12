@@ -65,8 +65,6 @@ modded class ExpansionMapMenu
         }
     }
 
-    ref array<vector> GetPlayerPositions
-
     //ensure BR markers are rendering correct
     override void Update( float timeslice )
     {

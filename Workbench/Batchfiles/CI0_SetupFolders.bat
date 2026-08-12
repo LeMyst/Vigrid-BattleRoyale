@@ -2,7 +2,8 @@
 setlocal enabledelayedexpansion
 
 REM Usage: CI0_SetupFolders <modName>
-REM Creates/clears pboNames\<modName> folder, creates Mod\<modName> and Temp\<modName> subfolders, and copies key.
+REM Creates the PboNames\<modName> marker folder, the Mod\<modName> and
+REM Temp\<modName> output folders, and copies the signing key into place.
 
 echo CI0_SetupFolders %* running...
 
@@ -13,50 +14,31 @@ IF "%modName%"=="" (
 	exit /B 1
 )
 
-IF "%workDrive%"=="" (
-	echo CI0_SetupFolders - ERROR: workDrive not set
-	exit /B 1
-)
-IF "%modBuildDirectory%"=="" (
-	echo CI0_SetupFolders - ERROR: modBuildDirectory not set
-	exit /B 1
-)
-IF "%keyDirectory%"=="" (
-	echo CI0_SetupFolders - ERROR: keyDirectory not set
-	exit /B 1
-)
-IF "%keyName%"=="" (
-	echo CI0_SetupFolders - ERROR: keyName not set
-	exit /B 1
+set /a failed=0
+
+for %%k in (workDrive modBuildDirectory keyDirectory keyName) do (
+	call "%~dp0_Require.bat" %%k
+	if errorlevel 1 set /a failed=1
 )
 
-IF NOT exist "%workDrive%Temp\PboNames\%modName%" (
-	mkdir "%workDrive%Temp\PboNames\%modName%"
-)
+if %failed%==1 exit /B 1
 
-IF NOT exist "%modBuildDirectory%%modName%\addons\" (
-	echo Creating folder "%modBuildDirectory%%modName%\addons\"
-	mkdir "%modBuildDirectory%%modName%\addons\"
-)
-
-IF NOT exist "%modBuildDirectory%%modName%\keys\" (
-	echo Creating folder "%modBuildDirectory%%modName%\keys\"
-	mkdir "%modBuildDirectory%%modName%\keys\"
+for %%d in (
+	"%workDrive%Temp\PboNames\%modName%"
+	"%modBuildDirectory%%modName%\addons\"
+	"%modBuildDirectory%%modName%\keys\"
+	"%workDrive%Temp\%modName%\"
+	"%workDrive%Temp\%modName%\addons\"
+) do (
+	IF NOT exist %%d (
+		echo Creating folder %%d
+		mkdir %%d
+	)
 )
 
 IF NOT exist "%modBuildDirectory%%modName%\addons\" (
 	echo CI0_SetupFolders - ERROR: %modBuildDirectory%%modName%\addons\ does not exist
 	exit /B 1
-)
-
-IF NOT exist "%workDrive%Temp\%modName%\" (
-	echo Creating folder "%workDrive%Temp\%modName%\"
-	mkdir "%workDrive%Temp\%modName%\"
-)
-
-IF NOT exist "%workDrive%Temp\%modName%\addons\" (
-	echo Creating folder "%workDrive%Temp\%modName%\addons\"
-	mkdir "%workDrive%Temp\%modName%\addons\"
 )
 
 echo Copying over "%keyDirectory%%keyName%.bikey" to "%modBuildDirectory%%modName%\keys\"

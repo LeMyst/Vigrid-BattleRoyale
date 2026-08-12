@@ -14,7 +14,7 @@ Hard dependencies (mod load order set in `Workbench/project.cfg`): CF, Dabs Fram
 
 - Skip it for read-only work: answering questions, searching, reading logs.
 - Skip it if the session is already inside `.claude/worktrees/` — worktrees do not nest.
-- **Building from a worktree needs an extra step.** `Deploy.bat` builds whatever `P:\Vigrid-BattleRoyale\` points at, which is the primary checkout (see `SetupMod.bat` below). To build worktree code, re-point that junction at the worktree, or merge back to the primary checkout first — otherwise the build silently packs the old sources.
+- **Building from a worktree needs an extra step.** `Deploy.bat` builds whatever `P:\Vigrid-BattleRoyale\` points at, which is the primary checkout (see `SetupMod.bat` below). To build worktree code, re-point that junction at the worktree, or merge back to the primary checkout first — otherwise the build silently packs the old sources. Building the primary checkout never picks up worktree sources: the build skips dot-prefixed folders (see `_EnumPaths.bat`), so `.claude/worktrees/` is invisible to it. Re-pointing the junction still works — `dir` reports paths through the junction, so no dot appears in them.
 - Finish the work with a commit on the worktree branch; push and open a draft PR when the change should go to the remote.
 
 ## Build & run
@@ -33,12 +33,24 @@ Windows-only. Requires DayZ Tools (Steam) and a mounted `P:\` work drive.
 | `Deploy.bat rebuildAll` | Wipe the output mod folder and rebuild everything. |
 | `LaunchOffline.bat` | Single-player with `SPMission`. |
 | `LaunchServer.bat` | Dedicated server (clears logs + `storage_*` first). |
-| `LaunchLocalMP.bat` / `MP2` / `MP3` | Server + 1/2/3 local clients. |
+| `LaunchLocalMP.bat [1\|2\|3]` | Server + N local clients. `LaunchLocalMP2.bat` / `MP3.bat` are wrappers for `2` / `3`. |
+| `LaunchClient.bat [A\|B\|C]` | One client connecting to `127.0.0.1`. `LaunchClientB.bat` / `C.bat` are wrappers for `B` / `C`. |
 | `KillGame.bat` | Kill all DayZ/Diag processes. |
-| `ClearLogs.bat` | Clear **game** logs (`.rpt`, `.ADM`, `.mdmp`) from profile dirs — not build logs. |
+| `ClearLogs.bat ["<dir>"]` | Clear **game** logs (`.rpt`, `.ADM`, `.mdmp`) from one profile dir, or all of them when called with no argument — not build logs. |
 | `ClearStorage.bat` | Delete `storage_*` under `MPMission`. |
 
 Build result: `Workbench/Logs/Build.log`, plus marker files `Build.success` / `Build.failure` / `Build.deploy`. `CI.bat` hard-fails if `P:\` is not mounted.
+
+**Shared helpers** (`_`-prefixed, not entry points). Everything else calls these instead of re-implementing them:
+
+| Helper | Role |
+|---|---|
+| `_Config.bat <tag>` | The **only** way config is loaded. Transliterates `project.cfg` then `user.cfg` into `Workbench/combined.cfg.<tag>.bat` (`set "K=V"` per line, `#` and `;` comments skipped) and calls it. `user.cfg` wins by load order. The `<tag>` keeps concurrent callers off each other's artifact. |
+| `_Require.bat <Key>` | Echo a config value; non-zero exit if empty. |
+| `_EnumPaths.bat <pattern> <outputFile>` | The **only** way the build enumerates sources. Recursive `dir /B /S` from the caller's cwd, minus every path containing a dot-prefixed folder (`.claude`, `.git`, `.idea`, …). Exits 0 when nothing matches. |
+| `_LaunchClient.bat <A\|B\|C>` | Resolve the slot's `Player[B\|C]SteamID` / `Player[B\|C]Name` / `Client[B\|C]ProfileDirectory` and start it. |
+| `_LaunchServer.bat <SteamID>` | Clear logs + storage, then start the dedicated server. |
+| `SetupLaunch.bat <MP\|SP>` | Preamble for every `Launch*.bat`: config, validation, mod list, kill running game. Deliberately no `setlocal` — it exports into the caller. |
 
 Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 7 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`) plus 10 `Extra_*`. Renaming a top-level folder renames its PBO.
 
