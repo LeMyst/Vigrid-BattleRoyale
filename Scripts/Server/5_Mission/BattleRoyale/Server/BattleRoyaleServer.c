@@ -695,6 +695,24 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- the only send that is strictly required - everything else is a re-assert.
         SendHotZones( sender );
 
+        //--- Record it on the player themselves, which is what BattleRoyaleDebug's load gate reads.
+        //--- Resolved through GetPlayerFromIdentity rather than by scanning GetPlayers() for a uid:
+        //--- it matches on the engine-supplied `sender`, so a client cannot report anybody in as
+        //--- loaded but itself, and it answers NULL for a sender the current state does not hold -
+        //--- which is every late joiner, and none of them are the lobby's business.
+        //---
+        //--- ABOVE the late-joiner loop, because that loop returns as soon as it finds its entry.
+        BattleRoyaleState current_state = GetCurrentState();
+        if(current_state)
+        {
+            PlayerBase loaded_player = current_state.GetPlayerFromIdentity( sender );
+            if(loaded_player && !loaded_player.br_loaded_in)
+            {
+                loaded_player.br_loaded_in = true;
+                BattleRoyaleUtils.Info("Player " + sender_id + " reported loaded in.");
+            }
+        }
+
         for(int i = 0; i < a_LateJoiners.Count(); ++i)
         {
             BattleRoyaleLateJoiner entry = a_LateJoiners[i];

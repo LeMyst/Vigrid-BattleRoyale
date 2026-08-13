@@ -15,6 +15,11 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected int i_MinPartyRemainder;
     protected int i_AutoGroupSelfTest;
 
+    //--- GetGame().GetTime() at which the load gate first refused a start that was otherwise ready,
+    //--- or 0 when no hold is running. Owned by IsLoadGateClear / ResetLoadHold and read by
+    //--- MessageWaiting, which uses "is a hold running" as its "is loading what is holding us up".
+    protected int i_LoadHoldStartedMs;
+
     void BattleRoyaleDebug()
     {
         m_ReadyList = new array<PlayerBase>();
@@ -70,21 +75,112 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         return true;
     }
 
+    /**
+     *  How many players in the lobby are still on their loading screen.
+     *
+     *  A player is in this state's roster from BattleRoyaleServer.OnPlayerConnected, which vanilla
+     *  reaches from the ClientNew path - i.e. while their client is still loading the world. So they
+     *  count towards minimum_players and towards the vote denominator well before they can see
+     *  anything, and a match started inside that window takes them through spawn selection and the
+     *  BattleRoyalePrepare teleport with nobody home. Measured 2026-08-10: ClientPrepare -> ClientNew
+     *  alone took 20 s, and for a new character ClientReadyEventTypeID never fires at all.
+     *
+     *  A plain count, with no per-player deadline in it - the bound lives in IsLoadGateClear, and the
+     *  comment on BR_LOBBY_LOAD_MAX_HOLD_SECONDS explains why it has to be there and not here.
+     *  The answer is a count rather than a bool because MessageWaiting has to name a number.
+     */
+    protected int GetNotLoadedCount()
+    {
+        int not_loaded = 0;
+
+        ref array<PlayerBase> players = GetPlayers();
+        for(int i = 0; i < players.Count(); i++)
+        {
+            PlayerBase player = players.Get(i);
+            if(!player)
+                continue;
+
+            if(!player.br_loaded_in)
+                not_loaded++;
+        }
+
+        return not_loaded;
+    }
+
+    /**
+     *  May a match start that is otherwise ready to go proceed?
+     *
+     *  **Only call this once every other start condition is satisfied.** It starts a clock on its
+     *  first refusal, and that clock is what bounds the delay - so consulting it from somewhere the
+     *  match was never going to start anyway (the 10 Hz IsComplete poll of a lobby that is still
+     *  half empty, say) would run the bound down against nothing and leave the gate permanently open
+     *  by the time it mattered.
+     *
+     *  The hold is bounded rather than absolute because an absolute one cannot survive a busy lobby:
+     *  arrivals are continuous, each is unloaded for ~20 s, and "nobody is loading" is a condition a
+     *  filling server may simply never satisfy. Capping the hold means the stragglers get their few
+     *  seconds in the ordinary case and a churning lobby still starts on time in the bad one.
+     */
+    protected bool IsLoadGateClear()
+    {
+        if( GetNotLoadedCount() == 0 )
+        {
+            i_LoadHoldStartedMs = 0;
+            return true;
+        }
+
+        int now = GetGame().GetTime();
+
+        if( i_LoadHoldStartedMs == 0 )
+        {
+            i_LoadHoldStartedMs = now;
+            BattleRoyaleUtils.Info("Lobby load gate: holding the match start, " + GetNotLoadedCount() + " of " + GetPlayers().Count() + " players still loading (at most " + BR_LOBBY_LOAD_MAX_HOLD_SECONDS + "s).");
+            return false;
+        }
+
+        if( (now - i_LoadHoldStartedMs) >= (BR_LOBBY_LOAD_MAX_HOLD_SECONDS * 1000) )
+        {
+            BattleRoyaleUtils.Warn("Lobby load gate: held the match start for " + BR_LOBBY_LOAD_MAX_HOLD_SECONDS + "s and " + GetNotLoadedCount() + " players are still loading. Starting anyway.");
+            i_LoadHoldStartedMs = 0;
+            return true;
+        }
+
+        return false;
+    }
+
+    //--- Called from the paths above whenever the match is NOT otherwise ready to start, so a hold
+    //--- that began under conditions which have since lapsed - players left, the roster fell back
+    //--- below minimum_players - does not keep burning its bound while nothing is waiting on it.
+    protected void ResetLoadHold()
+    {
+        i_LoadHoldStartedMs = 0;
+    }
+
     //returns true when this state is complete
     override bool IsComplete()
     {
-        //--- Hoisted into a local because EnfusionScript has no multi-line if conditions, so the
-        //--- guarded term cannot simply be appended to the condition below.
-        bool enough_groups = true;
+        //--- The whole body is guarded on !b_UseVoteSystem, which is the condition the start test
+        //--- below already carried. Hoisted so that a server running the vote system - the default -
+        //--- never touches the load hold clock from here: CheckReadyState owns it in that case, and
+        //--- a ResetLoadHold() called at this method's 10 Hz would wipe the clock it is running.
+        if( !b_UseVoteSystem )
+        {
+            //--- Hoisted into a local because EnfusionScript has no multi-line if conditions, so the
+            //--- guarded term cannot simply be appended to the condition below.
+            bool enough_groups = true;
 #ifdef VIGRID_PARTY
-        enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
+            enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
 #endif
 
-        if( IsActive() && !b_UseVoteSystem && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime && enough_groups )
-        {
-            Deactivate();
+            bool start_wanted = IsActive() && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime && enough_groups;
+
+            //--- Load gate consulted LAST, once the start is otherwise green - see IsLoadGateClear.
+            if( !start_wanted )
+                ResetLoadHold();
+            else if( IsLoadGateClear() )
+                Deactivate();
         }
-        
+
         return super.IsComplete();
     }
 
@@ -170,14 +266,35 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
 		if( GetGame().GetTickTime() >= f_MinWaitingTime && GetPlayers().Count() > 1 )
 		{
-			//--- Deferred: this runs from a looping timer, i.e. inside TimerQueue.Tick. See
-			//--- BattleRoyaleState.DeactivateDeferred().
-			if( IsActive() && IsVoteReady() )
-				DeactivateDeferred();
+			bool vote_start = IsActive() && IsVoteReady();
 
 			int t_MaxPlayers = GetGame().ServerConfigGetInt( "maxPlayers" );
-			if( b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) ) )
-				DeactivateDeferred();
+			bool auto_start = b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) );
+
+			//--- Merged into one exit where these used to be two independent DeactivateDeferred()
+			//--- calls, so the load gate is consulted exactly once and cannot be satisfied by one
+			//--- path while the other starts the match behind its back.
+			if( !vote_start && !auto_start )
+			{
+				ResetLoadHold();
+				return;
+			}
+
+			//--- The hole issue #8 describes is on the vote path: a lobby at 80% readiness starts the
+			//--- moment min_waiting_time elapses, however many players are still on a loading screen.
+			//--- Consulted LAST, once the start is otherwise green - see IsLoadGateClear.
+			if( !IsLoadGateClear() )
+				return;
+
+			//--- Deferred: this runs from a looping timer, i.e. inside TimerQueue.Tick. See
+			//--- BattleRoyaleState.DeactivateDeferred().
+			DeactivateDeferred();
+		}
+		else
+		{
+			//--- Below the floor entirely - nothing is waiting on a load, so nothing should be
+			//--- spending the hold's bound.
+			ResetLoadHold();
 		}
     }
 
@@ -208,6 +325,19 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 				MessagePlayersUntranslated("STR_BR_WAITING_FOR_PLAYER");
 			else
 				MessagePlayersUntranslated("STR_BR_WAITING_FOR_PLAYERS", waiting_on_count.ToString());
+		}
+
+		//--- Keyed on a hold actually running, not on the raw unloaded count. Players trickle into a
+		//--- busy lobby continuously and each is loading for ~20 s, so that count is almost always
+		//--- non-zero and announcing it every cycle would be pure noise. A running hold means the
+		//--- match would have started by now, which is the only version of this worth telling anyone.
+		int not_loaded_count = GetNotLoadedCount();
+		if( i_LoadHoldStartedMs != 0 && not_loaded_count > 0 )
+		{
+			if( not_loaded_count == 1 )
+				MessagePlayersUntranslated("STR_BR_WAITING_FOR_LOADING_PLAYER");
+			else
+				MessagePlayersUntranslated("STR_BR_WAITING_FOR_LOADING_PLAYERS", not_loaded_count.ToString());
 		}
 
 		if( b_UseVoteSystem )

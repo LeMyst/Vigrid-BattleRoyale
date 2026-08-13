@@ -166,6 +166,17 @@ static const int BR_LATE_JOIN_KICK_MIN_SECONDS = 5;
 //20 s, so the whole grace period could be spent on a loading screen the player cannot read.
 //This ceiling only exists so a client that never reports in is still removed eventually.
 static const int BR_LATE_JOIN_READY_TIMEOUT_SECONDS = 90;
+//the longest the lobby will hold a match start it is otherwise ready to make, waiting for players
+//who have not yet reported themselves loaded in (PlayerLoadedIn -> PlayerBase.br_loaded_in).
+//
+//A BOUND ON THE TOTAL HOLD, NOT A PER-PLAYER TIMEOUT, and that distinction is the whole design.
+//A per-player deadline cannot bound anything on a busy server: every new arrival is unloaded for
+//~20 s and starts a fresh deadline of their own, so a lobby taking a joiner every few seconds
+//always contains somebody still loading and would never start at all. Worse, it would outrank the
+//autostart curve, whose entire job is to force a start once the server fills. Measured against the
+//moment the start first went green, so the delay is this constant whatever the lobby size or churn
+//rate, and it collapses to nothing in the normal case where the stragglers finish first.
+static const int BR_LOBBY_LOAD_MAX_HOLD_SECONDS = 30;
 //seconds remaining at which the "you are about to be disconnected" notification is repeated once.
 //The first one fires as soon as the kick is scheduled, which is while the player is still staring at
 //a loading screen on a slow client, so a single notification is easy to miss entirely.
