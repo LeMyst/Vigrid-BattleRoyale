@@ -4,7 +4,7 @@
 be lifted out of this repository and shipped on its own; none is required for the Battle Royale mod to
 function.
 
-**16 folders, 15 of which build** — `DisableFogChernarusPlus` is currently parked.
+**17 folders, 16 of which build** — `DisableFogChernarusPlus` is currently parked.
 
 ## How this folder works
 
@@ -30,6 +30,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [ChangeFeedbackURL](ChangeFeedbackURL/README.md) | `extra_changefeedbackurl.pbo` | client | Points the vanilla Feedback button at this mod's GitHub repo instead of Bohemia's tracker. **Not standalone** |
 | [DefaultFullAuto](DefaultFullAuto/README.md) | `extra_defaultfullauto.pbo` | server | Weapons spawn already set to full auto where they have one |
 | [DisableFogChernarusPlus](DisableFogChernarusPlus/README.md) | *disabled* | — | Removes fog on Chernarus+. Parked: it does nothing on Vigrid |
+| [DumpItemHeights](DumpItemHeights/README.md) | `extra_dumpitemheights.pbo` | client | **Throwaway diagnostic.** Dumps every loot item's bounding box to a CSV on an offline Diag client |
 | [KillFeed](KillFeed/README.md) | `extra_killfeed.pbo` | both | On-screen death feed with weapon models, attachments and range |
 | [LimitUnconsciousTime](LimitUnconsciousTime/README.md) | `extra_limitunconscioustime.pbo` | server | Force-wakes an unconscious player after 5 seconds. **Not standalone** |
 | [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, HUD compass, party-shared markers and zone circles |
@@ -60,11 +61,12 @@ Most of these have no settings at all. The ones that do:
 
 ## Compile-time defines
 
-Only four addons declare a `defines[]`, which is what lets the mod guard its call sites with
+Only five addons declare a `defines[]`, which is what lets the mod guard its call sites with
 `#ifdef`:
 
 | Define | Addon | Used by the mod? |
 |---|---|---|
+| `DUMP_ITEM_HEIGHTS` | DumpItemHeights | no — declared for consistency only |
 | `KILLFEED` | KillFeed | yes — 5 call sites |
 | `VIGRID_SAFEZONE` | SafeZone | yes — 2 call sites |
 | `VIGRID_MAP` | Map | yes — client zone pushes and two server calls |
