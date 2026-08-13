@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
-	int version = 2;  // Config version
+	int version = 3;  // Config version
 
 	// Lobby spawn location are in the spawns settings located in the mission folder.
 
@@ -20,6 +20,34 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 	// The autostart system will not start the match if the minimum waiting time (min_waiting_time) is not reached
     bool autostart_enabled = true;  // Enable autostart
     float autostart_delay = 750.0;  // Delay before autostart
+
+	// Forced team size - "duos", "trios", and so on.
+	// At 1 (the default) nothing happens and everyone who did not build a party plays solo.
+	// At 2 or more, the server fills every player into a party of at least this size the instant the
+	// lobby closes: undersized existing parties are topped up first, then the remaining solos are
+	// grouped at random - and being drawn at random is also what picks each new party's leader.
+	// A party that already meets the size is never touched and never split.
+	// This can only ever REDUCE the number of teams, and the match ends as soon as one team is left,
+	// so it will always stop short rather than collapse the lobby to a single party. When that
+	// happens somebody stays short-handed and the server log says so.
+    int min_party_size = 1;
+
+	// What to do with the players left over once no more full parties can be made from them - there
+	// are always fewer than min_party_size of them, so one rule or the other has to bend:
+	//   0 = put them in the smallest team going. Nobody plays alone, but if every team is already at
+	//       max_party_size (party_settings.json) then one of them ends up over that cap.
+	//   1 = let them form one short-handed team of their own. Never exceeds max_party_size.
+	//   2 = leave them solo. Team sizes stay exact and somebody plays alone.
+	// USE 1 IF min_party_size EQUALS max_party_size. Mode 0 has nowhere under the cap to put anyone,
+	// so it stacks the whole remainder onto one team - measured at min 4 / max 4, a team of 6.
+    int min_party_remainder = 0;
+
+	// Diagnostic. Runs N synthetic auto-group passes at boot and logs the resulting team sizes,
+	// then plays normally. 0 = off.
+	// Worth doing once after changing min_party_size: a local test rig only reaches three players,
+	// which is not enough to produce a four-way split, a top-up that also has a remainder, or the
+	// max_party_size overflow. This answers "can this configuration strand a player" in one boot.
+    int auto_group_selftest = 0;
 
     int debug_heal_tick_seconds = 5;  // seconds between debug (lobby) heal ticks
 
@@ -116,6 +144,56 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 
 			version = 2;
 			Save();
+		}
+
+		if (version < 3)
+		{
+			// v3 added min_party_size, min_party_remainder and auto_group_selftest. All three are
+			// scalars, so a v2 file simply has no such key and deserialization leaves the field
+			// initialisers above in place - which are already the intended defaults, and default to
+			// the behaviour the server had before this version existed. Load()'s re-save is what
+			// materialises the keys in an existing server's JSON. Nothing to migrate.
+			version = 3;
+			Save();
+		}
+	}
+
+	//--- Runs after the mission override, so a mission that sets these is checked too. Must not
+	//--- Save() - see BattleRoyaleDataBase.Validate().
+	override void Validate()
+	{
+		if (min_party_size < 1)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] min_party_size %1 is below 1, clamping to 1 (auto-grouping off)", min_party_size));
+			min_party_size = 1;
+		}
+
+		if (min_party_size > BR_MIN_PARTY_SIZE_CEILING)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] min_party_size %1 exceeds %2, clamping", min_party_size, BR_MIN_PARTY_SIZE_CEILING));
+			min_party_size = BR_MIN_PARTY_SIZE_CEILING;
+		}
+
+		if (min_party_remainder < 0 || min_party_remainder > 2)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] min_party_remainder %1 is not 0, 1 or 2, using 0", min_party_remainder));
+			min_party_remainder = 0;
+		}
+
+		if (auto_group_selftest < 0)
+			auto_group_selftest = 0;
+		if (auto_group_selftest > BR_AUTO_GROUP_SELFTEST_MAX)
+			auto_group_selftest = BR_AUTO_GROUP_SELFTEST_MAX;
+
+		//--- Warned about rather than clamped: it is a legal configuration, it just cannot deliver
+		//--- what it asks for. Two full teams need twice the team size, and below that the match
+		//--- would have to end the moment it started, so the group floor stops the pass short and
+		//--- somebody plays short-handed every single match.
+		if (min_party_size > 1 && (min_party_size * 2) > minimum_players)
+		{
+			string warning = string.Format("[Lobby] min_party_size %1 needs at least %2 players", min_party_size, min_party_size * 2);
+			warning = warning + string.Format(" to make two full teams, but minimum_players is %1", minimum_players);
+			BattleRoyaleUtils.Warn(warning);
 		}
 	}
 };

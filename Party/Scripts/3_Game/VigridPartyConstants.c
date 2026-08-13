@@ -78,6 +78,24 @@ static const int VIGRID_PARTY_FLAG_ONLINE = 1;      // bit0
 static const int VIGRID_PARTY_FLAG_ALIVE = 2;       // bit1
 static const int VIGRID_PARTY_FLAG_UNCONSCIOUS = 4; // bit2 - populated but unstyled in v1
 
+/**
+ *  What VigridPartyAPI.AutoGroup does with the players left over once it has formed as many parties
+ *  of min_size as the pool allows. There are always fewer than min_size of them, so by definition
+ *  they cannot make a party of the required size on their own and SOMETHING has to give. Which
+ *  concession is acceptable is the host operator's call, not this addon's - hence a mode rather
+ *  than a fixed rule.
+ *
+ *  Passed in by the caller; Party holds no setting of its own for it.
+ */
+static const int VIGRID_PARTY_REMAINDER_ABSORB = 0; //!< push them into the smallest party, exceeding max_party_size if every candidate is full - nobody is left alone, at the cost of one oversized team
+static const int VIGRID_PARTY_REMAINDER_PARTY = 1;  //!< let them form one undersized party together - never exceeds max_party_size, but that team is short-handed
+static const int VIGRID_PARTY_REMAINDER_SOLO = 2;   //!< leave them solo - sizes stay exact and somebody plays alone
+
+//--- Largest synthetic population VigridPartyAutoGroup.SelfTest walks up to. It steps from 1 rather
+//--- than sampling, so every small case - the ones a live test rig can never reach - is covered
+//--- exactly once per party shape.
+static const int VIGRID_PARTY_AUTOGROUP_TEST_MAX_PLAYERS = 64;
+
 //--- Settings defaults. Mirrored by VigridPartyData; kept here so the client has sane values
 //--- before the first VP_Settings lands.
 static const bool VIGRID_PARTY_DEF_ENABLED = true;

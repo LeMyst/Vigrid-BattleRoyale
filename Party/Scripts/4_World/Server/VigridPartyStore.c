@@ -150,6 +150,12 @@ class VigridPartyStore
      *  `name_cache` is written pruned: only uids that are actually in a party being persisted make
      *  it to disk, so the file stays bounded by real membership no matter how many players have
      *  connected this session.
+     *
+     *  Auto-placed members are subtracted first. A party is meant to outlive the process so a real
+     *  team does not have to be rebuilt every match; a teammate the host's auto-grouper assigned at
+     *  random is precisely what must not. So a fully auto-formed party writes nothing at all (it
+     *  fails the two-member rule once filtered) and a real party that was topped up is written back
+     *  as the party it was before the match.
      */
     static void Save(array<ref VigridParty> parties, map<string, string> name_cache)
     {
@@ -157,21 +163,33 @@ class VigridPartyStore
         store.saved_at = VigridPartyTime.NowSeconds();
         int now_hours = VigridPartyTime.NowHours();
 
+        ref array<string> persistent = new array<string>();
+
         int count = parties.Count();
         for (int i = 0; i < count; i++)
         {
             VigridParty party = parties.Get(i);
             if (!party)
                 continue;
-            if (party.Count() < 2)
+
+            party.BuildPersistentMembers(persistent);
+            if (persistent.Count() < 2)
                 continue; //!< never persist a party that has decayed to a single member
 
             ref VigridPartyStoreEntry entry = new VigridPartyStoreEntry();
             entry.id = party.id;
-            entry.leader_uid = party.leader_uid;
             entry.created_at = party.created_at;
             entry.last_seen_hours = party.last_seen_hours;
-            entry.member_uids.Copy(party.member_uids);
+            entry.member_uids.Copy(persistent);
+
+            //--- The live leader can be an auto member: leader_transfer_on_disconnect promotes the
+            //--- first ONLINE member, which does not care how they joined. Writing that uid would
+            //--- leave a leader who is not in member_uids - Load() repairs it, but a file that needs
+            //--- repairing every save is a file nobody can read. Fall back to the senior survivor,
+            //--- which is what Load()'s repair would have picked anyway.
+            entry.leader_uid = party.leader_uid;
+            if (party.IsAuto(entry.leader_uid))
+                entry.leader_uid = persistent.Get(0);
 
             store.parties.Insert(entry);
         }

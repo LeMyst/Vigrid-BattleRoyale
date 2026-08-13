@@ -212,6 +212,58 @@ class VigridPartyAPI
         manager.RefreshRosterNames();
     }
 
+    /**
+     *  Fill `population` into parties of at least `min_size`, creating parties as needed.
+     *
+     *  Existing parties are topped up before any new one is started, and one that already meets
+     *  `min_size` is never touched and never split. Each new party's members - and therefore its
+     *  leader, which is whoever went in first - are drawn in random order.
+     *
+     *  ⚠️ `min_groups` is a FLOOR ON THE RESULTING GROUP COUNT AND IT OUTRANKS `min_size`. A host
+     *  that counts groups down to a winner needs at least two of them to count with, and merging
+     *  the whole population into one party would end the match on its first tick. When the floor
+     *  and the minimum size cannot both be honoured the pass stops early and leaves players
+     *  short-handed; it never returns fewer than `min_groups` groups.
+     *
+     *  `remainder` is one of VIGRID_PARTY_REMAINDER_* and decides what happens to the players left
+     *  over once no full party can be made from them - fewer than `min_size` of them, by definition,
+     *  so some rule has to bend. ABSORB may exceed max_party_size; the other two never do.
+     *
+     *  Members added here are session-scoped: they are subtracted before parties.json is written, so
+     *  an assignment made for one match cannot follow anybody into the next. Everything else about
+     *  the party is normal - the roster, the HUD, the nametags, the pings and every grouping query.
+     *
+     *  Safe either side of SetFormationLocked (the lock only gates player requests), but call it
+     *  BEFORE locking, or players are told composition is frozen and then watch it change.
+     *
+     *  Returns the resulting group count, or -1 when nothing was done - the addon is disabled,
+     *  `min_size` is 1 or less, or the population is empty.
+     */
+    static int AutoGroup(array<PlayerBase> population, int min_size, int min_groups, int remainder)
+    {
+        VigridPartyManager manager = VigridPartyManager.GetInstance();
+        if (!manager || !manager.IsEnabled())
+            return -1;
+
+        return manager.AutoGroupPopulation(population, min_size, min_groups, remainder);
+    }
+
+    /**
+     *  Plan `cases` synthetic populations with the settings AutoGroup would use and log the result.
+     *  Changes nothing and touches no player - it is arithmetic against the same planner.
+     *
+     *  Worth running once after changing min_size: the cases that can strand a player or collapse
+     *  the group count are combinatorial, and a live test rig cannot produce them.
+     */
+    static void AutoGroupSelfTest(int cases, int min_size, int min_groups, int remainder)
+    {
+        VigridPartyManager manager = VigridPartyManager.GetInstance();
+        if (!manager || !manager.IsEnabled())
+            return;
+
+        VigridPartyAutoGroup.SelfTest(cases, min_size, manager.GetMaxPartySize(), min_groups, remainder);
+    }
+
     //! Degenerate partition used when the addon is disabled or not up yet: one group per player.
     private static array<ref array<PlayerBase>> SoloGroups(array<PlayerBase> population)
     {

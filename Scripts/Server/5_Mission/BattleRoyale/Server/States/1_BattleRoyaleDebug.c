@@ -11,6 +11,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected float f_AutoStartDelay;
     protected bool b_AutoStartGame;
     protected int i_FirstPlayerTick;
+    protected int i_MinPartySize;
+    protected int i_MinPartyRemainder;
+    protected int i_AutoGroupSelfTest;
 
     void BattleRoyaleDebug()
     {
@@ -25,7 +28,27 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		f_MinWaitingTime = m_LobbySettings.min_waiting_time;
 		b_AutoStartGame = m_LobbySettings.autostart_enabled;
 		f_AutoStartDelay = m_LobbySettings.autostart_delay;
+		i_MinPartySize = m_LobbySettings.min_party_size;
+		i_MinPartyRemainder = m_LobbySettings.min_party_remainder;
+		i_AutoGroupSelfTest = m_LobbySettings.auto_group_selftest;
     }
+
+#ifdef VIGRID_PARTY
+    //--- Diagnostic, off unless lobby_settings.json asks for it. Plans synthetic populations with
+    //--- the settings this match will use and logs the sizes that come out; changes nothing.
+    //--- It is here because the interesting cases are combinatorial and the local rig runs three
+    //--- clients, which cannot produce a four-way split, a top-up that also leaves a remainder, or
+    //--- the max_party_size overflow.
+    protected void RunAutoGroupSelfTest()
+    {
+        if ( i_AutoGroupSelfTest <= 0 )
+            return;
+        if ( i_MinPartySize <= 1 )
+            return;
+
+        VigridPartyAPI.AutoGroupSelfTest( i_AutoGroupSelfTest, i_MinPartySize, BR_AUTO_GROUP_MIN_GROUPS, i_MinPartyRemainder );
+    }
+#endif
 
     override string GetName()
     {
@@ -107,6 +130,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         VigridMapAPI.ClearAllMarkers();
 #endif
 
+#ifdef VIGRID_PARTY
+        //--- Here rather than in BattleRoyaleServer.Init(): the party manager is created from its
+        //--- own modded MissionServer.OnInit, and nothing pins the order of the two overrides, so
+        //--- Init() may well run before it exists. By the time the lobby opens it certainly does.
+        //--- One match per process, so this runs at most once.
+        RunAutoGroupSelfTest();
+#endif
+
         super.Activate();
     }
 
@@ -115,6 +146,19 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         super.Deactivate();
 
 #ifdef VIGRID_PARTY
+        //--- Forced team size, if the server wants one. This is the last instant the roster is still
+        //--- intact - BattleRoyaleServer.Update calls Deactivate() and only then migrates the
+        //--- players to the next state - and it is after the group-count gate in IsComplete(), so
+        //--- grouping cannot stall the lobby it is closing.
+        //---
+        //--- It also has to land BEFORE the lock below, for two reasons. Players are about to be
+        //--- told composition is frozen and must not then watch it change; and everything downstream
+        //--- that reads parties - party-only voice, spawn selection gathering, the grouped teleport,
+        //--- the leaderboard field size - runs from the next state onwards and picks the new teams
+        //--- up for free.
+        if ( i_MinPartySize > 1 )
+            VigridPartyAPI.AutoGroup( GetPlayers(), i_MinPartySize, BR_AUTO_GROUP_MIN_GROUPS, i_MinPartyRemainder );
+
         //--- The lobby is the last moment party composition may change. Freezing it here stops a
         //--- player splitting off mid-match, which would raise the group count and stall the
         //--- round-end condition that waits for a single group to remain.

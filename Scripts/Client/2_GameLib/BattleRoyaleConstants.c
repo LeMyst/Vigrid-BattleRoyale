@@ -171,6 +171,21 @@ static const int BR_LATE_JOIN_READY_TIMEOUT_SECONDS = 90;
 //a loading screen on a slow client, so a single notification is easy to miss entirely.
 static const int BR_LATE_JOIN_FINAL_WARN_SECONDS = 5;
 
+//--- forced team size, lobby_settings.json `min_party_size`. See BattleRoyaleLobbyData.
+//ceiling on min_party_size. Matches the ceiling party_settings.json puts on max_party_size, so the
+//two settings cannot describe sizes the other cannot hold.
+static const int BR_MIN_PARTY_SIZE_CEILING = 16;
+//THE FLOOR ON HOW MANY TEAMS AUTO-GROUPING MAY LEAVE STANDING, and it outranks min_party_size.
+//Every round-end and skip condition in the state machine ends the match at `GetGroupCount() <= 1`,
+//so a pass that merged the lobby into one party would end the match on its first tick. Two is the
+//smallest number that can still be counted down to a winner. Not a setting: no value below 2 is a
+//working match, and no value above 2 is a floor anybody asked for.
+static const int BR_AUTO_GROUP_MIN_GROUPS = 2;
+//ceiling on lobby_settings.json `auto_group_selftest`. The pass is pure arithmetic and costs
+//microseconds, but it runs inline during OnInit, so an admin typing an extra zero should not be able
+//to stall the boot.
+static const int BR_AUTO_GROUP_SELFTEST_MAX = 1000;
+
 //field-size weighting curves for leaderboard_settings.json `field_weight_mode`.
 static const int BR_LEADERBOARD_WEIGHT_FLAT = 0;
 static const int BR_LEADERBOARD_WEIGHT_LOG2 = 1;
