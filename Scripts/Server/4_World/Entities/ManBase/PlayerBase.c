@@ -56,6 +56,14 @@ modded class PlayerBase
 	float br_prehit_blood = 0;
 	int br_prehit_ms = -1;
 
+	//--- Set by EEOnDamageCalculated and CONSUMED by the matching EEHitBy, so a latch is paired with
+	//--- its own hit exactly rather than by comparing clocks. The millisecond-equality test this
+	//--- replaced dropped hits at random - GetTime() is live ms and real work happens between the two
+	//--- hooks, so a damage event that straddled a millisecond boundary scored nothing. Measured
+	//--- 2026-08-13: the same player killing the same opponent scored 100 in one match and 0 in the
+	//--- next, with the rejections logged as "stale latch".
+	bool br_prehit_valid = false;
+
 	PlayerBase last_unconscious_source;
 	//--- SteamID64 of whoever is responsible for the hit that downed this player, which is NOT always
 	//--- expressible as an object: an explosive's owner may already be dead or disconnected. Set
@@ -139,6 +147,7 @@ modded class PlayerBase
 		br_prehit_health = GetHealth("", "Health");
 		br_prehit_blood = GetHealth("", "Blood");
 		br_prehit_ms = GetGame().GetTime();
+		br_prehit_valid = true;
 
 		return true;
 	}
@@ -168,22 +177,59 @@ modded class PlayerBase
 		//--- Reuse the uid EEHitBy already resolved - do not call ResolveKillerUid a second time. It
 		//--- is "" for self-damage, the zone, falls, drowning, infected, animals and your own
 		//--- grenade, so this single test excludes every non-player cause.
-		if ( last_unconscious_source_uid == "" )
-			return;
-
 		string victim_uid = player_steamid;
 		if ( victim_uid == "" && GetIdentity() )
 			victim_uid = GetIdentity().GetPlainId();
 
+		if ( last_unconscious_source_uid == "" )
+		{
+			stats.NoteDamageRejected("no player source", last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
 		//--- Crediting a player for shooting their own squadmate reads as a bug on a summary card.
 		if ( stats.AreTeammates(last_unconscious_source_uid, victim_uid) )
+		{
+			stats.NoteDamageRejected("teammates", last_unconscious_source_uid, victim_uid);
 			return;
+		}
 
-		//--- A STAMP, not a bool. Some scripted damage paths never route through
-		//--- EEOnDamageCalculated, and a latch left over from an earlier hit would clamp this one
-		//--- against a health value that is seconds old.
-		if ( br_prehit_ms != GetGame().GetTime() )
+		/**
+		 *  Pair the latch with ITS OWN hit.
+		 *
+		 *  This was `br_prehit_ms != GetGame().GetTime()` - millisecond-exact equality - and it
+		 *  dropped hits at random. GetTime() is live mission time in ms, and the engine applies the
+		 *  damage, processes bleeding and runs the shock transfer between EEOnDamageCalculated and
+		 *  EEHitBy, so any damage event straddling a millisecond boundary was discarded. Measured
+		 *  2026-08-13: the same player killing the same opponent with the same weapon scored 100 in
+		 *  one match and 0 in the next.
+		 *
+		 *  The flag is exact - set by the hook that runs first, consumed by the hook that runs second,
+		 *  once per damage event - and needs no clock at all. The age check below is only a safety net
+		 *  for the leak where EEOnDamageCalculated ran but its EEHitBy never did, because another mod
+		 *  cancelled the damage in between; without it that orphaned latch would be consumed by
+		 *  whatever hit came next, clamping it against stale health.
+		 *
+		 *  The two rejections are reported SEPARATELY on purpose: "no latch" means
+		 *  EEOnDamageCalculated never ran for this hit at all, which is a different fault with a
+		 *  different fix, and lumping them together is what made the first diagnosis ambiguous.
+		 */
+		if ( !br_prehit_valid )
+		{
+			stats.NoteDamageRejected("no latch - EEOnDamageCalculated did not run", last_unconscious_source_uid, victim_uid);
 			return;
+		}
+
+		int latch_age = GetGame().GetTime() - br_prehit_ms;
+
+		//--- Consumed whatever happens next, so one latch can never serve two hits.
+		br_prehit_valid = false;
+
+		if ( latch_age > BR_PREHIT_LATCH_TTL_MS )
+		{
+			stats.NoteDamageRejected("latch too old age=" + latch_age, last_unconscious_source_uid, victim_uid);
+			return;
+		}
 
 		/**
 		 *  Were they ALIVE BEFORE this hit? That is the question, and it is not the same as IsAlive().
@@ -203,7 +249,10 @@ modded class PlayerBase
 		 *  to whatever they had left, so the killing hit scores what it actually took and no overkill.
 		 */
 		if ( br_prehit_health <= 0 )
+		{
+			stats.NoteDamageRejected("already dead", last_unconscious_source_uid, victim_uid);
 			return;
+		}
 
 		float max_health = GetMaxHealth("", "Health");
 		float max_blood = GetMaxHealth("", "Blood");
@@ -218,8 +267,14 @@ modded class PlayerBase
 		float dealt = Math.Max( health_lost / max_health, blood_lost / max_blood );
 		dealt = dealt * 100;
 
+		//--- The one exit that is genuinely interesting if it fires: the hit resolved to a real
+		//--- attacker and a live victim, and still removed nothing measurable. That would mean the
+		//--- delta is not seeing what the damage system did.
 		if ( dealt <= 0 )
+		{
+			stats.NoteDamageRejected("zero delta", last_unconscious_source_uid, victim_uid);
 			return;
+		}
 
 		stats.NoteDamage( last_unconscious_source_uid, victim_uid, dealt );
 	}

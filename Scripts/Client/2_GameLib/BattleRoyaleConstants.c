@@ -96,6 +96,12 @@ static const int BR_LASTMATCH_FLAG_GROUPED = 1;
 //outright - no figure beats a wrong figure.
 static const int BR_LASTMATCH_FLAG_TRUNCATED = 2;
 
+//Safety net on the pre-hit health latch, in ms. The latch is normally matched to its hit by a
+//consumed flag, which is exact; this only catches the leak where EEOnDamageCalculated ran but the
+//matching EEHitBy never did (another mod cancelled the damage), leaving the flag set for whatever
+//comes next. Well above one damage event and well below the gap between two unrelated ones.
+static const int BR_PREHIT_LATCH_TTL_MS = 200;
+
 //How long a zone-damage hint stays good. The play area is the one environmental cause worth naming,
 //and scripted damage reaches EEKilled with the victim as their own killer, so it is only knowable
 //from a hint dropped at the damage site. Consumed on read, so a stale hint cannot mislabel the next

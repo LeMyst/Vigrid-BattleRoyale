@@ -322,6 +322,34 @@ class BattleRoyaleMatchStats
         if (m_PairDamage.Contains(pair_key))
             pair_running = m_PairDamage.Get(pair_key);
         m_PairDamage.Set(pair_key, pair_running + dealt);
+
+        //--- Per hit, at Trace. Noisy by construction, and that is the point: without it "this player
+        //--- dealt no damage" and "this player's hits were rejected before they got here" are the
+        //--- same log line - i.e. no line at all. That ambiguity cost a whole two-client match once,
+        //--- when a victim visibly finished on 74 health while their attacker was credited with zero.
+        string line = "[Stats] hit " + attacker_uid;
+        line = line + " -> " + victim_uid;
+        line = line + " dealt=" + Math.Round(dealt);
+        line = line + " total=" + GetDamage(attacker_uid);
+        BattleRoyaleUtils.Trace(line);
+    }
+
+    /**
+     *  Why a hit was NOT credited. Called from PlayerBase.BR_NoteDamageDealt at each of its exits.
+     *
+     *  The mirror of the trace above, and the more useful half: a rejected hit is otherwise
+     *  completely silent, so a damage total that is wrong and a damage total that is right are
+     *  indistinguishable from the log.
+     */
+    void NoteDamageRejected(string reason, string attacker_uid, string victim_uid)
+    {
+        if (!m_Recording)
+            return;
+
+        string line = "[Stats] hit REJECTED (" + reason + ")";
+        line = line + " attacker=" + attacker_uid;
+        line = line + " victim=" + victim_uid;
+        BattleRoyaleUtils.Trace(line);
     }
 
     protected string PairKey(string attacker_uid, string victim_uid)

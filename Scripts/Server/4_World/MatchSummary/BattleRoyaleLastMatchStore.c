@@ -119,11 +119,18 @@ class BattleRoyaleLastMatchStore
     }
 
     /**
-     *  Drop rows with no uid, drop duplicates keeping the first, and cap the total.
+     *  Drop rows with no uid, drop duplicates keeping the first, sort by place, and cap the total.
      *
      *  The cap is applied on READ as well as on write, because the file may have been produced by a
      *  different build or edited by hand, and the row count decides the size of an RPC payload that
      *  has no chunking behind it.
+     *
+     *  The SORT is here for the same reason, and it is not redundant with the one in
+     *  BattleRoyaleMatchStats.BuildFile. That one runs at write time and therefore cannot repair a
+     *  file this build did not produce - an older build wrote exit order, which renders the winner
+     *  underneath the loser, and a hand-written test fixture can be in any order at all. Everything
+     *  read off this disk is untrusted, ordering included; SendLastMatchTable walks the rows as it
+     *  finds them and should not have to care where they came from.
      */
     private static void Prune(BattleRoyaleLastMatchFile store)
     {
@@ -158,6 +165,31 @@ class BattleRoyaleLastMatchStore
 
             seen.Insert(uid);
         }
+
+        //--- Best place first, and BEFORE the cap below so a file longer than the cap keeps the top
+        //--- places rather than whichever rows happened to be stored first. Insertion sort: bounded
+        //--- by the cap, and stable for equal places.
+        ref array<ref BattleRoyaleLastMatchRow> sorted = new array<ref BattleRoyaleLastMatchRow>();
+        for (i = 0; i < store.rows.Count(); i++)
+        {
+            BattleRoyaleLastMatchRow to_place = store.rows.Get(i);
+
+            int insert_at = sorted.Count();
+            for (int j = 0; j < sorted.Count(); j++)
+            {
+                if (to_place.place < sorted.Get(j).place)
+                {
+                    insert_at = j;
+                    break;
+                }
+            }
+
+            sorted.InsertAt(to_place, insert_at);
+        }
+
+        store.rows.Clear();
+        for (i = 0; i < sorted.Count(); i++)
+            store.rows.Insert(sorted.Get(i));
 
         while (store.rows.Count() > BR_LASTMATCH_MAX_ROWS)
             store.rows.RemoveOrdered(store.rows.Count() - 1);
