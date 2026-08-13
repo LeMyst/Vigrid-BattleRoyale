@@ -8,6 +8,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected bool b_UseVoteSystem;
     protected float f_VoteThreshold;
     protected float f_MinWaitingTime;
+    protected float f_MinWaitingTimeNotFull;
     protected float f_AutoStartDelay;
     protected bool b_AutoStartGame;
     protected int i_FirstPlayerTick;
@@ -31,6 +32,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		b_UseVoteSystem = (m_LobbySettings.use_ready_up == 1);
 		f_VoteThreshold = m_LobbySettings.ready_up_percent;
 		f_MinWaitingTime = m_LobbySettings.min_waiting_time;
+		f_MinWaitingTimeNotFull = m_LobbySettings.min_waiting_time_not_full;
 		b_AutoStartGame = m_LobbySettings.autostart_enabled;
 		f_AutoStartDelay = m_LobbySettings.autostart_delay;
 		i_MinPartySize = m_LobbySettings.min_party_size;
@@ -108,6 +110,81 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     }
 
     /**
+     *  Players in the lobby whose client has reported itself loaded in - i.e. who could actually
+     *  play a match that started right now.
+     *
+     *  This, not GetPlayers().Count(), is what minimum_players is measured against: "ten players"
+     *  should mean ten players who can play, not ten connections of which three are on a loading
+     *  screen. Note it is deliberately NOT used for the vote PERCENTAGE denominator, for the HUD
+     *  counter, for i_NumStartingPlayers or for the party group count - a roster that shrinks and
+     *  grows as clients load would make the displayed count jitter and would let the zone sizing
+     *  disagree with the roster that actually plays. The dilution it causes in IsVoteReady errs
+     *  towards refusing to start, which is the safe direction.
+     */
+    protected int GetLoadedPlayerCount()
+    {
+        return GetPlayers().Count() - GetNotLoadedCount();
+    }
+
+    /**
+     *  Is the lobby at the server's player cap?
+     *
+     *  Raw connection count, NOT GetLoadedPlayerCount, and the difference is deliberate: "full" here
+     *  means "no further player can join", so waiting any longer cannot add anyone. Whether those
+     *  players have finished loading is #8's question and is answered by the load gate below.
+     *
+     *  maxPlayers comes from serverDZ.cfg via ServerConfigGetInt, which is server-only - fine here,
+     *  and where the autostart curve already reads it from. A missing or zero key answers TRUE:
+     *  fullness cannot be determined, and the alternative is a gate that can never be satisfied,
+     *  i.e. a server that never starts a match because its config was misread.
+     */
+    protected bool IsLobbyFull()
+    {
+        int max_players = GetGame().ServerConfigGetInt( "maxPlayers" );
+        if( max_players <= 0 )
+            return true;
+
+        return (GetPlayers().Count() >= max_players);
+    }
+
+    /**
+     *  Issue #9: may a match start while the lobby is below the server's player cap?
+     *
+     *  A ready-up vote reaching ready_up_percent used to start the match at any population from
+     *  minimum_players upwards, so a dozen players could vote a 60-slot server into a match minutes
+     *  before it filled. While min_waiting_time_not_full has not elapsed, only a full lobby may go.
+     *
+     *  Measured from i_FirstPlayerTick rather than from GetTickTime() alone, so it means "X seconds
+     *  of the lobby actually having players in it" rather than X seconds of server uptime. That is
+     *  the same basis the autostart curve uses, and it is the one an admin means when they set it.
+     *
+     *  Deliberately NOT applied to the autostart path - see the comment on the setting itself.
+     */
+    protected bool IsNotFullWaitSatisfied()
+    {
+        if( f_MinWaitingTimeNotFull <= 0 )
+            return true;
+
+        if( IsLobbyFull() )
+            return true;
+
+        return (GetGame().GetTickTime() - i_FirstPlayerTick) >= f_MinWaitingTimeNotFull;
+    }
+
+    //--- Seconds left on the not-full wait, for the notification. 0 when nothing is waiting.
+    protected int GetNotFullSecondsLeft()
+    {
+        if( IsNotFullWaitSatisfied() )
+            return 0;
+
+        //--- Math.Ceil returns a float; the narrowing happens on the assignment, which is the same
+        //--- idiom the min_waiting_time countdown in MessageWaiting already uses.
+        float elapsed = GetGame().GetTickTime() - i_FirstPlayerTick;
+        int seconds_left = Math.Ceil( f_MinWaitingTimeNotFull - elapsed );
+        return seconds_left;
+    }
+
+    /**
      *  May a match start that is otherwise ready to go proceed?
      *
      *  **Only call this once every other start condition is satisfied.** It starts a clock on its
@@ -172,7 +249,12 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
 #endif
 
-            bool start_wanted = IsActive() && GetPlayers().Count() >= i_MinPlayers && GetGame().GetTickTime() >= f_MinWaitingTime && enough_groups;
+            //--- Split into named locals rather than one long condition: EnfusionScript caps how
+            //--- complex a single expression may be ("Formula too complex" is a hard compile error),
+            //--- and this one now carries five independent tests.
+            bool enough_players = GetLoadedPlayerCount() >= i_MinPlayers;
+            bool waited_long_enough = GetGame().GetTickTime() >= f_MinWaitingTime;
+            bool start_wanted = IsActive() && enough_players && waited_long_enough && enough_groups && IsNotFullWaitSatisfied();
 
             //--- Load gate consulted LAST, once the start is otherwise green - see IsLoadGateClear.
             if( !start_wanted )
@@ -266,7 +348,11 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
 		if( GetGame().GetTickTime() >= f_MinWaitingTime && GetPlayers().Count() > 1 )
 		{
-			bool vote_start = IsActive() && IsVoteReady();
+			//--- The not-full wait (#9) gates the VOTE only. The autostart term below is left alone
+			//--- on purpose: its threshold already decays from "a full lobby" to nothing across
+			//--- autostart_delay, so it is the same rule in continuous form, and it is the path that
+			//--- guarantees a match eventually happens at all.
+			bool vote_start = IsActive() && IsVoteReady() && IsNotFullWaitSatisfied();
 
 			int t_MaxPlayers = GetGame().ServerConfigGetInt( "maxPlayers" );
 			bool auto_start = b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) );
@@ -317,7 +403,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void MessageWaiting()
     {
-		int waiting_on_count = i_MinPlayers - GetPlayers().Count();
+		//--- Over loaded players, so this agrees with the minimum_players test that actually gates the
+		//--- start. Against the raw roster it would say "waiting for 0 more" while the lobby sat
+		//--- there waiting, which is the shape of report that sends an admin looking for a bug.
+		int waiting_on_count = i_MinPlayers - GetLoadedPlayerCount();
 
 		if( waiting_on_count > 0)
 		{
@@ -331,6 +420,13 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		//--- busy lobby continuously and each is loading for ~20 s, so that count is almost always
 		//--- non-zero and announcing it every cycle would be pure noise. A running hold means the
 		//--- match would have started by now, which is the only version of this worth telling anyone.
+		//--- Only while the lobby is otherwise big enough to go, which is the only time the not-full
+		//--- wait is what is actually holding things up - below minimum_players the message above
+		//--- already explains it, and two competing explanations is worse than one.
+		int not_full_seconds = GetNotFullSecondsLeft();
+		if( not_full_seconds > 0 && GetLoadedPlayerCount() >= i_MinPlayers )
+			MessagePlayersUntranslated("STR_BR_WAITING_FOR_FULL_LOBBY", not_full_seconds.ToString());
+
 		int not_loaded_count = GetNotLoadedCount();
 		if( i_LoadHoldStartedMs != 0 && not_loaded_count > 0 )
 		{
@@ -384,10 +480,15 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		if( player_count <= 1 ) // need more than 1 player
 			return false;
 
-		//--- At least the minimum, matching the non-vote path in IsComplete() which starts on
-		//--- `Count() >= i_MinPlayers`. This used to demand strictly more, so a lobby sitting at
-		//--- exactly minimum_players could never vote-start however many players readied up.
-		if( player_count < i_MinPlayers )
+		//--- At least the minimum, matching the non-vote path in IsComplete(). This used to demand
+		//--- strictly more, so a lobby sitting at exactly minimum_players could never vote-start
+		//--- however many players readied up.
+		//---
+		//--- Counted over LOADED players, like IsComplete()'s enough_players - minimum_players means
+		//--- players who can play. Note the percentage below still divides by the full roster: a
+		//--- player who is still loading cannot have readied up, so including them makes the vote
+		//--- harder to pass, and erring towards not starting is the safe direction here.
+		if( GetLoadedPlayerCount() < i_MinPlayers )
 			return false;
 
 #ifdef VIGRID_PARTY
