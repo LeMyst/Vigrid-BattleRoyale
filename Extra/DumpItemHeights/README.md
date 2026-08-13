@@ -7,14 +7,21 @@ model's vertical extent — the number to compare against `<point height="..."/>
 
 |                 |                                                                    |
 |-----------------|--------------------------------------------------------------------|
-| **PBO**         | `extra_dumpitemheights.pbo`                                        |
+| **PBO**         | *none — parked* (`extra_dumpitemheights.pbo` when enabled)         |
 | **Side**        | client (`#ifndef SERVER` + `#ifdef DIAG_DEVELOPER`)                |
 | **Stages**      | `5_Mission`                                                        |
 | **`defines[]`** | `DUMP_ITEM_HEIGHTS` — declared for consistency only, nothing reads it |
 | **Standalone**  | yes — no `BattleRoyale*` symbol referenced                          |
 
-> **This is a throwaway tool.** Build it, run it once, then rename `config.cpp` →
-> `config.cpp.disabled` and rebuild.
+> ⚠️ **This addon does not ship.** Its `config.cpp` is renamed to `config.cpp.disabled`, so the build
+> skips the folder entirely and no PBO is produced. See *Enabling* at the bottom.
+
+## Why it is parked
+
+It is a throwaway tool, not a gameplay feature: it was written to answer one question, it answered
+it, and leaving it enabled would mean every client build carries a module that spawns and deletes a
+few thousand entities on an offline launch. The measured output is recorded below, so the dump only
+needs re-running when the item set changes — a DayZ update, or a mod added or removed.
 
 ## Why it exists
 
@@ -164,8 +171,21 @@ accounting above summing exactly to `dumped`.
   network or the central economy, but it is still not something to run on a live server — which is
   what the three gates are for.
 
-## Disabling
+## Enabling
 
-Rename `config.cpp` → `config.cpp.disabled` and rebuild; the folder is then skipped entirely. Check
-`%ModBuildDirectory%@Vigrid-BattleRoyale\` afterwards — an incremental build does not reliably delete
-an orphaned PBO, so `extra_dumpitemheights.pbo` and its `.bisign` may need removing by hand.
+Rename `config.cpp.disabled` → `config.cpp` and rebuild; the folder becomes its own PBO again. Then
+delete `<ClientProfileDirectory>\item_heights.csv` (a run with the CSV already present skips) and
+launch `LaunchOffline.bat`.
+
+To park it again, rename back and rebuild — then ⚠️ **delete the orphaned PBO by hand.** A rebuild
+after the rename does **not** remove it: measured 2026-08-13, `Deploy.bat` reported success and
+`extra_dumpitemheights.pbo` was still sitting in `%ModBuildDirectory%@Vigrid-BattleRoyale\Addons\`
+with its pre-rename timestamp, so the addon would have carried on loading despite being "disabled".
+Both files have to go:
+
+```
+extra_dumpitemheights.pbo
+extra_dumpitemheights.pbo.battleroyale.bisign
+```
+
+The PBO count in that folder is the check — 23 with this addon parked.
