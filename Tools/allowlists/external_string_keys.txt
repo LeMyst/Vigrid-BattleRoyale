@@ -1,0 +1,8 @@
+# Stringtable keys this mod references but does not own.
+#
+# A key listed here is resolved by somebody else's table - vanilla DayZ's, or a dependency's - so
+# the absence of a definition in our own stringtable.csv files is correct rather than a defect.
+#
+#   <key>   # why it is not ours
+
+STR_MP_SESSION_LOCKED   # vanilla: the engine's own "server is locked" connect error, concatenated with our STR_BR_SERVER_LOCKED in ConnectErrorServerModule.c

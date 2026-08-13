@@ -1,0 +1,10 @@
+# Files under Scripts/Server/ that deliberately carry no `#ifdef SERVER` guard, and so compile
+# into the client as well.
+#
+# Every entry needs a reason. A guard is cheap and the default should always be to add one; this
+# list exists for the cases where compiling on both sides is the point.
+#
+#   <repo-relative path>   # why it is unguarded
+
+Scripts/Server/3_Game/Constants.c   # modded class GameConstants - zeroes the sprint stamina drain, which is predicted client-side as well as simulated server-side, so both sides must agree on the constant
+Scripts/Server/3_Game/ExpansionAirdropSettings.c   # entire body is commented out; nothing compiles either way

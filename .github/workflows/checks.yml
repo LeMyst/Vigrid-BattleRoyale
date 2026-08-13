@@ -1,0 +1,37 @@
+name: Static checks
+
+# These do NOT build the mod, and no hosted runner can: binarize/rapify/pack need DayZ Tools, a
+# mounted P: and Windows. A self-hosted Windows runner would be worse than nothing here, because
+# the P:\Vigrid-BattleRoyale junction is a single global build target that a CI job would silently
+# steal from whatever interactive session was mid-build.
+#
+# What runs instead is Tools/check.py - the class of defect that fails silently at runtime with a
+# clean .rpt, decided from the source text alone in a couple of seconds. The real validation loop
+# is unchanged: Deploy.bat -> LaunchOffline.bat -> read the .rpt.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Source checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # settings-version diffs against the merge base with origin/main, so it needs history.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Stdlib only, by design - nothing to install, nothing to cache, nothing to keep current.
+      - name: Run checks
+        run: python Tools/check.py

@@ -16,3 +16,7 @@ user.cfg
 
 # Internal review backlog - kept on disk, never published
 /TODO.md
+
+# Static checks (Tools/) - Python bytecode
+__pycache__/
+*.pyc

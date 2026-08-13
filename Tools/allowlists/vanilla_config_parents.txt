@@ -1,0 +1,24 @@
+# Vanilla config classes that MUST carry their parent when this repo redeclares them.
+#
+# Redeclaring an existing class WITHOUT restating its parent does not merge-patch it, it REPLACES
+# it - silently stripping every inherited property. A parentless `class RscMapControl` is what
+# hard-froze every client on 2026-08-07 (proven by bisection 2026-08-08): the real map control kept
+# satellite and lost everything else, including the ptsPerSquare* tessellation densities.
+#
+# NOTE this table only lists classes vanilla declares WITH a parent. Plenty of vanilla classes are
+# parentless roots - MapDefaults, CfgLocationTypes, Name, NameIcon - and redeclaring THOSE without
+# a parent is correct and is what Extra/MapSatellite does deliberately. Do not add them here.
+#
+#   <class> : <required parent>   # where vanilla declares it
+#
+# Seeded from the evidence written up in Extra/MapSatellite/config.cpp. Anyone with P: mounted can
+# extend it; `grep -rn "class <Name>" P:\DZ` is the check.
+
+RscMapControl : MapDefaults   # P:\DZ\data\config.cpp - vanilla is `class RscMapControl: MapDefaults {};`
+
+# The CfgLocationTypes settlement tiers. Every one derives from Name; omitting it strips drawStyle,
+# texture and name. Sizes in vanilla are Capital 0.06 / City 0.05 / Village 0.04 / Local 0.03.
+Capital : Name   # P:\DZ\gear\navigation\config.cpp
+City : Name      # P:\DZ\gear\navigation\config.cpp
+Village : Name   # P:\DZ\gear\navigation\config.cpp
+Local : Name     # P:\DZ\gear\navigation\config.cpp
