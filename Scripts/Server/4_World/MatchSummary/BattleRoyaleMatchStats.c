@@ -327,6 +327,14 @@ class BattleRoyaleMatchStats
         //--- dealt no damage" and "this player's hits were rejected before they got here" are the
         //--- same log line - i.e. no line at all. That ambiguity cost a whole two-client match once,
         //--- when a victim visibly finished on 74 health while their attacker was credited with zero.
+        //---
+        //--- Gated on the level BEFORE the string is built, because this is the one genuinely hot
+        //--- path in the class - every bullet from every player in the match reaches it - and a
+        //--- concatenation is paid even when the line is then dropped. Same reason
+        //--- BattleRoyaleZone.Init() guards its POI trace.
+        if (!BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.TRACE))
+            return;
+
         string line = "[Stats] hit " + attacker_uid;
         line = line + " -> " + victim_uid;
         line = line + " dealt=" + Math.Round(dealt);
@@ -344,6 +352,8 @@ class BattleRoyaleMatchStats
     void NoteDamageRejected(string reason, string attacker_uid, string victim_uid)
     {
         if (!m_Recording)
+            return;
+        if (!BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.TRACE))
             return;
 
         string line = "[Stats] hit REJECTED (" + reason + ")";
