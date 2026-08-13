@@ -2,28 +2,33 @@
 #ifdef DIAG_DEVELOPER
 
 /**
- *  DumpItemHeights - walks CfgVehicles, spawns every loot item once, measures its bounding box and
- *  writes the result to a CSV in the profile directory.
+ *  DumpItemHeights - walks CfgVehicles, CfgWeapons and CfgMagazines, spawns every loot item once,
+ *  measures its bounding box and writes the result to a CSV in the profile directory.
  *
  *  size_y is the column that matters: it is the model's vertical extent, i.e. what has to be
  *  compared against <point height="..."/> in mapgroupproto.xml.
+ *
+ *  THREE TREES, because loot is not all in one. Firearms live in CfgWeapons and magazines and loose
+ *  rounds in CfgMagazines; only items and clothing are in CfgVehicles. All three spawn at loot
+ *  points, so all three need heights.
  *
  *  THREE GATES, all of which must pass before a single object is created:
  *    1. #ifndef SERVER        - line 1. Client only.
  *    2. #ifdef DIAG_DEVELOPER - line 2. DayZDiag_x64 only.
  *    3. !GetGame().IsMultiplayer() - runtime, in Arm(). Offline only, i.e. LaunchOffline.bat.
  *
- *  CHUNKED, NOT SYNCHRONOUS. There are ~5700 CfgVehicles children; creating and deleting all the
- *  loot among them inside one frame is a multi-minute freeze the engine may well decide is a hang.
- *  Update() processes ITEMS_PER_FRAME config indices per frame instead.
+ *  CHUNKED, NOT SYNCHRONOUS. There are several thousand classes across the three trees; creating and
+ *  deleting all the loot among them inside one frame is a multi-minute freeze the engine may well
+ *  decide is a hang. Update() processes ITEMS_PER_FRAME config indices per frame instead.
  *
  *  RESUMABLE, BECAUSE CreateObjectEx CAN HARD-CRASH THE CLIENT AND THERE IS NO try/catch.
  *  Measured 2026-08-13: ItemOptics (scope=1, no model of its own - it inherits model="" from
  *  Inventory_Base) faults the engine with "Access violation. Illegal read ... at 0x31c" inside
  *  CreateObjectEx. The scope >= 2 filter below excludes that whole category, but nothing proves
- *  another of the ~5700 classes is not also bad, so the index currently being created is written to
- *  a progress file before every attempt. A relaunch resumes at the next index, records the offender
- *  in the CSV as a comment and carries on - one relaunch per bad class rather than losing the run.
+ *  another of the several thousand classes is not also bad, so the position currently being created
+ *  is written to a progress file before every attempt. A relaunch resumes at the next index, records
+ *  the offender in the CSV as a comment and carries on - one relaunch per bad class rather than
+ *  losing the run.
  */
 class DumpItemHeights
 {
@@ -31,12 +36,14 @@ class DumpItemHeights
     private static const string OUTPUT_PATH   = "$profile:item_heights.csv";
     private static const string PROGRESS_PATH = "$profile:item_heights_progress.txt";
 
-    private static const string CFG_PATH    = "CfgVehicles";
+    private static const string CFG_VEHICLES  = "CfgVehicles";
+    private static const string CFG_WEAPONS   = "CfgWeapons";
+    private static const string CFG_MAGAZINES = "CfgMagazines";
 
-    //--- Inventory_Base covers everything that can sit in an inventory or on the ground as loot:
-    //--- Clothing_Base, ItemOptics, Container_Base, Edible_Base, Trap_Base and ExplosivesBase are
-    //--- all under it. It deliberately does NOT cover House / HouseNoDestruct (buildings), Man, or
-    //--- CfgWeapons / CfgMagazines entries - those are not what mapgroupproto point heights are for.
+    //--- Applied to CfgVehicles ONLY - see PassesKindFilter. Inventory_Base covers everything in that
+    //--- tree that can sit in an inventory or on the ground as loot: Clothing_Base, ItemOptics,
+    //--- Container_Base, Edible_Base, Trap_Base and ExplosivesBase are all under it. It keeps out
+    //--- House / HouseNoDestruct (buildings) and Man, which are not what loot point heights are for.
     private static const string KIND_FILTER = "Inventory_Base";
 
     //--- Vanilla's own fallback for a model with no collision geometry - see hologram.c
@@ -54,10 +61,13 @@ class DumpItemHeights
     //--- progress file does that), but handy when something goes wrong in a way that does not crash.
     private static const bool  LOG_EVERY_ITEM  = false;
 
+    private ref array<string> m_Trees;
+
     private FileHandle m_File;
     private bool  m_FileOpen;
     private bool  m_Armed;
     private float m_Delay;
+    private int   m_TreeIndex;
     private int   m_Index;
     private int   m_Count;
 
@@ -83,6 +93,11 @@ class DumpItemHeights
             return;
         }
 
+        m_Trees = new array<string>;
+        m_Trees.Insert(CFG_VEHICLES);
+        m_Trees.Insert(CFG_WEAPONS);
+        m_Trees.Insert(CFG_MAGAZINES);
+
         bool has_csv = FileExist(OUTPUT_PATH);
         bool has_progress = FileExist(PROGRESS_PATH);
 
@@ -94,22 +109,27 @@ class DumpItemHeights
             return;
         }
 
+        int resume_tree = -1;
         int resume_index = -1;
+        bool resuming = false;
+
         if (has_csv && has_progress)
-            resume_index = ReadProgress();
+            resuming = ReadProgress(resume_tree, resume_index);
 
         //--- A progress file with no CSV is debris from an aborted run; start clean.
         if (!has_csv)
             DeleteFile(PROGRESS_PATH);
 
-        if (resume_index >= 0)
+        if (resuming)
         {
             m_File = OpenFile(OUTPUT_PATH, FileMode.APPEND);
+            m_TreeIndex = resume_tree;
             m_Index = resume_index + 1;
         }
         else
         {
             m_File = OpenFile(OUTPUT_PATH, FileMode.WRITE);
+            m_TreeIndex = 0;
             m_Index = 0;
         }
 
@@ -121,16 +141,23 @@ class DumpItemHeights
 
         m_FileOpen = true;
 
-        if (resume_index >= 0)
-            NoteCrashedClass(resume_index);
+        if (resuming)
+            NoteCrashedClass(resume_tree, resume_index);
         else
-            FPrintln(m_File, "classname,scope,size_x,size_y,size_z,min_y,max_y,radius,source");
+            FPrintln(m_File, "classname,tree,scope,size_x,size_y,size_z,min_y,max_y,radius,source");
 
-        m_Count = GetGame().ConfigGetChildrenCount(CFG_PATH);
+        if (m_TreeIndex >= m_Trees.Count())
+        {
+            Finish();
+            return;
+        }
+
+        string first_tree = m_Trees.Get(m_TreeIndex);
+        m_Count = GetGame().ConfigGetChildrenCount(first_tree);
         m_Delay = START_DELAY_S;
         m_Armed = true;
 
-        Print(string.Format("[DumpItemHeights] armed - %1 CfgVehicles children, starting at index %2 in %3s.", m_Count, m_Index, START_DELAY_S));
+        Print(string.Format("[DumpItemHeights] armed - walking %1 (%2 children) from index %3 in %4s.", first_tree, m_Count, m_Index, START_DELAY_S));
     }
 
     void Update(float timeslice)
@@ -147,18 +174,25 @@ class DumpItemHeights
         int processed = 0;
         while (processed < ITEMS_PER_FRAME)
         {
-            if (m_Index >= m_Count)
+            if (m_TreeIndex >= m_Trees.Count())
                 break;
 
-            MeasureOne(m_Index);
+            //--- Bounded: AdvanceTree always moves m_TreeIndex on, and there are only three trees.
+            if (m_Index >= m_Count)
+            {
+                AdvanceTree();
+                continue;
+            }
+
+            MeasureOne(m_TreeIndex, m_Index);
             m_Index++;
             processed++;
         }
 
         if (!LOG_EVERY_ITEM)
-            Print(string.Format("[DumpItemHeights] i=%1/%2 dumped=%3", m_Index, m_Count, m_Dumped));
+            LogProgressLine();
 
-        if (m_Index >= m_Count)
+        if (m_TreeIndex >= m_Trees.Count())
             Finish();
     }
 
@@ -176,40 +210,78 @@ class DumpItemHeights
 
     //------------------------------------------------------------------------------------------------
 
-    private void MeasureOne(int index)
+    private void AdvanceTree()
     {
+        string finished = m_Trees.Get(m_TreeIndex);
+        Print(string.Format("[DumpItemHeights] finished %1 - dumped=%2 so far.", finished, m_Dumped));
+
+        m_TreeIndex++;
+        m_Index = 0;
+        m_Count = 0;
+
+        if (m_TreeIndex >= m_Trees.Count())
+            return;
+
+        string next = m_Trees.Get(m_TreeIndex);
+        m_Count = GetGame().ConfigGetChildrenCount(next);
+
+        Print(string.Format("[DumpItemHeights] walking %1 - %2 children.", next, m_Count));
+    }
+
+    private void LogProgressLine()
+    {
+        if (m_TreeIndex >= m_Trees.Count())
+            return;
+
+        string tree = m_Trees.Get(m_TreeIndex);
+        Print(string.Format("[DumpItemHeights] %1 i=%2/%3 dumped=%4", tree, m_Index, m_Count, m_Dumped));
+    }
+
+    //! IsKindOf resolves against CfgVehicles only (it walks ConfigGetFullPath("CfgVehicles " + name)),
+    //! so it is meaningless for the other two trees and would reject everything in them. Nothing in
+    //! CfgWeapons or CfgMagazines needs filtering anyway - it is all loot by definition.
+    private bool PassesKindFilter(string tree, string classname)
+    {
+        if (tree != CFG_VEHICLES)
+            return true;
+
+        return GetGame().IsKindOf(classname, KIND_FILTER);
+    }
+
+    private void MeasureOne(int tree_index, int index)
+    {
+        string tree = m_Trees.Get(tree_index);
+
         string classname;
-        if (!GetGame().ConfigGetChildName(CFG_PATH, index, classname))
+        if (!GetGame().ConfigGetChildName(tree, index, classname))
             return;
 
         if (classname == "")
             return;
 
         //--- scope >= 2 only. scope 0 is abstract, and scope 1 is "inheritable but not usable on its
-        //--- own" - which in practice means base classes that inherit model="" from Inventory_Base
-        //--- and HARD-CRASH the engine on CreateObjectEx. ItemOptics is the measured example.
-        //--- Every item that actually spawns as loot is scope 2.
-        int scope = GetGame().ConfigGetInt(CFG_PATH + " " + classname + " scope");
+        //--- own" - which in practice means base classes that inherit model="" and HARD-CRASH the
+        //--- engine on CreateObjectEx. ItemOptics is the measured example. Every item that actually
+        //--- spawns as loot is scope 2, in all three trees.
+        int scope = GetGame().ConfigGetInt(tree + " " + classname + " scope");
         if (scope < 2)
         {
             m_SkippedScope++;
             return;
         }
 
-        //--- DayZGame.IsKindOf is a script helper that walks ConfigGetFullPath against CfgVehicles
-        //--- only, which is precisely the tree being enumerated here.
-        if (!GetGame().IsKindOf(classname, KIND_FILTER))
+        if (!PassesKindFilter(tree, classname))
         {
             m_SkippedKind++;
             return;
         }
 
         if (LOG_EVERY_ITEM)
-            Print(string.Format("[DumpItemHeights] i=%1 %2", index, classname));
+            Print(string.Format("[DumpItemHeights] %1 i=%2 %3", tree, index, classname));
 
         //--- The breadcrumb. If the create below takes the client down, this is what lets the next
         //--- launch resume past it instead of dying on the same class forever.
-        WriteProgress(index);
+        WriteProgress(tree_index, index);
 
         //--- ECE_CREATEPHYSICS is load bearing: without a collision envelope GetCollisionBox returns
         //--- false and every row silently degrades to the looser ClippingInfo render bounds.
@@ -260,11 +332,11 @@ class DumpItemHeights
 
         GetGame().ObjectDelete(obj);
 
-        WriteRow(classname, scope, size, box_min, box_max, radius, source);
+        WriteRow(classname, tree, scope, size, box_min, box_max, radius, source);
         m_Dumped++;
     }
 
-    private void WriteRow(string classname, int scope, vector size, vector box_min, vector box_max, float radius, string source)
+    private void WriteRow(string classname, string tree, int scope, vector size, vector box_min, vector box_max, float radius, string source)
     {
         //--- Every component pulled onto its own statement before it reaches a call - EnfusionScript
         //--- has been measured to read the wrong value when an indexed read shares an expression
@@ -275,10 +347,9 @@ class DumpItemHeights
         float min_y  = box_min[1];
         float max_y  = box_max[1];
 
-        //--- Nine fields is exactly string.Format's %9 ceiling, so the row is built in two halves
-        //--- rather than sitting on the limit.
-        string head = string.Format("%1,%2,%3,%4,%5", classname, scope, Fmt(size_x), Fmt(size_y), Fmt(size_z));
-        string tail = string.Format("%1,%2,%3,%4", Fmt(min_y), Fmt(max_y), Fmt(radius), source);
+        //--- Ten fields against string.Format's %9 ceiling, so the row is built in two halves.
+        string head = string.Format("%1,%2,%3,%4,%5", classname, tree, scope, Fmt(size_x), Fmt(size_y));
+        string tail = string.Format("%1,%2,%3,%4,%5", Fmt(size_z), Fmt(min_y), Fmt(max_y), Fmt(radius), source);
 
         FPrintln(m_File, head + "," + tail);
     }
@@ -299,40 +370,61 @@ class DumpItemHeights
 
     //------------------------------------------------------------------------------------------------
 
-    private void WriteProgress(int index)
+    private void WriteProgress(int tree_index, int index)
     {
         FileHandle progress = OpenFile(PROGRESS_PATH, FileMode.WRITE);
         if (progress == 0)
             return;
 
+        FPrintln(progress, string.Format("%1", tree_index));
         FPrintln(progress, string.Format("%1", index));
         CloseFile(progress);
     }
 
-    private int ReadProgress()
+    private bool ReadProgress(out int tree_index, out int index)
     {
+        tree_index = -1;
+        index = -1;
+
         FileHandle progress = OpenFile(PROGRESS_PATH, FileMode.READ);
         if (progress == 0)
-            return -1;
+            return false;
 
-        string line = "";
-        int read = FGets(progress, line);
+        string line_tree = "";
+        string line_index = "";
+
+        int read_tree = FGets(progress, line_tree);
+        int read_index = FGets(progress, line_index);
         CloseFile(progress);
 
-        if (read <= 0)
-            return -1;
+        if (read_tree <= 0)
+            return false;
 
-        return line.ToInt();
+        if (read_index <= 0)
+            return false;
+
+        tree_index = line_tree.ToInt();
+        index = line_index.ToInt();
+
+        if (tree_index < 0)
+            return false;
+
+        return true;
     }
 
     //! The class recorded in the progress file is the one that was mid-creation when the client
     //! died. Name it in both the log and the CSV so the artifact documents its own gaps.
-    private void NoteCrashedClass(int index)
+    private void NoteCrashedClass(int tree_index, int index)
     {
-        string crashed = "";
-        GetGame().ConfigGetChildName(CFG_PATH, index, crashed);
+        if (tree_index >= m_Trees.Count())
+            return;
 
-        string note = string.Format("# resumed - index %1 (%2) crashed the previous run and is skipped", index, crashed);
+        string tree = m_Trees.Get(tree_index);
+
+        string crashed = "";
+        GetGame().ConfigGetChildName(tree, index, crashed);
+
+        string note = string.Format("# resumed - %1 index %2 (%3) crashed the previous run and is skipped", tree, index, crashed);
 
         FPrintln(m_File, note);
         Print("[DumpItemHeights] " + note);

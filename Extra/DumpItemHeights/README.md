@@ -1,7 +1,8 @@
 # Dump Item Heights
 
-Writes every loot item's bounding box to a CSV, once, on an offline Diag client. The `size_y` column
-is the model's vertical extent — the number to compare against `<point height="..."/>` in
+Writes every loot item's bounding box to a CSV, once, on an offline Diag client, across all three
+loot config trees — `CfgVehicles`, `CfgWeapons` and `CfgMagazines`. The `size_y` column is the
+model's vertical extent — the number to compare against `<point height="..."/>` in
 `mapgroupproto.xml`.
 
 |                 |                                                                    |
@@ -51,7 +52,14 @@ relaunch per bad class instead of losing the whole run.
 deleting all of them inside one frame is a multi-minute freeze the engine may decide is a hang.
 `Update()` processes `ITEMS_PER_FRAME` (25) config indices per frame after a 5 s settle.
 
-**Per item:** skip `scope < 2`, skip anything that is not `IsKindOf(name, "Inventory_Base")`, then
+**Three trees, walked in order:** `CfgVehicles` → `CfgWeapons` → `CfgMagazines`. Loot is not all in
+one tree — firearms are in `CfgWeapons`, magazines and loose rounds in `CfgMagazines`, and only items
+and clothing in `CfgVehicles`. All three spawn at loot points, so all three need heights.
+
+**Per item:** skip `scope < 2`, then — **for `CfgVehicles` only** — skip anything that is not
+`IsKindOf(name, "Inventory_Base")`. That filter resolves against `CfgVehicles` by construction
+(`IsKindOf` walks `ConfigGetFullPath("CfgVehicles " + name)`), so applying it to the other two trees
+would reject every class in them; nothing there needs filtering anyway, as it is all loot. Then
 
 ```c
 Object obj = GetGame().CreateObjectEx(classname, test_pos, ECE_LOCAL | ECE_CREATEPHYSICS);
@@ -79,10 +87,24 @@ that fell through to `clipping`.
 `<ClientProfileDirectory>\item_heights.csv`
 
 ```
-classname,scope,size_x,size_y,size_z,min_y,max_y,radius,source
+classname,tree,scope,size_x,size_y,size_z,min_y,max_y,radius,source
 ```
 
-plus a trailer line `# dumped=N skipped_scope=N skipped_kind=N skipped_create=N`. Values are rounded
+| Column | Meaning |
+|---|---|
+| `classname` | the config class — the same string used in `types.xml` |
+| `tree` | which config tree it came from: `CfgVehicles`, `CfgWeapons` or `CfgMagazines` |
+| `scope` | config visibility. Always `2`, since `scope < 2` is filtered out |
+| `size_x` / `size_y` / `size_z` | bounding-box width / **height** / depth in metres, model space |
+| `min_y` / `max_y` | how far the geometry reaches below / above the model origin. `size_y = max_y - min_y` |
+| `radius` | `GetCollisionRadius()`, the bounding *sphere*. A cross-check, not a dimension |
+| `source` | which measurement produced the box — see the table above |
+
+`min_y` is worth reading alongside `size_y`: `min_y ≈ 0` means the origin sits at the item's base,
+while `min_y ≈ -size_y / 2` means it sits at the centre and half the item hangs below the point it is
+placed at.
+
+Plus a trailer line `# dumped=N skipped_scope=N skipped_kind=N skipped_create=N`. Values are rounded
 to millimetres.
 
 Progress goes to the client `script_*.log` (not the `.rpt`, which stops recording once the world has
@@ -91,13 +113,31 @@ loaded) as `[DumpItemHeights] i=N/M dumped=K`, one line per chunk.
 ## Measured results (2026-08-13, ChernarusPlus, full mod list)
 
 ```
-# dumped=1859 skipped_scope=3251 skipped_kind=561 skipped_create=0
+# dumped=2099 skipped_scope=3333 skipped_kind=561 skipped_create=0
 ```
 
-1859 rows out of 5671 `CfgVehicles` children. `source` came out **1698 `collision` / 161 `clipping` /
-0 `memorypoint`** — `collision` being the large majority is the check that `ECE_CREATEPHYSICS` is
-actually taking effect. Sanity spot-checks: `TunaCan` 0.025, `Apple` 0.101, `WaterBottle` 0.27,
-`FirefighterAxe` 0.95, `Barrel_Blue` 0.81.
+| Tree | Children | Dumped | `collision` | `clipping` |
+|---|---:|---:|---:|---:|
+| `CfgVehicles` | 5671 | 1859 | 1698 | 161 |
+| `CfgWeapons` | 194 | 117 | 96 | 21 |
+| `CfgMagazines` | 128 | 123 | 93 | 30 |
+| | | **2099** | **1887** | **212** |
+
+`memorypoint` never fired. `collision` being ~90% is the check that `ECE_CREATEPHYSICS` is actually
+taking effect — if it ever drops, the numbers are the looser render bounds and are not to be trusted.
+`skipped_kind` is `CfgVehicles`-only by construction, which is the regression check on
+`PassesKindFilter`.
+
+Sanity spot-checks: `TunaCan` 0.025, `Apple` 0.101, `WaterBottle` 0.27, `FirefighterAxe` 0.95,
+`Barrel_Blue` 0.81, `Mosin9130` 0.184 (× 1.236 long), `M4A1` 0.22, `Mag_STANAG_30Rnd` 0.211. Note a
+firearm's length is `size_x` — `size_y` is the height of it lying flat, which is the clearance a loot
+point actually has to give it.
+
+**Expect ~6 `ValidateMuzzleArray` entries in `crash_*.log`, and ignore them.** They are non-fatal
+vanilla script errors from `WeaponStableState`, raised while a handful of `CfgWeapons` classes build
+their FSM, and they are logged rather than fatal because `LaunchOffline.bat` passes
+`newErrorsAreWarnings 1`. The run completes and every weapon still gets a row — verified by the row
+accounting above summing exactly to `dumped`.
 
 ## Caveats
 
@@ -113,14 +153,10 @@ actually taking effect. Sanity spot-checks: `TunaCan` 0.025, `Apple` 0.101, `Wat
   3.664, which is the *deployed structure's* bounds rather than the kit item's. **Filter on
   `source == "collision"` for anything you intend to trust**, and treat a zero row as "no data", not
   as a flat item.
-- ⚠️ **Firearms and magazines are NOT in this dump.** They live in `CfgWeapons` and `CfgMagazines`,
-  which are separate config trees — this addon walks `CfgVehicles` only, and `IsKindOf` is
-  CfgVehicles-only by construction. `M4A1`, `AKM`, `Mag_STANAG_30Rnd` and `Ammo_556x45` are all
-  absent. If point heights are needed for weapon spawns, `CFG_PATH` and `KIND_FILTER` have to grow a
-  second pass over those trees (no `IsKindOf` filter there — just `scope >= 2`).
-- **Loot only.** `Inventory_Base` covers clothing, optics, containers, food, traps and explosives —
-  everything under it. It does **not** cover `House` / `HouseNoDestruct` (buildings, and a surprising
-  number of camping, cooking and radio items inherit `HouseNoDestruct`) or `Man`.
+- **Loot only.** Within `CfgVehicles`, `Inventory_Base` covers clothing, optics, containers, food,
+  traps and explosives — everything under it. It does **not** cover `House` / `HouseNoDestruct`
+  (buildings, and a surprising number of camping, cooking and radio items inherit `HouseNoDestruct`)
+  or `Man`. `CfgWeapons` and `CfgMagazines` are taken whole, filtered on `scope >= 2` alone.
 - Vanilla's preview spawner calls `dBodyDestroy` on its throwaway object; this addon deliberately
   does **not**. That object lives for many frames, this one is deleted before the frame ends, and
   destroying the physics body risks taking away the very collision data being read.

@@ -30,7 +30,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [ChangeFeedbackURL](ChangeFeedbackURL/README.md) | `extra_changefeedbackurl.pbo` | client | Points the vanilla Feedback button at this mod's GitHub repo instead of Bohemia's tracker. **Not standalone** |
 | [DefaultFullAuto](DefaultFullAuto/README.md) | `extra_defaultfullauto.pbo` | server | Weapons spawn already set to full auto where they have one |
 | [DisableFogChernarusPlus](DisableFogChernarusPlus/README.md) | *disabled* | — | Removes fog on Chernarus+. Parked: it does nothing on Vigrid |
-| [DumpItemHeights](DumpItemHeights/README.md) | `extra_dumpitemheights.pbo` | client | **Throwaway diagnostic.** Dumps every loot item's bounding box to a CSV on an offline Diag client |
+| [DumpItemHeights](DumpItemHeights/README.md) | `extra_dumpitemheights.pbo` | client | **Throwaway diagnostic.** Dumps every loot item's bounding box (CfgVehicles + CfgWeapons + CfgMagazines) to a CSV on an offline Diag client |
 | [KillFeed](KillFeed/README.md) | `extra_killfeed.pbo` | both | On-screen death feed with weapon models, attachments and range |
 | [LimitUnconsciousTime](LimitUnconsciousTime/README.md) | `extra_limitunconscioustime.pbo` | server | Force-wakes an unconscious player after 5 seconds. **Not standalone** |
 | [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, HUD compass, party-shared markers and zone circles |
