@@ -47,6 +47,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerUnstuck", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", this);
+        GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLastMatch", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestSpectate", this);
         //--- Admin spectate. All four resolve their actor from the engine-supplied `sender` and all
@@ -913,6 +914,12 @@ class BattleRoyaleServer: BattleRoyaleBase
 
             //--- 3. Register the victim as a spectator, now that they are off the roster.
             BattleRoyaleSpectators.GetInstance().OnDeath(killed);
+
+            //--- 3.5 Push the death recap to the victim, for their death screen.
+            //--- Here rather than in RemovePlayer, which also runs on disconnect (nobody to send to)
+            //--- and in KickWinner (about to be dropped). Inside the ContainsPlayer gate, so it
+            //--- fires exactly once per death.
+            SendDeathRecap(killed);
         }
 
         //--- 4. Anyone watching the victim needs a new target.
@@ -1429,6 +1436,167 @@ class BattleRoyaleServer: BattleRoyaleBase
             //--- Rate limiting and board validation both live in ServeRequest.
             BattleRoyaleLeaderboard.GetInstance().ServeRequest( sender, data.param1 );
         }
+    }
+
+    /**
+     *  The lobby asking for the previous match.
+     *
+     *  No payload - the actor is the engine-supplied `sender`, so there is nothing here a client
+     *  could aim at somebody else's summary.
+     */
+    void RequestLastMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        if(type != CallType.Server)
+            return;
+
+        if(!sender)
+            return;
+
+        //--- Its OWN cooldown map, not the leaderboard's. Sharing one budget means a player who
+        //--- opens F4 and flicks between tabs gets silently refused, and the menu's 1 s retry would
+        //--- then thrash against it.
+        string uid = sender.GetPlainId();
+        int now_ms = GetGame().GetTime();
+
+        if(!a_LastMatchCooldowns)
+            a_LastMatchCooldowns = new map<string, int>();
+
+        if(a_LastMatchCooldowns.Contains(uid))
+        {
+            if(now_ms < a_LastMatchCooldowns.Get(uid))
+                return;
+        }
+
+        a_LastMatchCooldowns.Set(uid, now_ms + BR_LASTMATCH_REQUEST_COOLDOWN_MS);
+
+        SendLastMatchTable(sender);
+        SendLastMatchRecap(sender);
+    }
+
+    //! Per-player floor between last-match requests. Lazily created, since a server whose players
+    //! never open the tab should not carry the map.
+    protected ref map<string, int> a_LastMatchCooldowns;
+
+    /**
+     *  The previous match's final standings, per identity.
+     *
+     *  Parallel primitive arrays and NO SteamID64s - self_index is what tells the client which row
+     *  is theirs, and -1 says they did not play it, which is the COMMON case in a lobby full of
+     *  people who connected after the restart.
+     */
+    protected void SendLastMatchTable(PlayerIdentity recipient)
+    {
+        BattleRoyaleLastMatchFile previous = BattleRoyaleMatchStats.GetInstance().GetPrevious();
+
+        ref array<string> names = new array<string>();
+        ref array<int> places = new array<int>();
+        ref array<int> kills = new array<int>();
+        ref array<int> damage = new array<int>();
+        ref array<int> survived = new array<int>();
+        ref array<int> groups = new array<int>();
+
+        int self_index = -1;
+        int field_size = 0;
+        int flags = 0;
+        int i = 0;
+
+        if(previous)
+        {
+            field_size = previous.field_size;
+
+            if(previous.grouped)
+                flags = flags | BR_LASTMATCH_FLAG_GROUPED;
+
+            for(i = 0; i < previous.rows.Count(); i++)
+            {
+                BattleRoyaleLastMatchRow row = previous.rows.Get(i);
+                if(!row)
+                    continue;
+
+                if(names.Count() >= BR_LASTMATCH_MAX_ROWS)
+                {
+                    //--- The squad totals are summed CLIENT-side from this table, so a squadmate cut
+                    //--- from it produces a smaller, wrong figure with nothing to signal it. The
+                    //--- client hides the squad block outright when this is set.
+                    flags = flags | BR_LASTMATCH_FLAG_TRUNCATED;
+                    break;
+                }
+
+                if(row.uid == recipient.GetPlainId())
+                    self_index = names.Count();
+
+                names.Insert(row.name);
+                places.Insert(row.place);
+                kills.Insert(row.kills);
+                damage.Insert(row.damage);
+                survived.Insert(row.survived_s);
+                groups.Insert(row.group_index);
+            }
+        }
+
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchTable",
+            new Param9< array<string>, array<int>, array<int>, array<int>, array<int>, array<int>, int, int, int >(
+                names, places, kills, damage, survived, groups, self_index, field_size, flags ),
+            true, recipient );
+
+        string line = "[LastMatch] served " + recipient.GetPlainId();
+        line = line + " rows=" + names.Count();
+        line = line + " self_index=" + self_index;
+        line = line + " flags=" + flags;
+        BattleRoyaleUtils.Debug(line);
+    }
+
+    //! The recipient's own recap out of the previous match, or a blank one if they did not play it.
+    protected void SendLastMatchRecap(PlayerIdentity recipient)
+    {
+        BattleRoyaleLastMatchFile previous = BattleRoyaleMatchStats.GetInstance().GetPrevious();
+        int i = 0;
+
+        if(!previous)
+            return;
+
+        for(i = 0; i < previous.rows.Count(); i++)
+        {
+            BattleRoyaleLastMatchRow row = previous.rows.Get(i);
+            if(!row)
+                continue;
+            if(row.uid != recipient.GetPlainId())
+                continue;
+
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchRecap",
+                new Param8< string, string, int, int, int, int, int, int >(
+                    row.killer_name, row.weapon_type, row.cause, row.distance_m,
+                    row.killer_health_pct, row.damage_to_killer, row.group_index, row.hits ),
+                true, recipient );
+            return;
+        }
+    }
+
+    /**
+     *  Push a freshly-dead player their own recap, so the death screen can paint it.
+     *
+     *  Same RPC and same client handler as the lobby answer above. The two provenances cannot be
+     *  confused within a session: the server restarts between matches and a client's RPC state is
+     *  per-session, so a session spans exactly one process and therefore exactly one match.
+     */
+    protected void SendDeathRecap(PlayerBase victim)
+    {
+        if(!victim)
+            return;
+        if(!victim.GetIdentity())
+            return;
+
+        BattleRoyaleDeathRecord record = BattleRoyaleSpectators.GetInstance().GetDeathRecordFor(victim);
+        if(!record)
+            return;
+
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchRecap",
+            new Param8< string, string, int, int, int, int, int, int >(
+                record.killer_name, record.weapon_type, record.cause, record.distance_m,
+                record.killer_health_pct, record.damage_to_killer,
+                BattleRoyaleMatchStats.GetInstance().GetGroupIndex(record.victim_uid),
+                BattleRoyaleMatchStats.GetInstance().GetHits(record.victim_uid) ),
+            true, victim.GetIdentity() );
     }
 
     //TODO: This will need a rework!

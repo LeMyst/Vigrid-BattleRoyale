@@ -42,6 +42,28 @@ modded class PlayerBase
 
 	vector spawn_pos = vector.Zero;
 
+	//--- GetGame().GetTime() of the last play-area damage tick, dropped by 6_BattleRoyaleRound and
+	//--- 7_BattleRoyaleLastRound. Scripted damage reaches EEKilled with the player as their own
+	//--- source, so this is the only way the death recap can tell the zone from starvation or a fall.
+	//--- Consumed (read then zeroed) by BattleRoyaleKillAttribution.ConsumeZoneHint, so a stale hint
+	//--- cannot mislabel the next environmental death.
+	int br_zone_damage_ms = 0;
+
+	//--- Health and blood as they were immediately BEFORE the hit currently being processed, latched
+	//--- in EEOnDamageCalculated so EEHitBy can measure what the hit actually removed. br_prehit_ms
+	//--- is the guard: the latch is only trusted within the same frame it was taken.
+	float br_prehit_health = 0;
+	float br_prehit_blood = 0;
+	int br_prehit_ms = -1;
+
+	//--- Set by EEOnDamageCalculated and CONSUMED by the matching EEHitBy, so a latch is paired with
+	//--- its own hit exactly rather than by comparing clocks. The millisecond-equality test this
+	//--- replaced dropped hits at random - GetTime() is live ms and real work happens between the two
+	//--- hooks, so a damage event that straddled a millisecond boundary scored nothing. Measured
+	//--- 2026-08-13: the same player killing the same opponent scored 100 in one match and 0 in the
+	//--- next, with the rejections logged as "stale latch".
+	bool br_prehit_valid = false;
+
 	PlayerBase last_unconscious_source;
 	//--- SteamID64 of whoever is responsible for the hit that downed this player, which is NOT always
 	//--- expressible as an object: an explosive's owner may already be dead or disconnected. Set
@@ -100,6 +122,161 @@ modded class PlayerBase
 
 		if ( !playerSource && last_unconscious_source_uid == "" )
 			BattleRoyaleUtils.Trace("Player " + GetCachedName() + " was hit by an unknown source.");
+
+		BR_NoteDamageDealt();
+	}
+
+	/**
+	 *  Latch this player's health and blood BEFORE the hit lands.
+	 *
+	 *  TotalDamageResult reports COMPUTED damage, not APPLIED damage, so a 400-damage headshot on a
+	 *  player with 12 HP left reports 400. EEHitBy runs after application and so cannot recover the
+	 *  pre-hit value. This is the only hook that runs first.
+	 *
+	 *  SUPER FIRST, and return on false. Extra/SafeZone declares its own modded PlayerBase with this
+	 *  same override in a different PBO, and neither addon requires the other, so their relative
+	 *  chain order is not pinned by anything. This shape makes the order irrelevant: whichever way
+	 *  round they end up, a hit SafeZone cancels never reaches EEHitBy, so lobby punches can never be
+	 *  scored - and if we latch first and SafeZone then cancels, the latch is simply never consumed.
+	 */
+	override bool EEOnDamageCalculated(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
+	{
+		if ( !super.EEOnDamageCalculated(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef) )
+			return false;
+
+		br_prehit_health = GetHealth("", "Health");
+		br_prehit_blood = GetHealth("", "Blood");
+		br_prehit_ms = GetGame().GetTime();
+		br_prehit_valid = true;
+
+		return true;
+	}
+
+	/**
+	 *  Credit whoever just hit this player, measured as the health/blood the hit actually removed.
+	 *
+	 *  Measured as a DELTA rather than read off TotalDamageResult for three reasons: it clamps for
+	 *  free, because both pools floor at zero, so a headshot on a dying player scores what they had
+	 *  left instead of a four-figure overkill number; it accounts for armour; and it picks up the
+	 *  shock-to-health transfer vanilla applies inside EEHitBy itself, which the reported damage does
+	 *  not include. The existing override calls super first, so GetHealth here is fully post-hit.
+	 *
+	 *  BOTH pools, because DayZ death is Health <= 0 OR Blood <= 0 and a firearm body shot is mostly
+	 *  a blood hit - roughly 100 blood against a 5000 pool versus 30 health against 100. Health alone
+	 *  would under-report every gunfight and report ZERO for a bleed-out kill. Math.Max rather than a
+	 *  sum so a hit doing both is not counted twice, and normalising by this player's own maxima
+	 *  keeps it honest if another mod resizes the pools. The result reads as "one full-health player
+	 *  == 100 damage".
+	 */
+	protected void BR_NoteDamageDealt()
+	{
+		BattleRoyaleMatchStats stats = BattleRoyaleMatchStats.GetInstance();
+		if ( !stats.IsRecording() )
+			return;
+
+		//--- Reuse the uid EEHitBy already resolved - do not call ResolveKillerUid a second time. It
+		//--- is "" for self-damage, the zone, falls, drowning, infected, animals and your own
+		//--- grenade, so this single test excludes every non-player cause.
+		string victim_uid = player_steamid;
+		if ( victim_uid == "" && GetIdentity() )
+			victim_uid = GetIdentity().GetPlainId();
+
+		if ( last_unconscious_source_uid == "" )
+		{
+			stats.NoteDamageRejected("no player source", last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
+		//--- Crediting a player for shooting their own squadmate reads as a bug on a summary card.
+		if ( stats.AreTeammates(last_unconscious_source_uid, victim_uid) )
+		{
+			stats.NoteDamageRejected("teammates", last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
+		/**
+		 *  Pair the latch with ITS OWN hit.
+		 *
+		 *  This was `br_prehit_ms != GetGame().GetTime()` - millisecond-exact equality - and it
+		 *  dropped hits at random. GetTime() is live mission time in ms, and the engine applies the
+		 *  damage, processes bleeding and runs the shock transfer between EEOnDamageCalculated and
+		 *  EEHitBy, so any damage event straddling a millisecond boundary was discarded. Measured
+		 *  2026-08-13: the same player killing the same opponent with the same weapon scored 100 in
+		 *  one match and 0 in the next.
+		 *
+		 *  The flag is exact - set by the hook that runs first, consumed by the hook that runs second,
+		 *  once per damage event - and needs no clock at all. The age check below is only a safety net
+		 *  for the leak where EEOnDamageCalculated ran but its EEHitBy never did, because another mod
+		 *  cancelled the damage in between; without it that orphaned latch would be consumed by
+		 *  whatever hit came next, clamping it against stale health.
+		 *
+		 *  The two rejections are reported SEPARATELY on purpose: "no latch" means
+		 *  EEOnDamageCalculated never ran for this hit at all, which is a different fault with a
+		 *  different fix, and lumping them together is what made the first diagnosis ambiguous.
+		 */
+		if ( !br_prehit_valid )
+		{
+			stats.NoteDamageRejected("no latch - EEOnDamageCalculated did not run", last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
+		int latch_age = GetGame().GetTime() - br_prehit_ms;
+
+		//--- Consumed whatever happens next, so one latch can never serve two hits.
+		br_prehit_valid = false;
+
+		if ( latch_age > BR_PREHIT_LATCH_TTL_MS )
+		{
+			stats.NoteDamageRejected("latch too old age=" + latch_age, last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
+		/**
+		 *  Were they ALIVE BEFORE this hit? That is the question, and it is not the same as IsAlive().
+		 *
+		 *  This used to be a plain `if ( !IsAlive() ) return;` to stop corpse-shooting from scoring.
+		 *  It also threw away the KILLING BLOW, because vanilla's IsAlive() is !IsDamageDestroyed() -
+		 *  purely health-based - and EEHitBy runs AFTER the engine has applied the damage. A hit that
+		 *  takes health to zero therefore reports IsAlive() false by the time we look, so the one hit
+		 *  that decided the fight was the one hit never credited.
+		 *
+		 *  Measured 2026-08-13: a knife kill on a full-health player scored 76 instead of >= 100,
+		 *  which is what surfaced this - the per-hit deltas cannot sum to less than the total health
+		 *  actually lost unless hits are being dropped.
+		 *
+		 *  The pre-hit latch answers it exactly: a corpse was already at zero before the hit and is
+		 *  still refused, while the fatal blow was above zero and now counts. The delta clamps itself
+		 *  to whatever they had left, so the killing hit scores what it actually took and no overkill.
+		 */
+		if ( br_prehit_health <= 0 )
+		{
+			stats.NoteDamageRejected("already dead", last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
+		float max_health = GetMaxHealth("", "Health");
+		float max_blood = GetMaxHealth("", "Blood");
+		if ( max_health <= 0 )
+			return;
+		if ( max_blood <= 0 )
+			return;
+
+		float health_lost = br_prehit_health - GetHealth("", "Health");
+		float blood_lost = br_prehit_blood - GetHealth("", "Blood");
+
+		float dealt = Math.Max( health_lost / max_health, blood_lost / max_blood );
+		dealt = dealt * 100;
+
+		//--- The one exit that is genuinely interesting if it fires: the hit resolved to a real
+		//--- attacker and a live victim, and still removed nothing measurable. That would mean the
+		//--- delta is not seeing what the damage system did.
+		if ( dealt <= 0 )
+		{
+			stats.NoteDamageRejected("zero delta", last_unconscious_source_uid, victim_uid);
+			return;
+		}
+
+		stats.NoteDamage( last_unconscious_source_uid, victim_uid, dealt );
 	}
 
 	override void OnUnconsciousStop(int pCurrentCommandID)

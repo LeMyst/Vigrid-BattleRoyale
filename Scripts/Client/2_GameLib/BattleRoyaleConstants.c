@@ -58,6 +58,55 @@ static const int BR_LEADERBOARD_MAX_ROWS = 50;
 //which ladder a result lands on, decided by the player's own group size at match start.
 static const int BR_LEADERBOARD_BOARD_SOLO = 0;
 static const int BR_LEADERBOARD_BOARD_GROUP = 1;
+//...and the third tab, which is not a ladder at all: the previous match, read back from disk.
+//It shares the menu and nothing else - its own request RPC, its own cache and its own sequence
+//counter. See the warning on BattleRoyaleClient.RequestLeaderboard about never passing this value.
+static const int BR_LEADERBOARD_BOARD_LASTMATCH = 2;
+
+
+//--- last match summary persistence
+//One match, written once, read back by the NEXT server process. The whole feature exists because
+//this server restarts between matches, so the lobby a player reconnects into is the only place a
+//summary can reach the winner as well as the dead.
+static const string BATTLEROYALE_LASTMATCH_FILE = "$profile:Vigrid-BattleRoyale\\last_match.json";
+//Same non-atomic SaveFile problem as the leaderboard. Here the copy-aside doubles as a free
+//one-deep history: at the instant of the single write the primary still holds the PREVIOUS match.
+static const string BATTLEROYALE_LASTMATCH_BACKUP = "$profile:Vigrid-BattleRoyale\\last_match.json.bak";
+
+//Hard cap on rows, applied on write and again on read. Sits above any realistic field on purpose -
+//see the TRUNCATED flag below for why a cap that actually bites is a correctness problem and not
+//just a display one.
+static const int BR_LASTMATCH_MAX_ROWS = 64;
+//Per-player floor between last-match requests. Its OWN map, not the leaderboard's: sharing one
+//budget means opening F4 and switching tabs quickly gets silently refused, and the menu's 1000 ms
+//retry would then thrash against it.
+static const int BR_LASTMATCH_REQUEST_COOLDOWN_MS = 500;
+//On-disk format version. Nothing to migrate yet; present from day one because this file is a
+//readable, uid-keyed, write-once artefact that an external tool could reasonably consume.
+static const int BR_LASTMATCH_FILE_VERSION = 1;
+
+//Flags on SetLastMatchTable.
+//GROUPED: field_size counts GROUPS, and that figure only means something when parties are actually
+//in play. VigridPartyAPI.GetGroupCount degrades to one group per player when the party manager is
+//disabled, which is numerically identical to the player count - so without this the card would
+//render "#4 of 12 squads" on a server with no squads. Same trap as BR_HUD_GROUPS_NONE.
+static const int BR_LASTMATCH_FLAG_GROUPED = 1;
+//TRUNCATED: the row cap bit. The squad block is summed CLIENT-side from the table, so a missing
+//squadmate silently produces a smaller, wrong total. With this set the client hides the squad block
+//outright - no figure beats a wrong figure.
+static const int BR_LASTMATCH_FLAG_TRUNCATED = 2;
+
+//Safety net on the pre-hit health latch, in ms. The latch is normally matched to its hit by a
+//consumed flag, which is exact; this only catches the leak where EEOnDamageCalculated ran but the
+//matching EEHitBy never did (another mod cancelled the damage), leaving the flag set for whatever
+//comes next. Well above one damage event and well below the gap between two unrelated ones.
+static const int BR_PREHIT_LATCH_TTL_MS = 200;
+
+//How long a zone-damage hint stays good. The play area is the one environmental cause worth naming,
+//and scripted damage reaches EEKilled with the victim as their own killer, so it is only knowable
+//from a hint dropped at the damage site. Consumed on read, so a stale hint cannot mislabel the next
+//environmental death.
+static const int BR_KILL_HINT_TTL_MS = 5000;
 
 //id of the mod's own DayZPlayer sync juncture, used by every teleport this mod performs (match
 //start and F2 unstuck). Both halves of the handler key off it - the server one repositions, the

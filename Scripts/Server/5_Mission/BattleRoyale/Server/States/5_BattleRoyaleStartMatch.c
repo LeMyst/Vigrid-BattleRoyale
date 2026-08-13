@@ -210,9 +210,37 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         int field_size = GetPlayers().Count();
         ref map<string, int> group_sizes = new map<string, int>();
 
+        //--- The match summary needs two more snapshots taken at this same instant: which squad each
+        //--- player belongs to, and what everyone was called while they all still had an identity.
+        ref map<string, int> group_index = new map<string, int>();
+        ref map<string, string> names = new map<string, string>();
+        bool grouped = false;
+
+        //--- Seeded with the SOLO partition first, then overwritten by the party block below. That
+        //--- ordering is what lets this method have one code path and no #else branch: with the addon
+        //--- absent, or present but disabled, every player simply keeps their own index.
+        for (int s = 0; s < GetPlayers().Count(); s++)
+        {
+            PlayerBase solo = GetPlayers().Get(s);
+            if (!solo)
+                continue;
+            if (solo.player_steamid == "")
+                continue;
+
+            group_index.Set(solo.player_steamid, s);
+            names.Set(solo.player_steamid, BattleRoyaleKillAttribution.NameOfPlayer(solo));
+        }
+
 #ifdef VIGRID_PARTY
         array<ref array<PlayerBase>> groups = VigridPartyAPI.GetGroups( GetPlayers() );
         field_size = groups.Count();
+
+        //--- IsReady(), never the #ifdef. Party ships in this repo so the guard is true on every
+        //--- server, while party_settings.json can still switch the manager off - in which case
+        //--- GetGroups degrades to one group per player and field_size becomes numerically identical
+        //--- to the player count. That is correct for partitioning and wrong for any label saying
+        //--- "squads", which is the mechanism behind issue #158.
+        grouped = VigridPartyAPI.IsReady();
 
         for (int g = 0; g < groups.Count(); g++)
         {
@@ -226,11 +254,13 @@ class BattleRoyaleStartMatch: BattleRoyaleState
                     continue;
 
                 group_sizes.Set(member.player_steamid, party_group.Count());
+                group_index.Set(member.player_steamid, g);
             }
         }
 #endif
 
         BattleRoyaleLeaderboard.GetInstance().BeginMatch( field_size, group_sizes );
+        BattleRoyaleMatchStats.GetInstance().BeginMatch( field_size, grouped, group_index, names );
     }
 
     void StartZoning()

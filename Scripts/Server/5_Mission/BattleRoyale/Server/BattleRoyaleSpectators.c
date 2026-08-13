@@ -61,26 +61,10 @@
  *  and corpse survive their respawn exactly as they were.
  */
 
-//! One death. Written once, read for the rest of the match.
-class BattleRoyaleDeathRecord
-{
-    string victim_uid;   //!< SteamID64. Map key.
-    string victim_name;  //!< cached at death, so rendering a name never needs an identity
-    string killer_uid;   //!< SteamID64 of the responsible PLAYER, or "" for every non-player cause
-    int death_ms;        //!< GetGame().GetTime() at death
-    string party_id;     //!< VigridPartyAPI.GetPartyId() snapshot, "" when solo or no party addon
-    vector death_pos;    //!< where they fell. Used to pick the NEAREST living player as a fallback.
-
-    void BattleRoyaleDeathRecord(string victim, string name, string killer, int time_ms, string party, vector position)
-    {
-        victim_uid = victim;
-        victim_name = name;
-        killer_uid = killer;
-        death_ms = time_ms;
-        party_id = party;
-        death_pos = position;
-    }
-}
+//! BattleRoyaleDeathRecord used to be declared here. It now lives in
+//! Scripts/Server/4_World/MatchSummary/BattleRoyaleDeathRecord.c, because BattleRoyaleMatchStats
+//! also reads it and that class has to be 4_World for PlayerBase.EEHitBy to reach it - a 4_World
+//! method cannot name a 5_Mission type. This class still owns and writes every record.
 
 //! One player currently spectating.
 class BattleRoyaleSpectatorEntry
@@ -310,6 +294,24 @@ class BattleRoyaleSpectators
             victim_name = victim.GetIdentity().GetName();
 
         BattleRoyaleDeathRecord record = new BattleRoyaleDeathRecord(uid, victim_name, killer_uid, GetGame().GetTime(), party_id, victim.GetPosition());
+
+        //--- The recap, resolved while `source` - the weapon or the armed device - is still in hand.
+        //--- This is the only moment it is: EEKilled's source is not retained anywhere.
+        //---
+        //--- DELIBERATELY inside the first-write-wins block above. Filling these in on a later call
+        //--- would be the one way to break the feature: the unconscious-disconnect path fires a
+        //--- second EEKilled whose source is the VICTIM, so a second pass would overwrite a good
+        //--- attribution with ENVIRONMENT and an empty name.
+        BattleRoyaleKillDetails details = new BattleRoyaleKillDetails();
+        BattleRoyaleKillAttribution.ResolveKillDetails(victim, source, details);
+
+        record.cause = details.cause;
+        record.killer_name = details.killer_name;
+        record.weapon_type = details.weapon_type;
+        record.distance_m = details.distance_m;
+        record.killer_health_pct = details.killer_health_pct;
+        record.damage_to_killer = BattleRoyaleMatchStats.GetInstance().GetPairDamage(uid, killer_uid);
+
         m_Deaths.Set(uid, record);
         m_DeathOrder.Insert(uid);
 
@@ -322,6 +324,20 @@ class BattleRoyaleSpectators
             party_log = "-";
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] RecordDeath victim=%1 killer=%2 party=%3", uid, killer_log, party_log));
+
+        //--- The resolved recap, logged separately so what the server decided can be cross-checked
+        //--- against what the death screen actually renders. Without it the only way to tell a bad
+        //--- resolve from a bad render is to stage another two-client kill.
+        //--- Built in steps: six fields in one concatenation is the shape that trips
+        //--- "Formula too complex", which is a hard compile error the packer does not catch.
+        string recap_log = "[Recap] victim=" + uid;
+        recap_log = recap_log + " cause=" + record.cause;
+        recap_log = recap_log + " killer=" + record.killer_name;
+        recap_log = recap_log + " weapon=" + record.weapon_type;
+        recap_log = recap_log + " dist=" + record.distance_m;
+        recap_log = recap_log + " killer_hp=" + record.killer_health_pct;
+        recap_log = recap_log + " dealt=" + record.damage_to_killer;
+        BattleRoyaleUtils.Info(recap_log);
     }
 
     /**
@@ -369,10 +385,52 @@ class BattleRoyaleSpectators
             victim_name = victim.GetIdentity().GetName();
 
         BattleRoyaleDeathRecord record = new BattleRoyaleDeathRecord(uid, victim_name, killer_uid, GetGame().GetTime(), party_id, victim.GetPosition());
+
+        //--- The DEGRADED recap. There is no `source` on this path - the hit that downed them was
+        //--- minutes ago and the object is long gone - so the weapon and the range are genuinely
+        //--- lost. They are left unknown rather than guessed: the killer may have moved a kilometre
+        //--- since, and a plausible wrong distance is worse than none at all. The killer's name is
+        //--- the one thing that is both knowable and worth showing, and the damage already dealt to
+        //--- them is a running total rather than a snapshot, so it survives the delay intact.
+        if (killer_uid != "")
+        {
+            record.cause = BattleRoyaleKillCause.UNKNOWN;
+            record.killer_name = BattleRoyaleKillAttribution.NameOfPlayer(BattleRoyaleKillAttribution.FindPlayerByUid(killer_uid));
+            record.damage_to_killer = BattleRoyaleMatchStats.GetInstance().GetPairDamage(uid, killer_uid);
+        }
+
         m_Deaths.Set(uid, record);
         m_DeathOrder.Insert(uid);
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] RecordDeath (disconnect) victim=%1 killer=%2", uid, killer_uid));
+    }
+
+    //! The death record for a uid, or NULL if they are still alive. Plain data - see the class
+    //! header on BattleRoyaleDeathRecord for why handing out the reference is safe here.
+    BattleRoyaleDeathRecord GetDeathRecord(string uid)
+    {
+        if (uid == "")
+            return NULL;
+        if (!m_Deaths.Contains(uid))
+            return NULL;
+
+        return m_Deaths.Get(uid);
+    }
+
+    //! Convenience form for callers holding a player rather than a uid. Reads player_steamid first,
+    //! since a disconnecting player's identity is already NULL by the time RemovePlayer runs.
+    BattleRoyaleDeathRecord GetDeathRecordFor(PlayerBase player)
+    {
+        string uid = "";
+
+        if (!player)
+            return NULL;
+
+        uid = player.player_steamid;
+        if (uid == "" && player.GetIdentity())
+            uid = player.GetIdentity().GetPlainId();
+
+        return GetDeathRecord(uid);
     }
 
     //------------------------------------------------------------------------------------------

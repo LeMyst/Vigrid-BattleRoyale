@@ -52,6 +52,11 @@ class BattleRoyaleRPC
 		lb_solo = new BattleRoyaleLeaderboardBoard();
 		lb_group = new BattleRoyaleLeaderboardBoard();
 
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchTable", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchRecap", this );
+
+		last_match = new BattleRoyaleLastMatch();
+
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
 
@@ -148,6 +153,133 @@ class BattleRoyaleRPC
 		hot_zone_centers.Clear();
 		hot_zone_radii.Clear();
 		hot_zone_seq++;
+		//--- The last-match card and table ARE reset, and the note above about is_admin and
+		//--- death_locked invites exactly the wrong inference here. Those two are respectively a
+		//--- property of who is connected and a one-shot handshake. This is match data belonging to
+		//--- one server process, and a world load means a different process.
+		//--- self_index back to -1, NOT 0: zero would make this client believe it is row 0 - the
+		//--- winner - against an empty table.
+		last_match.Clear();
+		last_match_seq = 0;
+		recap_killer_name = "";
+		recap_weapon_type = "";
+		recap_cause = BattleRoyaleKillCause.UNKNOWN;
+		recap_distance_m = -1;
+		recap_killer_health_pct = -1;
+		recap_damage_to_killer = 0;
+		recap_self_group = -1;
+		recap_hits = 0;
+		recap_valid = false;
+		recap_seq = 0;
+	}
+
+	//------------------------------------------------------------------------------------------
+	//--- Last match: the persisted summary of the PREVIOUS match, read back in the lobby.
+	//------------------------------------------------------------------------------------------
+
+	ref BattleRoyaleLastMatch last_match;
+
+	//! Its OWN sequence counter, never leaderboard_seq. Two producers - a ladder arriving must not
+	//! repaint the last-match tab, and vice versa.
+	int last_match_seq = 0;
+
+	/**
+	 *  The final standings of the previous match.
+	 *
+	 *  Parallel primitive arrays, never an array of structs, following every other table on this
+	 *  class. No SteamID64s: self_index is what identifies the local player's row.
+	 */
+	void SetLastMatchTable(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param9< array<string>, array<int>, array<int>, array<int>, array<int>, array<int>, int, int, int > data;
+
+		if ( !ctx.Read( data ) )
+		{
+			//--- Warn, never Error: the global Error() raises a VM exception and would take the
+			//--- client's whole mission down over a malformed cosmetic payload.
+			BattleRoyaleUtils.Warn("SetLastMatchTable: FAILED TO READ");
+			return;
+		}
+
+		if ( type == CallType.Client )
+		{
+			//--- Copy, never adopt the Param's arrays - they are transient.
+			last_match.names.Copy( data.param1 );
+			last_match.places.Copy( data.param2 );
+			last_match.kills.Copy( data.param3 );
+			last_match.damage.Copy( data.param4 );
+			last_match.survived.Copy( data.param5 );
+			last_match.groups.Copy( data.param6 );
+			last_match.self_index = data.param7;
+			last_match.field_size = data.param8;
+			last_match.flags = data.param9;
+			last_match.valid = true;
+
+			string line = "SetLastMatchTable: rows=" + last_match.Count();
+			line = line + " self=" + last_match.self_index;
+			line = line + " field=" + last_match.field_size;
+			line = line + " flags=" + last_match.flags;
+			BattleRoyaleUtils.Debug(line);
+		}
+
+		//--- Unconditionally at the end, so an edge-triggered renderer repaints even on a payload
+		//--- that changed nothing.
+		last_match_seq++;
+	}
+
+	//------------------------------------------------------------------------------------------
+	//--- Death recap. ONE handler, TWO send points: pushed live at the moment of death so the death
+	//--- screen can paint it, and sent again with the table when the lobby asks.
+	//---
+	//--- The two can never be confused within a session, and the reason is structural rather than
+	//--- lucky: the server restarts between matches and this instance is per-session, so a session
+	//--- spans exactly one process and therefore exactly one match. The one exception is an admin,
+	//--- who is exempt from the late-join kick: they can read the previous match in the lobby, then
+	//--- play and die, and the fields are overwritten under the old header. Documented rather than
+	//--- engineered around - it affects admins only, and both fixes cost more than the bug.
+	//------------------------------------------------------------------------------------------
+
+	string recap_killer_name = "";
+	string recap_weapon_type = "";   //!< classname; localised here on the client, per viewer
+	int recap_cause = BattleRoyaleKillCause.UNKNOWN;
+	int recap_distance_m = -1;
+	int recap_killer_health_pct = -1;
+	int recap_damage_to_killer = 0;
+	int recap_self_group = -1;
+	int recap_hits = 0;              //!< rides here because the table carries no hits column
+	bool recap_valid = false;
+	int recap_seq = 0;
+
+	void SetLastMatchRecap(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param8< string, string, int, int, int, int, int, int > data;
+
+		if ( !ctx.Read( data ) )
+		{
+			BattleRoyaleUtils.Warn("SetLastMatchRecap: FAILED TO READ");
+			return;
+		}
+
+		if ( type == CallType.Client )
+		{
+			recap_killer_name = data.param1;
+			recap_weapon_type = data.param2;
+			recap_cause = data.param3;
+			recap_distance_m = data.param4;
+			recap_killer_health_pct = data.param5;
+			recap_damage_to_killer = data.param6;
+			recap_self_group = data.param7;
+			recap_hits = data.param8;
+			recap_valid = true;
+
+			string line = "SetLastMatchRecap: cause=" + recap_cause;
+			line = line + " killer=" + recap_killer_name;
+			line = line + " weapon=" + recap_weapon_type;
+			line = line + " dist=" + recap_distance_m;
+			BattleRoyaleUtils.Debug(line);
+		}
+
+		recap_seq++;
 	}
 
 	// Set the number of players and groups

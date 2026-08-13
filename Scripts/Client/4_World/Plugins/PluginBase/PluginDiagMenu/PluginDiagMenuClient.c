@@ -56,6 +56,10 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagOpenSpawnMenuID, CBBRDiagOpenSpawnMenu);
 		DiagMenu.BindCallback(m_BRDiagOpenLeaderboardID, CBBRDiagOpenLeaderboard);
 		DiagMenu.BindCallback(m_BRDiagFakeLeaderboardID, CBBRDiagFakeLeaderboard);
+		DiagMenu.BindCallback(m_BRDiagFakeLastMatchID, CBBRDiagFakeLastMatch);
+		DiagMenu.BindCallback(m_BRDiagLastMatchCauseID, CBBRDiagLastMatchCause);
+		DiagMenu.BindCallback(m_BRDiagLastMatchNotPlayedID, CBBRDiagLastMatchNotPlayed);
+		DiagMenu.BindCallback(m_BRDiagOpenDeathScreenID, CBBRDiagOpenDeathScreen);
 		DiagMenu.BindCallback(m_BRDiagFadeID, CBBRDiagFade);
 
 #ifdef KILLFEED
@@ -295,6 +299,92 @@ modded class PluginDiagMenuClient
 		board.self_wins = 3;
 		board.self_points = 900;
 		board.valid = true;
+	}
+
+	/**
+	 *  Fill the Last Match tab with a plausible previous match.
+	 *
+	 *  Writes BattleRoyaleRPC exactly as the SetLastMatchTable and SetLastMatchRecap handlers do,
+	 *  sequence bumps included, so what the menu reads is the production data by the time it reads it.
+	 *
+	 *  This is the whole client half of the feature made testable offline, where SERVER is undefined
+	 *  and none of the server code that produces this data exists at all.
+	 */
+	static void CBBRDiagFakeLastMatch(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+		BattleRoyaleLastMatch data = br_rpc.last_match;
+
+		data.Clear();
+
+		//--- 40 rows against a 342 px viewport at 26 px each - about 13 visible. Deliberately
+		//--- overflowing: a fixture that FITS cannot reach the scrolling it exists to exercise, which
+		//--- is how the leaderboard's own scroll bug survived two diagnoses.
+		for ( int i = 0; i < 40; i++ )
+		{
+			data.names.Insert("Fake Player " + (i + 1));
+			data.places.Insert(i + 1);
+			data.kills.Insert(Math.Max(0, 12 - (i / 3)));
+			data.damage.Insert(Math.Max(0, 940 - (i * 21)));
+			data.survived.Insert(Math.Max(0, 1450 - (i * 33)));
+			//--- Squads of three, so the squad block has real rows to sum and the self row is not
+			//--- alone in its group.
+			data.groups.Insert(i / 3);
+		}
+
+		//--- Mid-table, and NOT row 0: a self index of 0 hides every bug in the row highlight and in
+		//--- the squad sum at once.
+		data.self_index = 23;
+		if ( BattleRoyaleDiag.lastmatch_not_played )
+			data.self_index = -1;
+
+		data.field_size = 14;
+		data.flags = BR_LASTMATCH_FLAG_GROUPED;
+		data.valid = true;
+
+		br_rpc.recap_cause = BattleRoyaleDiag.lastmatch_cause;
+		br_rpc.recap_killer_name = "Myst";
+		br_rpc.recap_weapon_type = "M4A1";
+		br_rpc.recap_distance_m = 212;
+		br_rpc.recap_killer_health_pct = 23;
+		br_rpc.recap_damage_to_killer = 87;
+		br_rpc.recap_self_group = 7;
+		br_rpc.recap_hits = 11;
+		br_rpc.recap_valid = true;
+
+		br_rpc.last_match_seq = br_rpc.last_match_seq + 1;
+		br_rpc.recap_seq = br_rpc.recap_seq + 1;
+
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagLastMatchCause(int value)
+	{
+		//--- Offset by the enum's first *resolvable* cause, so the picker reads as causes rather than
+		//--- as raw numbers. UNKNOWN and NONE are included: NONE is the winner's card and UNKNOWN is
+		//--- the degraded disconnect path, and both have their own render branch.
+		BattleRoyaleDiag.lastmatch_cause = value;
+	}
+
+	static void CBBRDiagLastMatchNotPlayed(bool enabled)
+	{
+		BattleRoyaleDiag.lastmatch_not_played = enabled;
+	}
+
+	static void CBBRDiagOpenDeathScreen(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		//--- Offline the local player never dies, and DeathScreenMenu.Tick() closes itself on
+		//--- IsAlive(). Without this the screen shuts on its first tick and looks like a layout that
+		//--- failed to load.
+		BattleRoyaleDiag.suppress_alive_close = true;
+		BattleRoyaleDiag.req_open_death_screen = BattleRoyaleDiag.req_open_death_screen + 1;
+		DiagMenu.SetValue(id, false);
 	}
 
 	static void CBBRDiagFade(bool enabled)

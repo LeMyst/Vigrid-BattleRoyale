@@ -139,6 +139,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected vector br_diag_zone_origin;
     protected int br_diag_req_spawn_menu = 0;
     protected int br_diag_req_leaderboard = 0;
+    protected int br_diag_req_death_screen = 0;
 
     /**
      *  Replace the live play areas with synthetic circles pinned near the player.
@@ -208,6 +209,14 @@ class BattleRoyaleClient: BattleRoyaleBase
             //--- Mission, and this class is not one.
             GetGame().GetUIManager().CloseAll();
             GetGame().GetUIManager().EnterScriptedMenu( MENU_BR_LEADERBOARD, NULL );
+        }
+
+        if ( br_diag_req_death_screen != BattleRoyaleDiag.req_open_death_screen )
+        {
+            br_diag_req_death_screen = BattleRoyaleDiag.req_open_death_screen;
+
+            GetGame().GetUIManager().CloseAll();
+            GetGame().GetUIManager().EnterScriptedMenu( MENU_BR_DEAD, NULL );
         }
     }
 #endif
@@ -1740,13 +1749,27 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- their -name= launcher values. So the client has no persona name to offer, and this could
     //--- only ever have echoed back the placeholder it was meant to replace.
 
-    //! Ask the server for one leaderboard ladder. The server rate-limits this per player, so the
-    //! menu is free to call it on show, on every tab switch, and on a poll while it is open.
+    /**
+     *  Ask the server for one leaderboard ladder. The server rate-limits this per player, so the
+     *  menu is free to call it on show, on every tab switch, and on a poll while it is open.
+     *
+     *  ⚠ NEVER pass BR_LEADERBOARD_BOARD_LASTMATCH. BattleRoyaleLeaderboard.ServeRequest treats
+     *  anything that is not GROUP as SOLO, so board 2 would be answered with the solo ladder tagged
+     *  as solo while still consuming this player's cooldown - the tab would simply appear dead. The
+     *  last-match tab has its own request below.
+     */
     void RequestLeaderboard( int board )
     {
         ref Param1<int> requested_board = new Param1<int>( board );
         //--- No target - see ReadyUp above.
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", requested_board, true );
+    }
+
+    //! Ask the server for the PREVIOUS match: the standings table and this player's own recap.
+    //! No payload - the server resolves the actor from the RPC sender.
+    void RequestLastMatch()
+    {
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLastMatch", NULL, true );
     }
 
     void StartMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)

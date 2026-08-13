@@ -59,6 +59,32 @@ enum BattleRoyaleDiagAction
 }
 
 
+/**
+ *  What killed a player, as recorded on their death record and rendered by the death recap.
+ *
+ *  Not guarded, and deliberately NOT tied to KillFeedCause. Extra/KillFeed/ may not be named without
+ *  #ifdef KILLFEED and can be deleted from the build entirely, so pinning the two enums together
+ *  would make the recap depend on an optional addon. The values are numerically independent on
+ *  purpose - do not "align" them.
+ *
+ *  Append only - the value travels on the wire and is written into last_match.json, so renumbering
+ *  mislabels every death in a file written by an older build.
+ */
+enum BattleRoyaleKillCause
+{
+    UNKNOWN = 0,   //!< the degraded disconnect path: a killer is known, the how is not
+    NONE,          //!< never eliminated. The WINNER - renders "You were never eliminated."
+    FIREARM,
+    MELEE,
+    BAREHANDS,
+    EXPLOSIVE,     //!< grenade, mine, claymore, IED - attributed to whoever armed it
+    ZONE,          //!< the play area. Known only through the hint set at the two damage sites.
+    INFECTED,
+    ANIMAL,
+    ENVIRONMENT    //!< fall, drowning, exposure, a building - nobody is responsible
+}
+
+
 enum BattleRoyaleMatchMakingState
 {
 	INVALID = -1, //Do not move this

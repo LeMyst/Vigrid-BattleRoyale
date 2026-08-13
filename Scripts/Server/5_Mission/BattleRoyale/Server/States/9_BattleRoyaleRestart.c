@@ -14,6 +14,16 @@ class BattleRoyaleRestart: BattleRoyaleState
         //--- over this one.
         BattleRoyaleLeaderboard.GetInstance().EndMatch();
 
+        //--- THE match summary write, and the only one. Here rather than in 8_BattleRoyaleWin for a
+        //--- reason that is easy to miss: the winner's RecordExit does not run until KickWinner,
+        //--- fifteen seconds AFTER that state activates, so a write there produces a file with no
+        //--- placement and no survival time for the winner - the one row everybody looks at first.
+        //--- Restart activates only once Win has deactivated, so every row exists by now.
+        //---
+        //--- Deliberately not paired with a belt in 8_BattleRoyaleWin: that write would be the bad
+        //--- one, and any latch protecting it would then refuse this good one.
+        BattleRoyaleMatchStats.GetInstance().EndMatch();
+
         //--- Same reasoning for spectators: 8_BattleRoyaleWin normally gets here first, but this
         //--- state is reached by every match end. EndAll() latches, so the second call is a no-op.
         //--- Nothing here can delay the shutdown - IsComplete() is unconditionally false and the

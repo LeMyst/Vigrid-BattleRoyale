@@ -79,6 +79,11 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         //these loop & will be automatically cleaned up on Deactivation
         AddTimer(i_TimeBetweenMessages, this, "MessageWaiting", NULL, true);
 
+        //--- Name the previous winner once, as the lobby opens. The record is already in memory -
+        //--- the summary store loads it at boot - so this costs one string and reaches every player
+        //--- rather than only the ones who think to press F4.
+        AnnouncePreviousWinner();
+
         if( b_UseVoteSystem )
         	AddTimer(2.0, this, "CheckReadyState", NULL, true);
 
@@ -130,6 +135,23 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			if( b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) ) )
 				DeactivateDeferred();
 		}
+    }
+
+    /**
+     *  "Last match won by X with N kills."
+     *
+     *  Silent when there is no previous match - first boot, or an operator who cleared the file -
+     *  rather than announcing an empty one.
+     */
+    void AnnouncePreviousWinner()
+    {
+        BattleRoyaleLastMatchFile previous = BattleRoyaleMatchStats.GetInstance().GetPrevious();
+        if (!previous)
+            return;
+        if (previous.winner_name == "")
+            return;
+
+        MessagePlayersUntranslated("STR_BR_LASTMATCH_WINNER_ANNOUNCE", previous.winner_name, previous.winner_kills.ToString());
     }
 
     void MessageWaiting()

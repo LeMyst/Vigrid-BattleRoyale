@@ -13,7 +13,9 @@ PanelWidgetClass DeathRoot {
   PanelWidgetClass Dialog {
    inheritalpha 0
    position 0 0
-   size 1000 340
+   // 404 rather than 340: the recap block below adds 64px. Dialog is center_ref, so growing it
+   // re-centres itself and DeathRoot is untouched.
+   size 1000 404
    halign center_ref
    valign center_ref
    hexactpos 1
@@ -56,9 +58,33 @@ PanelWidgetClass DeathRoot {
      "text valign" center
      wrap 1
     }
+    // Who killed you, with what, at what range - plus how they were left and what you had already
+    // taken off them. Painted from DeathScreenMenu.Tick(), NOT from Init(): the recap is pushed by
+    // the server while the menu is opened locally the instant the death command starts, so it is
+    // structurally late, not merely occasionally late.
+    // Empty when there is nothing to say. Dialog is fully transparent, so an empty widget here
+    // leaves no visible gap and nothing has to be repositioned at runtime.
+    MultilineTextWidgetClass RecapText {
+     inheritalpha 0
+     position 0 146
+     size 1000 56
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.85 0.78 0.62 1
+     text ""
+     font "gui/fonts/metron"
+     "exact text" 0
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     wrap 1
+    }
     TextWidgetClass StatusText {
      inheritalpha 0
-     position 0 152
+     position 0 216
      size 1000 32
      hexactpos 1
      vexactpos 1
@@ -73,7 +99,7 @@ PanelWidgetClass DeathRoot {
     }
     ButtonWidgetClass SpectateButton {
      inheritalpha 0
-     position 140 220
+     position 140 284
      size 220 48
      hexactpos 1
      vexactpos 1
@@ -90,7 +116,7 @@ PanelWidgetClass DeathRoot {
     // is why the two originals moved off 260/520.
     ButtonWidgetClass AdminButton {
      inheritalpha 0
-     position 390 220
+     position 390 284
      size 220 48
      hexactpos 1
      vexactpos 1
@@ -103,7 +129,7 @@ PanelWidgetClass DeathRoot {
     }
     ButtonWidgetClass QuitButton {
      inheritalpha 0
-     position 640 220
+     position 640 284
      size 220 48
      hexactpos 1
      vexactpos 1
