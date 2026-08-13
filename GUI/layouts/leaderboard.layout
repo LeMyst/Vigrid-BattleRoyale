@@ -133,10 +133,19 @@ PanelWidgetClass LeaderboardRoot {
     // with no style paints nothing at all, so these are pure grouping nodes. They must NOT be
     // transparent either - widget alpha multiplies through parents, so `color 0 0 0 0` here would
     // make every inheritalpha child invisible with a completely clean .rpt.
+    //
+    // ⚠ BOTH need `ignorepointer 1`, and leaving it off is a silent, total input failure. These are
+    // full dialog size and declared AFTER the tab buttons, so with the default ignorepointer 0 they
+    // sit over Solo / Group / Last Match and swallow every click on them - no error, no log line,
+    // the buttons simply stop responding while CloseButton (declared after these) keeps working.
+    // ignorepointer does NOT propagate to children: vanilla's own day_z_respawn_dialogue.layout
+    // stacks it on three nested parents and its ButtonWidgets inside them work fine. So the
+    // ScrollWidget below keeps its mouse input.
     // ---------------------------------------------------------------------------------------
 
     PanelWidgetClass LadderPanel {
      visible 1
+     ignorepointer 1
      position 0 0
      size 920 840
      hexactpos 1
@@ -294,6 +303,7 @@ PanelWidgetClass LeaderboardRoot {
 
     PanelWidgetClass LastMatchPanel {
      visible 0
+     ignorepointer 1
      position 0 0
      size 920 840
      hexactpos 1

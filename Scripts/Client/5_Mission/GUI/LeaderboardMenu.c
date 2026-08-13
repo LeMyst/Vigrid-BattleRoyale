@@ -590,6 +590,18 @@ class LeaderboardMenu extends UIScriptedMenu
 
     override bool OnClick(Widget w, int x, int y, int button)
     {
+        //--- Logged BEFORE the widget comparisons, the same way DeathScreenMenu does it, because it
+        //--- separates three failures that are indistinguishable on screen: the click never reaching
+        //--- the menu (no line at all), reaching it but landing on the wrong widget (a line naming
+        //--- something unexpected), and reaching the right widget with the handler misbehaving (a
+        //--- line and then nothing). Not having this cost a whole build once - a grouping panel with
+        //--- the default ignorepointer 0 was eating every tab click in silence.
+        string clicked = "<null>";
+        if (w)
+            clicked = w.GetName();
+
+        BattleRoyaleUtils.Trace("[Leaderboard] OnClick: " + clicked + " board=" + m_Board);
+
         if (w == m_CloseButton)
         {
             Close();
