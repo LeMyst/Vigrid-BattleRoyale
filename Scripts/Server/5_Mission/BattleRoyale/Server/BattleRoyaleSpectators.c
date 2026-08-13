@@ -324,6 +324,20 @@ class BattleRoyaleSpectators
             party_log = "-";
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] RecordDeath victim=%1 killer=%2 party=%3", uid, killer_log, party_log));
+
+        //--- The resolved recap, logged separately so what the server decided can be cross-checked
+        //--- against what the death screen actually renders. Without it the only way to tell a bad
+        //--- resolve from a bad render is to stage another two-client kill.
+        //--- Built in steps: six fields in one concatenation is the shape that trips
+        //--- "Formula too complex", which is a hard compile error the packer does not catch.
+        string recap_log = "[Recap] victim=" + uid;
+        recap_log = recap_log + " cause=" + record.cause;
+        recap_log = recap_log + " killer=" + record.killer_name;
+        recap_log = recap_log + " weapon=" + record.weapon_type;
+        recap_log = recap_log + " dist=" + record.distance_m;
+        recap_log = recap_log + " killer_hp=" + record.killer_health_pct;
+        recap_log = recap_log + " dealt=" + record.damage_to_killer;
+        BattleRoyaleUtils.Info(recap_log);
     }
 
     /**

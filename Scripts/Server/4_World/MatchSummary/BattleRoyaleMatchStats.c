@@ -199,19 +199,57 @@ class BattleRoyaleMatchStats
         store.grouped = m_Grouped;
 
         count = m_Rows.Count();
-        for (i = 0; i < count; i++)
-        {
-            if (i >= BR_LASTMATCH_MAX_ROWS)
-                break;
 
-            store.rows.Insert(m_Rows.Get(i));
-        }
-
+        //--- The winner is read BEFORE sorting, because it is the LAST exit rather than the best
+        //--- place: RemovePlayer runs in exit order and KickWinner removes the winners last.
         if (count > 0)
         {
             BattleRoyaleLastMatchRow winner = m_Rows.Get(count - 1);
             store.winner_name = winner.name;
             store.winner_kills = winner.kills;
+        }
+
+        /**
+         *  Sorted by PLACE, best first.
+         *
+         *  m_Rows is in exit order, which is death order - i.e. very nearly reverse standings. Left
+         *  unsorted the table renders last place at the top, which is what shipped until a real
+         *  two-player match showed the winner underneath the loser.
+         *
+         *  The fake fixture could never have caught it: it was written place 1..40 in file order, so
+         *  it was already sorted by construction and looked perfect. A fixture that is ordered the
+         *  way the output should be ordered cannot test the ordering.
+         *
+         *  Insertion sort: the field is capped at 64, so this is trivially small, and it is stable
+         *  for equal places. Sorting BEFORE the cap also means a truncated table keeps the BEST
+         *  places rather than whoever happened to die first.
+         */
+        ref array<ref BattleRoyaleLastMatchRow> sorted = new array<ref BattleRoyaleLastMatchRow>();
+        for (i = 0; i < count; i++)
+        {
+            BattleRoyaleLastMatchRow row = m_Rows.Get(i);
+            if (!row)
+                continue;
+
+            int insert_at = sorted.Count();
+            for (int j = 0; j < sorted.Count(); j++)
+            {
+                if (row.place < sorted.Get(j).place)
+                {
+                    insert_at = j;
+                    break;
+                }
+            }
+
+            sorted.InsertAt(row, insert_at);
+        }
+
+        for (i = 0; i < sorted.Count(); i++)
+        {
+            if (i >= BR_LASTMATCH_MAX_ROWS)
+                break;
+
+            store.rows.Insert(sorted.Get(i));
         }
 
         return store;

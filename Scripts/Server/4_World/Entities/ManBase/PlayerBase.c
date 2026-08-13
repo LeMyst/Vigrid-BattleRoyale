@@ -165,10 +165,6 @@ modded class PlayerBase
 		if ( !stats.IsRecording() )
 			return;
 
-		//--- Shooting a corpse must not score.
-		if ( !IsAlive() )
-			return;
-
 		//--- Reuse the uid EEHitBy already resolved - do not call ResolveKillerUid a second time. It
 		//--- is "" for self-damage, the zone, falls, drowning, infected, animals and your own
 		//--- grenade, so this single test excludes every non-player cause.
@@ -187,6 +183,26 @@ modded class PlayerBase
 		//--- EEOnDamageCalculated, and a latch left over from an earlier hit would clamp this one
 		//--- against a health value that is seconds old.
 		if ( br_prehit_ms != GetGame().GetTime() )
+			return;
+
+		/**
+		 *  Were they ALIVE BEFORE this hit? That is the question, and it is not the same as IsAlive().
+		 *
+		 *  This used to be a plain `if ( !IsAlive() ) return;` to stop corpse-shooting from scoring.
+		 *  It also threw away the KILLING BLOW, because vanilla's IsAlive() is !IsDamageDestroyed() -
+		 *  purely health-based - and EEHitBy runs AFTER the engine has applied the damage. A hit that
+		 *  takes health to zero therefore reports IsAlive() false by the time we look, so the one hit
+		 *  that decided the fight was the one hit never credited.
+		 *
+		 *  Measured 2026-08-13: a knife kill on a full-health player scored 76 instead of >= 100,
+		 *  which is what surfaced this - the per-hit deltas cannot sum to less than the total health
+		 *  actually lost unless hits are being dropped.
+		 *
+		 *  The pre-hit latch answers it exactly: a corpse was already at zero before the hit and is
+		 *  still refused, while the fatal blow was above zero and now counts. The delta clamps itself
+		 *  to whatever they had left, so the killing hit scores what it actually took and no overkill.
+		 */
+		if ( br_prehit_health <= 0 )
 			return;
 
 		float max_health = GetMaxHealth("", "Health");
