@@ -178,6 +178,16 @@ class BattleRoyaleState: Timeable
         //--- OnPlayerKilled, once from BattleRoyaleServer).
         BattleRoyaleLeaderboard.GetInstance().RecordExit(player);
 
+        //--- And the match summary, for the same reason and with the same guarantees: this is the
+        //--- one place every exit route funnels through, and it runs BEFORE RemoveItem so
+        //--- GetBRPosition() is still the finishing place. It dedupes on its own set rather than the
+        //--- leaderboard's, which is additionally gated on enable_leaderboard.
+        //---
+        //--- The death record is fetched here rather than inside RecordExit: it is held by
+        //--- BattleRoyaleSpectators in 5_Mission and BattleRoyaleMatchStats is 4_World, so only this
+        //--- caller can reach both. NULL means never eliminated - the winner.
+        BattleRoyaleMatchStats.GetInstance().RecordExit(player, BattleRoyaleSpectators.GetInstance().GetDeathRecordFor(player));
+
         m_Players.RemoveItem(player);
         OnPlayerCountChanged();
     }

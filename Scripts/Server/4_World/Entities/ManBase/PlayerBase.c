@@ -42,6 +42,20 @@ modded class PlayerBase
 
 	vector spawn_pos = vector.Zero;
 
+	//--- GetGame().GetTime() of the last play-area damage tick, dropped by 6_BattleRoyaleRound and
+	//--- 7_BattleRoyaleLastRound. Scripted damage reaches EEKilled with the player as their own
+	//--- source, so this is the only way the death recap can tell the zone from starvation or a fall.
+	//--- Consumed (read then zeroed) by BattleRoyaleKillAttribution.ConsumeZoneHint, so a stale hint
+	//--- cannot mislabel the next environmental death.
+	int br_zone_damage_ms = 0;
+
+	//--- Health and blood as they were immediately BEFORE the hit currently being processed, latched
+	//--- in EEOnDamageCalculated so EEHitBy can measure what the hit actually removed. br_prehit_ms
+	//--- is the guard: the latch is only trusted within the same frame it was taken.
+	float br_prehit_health = 0;
+	float br_prehit_blood = 0;
+	int br_prehit_ms = -1;
+
 	PlayerBase last_unconscious_source;
 	//--- SteamID64 of whoever is responsible for the hit that downed this player, which is NOT always
 	//--- expressible as an object: an explosive's owner may already be dead or disconnected. Set
@@ -100,6 +114,98 @@ modded class PlayerBase
 
 		if ( !playerSource && last_unconscious_source_uid == "" )
 			BattleRoyaleUtils.Trace("Player " + GetCachedName() + " was hit by an unknown source.");
+
+		BR_NoteDamageDealt();
+	}
+
+	/**
+	 *  Latch this player's health and blood BEFORE the hit lands.
+	 *
+	 *  TotalDamageResult reports COMPUTED damage, not APPLIED damage, so a 400-damage headshot on a
+	 *  player with 12 HP left reports 400. EEHitBy runs after application and so cannot recover the
+	 *  pre-hit value. This is the only hook that runs first.
+	 *
+	 *  SUPER FIRST, and return on false. Extra/SafeZone declares its own modded PlayerBase with this
+	 *  same override in a different PBO, and neither addon requires the other, so their relative
+	 *  chain order is not pinned by anything. This shape makes the order irrelevant: whichever way
+	 *  round they end up, a hit SafeZone cancels never reaches EEHitBy, so lobby punches can never be
+	 *  scored - and if we latch first and SafeZone then cancels, the latch is simply never consumed.
+	 */
+	override bool EEOnDamageCalculated(TotalDamageResult damageResult, int damageType, EntityAI source, int component, string dmgZone, string ammo, vector modelPos, float speedCoef)
+	{
+		if ( !super.EEOnDamageCalculated(damageResult, damageType, source, component, dmgZone, ammo, modelPos, speedCoef) )
+			return false;
+
+		br_prehit_health = GetHealth("", "Health");
+		br_prehit_blood = GetHealth("", "Blood");
+		br_prehit_ms = GetGame().GetTime();
+
+		return true;
+	}
+
+	/**
+	 *  Credit whoever just hit this player, measured as the health/blood the hit actually removed.
+	 *
+	 *  Measured as a DELTA rather than read off TotalDamageResult for three reasons: it clamps for
+	 *  free, because both pools floor at zero, so a headshot on a dying player scores what they had
+	 *  left instead of a four-figure overkill number; it accounts for armour; and it picks up the
+	 *  shock-to-health transfer vanilla applies inside EEHitBy itself, which the reported damage does
+	 *  not include. The existing override calls super first, so GetHealth here is fully post-hit.
+	 *
+	 *  BOTH pools, because DayZ death is Health <= 0 OR Blood <= 0 and a firearm body shot is mostly
+	 *  a blood hit - roughly 100 blood against a 5000 pool versus 30 health against 100. Health alone
+	 *  would under-report every gunfight and report ZERO for a bleed-out kill. Math.Max rather than a
+	 *  sum so a hit doing both is not counted twice, and normalising by this player's own maxima
+	 *  keeps it honest if another mod resizes the pools. The result reads as "one full-health player
+	 *  == 100 damage".
+	 */
+	protected void BR_NoteDamageDealt()
+	{
+		BattleRoyaleMatchStats stats = BattleRoyaleMatchStats.GetInstance();
+		if ( !stats.IsRecording() )
+			return;
+
+		//--- Shooting a corpse must not score.
+		if ( !IsAlive() )
+			return;
+
+		//--- Reuse the uid EEHitBy already resolved - do not call ResolveKillerUid a second time. It
+		//--- is "" for self-damage, the zone, falls, drowning, infected, animals and your own
+		//--- grenade, so this single test excludes every non-player cause.
+		if ( last_unconscious_source_uid == "" )
+			return;
+
+		string victim_uid = player_steamid;
+		if ( victim_uid == "" && GetIdentity() )
+			victim_uid = GetIdentity().GetPlainId();
+
+		//--- Crediting a player for shooting their own squadmate reads as a bug on a summary card.
+		if ( stats.AreTeammates(last_unconscious_source_uid, victim_uid) )
+			return;
+
+		//--- A STAMP, not a bool. Some scripted damage paths never route through
+		//--- EEOnDamageCalculated, and a latch left over from an earlier hit would clamp this one
+		//--- against a health value that is seconds old.
+		if ( br_prehit_ms != GetGame().GetTime() )
+			return;
+
+		float max_health = GetMaxHealth("", "Health");
+		float max_blood = GetMaxHealth("", "Blood");
+		if ( max_health <= 0 )
+			return;
+		if ( max_blood <= 0 )
+			return;
+
+		float health_lost = br_prehit_health - GetHealth("", "Health");
+		float blood_lost = br_prehit_blood - GetHealth("", "Blood");
+
+		float dealt = Math.Max( health_lost / max_health, blood_lost / max_blood );
+		dealt = dealt * 100;
+
+		if ( dealt <= 0 )
+			return;
+
+		stats.NoteDamage( last_unconscious_source_uid, victim_uid, dealt );
 	}
 
 	override void OnUnconsciousStop(int pCurrentCommandID)

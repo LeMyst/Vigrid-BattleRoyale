@@ -54,6 +54,10 @@ modded class PluginDiagMenu
 	protected int m_BRDiagOpenSpawnMenuID;
 	protected int m_BRDiagOpenLeaderboardID;
 	protected int m_BRDiagFakeLeaderboardID;
+	protected int m_BRDiagFakeLastMatchID;
+	protected int m_BRDiagLastMatchCauseID;
+	protected int m_BRDiagLastMatchNotPlayedID;
+	protected int m_BRDiagOpenDeathScreenID;
 	protected int m_BRDiagFadeID;
 
 	//--- Kill Feed
@@ -135,6 +139,10 @@ modded class PluginDiagMenu
 		m_BRDiagOpenSpawnMenuID = GetModdedDiagID();
 		m_BRDiagOpenLeaderboardID = GetModdedDiagID();
 		m_BRDiagFakeLeaderboardID = GetModdedDiagID();
+		m_BRDiagFakeLastMatchID = GetModdedDiagID();
+		m_BRDiagLastMatchCauseID = GetModdedDiagID();
+		m_BRDiagLastMatchNotPlayedID = GetModdedDiagID();
+		m_BRDiagOpenDeathScreenID = GetModdedDiagID();
 		m_BRDiagFadeID = GetModdedDiagID();
 
 		m_BRDiagKillFeedMenuID = GetModdedDiagID();
@@ -235,6 +243,16 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagOpenSpawnMenuID, "", "Open Spawn Menu", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenLeaderboardID, "", "Open Leaderboard", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagFakeLeaderboardID, "", "Fake Leaderboard", m_BRDiagHudMenuID);
+				//--- The client half of the match summary, testable with no server at all: SERVER is
+				//--- undefined offline, so nothing that PRODUCES this data is even compiled in.
+				DiagMenu.RegisterBool(m_BRDiagFakeLastMatchID, "", "Fake Last Match", m_BRDiagHudMenuID);
+				//--- Order matches BattleRoyaleKillCause exactly. NONE is the winner's card and
+				//--- UNKNOWN the degraded disconnect path; both have their own render branch, so both
+				//--- are pickable rather than only reachable by dying the right way on a live server.
+				DiagMenu.RegisterItem(m_BRDiagLastMatchCauseID, "", "Recap Cause", m_BRDiagHudMenuID, "Unknown,Won,Firearm,Melee,Barehands,Explosive,Zone,Infected,Animal,Environment");
+				DiagMenu.SetValue(m_BRDiagLastMatchCauseID, BattleRoyaleKillCause.FIREARM);
+				DiagMenu.RegisterBool(m_BRDiagLastMatchNotPlayedID, "", "Did Not Play", m_BRDiagHudMenuID);
+				DiagMenu.RegisterBool(m_BRDiagOpenDeathScreenID, "", "Open Death Screen", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagFadeID, "", "Fade", m_BRDiagHudMenuID);
 			}
 

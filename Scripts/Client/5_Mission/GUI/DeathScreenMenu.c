@@ -42,7 +42,11 @@ class DeathScreenMenu extends UIScriptedMenu
 
     private TextWidget m_PlacementText;
     private TextWidget m_FlavourText;
+    private TextWidget m_RecapText;
     private TextWidget m_StatusText;
+
+    //--- Last recap sequence painted. -1 so the first arrival always counts as a change.
+    private int m_RecapSeq;
     private ButtonWidget m_SpectateButton;
     private ButtonWidget m_QuitButton;
 
@@ -89,6 +93,7 @@ class DeathScreenMenu extends UIScriptedMenu
         m_AutoEnterArmed = false;
         m_QuitAtMs = 0;
         m_QuitArmed = false;
+        m_RecapSeq = -1;
     }
 
     override Widget Init()
@@ -104,6 +109,7 @@ class DeathScreenMenu extends UIScriptedMenu
 
         m_PlacementText = TextWidget.Cast( layoutRoot.FindAnyWidget("PlacementText") );
         m_FlavourText = TextWidget.Cast( layoutRoot.FindAnyWidget("FlavourText") );
+        m_RecapText = TextWidget.Cast( layoutRoot.FindAnyWidget("RecapText") );
         m_StatusText = TextWidget.Cast( layoutRoot.FindAnyWidget("StatusText") );
         m_SpectateButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpectateButton") );
         m_QuitButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("QuitButton") );
@@ -116,8 +122,8 @@ class DeathScreenMenu extends UIScriptedMenu
 
         //--- Which widgets resolved. Kept because a layout that loads but renames a widget fails
         //--- silently and invisibly - the screen just quietly stops doing one of its jobs.
-        BattleRoyaleUtils.Trace(string.Format("[Spectate] death screen Init: placement=%1 flavour=%2 status=%3 spectate=%4 quit=%5",
-            m_PlacementText != NULL, m_FlavourText != NULL, m_StatusText != NULL, m_SpectateButton != NULL, m_QuitButton != NULL));
+        BattleRoyaleUtils.Trace(string.Format("[Spectate] death screen Init: placement=%1 flavour=%2 status=%3 spectate=%4 quit=%5 recap=%6",
+            m_PlacementText != NULL, m_FlavourText != NULL, m_StatusText != NULL, m_SpectateButton != NULL, m_QuitButton != NULL, m_RecapText != NULL));
 
         ApplyText();
 
@@ -157,6 +163,49 @@ class DeathScreenMenu extends UIScriptedMenu
 
         if( m_FlavourText )
             m_FlavourText.SetText( br_rpc.dead_flavour );
+    }
+
+    /**
+     *  The death recap - who killed you, with what, at what range.
+     *
+     *  Called from Tick() rather than Init(), and that is structural rather than defensive: the two
+     *  lines above are written LOCALLY by ShowDeadScreen on the same frame this menu opens, while the
+     *  recap is pushed by the SERVER from OnPlayerKilled. Two clocks with a round trip between them,
+     *  so the menu always opens first.
+     *
+     *  Edge-triggered on the sequence counter, matching m_SpectateShown and m_LastSecondShown - and
+     *  for the same reason: re-laying-out a widget every frame is what eats clicks on this screen.
+     */
+    protected void ApplyRecap()
+    {
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc )
+            return;
+        if( !m_RecapText )
+            return;
+        if( !br_rpc.recap_valid )
+            return;
+        if( br_rpc.recap_seq == m_RecapSeq )
+            return;
+
+        m_RecapSeq = br_rpc.recap_seq;
+
+        //--- Built in steps. See BattleRoyaleRecapText for why concatenating this in one expression
+        //--- is a compile error rather than a style preference.
+        string line = BattleRoyaleRecapText.BuildRecapLine( br_rpc.recap_cause, br_rpc.recap_killer_name, br_rpc.recap_weapon_type, br_rpc.recap_distance_m );
+        string detail = BattleRoyaleRecapText.BuildRecapDetail( br_rpc.recap_killer_health_pct, br_rpc.recap_damage_to_killer );
+
+        if( detail != "" )
+        {
+            if( line != "" )
+                line = line + "\n";
+
+            line = line + detail;
+        }
+
+        m_RecapText.SetText( line );
+
+        BattleRoyaleUtils.Trace("[Spectate] death screen recap: " + line);
     }
 
     override void OnShow()
@@ -220,8 +269,16 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- future route back to a body without needing to know about this one. Note GetPlayer()
         //--- does NOT go NULL while spectating - it hands back the corpse - so IsAlive is the test,
         //--- not existence.
+        //--- The one exemption: the diag menu's "Open Death Screen", which exists so the layout can
+        //--- be looked at offline - where SERVER is undefined, nothing can kill you, and this guard
+        //--- would otherwise shut the screen on its first tick and read as a failed layout.
+        bool alive_close = true;
+#ifdef DIAG_DEVELOPER
+        alive_close = !BattleRoyaleDiag.suppress_alive_close;
+#endif
+
         PlayerBase local_player = PlayerBase.Cast( GetGame().GetPlayer() );
-        if( local_player && local_player.IsAlive() )
+        if( alive_close && local_player && local_player.IsAlive() )
         {
             BattleRoyaleUtils.Trace("[Spectate] death screen: player is alive again, closing");
             Close();
@@ -238,6 +295,10 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- WITHDRAWN under us: EndSpectate clears it when the match ends, which is what stops a
         //--- player who died moments before the last survivor being shown a button nobody will
         //--- honour.
+        //--- Above the button work, so a recap that lands while the player is reading gets painted
+        //--- even on a frame that changes nothing else.
+        ApplyRecap();
+
         bool offered = br_rpc.spectate_offered;
         bool offer = offered && !m_Requested;
 
@@ -314,6 +375,11 @@ class DeathScreenMenu extends UIScriptedMenu
         }
 
         UpdateStatus( offered );
+
+        //--- The diag open also suppresses the quit countdown: with no spectate offer standing it
+        //--- would abort the mission fifteen seconds into looking at the layout.
+        if( !alive_close )
+            return;
 
         if( m_QuitArmed && GetGame().GetTime() >= m_QuitAtMs )
         {

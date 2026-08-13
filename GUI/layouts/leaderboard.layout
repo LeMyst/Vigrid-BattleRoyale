@@ -10,7 +10,9 @@ PanelWidgetClass LeaderboardRoot {
  {
   PanelWidgetClass Dialog {
    position 0 0
-   size 920 700
+   // 840 rather than 700: the Last Match tab needs a card above its table. The ladder tab uses the
+   // extra height for a taller scroll rather than leaving a gap.
+   size 920 840
    halign center_ref
    valign center_ref
    hexactpos 1
@@ -71,6 +73,21 @@ PanelWidgetClass LeaderboardRoot {
      text_proportion 0.6
      font "gui/fonts/metron"
     }
+    // The third tab is not a ladder at all - it is the PREVIOUS match, read back from
+    // last_match.json by this server process. It shares this menu and nothing else: its own request
+    // RPC, its own client cache and its own sequence counter.
+    ButtonWidgetClass LastMatchTabButton {
+     position 360 64
+     size 160 36
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     style Editor
+     text "#STR_BR_LASTMATCH_TAB"
+     text_proportion 0.6
+     font "gui/fonts/metron"
+    }
     PanelWidgetClass SoloTabAccent {
      visible 1
      position 24 100
@@ -93,152 +110,640 @@ PanelWidgetClass LeaderboardRoot {
      color 0.85 0.62 0.16 1
      style DayZDefaultPanel
     }
-    TextWidgetClass HeaderRank {
-     position 32 116
-     size 50 24
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_RANK"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" left
-     "text valign" center
-    }
-    TextWidgetClass HeaderPlayer {
-     position 90 116
-     size 320 24
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_PLAYER"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" left
-     "text valign" center
-    }
-    TextWidgetClass HeaderMatches {
-     position 420 116
-     size 94 24
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_MATCHES"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" center
-     "text valign" center
-    }
-    TextWidgetClass HeaderWins {
-     position 518 116
-     size 94 24
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_WINS"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" center
-     "text valign" center
-    }
-    TextWidgetClass HeaderKills {
-     position 616 116
-     size 94 24
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_KILLS"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" center
-     "text valign" center
-    }
-    TextWidgetClass HeaderPoints {
-     position 714 116
-     size 122 24
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_POINTS"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" right
-     "text valign" center
-    }
-    ScrollWidgetClass LeaderboardScroll {
-     position 24 144
-     size 872 440
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     "Scrollbar V" 1
-     {
-      WrapSpacerWidgetClass LeaderboardRows {
-       position 0 0
-       size 1 26
-       hexactpos 1
-       vexactpos 1
-       hexactsize 0
-       vexactsize 1
-       "Size To Content V" 1
-      }
-     }
-    }
-    TextWidgetClass EmptyText {
+    PanelWidgetClass LastMatchTabAccent {
      visible 0
-     position 24 340
-     size 872 40
+     position 360 100
+     size 160 4
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     text "#STR_BR_LEADERBOARD_EMPTY"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" center
-     "text valign" center
-    }
-    PanelWidgetClass SelfBanner {
-     position 24 596
-     size 872 44
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     color 0.188 0.188 0.188 0.94
+     color 0.85 0.62 0.16 1
      style DayZDefaultPanel
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Two grouping containers, swapped by the tab. Both sit at 0,0 at the dialog's full size, so
+    // every child keeps the exact coordinates it would have had as a direct child of Dialog and
+    // nothing has to be repositioned from script - which matters, because DECLARED geometry is
+    // scaled by viewport/1920 while SetPos takes real pixels, and mixing the two shifts a whole
+    // group while its spacing stays correct.
+    //
+    // Neither container carries a `style` line, and that is what makes them free: a PanelWidget
+    // with no style paints nothing at all, so these are pure grouping nodes. They must NOT be
+    // transparent either - widget alpha multiplies through parents, so `color 0 0 0 0` here would
+    // make every inheritalpha child invisible with a completely clean .rpt.
+    // ---------------------------------------------------------------------------------------
+
+    PanelWidgetClass LadderPanel {
+     visible 1
+     position 0 0
+     size 920 840
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 1 1 1 1
      {
-      TextWidgetClass SelfText {
-       position 12 0
-       size 848 44
+      TextWidgetClass HeaderRank {
+       position 32 116
+       size 50 24
        hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
        style Bold
-       text ""
+       text "#STR_BR_LEADERBOARD_RANK"
        font "gui/fonts/metron"
        "exact text" 0
        "text halign" left
        "text valign" center
       }
+      TextWidgetClass HeaderPlayer {
+       position 90 116
+       size 320 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LEADERBOARD_PLAYER"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" left
+       "text valign" center
+      }
+      TextWidgetClass HeaderMatches {
+       position 420 116
+       size 94 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LEADERBOARD_MATCHES"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+      TextWidgetClass HeaderWins {
+       position 518 116
+       size 94 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LEADERBOARD_WINS"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+      TextWidgetClass HeaderKills {
+       position 616 116
+       size 94 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LEADERBOARD_KILLS"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+      TextWidgetClass HeaderPoints {
+       position 714 116
+       size 122 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LEADERBOARD_POINTS"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" right
+       "text valign" center
+      }
+      ScrollWidgetClass LeaderboardScroll {
+       position 24 144
+       size 872 560
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       "Scrollbar V" 1
+       {
+        WrapSpacerWidgetClass LeaderboardRows {
+         position 0 0
+         size 1 26
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         "Size To Content V" 1
+        }
+       }
+      }
+      TextWidgetClass EmptyText {
+       visible 0
+       position 24 340
+       size 872 40
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       text "#STR_BR_LEADERBOARD_EMPTY"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+      PanelWidgetClass SelfBanner {
+       position 24 736
+       size 872 44
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.188 0.188 0.188 0.94
+       style DayZDefaultPanel
+       {
+        TextWidgetClass SelfText {
+         position 12 0
+         size 848 44
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+       }
+      }
      }
     }
+
+    PanelWidgetClass LastMatchPanel {
+     visible 0
+     position 0 0
+     size 920 840
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 1 1 1 1
+     {
+      // The personal card. Hidden WHOLESALE when self_index is -1 - which is the common case in a
+      // lobby, since most people there connected after the restart and never played this match. A
+      // zeroed card would claim they placed #0 with no kills.
+      PanelWidgetClass CardRecap {
+       position 24 116
+       size 872 88
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.14 0.04 0.04 0.55
+       style DayZDefaultPanel
+       {
+        TextWidgetClass CardRecapHeader {
+         position 12 6
+         size 848 22
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text "#STR_BR_LASTMATCH_RECAP"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        MultilineTextWidgetClass CardRecapText {
+         position 12 30
+         size 848 54
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.85 0.78 0.62 1
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "size to text h" 0
+         "size to text v" 0
+         "text halign" center
+         "text valign" center
+         wrap 1
+        }
+       }
+      }
+      PanelWidgetClass CardStats {
+       position 24 212
+       size 430 140
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.08 0.08 0.08 0.55
+       style DayZDefaultPanel
+       {
+        TextWidgetClass CardStatsHeader {
+         position 12 6
+         size 406 22
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text "#STR_BR_LASTMATCH_YOUR_MATCH"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardPlacementLabel {
+         position 12 32
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_PLACEMENT"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardPlacementValue {
+         position 254 32
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardKillsLabel {
+         position 12 54
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_KILLS"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardKillsValue {
+         position 254 54
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardDamageLabel {
+         position 12 76
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_DAMAGE"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardDamageValue {
+         position 254 76
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardHitsLabel {
+         position 12 98
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_HITS"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardHitsValue {
+         position 254 98
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardTimeLabel {
+         position 12 116
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_TIME"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardTimeValue {
+         position 254 116
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+       }
+      }
+      // Hidden unless parties were actually in play AND the table arrived complete. The squad
+      // totals are summed client-side from the table, so a truncated table would silently produce a
+      // smaller, wrong figure - no figure beats a wrong one.
+      PanelWidgetClass CardSquad {
+       visible 0
+       position 466 212
+       size 430 140
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.08 0.08 0.08 0.55
+       style DayZDefaultPanel
+       {
+        TextWidgetClass CardSquadHeader {
+         position 12 6
+         size 406 22
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text "#STR_BR_LASTMATCH_YOUR_SQUAD"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardSquadKillsLabel {
+         position 12 36
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_SQUAD_KILLS"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardSquadKillsValue {
+         position 254 36
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardSquadDamageLabel {
+         position 12 62
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_SQUAD_DAMAGE"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardSquadDamageValue {
+         position 254 62
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardSquadBestLabel {
+         position 12 88
+         size 240 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         text "#STR_BR_LASTMATCH_SQUAD_BEST"
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass CardSquadBestValue {
+         position 254 88
+         size 164 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         style Bold
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" right
+         "text valign" center
+        }
+        TextWidgetClass CardSquadMembers {
+         position 12 112
+         size 406 20
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.75 0.75 0.75 1
+         text ""
+         font "gui/fonts/metron"
+         "exact text" 0
+         "text halign" left
+         "text valign" center
+        }
+       }
+      }
+
+      TextWidgetClass LastMatchHeaderPlace {
+       position 32 366
+       size 60 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LASTMATCH_COL_PLACE"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" left
+       "text valign" center
+      }
+      TextWidgetClass LastMatchHeaderPlayer {
+       position 100 366
+       size 300 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LASTMATCH_COL_PLAYER"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" left
+       "text valign" center
+      }
+      TextWidgetClass LastMatchHeaderKills {
+       position 412 366
+       size 100 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LASTMATCH_COL_KILLS"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+      TextWidgetClass LastMatchHeaderDamage {
+       position 520 366
+       size 120 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LASTMATCH_COL_DAMAGE"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+      TextWidgetClass LastMatchHeaderSurvived {
+       position 650 366
+       size 186 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       style Bold
+       text "#STR_BR_LASTMATCH_COL_SURVIVED"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" right
+       "text valign" center
+      }
+      ScrollWidgetClass LastMatchScroll {
+       position 24 394
+       size 872 342
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       "Scrollbar V" 1
+       {
+        WrapSpacerWidgetClass LastMatchRows {
+         position 0 0
+         size 1 26
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         "Size To Content V" 1
+        }
+       }
+      }
+      TextWidgetClass LastMatchEmpty {
+       visible 0
+       position 24 480
+       size 872 40
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       text "#STR_BR_LASTMATCH_EMPTY"
+       font "gui/fonts/metron"
+       "exact text" 0
+       "text halign" center
+       "text valign" center
+      }
+     }
+    }
+
     ButtonWidgetClass CloseButton {
-     position 766 652
+     position 766 792
      size 130 36
      hexactpos 1
      vexactpos 1

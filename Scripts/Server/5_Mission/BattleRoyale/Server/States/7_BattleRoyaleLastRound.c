@@ -211,6 +211,10 @@ class BattleRoyaleLastRound: BattleRoyaleState
                 MessagePlayerUntranslated(player, "STR_BR_TAKING_DAMAGE");
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
                 player.DecreaseHealthCoef( f_Damage );
+                //--- Same reason as the kill feed hint below, but BR-owned: the death recap has to
+                //--- name the zone on a server where Extra/KillFeed/ is not built at all.
+                //--- Consumed by BattleRoyaleKillAttribution.ConsumeZoneHint.
+                player.br_zone_damage_ms = GetGame().GetTime();
 #ifdef KILLFEED
                 //--- Scripted damage reaches EEKilled with the player as their own killer, so
                 //--- without this the kill feed cannot tell a zone death from starvation.

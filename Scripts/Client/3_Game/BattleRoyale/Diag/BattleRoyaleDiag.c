@@ -93,6 +93,24 @@ class BattleRoyaleDiag
     //--- last-seen value, so nobody owns the clear and two presses in one frame are not merged.
     static int req_open_spawn_menu = 0;
     static int req_open_leaderboard = 0;
+    static int req_open_death_screen = 0;
+
+    //--- Which BattleRoyaleKillCause the fake recap uses. Cycled so every recap branch and every
+    //--- STR_BR_CAUSE_* key can be eyeballed without dying nine different ways on a live server.
+    static int lastmatch_cause = BattleRoyaleKillCause.FIREARM;
+
+    //--- Fake the "did not play the last match" case, which is the COMMON one in a real lobby and so
+    //--- the one most likely to be left untested.
+    static bool lastmatch_not_played = false;
+
+    /**
+     *  Let the death screen stay open while the local player is alive.
+     *
+     *  DeathScreenMenu.Tick() closes itself the moment GetPlayer().IsAlive() - an invariant that
+     *  exists for the admin respawn. Offline the player is ALWAYS alive, so without this the screen
+     *  shuts on its first tick and reads as a broken layout rather than as a working guard.
+     */
+    static bool suppress_alive_close = false;
 
     //! Zero everything. The plugin is destroyed and recreated on every world change, so this runs
     //! from RegisterModdedDiags() as well as from BattleRoyaleClient.Init().
@@ -124,6 +142,10 @@ class BattleRoyaleDiag
 
         req_open_spawn_menu = 0;
         req_open_leaderboard = 0;
+        req_open_death_screen = 0;
+        lastmatch_cause = BattleRoyaleKillCause.FIREARM;
+        lastmatch_not_played = false;
+        suppress_alive_close = false;
     }
 
     /**
