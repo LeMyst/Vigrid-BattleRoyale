@@ -1,17 +1,27 @@
 [
     {
-        "m_Headline": "Hide or show 3D marker!",
+        "m_Headline": "#STR_BR_HINT_READY_TITLE",
         "m_ImagePath": "",
-        "m_Description": "Press 'K' to hide or show the 3D marker!"
+        "m_Description": "#STR_BR_HINT_READY_DESC"
     },
     {
-        "m_Headline": "Use the auto-run!",
+        "m_Headline": "#STR_BR_HINT_UNSTUCK_TITLE",
         "m_ImagePath": "",
-        "m_Description": "Press 'Z' while running to enable the auto-run!"
+        "m_Description": "#STR_BR_HINT_UNSTUCK_DESC"
     },
     {
-        "m_Headline": "Reduce the sound!",
+        "m_Headline": "#STR_BR_HINT_LEADERBOARD_TITLE",
         "m_ImagePath": "",
-        "m_Description": "Press 'P' to reduce ambient noise!"
+        "m_Description": "#STR_BR_HINT_LEADERBOARD_DESC"
+    },
+    {
+        "m_Headline": "#STR_BR_HINT_ZONE_TITLE",
+        "m_ImagePath": "",
+        "m_Description": "#STR_BR_HINT_ZONE_DESC"
+    },
+    {
+        "m_Headline": "#STR_BR_HINT_LOBBY_TITLE",
+        "m_ImagePath": "",
+        "m_Description": "#STR_BR_HINT_LOBBY_DESC"
     }
 ]
