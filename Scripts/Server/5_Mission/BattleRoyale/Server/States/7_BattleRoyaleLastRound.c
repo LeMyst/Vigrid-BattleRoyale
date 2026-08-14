@@ -122,16 +122,14 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     override bool SkipState(BattleRoyaleState _previousState)
     {
-        //only one (or less) players remaining, must skip to win state
-        if(_previousState.GetPlayers().Count() > 1)
-            return false;
-
-#ifdef VIGRID_PARTY
-        if(VigridPartyAPI.GetGroupCount( _previousState.GetPlayers() ) > 1)
-            return false;
-#endif
-
-        return true;
+        //only one side (or less) remaining, must skip to win state
+        //
+        //--- The two tests this replaced were ANDed, so a party of two left standing satisfied
+        //--- "players > 1" and refused to skip - the final round activated and deactivated inside a
+        //--- single tick, which is what the doubled RemoveAllPlayers/AddPlayer pair in the log was.
+        //--- Harmless in itself, but it is the same missing group test that stalled the state before
+        //--- this one; both now ask BattleRoyaleState.IsOneSideLeft.
+        return BattleRoyaleState.IsOneSideLeft( _previousState.GetPlayers() );
     }
 
 	override string GetName()
@@ -149,14 +147,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
 	{
 		if(IsActive())
 		{
-			//--- Hoisted: EnfusionScript has no multi-line if conditions, so the guarded term
-			//--- cannot be appended inline. Without the party addon this mirrors the player test.
-			bool one_group_left = GetPlayers().Count() <= 1;
-#ifdef VIGRID_PARTY
-			one_group_left = VigridPartyAPI.GetGroupCount( GetPlayers() ) <= 1;
-#endif
-
-			if(GetPlayers().Count() <= 1 || one_group_left)
+			if(BattleRoyaleState.IsOneSideLeft( GetPlayers() ))
 				Deactivate();
 		}
 
