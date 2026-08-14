@@ -193,7 +193,12 @@ class BattleRoyaleSpectatorTags
 
         string uid = br_rpc.admin_uids.Get(slot);
 
-        vector body_pos = ResolveBodyPos(br_rpc, slot, uid, can_lerp, lerp_t);
+        //--- Resolved ONCE and handed to both users of it. This used to be looked up twice per tag
+        //--- per frame - once for the body position and once for the head bone - and each lookup was
+        //--- a full scan of the local population. Same shape VigridPartyNametags already uses.
+        PlayerBase entity = FindLocalPlayer(uid);
+
+        vector body_pos = ResolveBodyPos(br_rpc, slot, entity, can_lerp, lerp_t);
         if (body_pos == vector.Zero)
         {
             tag.Show(false);
@@ -206,7 +211,7 @@ class BattleRoyaleSpectatorTags
         //--- from it changes when the camera turns and nobody has moved.
         float distance = vector.Distance(self_pos, body_pos);
 
-        vector screen_pos = GetGame().GetScreenPosRelative(ResolveAnchorPos(uid, body_pos));
+        vector screen_pos = GetGame().GetScreenPosRelative(ResolveAnchorPos(entity, body_pos));
         bool on_screen = IsOnScreen(screen_pos);
 
         //--- Shown before being measured: a widget that has never been displayed reports zero size,
@@ -303,10 +308,13 @@ class BattleRoyaleSpectatorTags
      *  2 Hz. Outside the network bubble there is no entity at all - which for a flying admin is most
      *  of the map - and the interpolated push is all there is. Same two-source shape as
      *  VigridPartyAPI.ResolveBodyPos, for the same reason.
+     *
+     *  `entity` is passed in rather than resolved here, so one lookup serves this and the anchor.
+     *  NULL is the normal case, not an error - it means "outside the bubble", which is the branch
+     *  the server push exists for.
      */
-    protected vector ResolveBodyPos(BattleRoyaleRPC br_rpc, int slot, string uid, bool can_lerp, float lerp_t)
+    protected vector ResolveBodyPos(BattleRoyaleRPC br_rpc, int slot, PlayerBase entity, bool can_lerp, float lerp_t)
     {
-        PlayerBase entity = FindLocalPlayer(uid);
         if (entity)
             return entity.GetPosition();
 
@@ -323,9 +331,8 @@ class BattleRoyaleSpectatorTags
     }
 
     //! Head height when the entity is present, an estimate when it is not.
-    protected vector ResolveAnchorPos(string uid, vector body_pos)
+    protected vector ResolveAnchorPos(PlayerBase entity, vector body_pos)
     {
-        PlayerBase entity = FindLocalPlayer(uid);
         if (entity)
         {
             //--- GetBoneIndexByName, not GetBoneIndex - the latter resolves a proxy SELECTION, which
@@ -338,7 +345,23 @@ class BattleRoyaleSpectatorTags
         return body_pos + Vector(0, BR_SPECTATE_TAG_HEIGHT_OFFSET, 0);
     }
 
-    //! The entity for a uid inside the local network bubble, or NULL. NULL is normal, not an error.
+    /**
+     *  The entity for a uid inside the local network bubble, or NULL. NULL is normal, not an error.
+     *
+     *  MEMOIZED PER FRAME, for the same reason as VigridPartyAPI.FindLocalPlayer - and this is the
+     *  heavier of the two, because admin_uids is the whole LIVING ROSTER rather than one party. A
+     *  full scan per tag meant O(roster x population) per frame with a string materialised from
+     *  GetPlainId() for every candidate rejected; at a 60-player count that is both figures at their
+     *  maximum at once. The index makes it one walk per frame plus a hash lookup per tag.
+     *
+     *  Reimplemented here rather than calling Party's, per the rule at the top of this file: neither
+     *  addon may depend on the other. Invalidation is the millisecond plus the population count, and
+     *  entries are null-checked on the way out - see the Party copy for why both.
+     */
+    protected ref map<string, PlayerBase> m_LocalByUid;
+    protected int m_LocalByUidMs = -1;
+    protected int m_LocalByUidCount = -1;
+
     protected PlayerBase FindLocalPlayer(string uid)
     {
         if (uid == "")
@@ -347,6 +370,29 @@ class BattleRoyaleSpectatorTags
             return NULL;
 
         int count = ClientData.m_PlayerBaseList.Count();
+        int now = GetGame().GetTime();
+
+        if (now != m_LocalByUidMs || count != m_LocalByUidCount || !m_LocalByUid)
+            RebuildLocalIndex(count, now);
+
+        PlayerBase found = m_LocalByUid.Get(uid);
+        if (!found)
+            return NULL;
+
+        return found;
+    }
+
+    //! One walk of the population, keyed by uid. The only place the scan still happens.
+    protected void RebuildLocalIndex(int count, int now)
+    {
+        if (!m_LocalByUid)
+            m_LocalByUid = new map<string, PlayerBase>();
+        else
+            m_LocalByUid.Clear();
+
+        m_LocalByUidMs = now;
+        m_LocalByUidCount = count;
+
         for (int i = 0; i < count; i++)
         {
             PlayerBase candidate = PlayerBase.Cast(ClientData.m_PlayerBaseList.Get(i));
@@ -354,13 +400,18 @@ class BattleRoyaleSpectatorTags
                 continue;
             if (!candidate.GetIdentity())
                 continue;
-            if (candidate.GetIdentity().GetPlainId() != uid)
+
+            //--- Read out before the call that consumes it, per the container-aliasing rule.
+            string candidate_uid = candidate.GetIdentity().GetPlainId();
+
+            //--- FIRST WINS, matching the linear scan this replaces, which returned on its first
+            //--- match. Corpses are never deleted by this mod and stay in the population list, so a
+            //--- uid appearing twice is not obviously impossible - see the Party copy.
+            if (m_LocalByUid.Contains(candidate_uid))
                 continue;
 
-            return candidate;
+            m_LocalByUid.Set(candidate_uid, candidate);
         }
-
-        return NULL;
     }
 
     //--------------------------------------------------------------------------------------------

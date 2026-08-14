@@ -554,7 +554,32 @@ class VigridPartyAPI
 
     //--- position resolution, shared with VigridPartyNametags ----------------------------------
 
-    //! Locate a teammate's entity in the local network bubble. Null is normal, not an error.
+    //--- Per-frame uid -> entity index over ClientData.m_PlayerBaseList. See FindLocalPlayer.
+    private static ref map<string, PlayerBase> s_LocalByUid;
+    private static int s_LocalByUidMs = -1;
+    private static int s_LocalByUidCount = -1;
+
+    /**
+     *  Locate a teammate's entity in the local network bubble. Null is normal, not an error.
+     *
+     *  MEMOIZED PER FRAME, because the callers are per-frame renderers and there are several of
+     *  them. This was a linear scan of the whole population per call, and every call site asks it
+     *  once PER PARTY MEMBER: VigridPartyNametags and VigridMapCompass.CollectCarets both run every
+     *  frame, VigridMapMinimap and VigridMapMenu at 10 Hz. So a four-player party cost six-odd full
+     *  walks per frame, and each walk materialises a fresh string from GetPlainId() for every
+     *  candidate it rejects. That is O(members x population) string allocations per frame, and it is
+     *  worst exactly where the population is densest - the lobby, where everyone stands in one
+     *  clearing and so everyone is inside everyone else's bubble.
+     *
+     *  The index makes it one walk per frame plus a hash lookup per call. Built lazily, so a solo
+     *  player with no roster to draw never pays for it at all.
+     *
+     *  Invalidated on the millisecond AND on the population count. The clock alone is enough at any
+     *  real frame rate - 60 fps is 16 ms apart - but an entity entering or leaving the bubble within
+     *  the same millisecond would otherwise be missed for that frame, and the count is one integer
+     *  compare. Entries are still null-checked on the way out: an entity deleted after the index was
+     *  built reads as null through its reference, exactly as it did mid-walk before.
+     */
     static PlayerBase FindLocalPlayer(string uid)
     {
         if (uid == "")
@@ -563,6 +588,29 @@ class VigridPartyAPI
             return null;
 
         int count = ClientData.m_PlayerBaseList.Count();
+        int now = GetGame().GetTime();
+
+        if (now != s_LocalByUidMs || count != s_LocalByUidCount || !s_LocalByUid)
+            RebuildLocalIndex(count, now);
+
+        PlayerBase found = s_LocalByUid.Get(uid);
+        if (!found)
+            return null;
+
+        return found;
+    }
+
+    //! One walk of the population, keyed by uid. The only place the scan still happens.
+    private static void RebuildLocalIndex(int count, int now)
+    {
+        if (!s_LocalByUid)
+            s_LocalByUid = new map<string, PlayerBase>();
+        else
+            s_LocalByUid.Clear();
+
+        s_LocalByUidMs = now;
+        s_LocalByUidCount = count;
+
         for (int i = 0; i < count; i++)
         {
             PlayerBase candidate = PlayerBase.Cast(ClientData.m_PlayerBaseList.Get(i));
@@ -570,13 +618,19 @@ class VigridPartyAPI
                 continue;
             if (!candidate.GetIdentity())
                 continue;
-            if (candidate.GetIdentity().GetPlainId() != uid)
+
+            //--- Read out before the call that consumes it, per the container-aliasing rule.
+            string candidate_uid = candidate.GetIdentity().GetPlainId();
+
+            //--- FIRST WINS, because the linear scan this replaces returned on its first match.
+            //--- Two entities sharing a uid is not something we expect - but a corpse is never
+            //--- deleted by this mod and stays in the population list, so it is not obviously
+            //--- impossible either, and "same answer as before" is worth one Contains() per entry.
+            if (s_LocalByUid.Contains(candidate_uid))
                 continue;
 
-            return candidate;
+            s_LocalByUid.Set(candidate_uid, candidate);
         }
-
-        return null;
     }
 
     /**
