@@ -37,7 +37,11 @@ admin-spawned or scripted weapons.
 
 ## Configuration
 
-Three `serverDZ.cfg` keys, read only by this addon:
+Three `serverDZ.cfg` keys, read only by this addon. `VigridSpawnAmmoConfig` reads all three **once per
+process**, on the first CE weapon: `EEOnCECreate` fires for every item the economy creates — 33,921 on
+a cold ChernarusPlus boot — and the original code read `BRDisableSpawnWithAmmo` *before* the
+`IsWeapon()` test, so every tin can paid for a config lookup during the phase that dominates boot time.
+serverDZ.cfg is parsed at boot and never changes under a running server, so nothing is lost.
 
 | Key | Effect |
 |---|---|
@@ -49,9 +53,10 @@ Three `serverDZ.cfg` keys, read only by this addon:
 
 - **Magazines over 100 rounds are skipped** — drums and other high-capacity magazines never spawn. The
   loop retries a different type, up to `spawnCount * 10` attempts.
-- The addon uses raw `Print()` rather than the project's logging helpers, so it writes to the log on
-  every CE weapon spawn. One of those calls also wraps the real `CreateObjectEx` call inside a
-  `Print()` argument.
+- The remaining `Print()` calls are the two rare diagnostics (a skipped high-capacity magazine, and a
+  shortfall after all attempts). The per-magazine pair that used to sit on the hot path is gone: it
+  wrote 6,344 of the 44,700 lines in one boot's script log, and one of the two wrapped the real
+  `CreateObjectEx` call inside a `Print()` argument.
 - In the no-magazine branch the loop bound `Math.RandomIntInclusive(min_spawn, max_spawn)` is
   **re-rolled on every iteration**, which biases the number of ammo piles toward the minimum.
 - Shares `modded class ItemBase { override void EEOnCECreate() }` with `Extra/SpawnWithBattery`; both
