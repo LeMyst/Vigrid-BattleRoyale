@@ -77,11 +77,12 @@ class BattleRoyaleLastRound: BattleRoyaleState
                 m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeToEndSeconds", new Param1<int>( sec ), false) ); //we need to store the object in case it's automatically deconstructed ?
         }
 
-        //timer before
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>((i_RoundTimeInSeconds)/2), true);
-
         //lock zone event
         m_FinalZoneLockTimer = AddTimer( time_till_lock / 1000.0, this, "LockFinalZone", NULL, false);
+
+        //timer before the final circle locks. Below the AddTimer above, not before it: SendCountdown
+        //reads the remaining time off the timer itself, so the timer has to exist first.
+        SendCountdown( m_FinalZoneLockTimer );
 
         //send play area to clients
         ref BattleRoyalePlayArea m_PreviousArea = NULL;
@@ -234,6 +235,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( "0 0 0", 0.0 ), true);
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( "0 0 0", 0.0, false ), true);
         b_IsZoneLocked = true;
+
+        //--- Nothing left to count down to: the match now ends when one side is left standing,
+        //--- which has no deadline. An explicit clear rather than letting the client tick to zero
+        //--- on its own - the client no longer ticks anything.
+        SendCountdown( NULL );
     }
 
     //--- The circle actually in play before the final round. A skipped round's zone was generated

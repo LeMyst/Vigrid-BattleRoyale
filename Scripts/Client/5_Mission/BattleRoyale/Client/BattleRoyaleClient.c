@@ -85,13 +85,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
     	BattleRoyaleUtils.Trace("BattleRoyaleClient::~BattleRoyaleClient");
 
-        // The GUI call queue lives for the whole process, so without this OnSecond keeps firing
-        // once a second against a mission that no longer exists, for the rest of the session.
-        // GetGame() is checked because a destructor can run on the way out - BattleRoyaleUtils
-        // guards its own client-side Chat() call for the same reason.
-        if ( GetGame() )
-            GetGame().GetCallQueue(CALL_CATEGORY_GUI).RemoveByName( this, "OnSecond" );
-
 #ifdef VIGRID_MAP
         // The map addon's zone state is static and outlives this object, so without this the
         // previous match's circles would still be drawn after a server change.
@@ -103,8 +96,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     void Init()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleClient::Init");
-
-		GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLaterByName( this, "OnSecond", 1000, true );
 
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 		br_rpc.Reset();
@@ -403,7 +394,9 @@ class BattleRoyaleClient: BattleRoyaleBase
     vector br_previous_future_play_area_center;
     float br_previous_future_play_area_radius;
     bool br_previous_win_screen = false;
-    int br_previous_countdown = 0;
+    //--- Seeded to a value the countdown computation cannot produce (it yields BR_COUNTDOWN_NONE,
+    //--- 0, or a positive second count), so the very first push is never mistaken for "unchanged".
+    int br_previous_countdown = -1000;
 
     /**
      *  Announce, exactly once, that this client has finished loading and is controlling its
@@ -523,7 +516,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 			int hud_players = br_rpc.nb_players;
 			int hud_groups = br_rpc.nb_groups;
 			int hud_kills = br_rpc.player_kills;
-			int hud_countdown = br_rpc.countdown_seconds;
 
 #ifdef DIAG_DEVELOPER
 			if ( BattleRoyaleDiag.hud_force )
@@ -531,7 +523,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 				hud_players = BattleRoyaleDiag.hud_players;
 				hud_groups = BattleRoyaleDiag.hud_groups;
 				hud_kills = BattleRoyaleDiag.hud_kills;
-				hud_countdown = BattleRoyaleDiag.hud_countdown;
 			}
 #endif
 
@@ -570,20 +561,42 @@ class BattleRoyaleClient: BattleRoyaleBase
 				OnMatchStarted();
 			}
 
-			// Update countdown timer and zone distance
-			bool countdown_changed = ( br_previous_countdown != hud_countdown );
+			//--- THE COUNTDOWN. Recomputed from the latched deadline every frame, never counted
+			//--- down locally. The local count is what used to drift: the server named a number of
+			//--- seconds once per phase and this client decremented it off a frame-driven 1 Hz
+			//--- CallQueue tick, so a round's worth of quantisation error accumulated - and each
+			//--- client accumulated its own, which is why no two screens agreed and why the zone
+			//--- locked several seconds before the HUD reached 00:00. See BR_COUNTDOWN_NONE.
+			//---
+			//--- Ceil, so the last whole second still reads 1 and 0 lands at the deadline itself
+			//--- rather than a second early.
+			int countdown_display = BR_COUNTDOWN_NONE;
+			if ( br_rpc.countdown_deadline_ms > 0 )
+			{
+				int countdown_remaining_ms = br_rpc.countdown_deadline_ms - GetGame().GetTime();
+				if ( countdown_remaining_ms > 0 )
+					countdown_display = (int)Math.Ceil( countdown_remaining_ms / 1000.0 );
+				else
+					countdown_display = 0;
+			}
+
 #ifdef DIAG_DEVELOPER
-			//--- Re-assert every frame while forcing, or OnSecond ticks the forced value down to
-			//--- zero and hides the widget a minute after it was set.
+			//--- The forced value is a fixed number, not a deadline: it stands until it is changed.
 			if ( BattleRoyaleDiag.hud_force )
-				countdown_changed = true;
+				countdown_display = BattleRoyaleDiag.hud_countdown;
 #endif
 
-			if ( countdown_changed )
+			//--- Edged on the DISPLAYED value, which is recomputed unconditionally above - so this
+			//--- only suppresses a redundant SetText, and cannot swallow a correction.
+			if ( countdown_display != br_previous_countdown )
 			{
-				i_SecondsRemaining = hud_countdown;
-				gameplay.UpdateCountdownTimer( i_SecondsRemaining );
-				br_previous_countdown = hud_countdown;
+				br_previous_countdown = countdown_display;
+				i_SecondsRemaining = countdown_display;
+
+				if ( countdown_display > 0 )
+					gameplay.UpdateCountdownTimer( countdown_display );
+				else
+					gameplay.HideCountdownTimer();
 			}
 
 			//--- False while the diag menu owns the circles, so the wire cannot overwrite them.
@@ -1293,23 +1306,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         {
             player.SetInventorySoftLock(false);
             player.SetMasterAttenuation("");
-        }
-    }
-
-    protected void OnSecond()
-    {
-        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-        if ( !gameplay )
-            return;
-
-        if(i_SecondsRemaining > 0)
-        {
-            i_SecondsRemaining--;
-            gameplay.UpdateCountdownTimer(i_SecondsRemaining);
-        }
-        else
-        {
-            gameplay.HideCountdownTimer();
         }
     }
 

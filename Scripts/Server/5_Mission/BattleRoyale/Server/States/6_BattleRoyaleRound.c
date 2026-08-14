@@ -133,11 +133,12 @@ class BattleRoyaleRound: BattleRoyaleState
 			}
         }
 
-        //timer before zone locks
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( time_till_lock / 1000 ), true);
-
         //lock zone event
         m_NewZoneLockTimer = AddTimer(time_till_lock / 1000.0, this, "LockNewZone", new Param1<int>( time_between_lock_and_end / 1000 ), false);
+
+        //timer before zone locks. Below the AddTimer above, not before it: SendCountdown reads the
+        //remaining time off the timer itself, so the timer has to exist first.
+        SendCountdown( m_NewZoneLockTimer );
 
         if (m_Zone.GetZoneNumber() < i_NumZones)  // Not the last zone
         {
@@ -421,8 +422,11 @@ class BattleRoyaleRound: BattleRoyaleState
             //tell the client we don't know the next play area
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
         }
-        //tell the client how much time until the next zone appears
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>( seconds ) , true);
+        //tell the client how much time until the next zone appears. Handed the timer rather than the
+        //`seconds` parameter - which carries the same figure - because the countdown the HUD shows
+        //now belongs to m_RoundTimeUpTimer, and SendCountdown has to know that to keep re-asserting
+        //the right one every 5 s. The parameter stays on the signature: it is the timer's Param1.
+        SendCountdown( m_RoundTimeUpTimer );
     }
 
     void OnRoundTimeUp()

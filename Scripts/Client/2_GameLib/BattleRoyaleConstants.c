@@ -635,6 +635,24 @@ static const int BR_HUD_GROUPS_CONCEALED = -1;
 static const int BR_HUD_ENDGAME_PLAYERS = 10;
 
 
+//--- THE COUNTDOWN CLOCK. The SetCountdownMs RPC carries MILLISECONDS REMAINING, and the client
+//--- turns that into a deadline against its own GetGame().GetTime() the instant the packet lands
+//--- (BattleRoyaleRPC.SetCountdownMs). It never counts down locally.
+//
+//That is the whole fix for the drift: the client used to be told a number of seconds once per phase
+//and then decrement it from a frame-driven 1 Hz CallQueue tick, so the quantisation error piled up
+//over a three-to-five minute round and every client piled up its own. The zone locked several
+//seconds before the HUD reached 00:00, and no two screens agreed.
+//
+//Milliseconds rather than seconds because the server RE-ASSERTS this every 5 s
+//(BattleRoyaleState.ResendGameInfo). A payload quantised to whole seconds would move the latched
+//deadline by up to half a second on every resend, i.e. the displayed digit would visibly repeat or
+//skip - trading smooth-but-wrong for correct-but-jittery.
+//
+//no countdown is running: the client hides the widget. Also what a fired or absent timer sends.
+static const int BR_COUNTDOWN_NONE = -1;
+
+
 //--- zoning subsystem
 //
 //Circles are generated SMALLEST FIRST: index 0 is the tight final circle and each later one must

@@ -28,6 +28,11 @@ class BattleRoyaleWin: BattleRoyaleState
 		//--- affect the GetPlayers().Count() == 0 condition below or the winner kick.
 		BattleRoyaleSpectators.GetInstance().EndAll();
 
+		//--- The match is over, so there is nothing left to count down to. Without this the winner
+		//--- watches the previous round's clock keep running under the win screen: the client holds
+		//--- a deadline, and only a push clears it.
+		SendCountdown( NULL );
+
 		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{

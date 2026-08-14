@@ -16,7 +16,7 @@ class BattleRoyaleRPC
 		lobby_net_low = new array<int>();
 		lobby_net_high = new array<int>();
 		lobby_names = new array<string>();
-		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownMs", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", this );
@@ -103,7 +103,7 @@ class BattleRoyaleRPC
 		lobby_net_low.Clear();
 		lobby_net_high.Clear();
 		lobby_names.Clear();
-		countdown_seconds = 0;
+		countdown_deadline_ms = BR_COUNTDOWN_NONE;
 		current_play_area_center = "0 0 0";
 		current_play_area_radius = 0.0;
 		future_play_area_center = "0 0 0";
@@ -773,22 +773,44 @@ class BattleRoyaleRPC
 		BattleRoyaleUtils.Trace("SetLobbyNames " + lobby_names.Count() + " row(s)");
 	}
 
-	// Set the countdown seconds
+	// Set the countdown deadline
 
-	int countdown_seconds = 0;
+	/**
+	 *  When the countdown reaches zero, on THIS client's own clock, or BR_COUNTDOWN_NONE.
+	 *
+	 *  A deadline rather than a remaining time, and latched here at the instant the packet lands
+	 *  rather than on an edge in BattleRoyaleClient.Update(). Two things follow, and both are the
+	 *  point:
+	 *
+	 *  - The reader has nothing to edge-detect. It subtracts this from GetGame().GetTime() every
+	 *    frame and is correct whether a push arrived this frame, five seconds ago, or never. There
+	 *    is no edge to raise and therefore no edge to miss - the failure recorded against the map's
+	 *    marker layer, where a snapshot that raised no edge waited out a one-second watchdog.
+	 *  - Error does not accumulate. The old field held whole seconds and the client decremented it
+	 *    from a 1 Hz CallQueue tick, so a round's worth of quantisation error piled up and each
+	 *    client piled up its own. What is left here is the one-way latency at the moment of the
+	 *    push, and the server re-asserts every 5 s anyway.
+	 *
+	 *  See BR_COUNTDOWN_NONE for why the wire carries milliseconds.
+	 */
+	int countdown_deadline_ms = BR_COUNTDOWN_NONE;
 
-	void SetCountdownSeconds(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	void SetCountdownMs(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETCOUNTDOWNSECONDS RPC");
+			Error("FAILED TO READ SETCOUNTDOWNMS RPC");
 			return;
 		}
 		if ( type == CallType.Client )
 		{
-			BattleRoyaleUtils.Trace(string.Format("SetCountdownSeconds: %1", data.param1));
-			countdown_seconds = data.param1;
+			BattleRoyaleUtils.Trace(string.Format("SetCountdownMs: %1", data.param1));
+
+			if ( data.param1 > 0 )
+				countdown_deadline_ms = GetGame().GetTime() + data.param1;
+			else
+				countdown_deadline_ms = BR_COUNTDOWN_NONE;
 		}
 	}
 
