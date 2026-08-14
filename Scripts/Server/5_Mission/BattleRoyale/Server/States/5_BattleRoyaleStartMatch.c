@@ -99,7 +99,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
         //timer before first zone appears
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownSeconds", new Param1<int>(i_FirstRoundDelay), true);
+        SendCountdown( m_ZoneStartTimer );
     }
 
     override void Deactivate()

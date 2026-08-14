@@ -28,6 +28,13 @@ class BattleRoyaleState: Timeable
     //--- mod's #ifdef, which meant a build without that mod could not honour it at all.
     bool hide_players_endgame = false;
 
+    //--- The timer the HUD countdown is currently counting down to, or NULL when no countdown is
+    //--- showing. Set by SendCountdown() and read by ResendGameInfo().
+    //---
+    //--- Deliberately NOT a `ref`: the state that started the timer already owns one, and this is a
+    //--- second handle to the same object rather than a second owner.
+    protected Timer m_CountdownTimer;
+
     string GetName()
     {
         return "Unknown State";
@@ -41,10 +48,11 @@ class BattleRoyaleState: Timeable
         b_IsPaused = false;
         b_IsDebug = false;
 
-        //--- Drives the player/group counter on every client's HUD. This used to be registered
-        //--- only when the party mod was present, so a build without it never refreshed the
-        //--- counter at all - the panel simply froze on whatever it was first told.
-        AddTimer(5.0, this, "OnPlayerCountChanged", NULL, true);
+        //--- Re-asserts everything the HUD shows - the player/group counter and the countdown - on
+        //--- every client. This used to be registered only when the party mod was present, so a
+        //--- build without it never refreshed the counter at all: the panel simply froze on
+        //--- whatever it was first told.
+        AddTimer(5.0, this, "ResendGameInfo", NULL, true);
 
         BattleRoyaleGameData m_GameSettings = BattleRoyaleConfig.GetConfig().GetGameData();
         if(m_GameSettings)
@@ -72,6 +80,10 @@ class BattleRoyaleState: Timeable
         //Note: this is called BEFORE players are removed
         //--- stop all repeating timers
         StopTimers();
+
+        //--- Whatever this state was counting down to is over. Dropped rather than left dangling so
+        //--- a stray resend cannot advertise a dead state's timer.
+        m_CountdownTimer = NULL;
 
         b_IsActive = false;
     }
@@ -291,6 +303,60 @@ class BattleRoyaleState: Timeable
 
 	void OnPlayerTick(PlayerBase player, float timeslice)
 	{
+	}
+
+	/**
+	 *  Push the countdown to every client AND record which timer it is counting down to.
+	 *
+	 *  Pass NULL to clear the countdown outright.
+	 *
+	 *  THE WIRE CARRIES MILLISECONDS REMAINING, not seconds - see BR_COUNTDOWN_NONE. The client
+	 *  turns it into a deadline against its own clock the instant it lands and never counts down
+	 *  locally, which is what removes the drift that used to have the zone locking several seconds
+	 *  before the HUD reached 00:00, differently on every screen.
+	 *
+	 *  Recording the timer is what lets ResendGameInfo() below re-assert this every 5 s from ONE
+	 *  place. It replaced four hand-written SendRPC call sites, one of which (7_BattleRoyaleLastRound)
+	 *  had no resend at all - the same shape of drift-by-duplication that IsOneSideLeft was
+	 *  centralised to stop.
+	 */
+	void SendCountdown(Timer countdown_timer)
+	{
+		m_CountdownTimer = countdown_timer;
+
+		int remaining_ms = BR_COUNTDOWN_NONE;
+
+		//--- IsRunning() is LOAD-BEARING, not defensive. A one-shot Timer that has already fired
+		//--- sets m_time = 0 *before* invoking its callback (TimerBase.Tick,
+		//--- P:\scripts\3_game\tools\tools.c), so GetRemaining() on a fired timer hands back its
+		//--- FULL DURATION rather than zero - i.e. dropping this guard restarts the countdown from
+		//--- the top every 5 s.
+		if(countdown_timer && countdown_timer.IsRunning())
+			remaining_ms = (int)Math.Round( countdown_timer.GetRemaining() * 1000 );
+
+		if(remaining_ms <= 0)
+			remaining_ms = BR_COUNTDOWN_NONE;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownMs", new Param1<int>( remaining_ms ), true);
+	}
+
+	/**
+	 *  Re-assert everything the HUD shows, on a 5 s loop registered in the constructor.
+	 *
+	 *  This is the only thing that corrects a client which missed a push, joined late, or
+	 *  reconnected - and, for the countdown, the only thing that closes the gap between the
+	 *  server's clock and the client's.
+	 */
+	void ResendGameInfo()
+	{
+		if(!IsActive())
+			return;
+
+		//--- Sends SetPlayerCount and SetTopPosition.
+		OnPlayerCountChanged();
+
+		if(m_CountdownTimer && m_CountdownTimer.IsRunning())
+			SendCountdown( m_CountdownTimer );
 	}
 
 	//player count changed event handler
