@@ -448,12 +448,15 @@ static const float BR_LOBBY_TAG_GAP_PX = 6.0;
 static const float BR_LOBBY_TAG_HEAD_OFFSET = 0.22;
 //--- Fallback anchor when the head bone will not resolve, measured from the feet.
 static const float BR_LOBBY_TAG_HEIGHT_OFFSET = 1.9;
-//--- Past this there is no tag at all. The lobby is one clearing and everybody in it is within a
-//--- few dozen metres; the cap is what stops the far side of the map filling the screen with names
-//--- during the pre-match countdown, when players have started to spread out.
-static const float BR_LOBBY_TAG_MAX_DISTANCE_M = 80.0;
-//--- Fade over the last stretch of that range, so a tag thins out rather than blinking off.
-static const float BR_LOBBY_TAG_FADE_START_M = 55.0;
+//--- Past this there is no tag at all, and it is a PROXIMITY RULE rather than an anti-clutter cap:
+//--- you read the name of somebody you are standing next to, not of everybody in the clearing.
+//--- Measured from the local player's BODY (see the note on BattleRoyaleLobbyTags.Update), so the
+//--- figure means what it says in either camera mode.
+static const float BR_LOBBY_TAG_MAX_DISTANCE_M = 10.0;
+//--- Fade over the last stretch of that range, so a tag thins out rather than blinking off. Two
+//--- metres is about half a second at walking pace - short, but a hard edge at this range reads as
+//--- the tag flickering every time its owner shifts their weight.
+static const float BR_LOBBY_TAG_FADE_START_M = 8.0;
 //--- Bound on rows, matching the pooling everywhere else in this mod. A full lobby is 60 players
 //--- and every one of them is in the same clearing.
 static const int BR_LOBBY_TAG_MAX_ROWS = 64;

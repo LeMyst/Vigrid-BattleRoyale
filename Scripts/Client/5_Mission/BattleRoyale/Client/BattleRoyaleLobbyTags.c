@@ -127,8 +127,16 @@ class BattleRoyaleLobbyTags
     /**
      *  Called every frame from BattleRoyaleClient.Update.
      *
-     *  Distances are measured from the CAMERA rather than from the body, so a player in third person
-     *  gets the same answer as what they are looking at rather than one offset by the boom arm.
+     *  Distances are measured from the local player's BODY, feet to feet - so BR_LOBBY_TAG_MAX_DISTANCE_M
+     *  means that many metres between two characters, whatever the camera is doing.
+     *
+     *  REVERSED 2026-08-14, and the reasoning it replaced was not wrong so much as outgrown. This
+     *  measured from the CAMERA, on the grounds that a third-person player then gets the same answer
+     *  as what they are looking at rather than one offset by the boom arm. That holds - but the boom
+     *  is ~2 m, which was noise against the old 80 m cap and is 20% of the 10 m one. A "10 m" rule
+     *  that is really 8 m in third person and 10 m in first is not a rule anybody can reason about.
+     *  The trade accepted in exchange: in third person a tag can now appear on somebody fractionally
+     *  behind the camera. Do not re-derive the camera version from the shape of the fallback below.
      */
     void Update(bool active)
     {
@@ -156,7 +164,15 @@ class BattleRoyaleLobbyTags
         if (parent_w <= 0 || parent_h <= 0)
             return;
 
-        vector camera_pos = GetGame().GetCurrentCameraPosition();
+        //--- Body first, camera only as a fallback for the frames before the local player exists -
+        //--- this runs every frame, including during load-in. NOT the spectator case: UpdateLobbyTags
+        //--- gates on !IsSpectating(), so the "GetPlayer() keeps returning the corpse" trap is out of
+        //--- reach here.
+        vector reference_pos = GetGame().GetCurrentCameraPosition();
+
+        PlayerBase local_player = PlayerBase.Cast(GetGame().GetPlayer());
+        if (local_player)
+            reference_pos = local_player.GetPosition();
 
         int used = 0;
         int rows = br_rpc.lobby_names.Count();
@@ -205,7 +221,7 @@ class BattleRoyaleLobbyTags
             if (!other.GetIdentity())
                 no_identity++;
 
-            float distance = vector.Distance(camera_pos, other.GetPosition());
+            float distance = vector.Distance(reference_pos, other.GetPosition());
             if (distance > BR_LOBBY_TAG_MAX_DISTANCE_M)
             {
                 too_far++;
