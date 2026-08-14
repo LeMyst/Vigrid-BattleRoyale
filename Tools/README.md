@@ -15,6 +15,10 @@ Check.bat
 `--list` names every check, `--only <name>` runs one (repeatable, or comma-separated), `-W` makes
 warnings fail the run. Exit code is 0 when there are no errors.
 
+**CI runs with `-W`, so a warning fails the build.** That is affordable because the tree is clean —
+if you add a check that reports warnings on existing code, either fix the code or allowlist it, but
+do not leave it warning, because then every later warning is buried in noise.
+
 ## What this is and is not
 
 **It compiles nothing.** The real validation loop is unchanged — `Deploy.bat` → `LaunchOffline.bat`

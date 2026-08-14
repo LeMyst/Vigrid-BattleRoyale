@@ -23,15 +23,20 @@ jobs:
     name: Source checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # settings-version diffs against the merge base with origin/main, so it needs history.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
-          python-version: '3.12'
+          python-version: '3.14'
 
       # Stdlib only, by design - nothing to install, nothing to cache, nothing to keep current.
+      #
+      # -W makes warnings fail the run. That is affordable because the tree is clean: the two
+      # findings this suite surfaced when it was written (a dead RPC registration and three orphan
+      # stringtable keys) are both fixed, so there is nothing to grandfather in. Without it a new
+      # warning would pass silently, which is the whole failure mode these checks exist to close.
       - name: Run checks
-        run: python Tools/check.py
+        run: python Tools/check.py -W
