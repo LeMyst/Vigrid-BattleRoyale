@@ -19,6 +19,16 @@ modded class PlayerBase
 
     string owner_id = "";
 
+	//--- Their client has sent PlayerLoadedIn, i.e. it has finished loading the world and is
+	//--- controlling its character. Until then the player is in the lobby roster and counts towards
+	//--- minimum_players while still staring at a loading screen: vanilla reaches InvokeOnConnect
+	//--- from the ClientNew path, which fires ~20 s before the client is actually in the world
+	//--- (measured 2026-08-10, see BR_LATE_JOIN_READY_TIMEOUT_SECONDS). BattleRoyaleDebug delays a
+	//--- match start it is otherwise ready to make while anyone in the lobby still reads false here -
+	//--- by at most BR_LOBBY_LOAD_MAX_HOLD_SECONDS, since on a filling server there is nearly always
+	//--- somebody loading and an unbounded wait would never end.
+	bool br_loaded_in = false;
+
 	int br_position = -1;
 	string player_steamid = "";
 	//--- Cached alongside player_steamid because PlayerIdentity is already NULL by the time the

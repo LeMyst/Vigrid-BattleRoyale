@@ -55,6 +55,9 @@ enum BattleRoyaleDiagAction
     SPECTATE_TP_CORPSE,//!< move the sender's OWN corpse to their watched target - the bubble probe
     SET_ADMIN_SPECTATE,//!< arg_i 0/1 - flip admin_spectate_enabled for this process only
 
+    SET_FAKE_UNLOADED, //!< arg_i 0/1 - mark every lobby player un/loaded, to hold the #8 load gate open
+    LOG_LOBBY_GATE,    //!< dump every term of both lobby start gates, i.e. why it is or is not starting
+
     COUNT //Do not move this
 }
 

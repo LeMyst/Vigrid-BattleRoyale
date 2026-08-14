@@ -438,8 +438,10 @@ class BattleRoyaleClient: BattleRoyaleBase
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 
-        //--- Tell the server we are actually in the world. Only the late-join kick uses this, but it
-        //--- is sent unconditionally because the client has no idea whether it joined late.
+        //--- Tell the server we are actually in the world. Two things consume it - the late-join kick
+        //--- grace period, and the lobby's refusal to start the match while anyone is still loading
+        //--- (BattleRoyaleDebug.GetNotLoadedCount) - and it is sent unconditionally because the
+        //--- client knows neither whether it joined late nor whether the lobby is waiting on it.
         SendLoadedInOnce( player );
 
 		float distExt;

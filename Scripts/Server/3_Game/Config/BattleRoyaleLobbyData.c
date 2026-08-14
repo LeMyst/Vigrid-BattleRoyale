@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
-	int version = 3;  // Config version
+	int version = 4;  // Config version
 
 	// Lobby spawn location are in the spawns settings located in the mission folder.
 
@@ -10,6 +10,21 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
     float ready_up_percent = 0.8;  // Percentage of players needed to ready up to automatically start the match
     float min_waiting_time = 300.0;  // Minimum waiting time before the match can start
     int time_to_start_match_seconds = 30;  // Time to start the match after the minimum waiting time
+
+	// While the lobby is NOT full, the match may not start until this many seconds have passed,
+	// counted from the moment the first player joined the lobby (not from server boot). A full lobby
+	// ignores it and may start as soon as the ordinary rules allow.
+	//
+	// This exists because a ready-up vote reaching ready_up_percent used to start the match at ANY
+	// population from minimum_players upwards, so a handful of players could vote a 60-slot server
+	// into a match minutes before it filled. Raising minimum_players is not the same thing: that is a
+	// floor on whether a match is viable at all, this is "give the server a chance to fill first".
+	//
+	// 0 disables it, which is the shipped default - an existing server keeps its current behaviour
+	// until an admin opts in. It is deliberately NOT applied to the autostart system below, which
+	// already expresses the same idea continuously (it demands a full lobby at t=0 and relaxes to
+	// nothing over autostart_delay) and is the safety valve that guarantees a match eventually runs.
+	float min_waiting_time_not_full = 0.0;
 
 	// Autostart settings
 	// The autostart system will start the match automatically based on the number of maximum players the server can handle
@@ -154,6 +169,18 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 			// the behaviour the server had before this version existed. Load()'s re-save is what
 			// materialises the keys in an existing server's JSON. Nothing to migrate.
 			version = 3;
+			Save();
+		}
+
+		if (version < 4)
+		{
+			// v4 added min_waiting_time_not_full, a SCALAR, so the same reasoning as v3 applies: a v3
+			// file has no such key, deserialization leaves the field initialiser in place, and Load()'s
+			// re-save materialises it. Only a `ref array` needs an explicit branch here, its
+			// initialiser not surviving deserialization - which is why the v2 block has two and
+			// neither of these has any. Shipped default is 0, i.e. the feature is off, so an existing
+			// server upgrades with no change in behaviour.
+			version = 4;
 			Save();
 		}
 	}

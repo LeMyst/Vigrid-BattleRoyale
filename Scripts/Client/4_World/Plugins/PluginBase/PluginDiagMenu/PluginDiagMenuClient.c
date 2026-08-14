@@ -42,6 +42,8 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagGotoGoID, CBBRDiagGotoGo);
 		DiagMenu.BindCallback(m_BRDiagForceReadyID, CBBRDiagForceReady);
 		DiagMenu.BindCallback(m_BRDiagLogStateID, CBBRDiagLogState);
+		DiagMenu.BindCallback(m_BRDiagFakeUnloadedID, CBBRDiagFakeUnloaded);
+		DiagMenu.BindCallback(m_BRDiagLogGateID, CBBRDiagLogGate);
 
 		DiagMenu.BindCallback(m_BRDiagTpZoneID, CBBRDiagTpZone);
 		DiagMenu.BindCallback(m_BRDiagTpNextZoneID, CBBRDiagTpNextZone);
@@ -158,6 +160,34 @@ modded class PluginDiagMenuClient
 			return;
 
 		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.LOG_STATE, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	/**
+	 *  A LATCHING toggle, deliberately unlike every other entry in this menu.
+	 *
+	 *  The momentary idiom above - act on the rising edge, then SetValue(id, false) - is wrong here:
+	 *  it would send "mark everyone unloaded" and immediately show the entry as off, leaving no way
+	 *  to send the matching "mark them loaded again" and no on-screen record that the gate is being
+	 *  held. So both edges are sent, and the entry keeps whatever the tester set it to.
+	 *
+	 *  Turning it OFF is half the test: that is what releases the gate and lets the match start.
+	 */
+	static void CBBRDiagFakeUnloaded(bool enabled, int id)
+	{
+		int flag = 0;
+		if ( enabled )
+			flag = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_FAKE_UNLOADED, flag, 0);
+	}
+
+	static void CBBRDiagLogGate(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.LOG_LOBBY_GATE, 0, 0);
 		DiagMenu.SetValue(id, false);
 	}
 
