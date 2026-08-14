@@ -1,11 +1,17 @@
 """
  *  Localization coverage.
  *
- *  Every STR_* key referenced from script, a layout or an XML must exist in a stringtable.csv -
- *  and in the RIGHT one. The engine loads one table per addon, so a STR_PARTY_* key filed in
- *  LanguageCore/stringtable.csv is not merely untidy: it silently fails to localize, and the
- *  player sees the raw key. That is why the owner map below is enforced rather than just the
- *  union of all four tables.
+ *  Every STR_* key referenced from script, a layout, an XML or a JSON data file must exist in a
+ *  stringtable.csv - and in the RIGHT one. The engine loads one table per addon, so a STR_PARTY_*
+ *  key filed in LanguageCore/stringtable.csv is not merely untidy: it silently fails to localize,
+ *  and the player sees the raw key. That is why the owner map below is enforced rather than just
+ *  the union of all four tables.
+ *
+ *  JSON counts as a referencing file because content this mod ships as DATA carries keys the same
+ *  way script does - Data/hints*.json is a list of "#STR_BR_HINT_*" pairs handed to a widget's
+ *  SetText, which is a reference in every sense that matters. Leaving JSON out reported all
+ *  twenty-two hint keys as orphans on a tree where every one of them was in use, i.e. the exact
+ *  false positive that trains people to ignore this check.
  *
  *  A referenced token ending in `_` is a concatenation stub - `"#STR_BR_CAUSE_" + name` - and is
  *  skipped, since no real key ends in an underscore.
@@ -39,7 +45,7 @@ OWNERS = {
 #  Preceded by `"` (a bare key, the form server script sends over the wire) or `#` (the localised
 #  form a widget resolves itself). Anything else is an identifier that merely starts with STR_.
 KEY = re.compile(r'["#](STR_[A-Z0-9_]+)')
-REFERENCING_FILES = ("*.c", "*.layout", "*.xml", "*.cpp")
+REFERENCING_FILES = ("*.c", "*.layout", "*.xml", "*.cpp", "*.json")
 
 
 def owner_of(key: str) -> str | None:
