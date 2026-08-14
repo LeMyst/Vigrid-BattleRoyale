@@ -1,0 +1,15 @@
+# Addon names this repo's `requiredAddons[]` may reference without declaring them.
+#
+# Everything else must resolve to a CfgPatches class declared somewhere in this repo. That is what
+# catches a renamed folder orphaning a dependent - a requiredAddons entry naming an addon that no
+# longer exists does not fail the build, it just stops constraining load order.
+#
+#   <addon>   # who ships it
+
+DZ_Data                 # vanilla
+DZ_Scripts              # vanilla
+DZ_Sounds_Effects       # vanilla
+DZ_Gear_Navigation      # vanilla - declares CfgLocationTypes
+DZ_Worlds_Chernarusplus_World   # vanilla - the ChernarusPlus world PBO, required by Extra/DisableFogChernarusPlus
+JM_CF_Scripts           # Community Framework (CF)
+DayZExpansion_Scripts   # DayZ-Expansion

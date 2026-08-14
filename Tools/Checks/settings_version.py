@@ -1,0 +1,114 @@
+"""
+ *  Settings-class migration discipline. Diff-scoped: this one asks about the CHANGE, not the tree.
+ *
+ *  Every BattleRoyale*Data class carries `int version` plus an `Upgrade()` migration, and Load()
+ *  re-saves after reading so new fields appear in existing profile JSONs on the next boot. Adding
+ *  a field without bumping the version skips that migration.
+ *
+ *  For a `ref array` field the Upgrade() branch is NOT OPTIONAL, and this is the silent one: a
+ *  field initialiser survives deserialization for scalars but not for arrays. On every server that
+ *  already has the JSON on disk, the array loads back EMPTY and the feature does nothing at all -
+ *  no error, no warning, and it works perfectly on a fresh server, which is where it gets tested.
+ *  BattleRoyaleGameData and BattleRoyaleServerData.placeholder_player_names both refill in
+ *  Upgrade(), and only when the array comes back empty, so an admin who deliberately cleared it
+ *  keeps their choice.
+ *
+ *  Compares against the merge base with origin/main. With no origin/main available - a fresh
+ *  clone, a detached checkout - the check reports nothing rather than guessing; it is advisory by
+ *  construction, and the tree-wide checks are the ones that must always run.
+"""
+
+from __future__ import annotations
+
+import re
+import subprocess
+
+from Checks._source import Finding, error, repo_root, warn
+
+NAME = "settings-version"
+SUMMARY = "a new settings field bumps version; a new ref array gets an Upgrade() branch"
+
+CONFIG_DIR = "Scripts/Server/3_Game/Config/"
+BASE_CANDIDATES = ("origin/main", "main")
+
+MEMBER = re.compile(
+    r"^\+\s*(?:ref\s+)?(?P<type>array<[^>]*>|map<[^>]*>|int|float|bool|string|vector)\s+"
+    r"(?P<name>[A-Za-z_]\w*)\s*(?:=|;)"
+)
+VERSION_TOUCHED = re.compile(r"^\+.*\bversion\s*=\s*\d+")
+UPGRADE_TOUCHED = re.compile(r"^\+.*\bversion\s*<\s*\d+")
+
+
+def git(*args: str) -> tuple[int, str]:
+    result = subprocess.run(
+        ["git", "-C", str(repo_root()), *args], capture_output=True, text=True)
+    return result.returncode, result.stdout
+
+
+def merge_base() -> str | None:
+    for candidate in BASE_CANDIDATES:
+        code, _ = git("rev-parse", "--verify", "--quiet", candidate)
+        if code != 0:
+            continue
+        code, out = git("merge-base", "HEAD", candidate)
+        if code == 0 and out.strip():
+            return out.strip()
+    return None
+
+
+def run() -> list[Finding]:
+    base = merge_base()
+    if base is None:
+        return []
+
+    code, out = git("diff", "--unified=0", base, "--", f"{CONFIG_DIR}BattleRoyale*Data.c")
+    if code != 0 or not out.strip():
+        return []
+
+    findings: list[Finding] = []
+    path: str | None = None
+    added_members: list[tuple[str, str]] = []
+    bumped = False
+    upgraded = False
+
+    def flush() -> None:
+        if path is None or not added_members:
+            return
+        names = ", ".join(f"`{n}`" for _, n in added_members)
+        if not bumped:
+            findings.append(error(
+                f"adds {names} but does not bump `version` - Upgrade() will not run, so the new "
+                f"field never reaches a profile JSON that already exists",
+                path,
+            ))
+        arrays = [n for t, n in added_members if t.startswith(("array<", "map<"))]
+        if arrays and not upgraded:
+            listed = ", ".join(f"`{n}`" for n in arrays)
+            findings.append(error(
+                f"adds the collection field(s) {listed} with no new Upgrade() branch - a field "
+                f"initialiser does NOT survive deserialization for arrays, so on every server "
+                f"that already has this JSON the field loads back empty and the feature silently "
+                f"does nothing; refill it in Upgrade(), and only when it comes back empty",
+                path,
+            ))
+
+    for line in out.splitlines():
+        if line.startswith("+++ b/"):
+            flush()
+            path = line[len("+++ b/"):].strip()
+            added_members = []
+            bumped = False
+            upgraded = False
+            continue
+        if path is None or not line.startswith("+") or line.startswith("+++"):
+            continue
+        if VERSION_TOUCHED.search(line):
+            bumped = True
+        if UPGRADE_TOUCHED.search(line):
+            upgraded = True
+        match = MEMBER.match(line)
+        if match:
+            added_members.append((match.group("type"), match.group("name")))
+
+    flush()
+    return findings
