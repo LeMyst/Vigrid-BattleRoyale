@@ -18,7 +18,7 @@
  *  is compiled at all, so Match Flow and Spawn / Teleport doing nothing there is expected.
  *
  *  ID BUDGET. Ids come from GetModdedDiagID(), which counts up from DiagMenuIDs.MODDED_MENU (~235)
- *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 60,
+ *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 62,
  *  measured from the canary line rather than counted by hand (the previous "47" was one short). Do
  *  not allocate an id for something a bag field can carry: an entry whose value is only ever read
  *  when another entry fires does not need its id kept.
@@ -36,6 +36,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagGotoGoID;
 	protected int m_BRDiagForceReadyID;
 	protected int m_BRDiagLogStateID;
+	protected int m_BRDiagFakeUnloadedID;
+	protected int m_BRDiagLogGateID;
 
 	//--- Spawn / Teleport
 	protected int m_BRDiagTeleportMenuID;
@@ -123,6 +125,8 @@ modded class PluginDiagMenu
 		m_BRDiagGotoGoID = GetModdedDiagID();
 		m_BRDiagForceReadyID = GetModdedDiagID();
 		m_BRDiagLogStateID = GetModdedDiagID();
+		m_BRDiagFakeUnloadedID = GetModdedDiagID();
+		m_BRDiagLogGateID = GetModdedDiagID();
 
 		m_BRDiagTeleportMenuID = GetModdedDiagID();
 		m_BRDiagTpZoneID = GetModdedDiagID();
@@ -214,6 +218,12 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagGotoGoID, "", "Jump: Go", m_BRDiagFlowMenuID);
 				DiagMenu.RegisterBool(m_BRDiagForceReadyID, "", "Force Ready All", m_BRDiagFlowMenuID);
 				DiagMenu.RegisterBool(m_BRDiagLogStateID, "", "Log State", m_BRDiagFlowMenuID);
+				//--- A TOGGLE, not a momentary button: the whole point is that it stays on long
+				//--- enough to watch the lobby refuse to start. Off again releases the gate, which is
+				//--- how the "and then it starts" half is exercised. Needs MORE than minimum_players
+				//--- in the lobby to do anything - see BR_DiagSetAllUnloaded for why.
+				DiagMenu.RegisterBool(m_BRDiagFakeUnloadedID, "", "Fake Loading Stragglers", m_BRDiagFlowMenuID);
+				DiagMenu.RegisterBool(m_BRDiagLogGateID, "", "Log Lobby Gate", m_BRDiagFlowMenuID);
 			}
 
 			//--- Spawn / Teleport. All four go through BR_SYNC_JUNCTURE_TELEPORT, never a raw

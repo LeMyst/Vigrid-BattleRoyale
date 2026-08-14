@@ -233,6 +233,128 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         i_LoadHoldStartedMs = 0;
     }
 
+#ifdef DIAG_DEVELOPER
+    /**
+     *  Diag only: fake a lobby where the first `minimum_players` are in and the rest are still
+     *  loading - or put everybody back.
+     *
+     *  The window this fakes is real but far too short to test against. Measured 2026-08-13 on three
+     *  local clients, the gap between `AddPlayer` and the `PlayerLoadedIn` report was under ONE
+     *  SECOND - so a test built on connecting a player at the right moment is a coin flip against a
+     *  10 Hz poll, and a miss is indistinguishable from a broken gate.
+     *
+     *  ⚠️ IT LEAVES EXACTLY minimum_players LOADED, and that is the entire point rather than a
+     *  detail. Marking *everyone* unloaded is the obvious implementation and it tests NOTHING: the
+     *  start test now counts loaded players (`GetLoadedPlayerCount() >= i_MinPlayers`), so a lobby
+     *  with nobody loaded fails at the minimum and the start never goes green - meaning the load gate
+     *  is never consulted and the hold never arms. The gate only has an opinion when the match would
+     *  otherwise start, so the fixture has to produce exactly that: enough loaded to be startable,
+     *  plus at least one straggler. Which is also the real-world case it stands in for.
+     *
+     *  The clients never re-report - SendLoadedInOnce is a one-shot for the session - so this holds
+     *  indefinitely until either it is called again with false, which is how the "gate clears and the
+     *  match starts" half is exercised, or BR_LOBBY_LOAD_MAX_HOLD_SECONDS expires and starts the
+     *  match anyway, which is the other half.
+     */
+    void BR_DiagSetAllUnloaded(bool unloaded)
+    {
+        ref array<PlayerBase> players = GetPlayers();
+        int marked = 0;
+
+        for(int i = 0; i < players.Count(); i++)
+        {
+            PlayerBase player = players.Get(i);
+            if(!player)
+                continue;
+
+            //--- Restoring: everybody back to loaded, no arithmetic needed.
+            if( !unloaded )
+            {
+                player.br_loaded_in = true;
+                continue;
+            }
+
+            //--- Faking: keep the first i_MinPlayers loaded so the start still goes green, and turn
+            //--- everyone after them into a straggler.
+            if( i < i_MinPlayers )
+            {
+                player.br_loaded_in = true;
+                continue;
+            }
+
+            player.br_loaded_in = false;
+            marked++;
+        }
+
+        //--- Cleared too, so a second press starts a fresh bound rather than resuming one that has
+        //--- already half run down.
+        ResetLoadHold();
+
+        if( unloaded )
+            BattleRoyaleUtils.Info("[Diag] faked " + marked + " straggler(s) of " + players.Count() + ", keeping " + i_MinPlayers + " loaded so the start still goes green.");
+        else
+            BattleRoyaleUtils.Info("[Diag] marked all " + players.Count() + " lobby players loaded again.");
+
+        if( unloaded && marked == 0 )
+            BattleRoyaleUtils.Warn("[Diag] nobody left to fake as loading - you need more than minimum_players (" + i_MinPlayers + ") in the lobby for this to do anything.");
+    }
+
+    /**
+     *  Diag only: say why the lobby is or is not starting, one condition at a time.
+     *
+     *  Every term of both start paths, so "it did not start and I do not know why" is one keypress
+     *  instead of a log dig. Emitted as two lines and built in steps rather than as one concatenation
+     *  - a single expression carrying this many fields hits EnfusionScript's "Formula too complex",
+     *  which is a hard compile error that only surfaces when the module loads.
+     *
+     *  The bools go through int locals because only their numeric form is safe to concatenate here.
+     */
+    void BR_DiagLogGate()
+    {
+        int total = GetPlayers().Count();
+        int loaded = GetLoadedPlayerCount();
+        int tick_now = GetGame().GetTickTime();
+        int min_wait = f_MinWaitingTime;
+
+        int groups = total;
+#ifdef VIGRID_PARTY
+        groups = VigridPartyAPI.GetGroupCount( GetPlayers() );
+#endif
+
+        string line1 = "[Diag] lobby gate #8:";
+        line1 += " players=" + total;
+        line1 += " loaded=" + loaded;
+        line1 += " minimum=" + i_MinPlayers;
+        line1 += " groups=" + groups;
+        line1 += " uptime=" + tick_now + "/" + min_wait;
+        BattleRoyaleUtils.Info( line1 );
+
+        int is_full = 0;
+        if( IsLobbyFull() )
+            is_full = 1;
+
+        int notfull_ok = 0;
+        if( IsNotFullWaitSatisfied() )
+            notfull_ok = 1;
+
+        int hold_running = 0;
+        if( i_LoadHoldStartedMs != 0 )
+            hold_running = 1;
+
+        int vote_system = 0;
+        if( b_UseVoteSystem )
+            vote_system = 1;
+
+        string line2 = "[Diag] lobby gate #9:";
+        line2 += " full=" + is_full;
+        line2 += " notfull_wait_ok=" + notfull_ok;
+        line2 += " notfull_secs_left=" + GetNotFullSecondsLeft();
+        line2 += " vote_system=" + vote_system;
+        line2 += " load_hold_running=" + hold_running;
+        BattleRoyaleUtils.Info( line2 );
+    }
+#endif
+
     //returns true when this state is complete
     override bool IsComplete()
     {

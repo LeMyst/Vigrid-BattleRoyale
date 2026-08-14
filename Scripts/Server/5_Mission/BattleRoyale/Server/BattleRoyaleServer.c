@@ -1765,6 +1765,34 @@ class BattleRoyaleServer: BattleRoyaleBase
                 break;
             }
 
+            case BattleRoyaleDiagAction.SET_FAKE_UNLOADED:
+            {
+                //--- BattleRoyaleDebug specifically, like FORCE_READY_ALL above: the load gate lives
+                //--- on the lobby state, and CountReached only shares its base class.
+                BattleRoyaleDebug unload_lobby;
+                if(!Class.CastTo(unload_lobby, state))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] Fake Unloaded only works in the lobby state");
+                    break;
+                }
+
+                unload_lobby.BR_DiagSetAllUnloaded( data.param2 != 0 );
+                break;
+            }
+
+            case BattleRoyaleDiagAction.LOG_LOBBY_GATE:
+            {
+                BattleRoyaleDebug gate_lobby;
+                if(!Class.CastTo(gate_lobby, state))
+                {
+                    BattleRoyaleUtils.Warn("[Diag] Log Lobby Gate only works in the lobby state");
+                    break;
+                }
+
+                gate_lobby.BR_DiagLogGate();
+                break;
+            }
+
             case BattleRoyaleDiagAction.LOG_STATE:
             {
                 if(!state)
