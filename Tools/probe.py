@@ -132,10 +132,11 @@ PROBES = [
      "Scripts/Client/3_Game/Constants.c", append("\nconst int MENU_BR_PROBE = 178;\n")),
 
     #  rpc reports at WARNING level, so this probe runs with -W or a correct detection reads as a
-    #  miss.
+    #  miss. It renames a LIVE registration rather than adding a new line, so the probe also proves
+    #  the handler lookup is what answers, not the mere presence of an AddRPC call.
     ("rpc: registration with no handler", "rpc",
      "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleServer.c",
-     replace('AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestEntityHealthUpdate", this);',
+     replace('AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);',
              'AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "ProbeHandlerThatDoesNotExist", this);'),
      True),
 
