@@ -152,6 +152,41 @@ class BattleRoyaleState: Timeable
         return false;
     }
 
+    /**
+     *  "Only one side is left standing" - THE win condition, in one place.
+     *
+     *  It is a test on GROUPS, not on players: a surviving party has already won, and a match that
+     *  waits for one of them to kill the other never ends. Without the party addon - or with it
+     *  compiled in but the manager switched off in party_settings.json - GetGroupCount() degrades to
+     *  one group per player, so this mirrors the raw player test exactly and no caller needs an
+     *  #else branch.
+     *
+     *  Static, and taking the roster explicitly rather than reading GetPlayers(), because
+     *  SkipState() has to ask it about the state it is being handed and not about itself.
+     *
+     *  Every gameplay state must route through this. It used to be written out four times - twice in
+     *  6_BattleRoyaleRound (IsComplete and SkipState), twice in 7_BattleRoyaleLastRound - and
+     *  5_BattleRoyaleStartMatch had only the player half of it. The consequence was a party that
+     *  wiped the field during the pre-zone countdown holding two live players, so the state never
+     *  completed and the win screen did not appear until the countdown ran out on its own
+     *  (observed 2026-08-14: field cleared at 13:02:18, Win State entered at 13:02:34).
+     */
+    static bool IsOneSideLeft(array<PlayerBase> players)
+    {
+        if(!players)
+            return true;
+
+        if(players.Count() <= 1)
+            return true;
+
+#ifdef VIGRID_PARTY
+        if(VigridPartyAPI.GetGroupCount( players ) <= 1)
+            return true;
+#endif
+
+        return false;
+    }
+
     ref array<PlayerBase> GetPlayers()
     {
         return m_Players;

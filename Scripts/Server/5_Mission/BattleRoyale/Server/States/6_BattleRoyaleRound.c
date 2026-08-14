@@ -255,26 +255,12 @@ class BattleRoyaleRound: BattleRoyaleState
 		if(!IsActive())
 			return super.IsComplete();
 
-		//--- The round ends when a single group is left standing, not a single player: a
-		//--- surviving party has already won. Without the party addon every player is their own
-		//--- group, so the group test simply mirrors the player test.
-		bool playersLessThanTwo = GetPlayers().Count() <= 1;
-		bool groupsLessThanTwo = playersLessThanTwo;
-#ifdef VIGRID_PARTY
-		groupsLessThanTwo = VigridPartyAPI.GetGroupCount( GetPlayers() ) <= 1;
-#endif
-
-		if(playersLessThanTwo || groupsLessThanTwo)
+		//--- The round ends when a single group is left standing, not a single player: a surviving
+		//--- party has already won. Shared with every other gameplay state - see
+		//--- BattleRoyaleState.IsOneSideLeft, which is also what SkipState below asks.
+		if(BattleRoyaleState.IsOneSideLeft( GetPlayers() ))
 		{
-			string reason;
-			if(playersLessThanTwo && groupsLessThanTwo)
-				reason = "(Players/Groups)";
-			else if(playersLessThanTwo)
-				reason = "(Players)";
-			else
-				reason = "(Groups)";
-
-			BattleRoyaleUtils.Trace(GetName() + " IsComplete " + reason + "!");
+			BattleRoyaleUtils.Trace(GetName() + " IsComplete!");
 			Deactivate();
 		}
 
@@ -283,15 +269,10 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override bool SkipState(BattleRoyaleState _previousState)
     {
-        //only one (or less) players remaining, must skip to win state
+        //only one side (or less) remaining, must skip to win state
         // TODO: toggle to debug game
-        if(_previousState.GetPlayers().Count() <= 1)
+        if(BattleRoyaleState.IsOneSideLeft( _previousState.GetPlayers() ))
             return true;
-
-#ifdef VIGRID_PARTY
-        if(VigridPartyAPI.GetGroupCount( _previousState.GetPlayers() ) <= 1)
-            return true;
-#endif
 
         if( GetDynamicStartingZone(i_NumStartingPlayers) > zone_num )
         {
