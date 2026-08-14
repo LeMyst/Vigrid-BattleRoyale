@@ -31,13 +31,24 @@ modded class LoadingScreen
         //--- 100,286, directly under the DayZ logo this mod hides) is fine as it is.
         m_ModdedWarning.SetText( BATTLEROYALE_LOADING_MODDED_MESSAGE );
         m_ModdedWarning.Show( true );
+
+        //--- Drop the background's alpha mask so the loading art is shown whole. The engine answers
+        //--- an empty path with `RESOURCES (E): Bad texture name ''` plus
+        //--- `GUI (E): ImageWidget::AlphaMaskTexture can't load ''`, and this used to run from
+        //--- Show(), i.e. once per loading screen. It is ONCE PER PROCESS here: m_ImageBackground is
+        //--- resolved once at dayzgame.c:739 and never re-created, and no vanilla path reloads its
+        //--- mask texture - so a single clear holds for the session.
+        //---
+        //--- Vanilla's SetMaskProgress(0.0) is NOT a substitute, and it looks like one. Vanilla
+        //--- Show() already calls it (dayzgame.c:854, and ours runs super first), and ShowEx hands
+        //--- m_ImageBackground to ProgressAsync.SetUserData (:774) so the engine drives mask
+        //--- progress for the whole load - any one-shot value is overwritten within the frame.
+        m_ImageBackground.LoadMaskTexture("");
     }
 
     override void Show()
     {
         super.Show();
-
-        m_ImageBackground.LoadMaskTexture("");  // Hide the mask texture
 
         //--- Re-assert after super, which hides the mid logo on the main-menu loading screen and
         //--- shows it everywhere else (dayzgame.c:863-876). We want the BR logo in both cases, so
