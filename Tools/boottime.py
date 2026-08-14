@@ -286,7 +286,9 @@ def main() -> int:
             print("boottime: ServerProfileDirectory is not set in Workbench/user.cfg; "
                   "pass --profile or --rpt.", file=sys.stderr)
             return 1
-        profile = Path(raw)
+        #  Belt and braces for the same trailing-backslash trap BootTime.bat trims: a path typed by
+        #  hand as "F:\ServerProfile\" arrives here with the quote glued on.
+        profile = Path(raw.strip().strip('"'))
         if not profile.is_dir():
             print(f"boottime: profile directory not found: {profile}", file=sys.stderr)
             return 1

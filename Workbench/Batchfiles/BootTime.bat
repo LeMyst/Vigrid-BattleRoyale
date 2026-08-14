@@ -29,7 +29,13 @@ if not defined serverProfileDirectory (
 	exit /b 1
 )
 
-call :run --profile "%serverProfileDirectory%"
+REM ServerProfileDirectory conventionally ends in a backslash, and a trailing backslash inside a
+REM quoted argument escapes the closing quote - the path reaches python as F:\ServerProfile" and the
+REM directory is "not found". Same trim ClearStorage.bat does before joining a path.
+set "brProfile=%serverProfileDirectory%"
+if "%brProfile:~-1%"=="\" set "brProfile=%brProfile:~0,-1%"
+
+call :run --profile "%brProfile%"
 exit /b %errorlevel%
 
 :run

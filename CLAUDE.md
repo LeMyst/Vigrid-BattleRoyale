@@ -95,11 +95,14 @@ DayZ reads raw input and discards it (measured 2026-08-11).
 
 ### Server boot time
 
-⚠️ **Boot time is not stable, and that is the first thing to establish before chasing a "slowdown".**
-Three boots of an identical build on 2026-08-14 measured **3m36s, 2m27s and 1m48s** — a 2× spread,
-cold page cache versus warm (the first launch after a build pays for ~130 MB of freshly written
-PBOs). A single slow boot is not evidence of anything, and the difference between "the mod got
-slower" and "the disk was cold" is invisible without a baseline.
+⚠️ **The first boot after a build is not comparable to any other, and that is the first thing to
+establish before chasing a "slowdown".** Measured 2026-08-14: three boots of one identical build
+gave **3m36s, 2m27s and 1m48s** — but they were spread over an hour with a build in between. Three
+boots taken back-to-back on warm cache gave **76.7 s, 76.2 s, 76.0 s**. So boot time is *stable to
+under a second* when nothing else has touched the disk, and the 2× spread was the page cache paying
+for ~130 MB of freshly written PBOs, not the mod. Compare warm against warm or the measurement is
+meaningless — and the difference between "the mod got slower" and "the disk was cold" is invisible
+without a baseline.
 
 **`ClearLogs.bat` deletes `*.log` and `*.rpt` from the profile directory at the START of every
 launch**, so each run destroys the evidence of the one before it. `BootTime.bat` exists to break
@@ -112,10 +115,14 @@ Where a cold ChernarusPlus boot actually goes (measured, 33,921 CE items):
 | Phase | Share | Marker it ends at |
 |---|---|---|
 | engine + PBO load | ~16 s | `Hostname of server:` |
-| world, scripts, mission `OnInit` | ~24 s | `[CE][TypeSetup]` |
-| **Central Economy loot spawn** | **51–75 s** | `[CE][LootRespawner] … Initially (re)spawned:` |
-| CE vehicle respawn | ~8–15 s | last `[CE][VehicleRespawner]` |
-| finalise + first save | ~4 s | `[IdleMode] Entering IN` |
+| world, scripts, mission `OnInit` | ~18 s | `[CE][TypeSetup]` |
+| **Central Economy loot spawn** | **~33 s** | `[CE][LootRespawner] … Initially (re)spawned:` |
+| CE vehicle respawn | ~6 s | last `[CE][VehicleRespawner]` |
+| finalise + first save | ~3 s | `[IdleMode] Entering IN` |
+
+The CE phase used to be 51–75 s of that, and the engine's own report of it (the `at N (sec)` on the
+`LootRespawner` line) went **51 s → 30 s, stable across three runs**, once `SpawnWithAmmoAndMagazine`
+stopped reading `serverDZ.cfg` once per item and stopped logging once per magazine.
 
 **The mod's own boot work is free** — zone generation, all eight settings files, Party, KillFeed,
 SafeZone and Map all complete inside a *single second*. Do not go looking for boot cost in
@@ -128,9 +135,10 @@ the whole map every launch; keeping storage skips that phase outright. Off by de
 wipe is what makes a run reproducible. A loot-free `empty.*` MP mission removes the phase entirely
 (same trick as the offline rig above — no `CreateHive()`, so no loot and no infected).
 
-⚠️ **The script log is the cheapest proxy for per-item work, and it is enormous**: ~44,700 lines /
-4.3 MB per boot, of which ~33,000 are the weapon-chambering path — COT's `FillChamber` /
-`FillInnerMagazine` INFO logging, triggered once per weapon by `Extra/SpawnWeaponChambered`. By
+⚠️ **The script log is the cheapest proxy for per-item work, and it is enormous**: ~31,900 lines per
+boot (44,700 before the two per-magazine `Print()`s came out of `SpawnWithAmmoAndMagazine`), of which
+~26,650 are the weapon-chambering path — COT's `FillChamber` / `FillInnerMagazine` INFO logging,
+triggered once per weapon by `Extra/SpawnWeaponChambered`, and the largest remaining block. By
 contrast Expansion's `EXTRACE` contributes 221 lines and the four newer addons 31 between them, so
 neither is worth suspecting. `boottime.csv` carries the line count per boot for exactly this reason:
 a newly chatty hook shows up there first.
