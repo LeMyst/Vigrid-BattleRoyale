@@ -8,3 +8,7 @@
 "STR_MAP_COMPASS_SW","SW","SW","JZ","SW","ЮЗ","SW","DNy","SO","SO","SO","西南","南西","SO","西南"
 "STR_MAP_COMPASS_W","W","W","Z","W","З","W","Ny","O","O","O","西","西","O","西"
 "STR_MAP_COMPASS_NW","NW","NW","SZ","NW","СЗ","NW","ÉNy","NO","NO","NO","西北","北西","NO","西北"
+"STR_MAP_KEYBIND_CATEGORY","MAP","MAP","MAPA","KARTE","КАРТА","MAPA","TÉRKÉP","MAPPA","MAPA","CARTE","地图","マップ","MAPA","地图"
+"STR_MAP_KEYBIND_TOGGLE","Open Map","Open Map","Otevřít mapu","Karte öffnen","Открыть карту","Otwórz mapę","Térkép megnyitása","Apri mappa","Abrir mapa","Ouvrir la carte","打开地图","マップを開く","Abrir mapa","打开地图"
+"STR_MAP_KEYBIND_MINIMAP","Toggle Minimap","Toggle Minimap","Přepnout minimapu","Minikarte umschalten","Переключить миникарту","Przełącz minimapę","Minitérkép be/ki","Attiva/disattiva minimappa","Alternar minimapa","Afficher/masquer la minicarte","切换小地图","ミニマップ切り替え","Alternar minimapa","切换小地图"
+"STR_MAP_KEYBIND_COMPASS","Toggle Compass","Toggle Compass","Přepnout kompas","Kompass umschalten","Переключить компас","Przełącz kompas","Iránytű be/ki","Attiva/disattiva bussola","Alternar brújula","Afficher/masquer la boussole","切换指南针","コンパス切り替え","Alternar bússola","切换指南针"

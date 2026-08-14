@@ -71,7 +71,9 @@ modded class BRMasterControlsModule
         }
 
 #ifdef EXPANSIONMODMISSIONS
-		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "Airdrop sent." ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
+		//--- StringLocaliser takes a BARE stringtable key with no leading '#' (Expansion's own
+		//--- call sites do the same) - a sentence here reaches the player untranslated.
+		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "STR_BR_COT_AIRDROP_SENT" ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
 		ExpansionMissionModule.s_Instance.CallAirdrop(senderRPC.GetPlayer().GetPosition());
 #endif
     }

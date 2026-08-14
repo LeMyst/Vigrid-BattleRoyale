@@ -106,7 +106,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          hexactsize 1
          vexactsize 1
          style Bold
-         text "safe"
+         text "#STR_BR_SAFE"
          font "gui/fonts/etelkatextpro"
          "exact text" 0
          "text halign" right

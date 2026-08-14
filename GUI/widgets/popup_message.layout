@@ -37,7 +37,7 @@ WindowWidgetClass PopupDialogRoot {
      scaled 1
      scriptclass ""
      style DayZNormal
-     text "This is a very long popup message that really shouldn't be this long but it is"
+     text ""
      font "gui/fonts/etelkatextpro"
      "exact text" 1
      "text halign" center

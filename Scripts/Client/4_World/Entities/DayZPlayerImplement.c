@@ -48,8 +48,13 @@ modded class DayZPlayerImplement
 			{
 				funny_string = funny_strings.GetRandomElement();
 
-				//--- Neither ScreenFadeIn nor TextWidget.SetText resolves a "#KEY" the way a layout's
-				//--- own `text` property does, so translate and format here.
+				//--- Translated HERE because string.Format has to run on the TRANSLATED text - the
+				//--- key carries the "#%1" and only the localized string has a %1 to substitute
+				//--- into. Not because SetText cannot resolve a key: it can, and it resolves every
+				//--- "#token" in a string, not just a leading one (vanilla ships
+				//--- "#server_browser_show / #server_browser_hide" as one literal, and
+				//--- "#main_menu_version" + " " + version in seven places). This comment used to
+				//--- claim otherwise and that claim was wrong - see CLAUDE.md, Localization.
 				placement = Widget.TranslateString("#STR_BR_DEAD_POSITION");
 				placement = string.Format(placement, position_top);
 			}

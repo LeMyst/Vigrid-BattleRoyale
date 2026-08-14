@@ -187,7 +187,7 @@ modded class MainMenu
 	private bool IsMatchMakingAvailable()
 	{
 		// Change the play button text
-		m_PlayButtonLabel.SetText("LOGIN...");
+		m_PlayButtonLabel.SetText("#STR_BR_MM_LOGIN");
 
 		// MatchMaking Webhook
 		MatchMakingWebhook matchMakingWebhook = new MatchMakingWebhook();

@@ -24,7 +24,10 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
     override string GetTitle()
     {
-        return "[BR] State Machine";
+        //--- Resolved here rather than returned as a bare "#KEY": these strings are handed to
+        //--- Community-Online-Tools, and whether it feeds them through a widget SetText (which
+        //--- would resolve the key) is not ours to rely on. TranslateString is correct either way.
+        return Widget.TranslateString( "#STR_BR_COT_MENUENTRY" );
     }
 
     override string GetIconName()
@@ -39,7 +42,7 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
     override string GetWebhookTitle()
     {
-        return "BattleRoyale State Machine";
+        return Widget.TranslateString( "#STR_BR_COT_WEBHOOKTITLE" );
     }
 
     override int GetRPCMin()

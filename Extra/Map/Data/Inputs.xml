@@ -21,12 +21,14 @@
 <modded_inputs>
     <inputs>
         <actions>
-            <input name="UAVigridMapToggle" loc="Open Map" />
-            <input name="UAVigridMapMinimapToggle" loc="Toggle Minimap" />
-            <input name="UAVigridMapCompassToggle" loc="Toggle Compass" />
+            <!-- loc= takes a BARE stringtable key with no leading '#'. Keys live in this
+                 addon's own stringtable.csv - the map must not reference a STR_BR_* key. -->
+            <input name="UAVigridMapToggle" loc="STR_MAP_KEYBIND_TOGGLE" />
+            <input name="UAVigridMapMinimapToggle" loc="STR_MAP_KEYBIND_MINIMAP" />
+            <input name="UAVigridMapCompassToggle" loc="STR_MAP_KEYBIND_COMPASS" />
         </actions>
 
-        <sorting name="vigridmap" loc="MAP">
+        <sorting name="vigridmap" loc="STR_MAP_KEYBIND_CATEGORY">
             <input name="UAVigridMapToggle" />
             <input name="UAVigridMapMinimapToggle" />
             <input name="UAVigridMapCompassToggle" />

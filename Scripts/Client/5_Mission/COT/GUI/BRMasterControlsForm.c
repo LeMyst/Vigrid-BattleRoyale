@@ -18,15 +18,15 @@ class BRMasterControlsForm: JMFormBase
 
         //create button widgets dynamically
         Widget wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
-            UIActionManager.CreateText( wrapper, "State Machine" );
-            UIActionManager.CreateButton( wrapper, "Next State", this, "StateMachine_Next" );
-            UIActionManager.CreateButton( wrapper, "Pause", this, "StateMachine_Pause" );
-            UIActionManager.CreateButton( wrapper, "Resume", this, "StateMachine_Resume" );
+            UIActionManager.CreateText( wrapper, "#STR_BR_COT_STATEMACHINE" );
+            UIActionManager.CreateButton( wrapper, "#STR_BR_COT_NEXTSTATE", this, "StateMachine_Next" );
+            UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PAUSE", this, "StateMachine_Pause" );
+            UIActionManager.CreateButton( wrapper, "#STR_BR_COT_RESUME", this, "StateMachine_Resume" );
 
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
-            UIActionManager.CreateText( wrapper, "Event Manager" );
+            UIActionManager.CreateText( wrapper, "#STR_BR_COT_EVENTMANAGER" );
 #ifdef EXPANSIONMODMISSIONS
-            UIActionManager.CreateButton( wrapper, "Spawn Airdrop", this, "SpawnAirdrop" );
+            UIActionManager.CreateButton( wrapper, "#STR_BR_COT_SPAWNAIRDROP", this, "SpawnAirdrop" );
 #endif
 
         //--- No DIAG block here on purpose. "Add Player" / "Add Group" used to live here, but

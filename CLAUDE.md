@@ -740,10 +740,25 @@ camera.
 
 ### Localization
 
-`LanguageCore/stringtable.csv`, keys prefixed `STR_BR_`. The `Party/` addon carries its own `stringtable.csv` at its PBO root with `STR_PARTY_*` keys — the engine loads one per addon — so party strings do not go here. Three reference styles:
+`LanguageCore/stringtable.csv`, keys prefixed `STR_BR_`. The `Party/` addon carries its own `stringtable.csv` at its PBO root with `STR_PARTY_*` keys — the engine loads one per addon — so party strings do not go here. Five reference styles:
 - Layouts: `text "#STR_BR_..."`
 - Client script: `SetText("#STR_BR_...")`
-- **Server script: the bare key with no `#`.** `MessagePlayerUntranslated()` / `MessagePlayersUntranslated()` (`0_BattleRoyaleState.c:200-242`) ship the key over the `NotificationMessage` RPC and the client localizes it in `BattleRoyaleRPC.NotificationMessage()`, which also substitutes the `READY_KEY` / `UNSTUCK_KEY` placeholders with live keybinds.
+- **Server script: the bare key with no `#`.** `MessagePlayerUntranslated()` / `MessagePlayersUntranslated()` (`0_BattleRoyaleState.c:200-242`) ship the key over the `NotificationMessage` RPC and the client localizes it in `BattleRoyaleRPC.NotificationMessage()`, which also substitutes the `READY_KEY` / `UNSTUCK_KEY` placeholders with live keybinds. `StringLocaliser` takes the bare key too.
+- **`Inputs.xml` `loc=`: the bare key, no `#`** — the keybind label in Options → Controls, and the `<sorting>` category name. Verified live 2026-08-14; the reference is DayZ-Expansion, whose every `Data/Inputs.xml` uses `loc="STR_EXPANSION_..."`. A raw English label here is not an error, it just ships untranslated, so nothing flags it but the eye.
+- **Data JSON: `"#STR_BR_..."`, and it does resolve.** `Data/credits.json` names its section headings this way, exactly as vanilla's `P:\scripts\data\credits.json` does — vanilla feeds `SectionName` straight to `SetText` (`creditsdepartmentelement.c:53`).
+
+**`SetText` resolves EVERY `#token` in the string, not just a leading one, and not only a whole-string key.** Concatenating around a key is fine and is what vanilla itself does:
+
+```c
+SetText("Client #main_menu_version" + " " + version);   // resolves - key mid-string
+SetText("#STR_BR_MM_SEARCHING " + attempt);             // resolves - key terminated by the space
+```
+
+Vanilla ships `"#main_menu_version" + " " + version` in seven places (`P:\scripts\5_mission\gui\ingamemenu.c:85` is the method this mod overrides), `"#craft "` / `"#build "` with trailing text, and `"#server_browser_show / #server_browser_hide"` — **two keys in one literal**, the second mid-string. ⚠️ **This was written up backwards on 2026-08-14** ("a key only resolves as the entire string"), four call sites were rewritten to work around a bug that never existed, and Myst caught it by observing the version line had always been fine. If you are about to "fix" a concatenated key, don't — check vanilla first.
+
+The real reason to reach for **`Widget.TranslateString("#KEY")`** is narrower: when you need `string.Format` to substitute into the *localized* text (`DayZPlayerImplement.ShowDeadScreen` — the `%1` only exists once the key is resolved), or when the string is handed to code that is **not** a widget at all, such as a webhook body.
+
+The `stringtable` check (`Tools/Checks/stringtable.py`, via `Workbench/Batchfiles/Check.bat`) catches a key that is referenced but undefined, filed in the wrong addon's table, or defined and never referenced — across `*.c`, `*.layout`, `*.xml`, `*.cpp` and `*.json`. ⚠️ Note it prunes orphans in a direction that bites: a key goes unreferenced the moment its last call site is hardcoded, so "delete the unused key" is often exactly backwards. `STR_BR_MM_LOGIN` was deleted as unused while the button beside it read `"LOGIN..."`; treat an orphan as *find the missing call site* first.
 
 ### UI
 
