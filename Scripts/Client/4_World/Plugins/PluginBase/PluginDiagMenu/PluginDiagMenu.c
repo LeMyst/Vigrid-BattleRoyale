@@ -18,7 +18,7 @@
  *  is compiled at all, so Match Flow and Spawn / Teleport doing nothing there is expected.
  *
  *  ID BUDGET. Ids come from GetModdedDiagID(), which counts up from DiagMenuIDs.MODDED_MENU (~235)
- *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 62,
+ *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 67,
  *  measured from the canary line rather than counted by hand (the previous "47" was one short). Do
  *  not allocate an id for something a bag field can carry: an entry whose value is only ever read
  *  when another entry fires does not need its id kept.
