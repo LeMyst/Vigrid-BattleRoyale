@@ -561,6 +561,219 @@ class VigridPartyManager
         MarkDirty(true);
     }
 
+    // ---------------------------------------------------------------- auto grouping
+
+    /**
+     *  Fill `population` into parties of at least `min_size`. Backs VigridPartyAPI.AutoGroup, which
+     *  is where the contract is written down.
+     *
+     *  Deliberately NOT gated on m_FormationLocked. That flag is a client-request gate - only
+     *  RejectIfUnavailable consults it, and only the RPC handlers call that - so a host asking for
+     *  this is not a player sneaking a composition change past the lock. The host is expected to
+     *  call it just BEFORE locking anyway, so that nobody is told their party is frozen and then
+     *  watches it change.
+     *
+     *  Returns the resulting group count, or -1 when it did nothing at all.
+     */
+    int AutoGroupPopulation(array<PlayerBase> population, int min_size, int min_groups, int remainder)
+    {
+        if (!m_Settings.enabled)
+            return -1;
+        if (min_size <= 1)
+            return -1;
+        if (!population)
+            return -1;
+        if (population.Count() == 0)
+            return -1;
+
+        //--- One pass over the population for everything below. GetPlayerByUid and NameOfUid each
+        //--- walk GetGame().GetPlayers(), so reaching for them per member inside the loops that
+        //--- follow would make this quadratic in a full lobby.
+        ref array<PlayerBase> pool = new array<PlayerBase>();
+        ref array<VigridParty> existing = new array<VigridParty>();
+        ref array<int> existing_sizes = new array<int>();
+        ref map<string, string> names = new map<string, string>();
+
+        int population_count = population.Count();
+        for (int i = 0; i < population_count; i++)
+        {
+            PlayerBase player = population.Get(i);
+            string uid = UidOf(player);
+            if (uid == "")
+                continue;
+
+            names.Set(uid, NameOf(player));
+
+            VigridParty party = GetPartyByUid(uid);
+            if (!party)
+            {
+                pool.Insert(player);
+                continue;
+            }
+
+            //--- A party is sized by how many of its members are actually HERE, not by Count().
+            //--- One whose third player never connected is a duo in this match, and topping that
+            //--- duo up is precisely the job.
+            int known = existing.Find(party);
+            if (known == -1)
+            {
+                existing.Insert(party);
+                existing_sizes.Insert(1);
+                continue;
+            }
+
+            existing_sizes.Set(known, existing_sizes.Get(known) + 1);
+        }
+
+        //--- Fisher-Yates. This shuffle IS the "random leader" rule: VigridParty.Add makes the first
+        //--- member in the leader and the plan fills each new party in pool order, so randomising
+        //--- the pool randomises both who ends up with whom and who leads them.
+        for (int s = pool.Count() - 1; s > 0; s--)
+        {
+            int j = Math.RandomInt(0, s + 1);
+            PlayerBase swap = pool.Get(s);
+            pool.Set(s, pool.Get(j));
+            pool.Set(j, swap);
+        }
+
+        ref VigridPartyAutoGroupPlan plan = VigridPartyAutoGroup.Plan(pool.Count(), existing_sizes, min_size, m_Settings.max_party_size, min_groups, remainder);
+
+        string summary = "AutoGroup min_size=" + min_size + " floor=" + min_groups;
+        summary = summary + " pool=" + pool.Count() + " -> " + plan.Repr();
+        VigridPartyLog.Info(summary);
+
+        if (plan.overflow_count > 0)
+            VigridPartyLog.Warn("AutoGroup placed " + plan.overflow_count + " player(s) past max_party_size " + m_Settings.max_party_size);
+
+        if (plan.floor_hit)
+            VigridPartyLog.Warn("AutoGroup stopped short of min_size to keep at least " + min_groups + " groups standing");
+
+        if (!plan.ChangedAnything())
+            return plan.groups_after;
+
+        //--- Slot -> party. The leading slots are parties that already exist; the rest are created
+        //--- lazily by the first member the plan assigns to them.
+        ref array<VigridParty> slot_party = new array<VigridParty>();
+        int slot_count = plan.slot_size.Count();
+        for (int a = 0; a < slot_count; a++)
+        {
+            if (a < plan.existing_count)
+                slot_party.Insert(existing.Get(a));
+            else
+                slot_party.Insert(NULL);
+        }
+
+        ref array<VigridParty> touched = new array<VigridParty>();
+
+        int pool_count = pool.Count();
+        for (int b = 0; b < pool_count; b++)
+        {
+            int slot = plan.slot_of_pool.Get(b);
+            if (slot == -1)
+                continue;
+
+            string member_uid = UidOf(pool.Get(b));
+            if (member_uid == "")
+                continue;
+
+            VigridParty target = slot_party.Get(slot);
+            if (!target)
+            {
+                target = CreatePartyFor(member_uid);
+                slot_party.Set(slot, target);
+            }
+            else
+            {
+                //--- The add contract, identical to the invite-accept path: Add THEN IndexMember,
+                //--- or m_MemberIndex falls out of lockstep with m_Parties and every grouping query
+                //--- silently answers from the stale one.
+                if (!target.Add(member_uid))
+                    continue;
+
+                IndexMember(target, member_uid);
+            }
+
+            //--- Flags them for VigridPartyStore.Save to subtract, which is what stops a randomly
+            //--- assigned teammate surviving into the next match.
+            target.MarkAuto(member_uid);
+
+            if (touched.Find(target) == -1)
+                touched.Insert(target);
+        }
+
+        int touched_count = touched.Count();
+        for (int c = 0; c < touched_count; c++)
+        {
+            VigridParty done = touched.Get(c);
+
+            //--- One version bump per party, after its last add rather than per add. A client
+            //--- discards a VP_TeamState whose version does not match the roster it holds, so
+            //--- publishing the intermediate versions would only make it drop state it is about to
+            //--- be sent again.
+            done.roster_version = NextRosterVersion();
+            done.last_seen_hours = VigridPartyTime.NowHours();
+
+            BroadcastRoster(done);
+            NotifyAutoGrouped(done, names);
+        }
+
+        //--- No MarkDirty on purpose. Nothing an auto-group does is persistable - Save() subtracts
+        //--- every uid marked above - so a flush here would only rewrite the file with what it
+        //--- already contains.
+
+        return plan.groups_after;
+    }
+
+    /**
+     *  Tell each member of a freshly grouped party who they are now playing with.
+     *
+     *  Per recipient rather than one NotifyParty broadcast, because the useful message names the
+     *  OTHER members and that list differs for every one of them.
+     */
+    private void NotifyAutoGrouped(VigridParty party, map<string, string> names)
+    {
+        int count = party.member_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            PlayerBase member = GetPlayerByUid(party.member_uids.Get(i));
+            if (!member)
+                continue;
+            if (!member.GetIdentity())
+                continue;
+
+            //--- Accumulated one name per statement. A single expression carrying this many
+            //--- concatenated terms is rejected outright with "Formula too complex", and it is a
+            //--- compile error the PBO packs straight past.
+            string others = "";
+            for (int j = 0; j < count; j++)
+            {
+                if (j == i)
+                    continue;
+
+                string other_uid = party.member_uids.Get(j);
+
+                //--- The map covers everyone in the population; NameOfUid is the fallback for a
+                //--- member of a topped-up party who is not in this match.
+                string other_name = NameOfUid(other_uid);
+                if (names.Contains(other_uid))
+                    other_name = names.Get(other_uid);
+
+                if (other_name == "")
+                    continue;
+
+                if (others != "")
+                    others = others + ", ";
+
+                others = others + other_name;
+            }
+
+            if (others == "")
+                continue;
+
+            SendNotify(member.GetIdentity(), "STR_PARTY_AUTO_GROUPED", others, "");
+        }
+    }
+
     /**
      *  Record a display name against a uid, so it survives the player's disconnect and the process.
      *

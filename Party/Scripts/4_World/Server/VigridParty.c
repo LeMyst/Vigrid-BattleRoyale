@@ -37,10 +37,24 @@ class VigridParty
      */
     ref array<ref VigridPartyPing> pings;
 
+    /**
+     *  Members placed here by the host's auto-grouper rather than by an invite they accepted.
+     *
+     *  Session-scoped and absent from VigridPartyStoreEntry on purpose, same as `pings` above: a
+     *  party is persisted so a real team survives the between-match server restart, and a randomly
+     *  assigned teammate is exactly what must NOT survive it. VigridPartyStore.Save() subtracts this
+     *  set before writing, so a fully auto-formed party never reaches disk at all and a real party
+     *  that was topped up is stored as the party it was before the match.
+     *
+     *  A subset of member_uids at all times - Remove() drops from both.
+     */
+    ref array<string> auto_uids;
+
     void VigridParty()
     {
         member_uids = new array<string>();
         pings = new array<ref VigridPartyPing>();
+        auto_uids = new array<string>();
     }
 
     bool Contains(string uid)
@@ -92,6 +106,12 @@ class VigridParty
 
         member_uids.Remove(index);
 
+        //--- Keep auto_uids a strict subset. A member who leaves and is later re-added by an invite
+        //--- must not still be flagged auto, or their real membership would be dropped on save.
+        int auto_index = auto_uids.Find(uid);
+        if (auto_index != -1)
+            auto_uids.Remove(auto_index);
+
         if (leader_uid != uid)
             return true;
 
@@ -109,6 +129,47 @@ class VigridParty
 
         leader_uid = uid;
         return true;
+    }
+
+    // ---------------------------------------------------------------- auto membership
+
+    //! Flag an existing member as auto-placed. Returns false for a non-member or a repeat.
+    bool MarkAuto(string uid)
+    {
+        if (!Contains(uid))
+            return false;
+        if (auto_uids.Find(uid) != -1)
+            return false;
+
+        auto_uids.Insert(uid);
+        return true;
+    }
+
+    bool IsAuto(string uid)
+    {
+        return auto_uids.Find(uid) != -1;
+    }
+
+    /**
+     *  Fill `into` with the members that are allowed to reach disk, i.e. everyone the auto-grouper
+     *  did not place. Join order is preserved, so a reloaded party keeps its slots.
+     *
+     *  Not named `out`: that is a parameter-direction keyword EnfusionScript will not accept as an
+     *  identifier. The array is filled in place rather than returned for the same reason.
+     */
+    void BuildPersistentMembers(array<string> into)
+    {
+        into.Clear();
+
+        int count = member_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            string uid = member_uids.Get(i);
+            if (auto_uids.Find(uid) != -1)
+                continue;
+
+            into.Insert(uid);
+        }
     }
 
     // ---------------------------------------------------------------- pings
