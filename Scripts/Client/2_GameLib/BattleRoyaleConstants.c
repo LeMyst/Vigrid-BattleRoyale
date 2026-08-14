@@ -185,7 +185,9 @@ static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRo
 
 //--- constant strings
 static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";
-static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "Remember! This is not normal DayZ.";
+//Shown by LoadingScreen in place of vanilla's "#str_modded_version_warning0". A stringtable key
+//rather than literal English, so it is translated like everything else the player reads.
+static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "#STR_BR_LOADING_MODDED_WARNING";
 
 
 // Textures
@@ -695,7 +697,18 @@ static const int   BR_ZONE_SELFTEST_DEFAULT_RUNS = 50;
 static const int   BR_ZONE_SELFTEST_WORK_CAP     = 20000;
 
 
-//---- DayZ Expansion Loading Screens
+//---- Loading screens.
+//NOTE these were Expansion's once - the original code read m_Backgrounds and m_MessageJson off
+//Expansion's modded LoadingScreen. Expansion gutted that system and the whole block was commented
+//out in "Update 1.21"; backgrounds came back in #201 with the mod's own LoadingScreenBackground,
+//and none of this is Expansion's any more.
 static const string DAYZBR_LOADING_SCREENS_PATH     = "Vigrid-BattleRoyale/Data/LoadingScreens.json";
 static const string DAYZBR_LOADING_MESSAGES_PATH    = "Vigrid-BattleRoyale/Data/LoadingMessages.json";
 static const int DAYZBR_LOADING_BAR_COLOR           = ARGB( 255, 0, 0, 0 );     //! A = Alpha (opacity) / R = Red / G = Green / B = Blue
+
+//---- Hint pages shown on the loading screen and in the in-game Esc menu, replacing vanilla's.
+//Split three ways so a hint never advertises a key that does not exist: the map and party files are
+//only loaded when their addon is compiled in.
+static const string DAYZBR_HINTS_PATH               = "Vigrid-BattleRoyale/Data/hints.json";
+static const string DAYZBR_HINTS_MAP_PATH           = "Vigrid-BattleRoyale/Data/hints_map.json";
+static const string DAYZBR_HINTS_PARTY_PATH         = "Vigrid-BattleRoyale/Data/hints_party.json";

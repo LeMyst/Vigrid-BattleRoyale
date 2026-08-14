@@ -11,9 +11,26 @@ modded class LoadingScreen
 
 		m_Backgrounds = LoadingScreenBackgrounds.Get();
 
-        m_ImageLogoMid.Show( false );  // Hide the DayZ logo
+        //--- Battle Royale logo in place of the DayZ one. The image is the imageset's, whose
+        //--- INTERNAL name is "battleroyale_gui" rather than the filename dayzbr_gui - see
+        //--- BATTLEROYALE_LOGO_IMAGE. Loaded once here; the texture survives every later Show().
+        //--- The corner slot stays hidden: it is the Bohemia logo's, and vanilla Show() only ever
+        //--- passes false to it anyway.
+        m_ImageLogoMid.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE );
+        m_ImageLogoMid.Show( true );
         m_ImageLogoCorner.Show( false );  // Hide the Bohemia Interactive logo
-        m_ModdedWarning.Show( false );  // Hide the modded warning
+
+        //--- Replace vanilla's "#str_modded_version_warning0" with our own, and show it. Vanilla
+        //--- gates this on g_Game.ReportModded(), which it evaluates in a constructor where g_Game
+        //--- is still null (see UpdateLoadingBackground below) - so the widget is effectively left
+        //--- at the layout's `visible 0` and we have to turn it on ourselves.
+        //---
+        //--- The original code also nudged it down by five pixels with GetPos/SetPos. That is NOT
+        //--- restored: declared widget geometry is scaled by viewport/1920 while SetPos takes real
+        //--- screen pixels, and mixing the two silently misplaces things. The declared spot (pixel
+        //--- 100,286, directly under the DayZ logo this mod hides) is fine as it is.
+        m_ModdedWarning.SetText( BATTLEROYALE_LOADING_MODDED_MESSAGE );
+        m_ModdedWarning.Show( true );
     }
 
     override void Show()
@@ -21,7 +38,11 @@ modded class LoadingScreen
         super.Show();
 
         m_ImageBackground.LoadMaskTexture("");  // Hide the mask texture
-        m_ImageLogoMid.Show( false );  // Hide the DayZ logo
+
+        //--- Re-assert after super, which hides the mid logo on the main-menu loading screen and
+        //--- shows it everywhere else (dayzgame.c:863-876). We want the BR logo in both cases, so
+        //--- this is unconditional rather than a mirror of vanilla's branch.
+        m_ImageLogoMid.Show( true );
         m_ImageLogoCorner.Show( false );  // Hide the Bohemia Interactive logo
         
 	    UpdateLoadingBackground();

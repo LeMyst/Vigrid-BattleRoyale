@@ -1,0 +1,22 @@
+[
+    {
+        "m_Headline": "#STR_BR_HINT_MAP_TITLE",
+        "m_ImagePath": "",
+        "m_Description": "#STR_BR_HINT_MAP_DESC"
+    },
+    {
+        "m_Headline": "#STR_BR_HINT_MINIMAP_TITLE",
+        "m_ImagePath": "",
+        "m_Description": "#STR_BR_HINT_MINIMAP_DESC"
+    },
+    {
+        "m_Headline": "#STR_BR_HINT_COMPASS_TITLE",
+        "m_ImagePath": "",
+        "m_Description": "#STR_BR_HINT_COMPASS_DESC"
+    },
+    {
+        "m_Headline": "#STR_BR_HINT_HOTZONE_TITLE",
+        "m_ImagePath": "",
+        "m_Description": "#STR_BR_HINT_HOTZONE_DESC"
+    }
+]

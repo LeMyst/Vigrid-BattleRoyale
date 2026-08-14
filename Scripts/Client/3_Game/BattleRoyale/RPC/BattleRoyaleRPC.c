@@ -969,15 +969,10 @@ class BattleRoyaleRPC
 			string translated_message = message.Format();
 
 			// Special case
-			// Finish the translation client side to get the correct key
-			if (translated_message.Contains("READY_KEY"))
-			{
-				translated_message.Replace("READY_KEY", InputUtils.GetButtonNameFromInput("UADayZBRReadyUp", EInputDeviceType.MOUSE_AND_KEYBOARD));
-			}
-			if (translated_message.Contains("UNSTUCK_KEY"))
-			{
-				translated_message.Replace("UNSTUCK_KEY", InputUtils.GetButtonNameFromInput("UADayZBRUnstuck", EInputDeviceType.MOUSE_AND_KEYBOARD));
-			}
+			// Finish the translation client side to get the correct key.
+			// The token table is shared with the loading-screen hints, which need seven more of
+			// these; see BattleRoyaleKeyTokens for why every lookup has a fallback.
+			translated_message = BattleRoyaleKeyTokens.Substitute(translated_message);
 
 			ExpansionNotification(DAYZBR_MSG_TITLE, translated_message, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, data.param2).Create();
 		}
