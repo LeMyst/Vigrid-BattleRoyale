@@ -106,6 +106,16 @@ PROBES = [
      "Party/stringtable.csv",
      lambda b: b + b'\n"STR_BR_COT_NAME"' + b',"x"' * 14 + b"\n"),
 
+    #  `*.json` is in REFERENCING_FILES because data files carry keys too - Data/hints*.json holds
+    #  the twenty-two hint pages, Data/credits.json the section headings. Breaking the reference
+    #  INSIDE the JSON is what makes this probe specific to that: it fires only while *.json is
+    #  listed, so the file list can no longer be narrowed without a probe going MISSED. Worth having
+    #  as a probe rather than a one-off manual check, since dropping it back turns thirty-odd live
+    #  keys into orphan warnings and nothing else complains.
+    ("stringtable: undefined key referenced from a JSON data file", "stringtable",
+     "Data/credits.json",
+     replace('"#STR_BR_CREDITS_PROJECTLEAD"', '"#STR_BR_CREDITS_NO_SUCH_KEY"')),
+
     ("asset-paths: layout path that does not exist", "asset-paths",
      "Scripts/Client/5_Mission/GUI/DeathScreenMenu.c",
      append('\nclass BRProbe { void F() { string p = '
