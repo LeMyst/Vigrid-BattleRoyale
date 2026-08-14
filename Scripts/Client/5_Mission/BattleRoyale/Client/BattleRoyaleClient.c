@@ -13,10 +13,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- One-shot: we have told the server we finished loading. See SendLoadedInOnce().
     protected bool b_SentLoadedIn;
 
-#ifdef EXPANSION_MAP_ZONES
-    protected ref ExpansionServerMarkerData m_ZoneCenterMapMarker;
-#endif
-
     protected ref BattleRoyaleSpeakingList m_SpeakingList;
 
     //--- The "YOU SURVIVED" overlay. Created straight into the workspace, so it is owned by nobody
@@ -517,10 +513,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         ApplyOutOfZoneTint( want_tint, player );
 
-#ifdef BR_MINIMAP
-        vector camera_pos = GetGame().GetCurrentCameraPosition();
-        gameplay.UpdateMiniMap( camera_pos );
-#endif
 		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
 
 		if( br_rpc )
@@ -647,10 +639,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 				{
 					m_FuturePlayArea = new BattleRoyalePlayArea( br_rpc.future_play_area_center, br_rpc.future_play_area_radius );
 
-#ifdef EXPANSION_MAP_ZONES
-					UpdateZoneCenterMaker( br_rpc.future_play_area_center );
-#endif
-
 					if ( br_rpc.b_ArtillerySound )
 					{
 						ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
@@ -733,33 +721,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 		}
     }
-
-#ifdef EXPANSION_MAP_ZONES
-    //! Red dot at the next zone centre, on DayZ Expansion's map and in its 3D marker layer.
-    //! Superseded by Extra/Map/, which draws both without needing Expansion at all.
-    protected void UpdateZoneCenterMaker(vector center)
-    {
-        //--- GetExpansionSettings().GetMap() is declared by @DayZ-Expansion-Navigation, which is
-        //--- optional - and unlike a missing TYPE, a missing METHOD is invisible to any grep for
-        //--- Expansion class names, so this one only surfaced as the SECOND compile failure after
-        //--- Navigation was dropped. Without the map there is nowhere for a server marker to show,
-        //--- so the whole body is skipped rather than just the AddServerMarker call.
-#ifdef EXPANSIONMODNAVIGATION
-        if (!m_ZoneCenterMapMarker)
-        {
-            m_ZoneCenterMapMarker = new ExpansionServerMarkerData("ServerMarker_Zone_Center");
-            m_ZoneCenterMapMarker.Set3D(true);
-            m_ZoneCenterMapMarker.SetName("Center");
-            m_ZoneCenterMapMarker.SetIconName("Map Marker");
-            m_ZoneCenterMapMarker.SetColor(ARGB(255, 255, 0, 0));
-            m_ZoneCenterMapMarker.SetVisibility(EXPANSION_MARKER_VIS_WORLD | EXPANSION_MARKER_VIS_MAP);
-            GetExpansionSettings().GetMap().AddServerMarker(m_ZoneCenterMapMarker);
-        }
-
-        m_ZoneCenterMapMarker.SetPosition( center + "0 5 0" );
-#endif
-    }
-#endif
 
     /**
      *  Is `from` inside `play_area`, and how far out / in / at what bearing?
