@@ -19,6 +19,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected ref BattleRoyaleSpeakingList m_SpeakingList;
 
+    //--- The "YOU SURVIVED" overlay. Created straight into the workspace, so it is owned by nobody
+    //--- else and has to be unlinked here - see the creation site in Update().
+    protected Widget m_WinScreen;
+
     //--- The admin spectator's floating player tags. Built lazily on first use, so an ordinary
     //--- player never creates the widget tree at all.
     protected ref BattleRoyaleSpectatorTags m_SpectatorTags;
@@ -84,6 +88,16 @@ class BattleRoyaleClient: BattleRoyaleBase
     void ~BattleRoyaleClient()
     {
     	BattleRoyaleUtils.Trace("BattleRoyaleClient::~BattleRoyaleClient");
+
+        // The win screen is parented to the WORKSPACE, which outlives the mission, so nothing else
+        // will ever take it down. Without this it stays painted over the main menu for the rest of
+        // the session - which is guaranteed to happen, because KickWinner disconnects the one player
+        // who ever sees it.
+        if ( m_WinScreen )
+        {
+            m_WinScreen.Unlink();
+            m_WinScreen = NULL;
+        }
 
 #ifdef VIGRID_MAP
         // The map addon's zone state is static and outlives this object, so without this the
@@ -706,11 +720,15 @@ class BattleRoyaleClient: BattleRoyaleBase
 				m_SpeakingList.Update( show_speaking );
 			}
 
-			// Show the winner screen
+			// Show the winner screen. Kept as a MEMBER so the destructor can unlink it: this widget
+			// is parented to the workspace rather than to the HUD root, so nothing else tears it
+			// down, and 8_BattleRoyaleWin.KickWinner disconnects the winner ~15 s later - which used
+			// to leave "YOU SURVIVED" painted over the main menu for the rest of the session.
 			if( br_rpc.winner_screen && !br_previous_win_screen )
 			{
-				Widget win_screen_hud = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
-				win_screen_hud.Show( true );
+				m_WinScreen = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
+				if( m_WinScreen )
+					m_WinScreen.Show( true );
 				br_previous_win_screen = true;
 			}
 		}
