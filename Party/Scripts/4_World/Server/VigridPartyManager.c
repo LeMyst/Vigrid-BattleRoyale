@@ -60,6 +60,16 @@ class VigridPartyManager
      */
     private ref array<string> m_HiddenUids;
 
+    /**
+     *  GetPlainId() (SteamID64) -> the connected player's entity, rebuilt at most once per
+     *  millisecond. See GetPlayerByUid, which is the only reader and the only writer.
+     *
+     *  m_PlayerByUidMs is the millisecond the index was built on; -1 means "nothing indexed yet",
+     *  which GetGame().GetTime() never returns, and is also what InvalidatePlayerIndex sets.
+     */
+    private ref map<string, PlayerBase> m_PlayerByUid;
+    private int m_PlayerByUidMs;
+
     private VigridPartyData m_Settings;
 
     private bool m_FormationLocked;
@@ -81,7 +91,9 @@ class VigridPartyManager
         m_HashedToPlain = new map<string, string>();
         m_NameByUid = new map<string, string>();
         m_HiddenUids = new array<string>();
+        m_PlayerByUid = new map<string, PlayerBase>();
 
+        m_PlayerByUidMs = -1;
         m_FormationLocked = false;
         m_Dirty = false;
         m_FlushDueMs = 0;
@@ -201,11 +213,52 @@ class VigridPartyManager
     /**
      *  Resolve a uid to a connected player. Returns null when they are offline - which is a normal
      *  state here, not an error: parties outlive sessions.
+     *
+     *  MEMOIZED PER MILLISECOND, because the callers ask it in bursts and there are twenty of them.
+     *  This was a fresh array<Man> allocation plus a full walk of the population per call, and the
+     *  recurring paths each ask it once PER MEMBER: PushTeamState twice per member of every party on
+     *  a 500 ms timer, BroadcastRoster twice per member (once here, once through NameOfUid) on every
+     *  composition change, BroadcastPings and SweepInvites once per member at 1 Hz. So the cost was
+     *  O(members x population) per push, and each walk materialises a fresh string from GetPlainId()
+     *  for every candidate it rejects. AutoGroupPopulation is the one loop that already dodged this,
+     *  by hand - see the comment above its own single pass.
+     *
+     *  Invalidation is the millisecond ALONE, plus the two session hooks. The client-side twin
+     *  (VigridPartyAPI.FindLocalPlayer) also keys on the population count, but that term is free
+     *  there and is not available here: nothing in the engine reports a server population count, and
+     *  both GetPlayers and GetPlayerIndentities fill an out array - reading the count means doing the
+     *  walk this exists to remove. InvalidatePlayerIndex covers what the count was a proxy for, and
+     *  covers it exactly rather than by inference.
+     *
+     *  Entries are still null-checked on the way out: an entity deleted after the index was built
+     *  reads as null through its reference, exactly as it did mid-walk before.
      */
     PlayerBase GetPlayerByUid(string uid)
     {
         if (uid == "")
             return null;
+
+        int now_ms = VigridPartyTime.NowMs();
+
+        if (now_ms != m_PlayerByUidMs || !m_PlayerByUid)
+            RebuildPlayerIndex(now_ms);
+
+        PlayerBase found = m_PlayerByUid.Get(uid);
+        if (!found)
+            return null;
+
+        return found;
+    }
+
+    //! One walk of the population, keyed by uid. The only place the scan still happens.
+    private void RebuildPlayerIndex(int now_ms)
+    {
+        if (!m_PlayerByUid)
+            m_PlayerByUid = new map<string, PlayerBase>();
+        else
+            m_PlayerByUid.Clear();
+
+        m_PlayerByUidMs = now_ms;
 
         array<Man> players = new array<Man>();
         GetGame().GetPlayers(players);
@@ -218,11 +271,43 @@ class VigridPartyManager
                 continue;
             if (!candidate.GetIdentity())
                 continue;
-            if (candidate.GetIdentity().GetPlainId() == uid)
-                return candidate;
+
+            //--- Read out before the call that consumes it, per the container-aliasing rule.
+            string candidate_uid = candidate.GetIdentity().GetPlainId();
+
+            //--- FIRST WINS, because the linear scan this replaces returned on its first match. Two
+            //--- entities sharing a uid is not something we expect - but a corpse is never deleted
+            //--- by the host mod and stays in the population, so it is not obviously impossible
+            //--- either, and "same answer as before" is worth one Contains() per entry.
+            if (m_PlayerByUid.Contains(candidate_uid))
+                continue;
+
+            m_PlayerByUid.Set(candidate_uid, candidate);
         }
 
-        return null;
+        //--- Gated rather than handed straight to Trace(): the argument would be concatenated on
+        //--- every rebuild regardless of level. This line is the acceptance measurement - run the
+        //--- server at -party-trace and count it against the lookups a push issues.
+        if (VigridPartyLog.CheckLogLevel(VigridPartyLog.TRACE))
+            VigridPartyLog.Trace("Player index rebuilt at " + now_ms + " ms, " + m_PlayerByUid.Count() + " online of " + count);
+    }
+
+    /**
+     *  Force the next GetPlayerByUid to walk the population again.
+     *
+     *  Called from both session hooks, and NOT optional - each has a caller that would otherwise
+     *  read an index built earlier in the same millisecond and get a different answer than the scan
+     *  would have given:
+     *
+     *    - OnPlayerConnected broadcasts a roster that resolves THE JOINER THEMSELVES. Update() can
+     *      have run PushTeamState earlier in the same millisecond, before that entity existed, so
+     *      the joiner would resolve null and miss their own roster push.
+     *    - OnPlayerDisconnected runs FirstOnlineOther, which promotes a new leader. A stale entry
+     *      there would hand the party to somebody who has already left.
+     */
+    private void InvalidatePlayerIndex()
+    {
+        m_PlayerByUidMs = -1;
     }
 
     static string UidOf(PlayerBase player)
@@ -1387,6 +1472,10 @@ class VigridPartyManager
 
     void OnPlayerConnected(PlayerIdentity identity)
     {
+        //--- First, before anything below can memoize a population this player is missing from.
+        //--- BroadcastRoster at the bottom resolves the joiner themselves.
+        InvalidatePlayerIndex();
+
         if (!identity)
             return;
 
@@ -1428,6 +1517,10 @@ class VigridPartyManager
      */
     void OnPlayerDisconnected(PlayerIdentity identity, string hashed_uid)
     {
+        //--- First, for the same reason as OnPlayerConnected: FirstOnlineOther below picks the new
+        //--- leader, and a stale index would offer it the player who has just left.
+        InvalidatePlayerIndex();
+
         string uid = "";
 
         if (identity)
