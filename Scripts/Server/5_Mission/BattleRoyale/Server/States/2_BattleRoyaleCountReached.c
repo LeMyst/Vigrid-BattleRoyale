@@ -35,9 +35,14 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 			autoLockWebhook.LockServer();
 		}
 
-        string second = "seconds";
+        //--- Two whole message keys rather than one key plus the word as %2. The word used to be
+        //--- built here in English and substituted into a LOCALISED sentence, so every non-English
+        //--- client read "Матч начнется через 30 seconds !". A word cannot be localised in isolation
+        //--- anyway - the plural form is a property of the whole sentence in most of the fourteen
+        //--- locales, and in Hungarian the numeral takes the singular.
+        string announcement = "STR_BR_ANNOUNCEMENT_PLAYERCOUNTREACHED";
         if ( i_TimeToStart == 1 )
-            second = "second";
+            announcement = "STR_BR_ANNOUNCEMENT_PLAYERCOUNTREACHED_ONE";
 
         // Track the number of players at start
         i_NumStartingPlayers = m_Players.Count();
@@ -47,7 +52,7 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
         //--- matrix never needs rebuilding. Cleared again in 5_BattleRoyaleStartMatch.
         BattleRoyaleVoice.ApplyPartyOnly( GetPlayers() );
 
-        MessagePlayersUntranslated("STR_BR_ANNOUNCEMENT_PLAYERCOUNTREACHED", i_TimeToStart.ToString(), second);
+        MessagePlayersUntranslated(announcement, i_TimeToStart.ToString());
         m_StartTimer = AddTimer(i_TimeToStart, this, "DoStart", NULL, false);
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetInput", new Param1<bool>(true), true); //disable user input on all clients (we'll do this on the server in another thread)
     }
