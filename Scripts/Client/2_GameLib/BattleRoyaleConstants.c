@@ -295,6 +295,11 @@ static const int BR_SPAWN_SNAP_MAX_STEPS = 512;
 //how far inside the circle a click from outside it lands, in metres. Keeps the
 //snapped point clear of the boundary rather than sitting exactly on it.
 static const float BR_SPAWN_SNAP_INSET = 25.0;
+//how long BRMapHandler ignores a second mouse-up on the spawn map. This swallows the
+//second half of a double-click, which would otherwise select twice. Deliberately OURS
+//rather than Extra/Map/'s VIGRID_MAP_CLICK_DEBOUNCE_MS: the mod must not depend on that
+//addon, which ships its own copy of the same handler for the same reason.
+static const int BR_MAP_CLICK_DEBOUNCE_MS = 250;
 
 
 //--- "who is speaking" HUD list
