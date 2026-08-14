@@ -60,7 +60,7 @@ FrameWidgetClass ContainerWidget {
        vexactpos 0
        hexactsize 0
        vexactsize 0
-       text "40 seconds to chose your spawn"
+       text "#STR_BR_TIMER_SPAWN_SELECTION_SECONDS"
        "size to text h" 1
        "size to text v" 0
       }

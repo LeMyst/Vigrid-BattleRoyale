@@ -122,15 +122,21 @@ modded class MainMenu
 		m_ModdedWarning.SetText(funny_strings.GetRandomElement());
 		//m_ModdedWarning.Show( false ); // Hide modded message
 
+		//--- SetText only resolves a "#KEY" when the key is the ENTIRE string, so the vanilla
+		//--- key has to be translated here rather than concatenated into a larger literal -
+		//--- otherwise the player reads "Client #main_menu_version 1.2.3" verbatim.
+		//--- Same pattern as DayZPlayerImplement.ShowDeadScreen.
+		string version_label = Widget.TranslateString( "#main_menu_version" );
+
 		if ( GetDayZGame() )
 		{
 			string expansion_version = GetDayZGame().GetExpansionClientVersion();
 			string dayzbr_version = GetDayZGame().GetBattleRoyaleClientVersion();
-			m_Version.SetText( "Client #main_menu_version" + " " + version + " | " + expansion_version + " | " + dayzbr_version );
+			m_Version.SetText( "Client " + version_label + " " + version + " | " + expansion_version + " | " + dayzbr_version );
 		}
 		else
 		{
-			m_Version.SetText( "DayZ SA #main_menu_version" + " " + version );
+			m_Version.SetText( "DayZ SA " + version_label + " " + version );
 		}
 
 		if(OnStart())
@@ -187,7 +193,7 @@ modded class MainMenu
 	private bool IsMatchMakingAvailable()
 	{
 		// Change the play button text
-		m_PlayButtonLabel.SetText("LOGIN...");
+		m_PlayButtonLabel.SetText("#STR_BR_MM_LOGIN");
 
 		// MatchMaking Webhook
 		MatchMakingWebhook matchMakingWebhook = new MatchMakingWebhook();
@@ -513,7 +519,11 @@ modded class MainMenu
 
 		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
 		{
-			m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING " + m_MatchMakingTryCount);
+			//--- The attempt counter has to go through a %1 in a dedicated key: appending it to
+			//--- the key string made the engine look up "STR_BR_MM_SEARCHING 3", which misses and
+			//--- prints raw. StartMatchMaking still uses the bare STR_BR_MM_SEARCHING.
+			string searching = Widget.TranslateString("#STR_BR_MM_SEARCHING_COUNT");
+			m_PlayButtonLabel.SetText(string.Format(searching, m_MatchMakingTryCount));
 		}
 		else if (m_MatchMakingState == BattleRoyaleMatchMakingState.Connecting)
 		{

@@ -253,7 +253,9 @@ class KillFeedUI
         if (distance)
         {
             if (entry.distance >= 0)
-                distance.SetText(entry.distance.ToString() + " m");
+                //--- No space before the unit: every other distance readout in the mod family
+                //--- (HUD, spectator tags, party nametags, map markers) formats it this way.
+                distance.SetText(entry.distance.ToString() + "m");
             else
                 distance.SetText("");
         }

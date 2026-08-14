@@ -45,15 +45,21 @@ modded class InGameMenu
         string version;
         GetGame().GetVersion( version );
 
+        //--- SetText only resolves a "#KEY" when the key is the ENTIRE string, so the vanilla
+        //--- key has to be translated here rather than concatenated into a larger literal -
+        //--- otherwise the player reads "Client #main_menu_version 1.2.3" verbatim.
+        //--- Same pattern as DayZPlayerImplement.ShowDeadScreen.
+        string version_label = Widget.TranslateString( "#main_menu_version" );
+
         if ( GetDayZGame() )
         {
             string expansion_version = GetDayZGame().GetExpansionClientVersion();
             string dayzbr_version = GetDayZGame().GetBattleRoyaleClientVersion();
-            version_widget.SetText( "Client #main_menu_version" + " " + version + " | " + expansion_version + " | " + dayzbr_version );
+            version_widget.SetText( "Client " + version_label + " " + version + " | " + expansion_version + " | " + dayzbr_version );
         }
         else
         {
-            version_widget.SetText( "DayZ SA #main_menu_version" + " " + version );
+            version_widget.SetText( "DayZ SA " + version_label + " " + version );
         }
     }
 

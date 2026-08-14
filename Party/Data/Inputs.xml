@@ -2,12 +2,14 @@
 <modded_inputs>
     <inputs>
         <actions>
-            <input name="UAVigridPartyMenu" loc="Party Menu" />
-            <input name="UAVigridPartyPing" loc="Place Party Ping" />
-            <input name="UAVigridPartyPingClear" loc="Clear Your Party Pings" />
+            <!-- loc= takes a BARE stringtable key with no leading '#'. Keys live in this
+                 addon's own stringtable.csv - Party must not reference a STR_BR_* key. -->
+            <input name="UAVigridPartyMenu" loc="STR_PARTY_KEYBIND_MENU" />
+            <input name="UAVigridPartyPing" loc="STR_PARTY_KEYBIND_PING" />
+            <input name="UAVigridPartyPingClear" loc="STR_PARTY_KEYBIND_PINGCLEAR" />
         </actions>
 
-        <sorting name="vigridparty" loc="PARTY">
+        <sorting name="vigridparty" loc="STR_PARTY_KEYBIND_CATEGORY">
             <input name="UAVigridPartyMenu" />
             <input name="UAVigridPartyPing" />
             <input name="UAVigridPartyPingClear" />

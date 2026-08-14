@@ -4,13 +4,13 @@
       "DepartmentName": "Vigrid Battle Royale",
       "Sections": [
         {
-          "SectionName": "Project Lead",
+          "SectionName": "#STR_BR_CREDITS_PROJECTLEAD",
           "SectionLines": [
             "Myst (Bender B. Rodriguez)"
           ]
         },
         {
-          "SectionName": "Developers",
+          "SectionName": "#STR_BR_CREDITS_DEVELOPERS",
           "SectionLines": [
             "LieutenantMaster",
             "Myst",
@@ -18,20 +18,20 @@
           ]
         },
         {
-          "SectionName": "Music By",
+          "SectionName": "#STR_BR_CREDITS_MUSICBY",
           "SectionLines": [
             "Christmas - Scott Holmes Music",
             "Apocalypse - Desolation Redux"
           ]
         },
         {
-          "SectionName": "Contributors",
+          "SectionName": "#STR_BR_CREDITS_CONTRIBUTORS",
           "SectionLines": [
             "ikoneec"
           ]
         },
         {
-          "SectionName": "Alpha Testers",
+          "SectionName": "#STR_BR_CREDITS_ALPHATESTERS",
           "SectionLines": [
             "Pastou33",
             "Pow-Lette",
@@ -39,13 +39,13 @@
           ]
         },
         {
-          "SectionName": "Legacy Project Lead (DayZ Battle Royale)",
+          "SectionName": "#STR_BR_CREDITS_LEGACY_PROJECTLEAD",
           "SectionLines": [
             "Kegan Hollern (Lystic)"
           ]
         },
         {
-          "SectionName": "Legacy Contributors (DayZ Battle Royale)",
+          "SectionName": "#STR_BR_CREDITS_LEGACY_CONTRIBUTORS",
           "SectionLines": [
             "B.A.D.",
             "BigBen",
@@ -63,7 +63,7 @@
           ]
         },
         {
-          "SectionName": "Thanks to (DayZ Battle Royale)",
+          "SectionName": "#STR_BR_CREDITS_THANKSTO",
           "SectionLines": [
             "GravityWolf",
             "Wardog",
@@ -72,7 +72,7 @@
           ]
         },
         {
-          "SectionName": "Legacy Alpha Testers (DayZ Battle Royale)",
+          "SectionName": "#STR_BR_CREDITS_LEGACY_ALPHATESTERS",
           "SectionLines": [
             "Bender_Rodriguez",
             "FreakingHoudini",

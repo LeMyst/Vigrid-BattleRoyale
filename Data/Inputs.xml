@@ -2,20 +2,23 @@
 <modded_inputs>
     <inputs>
         <actions>
-            <input name="UADayZBRReadyUp" loc="BR Ready Up" />
-            <input name="UADayZBRUnstuck" loc="BR Unstuck" />
-            <input name="UADayZBRLeaderboard" loc="BR Leaderboard" />
-            <input name="UADayZBRAdminSpectate" loc="BR Admin Spectate" />
-            <input name="UADayZBRSpectateMode" loc="BR Spectate Camera Mode" />
-            <input name="UADayZBRSpectateNext" loc="BR Spectate Next Player" />
-            <input name="UADayZBRSpectatePrev" loc="BR Spectate Previous Player" />
-            <input name="UADayZBRSpectateSkeleton" loc="BR Spectate Skeletons" />
+            <!-- loc= takes a BARE stringtable key with no leading '#' - that is the engine's
+                 convention here, and it is what DayZ-Expansion's own Inputs.xml files use.
+                 A raw English label renders untranslated in Options -> Controls. -->
+            <input name="UADayZBRReadyUp" loc="STR_BR_KEYBIND_READYUP" />
+            <input name="UADayZBRUnstuck" loc="STR_BR_KEYBIND_UNSTUCK" />
+            <input name="UADayZBRLeaderboard" loc="STR_BR_KEYBIND_LEADERBOARD" />
+            <input name="UADayZBRAdminSpectate" loc="STR_BR_KEYBIND_ADMINSPECTATE" />
+            <input name="UADayZBRSpectateMode" loc="STR_BR_KEYBIND_SPECTATEMODE" />
+            <input name="UADayZBRSpectateNext" loc="STR_BR_KEYBIND_SPECTATENEXT" />
+            <input name="UADayZBRSpectatePrev" loc="STR_BR_KEYBIND_SPECTATEPREV" />
+            <input name="UADayZBRSpectateSkeleton" loc="STR_BR_KEYBIND_SPECTATESKELETON" />
             <!--            <input name="UADayZBRToggleMiniMap" loc="BR Mini Map Toggle" />-->
             <!--            <input name="UADayZBRMiniMapZoomPlus" loc="BR Mini Map Increase Zoom" />-->
             <!--            <input name="UADayZBRMiniMapZoomMinus" loc="BR Mini Map Decrease Zoom" />-->
         </actions>
 
-        <sorting name="dayzbr" loc="BATTLE ROYALE">
+        <sorting name="dayzbr" loc="STR_BR_KEYBIND_CATEGORY">
             <input name="UADayZBRReadyUp" />
             <input name="UADayZBRUnstuck" />
             <input name="UADayZBRLeaderboard" />
