@@ -304,6 +304,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- touches uid strings, so it cannot fire against a freed player object.
 			BattleRoyaleSpectators.GetInstance().Tick();
 
+			//--- Diagnostic only, and inert without -br-ceprobe on the command line: one cached
+			//--- bool test per tick on every real server. See the header of BattleRoyaleCEProbe.c.
+			BattleRoyaleCEProbe.Tick();
+
 			if (GetCurrentState().IsComplete()) //current state is complete
 			{
 				int next_index = GetNextStateIndex();
