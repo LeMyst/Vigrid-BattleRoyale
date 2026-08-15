@@ -83,6 +83,27 @@ modded class IngameHud
 		}
 	}
 
+	//--- Hide the injured-leg badge. See BR_HIDE_INJURED_LEGS_BADGE in BattleRoyaleConstants.c for why
+	//--- it is dead weight here.
+	//---
+	//--- THIS CANNOT BE A Show(false) IN InitBadgesAndNotifiers LIKE ITS NEIGHBOURS ABOVE. The three
+	//--- notifiers are static widgets, so hiding them once settles them; a BADGE is dynamic. Vanilla's
+	//--- DisplayBadge re-walks every badge on every call and Show(true)s any whose stored value is
+	//--- positive, so a one-time hide is silently undone by the first fall that scratches a leg.
+	//---
+	//--- AND super MUST STILL RUN. DisplayBadge is also what maintains EHudContextFlags.NO_BADGE, which
+	//--- is the only thing driving BadgeNotifierDivider (see IngameHudVisibility's element link map) -
+	//--- so suppressing the badge by any route that skips super would leave that divider standing
+	//--- beside a badge nobody can see. Forcing the value to 0 rather than dropping the call also keeps
+	//--- m_BadgesWidgetDisplay honest for anything else that reads it.
+	override void DisplayBadge( int key, int value )
+	{
+		if ( BR_HIDE_INJURED_LEGS_BADGE && key == NTFKEY_LEGS )
+			value = 0;
+
+		super.DisplayBadge( key, value );
+	}
+
 	override void Update( float timeslice )
 	{
 		super.Update( timeslice );
