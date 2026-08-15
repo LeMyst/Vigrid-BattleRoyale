@@ -202,7 +202,10 @@ class BattleRoyaleLastRound: BattleRoyaleState
                 //DAMAGE
                 MessagePlayerUntranslated(player, "STR_BR_TAKING_DAMAGE");
                 player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_HEAVY);
-                player.DecreaseHealthCoef( f_Damage );
+                //--- auto_delete FALSE - see the identical call in 6_BattleRoyaleRound for why the
+                //--- vanilla default (true) would delete the corpse, and why the fact that it
+                //--- currently does not is an upstream bug rather than a guarantee.
+                player.DecreaseHealthCoef( f_Damage, false );
                 //--- Same reason as the kill feed hint below, but BR-owned: the death recap has to
                 //--- name the zone on a server where Extra/KillFeed/ is not built at all.
                 //--- Consumed by BattleRoyaleKillAttribution.ConsumeZoneHint.

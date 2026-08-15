@@ -200,11 +200,21 @@ modded class MissionGameplay
 			}
 			//--- Toggle, so the same key closes the board again. Answerable in any state, though it
 			//--- is mostly a lobby feature.
+			//---
+			//--- OPENING is gated on nothing else being open, and the parent is NULL - the same two
+			//--- rules VigridPartyMenu and VigridMapMenu already follow. Without the gate F4 stacked
+			//--- the board over the death screen, the map, the inventory and the Esc menu; passing
+			//--- GetMenu() as the parent then made whatever was underneath the board's parent and
+			//--- handed focus back to it on close. The gate is deliberately "any menu at all" rather
+			//--- than a list of ids, because a list is what drifted last time.
+			//---
+			//--- Closing is NOT gated: while the board is open GetMenu() returns it, so testing the
+			//--- gate first would make the key one-way.
 			if (GetUApi().GetInputByID(UADayZBRLeaderboard).LocalPress()) {
 				if (m_UIManager.IsMenuOpen(MENU_BR_LEADERBOARD)) {
 					m_UIManager.CloseMenu(MENU_BR_LEADERBOARD);
-				} else {
-					GetUIManager().EnterScriptedMenu(MENU_BR_LEADERBOARD, GetUIManager().GetMenu());
+				} else if (!m_UIManager.GetMenu()) {
+					GetUIManager().EnterScriptedMenu(MENU_BR_LEADERBOARD, NULL);
 				}
 			}
 		}

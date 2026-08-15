@@ -143,8 +143,21 @@ class LeaderboardMenu extends UIScriptedMenu
     {
         super.OnHide();
 
-        //--- Both of these are mandatory. Skipping ResetGameFocus leaves the player unable to move.
-        GetGame().GetInput().ResetGameFocus();
+        //--- ChangeGameFocus(-1), NEVER ResetGameFocus(). Input focus is an ADDITIVE counter that
+        //--- every holder shares, and ResetGameFocus SETS IT TO ZERO across all devices
+        //--- (input.c:22-27) - so it does not release our acquire, it releases EVERYONE'S.
+        //---
+        //--- That was reachable in three keypresses: die (SimulateDeath +1, death screen +1), press
+        //--- F4 twice, and the reset dropped the counter to 0 with the death screen still up; the
+        //--- Spectate button then ran EnterSpectate's three releases and drove it NEGATIVE, which
+        //--- breaks input with no error and nothing on screen.
+        //---
+        //--- This pairs with the ChangeGameFocus(1) in OnShow, so the menu still runs one level
+        //--- above super's own LockControls acquire exactly as before - only the global zeroing is
+        //--- gone. (DeathScreenMenu takes the stricter line and adds no focus calls at all, letting
+        //--- super handle both halves; that is the tidier shape but a larger behavioural change
+        //--- than this fix needs to be.)
+        GetGame().GetInput().ChangeGameFocus(-1);
         GetGame().GetUIManager().ShowUICursor(false);
     }
 

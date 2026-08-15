@@ -16,10 +16,15 @@
  *                                                                     ------------------------
  *                                                                     net 0
  *
- *  So this class must add NO focus calls of its own - super handles its own half exactly. Note the
- *  mod's LeaderboardMenu does add ChangeGameFocus(1) / ResetGameFocus() on top of super; do not copy
- *  that here. ResetGameFocus zeroes the counter rather than decrementing it, which would eat the
- *  acquire that SimulateDeath still owns.
+ *  So this class must add NO focus calls of its own - super handles its own half exactly.
+ *
+ *  ResetGameFocus() is the specific thing never to reach for: it SETS the counter to zero across
+ *  every device rather than decrementing it, so it releases every other holder's acquire and not
+ *  just the caller's. LeaderboardMenu used to call it and that was reachable from this screen -
+ *  F4 over the death screen, twice, zeroed the counter while this menu was still up, and the
+ *  Spectate button then drove it negative. All three menus that pair with ChangeGameFocus(1) now
+ *  release with ChangeGameFocus(-1); VigridMapMenu takes the stricter line this class does and adds
+ *  no focus call at all.
  */
 class DeathScreenMenu extends UIScriptedMenu
 {
