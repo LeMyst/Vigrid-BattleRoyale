@@ -25,12 +25,24 @@
 //--- That third line is the actionable outcome: it means tile RadiusLifetimeDecrease over the
 //--- map instead of looking for a global call.
 //---
-//--- IT ALSO MEASURES THE REFILL, WHICH IS THE NUMBER THAT DECIDES THE FEATURE
-//--- After TimeShift the probe keeps sampling for four minutes and reports the trough and how
-//--- far the count recovered. The live respawner is throttled per type (RespawnLimit 10/type
-//--- /cycle against SpawnInitial 1200/cycle at boot), so the drain is expected to be fast and
-//--- the refill slow. If the recovery curve is flatter than a restart, the whole idea is dead
-//--- regardless of whether TimeShift works.
+//--- IT ALSO MEASURES THE DRAIN RATE, WHICH IS THE NUMBER THAT DECIDES THE FEATURE
+//--- After TimeShift the probe keeps sampling and reports items/s plus how long the sampled
+//--- population would take to empty. That comparison against a restart is the actual decision,
+//--- independent of whether TimeShift works at all.
+//---
+//--- ============ WHAT THE FIRST REAL RUN FOUND (2026-08-15, ChernarusPlus) ============
+//--- BOTH CALLS FIRE. The control was textbook: point #0 went 121 -> 90 monotonically over 90 s
+//--- while all seven untargeted points sat perfectly still. Then TimeShift moved all eight.
+//---
+//--- AND THE FEATURE IS STILL DEAD, for a reason no API change can fix: CE cleanup is
+//--- rate-limited. The drain ran -90 items in 241 s across points holding 1503 of the map's
+//--- 33,959 items - 0.373 items/s sampled, ~8.4 items/s map-wide, i.e. roughly 67 MINUTES to
+//--- expire the map, before the throttled refill even begins. A restart is ~76 s.
+//---
+//--- So the probe's remaining value is as a measuring instrument, not as a gate on a feature.
+//--- Note the baseline was frozen at 1503 across four consecutive samples, which is what makes
+//--- the post-TimeShift decline attributable rather than churn - keep the settle phase.
+//--- ====================================================================================
 //---
 //--- HOW TO RUN IT
 //---   LaunchLocalMP.bat 1, with -br-ceprobe -br-info on the SERVER command line.
@@ -72,8 +84,19 @@ const float BR_CEPROBE_POINT_SEPARATION_M = 800;
 //! Consecutive samples within tolerance before CE counts as settled.
 const int BR_CEPROBE_SETTLE_SAMPLES = 3;
 const float BR_CEPROBE_SETTLE_TOLERANCE = 0.02;
-//! Fraction of its own baseline a point must lose to count as drained.
-const float BR_CEPROBE_DRAIN_THRESHOLD = 0.5;
+//! What counts as "this point fell". Deliberately a NOISE FLOOR and not a drain fraction.
+//!
+//! This was a fixed 0.5 - a point had to lose half its items - and it produced a WRONG VERDICT on
+//! the first real run (2026-08-15): the control point fell 121 -> 90 monotonically while all seven
+//! others sat still, which is a textbook positive control, and the probe reported CONTROL FAILED
+//! because 26% < 50%. CE cleanup is rate-limited, so the drain does not complete inside any window
+//! worth waiting for and NO fixed fraction is safe.
+//!
+//! The differential is the real evidence and it is scale-free: did the targeted point fall while
+//! the untargeted ones held. So these two only have to clear the sampling noise, which was
+//! observed at +/-2 items per point.
+const int BR_CEPROBE_FELL_MIN_ITEMS = 3;
+const float BR_CEPROBE_FELL_MIN_FRAC = 0.02;
 
 const int BR_CEPROBE_PHASE_IDLE = 0;
 const int BR_CEPROBE_PHASE_SETTLE = 1;
@@ -402,36 +425,36 @@ class BattleRoyaleCEProbe
     {
         int i;
         int baseline_total;
-        int trough;
-        int recovered;
-        int others_drained;
-        int shift_drained;
-        float drop_pct;
-        float recover_pct;
-        float trough_secs;
-        float base_f;
-        float trough_f;
-        float recovered_f;
+        int after_control_total;
+        int now_total;
+        int others_fell;
+        int shift_fell;
+        float lost_f;
+        float window_s;
+        float rate;
+        float mins_to_empty;
         bool control_worked;
         string line;
 
         s_Phase = BR_CEPROBE_PHASE_DONE;
 
         baseline_total = SumOf(s_Baseline);
-        control_worked = Drained(0, s_Baseline, s_AfterControl);
-        others_drained = 0;
-        shift_drained = 0;
+        after_control_total = SumOf(s_AfterControl);
+        now_total = SumOf(s_Latest);
+        control_worked = Fell(0, s_Baseline, s_AfterControl);
+        others_fell = 0;
+        shift_fell = 0;
 
         for (i = 1; i < s_Points.Count(); i++)
         {
-            if (Drained(i, s_Baseline, s_AfterControl))
-                others_drained++;
+            if (Fell(i, s_Baseline, s_AfterControl))
+                others_fell++;
         }
 
         for (i = 0; i < s_Points.Count(); i++)
         {
-            if (Drained(i, s_AfterControl, s_Latest))
-                shift_drained++;
+            if (Fell(i, s_AfterControl, s_Latest))
+                shift_fell++;
         }
 
         //--- Built in steps rather than as one expression: a single concatenation carrying this
@@ -441,16 +464,16 @@ class BattleRoyaleCEProbe
         BattleRoyaleUtils.Info("[CEProbe] settled before acting: " + YN(s_Settled));
 
         line = "[CEProbe] totals: baseline=" + baseline_total;
-        line = line + "  after control=" + SumOf(s_AfterControl);
-        line = line + "  now=" + SumOf(s_Latest);
+        line = line + "  after control=" + after_control_total;
+        line = line + "  now=" + now_total;
         BattleRoyaleUtils.Info(line);
 
-        line = "[CEProbe] control point #0 drained=" + YN(control_worked);
-        line = line + "  other points drained by the control=" + others_drained;
+        line = "[CEProbe] control point #0 fell=" + YN(control_worked);
+        line = line + "  untargeted points that also fell=" + others_fell;
         line = line + " of " + (s_Points.Count() - 1);
         BattleRoyaleUtils.Info(line);
 
-        line = "[CEProbe] points drained by TimeShift=" + shift_drained;
+        line = "[CEProbe] points that fell under TimeShift=" + shift_fell;
         line = line + " of " + s_Points.Count();
         BattleRoyaleUtils.Info(line);
 
@@ -466,40 +489,42 @@ class BattleRoyaleCEProbe
             return;
         }
 
-        if (others_drained > 0)
+        if (others_fell > 0)
         {
-            BattleRoyaleUtils.Info("[CEProbe] WARNING: the scoped control drained " + others_drained + " point(s) it should not have touched. Either the points are closer together than the control radius, or something else is expiring loot. The stage 2 result below is weaker than it looks.");
+            BattleRoyaleUtils.Info("[CEProbe] WARNING: " + others_fell + " untargeted point(s) also fell during the control window. Either the points are closer together than the control radius, or something else is expiring loot. The stage 2 result below is weaker than it looks.");
         }
 
-        if (shift_drained <= others_drained)
+        if (shift_fell <= others_fell)
         {
-            BattleRoyaleUtils.Info("[CEProbe] VERDICT: TIMESHIFT IS A NO-OP. The control drained on the same run with the same instrument, so the mechanism and the measurement both work and TimeShift specifically does nothing. ACTION: tile RadiusLifetimeDecrease across the map instead - it is the same family and it demonstrably fires.");
+            BattleRoyaleUtils.Info("[CEProbe] VERDICT: TIMESHIFT IS A NO-OP. The control fell on the same run with the same instrument, so the mechanism and the measurement both work and TimeShift specifically does nothing. ACTION: tile RadiusLifetimeDecrease across the map instead - it is the same family and it demonstrably fires.");
             return;
         }
 
-        trough = s_TroughTotal;
-        recovered = SumOf(s_Latest);
-        drop_pct = 0;
-        recover_pct = 0;
-
-        if (baseline_total > 0)
-        {
-            base_f = baseline_total;
-            trough_f = trough;
-            recovered_f = recovered;
-            drop_pct = (1 - (trough_f / base_f)) * 100;
-            recover_pct = (recovered_f / base_f) * 100;
-        }
-
-        trough_secs = (s_TroughMs - s_PhaseStartMs) / 1000.0;
-
         BattleRoyaleUtils.Info("[CEProbe] VERDICT: TIMESHIFT WORKS. It expired loot map-wide.");
 
-        line = "[CEProbe] REFILL: fell " + drop_pct + "% to a trough of " + trough;
-        line = line + " at t+" + trough_secs + "s, back to " + recover_pct + "% of baseline";
-        line = line + " after " + (BR_CEPROBE_TIMESHIFT_MS / 1000) + "s.";
+        //--- The rate, not the depth, is the answer. Measured 2026-08-15 the drain does not come
+        //--- close to finishing inside any sane window - 6.1% in four minutes - so reporting "how
+        //--- far it fell" says more about the window length than about CE. Extrapolating to an
+        //--- empty sampled population is the figure that compares directly against a restart.
+        lost_f = baseline_total - now_total;
+        window_s = (GetGame().GetTime() - s_PhaseStartMs) / 1000.0;
+        rate = 0;
+        mins_to_empty = 0;
+
+        if (window_s > 0)
+            rate = lost_f / window_s;
+
+        if (rate > 0)
+            mins_to_empty = (now_total / rate) / 60.0;
+
+        line = "[CEProbe] DRAIN RATE: -" + lost_f + " items over " + window_s + "s";
+        line = line + " = " + rate + " items/s across " + s_Points.Count() + " points.";
         BattleRoyaleUtils.Info(line);
-        BattleRoyaleUtils.Info("[CEProbe] Read the refill RATE off the per-sample totals above, not off this line. That rate is what decides the feature: if the curve has not come back near 100% inside ~76s, a drain-and-refill is slower than simply restarting the server.");
+
+        line = "[CEProbe] At that rate the SAMPLED population empties in ~" + mins_to_empty + " min";
+        line = line + " - and the refill has not even started yet.";
+        BattleRoyaleUtils.Info(line);
+        BattleRoyaleUtils.Info("[CEProbe] Compare against a server restart (~76 s warm) before concluding this is worth doing. Scale to the whole map by dividing the sampled item count by the CE '[LootRespawner] Total in Map' figure from boot.");
     }
 
     //=====================================================================================
@@ -587,13 +612,14 @@ class BattleRoyaleCEProbe
         return total;
     }
 
-    //! Did point `index` lose at least the threshold fraction of its own count between the two
-    //! snapshots? Per-point rather than on the total, so one busy point cannot mask the rest.
-    protected static bool Drained(int index, array<int> before, array<int> after)
+    //! Did point `index` fall by more than sampling noise between the two snapshots? Per-point
+    //! rather than on the total, so one busy point cannot mask the rest, and a floor rather than a
+    //! fraction-of-baseline - see BR_CEPROBE_FELL_MIN_ITEMS for why that distinction cost a run.
+    protected static bool Fell(int index, array<int> before, array<int> after)
     {
-        float before_f;
-        float after_f;
-        float lost;
+        int lost;
+        int floor_items;
+        float floor_frac;
 
         if (!before || !after)
             return false;
@@ -604,11 +630,19 @@ class BattleRoyaleCEProbe
         if (before.Get(index) <= 0)
             return false;
 
-        before_f = before.Get(index);
-        after_f = after.Get(index);
-        lost = (before_f - after_f) / before_f;
+        lost = before.Get(index) - after.Get(index);
 
-        return lost >= BR_CEPROBE_DRAIN_THRESHOLD;
+        if (lost < BR_CEPROBE_FELL_MIN_ITEMS)
+            return false;
+
+        //--- Scale the floor on a busy point, so a 400-item town needs more than 3 to count.
+        floor_frac = before.Get(index) * BR_CEPROBE_FELL_MIN_FRAC;
+        floor_items = BR_CEPROBE_FELL_MIN_ITEMS;
+
+        if (floor_frac > floor_items)
+            floor_items = floor_frac;
+
+        return lost >= floor_items;
     }
 
     //! EnfusionScript has no bool -> string promotion, so a bare `"x=" + some_bool` is a compile
