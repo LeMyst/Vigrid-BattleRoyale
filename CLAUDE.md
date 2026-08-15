@@ -34,6 +34,15 @@ Windows-only. Requires DayZ Tools (Steam) and a mounted `P:\` work drive.
 
 **One-time setup:**
 1. Copy `Workbench/user_sample.cfg` → `Workbench/user.cfg` and fill in `WorkDrive`, `ModBuildDirectory`, `KeyDirectory`, `KeyName`, `GameDirectory`, `ServerDirectory`, `SPMission`, `MPMission`, profile dirs, SteamIDs. `user.cfg` is gitignored and its values override `project.cfg`.
+
+⚠️ **Two switches default OFF in `project.cfg` and almost certainly want to be ON in your `user.cfg`.** Both were unconditional until 2026-08-15; each is off by default because it is unrelated to building the mod and this repo is public.
+
+| Key | Off (the default) | On |
+|---|---|---|
+| `UseSteamEmu` | `LaunchSteamClient.bat` starts the exe and writes nothing | writes the Goldberg Steam identity per slot, which is what stops several local clients kicking each other off one shared identity. **`LaunchLocalMP.bat 2`/`3` needs this** |
+| `CopyExtraPBOs` | `CI0_CopyExtraPBO.bat` skips `Workbench/ExtraPBOs/` | copies those prebuilt third-party PBOs into the built mod, as the build always used to |
+
+`Workbench/ExtraPBOs/` is gitignored (`*`), so an unconditional copy meant **a clone built a different mod than the maintainer's, invisibly** — the extra PBOs load exactly like the mod's own. That folder now carries a `README.md` naming each PBO, its author and its licence status; read it before turning the switch on for anything you publish.
 2. `Workbench/Batchfiles/SetupMod.bat` — creates the `P:\Vigrid-BattleRoyale\` junction into this checkout, then copies every folder in `Workbench/Missions/` out to `%GameDirectory%Missions\`. The checkout folder name must equal `PrefixLinkRoot` (`Vigrid-BattleRoyale`).
 
 **Re-run `SetupMod.bat` after a DayZ update** — an update wipes `%GameDirectory%Missions\`, which takes the offline test mission with it. It cannot be a junction into the checkout for the same reason, so `Workbench/Missions/` holds the masters and the copy is one-way. The copy is per folder and never deletes, so an unrelated mission already installed there survives; the build never sees these files, since `_EnumPaths` only enumerates `config.cpp`.
@@ -54,6 +63,8 @@ Windows-only. Requires DayZ Tools (Steam) and a mounted `P:\` work drive.
 | `BootTime.bat` | Report where the last server boot's time went, and append it to `Workbench/Logs/boottime.csv`. Run it *after* the server is up — the launcher starts it detached. |
 
 Build result: `Workbench/Logs/Build.log`, plus marker files `Build.success` / `Build.failure` / `Build.deploy`. `CI.bat` hard-fails if `P:\` is not mounted.
+
+**A failed signature now fails the build.** `CI1.bat`'s `:SIGN` used to ignore `DSSignFile.exe`'s exit code, and so did both of its call sites, so an **unsigned PBO reached `Build.success`** and a signature-verifying server rejected the mod with nothing in the log to say why. `:SIGN` returns 0/1, checks the `.bisign` actually appeared (the tool is not trusted to report its own failure), and `:PACK` forwards that to the `IF ERRORLEVEL 1 GOTO ABORT` the build loop already had.
 
 **Shared helpers** (`_`-prefixed, not entry points). Everything else calls these instead of re-implementing them:
 
@@ -1263,7 +1274,8 @@ Note the imageset's internal name is `battleroyale_gui`, not the filename `dayzb
 ## Notes
 
 - `Extra/` holds 16 independent single-purpose sub-addons, each its own PBO. 15 are built; `Extra/DisableFogChernarusPlus/` is parked as `config.cpp.disabled` and produces no PBO. Most are small script tweaks; the exceptions are `Extra/KillFeed/`, `Extra/SafeZone/` and `Extra/Map/`, self-contained addons documented under *Architecture → Kill feed*, *→ Safe zone / lobby truce* and *→ Map*. Each folder carries its own `README.md`, indexed by `Extra/README.md`.
-- **An incremental `Deploy.bat` does not always delete the PBO of an addon you just disabled.** It cleans orphans only sometimes, so a `config.cpp` → `.disabled` rename can leave the previous PBO in `%ModBuildDirectory%` and the addon still loads — which silently invalidates a discipline negative-build. Check the output folder and delete the `.pbo` plus its `.bisign` by hand.
+- **An incremental `Deploy.bat` does not always delete the PBO of an addon you just disabled.** It cleans orphans only sometimes, so a `config.cpp` → `.disabled` rename can leave the previous PBO in `%ModBuildDirectory%` and the addon still loads — which silently invalidates a discipline negative-build. Check the output folder and delete the `.pbo` plus its `.bisign` by hand. **The same applies to `CopyExtraPBOs`**: turning it off does not remove the third-party PBOs a previous build already copied there.
+- **`Tools/edds.py` reads and rewrites the Enfusion `.edds` texture container**, whose format is documented in that file's header (decoded from scratch; two traps — the chunk table runs *smallest mip first*, and the LZ4 blocks inside a chunk are *linked*). `selftest` is its acceptance gate and is the thing to run first. It is what took the twelve loading screens from 120 MB of uncompressed BGRA8 to 15.4 MB of DXT1.
 - `Extra/RandomMenuGear/` re-dresses the main-menu intro character in a random outfit plus a slung rifle and a melee weapon, re-rolled on every menu show. It hooks vanilla `IntroSceneCharacter.CreateNewCharacterById` (creation, prev/next arrows) and `MainMenu.OnShow` (returning from a submenu — that path calls `OnChangeCharacter(false)` and never recreates the character). It is **not** a fix for the broken character save that makes the menu character render naked; it only decorates the spawned object. Gear is applied with `GameInventory.CreateAttachmentEx` and deliberately never written into `MenuDefaultCharacterData` — that map is serialized to the server on connect and saved locally, so writing to it would leak menu gear into the real spawn loadout. Same discipline rule as `Party/` and `Extra/KillFeed/`: no `BattleRoyale*` symbol may be referenced.
 - Spectating is entered **in place on death** — no disconnect, no reconnect — behind `spectate_enabled` in `general_settings.json`, which defaults **off**. **It has a known ~1 km limitation**: the network bubble stays on the spectator's corpse, so a target further than that is not replicated and the spectator sees a nametag with no character. Measured both directions 2026-08-10. See *Architecture → Spectating*. The orphaned `GUI/layouts/hud/spectator/player.layout` is still unreferenced: there is no spectator HUD, only a notification naming the current target.
 - `Workbench/version` (`0.8.100368`) is a DayZ build number read by nothing. The mod version is `BATTLEROYALE_VERSION`.

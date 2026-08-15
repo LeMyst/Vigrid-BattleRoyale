@@ -82,6 +82,33 @@ and one "broke" the `Extra/` index by renaming a link label rather than its targ
 check was too weak to catch anyway. Two were probe bugs; the third was a real weakness and the
 check got stricter. Expect to debug the probe as often as the check.
 
+## `edds.py` — a different kind of tool
+
+`Tools/edds.py` is not a check and `check.py` does not run it. It reads, verifies and rewrites the
+Enfusion `.edds` texture container, and it exists because 12 loading screens were 120 MB of
+*uncompressed* pixels.
+
+```bash
+python Tools/edds.py selftest    # prove the parser and the codecs - run this first
+python Tools/edds.py info        # header and chunk table for every tracked loading screen
+python Tools/edds.py pack        # lossless: LZ4 the chunks stored raw
+python Tools/edds.py bc1         # LOSSY: convert BGRA8 to DXT1 (8x on pixel data)
+```
+
+The format is documented in the file's header, decoded from scratch until every byte of all twelve
+files plus a vanilla one was accounted for. Two things in it are traps: the chunk table runs
+**smallest mip first**, and the LZ4 blocks inside a chunk are **linked**, so decoding them
+independently silently produces short output rather than an error.
+
+`selftest` is the acceptance gate, in the same spirit as `probe.py`, and its two strongest checks
+are the ones that are not self-referential: a decoded mip is compared against a box filter of the
+mip above it (a chain that terminates in `COPY` chunks nobody had to decode), and the decoder is
+run against **vanilla's** `loading_screen_default.edds`, whose LZ4 blocks this repo did not
+produce. A codec verified only against its own output proves nothing — that is the same trap the
+`strip_code` note above describes.
+
+`bc1` is the one command that needs numpy, imported lazily; everything else is stdlib.
+
 ## Allowlists
 
 `Tools/allowlists/*.txt`, one entry per line as `entry  # reason`. They are documentation as much

@@ -39,7 +39,7 @@ modded class ItemBase
 				int maxMagCapacity = GetGame().ConfigGetInt("CfgMagazines " + magazineType + " count");
 				if(maxMagCapacity > 100)
 				{
-					Print("[SpawnWithAmmo] Skipping high capacity magazine: " + magazineType + " (" + maxMagCapacity + " rounds)");
+					BattleRoyaleUtils.Warn("[SpawnWithAmmo] Skipping high capacity magazine: " + magazineType + " (" + maxMagCapacity + " rounds)");
 					continue; // Try another magazine type without counting it as spawned
 				}
 
@@ -53,7 +53,7 @@ modded class ItemBase
 
 			if (validMagazinesSpawned < spawnCount)
 			{
-				Print("[SpawnWithAmmo] Could only spawn " + validMagazinesSpawned + " valid magazines after " + attempts + " attempts");
+				BattleRoyaleUtils.Warn("[SpawnWithAmmo] Could only spawn " + validMagazinesSpawned + " valid magazines after " + attempts + " attempts");
 			}
 		}
 		else  // No compatible magazines, try to spawn chamberable ammo piles instead
@@ -76,24 +76,6 @@ modded class ItemBase
 						ammoPile.Delete();
 					}
 				}
-//					string ammoType = weapon.GetRandomChamberableAmmoTypeName(0);
-//
-//					string ammoTypeName;
-//					GetGame().ConfigGetText( string.Format("CfgAmmo %1 spawnPileType", ammoType), ammoTypeName );  // Get the ammo pile type
-//					// GetEconomyProfile
-//					if( ammoTypeName != string.Empty )
-//					{
-//						EntityAI ammoPile = GetGame().CreateObjectEx( ammoTypeName, GetPosition(), ECE_CREATEPHYSICS|ECE_UPDATEPATHGRAPH );
-//						if( ammoPile.GetEconomyProfile() == NULL || ammoPile.GetEconomyProfile().GetNominal() == 0 )
-//						{
-//							// Ammo pile has no economy profile, delete it
-//							// We don't try to spawn one more to avoid infinite loop
-//							ammoPile.Delete();
-//						} else {
-//							Print("Ammo type name: " + ammoTypeName);
-//							Print(ammoPile.GetEconomyProfile().GetNominal());
-//						}
-//					}
 			}
 		}
 	}

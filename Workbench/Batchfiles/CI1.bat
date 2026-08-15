@@ -401,6 +401,7 @@ IF %filesChanged%==0 IF %skipUnchanged%==1 (
 		) else (
 			set filesChanged=1
 			CALL :SIGN %modName% "%pboName%"
+			IF ERRORLEVEL 1 GOTO SIGNFAILED
 		)
 		goto ENDPACK
 	)
@@ -498,6 +499,7 @@ IF ERRORLEVEL 1 (
 )
 
 CALL :SIGN %modName% "%pboName%"
+IF ERRORLEVEL 1 GOTO SIGNFAILED
 
 :ENDPACK
 set deploy=!filesChanged!
@@ -508,8 +510,19 @@ if !deploy! NEQ 0 (
 :EXITPACK
 endlocal
 exit /B 0
+
+REM An unsigned PBO used to reach Build.success: :SIGN swallowed DSSignFile's exit code and
+REM neither call site looked at it. The propagation path already existed - the :BUILD loop
+REM does IF ERRORLEVEL 1 GOTO ABORT on this label's return - so failing here is the whole fix.
+:SIGNFAILED
+endlocal
+exit /B 1
 REM End :PACK
 
+REM Signs one PBO. Returns 0 on success, 1 on failure - callers MUST check, because an
+REM unsigned PBO is rejected by any signature-verifying server while the build still
+REM reports success. DSSignFile is not trusted to report its own failure, so the .bisign
+REM it was supposed to produce is checked afterwards as well.
 :SIGN
 
 setlocal enableextensions enabledelayedexpansion
@@ -517,11 +530,27 @@ setlocal enableextensions enabledelayedexpansion
 set modName=%1
 set "pboName=%~2"
 
-if "%modName%"=="%clientModName%" (
-	echo %date% %time% Signing "%modBuildDirectory%%modName%\addons\%pboName%.pbo"
-	"%_DAYZTOOLSPATH%\DsUtils\DSSignFile.exe" "%keyDirectory%%keyName%.biprivatekey" "%modBuildDirectory%%modName%\addons\%pboName%.pbo"
+if "%modName%" NEQ "%clientModName%" goto SIGNOK
+
+echo %date% %time% Signing "%modBuildDirectory%%modName%\addons\%pboName%.pbo"
+"%_DAYZTOOLSPATH%\DsUtils\DSSignFile.exe" "%keyDirectory%%keyName%.biprivatekey" "%modBuildDirectory%%modName%\addons\%pboName%.pbo"
+IF ERRORLEVEL 1 (
+	call :banner %date% %time% DSSignFile failed on %pboName%.pbo for %modName%
+	goto SIGNBAD
 )
-exit /B
+
+IF NOT EXIST "%modBuildDirectory%%modName%\addons\%pboName%.pbo.%keyName%.bisign" (
+	call :banner %date% %time% DSSignFile reported success but "%pboName%.pbo.%keyName%.bisign" does not exist
+	goto SIGNBAD
+)
+
+:SIGNOK
+endlocal
+exit /B 0
+
+:SIGNBAD
+endlocal
+exit /B 1
 REM End :SIGN
 
 :EXIT
