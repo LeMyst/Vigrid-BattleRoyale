@@ -690,6 +690,14 @@ static const int BR_COUNTDOWN_NONE = -1;
 //accepted circle has a guaranteed next step available - the witness step. Placement therefore
 //cannot dead-end, and the old RequestExit-the-server failure path is gone rather than made rarer.
 //
+//NOTE the nesting needs ONLY that the radii be strictly increasing - it does not need them to be the
+//ones in static_sizes. That is what lets BR_ZONE_GROW_* below vary a radius per match without
+//weakening the oracle. But it adds a maintenance constraint that did not exist before: THE RADII IN
+//FORCE WHEN A POSITION IS ACCEPTED MUST STILL BE IN FORCE WHEN ITS CHILD TAKES ITS WITNESS STEP.
+//TryPlaceLevel accepts the witness step with no FitsWorld check at all, deliberately, because it was
+//provably unnecessary; leave an inflated radius behind in s_ChainRadii after a failed growth attempt
+//and it stops being provable - the circle can land partly off the map. See TryGrowLevel.
+//
 //Reach the oracle and the witness step plan on. Containment only needs d <= r_i - r_{i-1}; this is
 //how much of that legal reach the chain is allowed to count on. It is the single biggest lever on
 //how many POIs are usable as a final zone: raising it 0.75 -> 0.95 grows the usable-POI disc on an
@@ -730,6 +738,13 @@ static const int   BR_ZONE_TIER_COUNT  = 3;
 static const int   BR_ZONE_SWEEP_ANGLES    = 24;
 static const int   BR_ZONE_SWEEP_DISTANCES = 4;
 
+//How many columns s_TierUsage carries: T1, T2, T3, growth, sweep, witness step. A NAMED constant
+//because the array is sized in ResetGenerationStats and re-read by a second loop in RunSelfTest, and
+//when a column was added those two were separately hardcoded to 5. Bump only the reset and the self
+//test silently drops the new column - invisible, from the one instrument that could judge it. Bump
+//only the self test and it reads past the end of the array.
+static const int   BR_ZONE_TIER_SLOTS      = 6;
+
 //Land sampling. Rings sit at equal-AREA radii, so the outer band - which is most of a big circle -
 //is not under-sampled. 1 + 2*6 = 13 SurfaceIsSea calls per large candidate.
 static const int   BR_ZONE_LAND_RINGS    = 2;
@@ -762,6 +777,62 @@ static const float BR_ZONE_PRESSURE_ARC_TIGHTEN = 0.7;
 static const float BR_ZONE_OFFSET_MIN_DISTANCE = 600.0;
 static const float BR_ZONE_OFFSET_SPEED_MPS    = 6.0;
 static const float BR_ZONE_OFFSET_MAX_SECONDS  = 120.0;
+
+//--- PER-MATCH RADIUS FLEX (#241, and #19's "determine the best between the zone maximum time and the
+//--- zone size"). A level that is geometrically squeezed may GROW, within the bounds below, and pays
+//--- for it in round seconds. A bigger radius is a bigger span, which is more reach and more
+//--- off-centre freedom; it also averages out water, so the land gate gets easier to satisfy.
+//
+//It sits AFTER tier 3 and BEFORE the sweep, gated on pressure > 0. The three tiers loosen the
+//ACCEPTANCE BAR over a fixed annulus; growth changes the ANNULUS ITSELF and permanently alters the
+//match, so it is not a fourth tier. Put it at T1/T2 and it fires on every missed roll - often, on a
+//coastal map - in preference to accepting a 0.35-land circle, and it inserts ~936 SurfaceIsSea calls
+//ahead of T2's cheap 24, inverting the cheapest-first ordering TryPlaceLevel is explicit about; it
+//would also weaken BR_ZONE_SEED_WORK and BR_ZONE_SELFTEST_WORK_CAP, which count placements rather
+//than rolls, by about 4x. Put it AFTER the sweep and it is dead code, the same trap
+//BR_ZONE_OFFSET_MIN_DISTANCE fell into at 1500 m: the sweep only fails when not one of 96 systematic
+//candidates had ANY land, after T3 (0.10 land, 180 deg arc) has already failed, and no radius bump
+//rescues that. The pressure gate is what keeps "a healthy match never leaves T1" true, which is what
+//shipping this ON by default rests on.
+//
+//How much a circle may grow, as a fraction of its OWN static span, and in how many increments.
+static const float BR_ZONE_GROW_MAX_PERCENT = 0.25;
+static const int   BR_ZONE_GROW_STEPS       = 3;
+//Growing r_L shrinks the next level's span (r_L+1 - r_L) and so its whole travel budget. The oracle
+//covers FEASIBILITY; nothing covers QUALITY, and a level with half its budget left sits almost on top
+//of its parent. At the shipped sizes this never binds (level 1 grows 26 m against level 2's 422 m
+//span, i.e. 94%); it only bites on tightly packed arrays like the 8-circle Sakhal set.
+static const float BR_ZONE_GROW_MIN_NEXT_SPAN_PCT = 0.85;
+//Total metres of growth one chain may spend, so a match cannot end up with its whole middle fattened.
+static const float BR_ZONE_GROW_BUDGET_M = 400.0;
+
+//--- ROUND TIMER DERIVATION (#241 part 3, opt-in via zone_settings.derive_timers_from_geometry).
+//
+//When the new circle starts damaging, as a fraction of the round. Extracted from an inline 0.80 in
+//6_BattleRoyaleRound.Activate so the derivation below and the state that consumes it cannot disagree
+//- being able to disagree is the whole reason this is a constant. The endgame is a SEPARATE number:
+//7_BattleRoyaleLastRound locks at half its round, not at 80%, so one shared constant would be wrong.
+static const float BR_ZONE_LOCK_FRACTION         = 0.80;
+static const float BR_ZONE_ENDGAME_LOCK_FRACTION = 0.5;
+
+//Its own speed rather than a reuse of BR_ZONE_OFFSET_SPEED_MPS, which happens to hold the same value.
+//That one's error is bounded by a 120 s cap on a BONUS; this one sets a whole round, so the error is
+//unbounded and scales with the span. Keep them separately tunable.
+static const float BR_ZONE_TIMER_SPEED_MPS = 6.0;
+//Everything the round is for beyond crossing it: looting, fighting, and not sprinting the whole way.
+//125 makes "turn it on" pacing-neutral, and that is arithmetic rather than feel. Tier 1 draws the
+//distance uniformly in [0.25, 0.85] * span, mean 0.55, so typical travel is 1.55 * span; on
+//ChernarusPlus stock sizes at 6 m/s and a 0.80 lock the travel term is 34/136/182/363/363 s, so the
+//allowance that reproduces static_timers 155/260/307/495/495 is 121/124/125/132/132. Tight enough
+//across five rounds of very different size that one number is neutral everywhere. (A first pass used
+//the MAX step rather than the mean and landed on 100, which is ~8% short on the match players
+//actually get. 4.5 m/s was also tried and is too slow to be neutral - the big rounds run steeper
+//than stock.)
+static const float BR_ZONE_TIMER_FIGHT_SECONDS = 125.0;
+//Clamps. MIN must stay well clear of 0: 6_BattleRoyaleRound does AddTimer(time_till_lock / 1000.0),
+//and a zero there fires LockNewZone in the same frame.
+static const float BR_ZONE_TIMER_MIN_SECONDS = 60.0;
+static const float BR_ZONE_TIMER_MAX_SECONDS = 900.0;
 
 //Self test. Generates full chains headlessly and reports the failure/backtrack/tier distribution,
 //which is what turns "relaunch the server twenty times and hope" into a number.

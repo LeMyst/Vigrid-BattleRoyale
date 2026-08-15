@@ -57,6 +57,29 @@ class BattleRoyaleZone
     //--- MEASURED cost instead of an estimated one.
     static int s_SurfaceCalls;
 
+    //--- THE RADII ACTUALLY IN FORCE, which are a_StaticSizes unless allow_zone_size_flex grew one of
+    //--- them for this match (see TryGrowLevel). EVERYTHING geometric reads this rather than
+    //--- a_StaticSizes: GetStepReach, CanChainComplete, GetChainPressure, TryPlaceLevel,
+    //--- SweepPlaceLevel and CommitChain. a_StaticSizes stays the admin's untouched input and is only
+    //--- read to seed this array and to measure the growth against.
+    //---
+    //--- Filled in Init() BEFORE ComputeAllowRadii(), and that ordering is load-bearing rather than
+    //--- tidy: ComputeAllowRadii, BuildFeasiblePOIList and PickSeedCenter are all DEFINED THROUGH
+    //--- GetStepReach and CanChainComplete, so they read this array whether they mean to or not. With
+    //--- it still NULL, GetStepReach returns 0 and a_AllowRadius collapses to W/2 - r_{n-1} - 4305 m
+    //--- instead of 7579 m on ChernarusPlus - and BuildFeasiblePOIList then rejects nearly every POI.
+    //--- No error and no warning; the numbers are simply wrong and plausible, the same failure texture
+    //--- as the aliasing bug documented in ComputeAllowRadii.
+    //---
+    //--- Reused with Set() per seed attempt rather than reallocated: 8 seeds x 200 self-test runs is
+    //--- 1600 allocations, and every reallocation is another window where the array is NULL.
+    static ref array<float> s_ChainRadii;
+
+    //--- Metres of growth this chain has already spent, against BR_ZONE_GROW_BUDGET_M.
+    static float s_GrowthSpent;
+    //--- How many levels grew, and by how much in total, for LogGeneratedChain and the self test.
+    static int s_GrowthCount;
+
     void BattleRoyaleZone(BattleRoyaleZone parent = NULL)
     {
         m_ParentZone = parent;
@@ -92,6 +115,11 @@ class BattleRoyaleZone
         m_MapCenter = "0 0 0";
         m_MapCenter[0] = f_WorldSize / 2;
         m_MapCenter[2] = f_WorldSize / 2;
+
+        //--- BEFORE ComputeAllowRadii - see the s_ChainRadii field comment for what a NULL array does
+        //--- to it. Everything geometric reads this array, so it has to be a valid copy of the static
+        //--- sizes from the first moment anything can ask.
+        ResetChainRadii();
         ComputeAllowRadii();
 
 		// Convert final_zone_polygon strings to vectors and check if position is inside the polygon
@@ -226,6 +254,17 @@ class BattleRoyaleZone
         return i_NumRounds - GetZoneNumber();
     }
 
+    //--- Is the derived timing switched on AND applicable? Gated on shrink_type 3 as well as the
+    //--- setting, because static_timers - the thing being replaced - only applies to that mode, so
+    //--- letting the flag through for the others would silently override round_duration_minutes.
+    protected bool IsDerivedTimingActive()
+    {
+        if(!m_ZoneSettings || !m_ZoneSettings.derive_timers_from_geometry)
+            return false;
+
+        return (i_ShrinkType == 3);
+    }
+
     int GetZoneTimer()
     {
         if (i_ShrinkType ==  3)
@@ -240,6 +279,22 @@ class BattleRoyaleZone
                 //--- degrading - the exact opposite of what the fallback was written to do.
                 BattleRoyaleUtils.Warn("Not enough static timers! (zone " + GetZoneNumber() + " wants index " + timer_index + ", have " + a_StaticTimers.Count() + ")");
                 return 300;
+            }
+
+            //--- Derived timing (#241 part 3), when it is on and this round has a geometry to derive
+            //--- from. Note it deliberately does NOT add GetDurationOffset: the derivation already uses
+            //--- the real placed distance and the radii in force, so the offset's travel bonus and its
+            //--- growth term would both be counted twice.
+            //---
+            //--- Index n-1 is the OPENING round and is excluded on purpose. It has no predecessor circle,
+            //--- so CommitChain leaves its derived entry at 0; taken literally that would clamp to
+            //--- BR_ZONE_TIMER_MIN_SECONDS and collapse the one round where players are spread over the
+            //--- whole map. Its length is a drop-phase pacing choice, so it stays the admin's number.
+            if(IsDerivedTimingActive() && timer_index < (i_NumRounds - 1))
+            {
+                float derived = GetDerivedTimer(timer_index);
+                if(derived > 0)
+                    return Math.Round(derived);   //--- a travel budget: never truncate it downward
             }
 
             return a_StaticTimers[timer_index] + GetDurationOffset(timer_index);
@@ -276,6 +331,54 @@ class BattleRoyaleZone
         return s_PlayAreaDurationOffsets[play_area_index];
     }
 
+    //--- The geometry-derived length of the round that plays this circle. Same indexing as everything
+    //--- else here. 0 means "nothing derived for this index", which is the honest answer for the opening
+    //--- round and for a boot where CommitChain never ran; callers fall back to static_timers.
+    float GetDerivedTimer(int play_area_index)
+    {
+        if(!s_PlayAreaDerivedTimers)
+            return 0;
+
+        if(play_area_index < 0 || play_area_index >= s_PlayAreaDerivedTimers.Count())
+            return 0;
+
+        return s_PlayAreaDerivedTimers[play_area_index];
+    }
+
+    //--- How much circle `play_area_index` grew for this match, in metres. 0 when flex is off or when
+    //--- this circle was placed at its static size. Diagnostics only.
+    //---
+    //--- Measured against the COMMITTED play area rather than against s_ChainRadii, and that is the point
+    //--- rather than a detail: m_PlayAreas is immutable once CommitChain has run, while s_ChainRadii is
+    //--- working state that RunSelfTest churns 200 times over afterwards. Reading the committed value
+    //--- means this answer cannot go stale no matter what else touches the generator.
+    float GetRadiusGrowth(int play_area_index)
+    {
+        float static_radius = 0;
+        float committed;
+        BattleRoyalePlayArea area;
+
+        if(!m_PlayAreas || play_area_index < 0 || play_area_index >= m_PlayAreas.Count())
+            return 0;
+
+        if(a_StaticSizes && play_area_index < a_StaticSizes.Count())
+            static_radius = a_StaticSizes[play_area_index];
+
+        if(static_radius <= 0)
+            return 0;
+
+        //--- Element into a local before the call, per ComputeAllowRadii's rule.
+        area = m_PlayAreas.Get(play_area_index);
+        if(!area)
+            return 0;
+
+        committed = area.GetRadius();
+        if(committed <= static_radius)
+            return 0;
+
+        return committed - static_radius;
+    }
+
     bool IsInZone(float x, float z)
     {
         vector center = GetArea().GetCenter();
@@ -307,7 +410,96 @@ class BattleRoyaleZone
     //---   2. The first greedy step from any accepted position is itself always acceptable - the
     //---      "witness step". So every level has a move that cannot be rejected on geometric grounds,
     //---      and placement cannot dead-end. Termination is proved, not budgeted.
+    //---
+    //--- NOTE the nesting needs only that the radii be STRICTLY INCREASING - not that they be the ones
+    //--- in static_sizes. That is what lets TryGrowLevel vary one per match without weakening any of
+    //--- the above, and it is why every function here reads s_ChainRadii. What it does add is a
+    //--- maintenance constraint: the radii in force when a position is accepted must still be in force
+    //--- when its child takes its witness step, because that step is accepted with no FitsWorld check.
     //=====================================================================================
+
+    //--- The radius in force for circle `i`. One accessor so the a_StaticSizes fallback lives in one
+    //--- place: s_ChainRadii is filled in Init() before anything can ask, but a caller reached during a
+    //--- misconfigured boot must degrade to the static value rather than to zero.
+    protected float GetChainRadius(int i)
+    {
+        if(s_ChainRadii && i >= 0 && i < s_ChainRadii.Count())
+            return s_ChainRadii.Get(i);
+
+        if(a_StaticSizes && i >= 0 && i < a_StaticSizes.Count())
+            return a_StaticSizes[i];
+
+        return 0;
+    }
+
+    //--- Back to the admin's sizes, for every level. Called from Init() and from the top of each seed
+    //--- attempt, so a seed re-roll never inherits the previous attempt's growth.
+    protected void ResetChainRadii()
+    {
+        //--- One declaration per name per METHOD scope in EnfusionScript, so every local is up here
+        //--- rather than at first use - the same shape as Validate() in BattleRoyaleZoneData.
+        int i;
+        float static_radius;
+
+        if(!s_ChainRadii)
+            s_ChainRadii = new array<float>();
+
+        //--- Grown to length once, then only ever Set() - see the field comment on why this is not
+        //--- reallocated per attempt.
+        while(s_ChainRadii.Count() < i_NumRounds)
+        {
+            s_ChainRadii.Insert(0);
+        }
+
+        for(i = 0; i < s_ChainRadii.Count(); i++)
+        {
+            //--- Array read on its own line before the Set() call, per ComputeAllowRadii's rule.
+            static_radius = 0;
+            if(a_StaticSizes && i < a_StaticSizes.Count())
+                static_radius = a_StaticSizes[i];
+
+            s_ChainRadii.Set(i, static_radius);
+        }
+
+        s_GrowthSpent = 0;
+        s_GrowthCount = 0;
+    }
+
+    //--- Back to the admin's sizes for `level` and everything above it. Called when BuildChain
+    //--- backtracks: levels above the one being re-rolled are no longer placed, so any growth they were
+    //--- granted has to go with them or it accumulates across retries.
+    protected void ResetChainRadiiFrom(int level)
+    {
+        int i;
+        float static_radius;
+        float grown;
+
+        if(!s_ChainRadii)
+            return;
+
+        for(i = level; i < s_ChainRadii.Count(); i++)
+        {
+            static_radius = 0;
+            if(a_StaticSizes && i < a_StaticSizes.Count())
+                static_radius = a_StaticSizes[i];
+
+            //--- Refund the budget, or a chain that backtracked a lot would run out of growth it never
+            //--- actually kept. Both reads land in locals before the Set().
+            grown = s_ChainRadii.Get(i);
+            if(grown > static_radius)
+            {
+                s_GrowthSpent = s_GrowthSpent - (grown - static_radius);
+                s_GrowthCount = s_GrowthCount - 1;
+            }
+
+            s_ChainRadii.Set(i, static_radius);
+        }
+
+        if(s_GrowthSpent < 0)
+            s_GrowthSpent = 0;
+        if(s_GrowthCount < 0)
+            s_GrowthCount = 0;
+    }
 
     //--- How far circle `level` may move from circle `level-1`. Containment alone would permit the
     //--- full (r_i - r_{i-1}); BR_ZONE_REACH_PERCENT is how much of that the chain plans on.
@@ -316,10 +508,12 @@ class BattleRoyaleZone
         if(level < 1 || level >= i_NumRounds)
             return 0;
 
-        if(!a_StaticSizes || level >= a_StaticSizes.Count())
-            return 0;
+        //--- Each read on its own line, then the arithmetic - the reads must not share an expression
+        //--- with anything that indexes another array. See ComputeAllowRadii.
+        float radius = GetChainRadius(level);
+        float parent_radius = GetChainRadius(level - 1);
 
-        return BR_ZONE_REACH_PERCENT * (a_StaticSizes[level] - a_StaticSizes[level - 1]);
+        return BR_ZONE_REACH_PERCENT * (radius - parent_radius);
     }
 
     //--- Whole circle inside the world square. Four separate `if`s rather than one compound
@@ -369,6 +563,8 @@ class BattleRoyaleZone
     {
         vector p = pos;
         int i;
+        float reach;
+        float radius;
 
         if(!a_StaticSizes)
             return false;
@@ -378,9 +574,15 @@ class BattleRoyaleZone
             if(i >= a_StaticSizes.Count())
                 return false;
 
-            p = StepToward(p, m_MapCenter, GetStepReach(i));
+            //--- Both of these into locals BEFORE the calls that consume them. GetStepReach and
+            //--- GetChainRadius each index s_ChainRadii, so folding either into the StepToward or
+            //--- FitsWorld argument list is exactly the shape ComputeAllowRadii documents as reading the
+            //--- wrong array. This is the oracle; a silent misread here is an illegal chain.
+            reach = GetStepReach(i);
+            p = StepToward(p, m_MapCenter, reach);
 
-            if(!FitsWorld(p, a_StaticSizes[i]))
+            radius = GetChainRadius(i);
+            if(!FitsWorld(p, radius))
                 return false;
         }
 
@@ -445,6 +647,11 @@ class BattleRoyaleZone
         float mid;
         int i;
         vector probe;
+        //--- Materialised once, outside both FitsWorld conditions. CanChainComplete on the far side of
+        //--- the && indexes s_ChainRadii, so `FitsWorld(probe, s_ChainRadii[level]) && CanChainComplete(...)`
+        //--- would put an array read in an expression with a call that indexes the same array - the
+        //--- ComputeAllowRadii shape. Not a place to rely on "probably fine".
+        float level_radius = GetChainRadius(level);
 
         if(reach <= 0)
             return 0;
@@ -454,7 +661,7 @@ class BattleRoyaleZone
 
         //--- No movement needed at all is the common case; answer it without bisecting.
         probe = StepToward(parent_center, m_MapCenter, 0);
-        if(FitsWorld(probe, a_StaticSizes[level]) && CanChainComplete(probe, level))
+        if(FitsWorld(probe, level_radius) && CanChainComplete(probe, level))
             return 0;
 
         hi = reach;
@@ -463,7 +670,7 @@ class BattleRoyaleZone
             mid = (lo + hi) * 0.5;
             probe = StepToward(parent_center, m_MapCenter, mid);
 
-            if(FitsWorld(probe, a_StaticSizes[level]) && CanChainComplete(probe, level))
+            if(FitsWorld(probe, level_radius) && CanChainComplete(probe, level))
                 hi = mid;
             else
                 lo = mid;
@@ -645,10 +852,21 @@ class BattleRoyaleZone
 
     static ref array<ref BattleRoyalePlayArea> m_PlayAreas;
 
-    //--- Parallel to m_PlayAreas: extra round seconds earned by the travel into each circle.
-    //--- Static for the same reason m_PlayAreas is - the circles are generated once per process and
-    //--- every zone object reads the same set.
+    //--- Parallel to m_PlayAreas: extra round seconds earned by the travel into each circle, plus any
+    //--- extra ground a grown circle added (#241). Static for the same reason m_PlayAreas is - the
+    //--- circles are generated once per process and every zone object reads the same set.
+    //---
+    //--- Written ONLY by CommitChain, from the finished chain. Never accumulated during placement: see
+    //--- CommitChain's header for what RunSelfTest does to an array that is.
     static ref array<float> s_PlayAreaDurationOffsets;
+
+    //--- Also parallel to m_PlayAreas: what each round's length WOULD be if derived from the geometry
+    //--- rather than read from static_timers (#241 part 3). Filled unconditionally so the diag zone
+    //--- table can show it either way; only consumed when derive_timers_from_geometry is on.
+    //---
+    //--- Index n-1 - the opening round - is always 0 and unused. It has no predecessor circle, so there
+    //--- is no travel to derive from; GetZoneTimer keeps that round on static_timers.
+    static ref array<float> s_PlayAreaDerivedTimers;
 
     //=====================================================================================
     //--- Placement.
@@ -668,7 +886,9 @@ class BattleRoyaleZone
 
     //--- Per-generation statistics. Logged at boot and reported by the self test.
     static ref array<int> s_LevelRetries;
-    static ref array<int> s_TierUsage;   //--- [0]=T1 [1]=T2 [2]=T3 [3]=sweep [4]=witness step
+    //--- [0]=T1 [1]=T2 [2]=T3 [3]=growth [4]=sweep [5]=witness step. Sized from BR_ZONE_TIER_SLOTS
+    //--- rather than a literal, because RunSelfTest walks it with a second loop of its own.
+    static ref array<int> s_TierUsage;
     static int s_TotalWork;
     static int s_Backtracks;
     static int s_DeepestBacktrack;
@@ -684,7 +904,7 @@ class BattleRoyaleZone
         s_SeedsUsed = 0;
 
         s_TierUsage = new array<int>();
-        for(i = 0; i < 5; i++)
+        for(i = 0; i < BR_ZONE_TIER_SLOTS; i++)
         {
             s_TierUsage.Insert(0);
         }
@@ -710,8 +930,11 @@ class BattleRoyaleZone
     //--- by another few hundred random rolls arriving at the same conclusion slowly.
     protected bool SweepPlaceLevel(int level, vector parent_center, float centre_dir, out vector placed)
     {
-        float radius = a_StaticSizes[level];
-        float span = radius - a_StaticSizes[level - 1];
+        //--- The radii IN FORCE, not the admin's - this level may already have grown. Each read on its
+        //--- own line before the subtraction, per ComputeAllowRadii's rule.
+        float radius = GetChainRadius(level);
+        float parent_radius = GetChainRadius(level - 1);
+        float span = radius - parent_radius;
         float steps_f = BR_ZONE_SWEEP_DISTANCES;
         float best_score = -1;
         float score;
@@ -758,14 +981,189 @@ class BattleRoyaleZone
         return true;
     }
 
+    //=====================================================================================
+    //--- PER-MATCH RADIUS FLEX (#241). #19 asked that when the preferred distance window cannot be
+    //--- respected, the generator "determine the best between the zone maximum time and the zone size".
+    //--- This is the size half; CommitChain pays for it with the time half.
+    //---
+    //--- A bigger radius is a bigger span, which is more reach and more freedom to sit off-centre - the
+    //--- exact thing a squeezed level cannot get - and a bigger circle averages out water, so the land
+    //--- gate is easier to clear. static_sizes is never touched: the growth lives in s_ChainRadii and
+    //--- therefore only in this match's generated chain.
+    //---
+    //--- WHY IT SITS BETWEEN TIER 3 AND THE SWEEP, which is the one design decision here worth
+    //--- defending. The three tiers loosen the ACCEPTANCE BAR over a fixed annulus; growth changes the
+    //--- ANNULUS ITSELF and permanently alters the match, so it is not a fourth tier and must not be
+    //--- treated as one:
+    //---   * Earlier (between T1 and T2) it would fire on every missed tier-1 roll - often, on a coastal
+    //---     map - in preference to simply accepting a 0.35-land circle, and it would spend ~936
+    //---     SurfaceIsSea calls ahead of T2's cheap 24, inverting the cheapest-first ordering
+    //---     TryPlaceLevel is explicit about. BR_ZONE_SEED_WORK and BR_ZONE_SELFTEST_WORK_CAP count
+    //---     placements rather than rolls, so both cost bounds would silently weaken by about 4x.
+    //---   * Later (after the sweep) it would be DEAD CODE, the same trap BR_ZONE_OFFSET_MIN_DISTANCE
+    //---     sat in at 1500 m for months. The sweep only fails when not one of 96 systematic candidates
+    //---     had ANY land at all, after T3 has already failed at 0.10 land over a 180 deg arc. No radius
+    //---     bump rescues that.
+    //--- The `pressure` gate is the other half of the same argument: growth answers a chain that is
+    //--- geometrically squeezed, and pressure 0 means it is not squeezed at all. That keeps "a healthy
+    //--- generation never leaves tier 1" true, which is what shipping this ON by default rests on.
+    //---
+    //--- THE RESTORE IS THE DANGEROUS PART. Guard (f) has to write r' into s_ChainRadii before it can be
+    //--- checked, because CanChainComplete derives reach(level+1) from that entry. So every exit that is
+    //--- not a success must put the static value back, or the inflated radius survives into the sweep
+    //--- and then the witness step - which TryPlaceLevel accepts with NO FitsWorld check, deliberately,
+    //--- on the grounds that it was provably unnecessary. Under an inflated reach it is not, and the
+    //--- circle can land partly off the map while CommitChain ships a radius nothing ever validated.
+    //--- That is why this is its own method: one place for the restore, and a fresh scope for the
+    //--- locals (TryPlaceLevel has already mutated min_pct/max_pct/arc_deg in place by the time it gets
+    //--- here, so its tier-1 values are gone, and EnfusionScript allows one declaration per name per
+    //--- method scope anyway).
+    protected bool TryGrowLevel(int level, vector parent_center, float centre_dir, float pressure, out vector placed)
+    {
+        int step;
+        int roll;
+        float static_radius;
+        float static_parent;
+        float static_span;
+        float grown_radius;
+        float grown_span;
+        float next_static_span;
+        float next_span;
+        float increment;
+        float min_pct;
+        float max_pct;
+        float arc_deg;
+        float grow_pressure;
+        float dist;
+        float angle;
+        float score;
+        vector candidate = "0 0 0";
+
+        placed = "0 0 0";
+
+        if(!m_ZoneSettings || !m_ZoneSettings.allow_zone_size_flex)
+            return false;
+
+        //--- (a) Never the seed and never the opening circle. Level 0 is not placed by TryPlaceLevel at
+        //--- all, and the opening circle's size is an admin-owned number that Validate() already advises
+        //--- on against the map width - growing it behind their back is not this feature's business.
+        if(level < 1 || level > (i_NumRounds - 2))
+            return false;
+
+        //--- The pressure gate. See the header.
+        if(pressure <= 0)
+            return false;
+
+        if(!a_StaticSizes || (level + 1) >= a_StaticSizes.Count())
+            return false;
+
+        //--- Every exit below the write in (e) has to restore, so bail out here rather than risk a write
+        //--- this method cannot undo. Init() fills the array to i_NumRounds and level is at most
+        //--- i_NumRounds - 2, so this is unreachable on a sane boot.
+        if(!s_ChainRadii || level >= s_ChainRadii.Count())
+            return false;
+
+        //--- Growth is measured against the STATIC span, not the current one, so a level that somehow
+        //--- arrived here already grown cannot compound it. Reads on their own lines throughout.
+        static_radius = a_StaticSizes[level];
+        static_parent = a_StaticSizes[level - 1];
+        static_span = static_radius - static_parent;
+
+        next_static_span = a_StaticSizes[level + 1] - static_radius;
+
+        if(static_span <= 0 || next_static_span <= 0)
+            return false;
+
+        increment = (static_span * BR_ZONE_GROW_MAX_PERCENT) / BR_ZONE_GROW_STEPS;
+        if(increment <= 0)
+            return false;
+
+        for(step = 1; step <= BR_ZONE_GROW_STEPS; step++)
+        {
+            grown_radius = static_radius + (increment * step);
+
+            //--- (b) The next level keeps most of its own travel budget. The oracle below covers
+            //--- FEASIBILITY; nothing covers QUALITY, and a level left with a fraction of its span sits
+            //--- almost on top of its parent, which is the boring chain this whole subsystem exists to
+            //--- avoid. At the shipped sizes this never binds.
+            next_span = a_StaticSizes[level + 1] - grown_radius;
+            if(next_span < (next_static_span * BR_ZONE_GROW_MIN_NEXT_SPAN_PCT))
+                break;
+
+            //--- (c) A circle wider than half the world has an empty world-fit box.
+            if((2 * grown_radius) > f_WorldSize)
+                break;
+
+            //--- (d) The chain's total growth allowance, so a match cannot end up with its whole middle
+            //--- quietly fattened.
+            if((s_GrowthSpent + (grown_radius - static_radius)) > BR_ZONE_GROW_BUDGET_M)
+                break;
+
+            //--- (e) In force from here on, because everything below reads it: GetStepReach for the
+            //--- window, CanChainComplete for reach(level+1), GetChainPressure for the bias. THIS IS THE
+            //--- WRITE THE RESTORE BELOW EXISTS FOR.
+            s_ChainRadii.Set(level, grown_radius);
+
+            grown_span = grown_radius - static_parent;
+            grow_pressure = GetChainPressure(parent_center, level);
+
+            //--- The tier-1 window again, recomputed at the grown radius. Same shape as TryPlaceLevel's
+            //--- tier 0 - deliberately tier 1 and not a looser one, because the whole point is to get an
+            //--- ORDINARY circle where the static radius could only produce a poor one.
+            min_pct = DAYZBR_ZS_MIN_DISTANCE_PERCENT;
+            max_pct = DAYZBR_ZS_MAX_DISTANCE_PERCENT;
+            arc_deg = BR_ZONE_T1_ARC_DEG;
+
+            min_pct = min_pct + ((max_pct - min_pct) * grow_pressure * BR_ZONE_PRESSURE_BIAS);
+            arc_deg = arc_deg * (1.0 - (grow_pressure * BR_ZONE_PRESSURE_ARC_TIGHTEN));
+
+            for(roll = 0; roll < BR_ZONE_T1_ROLLS; roll++)
+            {
+                dist = Math.RandomFloatInclusive(min_pct * grown_span, max_pct * grown_span);
+                angle = centre_dir + (Math.RandomFloat(-arc_deg, arc_deg) * Math.DEG2RAD);
+
+                candidate[0] = parent_center[0] + (dist * Math.Sin(angle));
+                candidate[2] = parent_center[2] + (dist * Math.Cos(angle));
+
+                //--- Cheapest-first, exactly as in TryPlaceLevel. (f) is the CanChainComplete call: it
+                //--- reads the grown radius written above, so it refuses any growth that would strand
+                //--- the rest of the chain.
+                if(!FitsWorld(candidate, grown_radius))
+                    continue;
+                if(!CanChainComplete(candidate, level))
+                    continue;
+
+                score = GetLandScore(candidate, grown_radius);
+                if(score < f_MinLandFraction)
+                    continue;
+
+                candidate[1] = GetGame().SurfaceY(candidate[0], candidate[2]);
+                placed = candidate;
+
+                s_GrowthSpent = s_GrowthSpent + (grown_radius - static_radius);
+                s_GrowthCount = s_GrowthCount + 1;
+
+                BattleRoyaleUtils.Debug("[BattleRoyaleZone] circle " + level + " grew " + static_radius + " -> " + grown_radius + " to place at pressure " + grow_pressure);
+                return true;
+            }
+        }
+
+        //--- THE RESTORE. Every path out of here that is not the success return above lands on this line
+        //--- - see the header for what happens if one ever does not.
+        s_ChainRadii.Set(level, static_radius);
+        return false;
+    }
+
     //--- Place circle `level` around its parent. `desperation` is how many times this level has
     //--- already been attempted against its CURRENT parent; tiers escalate inside one call, and the
     //--- witness step only unlocks once backtracking has had its chance, so a healthy match never
     //--- reaches it.
     protected bool TryPlaceLevel(int level, vector parent_center, int desperation, out vector placed)
     {
-        float radius = a_StaticSizes[level];
-        float span = radius - a_StaticSizes[level - 1];
+        //--- Radii in force, each read on its own line - see ComputeAllowRadii.
+        float radius = GetChainRadius(level);
+        float parent_radius = GetChainRadius(level - 1);
+        float span = radius - parent_radius;
         float centre_dir = Math.Atan2(m_MapCenter[0] - parent_center[0], m_MapCenter[2] - parent_center[2]);
         float pressure = GetChainPressure(parent_center, level);
         float arc_deg = 0;
@@ -848,9 +1246,16 @@ class BattleRoyaleZone
             }
         }
 
-        if(SweepPlaceLevel(level, parent_center, centre_dir, placed))
+        //--- BEFORE the sweep, not after: see TryGrowLevel's header for why either side of it is wrong.
+        if(TryGrowLevel(level, parent_center, centre_dir, pressure, placed))
         {
             s_TierUsage.Set(3, s_TierUsage.Get(3) + 1);
+            return true;
+        }
+
+        if(SweepPlaceLevel(level, parent_center, centre_dir, placed))
+        {
+            s_TierUsage.Set(4, s_TierUsage.Get(4) + 1);
             return true;
         }
 
@@ -861,7 +1266,7 @@ class BattleRoyaleZone
 
         placed = WitnessStep(level, parent_center);
         placed[1] = GetGame().SurfaceY(placed[0], placed[2]);
-        s_TierUsage.Set(4, s_TierUsage.Get(4) + 1);
+        s_TierUsage.Set(5, s_TierUsage.Get(5) + 1);
 
         BattleRoyaleUtils.Warn("[BattleRoyaleZone] circle " + level + " (r=" + radius + ") placed by the fallback step - no land-safe candidate at any tier. The circle is legal but may cover a lot of water.");
         return true;
@@ -1050,6 +1455,11 @@ class BattleRoyaleZone
                 s_LevelRetries.Set(k, 0);
             }
 
+            //--- A fresh seed is a fresh chain: drop every radius this attempt's predecessor grew, and
+            //--- with it the growth budget it spent. Level 0 is never grown, so resetting from 1 keeps
+            //--- the loop honest without touching the seed's own circle.
+            ResetChainRadiiFrom(1);
+
             level = 1;
 
             while(level < n)
@@ -1103,6 +1513,12 @@ class BattleRoyaleZone
                 //--- seed_work above, not by unwinding.
                 if(level < 1)
                     level = 1;
+
+                //--- Drop the growth of every level from here up. They are no longer placed, so keeping
+                //--- their radii would let growth ACCUMULATE across retries - each pass inheriting the
+                //--- last one's inflation - and would leave CommitChain shipping a radius for a circle
+                //--- whose position was rolled again afterwards. The budget is refunded with it.
+                ResetChainRadiiFrom(level);
             }
 
             if(level >= n)
@@ -1112,37 +1528,67 @@ class BattleRoyaleZone
         return false;
     }
 
-    //--- Turn a finished chain into the play areas, and work out the round-time bonuses from it.
+    //--- Turn a finished chain into the play areas, and work out the round timing from it.
     //---
-    //--- Offsets are computed HERE rather than during placement because a single scratch slot cannot
-    //--- survive backtracking - a re-rolled level's offset has to be discarded, and the old code had
-    //--- no way to do that.
+    //--- EVERY TIMING TERM IS COMPUTED HERE, FROM THE FINISHED CHAIN, AND NEVER DURING PLACEMENT. The
+    //--- original reason was backtracking: a single scratch slot cannot survive it, because a re-rolled
+    //--- level's offset has to be discarded and the old code had no way to do that. Radius flex added a
+    //--- second and sharper reason. s_PlayAreaDurationOffsets is allocated only in this method, while
+    //--- RunSelfTest calls BuildChain 50-200 times AFTER a real chain has already been committed and
+    //--- deliberately never re-commits - so an accumulator inside TryGrowLevel or TryPlaceLevel would
+    //--- fold hundreds of throwaway chains' payments into the array the live match is about to read, and
+    //--- pin every entry at BR_ZONE_OFFSET_MAX_SECONDS. Anybody following the documented acceptance gate
+    //--- (zone_selftest_runs > 0) would silently get +120 s on every round of every match.
+    //---
+    //--- So: no `+=` anywhere in here or upstream of it. Growth is recovered by DIFFING the radii that
+    //--- survived against the admin's static sizes, which is state that cannot be corrupted by a
+    //--- throwaway run because a throwaway run never reaches this method.
     protected void CommitChain(notnull array<vector> chain)
     {
         int i;
         float dist;
         float offset;
         float radius;
+        float static_radius;
+        float grown;
+        float distance_term;
+        float growth_term;
+        float travel;
+        float derived;
+        float parent_radius;
         vector centre;
         vector from_2d;
         vector to_2d;
 
         m_PlayAreas = new array<ref BattleRoyalePlayArea>();
         s_PlayAreaDurationOffsets = new array<float>();
+        s_PlayAreaDerivedTimers = new array<float>();
 
         for(i = 0; i < chain.Count(); i++)
         {
-            //--- Both reads into locals before the constructor call, as everywhere else here.
+            //--- Every read into a local before the constructor call, as everywhere else here. The radius
+            //--- is the one IN FORCE, so a grown circle is committed at the size it was validated at -
+            //--- and because every consumer outside this file reads radii through
+            //--- BattleRoyalePlayArea.GetRadius(), that is the whole of what makes flex reach the states,
+            //--- the RPCs and the client.
             centre = chain.Get(i);
-            radius = a_StaticSizes[i];
+            radius = GetChainRadius(i);
 
             m_PlayAreas.Insert(new BattleRoyalePlayArea(centre, radius));
             s_PlayAreaDurationOffsets.Insert(0);
+            s_PlayAreaDerivedTimers.Insert(0);
         }
 
         //--- The travel between circle i and circle i-1 belongs to the round that moves players INTO
         //--- circle i-1, i.e. play area index i-1. Measured in 2D: the old code compared positions
         //--- whose Y came from SurfaceY, so hilly terrain inflated the distance.
+        //---
+        //--- GROWTH IS CREDITED TO INDEX i-1 FOR THE SAME REASON, and getting that backwards is the
+        //--- tempting mistake. During the round whose settings index is j, players are inside circle j+1
+        //--- and must reach circle j - which is exactly what 6_BattleRoyaleRound.Activate sends as
+        //--- UpdateCurrentPlayArea and UpdateFuturePlayArea respectively. Worst-case travel is therefore
+        //--- |c_j+1 - c_j| + r_j+1 - r_j, so growing r_L makes round L-1 HARDER and round L slightly
+        //--- EASIER. Paying index L would pay the round that got easier and starve the one that did not.
         for(i = 1; i < chain.Count(); i++)
         {
             from_2d = chain.Get(i);
@@ -1151,14 +1597,60 @@ class BattleRoyaleZone
             to_2d[1] = 0;
 
             dist = vector.Distance(from_2d, to_2d);
-            if(dist <= BR_ZONE_OFFSET_MIN_DISTANCE)
-                continue;
 
-            offset = dist / BR_ZONE_OFFSET_SPEED_MPS;
+            //--- The distance term keeps its threshold: a short hop needs no bonus at all. But the
+            //--- threshold must NOT skip the whole iteration the way it used to, or the growth term goes
+            //--- with it - and levels 1-2, whose spans are 105-422 m and can never cross 600 m, are
+            //--- precisely where growth fires most.
+            distance_term = 0;
+            if(dist > BR_ZONE_OFFSET_MIN_DISTANCE)
+                distance_term = dist / BR_ZONE_OFFSET_SPEED_MPS;
+
+            //--- Extra ground inside circle i, which the round playing it has to cross to leave it.
+            static_radius = 0;
+            if(a_StaticSizes && i < a_StaticSizes.Count())
+                static_radius = a_StaticSizes[i];
+
+            grown = GetChainRadius(i);
+
+            growth_term = 0;
+            if(grown > static_radius)
+                growth_term = ((grown - static_radius) / BR_ZONE_OFFSET_SPEED_MPS) / BR_ZONE_LOCK_FRACTION;
+
+            offset = distance_term + growth_term;
+
+            //--- Capped once, after both terms, so the two cannot each spend the whole allowance.
             if(offset > BR_ZONE_OFFSET_MAX_SECONDS)
                 offset = BR_ZONE_OFFSET_MAX_SECONDS;
 
-            s_PlayAreaDurationOffsets.Set(i - 1, offset);
+            if(offset > 0)
+                s_PlayAreaDurationOffsets.Set(i - 1, offset);
+
+            //--- The derived timer for that same round, whether or not it is switched on - computing it
+            //--- unconditionally costs nothing and means the diag table can show what turning the setting
+            //--- on WOULD do. Radii in force, so growth is priced structurally here rather than added on
+            //--- top; that is why GetZoneTimer's derive branch deliberately skips GetDurationOffset.
+            parent_radius = GetChainRadius(i - 1);
+
+            travel = dist + grown - parent_radius;
+            derived = ((travel / BR_ZONE_TIMER_SPEED_MPS) / BR_ZONE_LOCK_FRACTION) + BR_ZONE_TIMER_FIGHT_SECONDS;
+
+            if(derived < BR_ZONE_TIMER_MIN_SECONDS)
+                derived = BR_ZONE_TIMER_MIN_SECONDS;
+
+            if(derived > BR_ZONE_TIMER_MAX_SECONDS)
+            {
+                derived = BR_ZONE_TIMER_MAX_SECONDS;
+
+                //--- Only worth saying when the value is actually in use. A bound clamp quietly
+                //--- reintroduces the under-time problem the derivation exists to remove, so it must not
+                //--- pass silently - but warning about it on a server that never turned the setting on
+                //--- would just be noise about a number nothing reads.
+                if(IsDerivedTimingActive())
+                    BattleRoyaleUtils.Warn("[BattleRoyaleZone] the derived timer for circle " + (i - 1) + " hit the " + BR_ZONE_TIMER_MAX_SECONDS + " s cap - that round is shorter than its own geometry asks for. Raise BR_ZONE_TIMER_MAX_SECONDS or lower this static_sizes span.");
+            }
+
+            s_PlayAreaDerivedTimers.Set(i - 1, derived);
         }
     }
 
@@ -1166,14 +1658,46 @@ class BattleRoyaleZone
     {
         int i;
         int surface_calls = s_SurfaceCalls;
+        //--- Built up in steps rather than concatenated in one go. A single expression has a complexity
+        //--- ceiling in EnfusionScript - around ten terms - and "Formula too complex" is a hard compile
+        //--- error that packing does not catch, so it only surfaces when the game loads the module. The
+        //--- tier line was already at eleven terms before growth added a sixth column.
+        string tiers;
+        string row;
+        float growth;
+        BattleRoyalePlayArea area;
 
         BattleRoyaleUtils.Info("[BattleRoyaleZone] generated " + m_PlayAreas.Count() + " circles: " + s_TotalWork + " placements, " + s_Backtracks + " backtracks (deepest level " + s_DeepestBacktrack + "), " + s_SeedsUsed + " seed(s), " + surface_calls + " surface queries.");
-        BattleRoyaleUtils.Info("[BattleRoyaleZone] tier usage: T1 " + s_TierUsage.Get(0) + "  T2 " + s_TierUsage.Get(1) + "  T3 " + s_TierUsage.Get(2) + "  sweep " + s_TierUsage.Get(3) + "  fallback-step " + s_TierUsage.Get(4) + ".");
+
+        tiers = "[BattleRoyaleZone] tier usage: T1 " + s_TierUsage.Get(0);
+        tiers = tiers + "  T2 " + s_TierUsage.Get(1);
+        tiers = tiers + "  T3 " + s_TierUsage.Get(2);
+        tiers = tiers + "  growth " + s_TierUsage.Get(3);
+        tiers = tiers + "  sweep " + s_TierUsage.Get(4);
+        tiers = tiers + "  fallback-step " + s_TierUsage.Get(5) + ".";
+        BattleRoyaleUtils.Info(tiers);
+
+        if(s_GrowthCount > 0)
+            BattleRoyaleUtils.Info("[BattleRoyaleZone] radius flex: " + s_GrowthCount + " circle(s) grew, " + s_GrowthSpent + " m of the " + BR_ZONE_GROW_BUDGET_M + " m budget spent.");
 
         //--- Index 0 is the FINAL circle - the array is smallest-first, like the settings arrays.
         for(i = 0; i < m_PlayAreas.Count(); i++)
         {
-            BattleRoyaleUtils.Debug("[BattleRoyaleZone]   [" + i + "] center=" + m_PlayAreas.Get(i).GetCenter() + " radius=" + m_PlayAreas.Get(i).GetRadius() + " duration_offset=" + s_PlayAreaDurationOffsets.Get(i));
+            //--- Element into a local first, and one array read per statement. The old one-liner read
+            //--- m_PlayAreas twice and s_PlayAreaDurationOffsets once inside a single expression full of
+            //--- calls - the exact shape ComputeAllowRadii documents as silently returning another
+            //--- array's entries. It was a log line, so a misread would have been believed.
+            area = m_PlayAreas.Get(i);
+            growth = GetRadiusGrowth(i);
+
+            row = "[BattleRoyaleZone]   [" + i + "] center=" + area.GetCenter();
+            row = row + " radius=" + area.GetRadius();
+            if(growth > 0)
+                row = row + " (grew +" + growth + ")";
+            row = row + " duration_offset=" + s_PlayAreaDurationOffsets.Get(i);
+            row = row + " derived_timer=" + s_PlayAreaDerivedTimers.Get(i);
+
+            BattleRoyaleUtils.Debug(row);
         }
     }
 
@@ -1210,9 +1734,38 @@ class BattleRoyaleZone
         float seed_min_z = float.MAX;
         float seed_max_z = float.LOWEST;
         vector first_circle;
+        //--- How much radius flex the throwaway runs asked for, so the acceptance gate can report it as
+        //--- its own column instead of it only being visible on the one live chain.
+        int grown_runs = 0;
+        float grown_metres = 0;
+        //--- Scratch for the two array reads below that would otherwise share an expression with a call.
+        float snapshot_radius;
+        int tier_run;
+        //--- The committed chain's radii, put back before this method returns, because BuildChain leaves
+        //--- s_ChainRadii holding whatever the LAST throwaway run happened to grow.
+        //---
+        //--- Two other things already stop that mattering, and this is a third line of defence rather
+        //--- than the load-bearing one: Init() calls ResetChainRadii() immediately before
+        //--- ComputeAllowRadii(), so a zone object built after this point derives a_AllowRadius from the
+        //--- static sizes either way; and GetRadiusGrowth reads the committed play area rather than this
+        //--- array. What it buys is that s_ChainRadii is never left describing a chain nobody plays -
+        //--- same intent as the RNG reseed at the bottom of this method, and cheap enough to just do.
+        ref array<float> committed_radii = new array<float>();
 
         if(iterations < 1)
             return;
+
+        if(s_ChainRadii)
+        {
+            for(k = 0; k < s_ChainRadii.Count(); k++)
+            {
+                //--- Read into a local before the Insert, rather than
+                //---     committed_radii.Insert(s_ChainRadii.Get(k));
+                //--- which is the two-arrays-in-one-expression shape ComputeAllowRadii documents.
+                snapshot_radius = s_ChainRadii.Get(k);
+                committed_radii.Insert(snapshot_radius);
+            }
+        }
 
         for(k = 0; k <= i_NumRounds; k++)
         {
@@ -1222,7 +1775,7 @@ class BattleRoyaleZone
         {
             seed_hist.Insert(0);
         }
-        for(k = 0; k < 5; k++)
+        for(k = 0; k < BR_ZONE_TIER_SLOTS; k++)
         {
             tier_total.Insert(0);
         }
@@ -1252,14 +1805,24 @@ class BattleRoyaleZone
                 seed_max_z = Math.Max(seed_max_z, first_circle[2]);
             }
 
+            if(s_GrowthCount > 0)
+            {
+                grown_runs++;
+                grown_metres = grown_metres + s_GrowthSpent;
+            }
+
             if(depth >= 0 && depth < depth_hist.Count())
                 depth_hist.Set(depth, depth_hist.Get(depth) + 1);
             if(seeds >= 0 && seeds < seed_hist.Count())
                 seed_hist.Set(seeds, seed_hist.Get(seeds) + 1);
 
-            for(k = 0; k < 5; k++)
+            for(k = 0; k < BR_ZONE_TIER_SLOTS; k++)
             {
-                tier_total.Set(k, tier_total.Get(k) + s_TierUsage.Get(k));
+                //--- Two DIFFERENT arrays were being read inside one Set() call here. That is the shape
+                //--- ComputeAllowRadii documents as silently yielding another array's entries, and this
+                //--- is the acceptance gate's own tally - a misread here would be believed.
+                tier_run = s_TierUsage.Get(k);
+                tier_total.Set(k, tier_total.Get(k) + tier_run);
             }
 
             if(work_total > BR_ZONE_SELFTEST_WORK_CAP)
@@ -1288,7 +1851,20 @@ class BattleRoyaleZone
         }
         BattleRoyaleUtils.Info("[BattleRoyaleZone][SelfTest]   seeds used:" + line);
 
-        BattleRoyaleUtils.Info("[BattleRoyaleZone][SelfTest]   tier per circle: T1 " + tier_total.Get(0) + "  T2 " + tier_total.Get(1) + "  T3 " + tier_total.Get(2) + "  sweep " + tier_total.Get(3) + "  fallback-step " + tier_total.Get(4) + ".");
+        //--- Built in steps: six columns is past the expression complexity ceiling, and "Formula too
+        //--- complex" is a compile error that only shows up when the game loads the module.
+        line = "[BattleRoyaleZone][SelfTest]   tier per circle: T1 " + tier_total.Get(0);
+        line = line + "  T2 " + tier_total.Get(1);
+        line = line + "  T3 " + tier_total.Get(2);
+        line = line + "  growth " + tier_total.Get(3);
+        line = line + "  sweep " + tier_total.Get(4);
+        line = line + "  fallback-step " + tier_total.Get(5) + ".";
+        BattleRoyaleUtils.Info(line);
+
+        //--- Reported unconditionally, including the zero, because "flex never fired" is exactly what a
+        //--- run with allow_zone_size_flex off has to be able to say for the comparison to mean anything.
+        BattleRoyaleUtils.Info("[BattleRoyaleZone][SelfTest]   radius flex: " + grown_runs + " run(s) grew a circle, " + grown_metres + " m total.");
+
         BattleRoyaleUtils.Info("[BattleRoyaleZone][SelfTest]   final circle spread: x[" + seed_min_x + " .. " + seed_max_x + "] z[" + seed_min_z + " .. " + seed_max_z + "].");
 
         if((seed_max_x - seed_min_x) < 1.0 && (seed_max_z - seed_min_z) < 1.0)
@@ -1299,6 +1875,17 @@ class BattleRoyaleZone
 
         if(failed > 0)
             BattleRoyaleUtils.Warn("[BattleRoyaleZone][SelfTest] " + failed + " run(s) produced NO chain at all. That should be impossible - check static_sizes against this map's size.");
+
+        //--- Put the committed chain's radii back - see committed_radii's declaration. Same intent as the
+        //--- RNG line below: this method must leave no trace on the match about to be played.
+        if(s_ChainRadii)
+        {
+            for(k = 0; k < committed_radii.Count(); k++)
+            {
+                if(k < s_ChainRadii.Count())
+                    s_ChainRadii.Set(k, committed_radii.Get(k));
+            }
+        }
 
         //--- Leave the RNG somewhere fresh so the match about to be played is not correlated with the
         //--- stream this test just consumed.

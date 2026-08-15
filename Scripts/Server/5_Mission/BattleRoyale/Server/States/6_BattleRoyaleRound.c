@@ -104,7 +104,11 @@ class BattleRoyaleRound: BattleRoyaleState
     {
         //we just activated this round (players not yet transfered from previous state)
         int time_till_end = i_RoundTimeInSeconds * 1000;
-        int time_till_lock = time_till_end * 0.80; // Time before lock, changed from 0.75 to 0.80
+        //--- Was an inline 0.80 here (0.75 before that). Named now because zone_settings'
+        //--- derive_timers_from_geometry divides by the SAME fraction to work out how long this round
+        //--- has to be - so if the two could drift apart, the derivation would be sizing a travel
+        //--- window that does not match the one the players actually get.
+        int time_till_lock = time_till_end * BR_ZONE_LOCK_FRACTION;
         int time_between_lock_and_end = time_till_end - time_till_lock;
         BattleRoyaleUtils.Trace(GetName() + " Activate with a duration of " + i_RoundTimeInSeconds + " seconds with a lock at " + time_till_lock / 1000 + " seconds (so " + time_between_lock_and_end / 1000 + " seconds after lock before end) !");
 
