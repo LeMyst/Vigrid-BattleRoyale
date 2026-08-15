@@ -622,6 +622,18 @@ static const bool BR_HIDE_SURVIVAL_NOTIFIERS = true;
 //--- Absolute rather than a delta so re-applying them after a respawn is idempotent.
 static const float BR_HUD_BADGES_SPACER_X = 70.0;
 static const float BR_HUD_BADGES_PANEL_X = 109.0;
+//--- THE INJURED-LEG BADGE, same reasoning one step further along. Extra/PreventPlayerModifiers
+//--- empties BrokenLegsMdfr's OnActivate/OnReconnect/Activate, so a leg can never actually break -
+//--- but vanilla's InjuredLegNotfr drives this badge off leg HEALTH rather than off the fracture
+//--- state (injuredlegnotfr.c:21 tiers 1 - min(GetHealth01("LeftLeg"), GetHealth01("RightLeg")) at
+//--- 0.05/0.35/0.65), so a five-percent scratch from any fall lights it up for the rest of the match.
+//--- It reports a state the player can neither act on nor let get worse, on a HUD where every pixel
+//--- is competing with the zone timer and the player counter.
+//---
+//--- The separate Fracture badge (NTFKEY_FRACTURE) is deliberately LEFT ALONE: it is the one that
+//--- would matter again the moment Extra/PreventPlayerModifiers is disabled, and it costs nothing
+//--- while that addon is in the build, since nothing can ever raise it.
+static const bool BR_HIDE_INJURED_LEGS_BADGE = true;
 
 
 //--- THE PLAYERS/GROUPS COUNTER. The SetPlayerCount RPC carries two plain integers, and the group
