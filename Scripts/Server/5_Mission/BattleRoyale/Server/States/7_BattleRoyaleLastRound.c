@@ -55,7 +55,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     override void Activate()
     {
-        int time_till_lock = (i_RoundTimeInSeconds * 1000) / 2;
+        //--- Halfway, not the 80% a normal round uses - hence a SEPARATE constant from
+        //--- BR_ZONE_LOCK_FRACTION rather than a shared one. The endgame has no travel to fund: the
+        //--- circle is already where it is going to be, and this timer only governs how long the
+        //--- survivors get before it closes on them.
+        int time_till_lock = (i_RoundTimeInSeconds * 1000) * BR_ZONE_ENDGAME_LOCK_FRACTION;
 
         int i;
         int min;

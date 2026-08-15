@@ -1872,17 +1872,45 @@ class BattleRoyaleServer: BattleRoyaleBase
                 }
 
                 BattleRoyaleUtils.Info("[Diag] play areas, generation order (index 0 is the FINAL circle):");
+
+                //--- Declared out here: one declaration per name per method scope in EnfusionScript, and
+                //--- the row is assembled in steps because a single expression has a complexity ceiling.
+                float offset;
+                float derived;
+                float growth;
+                string row;
+                BattleRoyaleZone dump_zone = BattleRoyaleZone.GetZone(1);
+
                 for(int z = 0; z < BattleRoyaleZone.m_PlayAreas.Count(); z++)
                 {
                     BattleRoyalePlayArea area = BattleRoyaleZone.m_PlayAreas[z];
                     if(!area)
                         continue;
 
-                    float offset = 0;
+                    offset = 0;
                     if(BattleRoyaleZone.s_PlayAreaDurationOffsets && z < BattleRoyaleZone.s_PlayAreaDurationOffsets.Count())
                         offset = BattleRoyaleZone.s_PlayAreaDurationOffsets[z];
 
-                    BattleRoyaleUtils.Info("[Diag]   [" + z + "] center=" + area.GetCenter() + " radius=" + area.GetRadius() + " duration_offset=" + offset);
+                    //--- The derived timer and the growth delta, so this table explains the round lengths
+                    //--- it is standing next to. Both are reported whether or not the settings that
+                    //--- consume them are on - the point of a diag dump is to show what turning one on
+                    //--- would do.
+                    derived = 0;
+                    growth = 0;
+                    if(dump_zone)
+                    {
+                        derived = dump_zone.GetDerivedTimer(z);
+                        growth = dump_zone.GetRadiusGrowth(z);
+                    }
+
+                    row = "[Diag]   [" + z + "] center=" + area.GetCenter();
+                    row = row + " radius=" + area.GetRadius();
+                    if(growth > 0)
+                        row = row + " (grew +" + growth + ")";
+                    row = row + " duration_offset=" + offset;
+                    row = row + " derived_timer=" + derived;
+
+                    BattleRoyaleUtils.Info(row);
                 }
                 break;
             }

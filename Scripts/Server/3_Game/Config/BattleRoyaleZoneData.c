@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 5;  // Config version
+	int version = 6;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -81,6 +81,32 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // 200 runs inside one boot answers "can this configuration ever dead-end here", which relaunching
     // the server twenty times never could. Costs a few hundred ms.
     int zone_selftest_runs = 0;
+
+    // --- Placement and timing derivation (v6) ---
+
+    // Let a squeezed circle GROW, per match, instead of accepting a worse position. #19 asked for the
+    // generator to "determine the best between the zone maximum time and the zone size" when the
+    // preferred distance window cannot be respected; this is that trade. static_sizes is untouched -
+    // the growth lives only in the generated chain - and it is bounded by the BR_ZONE_GROW_* constants,
+    // reported per chain in the boot log, and counted as its own column by zone_selftest_runs above.
+    //
+    // It only fires after tier 3 has failed AND the chain still owes centre-ward travel, so a healthy
+    // map barely sees it: at stock sizes ChernarusPlus leaves tier 1 on ~5% of placements and Sakhal on
+    // ~20%. Turn it OFF to compare a self-test run against a baseline recorded before v6.
+    bool allow_zone_size_flex = true;
+
+    // Derive each round's length from the geometry instead of reading static_timers: how far a player
+    // at the far edge of the current circle has to run to reach the next one, at sprint speed, plus a
+    // fixed allowance for everything a round is for besides running. #19 asked for timing "derived from
+    // mathematics values: zone size factor, maximum sprinting speed, etc."
+    //
+    // OFF by default because it changes pacing on every existing server, even though the constants are
+    // tuned to be near-neutral against the stock static_timers (see BR_ZONE_TIMER_FIGHT_SECONDS). Two
+    // rounds keep their hand-authored value even when this is on, because neither has any travel to
+    // derive from: the OPENING round, which has no predecessor circle, and the endgame in
+    // 7_BattleRoyaleLastRound, which plays out an already-locked circle. Ignored unless shrink_type is
+    // 3 (static), the only mode static_timers applies to.
+    bool derive_timers_from_geometry = false;
 
     // --- Hot zones (v5) ---
 
@@ -228,6 +254,17 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			// so "loaded empty" and "shipped empty" are the same state and there is nothing to
 			// restore. The branch exists only to move the version number.
 			version = 5;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 6)
+		{
+			// allow_zone_size_flex/derive_timers_from_geometry were INTRODUCED in v6, and like the v5
+			// branch above this one refills nothing - both are SCALARS, and a missing scalar key leaves
+			// the field initialiser in place. Only a ref array needs the refill treatment the v3 and v4
+			// branches give it. So every server upgrading to v6 picks up flex ON and derived timers OFF
+			// from the declarations above, which is what those defaults are chosen for.
+			version = 6;
 			Save();  // Save the upgraded config
 		}
 	}
