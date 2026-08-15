@@ -22,6 +22,16 @@ modded class MainMenu
 	protected static bool s_AutoConnectDone;
 #endif
 
+	void ~MainMenu()
+	{
+		//--- A "come back later" response queues StartMatchMaking on the SYSTEM call queue, which
+		//--- lives for the whole process. Without this the pending retry outlives the menu it
+		//--- belongs to and re-enters the blocking POST_now against a torn-down widget tree.
+		//--- GetGame() is checked because a destructor can run on the way out.
+		if ( GetGame() )
+			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).RemoveByName( this, "StartMatchMaking" );
+	}
+
 	override Widget Init()
 	{
 		layoutRoot = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/MainMenu/main_menu.layout");
@@ -341,6 +351,10 @@ modded class MainMenu
 					m_LastFocusedButton = m_Play;
 //					ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
 //					CreatePopup("Currently match making", "Close", closecallback, "", NULL);
+					//--- A press is a FRESH search, so the attempt budget restarts here rather than
+					//--- inside StartMatchMaking - which is also the automatic re-queue's entry
+					//--- point, and must keep counting.
+					m_MatchMakingTryCount = 0;
 					StartMatchMaking();
 
 					return true;
@@ -497,6 +511,15 @@ modded class MainMenu
 		}
 		else if ( server_info.Count() == 1 )
 		{
+			//--- "Come back later." Bounded, because it used to re-queue forever: nothing ever
+			//--- compared m_MatchMakingTryCount against anything, so a matchmaker that is up but
+			//--- never allocating kept the Play button disabled for as long as the client ran.
+			if ( m_MatchMakingTryCount >= BR_MATCHMAKING_MAX_ATTEMPTS )
+			{
+				FailMatchMaking("no server allocated after " + m_MatchMakingTryCount + " attempts");
+				return;
+			}
+
 			int sleep = server_info[0].ToInt();
 			if( sleep < 1000 )
 				sleep = 10000;  // If the sleep is anomalously low, set it to 10 seconds
@@ -505,6 +528,34 @@ modded class MainMenu
 			BattleRoyaleUtils.Trace("Sleeping for " + sleep + " milliseconds before retrying");
 			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "StartMatchMaking", sleep, false);
 		}
+		else
+		{
+			//--- Count() == 0 is the network failure / empty body case, and it matched NEITHER
+			//--- branch above - so the state stayed Searching with Play permanently
+			//--- IGNOREPOINTER-disabled and no retry queued. Any other count is a response shape
+			//--- this client does not understand, which is the same dead end.
+			FailMatchMaking("matchmaker returned " + server_info.Count() + " field(s)");
+		}
+	}
+
+	/**
+	 *  Every dead end in StartMatchMaking funnels through here: hand the Play button back and say so.
+	 *
+	 *  The point is that the player is never left looking at a disabled button with no way forward.
+	 *  BattleRoyaleMatchMakingState.Failed has existed in the enum since the beginning and was never
+	 *  reached; Update() paints the label only while Searching or Connecting, so this text sticks.
+	 */
+	void FailMatchMaking(string reason)
+	{
+		BattleRoyaleUtils.Warn("[MatchMaking] giving up: " + reason);
+
+		m_MatchMakingState = BattleRoyaleMatchMakingState.Failed;
+		//--- The next press is a fresh search with a fresh budget.
+		m_MatchMakingTryCount = 0;
+
+		m_Play.ClearFlags(WidgetFlags.IGNOREPOINTER);
+		ColorNormal(m_Play);
+		m_PlayButtonLabel.SetText("#STR_BR_MM_FAILED");
 	}
 
 	override void Update(float timeslice)

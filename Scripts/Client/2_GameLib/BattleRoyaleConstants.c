@@ -227,6 +227,14 @@ static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBR
 //later frame - so it is short enough to feel instant. DIAG-only, like the flag it serves.
 static const int BR_AUTOCONNECT_DELAY_MS = 500;
 
+//--- how many times the main menu asks the matchmaker for a server before it gives up and hands the
+//Play button back. There was no cap at all: StartMatchMaking re-queued itself forever on the
+//"come back later" response, and since each attempt is a SYNCHRONOUS POST that freezes the menu for
+//its round trip, a matchmaker that is up but never allocating held the player hostage indefinitely.
+//The retry interval has a 10 s floor already, so twenty attempts is a few minutes of trying - long
+//enough to ride out a queue, short enough that the player gets their menu back.
+static const int BR_MATCHMAKING_MAX_ATTEMPTS = 20;
+
 
 //--- game values
 static const float BATTLEROYALE_HEALTH_REGEN_MODIFIER = 10; //multiplier from base game values on HP regen speed
