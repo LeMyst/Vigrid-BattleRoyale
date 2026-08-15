@@ -783,17 +783,14 @@ static const float BR_ZONE_OFFSET_MAX_SECONDS  = 120.0;
 //--- for it in round seconds. A bigger radius is a bigger span, which is more reach and more
 //--- off-centre freedom; it also averages out water, so the land gate gets easier to satisfy.
 //
-//It sits AFTER tier 3 and BEFORE the sweep, gated on pressure > 0. The three tiers loosen the
-//ACCEPTANCE BAR over a fixed annulus; growth changes the ANNULUS ITSELF and permanently alters the
-//match, so it is not a fourth tier. Put it at T1/T2 and it fires on every missed roll - often, on a
-//coastal map - in preference to accepting a 0.35-land circle, and it inserts ~936 SurfaceIsSea calls
-//ahead of T2's cheap 24, inverting the cheapest-first ordering TryPlaceLevel is explicit about; it
-//would also weaken BR_ZONE_SEED_WORK and BR_ZONE_SELFTEST_WORK_CAP, which count placements rather
-//than rolls, by about 4x. Put it AFTER the sweep and it is dead code, the same trap
-//BR_ZONE_OFFSET_MIN_DISTANCE fell into at 1500 m: the sweep only fails when not one of 96 systematic
-//candidates had ANY land, after T3 (0.10 land, 180 deg arc) has already failed, and no radius bump
-//rescues that. The pressure gate is what keeps "a healthy match never leaves T1" true, which is what
-//shipping this ON by default rests on.
+//It is tried the moment TIER 1 fails, before tier 2 loosens the bar - which is #19's condition, and
+//the only position where growth is a fair test, since it re-runs tier 1's own window and tier 1's own
+//land requirement differing in the radius alone. Two earlier builds put it after tier 3 on the
+//reasoning that a permanent change to the match should be a last resort; both measured growth 0 in
+//1000 placements on Sakhal, because by tier 3 the ladder has already failed at 0.10 land over a 180
+//deg arc and re-asking for zone_min_land_fraction (0.60) is a STRICTER bar than the tier that just
+//failed. See TryGrowLevel's header for the full sequence - it is the BR_ZONE_OFFSET_MIN_DISTANCE
+//= 1500 dead-feature trap, caught by the self test rather than by reading the code.
 //
 //How much a circle may grow, as a fraction of its OWN static span, and in how many increments.
 static const float BR_ZONE_GROW_MAX_PERCENT = 0.25;

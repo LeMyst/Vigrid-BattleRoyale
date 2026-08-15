@@ -991,22 +991,33 @@ class BattleRoyaleZone
     //--- gate is easier to clear. static_sizes is never touched: the growth lives in s_ChainRadii and
     //--- therefore only in this match's generated chain.
     //---
-    //--- WHY IT SITS BETWEEN TIER 3 AND THE SWEEP, which is the one design decision here worth
-    //--- defending. The three tiers loosen the ACCEPTANCE BAR over a fixed annulus; growth changes the
-    //--- ANNULUS ITSELF and permanently alters the match, so it is not a fourth tier and must not be
-    //--- treated as one:
-    //---   * Earlier (between T1 and T2) it would fire on every missed tier-1 roll - often, on a coastal
-    //---     map - in preference to simply accepting a 0.35-land circle, and it would spend ~936
-    //---     SurfaceIsSea calls ahead of T2's cheap 24, inverting the cheapest-first ordering
-    //---     TryPlaceLevel is explicit about. BR_ZONE_SEED_WORK and BR_ZONE_SELFTEST_WORK_CAP count
-    //---     placements rather than rolls, so both cost bounds would silently weaken by about 4x.
-    //---   * Later (after the sweep) it would be DEAD CODE, the same trap BR_ZONE_OFFSET_MIN_DISTANCE
-    //---     sat in at 1500 m for months. The sweep only fails when not one of 96 systematic candidates
-    //---     had ANY land at all, after T3 has already failed at 0.10 land over a 180 deg arc. No radius
-    //---     bump rescues that.
-    //--- The `pressure` gate is the other half of the same argument: growth answers a chain that is
-    //--- geometrically squeezed, and pressure 0 means it is not squeezed at all. That keeps "a healthy
-    //--- generation never leaves tier 1" true, which is what shipping this ON by default rests on.
+    //--- WHERE IT SITS IN THE LADDER IS THE ONE DESIGN DECISION HERE, AND IT WAS SETTLED BY MEASUREMENT
+    //--- AFTER TWO WRONG ANSWERS. It is called from tier 0's failure path, before tier 2 loosens the bar.
+    //---
+    //--- The reasoning that put it later was that the three tiers loosen the ACCEPTANCE BAR over a fixed
+    //--- annulus, while growth changes the ANNULUS ITSELF and permanently alters the match - so it should
+    //--- be a last resort rather than a second choice. That is a fair description and it produced a
+    //--- feature that never fired once:
+    //---   * After tier 3 (build 1, gated on pressure > 0): growth 0 in 1000 placements on Sakhal, and
+    //---     the path was reached 47 times. Every refusal was the pressure gate, because the failures
+    //---     that get that far on Sakhal are WATER failures - the chain is not squeezed, so pressure is
+    //---     0 by construction exactly when this is reached.
+    //---   * After tier 3 (build 2, gate removed): still growth 0, path reached 62 times. The gate was
+    //---     never the blocker. By tier 3 the ladder has already accepted 0.10 land over a 180 deg arc
+    //---     and failed, so re-asking for f_MinLandFraction (0.60) is a STRICTER bar than the tier that
+    //---     just failed. Growth could not have succeeded there whatever the gate said.
+    //---   * After the SWEEP would be worse still, for the same reason squared.
+    //--- So the only position where growth is a fair test is against tier 1's own window and tier 1's own
+    //--- land bar, differing in the radius alone - which is also exactly #19's condition, "if the 25%/75%
+    //--- can't be respected". If growth fails there, tiers 2 and 3 loosen the bar as they always did.
+    //---
+    //--- The cost objection to this position is real and was measured rather than assumed: growth adds up
+    //--- to BR_ZONE_GROW_STEPS * BR_ZONE_T1_ROLLS land-sampled rolls ahead of tier 2's cheap 24. Sakhal's
+    //--- self test went from ~209k to the figure in the current baseline for 200 runs, i.e. a fraction of
+    //--- a second on a boot step that runs once. A live match pays it on at most 5 placements.
+    //---
+    //--- "A healthy generation never leaves tier 1" is unaffected: growth runs only when tier 1 has
+    //--- already failed, and ChernarusPlus at stock sizes never gets that far in the first place.
     //---
     //--- THE RESTORE IS THE DANGEROUS PART. Guard (f) has to write r' into s_ChainRadii before it can be
     //--- checked, because CanChainComplete derives reach(level+1) from that entry. So every exit that is
@@ -1018,7 +1029,7 @@ class BattleRoyaleZone
     //--- locals (TryPlaceLevel has already mutated min_pct/max_pct/arc_deg in place by the time it gets
     //--- here, so its tier-1 values are gone, and EnfusionScript allows one declaration per name per
     //--- method scope anyway).
-    protected bool TryGrowLevel(int level, vector parent_center, float centre_dir, float pressure, out vector placed)
+    protected bool TryGrowLevel(int level, vector parent_center, float centre_dir, out vector placed)
     {
         int step;
         int roll;
@@ -1050,10 +1061,9 @@ class BattleRoyaleZone
         if(level < 1 || level > (i_NumRounds - 2))
             return false;
 
-        //--- The pressure gate. See the header.
-        if(pressure <= 0)
-            return false;
-
+        //--- NOTE there is deliberately no pressure gate here - see the header for the two builds that
+        //--- established it was refusing every single call. Pressure is still consulted, but only as the
+        //--- window bias below, recomputed at the grown radius where it belongs.
         if(!a_StaticSizes || (level + 1) >= a_StaticSizes.Count())
             return false;
 
@@ -1244,13 +1254,27 @@ class BattleRoyaleZone
                 s_TierUsage.Set(tier, s_TierUsage.Get(tier) + 1);
                 return true;
             }
-        }
 
-        //--- BEFORE the sweep, not after: see TryGrowLevel's header for why either side of it is wrong.
-        if(TryGrowLevel(level, parent_center, centre_dir, pressure, placed))
-        {
-            s_TierUsage.Set(3, s_TierUsage.Get(3) + 1);
-            return true;
+            //--- Growth goes HERE - the moment tier 1's preferred window has failed and before tier 2
+            //--- loosens the bar. That is #19's condition word for word ("if the 25%/75% can't be
+            //--- respected... determine the best between the zone maximum time and the zone size"), and
+            //--- it is the only position where growth is a FAIR comparison: it re-runs tier 1's own
+            //--- window and tier 1's own land requirement, just at a bigger radius.
+            //---
+            //--- It was placed after tier 3 first, and the self test proved that cannot work. By then the
+            //--- ladder has already accepted 0.10 land over a 180 deg arc and failed even that, so asking
+            //--- for f_MinLandFraction (0.60) at a 25% larger radius is a STRICTER bar than the tier that
+            //--- just failed - growth measured 0 successes in 1000 placements on Sakhal across two builds,
+            //--- once with a pressure gate and once without. Dead code either way, which is the
+            //--- BR_ZONE_OFFSET_MIN_DISTANCE = 1500 trap.
+            if(tier == 0)
+            {
+                if(TryGrowLevel(level, parent_center, centre_dir, placed))
+                {
+                    s_TierUsage.Set(3, s_TierUsage.Get(3) + 1);
+                    return true;
+                }
+            }
         }
 
         if(SweepPlaceLevel(level, parent_center, centre_dir, placed))
