@@ -4,7 +4,7 @@
 be lifted out of this repository and shipped on its own; none is required for the Battle Royale mod to
 function.
 
-**17 folders, 15 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
+**18 folders, 16 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
 parked.
 
 ## How this folder works
@@ -32,6 +32,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [DefaultFullAuto](DefaultFullAuto/README.md) | `extra_defaultfullauto.pbo` | server | Weapons spawn already set to full auto where they have one |
 | [DisableFogChernarusPlus](DisableFogChernarusPlus/README.md) | *disabled* | — | Removes fog on Chernarus+. Parked: it does nothing on Vigrid |
 | [DumpItemHeights](DumpItemHeights/README.md) | *disabled* | — | **Throwaway diagnostic.** Dumps every loot item's bounding box (CfgVehicles + CfgWeapons + CfgMagazines) to a CSV on an offline Diag client. Parked: it has served its purpose, re-enable when heights need re-measuring |
+| [EarPlugs](EarPlugs/README.md) | `extra_earplugs.pbo` | client | One key cycles Off / Light / Heavy — scales the effects bus to a fraction of the player's own volume and applies a low-pass EQ |
 | [KillFeed](KillFeed/README.md) | `extra_killfeed.pbo` | both | On-screen death feed with weapon models, attachments and range |
 | [LimitUnconsciousTime](LimitUnconsciousTime/README.md) | `extra_limitunconscioustime.pbo` | server | Force-wakes an unconscious player after 5 seconds. **Not standalone** |
 | [Map](Map/README.md) | `extra_map.pbo` | both | Fullscreen map, HUD minimap, HUD compass, party-shared markers and zone circles |
@@ -52,6 +53,7 @@ Most of these have no settings at all. The ones that do:
 
 | Addon | Where |
 |---|---|
+| EarPlugs | `$profile:Vigrid-EarPlugs\earplugs_client.json` — per player, one value: the level last chosen. Not a server setting; there is none |
 | KillFeed | `$profile:KillFeed\killfeed_settings.json` — 4 options |
 | Map | `$profile:Vigrid-Map\map_settings.json` (server) and `map_client.json` (per player) |
 | MapSatellite | none, and it cannot have any — `MapWidget` exposes no satellite API, so the `config.cpp` rename is the whole control surface |
@@ -62,12 +64,13 @@ Most of these have no settings at all. The ones that do:
 
 ## Compile-time defines
 
-Only five addons declare a `defines[]`, which is what lets the mod guard its call sites with
+Only six addons declare a `defines[]`, which is what lets the mod guard its call sites with
 `#ifdef`:
 
 | Define | Addon | Used by the mod? |
 |---|---|---|
 | `DUMP_ITEM_HEIGHTS` | DumpItemHeights | no — declared for consistency only, and **not defined in a normal build** since the addon is parked |
+| `VIGRID_EARPLUGS` | EarPlugs | no — declared for consistency only; the addon exposes no API to call |
 | `KILLFEED` | KillFeed | yes — 5 call sites |
 | `VIGRID_SAFEZONE` | SafeZone | yes — 2 call sites |
 | `VIGRID_MAP` | Map | yes — client zone pushes and two server calls |
@@ -81,3 +84,7 @@ Comment either out of `Extra/Map/config.cpp` and that feature's class, its widge
 handler leave the PBO, while the fullscreen map is untouched.
 
 The other twelve declare none, so nothing can `#ifdef`-guard against them.
+
+`VIGRID_EARPLUGS` is a third kind again: it guards nothing anywhere, because EarPlugs is the one
+addon here with no API at all. It is declared so that a future host-mod call site has something to
+test, and so the addon does not look like an oversight beside the others.
