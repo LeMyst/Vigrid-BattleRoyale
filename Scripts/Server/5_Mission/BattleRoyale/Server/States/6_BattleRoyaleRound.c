@@ -320,7 +320,15 @@ class BattleRoyaleRound: BattleRoyaleState
                 	MessagePlayerUntranslated(player, "STR_BR_TAKING_DAMAGE");
 				    player.GetSymptomManager().QueueUpPrimarySymptom(SymptomIDs.SYMPTOM_PAIN_LIGHT);
                     //TODO: determine if this last health tick will kill the player
-                    player.DecreaseHealthCoef( f_Damage ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
+                    //--- auto_delete FALSE, explicitly, and never omitted. Vanilla's default is
+                    //--- `true`, which at health <= 0 queues ObjectDelete(player) - that would
+                    //--- destroy the corpse, which IS the victim's loot and is what the spectate,
+                    //--- kill-attribution and match-summary paths all read on the way out.
+                    //--- It does not fire today only because DecreaseHealthCoef accepts the flag
+                    //--- and never forwards it (object.c:1116 calls the 3-arg DecreaseHealth
+                    //--- overload, not the 4-arg one that honours it). That is a bug upstream, so
+                    //--- the safety is theirs to remove; say what we need instead of relying on it.
+                    player.DecreaseHealthCoef( f_Damage, false ); //TODO: delta this by the # of zones that have ticked (more zones = more damage)
                     //--- Same reason as the kill feed hint below, but BR-owned: the death recap has
                     //--- to name the zone on a server where Extra/KillFeed/ is not built at all.
                     //--- Consumed by BattleRoyaleKillAttribution.ConsumeZoneHint.

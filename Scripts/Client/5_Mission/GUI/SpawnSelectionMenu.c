@@ -105,7 +105,12 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		super.OnHide();
 
 		PPEffects.SetBlurMenu(0);
-		GetGame().GetInput().ResetGameFocus();
+		//--- ChangeGameFocus(-1), not ResetGameFocus(): the reset SETS the shared additive counter
+		//--- to zero on every device (input.c:22-27), releasing every other holder's acquire rather
+		//--- than our own. Latent here rather than live - spawn selection runs with no other menu
+		//--- up - but it is the same defect that was reachable through the leaderboard, and one
+		//--- copy left behind is how it comes back.
+		GetGame().GetInput().ChangeGameFocus(-1);
 	}
 
 	override Widget Init()

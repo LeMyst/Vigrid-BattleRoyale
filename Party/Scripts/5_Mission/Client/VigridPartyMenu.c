@@ -108,7 +108,12 @@ class VigridPartyMenu extends UIScriptedMenu
     {
         super.OnHide();
 
-        GetGame().GetInput().ResetGameFocus();
+        //--- ChangeGameFocus(-1), not ResetGameFocus(): the reset SETS the shared additive input
+        //--- focus counter to zero across all devices (vanilla input.c:22-27), which releases every
+        //--- other holder's acquire and not just ours. Latent here - this menu only opens when no
+        //--- other menu is up - but it is the same shape that was live elsewhere, and the pair is
+        //--- balanced against the ChangeGameFocus(1) in OnShow either way.
+        GetGame().GetInput().ChangeGameFocus(-1);
         GetGame().GetUIManager().ShowUICursor(false);
     }
 
