@@ -13,9 +13,6 @@
             <input name="UADayZBRSpectateNext" loc="STR_BR_KEYBIND_SPECTATENEXT" />
             <input name="UADayZBRSpectatePrev" loc="STR_BR_KEYBIND_SPECTATEPREV" />
             <input name="UADayZBRSpectateSkeleton" loc="STR_BR_KEYBIND_SPECTATESKELETON" />
-            <!--            <input name="UADayZBRToggleMiniMap" loc="BR Mini Map Toggle" />-->
-            <!--            <input name="UADayZBRMiniMapZoomPlus" loc="BR Mini Map Increase Zoom" />-->
-            <!--            <input name="UADayZBRMiniMapZoomMinus" loc="BR Mini Map Decrease Zoom" />-->
         </actions>
 
         <sorting name="dayzbr" loc="STR_BR_KEYBIND_CATEGORY">
@@ -27,9 +24,6 @@
             <input name="UADayZBRSpectateNext" />
             <input name="UADayZBRSpectatePrev" />
             <input name="UADayZBRSpectateSkeleton" />
-            <!--            <input name="UADayZBRToggleMiniMap" />-->
-            <!--            <input name="UADayZBRMiniMapZoomPlus" />-->
-            <!--            <input name="UADayZBRMiniMapZoomMinus" />-->
         </sorting>
     </inputs>
     <preset>
@@ -65,14 +59,5 @@
         <input name="UADayZBRSpectateSkeleton">
             <btn name="kF6" />
         </input>
-        <!--        <input name="UADayZBRToggleMiniMap">-->
-        <!--            <btn name="kB" />-->
-        <!--        </input>-->
-        <!--        <input name="UADayZBRMiniMapZoomPlus">-->
-        <!--            <btn name="kAdd" />-->
-        <!--        </input>-->
-        <!--        <input name="UADayZBRMiniMapZoomMinus">-->
-        <!--            <btn name="kSubstract" />-->
-        <!--        </input>-->
     </preset>
 </modded_inputs>
