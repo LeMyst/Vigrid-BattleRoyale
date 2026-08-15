@@ -215,11 +215,17 @@ static const float VIGRID_MAP_PING_LINE_WIDTH = 2.0;
 //--- map gets opened for). Raised to 16 for two reasons: a dart needs more pixels than a plus before
 //--- its direction is readable, and "you" should stay the easiest glyph to find on a big map, which
 //--- was the plus's one real virtue. 16 also keeps it clear of VIGRID_MAP_TEAM_PX (14), now the
-//--- closest silhouette on the map - colour separates them independently, since VIGRID_MAP_COLOR_SELF
-//--- is white and VigridPartyPalette contains no white.
+//--- closest silhouette on the map.
+//---
+//--- The dart is PURE yellow, and that matters: it was white until 2026-08-15, chosen then because
+//--- VigridPartyPalette contains no white and so colour separated you from a teammate on its own.
+//--- Yellow gives that up - the nearest palette entry is slot 0's amber (242,199,68), which is only
+//--- distinguishable because it is desaturated and darker. Separation is now carried mainly by
+//--- silhouette (a notched dart against a triangle) and size (16 against 14). Moving a palette entry
+//--- towards pure yellow would erode what is left of it.
 static const float VIGRID_MAP_SELF_PX = 16.0;
 static const float VIGRID_MAP_SELF_LINE_WIDTH = 2.0;
-static const int VIGRID_MAP_COLOR_SELF = 0xFFFFFFFF;
+static const int VIGRID_MAP_COLOR_SELF = 0xFFFFFF00;
 
 //--- Copy of VIGRID_PARTY_PING_BASE_ALPHA, so a ping reads at the same weight on the map as it does
 //--- in the world.
