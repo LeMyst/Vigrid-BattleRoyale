@@ -20,8 +20,6 @@ class BattleRoyaleHud
 
     protected bool is_shown;
 
-    protected int timeRemaining;
-
     void BattleRoyaleHud( Widget root )
     {
         m_Root = root;
@@ -74,6 +72,19 @@ class BattleRoyaleHud
     void ShowDistance( bool show )
     {
         m_ZoneDistancePanel.Show( show );
+
+        //--- The clock and its icon live in CountdownPanel but are coloured from SetDistance, which
+        //--- only runs while this panel is up. Without this, a clock that went red stays red for the
+        //--- rest of the session once the distance readout goes away - 7_BattleRoyaleLastRound clears
+        //--- both circles at LockFinalZone while a countdown is still running, which is exactly that.
+        //---
+        //--- Guarded, unlike the panel above: HideDistance() runs EVERY FRAME in the lobby, so an
+        //--- unresolved widget here would be a per-frame null dereference rather than a one-off.
+        if ( !show && m_CountdownTextWidget && m_ImageClock )
+        {
+            m_CountdownTextWidget.SetColor(ARGB(255, 255, 255, 255));
+            m_ImageClock.SetColor(ARGB(255, 255, 255, 255));
+        }
     }
 
     void ShowKillCount( bool show )
@@ -87,7 +98,16 @@ class BattleRoyaleHud
     }
 
     //value control
-    void SetDistance(bool isInsideZone, float distExt, float distInt, float angle)
+    /**
+     *  secondsToZone is the deadline for being INSIDE the circle the arrow points at, which is not
+     *  always the number printed on the clock - see BattleRoyaleClient.Update and
+     *  BattleRoyaleState.SendCountdown.
+     *
+     *  Passed in rather than read off a member the way `timeRemaining` used to be: SetCountdown only
+     *  ran on an edge, from a different call path, and ran AFTER this in the same frame - so the
+     *  colour was keyed to a stale value nobody could see was stale.
+     */
+    void SetDistance(bool isInsideZone, float distExt, float distInt, float angle, int secondsToZone)
     {
         if(!m_DistanceTextWidget)
         {
@@ -110,16 +130,21 @@ class BattleRoyaleHud
 			// Calculate speed needed to reach the zone in time (m/s)
 			float speedNeededToReachZone = 0;
 
-			if (timeRemaining > 0)
+			if (secondsToZone > 0)
 			{
-				speedNeededToReachZone = distExt / timeRemaining;
+				speedNeededToReachZone = distExt / secondsToZone;
 			}
 			else
 			{
 				speedNeededToReachZone = 99999; // Infinite speed needed if no time
 			}
 
-			BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 timeRemaining=%2 speedNeededToReachZone=%3", distExt, timeRemaining, speedNeededToReachZone));
+			//--- Gated so the string is not even BUILT at production log levels. This runs once per
+			//--- frame for as long as a player is outside the circle, which used to mean the tail end
+			//--- of a round and now means the whole pre-lock phase too - measured at ~60 lines/second
+			//--- per client, and string.Format runs before Debug() can reject it.
+			if (BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+				BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 secondsToZone=%2 speedNeededToReachZone=%3", distExt, secondsToZone, speedNeededToReachZone));
 
 			// Convert m/min thresholds to m/s for comparison (divide by 60)
 			float fastThreshold = 400.0 / 60.0;    // 6.67 m/s
@@ -206,8 +231,6 @@ class BattleRoyaleHud
             Error("Called SetCountdown but widget is null!");
             return;
         }
-
-        timeRemaining = value;
 
         int seconds = (value % 60);
         string second_string = seconds.ToString();

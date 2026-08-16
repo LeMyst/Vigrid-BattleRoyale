@@ -90,11 +90,11 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.SetCount( nb_players, nb_groups );
 	}
 
-	void UpdateZoneDistance(bool isInsideZone, float distExt, float distInt, float angle)
+	void UpdateZoneDistance(bool isInsideZone, float distExt, float distInt, float angle, int secondsToZone)
 	{
 		m_BattleRoyaleHud.ShowDistance(true);
 		//m_BattleRoyaleHud.ShowDistance( distance > 0 );
-		m_BattleRoyaleHud.SetDistance( isInsideZone, distExt, distInt, angle );
+		m_BattleRoyaleHud.SetDistance( isInsideZone, distExt, distInt, angle, secondsToZone );
 	}
 
 	void HideDistance()

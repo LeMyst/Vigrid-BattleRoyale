@@ -35,6 +35,15 @@ class BattleRoyaleState: Timeable
     //--- second handle to the same object rather than a second owner.
     protected Timer m_CountdownTimer;
 
+    //--- Milliseconds to ADD to m_CountdownTimer's remaining time to get the deadline by which a
+    //--- player has to be inside the circle the HUD arrow is pointing at. Zero for every state whose
+    //--- countdown IS that deadline - which is all of them except the warm-up, where the clock counts
+    //--- down to the first ROUND starting and the circle then stays harmless for another
+    //--- BR_ZONE_LOCK_FRACTION of round one on top.
+    //---
+    //--- Stored rather than recomputed so ResendGameInfo() can re-assert it off the live timer.
+    protected int i_CountdownZoneExtraMs;
+
     string GetName()
     {
         return "Unknown State";
@@ -84,6 +93,7 @@ class BattleRoyaleState: Timeable
         //--- Whatever this state was counting down to is over. Dropped rather than left dangling so
         //--- a stray resend cannot advertise a dead state's timer.
         m_CountdownTimer = NULL;
+        i_CountdownZoneExtraMs = 0;
 
         b_IsActive = false;
     }
@@ -319,10 +329,22 @@ class BattleRoyaleState: Timeable
 	 *  place. It replaced four hand-written SendRPC call sites, one of which (7_BattleRoyaleLastRound)
 	 *  had no resend at all - the same shape of drift-by-duplication that IsOneSideLeft was
 	 *  centralised to stop.
+	 *
+	 *  THE SECOND INT IS THE DEADLINE THE HUD COLOURS THE CLOCK AGAINST, which is not always the
+	 *  countdown itself. It rides this RPC rather than one of its own precisely because the two are
+	 *  halves of the same fact: sent together they can never disagree, and ResendGameInfo has one
+	 *  thing to keep in step instead of two. `zone_extra_ms` defaults to 0, so four of the five call
+	 *  sites say nothing and send exactly the countdown - the colour is unchanged everywhere except
+	 *  5_BattleRoyaleStartMatch, which is the one state where the two genuinely differ.
+	 *
+	 *  Note it is deliberately NOT "milliseconds until the circle bites": at LockNewZone the circle
+	 *  is already biting, so that reading is 0 and would pin the clock red for the rest of the match.
+	 *  "The deadline the colour is measured against" is one meaning that stays true at all five.
 	 */
-	void SendCountdown(Timer countdown_timer)
+	void SendCountdown(Timer countdown_timer, int zone_extra_ms = 0)
 	{
 		m_CountdownTimer = countdown_timer;
+		i_CountdownZoneExtraMs = zone_extra_ms;
 
 		int remaining_ms = BR_COUNTDOWN_NONE;
 
@@ -337,7 +359,13 @@ class BattleRoyaleState: Timeable
 		if(remaining_ms <= 0)
 			remaining_ms = BR_COUNTDOWN_NONE;
 
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownMs", new Param1<int>( remaining_ms ), true);
+		//--- Only meaningful while a countdown is actually running: with no timer there is nothing to
+		//--- add the extra to, and BR_COUNTDOWN_NONE + extra would be a plausible-looking wrong number.
+		int zone_ms = BR_COUNTDOWN_NONE;
+		if(remaining_ms > 0)
+			zone_ms = remaining_ms + zone_extra_ms;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownMs", new Param2<int, int>( remaining_ms, zone_ms ), true);
 	}
 
 	/**
@@ -355,8 +383,10 @@ class BattleRoyaleState: Timeable
 		//--- Sends SetPlayerCount and SetTopPosition.
 		OnPlayerCountChanged();
 
+		//--- The extra has to come along, or every resend would flatten the warm-up's colour deadline
+		//--- back onto the countdown five seconds after it was set.
 		if(m_CountdownTimer && m_CountdownTimer.IsRunning())
-			SendCountdown( m_CountdownTimer );
+			SendCountdown( m_CountdownTimer, i_CountdownZoneExtraMs );
 	}
 
 	//player count changed event handler

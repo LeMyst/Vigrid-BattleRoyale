@@ -137,6 +137,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- allocated fresh every frame.
     protected float br_diag_zone_radius = -1;
     protected float br_diag_zone_next_radius = -1;
+    protected bool br_diag_zone_no_current = false;
     protected vector br_diag_zone_origin;
     protected int br_diag_req_spawn_menu = 0;
     protected int br_diag_req_leaderboard = 0;
@@ -165,6 +166,10 @@ class BattleRoyaleClient: BattleRoyaleBase
             rebuild = true;
         if ( br_diag_zone_next_radius != BattleRoyaleDiag.zone_next_radius )
             rebuild = true;
+        //--- In the edge test as well as in the body below, or flipping the toggle would sit there
+        //--- doing nothing until a radius happened to move.
+        if ( br_diag_zone_no_current != BattleRoyaleDiag.zones_fake_no_current )
+            rebuild = true;
 
         if ( !rebuild )
             return;
@@ -181,11 +186,20 @@ class BattleRoyaleClient: BattleRoyaleBase
         vector diag_next_center = br_diag_zone_origin;
         diag_next_center[0] = diag_next_center[0] + (BattleRoyaleDiag.zone_radius * 0.4);
 
-        m_CurrentPlayArea = new BattleRoyalePlayArea( br_diag_zone_origin, BattleRoyaleDiag.zone_radius );
+        //--- "Pre-Lock": a next circle with no current one, which is what the client actually holds
+        //--- from the moment the first circle is advertised until LockNewZone. The next circle still
+        //--- uses the current radius for its offset, so toggling this is a pure A/B - same two
+        //--- circles in the same places, one of them simply not published.
+        if ( BattleRoyaleDiag.zones_fake_no_current )
+            m_CurrentPlayArea = NULL;
+        else
+            m_CurrentPlayArea = new BattleRoyalePlayArea( br_diag_zone_origin, BattleRoyaleDiag.zone_radius );
+
         m_FuturePlayArea = new BattleRoyalePlayArea( diag_next_center, BattleRoyaleDiag.zone_next_radius );
 
         br_diag_zone_radius = BattleRoyaleDiag.zone_radius;
         br_diag_zone_next_radius = BattleRoyaleDiag.zone_next_radius;
+        br_diag_zone_no_current = BattleRoyaleDiag.zones_fake_no_current;
     }
 
     //! Drain the diag menu's one-shot requests. Counters, so a press is never lost or double-fired.
@@ -470,6 +484,41 @@ class BattleRoyaleClient: BattleRoyaleBase
 		if ( !gameplay )
 			return;
 
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+
+		//--- The deadline the CLOCK COLOUR is measured against, which is not always the countdown on
+		//--- screen. During 5_BattleRoyaleStartMatch that countdown runs out when the first ROUND
+		//--- starts, after which the player still gets BR_ZONE_LOCK_FRACTION of round one before the
+		//--- circle bites - 536 s of real allowance behind a 140 s readout at the shipped defaults.
+		//--- The server sends the honest figure alongside; see BattleRoyaleState.SendCountdown.
+		//---
+		//--- Falling back to the countdown is what makes that wire field purely additive: a client
+		//--- that was never told - offline, diag, the frames before the first SetCountdownMs - gets
+		//--- exactly the behaviour that shipped before it existed.
+		int zone_seconds = BR_COUNTDOWN_NONE;
+		if ( br_rpc )
+		{
+			int zone_deadline_at_ms = br_rpc.zone_deadline_ms;
+			if ( zone_deadline_at_ms <= 0 )
+				zone_deadline_at_ms = br_rpc.countdown_deadline_ms;
+
+			if ( zone_deadline_at_ms > 0 )
+			{
+				int zone_remaining_ms = zone_deadline_at_ms - GetGame().GetTime();
+				if ( zone_remaining_ms > 0 )
+					zone_seconds = (int)Math.Ceil( zone_remaining_ms / 1000.0 );
+				else
+					zone_seconds = 0;
+			}
+		}
+
+#ifdef DIAG_DEVELOPER
+		//--- The same forced number the countdown block below uses, so the diag rig colours the clock
+		//--- against the figure it is displaying rather than a deadline no server ever sent.
+		if ( BattleRoyaleDiag.hud_force )
+			zone_seconds = BattleRoyaleDiag.hud_countdown;
+#endif
+
 		// First check if player is outside current play area
 		if (m_CurrentPlayArea)
 		{
@@ -479,21 +528,35 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// If outside current play area, show distance to it
 			if (!isInsideZone)
 			{
-				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle);
+				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle, zone_seconds);
 			}
 			// Player is inside current play area, check if future play area exists
 			else if (m_FuturePlayArea)
 			{
 				isInsideZone = GetZoneDistanceFrom(m_FuturePlayArea, subject_pos, distExt, distInt, angle);
-				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle);
+				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle, zone_seconds);
 			}
 			// Player inside current area but no future area
 			else
 			{
-				gameplay.UpdateZoneDistance(true, 0, distInt, angle);
+				gameplay.UpdateZoneDistance(true, 0, distInt, angle, zone_seconds);
 			}
 		}
-		// No current play area
+		//--- A FUTURE circle with no CURRENT one is the whole pre-lock phase, and it used to fall into
+		//--- the hide branch below: for the warm-up plus the first 80% of round one - ~9 minutes at the
+		//--- shipped defaults - the player got no arrow, no distance and, because SetDistance is the
+		//--- only thing that colours the clock, no timer colour either. The first UpdateCurrentPlayArea
+		//--- a client ever sees comes from 6_BattleRoyaleRound.LockNewZone, which is the same instant
+		//--- the damage starts.
+		//---
+		//--- Same measurement as the inside-current branch above: with no boundary yet, "am I inside
+		//--- the circle I have to be inside" is the only question there is.
+		else if (m_FuturePlayArea)
+		{
+			isInsideZone = GetZoneDistanceFrom(m_FuturePlayArea, subject_pos, distExt, distInt, angle);
+			gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle, zone_seconds);
+		}
+		// Neither circle: the lobby, and the frames after 7_BattleRoyaleLastRound clears both.
 		else
 		{
 			gameplay.HideDistance();
@@ -504,6 +567,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 		//--- are watching is outside the circle" - a camera that swings across the boundary behind a
 		//--- target who is safely inside must not tint, and a target who runs out must, even though
 		//--- the camera trails them.
+		//---
+		//--- CURRENT area only, deliberately, and NOT the future one the arrow above may be pointing
+		//--- at. There is no zone damage before the lock, so measuring this against the future circle
+		//--- would start the you-are-dying signal up to nine minutes early. Do not "unify" the two
+		//--- GetZoneDistanceFrom calls - they are asking different questions.
 		bool want_tint = false;
         if( m_CurrentPlayArea && has_subject )
         {
@@ -513,8 +581,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         ApplyOutOfZoneTint( want_tint, player );
 
-		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
-
+		//--- br_rpc is resolved above the zone block, which needs it for the colour deadline.
 		if( br_rpc )
 		{
 			//--- Everything the HUD shows, taken from the wire unless the diag menu is forcing it.
