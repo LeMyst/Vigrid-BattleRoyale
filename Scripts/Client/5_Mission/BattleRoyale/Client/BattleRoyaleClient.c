@@ -409,31 +409,52 @@ class BattleRoyaleClient: BattleRoyaleBase
     }
 
     /**
-     *  Fill the toast stack with a fixture built to FAIL if the layout is wrong.
+     *  Raise a random 1-3 toasts from a fixture built so it can FAIL.
      *
-     *  Three messages of deliberately different lengths, pushed in one frame:
-     *    - a short one, which should hug BR_TOAST_MIN_HEIGHT_PX
-     *    - a medium one that takes most of a line
+     *  The pool is deliberately uneven in length:
+     *    - a short key, which should hug BR_TOAST_MIN_HEIGHT_PX
+     *    - a medium key that takes most of a line
      *    - STR_BR_UNSTUCK_INFORMATION, two full sentences and the longest notification the mod
      *      actually sends. It is the wrap case, and in French it is longer again.
+     *    - a literal string, which is the shape the RPC path delivers after localising - the keys
+     *      here are passed with their '#' and resolved by the widget, as NotifyLocal does, so both
+     *      routes into the widget get exercised.
      *
-     *  If the plate does not grow for the long one, the text overflows or clips and it is obvious.
-     *  If the stack steps by a fixed height rather than each row's own, the rows overlap or gap and
-     *  that is obvious too. A single short toast would look perfect under either bug - the same trap
-     *  as the leaderboard fixture that fitted its viewport and so could not test scrolling.
+     *  If a plate does not grow for the long one, the text clips and it is obvious. If the stack
+     *  steps by a fixed height rather than each row's own, rows overlap or gap and that is obvious
+     *  too. A fixture that only ever raised one short toast would look perfect under either bug -
+     *  the same trap as the leaderboard fixture that fitted its viewport and so could not scroll.
      *
-     *  Keys are passed with their leading '#' and resolved by the widget, exactly as NotifyLocal
-     *  does; the server path arrives pre-localised instead. Both are exercised - the last one is
-     *  literal text, which is the shape the RPC path delivers.
+     *  ⚠️ RANDOM COUNT MEANS ANY SINGLE PRESS MAY MISS A CASE - that is the cost of it being random,
+     *  and it is worth paying because a varying count is what exercises the pooling: a burst on top
+     *  of live toasts is what caught the fourth plate binding to the wrong widget. Press it a few
+     *  times rather than reading anything into one press.
      */
     protected void BR_DiagPushToasts()
     {
         if ( !m_Toasts )
             return;
 
-        m_Toasts.Push( "#STR_BR_MATCH_STARTED", DAYZBR_MSG_TIME );
-        m_Toasts.Push( "#STR_BR_UNSTUCK_INFORMATION", DAYZBR_MSG_TIME );
-        m_Toasts.Push( "Toast fixture: literal text, no stringtable lookup.", DAYZBR_MSG_TIME );
+        array<string> pool = new array<string>();
+        pool.Insert( "#STR_BR_MATCH_STARTED" );
+        pool.Insert( "#STR_BR_UNSTUCK_INFORMATION" );
+        pool.Insert( "#STR_BR_TAKING_DAMAGE" );
+        pool.Insert( "Toast fixture: literal text, no stringtable lookup." );
+
+        int count = Math.RandomIntInclusive( 1, 3 );
+
+        //--- Drawn WITHOUT replacement, so a three-toast press is three different messages rather
+        //--- than the same one three times - which would tell you nothing about per-row sizing.
+        for ( int i = 0; i < count; i++ )
+        {
+            int pick = Math.RandomInt( 0, pool.Count() );
+            string message = pool.Get( pick );
+            pool.Remove( pick );
+
+            m_Toasts.Push( message, DAYZBR_MSG_TIME );
+        }
+
+        BattleRoyaleUtils.Debug( "[Toasts] diag raised " + count.ToString() + " toast(s)" );
     }
 #endif
     /**

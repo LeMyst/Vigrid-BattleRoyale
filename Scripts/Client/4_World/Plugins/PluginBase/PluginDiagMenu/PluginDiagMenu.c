@@ -308,10 +308,12 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagLastMatchNotPlayedID, "", "Did Not Play", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenDeathScreenID, "", "Open Death Screen", m_BRDiagHudMenuID);
 				//--- Toasts, which are otherwise unreachable offline - every real one is a server
-				//--- push. Deliberately raises a BURST rather than a single line, because the two
-				//--- things most likely to be wrong are only visible with more than one: whether a
-				//--- long message wraps and grows its plate, and whether the stack spaces rows by
-				//--- their own heights instead of a fixed step. A one-line fixture cannot fail either.
+				//--- push. Raises a RANDOM 1-3 from a pool of deliberately uneven lengths, because
+				//--- the things most likely to be wrong only show with more than one and with a
+				//--- varying count: whether a long message wraps and grows its plate, whether the
+				//--- stack spaces rows by their own heights instead of a fixed step, and whether the
+				//--- widget pool rebinds correctly when a burst lands on top of live toasts. That
+				//--- last one is what caught the fourth plate drawing empty. Press it a few times.
 				DiagMenu.RegisterBool(m_BRDiagPushToastsID, "", "Push Toasts", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagFadeID, "", "Fade", m_BRDiagHudMenuID);
 			}
