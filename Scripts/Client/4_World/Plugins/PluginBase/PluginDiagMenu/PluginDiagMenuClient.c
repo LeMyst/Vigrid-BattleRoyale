@@ -83,6 +83,7 @@ modded class PluginDiagMenuClient
 #endif
 
 		DiagMenu.BindCallback(m_BRDiagZonesFakeID, CBBRDiagZonesFake);
+		DiagMenu.BindCallback(m_BRDiagZonesNoCurrentID, CBBRDiagZonesNoCurrent);
 		DiagMenu.BindCallback(m_BRDiagZoneRadiusID, CBBRDiagZoneRadius);
 		DiagMenu.BindCallback(m_BRDiagZoneNextRadiusID, CBBRDiagZoneNextRadius);
 		DiagMenu.BindCallback(m_BRDiagLogZoneTableID, CBBRDiagLogZoneTable);
@@ -631,6 +632,11 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagZonesFake(bool enabled)
 	{
 		BattleRoyaleDiag.zones_fake = enabled;
+	}
+
+	static void CBBRDiagZonesNoCurrent(bool enabled)
+	{
+		BattleRoyaleDiag.zones_fake_no_current = enabled;
 	}
 
 	static void CBBRDiagZoneRadius(float value)

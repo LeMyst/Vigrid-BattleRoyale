@@ -62,6 +62,13 @@ class BattleRoyaleDiag
     static float zone_radius = 1500;
     static float zone_next_radius = 600;
 
+    //--- Suppress the CURRENT circle while still publishing the next one - the shape the client is in
+    //--- for the warm-up and the first 80% of round one, when the server has advertised where the
+    //--- first circle is but nothing is lethal yet. Without this the fake rig always sets BOTH areas
+    //--- and so can only ever exercise the branch that already worked: a fixture that cannot violate
+    //--- the property under test cannot test it.
+    static bool zones_fake_no_current = false;
+
     //--- Kill feed. Read by the "Push Fake Kill" / "Fill Feed" callbacks at the moment they fire,
     //--- rather than mirroring the entry ids, so no id has to leave the plugin class.
     static int kf_cause = 0;
@@ -131,6 +138,7 @@ class BattleRoyaleDiag
         zones_fake = false;
         zone_radius = 1500;
         zone_next_radius = 600;
+        zones_fake_no_current = false;
 
         kf_cause = 0;
         kf_with_weapon = true;

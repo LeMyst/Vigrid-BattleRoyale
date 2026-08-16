@@ -104,6 +104,7 @@ class BattleRoyaleRPC
 		lobby_net_high.Clear();
 		lobby_names.Clear();
 		countdown_deadline_ms = BR_COUNTDOWN_NONE;
+		zone_deadline_ms = BR_COUNTDOWN_NONE;
 		current_play_area_center = "0 0 0";
 		current_play_area_radius = 0.0;
 		future_play_area_center = "0 0 0";
@@ -795,9 +796,25 @@ class BattleRoyaleRPC
 	 */
 	int countdown_deadline_ms = BR_COUNTDOWN_NONE;
 
+	/**
+	 *  The deadline the HUD colours the CLOCK against, on this client's own clock.
+	 *
+	 *  Minted exactly like countdown_deadline_ms above and for the same reasons, but it answers a
+	 *  different question: "by when must the player be inside the circle the arrow points at". It
+	 *  EQUALS the countdown in every phase whose countdown is itself that deadline - every round, and
+	 *  the endgame - and differs only during the warm-up, where the clock counts down to the first
+	 *  round starting and the circle then stays harmless for another BR_ZONE_LOCK_FRACTION of round
+	 *  one. See BattleRoyaleState.SendCountdown for why it rides this RPC rather than one of its own.
+	 *
+	 *  BR_COUNTDOWN_NONE means the server has not said, and BattleRoyaleClient.Update then falls back
+	 *  to the countdown - which is exactly the behaviour that shipped before this field existed, and
+	 *  is what makes the whole change additive for offline and diag sessions.
+	 */
+	int zone_deadline_ms = BR_COUNTDOWN_NONE;
+
 	void SetCountdownMs(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
-		Param1<int> data;
+		Param2<int, int> data;
 		if( !ctx.Read( data ) )
 		{
 			Error("FAILED TO READ SETCOUNTDOWNMS RPC");
@@ -805,12 +822,17 @@ class BattleRoyaleRPC
 		}
 		if ( type == CallType.Client )
 		{
-			BattleRoyaleUtils.Trace(string.Format("SetCountdownMs: %1", data.param1));
+			BattleRoyaleUtils.Trace(string.Format("SetCountdownMs: %1 zone %2", data.param1, data.param2));
 
 			if ( data.param1 > 0 )
 				countdown_deadline_ms = GetGame().GetTime() + data.param1;
 			else
 				countdown_deadline_ms = BR_COUNTDOWN_NONE;
+
+			if ( data.param2 > 0 )
+				zone_deadline_ms = GetGame().GetTime() + data.param2;
+			else
+				zone_deadline_ms = BR_COUNTDOWN_NONE;
 		}
 	}
 

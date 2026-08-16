@@ -98,8 +98,38 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
-        //timer before first zone appears
-        SendCountdown( m_ZoneStartTimer );
+        //timer before first zone appears. The extra is the gap between what this clock counts down to
+        //(the first ROUND starting) and what the player is actually racing - see below.
+        SendCountdown( m_ZoneStartTimer, GetFirstZoneLockExtraMs() );
+    }
+
+    /**
+     *  How much longer than this state's countdown the player really has to reach the first circle.
+     *
+     *  The clock here counts down to StartZoning - the first ROUND beginning - after which the circle
+     *  still does no damage until BR_ZONE_LOCK_FRACTION of that round has elapsed. At the shipped
+     *  defaults that is 150 s on screen against 546 s of real allowance, so colouring the clock
+     *  against the readout over-warns by ~3.6x: a 2000 m gap reads RED while the player is walking it
+     *  comfortably, and red means "you cannot make it", whose correct response is the wrong play.
+     *
+     *  Consumed only by the HUD colour. The countdown the player reads is untouched.
+     *
+     *  Same zone ShowFirstZone() advertises, and i_NumStartingPlayers rather than the live count for
+     *  the same reason: the rounds decide which circle to skip to from the countdown snapshot, so the
+     *  live count can name a different one. GetZoneTimer() is the accessor 6_BattleRoyaleRound.Init
+     *  uses, so a flexed or derived round-one length is already folded in.
+     */
+    protected int GetFirstZoneLockExtraMs()
+    {
+        int first_zone_number = GetDynamicStartingZone(i_NumStartingPlayers);
+        ref BattleRoyaleZone first_zone = BattleRoyaleZone.GetZone( first_zone_number );
+        if(!first_zone)
+            return 0;
+
+        int round_seconds = first_zone.GetZoneTimer();
+        int round_ms = round_seconds * 1000;
+
+        return (int)( round_ms * BR_ZONE_LOCK_FRACTION );
     }
 
     override void Deactivate()

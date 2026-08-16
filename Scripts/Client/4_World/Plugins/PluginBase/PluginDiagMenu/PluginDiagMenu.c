@@ -83,6 +83,7 @@ modded class PluginDiagMenu
 	//--- Map & Zones
 	protected int m_BRDiagZoneMenuID;
 	protected int m_BRDiagZonesFakeID;
+	protected int m_BRDiagZonesNoCurrentID;
 	protected int m_BRDiagZoneRadiusID;
 	protected int m_BRDiagZoneNextRadiusID;
 	protected int m_BRDiagLogZoneTableID;
@@ -167,6 +168,7 @@ modded class PluginDiagMenu
 
 		m_BRDiagZoneMenuID = GetModdedDiagID();
 		m_BRDiagZonesFakeID = GetModdedDiagID();
+		m_BRDiagZonesNoCurrentID = GetModdedDiagID();
 		m_BRDiagZoneRadiusID = GetModdedDiagID();
 		m_BRDiagZoneNextRadiusID = GetModdedDiagID();
 		m_BRDiagLogZoneTableID = GetModdedDiagID();
@@ -319,6 +321,11 @@ modded class PluginDiagMenu
 			DiagMenu.RegisterMenu(m_BRDiagZoneMenuID, "Map & Zones", m_BRDiagRootMenuID);
 			{
 				DiagMenu.RegisterBool(m_BRDiagZonesFakeID, "", "Fake Zones", m_BRDiagZoneMenuID);
+				//--- Publish the NEXT circle only, which is what a client holds from the moment the
+				//--- first circle is advertised until LockNewZone - the ~9 minutes in which the HUD
+				//--- used to show nothing at all. The plain fake rig sets both circles and so cannot
+				//--- reach that branch.
+				DiagMenu.RegisterBool(m_BRDiagZonesNoCurrentID, "", "Fake Zones: Pre-Lock", m_BRDiagZoneMenuID);
 				DiagMenu.RegisterRange(m_BRDiagZoneRadiusID, "", "Zone Radius", m_BRDiagZoneMenuID, "50, 5000, 1500, 50");
 				DiagMenu.RegisterRange(m_BRDiagZoneNextRadiusID, "", "Next Radius", m_BRDiagZoneMenuID, "25, 2500, 600, 25");
 				//--- Generation runs smallest-first, so m_PlayAreas[0] is the FINAL circle. One dump
