@@ -98,10 +98,10 @@ class BattleRoyaleLastRound: BattleRoyaleState
         //--- Guarded exactly as the sibling in 6_BattleRoyaleRound.Activate() already is; skipping
         //--- the send is correct, since "no current area" IS "no boundary yet" on the client.
         if(m_PreviousArea)
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
+            SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
 
         //tell the client the future zone is NULL (no future zone)
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( "0 0 0", 0.0, false ), true);
+        SendFuturePlayArea( "0 0 0", 0.0, false );
 
         super.Activate();
     }
@@ -239,8 +239,8 @@ class BattleRoyaleLastRound: BattleRoyaleState
     void LockFinalZone()
     {
         //TODO: this doesn't fucking work | if zone is null, no damage occurs
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( "0 0 0", 0.0 ), true);
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( "0 0 0", 0.0, false ), true);
+        SendCurrentPlayArea( "0 0 0", 0.0 );
+        SendFuturePlayArea( "0 0 0", 0.0, false );
         b_IsZoneLocked = true;
 
         //--- Nothing left to count down to: the match now ends when one side is left standing,

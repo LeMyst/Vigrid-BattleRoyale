@@ -189,7 +189,7 @@ class BattleRoyaleRound: BattleRoyaleState
 			//--- Nothing to re-send when no round has played yet: the clients were never given a
 			//--- current area, and the circle of a skipped round must not be advertised as one.
 			if(m_PreviousArea)
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
+				SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
         }
 
         ref BattleRoyalePlayArea m_ThisArea = NULL;
@@ -203,7 +203,7 @@ class BattleRoyaleRound: BattleRoyaleState
         //--- Guarded for the same reason the m_PreviousArea send above is: GetZone() may hand back
         //--- nothing, and this used to dereference it unconditionally.
         if(m_ThisArea)
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+            SendFuturePlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound );
 
         //end state event
         m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
@@ -430,9 +430,9 @@ class BattleRoyaleRound: BattleRoyaleState
         if(m_ThisArea)
         {
             //tell the client the current area is now this area
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() ), true);
+            SendCurrentPlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() );
             //tell the client we don't know the next play area
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+            SendFuturePlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound );
         }
         //tell the client how much time until the next zone appears. Handed the timer rather than the
         //`seconds` parameter - which carries the same figure - because the countdown the HUD shows
