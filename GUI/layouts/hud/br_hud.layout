@@ -105,7 +105,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
            vexactpos 0
            hexactsize 1
            vexactsize 1
-           imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\persona_64x64.edds"
+           image0 "set:dayz_gui image:icon_player"
            mode blend
            "src alpha" 1
            "no wrap" 1
@@ -153,7 +153,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\skull_1_64x64.edds"
+         image0 "set:dayz_gui image:iconSkull"
          mode blend
          "src alpha" 1
          "no wrap" 1
@@ -196,7 +196,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         image0 "set:expansion_iconset image:clock_blank"
+         image0 "set:ccgui_enforce image:IconTime"
          mode blend
          "src alpha" 1
          "no wrap" 1
@@ -239,7 +239,11 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\arrow_64x64.edds"
+         // POINTS DOWN AT REST, and BattleRoyaleHud.SetDistance rotates this widget to aim
+         // at the zone (SetRotation(0, 0, angle)). Expansion's arrow_64x64 that this replaced
+         // may have rested at a different angle, so if the arrow aims 90 or 180 degrees off,
+         // the fix is an offset on `angle` at that call site - not a different icon.
+         image0 "set:dayz_gui image:icon_arrow"
          mode blend
          "src alpha" 1
          "no wrap" 1
