@@ -67,6 +67,7 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagLastMatchCauseID, CBBRDiagLastMatchCause);
 		DiagMenu.BindCallback(m_BRDiagLastMatchNotPlayedID, CBBRDiagLastMatchNotPlayed);
 		DiagMenu.BindCallback(m_BRDiagOpenDeathScreenID, CBBRDiagOpenDeathScreen);
+		DiagMenu.BindCallback(m_BRDiagPushToastsID, CBBRDiagPushToasts);
 		DiagMenu.BindCallback(m_BRDiagFadeID, CBBRDiagFade);
 
 #ifdef KILLFEED
@@ -448,6 +449,15 @@ modded class PluginDiagMenuClient
 		//--- failed to load.
 		BattleRoyaleDiag.suppress_alive_close = true;
 		BattleRoyaleDiag.req_open_death_screen = BattleRoyaleDiag.req_open_death_screen + 1;
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagPushToasts(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.req_push_toasts = BattleRoyaleDiag.req_push_toasts + 1;
 		DiagMenu.SetValue(id, false);
 	}
 

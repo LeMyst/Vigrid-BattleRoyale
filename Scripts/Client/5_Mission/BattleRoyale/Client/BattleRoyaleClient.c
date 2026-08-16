@@ -15,6 +15,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected ref BattleRoyaleSpeakingList m_SpeakingList;
 
+    //--- The mod's own notification stack, and what replaced ExpansionNotification. Fed from two
+    //--- places: the server's NotificationMessage RPC, which queues onto BattleRoyaleRPC and is
+    //--- drained here, and NotifyLocal() below for the notifications this client raises for itself.
+    protected ref BattleRoyaleToasts m_Toasts;
+
     //--- The "YOU SURVIVED" overlay. Created straight into the workspace, so it is owned by nobody
     //--- else and has to be unlinked here - see the creation site in Update().
     protected Widget m_WinScreen;
@@ -118,6 +123,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 #endif
 
 		m_SpeakingList = new BattleRoyaleSpeakingList();
+		m_Toasts = new BattleRoyaleToasts();
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -148,6 +154,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int br_diag_req_spawn_menu = 0;
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
+    protected int br_diag_req_toasts = 0;
 
     /**
      *  Fabricate the whole admin spectate overlay payload, so #276-#279 are reachable offline.
@@ -393,6 +400,40 @@ class BattleRoyaleClient: BattleRoyaleBase
             GetGame().GetUIManager().CloseAll();
             GetGame().GetUIManager().EnterScriptedMenu( MENU_BR_DEAD, NULL );
         }
+
+        if ( br_diag_req_toasts != BattleRoyaleDiag.req_push_toasts )
+        {
+            br_diag_req_toasts = BattleRoyaleDiag.req_push_toasts;
+            BR_DiagPushToasts();
+        }
+    }
+
+    /**
+     *  Fill the toast stack with a fixture built to FAIL if the layout is wrong.
+     *
+     *  Three messages of deliberately different lengths, pushed in one frame:
+     *    - a short one, which should hug BR_TOAST_MIN_HEIGHT_PX
+     *    - a medium one that takes most of a line
+     *    - STR_BR_UNSTUCK_INFORMATION, two full sentences and the longest notification the mod
+     *      actually sends. It is the wrap case, and in French it is longer again.
+     *
+     *  If the plate does not grow for the long one, the text overflows or clips and it is obvious.
+     *  If the stack steps by a fixed height rather than each row's own, the rows overlap or gap and
+     *  that is obvious too. A single short toast would look perfect under either bug - the same trap
+     *  as the leaderboard fixture that fitted its viewport and so could not test scrolling.
+     *
+     *  Keys are passed with their leading '#' and resolved by the widget, exactly as NotifyLocal
+     *  does; the server path arrives pre-localised instead. Both are exercised - the last one is
+     *  literal text, which is the shape the RPC path delivers.
+     */
+    protected void BR_DiagPushToasts()
+    {
+        if ( !m_Toasts )
+            return;
+
+        m_Toasts.Push( "#STR_BR_MATCH_STARTED", DAYZBR_MSG_TIME );
+        m_Toasts.Push( "#STR_BR_UNSTUCK_INFORMATION", DAYZBR_MSG_TIME );
+        m_Toasts.Push( "Toast fixture: literal text, no stringtable lookup.", DAYZBR_MSG_TIME );
     }
 #endif
     /**
@@ -624,6 +665,13 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- (BattleRoyaleDebug.GetNotLoadedCount) - and it is sent unconditionally because the
         //--- client knows neither whether it joined late nor whether the lobby is waiting on it.
         SendLoadedInOnce( player );
+
+		//--- Notifications, ticked ABOVE the !gameplay guard below on purpose. The stack is parented
+		//--- to the workspace rather than to the mission, and a toast raised on the way out - a
+		//--- late-join kick is the standard case - has to keep fading rather than freeze on screen.
+		//--- It costs one call that returns on an empty queue when nothing is up.
+		if ( m_Toasts )
+			m_Toasts.Update( delta );
 
 		float distExt;
 		float distInt;
@@ -2100,7 +2148,8 @@ class BattleRoyaleClient: BattleRoyaleBase
      */
     protected void NotifyLocal( string key )
     {
-        ExpansionNotification( DAYZBR_MSG_TITLE, key, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME ).Create();
+        if ( m_Toasts )
+            m_Toasts.Push( key, DAYZBR_MSG_TIME );
     }
 
     //! Does this client believe it is an admin? Pushed once by the server on connect. Used to gate

@@ -45,6 +45,9 @@ class BattleRoyaleRPC
 		admin_parties = new array<int>();
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
+
+		pending_toasts = new array<ref BattleRoyaleToast>();
+
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", this );
 
@@ -207,7 +210,26 @@ class BattleRoyaleRPC
 		recap_hits = 0;
 		recap_valid = false;
 		recap_seq = 0;
+		//--- A world load means a different server process, so anything still queued belongs to a
+		//--- match this client is no longer in. Note this is a QUEUE, not a latched value: the HUD
+		//--- drains it every frame, so it is almost always already empty and clearing it is cheap.
+		pending_toasts.Clear();
 	}
+
+	//------------------------------------------------------------------------------------------
+	//--- Toasts: notifications waiting for the HUD to pick them up.
+	//------------------------------------------------------------------------------------------
+
+	/**
+	 *  Notifications received but not yet shown. Drained by BattleRoyaleToasts.Drain() every frame.
+	 *
+	 *  A QUEUE rather than a field the client polls, unlike almost everything else on this class -
+	 *  and the difference is that a notification is an EVENT, not a state. The polled fields describe
+	 *  what is currently true, so a reader that misses a frame simply reads the same value next time;
+	 *  a toast that nobody read on the frame it arrived has been lost, and two toasts arriving in one
+	 *  frame would collapse into one. Same shape, and the same reason, as KillFeedRPC.pending.
+	 */
+	ref array<ref BattleRoyaleToast> pending_toasts;
 
 	//------------------------------------------------------------------------------------------
 	//--- Last match: the persisted summary of the PREVIOUS match, read back in the lobby.
@@ -1116,7 +1138,10 @@ class BattleRoyaleRPC
 			// these; see BattleRoyaleKeyTokens for why every lookup has a fallback.
 			translated_message = BattleRoyaleKeyTokens.Substitute(translated_message);
 
-			ExpansionNotification(DAYZBR_MSG_TITLE, translated_message, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, data.param2).Create();
+			//--- Queued, not drawn. This is 3_Game and the widget is 5_Mission, and more to the point
+			//--- an RPC handler runs whenever the packet lands - including on frames where the HUD
+			//--- does not exist yet. BattleRoyaleToasts drains this from BattleRoyaleClient.Update().
+			pending_toasts.Insert( new BattleRoyaleToast( translated_message, data.param2 ) );
 		}
 	}
 

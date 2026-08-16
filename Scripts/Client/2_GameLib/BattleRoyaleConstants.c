@@ -243,8 +243,41 @@ static const float BATTLEROYALE_BLOOD_REGEN_MODIFIER = 10; //multiplier from bas
 
 //--- notification messages
 static const float DAYZBR_MSG_TIME = 7;
-static const string DAYZBR_MSG_IMAGE = "set:expansion_iconset image:icon_info";
-static const string DAYZBR_MSG_TITLE = "DayZ Battle Royale";
+
+//--- Toasts: the mod's own notification widget (BattleRoyaleToasts + GUI/layouts/hud/toast*.layout).
+//---
+//--- This replaced ExpansionNotification, which was the LAST unguarded reason this mod needed
+//--- DayZ-Expansion loaded at all outside the airdrop path. The wire is unchanged - the server still
+//--- pushes a bare stringtable key over the NotificationMessage RPC and the client localises it on
+//--- arrival - so nothing server-side had to move. Two things did change on screen, deliberately:
+//--- there is no "DayZ Battle Royale" title line any more (it said the same thing on every single
+//--- toast, on a server where nothing else raises one) and no icon, because the old one came out of
+//--- Expansion's imageset and this mod's own has only the two logos in it. The coloured accent
+//--- stripe carries the identity instead and costs no asset at all.
+static const int BR_TOAST_MAX_ROWS = 4;         //!< widget pool size; older toasts fall off the top
+static const int BR_TOAST_TOP_PX = 96;          //!< top inset. Clears the map addon's compass strip
+static const int BR_TOAST_WIDTH_PX = 560;       //!< the wrap width, and so the whole row's width
+static const int BR_TOAST_PAD_X = 16;           //!< inset either side of the text
+static const int BR_TOAST_PAD_Y = 9;            //!< inset above and below the text block
+static const int BR_TOAST_GAP_PX = 6;           //!< vertical space between two stacked toasts
+static const int BR_TOAST_ACCENT_PX = 4;        //!< width of the coloured stripe down the left edge
+static const int BR_TOAST_MIN_HEIGHT_PX = 40;   //!< floor, so a one-line toast is not a thin sliver
+
+//--- Fades. A toast is opaque for all but the last BR_TOAST_FADE_OUT_MS of its life. Both are short
+//--- enough not to read as animation - they exist so a toast does not pop in and out.
+static const int BR_TOAST_FADE_IN_MS = 150;
+static const int BR_TOAST_FADE_OUT_MS = 400;
+
+//--- HUD alert colours, for the zone distance and countdown readouts in BattleRoyaleHud.
+//---
+//--- These replaced COLOR_EXPANSION_NOTIFICATION_ERROR and _ORANGE, which live in Expansion Core's
+//--- ExpansionConstants.c and were the last unguarded Expansion symbols in the client tree once the
+//--- toasts landed. Chosen fresh rather than transcribed, on the same principle Extra/MapSatellite
+//--- follows: what was wanted from Expansion was the IDEA that these two readouts go red and amber
+//--- when the zone is out of reach, and an idea carries no licence. Close enough to the old pair
+//--- that nobody reading the HUD will notice the swap.
+static const int BR_COLOR_ALERT = ARGB( 255, 220, 68, 55 );    //!< zone unreachable at any sane pace
+static const int BR_COLOR_WARN = ARGB( 255, 240, 160, 30 );    //!< reachable, but only at a sprint
 
 
 //--- broken debug zone values

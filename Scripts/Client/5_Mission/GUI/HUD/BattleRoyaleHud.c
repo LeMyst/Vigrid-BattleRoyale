@@ -136,8 +136,8 @@ class BattleRoyaleHud
         }
         else
         {
-            m_DistanceZoneArrow.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
-            m_DistanceTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+            m_DistanceZoneArrow.SetColor(BR_COLOR_ALERT);
+            m_DistanceTextWidget.SetColor(BR_COLOR_ALERT);
 
 			// Calculate speed needed to reach the zone in time (m/s)
 			float speedNeededToReachZone = 0;
@@ -165,14 +165,14 @@ class BattleRoyaleHud
 			if (speedNeededToReachZone > fastThreshold)
 			{
 				// Need to move faster than 400m/min (6.67m/s) - RED (impossible)
-				m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
-				m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+				m_CountdownTextWidget.SetColor(BR_COLOR_ALERT);
+				m_ImageClock.SetColor(BR_COLOR_ALERT);
 			}
 			else if (speedNeededToReachZone > mediumThreshold)
 			{
 				// Need to move between 240m/min and 400m/min (4-6.67m/s) - ORANGE (difficult)
-				m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
-				m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+				m_CountdownTextWidget.SetColor(BR_COLOR_WARN);
+				m_ImageClock.SetColor(BR_COLOR_WARN);
 			}
 			else
 			{

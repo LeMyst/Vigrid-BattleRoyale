@@ -1,0 +1,87 @@
+// One toast. Every position and size here is a placeholder: BattleRoyaleToasts.LayoutRow() measures
+// the wrapped text and overwrites all of them, exactly as killfeed_row.layout does. Keep them
+// plausible anyway so the row still reads correctly in Workbench.
+//
+// THE ROOT PAINTS NOTHING AND THAT IS DELIBERATE. A PanelWidgetClass with no `style` is not a fill -
+// it lays out and hosts its children and draws no pixels - so this is a pure grouping node whose only
+// job is to carry the fade. Its three children are `inheritalpha 1`, so one SetAlpha on the root
+// multiplies through all of them; without that the fade would have to be applied three times and the
+// backdrop, stripe and text could drift out of step.
+PanelWidgetClass ToastRoot {
+ visible 0
+ ignorepointer 1
+ inheritalpha 0
+ clipchildren 0
+ position 0 0
+ size 560 44
+ hexactpos 1
+ vexactpos 1
+ hexactsize 1
+ vexactsize 1
+ color 1 1 1 1
+ {
+  // The dark plate behind the text. `style DayZDefaultPanel` is what actually gives a panel a fill;
+  // `color` on its own paints nothing. killfeed_row.layout's RowRoot is the working reference in this
+  // repo for a translucent HUD plate, and this matches its alpha.
+  PanelWidgetClass ToastBackdrop {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 560 44
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0.55
+   style DayZDefaultPanel
+  }
+  // The accent stripe down the left edge - this mod's blue, 0x3C82FF, the same one the map draws the
+  // current play area in. It is what replaced the old Expansion icon: it says "this is the Battle
+  // Royale mod talking" without needing an imageset entry.
+  //
+  // `style rover_sim_colorable` is vanilla's flat tintable surface. DayZDefaultPanel would be wrong
+  // here - its texture is a plate, not a solid, and a 4px sliver of it does not read as a stripe.
+  PanelWidgetClass ToastAccent {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 4 44
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.235 0.510 1.0 1
+   style rover_sim_colorable
+  }
+  // `wrap 1` is what makes this multiline at all, and it is why the row can carry a message like
+  // STR_BR_UNSTUCK_INFORMATION (two full sentences, and longer again in French) without running off
+  // the screen. "size to text v" lets the widget report its wrapped height back to LayoutRow through
+  // GetScreenSize, which is how the plate ends up the right height for one line or for three.
+  MultilineTextWidgetClass ToastText {
+   visible 1
+   ignorepointer 1
+   inheritalpha 1
+   position 16 9
+   size 528 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   text ""
+   font "gui/fonts/etelkatextpro22"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "exact text" 1
+   "exact text size" 20
+   "size to text h" 0
+   "size to text v" 1
+   "text halign" center
+   "text valign" center
+   wrap 1
+  }
+ }
+}

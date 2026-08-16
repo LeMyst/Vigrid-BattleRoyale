@@ -134,9 +134,13 @@ modded class MainMenu
 
 		if ( GetDayZGame() )
 		{
-			string expansion_version = GetDayZGame().GetExpansionClientVersion();
-			string dayzbr_version = GetDayZGame().GetBattleRoyaleClientVersion();
-			m_Version.SetText( "Client #main_menu_version" + " " + version + " | " + expansion_version + " | " + dayzbr_version );
+			//--- Expansion segment is optional - same reasoning as InGameMenu.SetGameVersion().
+			string version_line = "Client #main_menu_version" + " " + version;
+#ifdef DZ_Expansion_Core
+			version_line = version_line + " | " + GetDayZGame().GetExpansionClientVersion();
+#endif
+			version_line = version_line + " | " + GetDayZGame().GetBattleRoyaleClientVersion();
+			m_Version.SetText( version_line );
 		}
 		else
 		{

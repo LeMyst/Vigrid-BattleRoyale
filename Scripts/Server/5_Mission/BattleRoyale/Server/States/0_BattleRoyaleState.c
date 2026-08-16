@@ -599,27 +599,13 @@ class BattleRoyaleState: Timeable
 		}
     }
 
-    //CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
-    void MessagePlayers(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
-    {
-		BattleRoyaleUtils.Info(string.Format("MessagePlayers: %1", message));
-        StringLocaliser text = new StringLocaliser( message );
-        ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create();
-    }
-
-    void MessagePlayer(PlayerBase player, string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
-    {
-        if(player)
-        {
-            PlayerIdentity identity = player.GetIdentity();
-            if(identity)
-            {
-            	BattleRoyaleUtils.Info(string.Format("MessagePlayer: %1 %2", identity.GetName(), message));
-                StringLocaliser text = new StringLocaliser( message );
-                ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create(identity);
-            }
-        }
-    }
+	//--- There were MessagePlayers() and MessagePlayer() here, the localise-on-the-server twins of the
+	//--- four Untranslated helpers below. They called ExpansionNotification directly and had NO CALL
+	//--- SITES ANYWHERE - every notification in the mod already went out through the Untranslated
+	//--- pair, which ships a bare stringtable key over the mod's own NotificationMessage RPC and lets
+	//--- the client localise it. They were deleted rather than ported, because porting them would
+	//--- have meant keeping a second way to do the same thing, and the wrong one: localising server
+	//--- side bakes in the SERVER's language, and Myst's own client runs in French.
 
 	/*
 	 * Send a message to all players, with standard message duration
