@@ -268,6 +268,27 @@ static const int BR_TOAST_MIN_HEIGHT_PX = 40;   //!< floor, so a one-line toast 
 static const int BR_TOAST_FADE_IN_MS = 150;
 static const int BR_TOAST_FADE_OUT_MS = 400;
 
+//--- How many repaints after a row is bound get their geometry dumped at Debug level. A toast lives
+//--- for seconds and repaints every frame while it fades, so logging every one buries the log;
+//--- logging only at bind time would miss a row laid out correctly on frame 1 and wrong on frame 2.
+static const int BR_TOAST_DIAG_FRAMES = 3;
+
+//--- Wrapped-height limits and the estimate used when nothing can be measured.
+//---
+//--- GetTextSize turns out to report a wrapping widget's FULL WRAPPED height directly (measured:
+//--- 301x66 for a three-line message at a 528px wrap width), so no line counting is needed. What
+//--- does NOT work is "size to text v", which answers zero and overrides SetSize while doing it,
+//--- and RichTextWidget.GetContentHeight, which has no call sites anywhere in P:\scripts - the
+//--- shape that compiles, runs and silently does nothing.
+//--- Both fallbacks track the FACE named in toast_row.layout, currently metron16. Change the face
+//--- and these want changing with it, or the fallback plate is sized for a font nobody is using.
+static const int BR_TOAST_MAX_LINES = 4;
+static const int BR_TOAST_LINE_H_PX = 18;    //!< fallback line height for metronlight16
+static const float BR_TOAST_AVG_CHAR_PX = 6.5;   //!< fallback mean glyph advance at that face
+//--- Words do not break at the wrap width, they break before it, so a line holds a little less than
+//--- its own width. Erring tall only pads the plate; erring short clips the message.
+static const float BR_TOAST_WRAP_PACKING = 0.92;
+
 //--- HUD alert colours, for the zone distance and countdown readouts in BattleRoyaleHud.
 //---
 //--- These replaced COLOR_EXPANSION_NOTIFICATION_ERROR and _ORANGE, which live in Expansion Core's

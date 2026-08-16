@@ -34,6 +34,12 @@ class BattleRoyaleToasts
     private float m_LastScreenW;
     private float m_LastScreenH;
 
+    //--- Frames of geometry logging still owed, armed whenever a row is bound to a new toast.
+    //--- A toast is on screen for seconds and repaints every frame while it fades, so logging
+    //--- unconditionally would bury the log; logging only at bind time would miss a row that is
+    //--- laid out correctly on frame 1 and wrong on frame 2. A short burst catches both.
+    private int m_DiagFrames;
+
     void BattleRoyaleToasts()
     {
         m_Model = new array<ref BattleRoyaleToastRow>();
@@ -302,13 +308,86 @@ class BattleRoyaleToasts
 
             int height = Bind( i, model );
 
+            float alpha = model.AlphaAt( now );
             row.SetPos( left, y );
-            row.SetAlpha( model.AlphaAt( now ) );
+            row.SetAlpha( alpha );
+
+            if ( m_DiagFrames > 0 )
+                DiagRow( i, row, alpha );
 
             y = y + height + BR_TOAST_GAP_PX;
         }
 
         m_Root.Show( model_count > 0 );
+
+        if ( m_DiagFrames > 0 )
+        {
+            m_DiagFrames = m_DiagFrames - 1;
+            BattleRoyaleUtils.Debug( "[Toasts] root shown=" + ( model_count > 0 ).ToString() + " screen=" + screen_w.ToString() + "x" + screen_h.ToString() + " left=" + left.ToString() );
+        }
+    }
+
+    /**
+     *  Dump one row's real geometry.
+     *
+     *  Everything here is read back with GetScreenPos / GetScreenSize rather than echoing what was
+     *  set, because the whole class of bug this is chasing is "the value was set and the widget did
+     *  something else with it". Echoing the input would confirm only that the code ran.
+     */
+    private void DiagRow( int index, Widget row, float alpha )
+    {
+        float rx;
+        float ry;
+        float rw;
+        float rh;
+        row.GetScreenPos( rx, ry );
+        row.GetScreenSize( rw, rh );
+
+        string line = "[Toasts] row " + index.ToString();
+        line = line + " pos " + rx.ToString() + "," + ry.ToString();
+        line = line + " size " + rw.ToString() + "x" + rh.ToString();
+        line = line + " alpha " + alpha.ToString();
+        BattleRoyaleUtils.Debug( line );
+
+        MultilineTextWidget text = m_RowTexts.Get( index );
+        if ( !text )
+            return;
+
+        float tx;
+        float ty;
+        float tw;
+        float th;
+        text.GetScreenPos( tx, ty );
+        text.GetScreenSize( tw, th );
+
+        string tline = "[Toasts]   text pos " + tx.ToString() + "," + ty.ToString();
+        tline = tline + " size " + tw.ToString() + "x" + th.ToString();
+        tline = tline + " vis " + text.IsVisible().ToString();
+        tline = tline + " alpha " + text.GetAlpha().ToString();
+        BattleRoyaleUtils.Debug( tline );
+    }
+
+    /**
+     *  Height of `message` in pixels, when nothing can be measured.
+     *
+     *  Only reached if GetTextSize answers zero. Estimates the unwrapped run from the character
+     *  count and a mean glyph advance, divides by the wrap width for a line count, and multiplies
+     *  by a nominal line height. Crude for a proportional face, but it only has to land within a
+     *  line, and rounding up costs padding where rounding down would clip the message.
+     */
+    private int FallbackHeight( string message, int wrap_w )
+    {
+        float run_w = message.Length() * BR_TOAST_AVG_CHAR_PX;
+
+        float usable = wrap_w * BR_TOAST_WRAP_PACKING;
+        if ( usable < 1 )
+            usable = 1;
+
+        int lines = Math.Ceil( run_w / usable );
+        if ( lines < 1 )
+            lines = 1;
+
+        return lines * BR_TOAST_LINE_H_PX;
     }
 
     /**
@@ -336,23 +415,53 @@ class BattleRoyaleToasts
             text.SetText( model.toast.text );
 
             model.bound = true;
+            m_DiagFrames = BR_TOAST_DIAG_FRAMES;
+
+            BattleRoyaleUtils.Debug( "[Toasts] bind " + index.ToString() + " w=" + text_w.ToString() + " text=" + model.toast.text );
         }
 
         //--- Update() before the read-back, every time. A widget that was only just shown has a stale
         //--- layout and measures as zero; TabberUI.c:126 and sizetochild.c:35 both do this.
         text.Update();
 
-        float measured_w;
-        float measured_h;
-        text.GetScreenSize( measured_w, measured_h );
+        //--- GetTextSize ON A WRAPPING WIDGET ALREADY RETURNS THE WRAPPED SIZE - width of the longest
+        //--- line, and the FULL height of the wrapped block. Measured: STR_BR_UNSTUCK_INFORMATION
+        //--- reports 301x66 at a 528px wrap width, and 66 is exactly three 22px lines. So the widget
+        //--- knows its own wrapped layout perfectly; what it will not do is SIZE ITSELF to it, which
+        //--- is the whole reason "size to text v" had to go.
+        //---
+        //--- This replaced a line-counting pass that divided the measured width by the wrap width.
+        //--- That was redundant, and worse, only correct by accident: it computed lines=1 and then
+        //--- multiplied by a "line height" that was already the full block height. The moment a
+        //--- message was long enough to compute lines=2 - the French unstuck text is the obvious
+        //--- candidate - it would have doubled the plate to 194px.
+        int measured_w;
+        int measured_h;
+        text.GetTextSize( measured_w, measured_h );
 
-        int height = Math.Round( measured_h ) + ( 2 * BR_TOAST_PAD_Y );
+        int content_h = measured_h;
+        if ( content_h <= 0 )
+            content_h = FallbackHeight( model.toast.text, text_w );
+
+        //--- Cap it. A message long enough to fill the screen is a bug somewhere upstream, and a
+        //--- toast is not the place to find that out.
+        int max_h = BR_TOAST_MAX_LINES * BR_TOAST_LINE_H_PX;
+        if ( content_h > max_h )
+            content_h = max_h;
+
+        int height = content_h + ( 2 * BR_TOAST_PAD_Y );
         if ( height < BR_TOAST_MIN_HEIGHT_PX )
             height = BR_TOAST_MIN_HEIGHT_PX;
 
-        //--- If "size to text v" turns out not to grow the widget, measured_h is simply the declared
-        //--- height and every toast gets a fixed plate. That is a worse-looking result, not a broken
-        //--- one - the failure mode here is deliberately not an invisible or zero-height row.
+        if ( m_DiagFrames > 0 )
+        {
+            string mline = "[Toasts] measure " + index.ToString();
+            mline = mline + " textsize " + measured_w.ToString() + "x" + measured_h.ToString();
+            mline = mline + " content " + content_h.ToString();
+            mline = mline + " height " + height.ToString();
+            BattleRoyaleUtils.Debug( mline );
+        }
+
         text.SetPos( BR_TOAST_PAD_X, BR_TOAST_PAD_Y );
         text.SetSize( text_w, height - ( 2 * BR_TOAST_PAD_Y ) );
 

@@ -57,8 +57,15 @@ PanelWidgetClass ToastRoot {
   }
   // `wrap 1` is what makes this multiline at all, and it is why the row can carry a message like
   // STR_BR_UNSTUCK_INFORMATION (two full sentences, and longer again in French) without running off
-  // the screen. "size to text v" lets the widget report its wrapped height back to LayoutRow through
-  // GetScreenSize, which is how the plate ends up the right height for one line or for three.
+  // the screen.
+  //
+  // ⚠️ "size to text v" IS 0, AND MUST STAY 0. It was 1, on the theory that the widget would then
+  // report its own wrapped height back through GetScreenSize. It does not - it reports height ZERO,
+  // and it overrides an explicit SetSize while doing it, so the widget ends up 528x0 and the toast
+  // renders as an empty plate with no text in it. Measured: "text pos 376,105 size 528x0 vis true
+  // alpha 1" for all three fixture rows. Vanilla never pairs "size to text v" with `wrap` either -
+  // day_z_invite_dialog.layout wraps at a FIXED height - which was noticed when this was written
+  // and used anyway. BattleRoyaleToasts.Bind now computes the height and SetSize decides it.
   MultilineTextWidgetClass ToastText {
    visible 1
    ignorepointer 1
@@ -71,14 +78,23 @@ PanelWidgetClass ToastRoot {
    vexactsize 1
    color 1 1 1 1
    text ""
-   font "gui/fonts/etelkatextpro22"
+   // ⚠️ THE FACE IS THE SIZE AND THE WEIGHT. There is no SetFont, and SetTextExactSize was measured
+   // to do nothing at all - 28/18/13 on one widget all rendered at 28 - so the only way to change
+   // either is to name a different file here. "exact text size" below is kept because vanilla's own
+   // layouts carry it, but the face is what decides.
+   //
+   // Was etelkatextpro22 (too heavy, a shade too large), then metron16, now metronlight16 - the
+   // lightest face vanilla ships at this size. The weight ladder, lightest first, at 12/14/16/22/28:
+   //   metronlight  <  metron  <  metronbook  <  metron-bold  <  metronblack
+   // so there is nothing lighter left at 16; going further means dropping to metronlight14.
+   font "gui/fonts/metronlight16"
    "shadow size" 3
    "shadow color" 0 0 0 1
    "shadow offset" 1 1
    "exact text" 1
-   "exact text size" 20
+   "exact text size" 16
    "size to text h" 0
-   "size to text v" 1
+   "size to text v" 0
    "text halign" center
    "text valign" center
    wrap 1

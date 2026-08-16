@@ -198,7 +198,15 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         image0 "set:ccgui_enforce image:IconTime"
+         // Ours. Vanilla's ccgui_enforce IconTime is a 16px source and this widget draws at 32 -
+         // more on a wide screen, since a declared size is viewport-scaled - so it was being
+         // upscaled 2-3x and the hands turned to mush. Drawn at 64 so the HUD only downsamples.
+         //
+         // Two alternates sit beside it in the atlas - swap the name and nothing else:
+         //   ClockSimple  ring + two hands (in use)
+         //   ClockTicks   also marks at 12/3/6/9, busier
+         //   ClockSolid   filled disc with the hands knocked out, heaviest
+         image0 "set:battleroyale_gui image:ClockSimple"
          mode blend
          "src alpha" 1
          "no wrap" 1
@@ -241,11 +249,17 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         // POINTS DOWN AT REST, and BattleRoyaleHud.SetDistance rotates this widget to aim
-         // at the zone (SetRotation(0, 0, angle)). Expansion's arrow_64x64 that this replaced
-         // may have rested at a different angle, so if the arrow aims 90 or 180 degrees off,
-         // the fix is an offset on `angle` at that call site - not a different icon.
-         image0 "set:dayz_gui image:icon_arrow"
+         // RESTS POINTING UP, which is what BattleRoyaleHud.SetDistance's SetRotation(0,0,angle)
+         // already assumes. Vanilla's icon_arrow rested pointing DOWN and so aimed 180 degrees
+         // out; it also read as a plain triangle, and at 45 or 135 degrees of rotation became an
+         // unreadable blob. All four of ours are drawn resting up, so swapping needs no code change.
+         //
+         // Three alternates sit beside this one in the atlas - swap the name and nothing else:
+         //   ZoneArrowNeedle   slim compass needle (in use)
+         //   ZoneArrowDart     notched dart. the map already uses this silhouette for YOU
+         //   ZoneArrowClassic  head on a stem, the heaviest
+         //   ZoneArrowChevron  open chevron, weakest when rotated - reads as an L
+         image0 "set:battleroyale_gui image:ZoneArrowNeedle"
          mode blend
          "src alpha" 1
          "no wrap" 1
