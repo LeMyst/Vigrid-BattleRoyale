@@ -1143,9 +1143,13 @@ class BattleRoyaleServer: BattleRoyaleBase
      *
      *  ONE PACKET PER RECIPIENT, and their own teammates are dropped from it here rather than
      *  filtered on arrival. Party composition therefore never goes on the wire, and neither do
-     *  SteamID64s - the client identifies each subject by NETWORK ID, which is the only handle both
-     *  sides agree on for a remote entity. GetIdentity() is not reliably populated client-side for
-     *  another player, which is what made the first attempt draw nothing at all.
+     *  SteamID64s - the client identifies each subject by NETWORK ID.
+     *
+     *  ⚠️ RETRACTED 2026-08-12. The reason once recorded here - that GetIdentity() is not reliably
+     *  populated client-side for another player - IS FALSE, and was never why the first attempt
+     *  drew nothing. Remote identities are populated; measured `noidentity=0`, sustained. Network id
+     *  is kept because it is the version that shipped and was verified. See the header of
+     *  BattleRoyaleLobbyTags.c for the measurement.
      *
      *  Names come from PlayerBase.player_name, so they carry the name service's corrections rather
      *  than the "Survivor" the client connected with.
