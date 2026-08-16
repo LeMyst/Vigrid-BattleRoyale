@@ -180,7 +180,21 @@ static const int VIGRID_MAP_TOAST_MS = 4000;
 //--- The MapWidget ignores SetMapPos until it has been laid out, so the initial centring is
 //--- re-issued from the call queue one frame batch later. Copied from the spawn-selection menu,
 //--- which needed exactly this.
+//---
+//--- This is now the BACKSTOP rather than the mechanism - VigridMapMenu.SettleView re-issues the
+//--- view every frame until a readback proves it took, which lands far sooner. 100 ms is ~6 frames
+//--- at 60 fps, and those 6 frames are exactly the "map opens off-centre, then jumps" artefact.
 static const int VIGRID_MAP_CENTER_DELAY_MS = 100;
+
+//--- Settling the initial view. The retry is capped so a widget that never reports a size cannot
+//--- hold the map hostage; past the cap the view is accepted and the delayed backstop above still
+//--- runs, which is precisely the behaviour that shipped before SettleView existed.
+static const int VIGRID_MAP_SETTLE_MAX_FRAMES = 30;
+
+//--- How close the read-back centre must be to count as "the SetMapPos took". Generous on purpose:
+//--- this is distinguishing "landed" from "was dropped and left at the engine default", which is a
+//--- whole-map distance apart, not a rounding difference.
+static const float VIGRID_MAP_SETTLE_EPSILON_M = 5.0;
 
 //--- 2D marker, drawn on the canvas. In screen pixels, not metres: a marker annotates a point, it
 //--- has no extent in the world, so it should not grow when the map is zoomed in.
