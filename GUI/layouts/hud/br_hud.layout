@@ -62,7 +62,9 @@ FrameWidgetClass BattleRoyaleHudFrame {
            vexactpos 0
            hexactsize 1
            vexactsize 1
-           image0 "set:expansion_iconset image:icon_group"
+             // Ours, in the mod's own atlas - vanilla has no group glyph. Composited from two
+             // copies of vanilla's icon_player at Pos 0 256 of dayzbr_gui.edds; see the imageset.
+             image0 "set:battleroyale_gui image:GroupIcon"
            mode blend
            "src alpha" 1
            "no wrap" 1

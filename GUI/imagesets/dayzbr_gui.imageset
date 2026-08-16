@@ -20,6 +20,12 @@ ImageSetClass {
    Size 494 238
    Flags 0
   }
+  ImageSetDefClass GroupIcon {
+   Name "GroupIcon"
+   Pos 0 256
+   Size 64 64
+   Flags 0
+  }
  }
  Groups {
  }
