@@ -66,6 +66,49 @@ class BattleRoyaleHud
     {
         is_shown = show;
         m_Root.Show( show );
+
+        if ( show )
+            DiagIconRects();
+    }
+
+    /**
+     *  Dump the real rects of the two icon widgets and their parents, once per HUD show.
+     *
+     *  The clock renders visibly clipped along its bottom edge, and giving the artwork a margin did
+     *  NOT fix it - so the cause is the widget rect, not the glyph. Everything here is read back with
+     *  GetScreenPos / GetScreenSize rather than echoing the layout, because the layout's declared
+     *  numbers are scaled by viewport/1920 and the question is what they actually became. A height
+     *  smaller than the width is the tell: it means something is squashing the box rather than
+     *  cropping the image.
+     */
+    protected void DiagIconRects()
+    {
+        DiagRect( "ZonePanel", m_Root.FindAnyWidget( "ZonePanel" ) );
+        DiagRect( "CountdownPanel", m_CountdownPanel );
+        DiagRect( "CountdownIcon", m_ImageClock );
+        DiagRect( "ZoneDistancePanel", m_ZoneDistancePanel );
+        DiagRect( "ZoneIcon", m_DistanceZoneArrow );
+    }
+
+    protected void DiagRect( string name, Widget w )
+    {
+        if ( !w )
+        {
+            BattleRoyaleUtils.Debug( "[HudRect] " + name + " NULL" );
+            return;
+        }
+
+        float x;
+        float y;
+        float sw;
+        float sh;
+        w.GetScreenPos( x, y );
+        w.GetScreenSize( sw, sh );
+
+        string line = "[HudRect] " + name;
+        line = line + " pos " + x.ToString() + "," + y.ToString();
+        line = line + " size " + sw.ToString() + "x" + sh.ToString();
+        BattleRoyaleUtils.Debug( line );
     }
 
     //show/hide control

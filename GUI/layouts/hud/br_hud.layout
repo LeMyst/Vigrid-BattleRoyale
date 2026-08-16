@@ -192,7 +192,10 @@ FrameWidgetClass BattleRoyaleHudFrame {
        {
         ImageWidgetClass CountdownIcon {
          position 0 0
-         size 32 32
+         // 28, not 32: the icon must fit the row its GridSpacer parent gives it, and that
+         // height scales with the viewport while this size does not. Re-measure with the
+         // [HudRect] dump after any change to MatchInfoIconsPanel.
+         size 28 28
          halign right_ref
          hexactpos 0
          vexactpos 0
@@ -243,7 +246,10 @@ FrameWidgetClass BattleRoyaleHudFrame {
         ImageWidgetClass ZoneIcon {
          ignorepointer 1
          position 0 0
-         size 32 32
+         // 28, not 32: the icon must fit the row its GridSpacer parent gives it, and that
+         // height scales with the viewport while this size does not. Re-measure with the
+         // [HudRect] dump after any change to MatchInfoIconsPanel.
+         size 28 28
          halign right_ref
          hexactpos 0
          vexactpos 0

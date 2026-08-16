@@ -17,15 +17,28 @@ class BattleRoyaleToastRow
     int shown_at;
     int expires_at;
 
-    //! Has the text been pushed into the widget yet? Tracked per MODEL row rather than per widget:
-    //! the pool is re-bound from the model whenever the stack shifts, so a widget that has just been
-    //! recycled onto a different toast has to be re-set even though it already holds text.
-    bool bound;
+    /**
+     *  Unique per toast, for the lifetime of the process. This is what the renderer matches against
+     *  to decide whether a pooled widget is already showing THIS toast.
+     *
+     *  ⚠️ IT REPLACED A `bound` FLAG ON THIS CLASS, WHICH WAS EXACTLY BACKWARDS. Binding is
+     *  model-to-widget-INDEX, and a new toast inserts at index 0 and shifts every existing model
+     *  down a slot - so a model that was already flagged bound arrives on a DIFFERENT widget, the
+     *  renderer skips SetText, and that widget keeps whatever text it had before. Raising two
+     *  bursts of three showed it: the fourth plate had never been bound to anything, so it drew
+     *  empty. An id compared against what the WIDGET currently holds survives the shift; a flag on
+     *  the model cannot, because the thing that changed is not the model.
+     */
+    int id;
+
+    private static int s_NextId = 1;
 
     void BattleRoyaleToastRow( BattleRoyaleToast entry )
     {
         toast = entry;
-        bound = false;
+
+        id = s_NextId;
+        s_NextId = s_NextId + 1;
 
         shown_at = GetGame().GetTime();
         expires_at = shown_at + entry.duration_ms + BR_TOAST_FADE_IN_MS + BR_TOAST_FADE_OUT_MS;

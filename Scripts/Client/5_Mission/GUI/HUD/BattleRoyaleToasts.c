@@ -29,6 +29,10 @@ class BattleRoyaleToasts
     private ref array<Widget> m_RowBackdrops;
     private ref array<Widget> m_RowAccents;
 
+    //--- Which toast id each pooled WIDGET currently displays, or 0 for none. Parallel to the arrays
+    //--- above, indexed by widget. See BattleRoyaleToastRow.id for why this cannot live on the model.
+    private ref array<int> m_RowIds;
+
     //--- Last viewport the stack was laid out against. A resolution change moves every row and
     //--- nothing in the model would otherwise notice.
     private float m_LastScreenW;
@@ -48,6 +52,7 @@ class BattleRoyaleToasts
         m_RowTexts = new array<MultilineTextWidget>();
         m_RowBackdrops = new array<Widget>();
         m_RowAccents = new array<Widget>();
+        m_RowIds = new array<int>();
     }
 
     void ~BattleRoyaleToasts()
@@ -180,6 +185,7 @@ class BattleRoyaleToasts
             m_RowTexts.Insert( text );
             m_RowBackdrops.Insert( backdrop );
             m_RowAccents.Insert( accent );
+            m_RowIds.Insert( 0 );
         }
     }
 
@@ -419,17 +425,20 @@ class BattleRoyaleToasts
 
         int text_w = BR_TOAST_WIDTH_PX - ( 2 * BR_TOAST_PAD_X );
 
-        if ( !model.bound )
+        //--- Re-set the text whenever THIS WIDGET is not already showing THIS toast. Comparing the
+        //--- widget's stored id rather than a flag on the model is what makes the pool survive a
+        //--- shift: inserting a toast at index 0 moves every other model onto a different widget.
+        if ( m_RowIds.Get( index ) != model.id )
         {
             //--- Width BEFORE text: the wrap is what decides the height, so a height read back before
             //--- the widget knows how wide it may be is a height for the wrong line count.
             text.SetSize( text_w, BR_TOAST_MIN_HEIGHT_PX );
             text.SetText( model.toast.text );
 
-            model.bound = true;
+            m_RowIds.Set( index, model.id );
             m_DiagFrames = BR_TOAST_DIAG_FRAMES;
 
-            BattleRoyaleUtils.Debug( "[Toasts] bind " + index.ToString() + " w=" + text_w.ToString() + " text=" + model.toast.text );
+            BattleRoyaleUtils.Debug( "[Toasts] bind widget " + index.ToString() + " <- toast " + model.id.ToString() + " text=" + model.toast.text );
         }
 
         //--- Update() before the read-back, every time. A widget that was only just shown has a stale
