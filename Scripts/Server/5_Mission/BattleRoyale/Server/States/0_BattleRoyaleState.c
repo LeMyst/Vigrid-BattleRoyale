@@ -44,6 +44,23 @@ class BattleRoyaleState: Timeable
     //--- Stored rather than recomputed so ResendGameInfo() can re-assert it off the live timer.
     protected int i_CountdownZoneExtraMs;
 
+    //--- The two circles every client should currently be holding, re-asserted by ResendGameInfo().
+    //---
+    //--- STATIC, and that is load-bearing: a circle outlives the state that announced it. A round
+    //--- that is not the last one never sends UpdateCurrentPlayArea at all - it relies on the PREVIOUS
+    //--- round's LockNewZone - so a per-instance record would be empty for most of the match, and a
+    //--- resend built from it would push the clear payload and wipe the live circle off every HUD and
+    //--- every map. Same reasoning as s_PlayAreaDurationOffsets in BattleRoyaleZone.
+    //---
+    //--- Seeded to the clear payload, which is exactly what BattleRoyaleRPC already defaults to, so a
+    //--- resend before anything has been announced is a no-op the client diffs away. That also makes
+    //--- 7_BattleRoyaleLastRound's deliberate clears re-assertable for free, with no "has this been
+    //--- set yet" flag to get wrong.
+    protected static vector s_CurrentAreaCenter = "0 0 0";
+    protected static float s_CurrentAreaRadius = 0.0;
+    protected static vector s_FutureAreaCenter = "0 0 0";
+    protected static float s_FutureAreaRadius = 0.0;
+
     string GetName()
     {
         return "Unknown State";
@@ -369,6 +386,35 @@ class BattleRoyaleState: Timeable
 	}
 
 	/**
+	 *  Announce the circle that is currently damaging, and record it for the resend.
+	 *
+	 *  Every UpdateCurrentPlayArea in the mod goes through here. Pass the clear payload
+	 *  ("0 0 0" / 0) to retire the circle, exactly as 7_BattleRoyaleLastRound does.
+	 */
+	void SendCurrentPlayArea(vector center, float radius)
+	{
+		s_CurrentAreaCenter = center;
+		s_CurrentAreaRadius = radius;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( center, radius ), true);
+	}
+
+	/**
+	 *  Announce the circle that is coming next, and record it for the resend.
+	 *
+	 *  `artillery` is an EVENT, not state - it makes the client play a one-shot distant-artillery
+	 *  sound at the new centre. It is therefore deliberately absent from what gets re-asserted; see
+	 *  ResendGameInfo below.
+	 */
+	void SendFuturePlayArea(vector center, float radius, bool artillery)
+	{
+		s_FutureAreaCenter = center;
+		s_FutureAreaRadius = radius;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( center, radius, artillery ), true);
+	}
+
+	/**
 	 *  Re-assert everything the HUD shows, on a 5 s loop registered in the constructor.
 	 *
 	 *  This is the only thing that corrects a client which missed a push, joined late, or
@@ -387,6 +433,22 @@ class BattleRoyaleState: Timeable
 		//--- back onto the countdown five seconds after it was set.
 		if(m_CountdownTimer && m_CountdownTimer.IsRunning())
 			SendCountdown( m_CountdownTimer, i_CountdownZoneExtraMs );
+
+		//--- The circles. Until this existed, a client that missed either push - a dropped packet, a
+		//--- reconnect, an admin joining mid-match - held the wrong circles until the NEXT state
+		//--- transition, which on a long round is minutes of a HUD arrow pointing at nothing and a map
+		//--- drawing a circle that has already moved.
+		//---
+		//--- Both go out unconditionally rather than on a "has anything been announced" flag: the
+		//--- seeded values are the clear payload, which is what the client already holds, so a resend
+		//--- in the lobby raises no diff and costs the client nothing.
+		//---
+		//--- ARTILLERY IS FALSE HERE, ALWAYS. The flag fires a one-shot sound on any client whose
+		//--- future circle actually changed - which is precisely the client this resend exists to
+		//--- correct. Passing the real flag would mean anyone who reconnected mid-round heard distant
+		//--- artillery announcing a circle that appeared minutes ago.
+		SendCurrentPlayArea( s_CurrentAreaCenter, s_CurrentAreaRadius );
+		SendFuturePlayArea( s_FutureAreaCenter, s_FutureAreaRadius, false );
 	}
 
 	//player count changed event handler
