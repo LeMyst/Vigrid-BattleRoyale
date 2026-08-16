@@ -282,10 +282,17 @@ class BattleRoyaleToasts
 
         float left = ( screen_w - BR_TOAST_WIDTH_PX ) / 2;
 
+        //--- The top inset is the ONE measurement here that scales with the viewport, and it has to,
+        //--- because what it clears is the map addon's compass strip - which multiplies its own 42px
+        //--- height by parent_w / 1920. Held at a flat pixel value the gap between the strip and the
+        //--- first toast grew as the resolution fell, so the same number gave a different layout at
+        //--- every resolution. Everything below stays in real pixels; see BR_TOAST_REFERENCE_W.
+        float view_scale = screen_w / BR_TOAST_REFERENCE_W;
+
         //--- Stack downward from the top inset, each row starting below the one above it. The step is
         //--- accumulated rather than `index * height` because a wrapped message is taller than a
         //--- short one and no two rows are guaranteed the same height.
-        int y = BR_TOAST_TOP_PX;
+        int y = Math.Round( BR_TOAST_TOP_PX * view_scale );
 
         for ( int i = 0; i < row_count; i++ )
         {
@@ -323,7 +330,12 @@ class BattleRoyaleToasts
         if ( m_DiagFrames > 0 )
         {
             m_DiagFrames = m_DiagFrames - 1;
-            BattleRoyaleUtils.Debug( "[Toasts] root shown=" + ( model_count > 0 ).ToString() + " screen=" + screen_w.ToString() + "x" + screen_h.ToString() + " left=" + left.ToString() );
+            string rline = "[Toasts] root shown=" + ( model_count > 0 ).ToString();
+            rline = rline + " screen=" + screen_w.ToString() + "x" + screen_h.ToString();
+            rline = rline + " scale=" + view_scale.ToString();
+            rline = rline + " top=" + Math.Round( BR_TOAST_TOP_PX * view_scale ).ToString();
+            rline = rline + " left=" + left.ToString();
+            BattleRoyaleUtils.Debug( rline );
         }
     }
 

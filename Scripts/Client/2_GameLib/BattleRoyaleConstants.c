@@ -255,7 +255,21 @@ static const float DAYZBR_MSG_TIME = 7;
 //--- Expansion's imageset and this mod's own has only the two logos in it. The coloured accent
 //--- stripe carries the identity instead and costs no asset at all.
 static const int BR_TOAST_MAX_ROWS = 4;         //!< widget pool size; older toasts fall off the top
-static const int BR_TOAST_TOP_PX = 96;          //!< top inset. Clears the map addon's compass strip
+//--- ⚠️ TOP INSET IS IN REFERENCE PIXELS AND IS SCALED BY screen_w / BR_TOAST_REFERENCE_W, because
+//--- the thing it has to clear - the map addon's compass strip - is scaled the same way. The compass
+//--- is 42 px tall at 1920 and multiplies every length by parent_w / 1920, so it is 28 px at 1280
+//--- and 56 px at 2560. This was a flat 96 real pixels, which meant the gap between the strip and
+//--- the first toast GREW as the resolution fell: 40 px at 1440p, 54 at 1080p, 68 at 720p. Same
+//--- number, three different layouts.
+//---
+//--- 72 was picked to reproduce the 1440p spacing that looked right: 72 x (2560/1920) = 96, exactly
+//--- what was on screen there before.
+static const int BR_TOAST_TOP_PX = 72;
+static const float BR_TOAST_REFERENCE_W = 1920.0;
+
+//--- Only the POSITION scales. Width, padding and row height stay in real pixels, because the text
+//--- inside them cannot scale - a bitmap font is a fixed pixel size - so a plate that grew with the
+//--- viewport would just add empty space around the same glyphs and change where the text wraps.
 static const int BR_TOAST_WIDTH_PX = 560;       //!< the wrap width, and so the whole row's width
 static const int BR_TOAST_PAD_X = 16;           //!< inset either side of the text
 static const int BR_TOAST_PAD_Y = 9;            //!< inset above and below the text block
