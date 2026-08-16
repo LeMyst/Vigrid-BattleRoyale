@@ -30,7 +30,7 @@ Pan and zoom are the engine's own. **You can keep running while the map is open*
 does not fire the weapon underneath it.
 
 **The map reopens at the zoom you left it at**, for the rest of the game session — the position still
-recentres on you every time. It is held in a static rather than written to `map_client.json`, so a
+recentres on you every time, and does so before the first frame you see rather than a beat later. It is held in a static rather than written to `map_client.json`, so a
 restart opens at `VIGRID_MAP_DEF_SCALE` again; persisting it would mean a synchronous JSON write every
 time the map is shut, which in a match is often, for a preference one wheel scroll restates.
 
@@ -248,6 +248,15 @@ without `OnHide`. A leaked exclude group would leave the player permanently unab
   same per-frame read for the same reason: it records `GetScale()` in `Update()` rather than on close,
   since `OnHide` is not guaranteed to pair with `OnShow` and the destructor runs after the widget tree
   has started going away.
+- ⚠️ **The initial view is established by `SettleView()` re-issuing it every frame, and `ClampZoom()`
+  plus every canvas is held off until it has.** A `MapWidget` ignores `SetMapPos`/`SetScale` until it
+  has been laid out, so the pair issued in `Init()` is dropped and the map used to draw at the
+  engine's own default position and zoom for the ~6 frames until the 100 ms `DelayedCenter` fired —
+  visible as "the map opens off-centre, then jumps to you". **`SettleView`'s own latch test has been
+  measured never to pass** (the delayed backstop wins every open); the artefact is gone regardless,
+  so one of the other two halves is what fixes it. The header comment carries the untested one-line
+  hypothesis and the acceptance test for it — a premature latch is the one way to bring the artefact
+  back, so do not change it without re-running that test.
 - **An input exclude group resets every held input, so `{"aiming"}` is the only one used here.** Both
   `AddActiveInputExcludes` and `RemoveActiveInputExcludes` end in `GetUApi().UpdateControls()`, which
   rebuilds the control state and drops the **held** state of every input including `UATurbo` — so

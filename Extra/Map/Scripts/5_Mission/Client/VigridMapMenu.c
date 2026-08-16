@@ -59,14 +59,18 @@ class VigridMapMenu extends UIScriptedMenu
     //--- GetOpenScale, which folds that case together with an out-of-range value.
     protected static float s_LastScale;
 
-    //--- Latched by DelayedCenter, and the capture in Update is gated on it. The frames before the
-    //--- deferred restore lands are the ones whose GetScale answers about a widget that has not been
-    //--- laid out yet; recording those would overwrite what we are trying to restore.
-    protected bool m_ScaleRestored;
+    //--- The view this open is trying to establish, and whether it has. Until it has, the widget is
+    //--- still showing the engine's default position and zoom, so nothing may be recorded from it -
+    //--- the capture in Update is gated on m_Settled for exactly that reason.
+    protected vector m_SettleTarget;
+    protected bool m_Settled;
+    protected int m_SettleFrames;
 
     void VigridMapMenu()
     {
-        m_ScaleRestored = false;
+        m_SettleTarget = vector.Zero;
+        m_Settled = false;
+        m_SettleFrames = 0;
         m_RenderDirty = true;
         m_LastRepaintMs = 0;
         m_LastMarkerSeq = -1;
@@ -149,10 +153,16 @@ class VigridMapMenu extends UIScriptedMenu
     /**
      *  Centre the map on the player.
      *
-     *  Issued twice on purpose. SetMapPos is ignored until the widget has been through a layout
-     *  pass, so the call made during Init lands on a widget that has no size yet and is silently
-     *  dropped; the deferred one is the one that actually takes effect. Copied from the
-     *  spawn-selection menu, which needed exactly this.
+     *  SetMapPos and SetScale are both ignored until the widget has been through a layout pass, so
+     *  the pair issued here lands on a widget that has no size yet and is silently dropped. Until a
+     *  later pair takes, the map draws at the engine's own default position and zoom - which is the
+     *  visible artefact this settles: the map appears off your position, then jumps.
+     *
+     *  So it is issued three ways, cheapest first: here, in case the widget is somehow ready; then
+     *  once per frame from SettleView until a readback proves it took; and finally from DelayedCenter
+     *  as the backstop that was the only mechanism before. The per-frame retry is what removes the
+     *  artefact - the fixed delay is ~6 frames at 60 fps, whereas the retry lands on the first frame
+     *  the widget is actually laid out.
      *
      *  The POSITION is recentred on every open and the ZOOM is not, which is the asymmetry to keep:
      *  the reason to open a map is to see where you are, but the zoom the player picked is a
@@ -169,10 +179,67 @@ class VigridMapMenu extends UIScriptedMenu
         if (target == vector.Zero)
             target = GetGame().GetCurrentCameraPosition();
 
+        m_SettleTarget = target;
+
         m_MapWidget.SetMapPos(target);
         m_MapWidget.SetScale(GetOpenScale());
 
         GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(DelayedCenter, VIGRID_MAP_CENTER_DELAY_MS, false, target);
+    }
+
+    /**
+     *  Re-issue the view every frame until it demonstrably takes.
+     *
+     *  Two tests, because neither alone is trustworthy. A widget that has not been laid out reports
+     *  a zero screen size, which is the direct question - "has layout run" - but says nothing about
+     *  whether the map transform behind it is ready. So the position is also read back: a SetMapPos
+     *  that was dropped leaves GetMapPos answering something else.
+     *
+     *  Capped rather than retried for ever. Past the cap the view is accepted as-is and DelayedCenter
+     *  is still coming, so the worst case is exactly the behaviour that shipped before this method
+     *  existed - never a map left stuck at the engine default.
+     */
+    protected void SettleView()
+    {
+        m_SettleFrames++;
+
+        float widget_w;
+        float widget_h;
+        m_MapWidget.GetScreenSize(widget_w, widget_h);
+
+        bool laid_out = (widget_w > 0) && (widget_h > 0);
+
+        if (laid_out)
+        {
+            m_MapWidget.SetMapPos(m_SettleTarget);
+            m_MapWidget.SetScale(GetOpenScale());
+        }
+
+        //--- ⚠️ MEASURED 2026-08-16: THIS TEST NEVER PASSES, and the log proves it - every open ends
+        //--- on "View settled by the delayed backstop, not SettleView". The artefact is nonetheless
+        //--- gone, so what fixed it is one of the two OTHER things this method brought with it: the
+        //--- per-frame re-issue of SetMapPos/SetScale above, or Update's early return holding
+        //--- ClampZoom and the canvases off until the view exists.
+        //---
+        //--- The likely reason it never passes, UNVERIFIED: m_SettleTarget is a PLAYER position,
+        //--- whose Y is terrain height - ~150 m on ChernarusPlus - while GetMapPos almost certainly
+        //--- answers at Y 0. A 3D distance is then never below any sane epsilon. Zeroing Y on both
+        //--- sides before comparing is the one-line change to try, and the acceptance test is this
+        //--- method's own log line reporting a frame count instead of the backstop message.
+        //---
+        //--- Left as-is deliberately: the behaviour above was tested and confirmed good, and the
+        //--- latch only decides when ClampZoom and the canvases resume, so getting it wrong EARLY is
+        //--- the one way to bring the artefact back. Do not "fix" it without re-running that test.
+        vector actual = m_MapWidget.GetMapPos();
+        bool took = laid_out && (vector.Distance(actual, m_SettleTarget) <= VIGRID_MAP_SETTLE_EPSILON_M);
+
+        if (!took && m_SettleFrames < VIGRID_MAP_SETTLE_MAX_FRAMES)
+            return;
+
+        m_Settled = true;
+        m_RenderDirty = true;
+
+        VigridMapLog.Debug("View settled after " + m_SettleFrames + " frame(s), took=" + took + " size=" + widget_w + "x" + widget_h);
     }
 
     void DelayedCenter(vector pos)
@@ -180,13 +247,18 @@ class VigridMapMenu extends UIScriptedMenu
         if (!m_MapWidget)
             return;
 
+        //--- The backstop. Harmless when SettleView already won - it re-asserts the same pair - and
+        //--- the whole mechanism when it did not.
         m_MapWidget.SetMapPos(pos);
         m_MapWidget.SetScale(GetOpenScale());
         m_RenderDirty = true;
 
-        //--- Set last, and only here: from this point the widget holds the scale we asked for, so
-        //--- Update may start recording what the player does to it.
-        m_ScaleRestored = true;
+        if (!m_Settled)
+            VigridMapLog.Debug("View settled by the delayed backstop, not SettleView");
+
+        //--- From this point the widget holds the scale we asked for, so Update may start recording
+        //--- what the player does to it.
+        m_Settled = true;
     }
 
     /**
@@ -451,6 +523,15 @@ class VigridMapMenu extends UIScriptedMenu
         if (!m_MapWidget)
             return;
 
+        //--- Above ClampZoom, and it must stay there: until the view has settled the widget holds the
+        //--- engine's default scale, and clamping that would write a value we never asked for into a
+        //--- widget that is about to be told what to show anyway.
+        if (!m_Settled)
+        {
+            SettleView();
+            return;
+        }
+
         ClampZoom();
 
         //--- Recorded from the live widget every frame rather than on close. There is no zoom event
@@ -458,8 +539,7 @@ class VigridMapMenu extends UIScriptedMenu
         //--- is a safe substitute: OnHide is not guaranteed to pair with OnShow on every path, and
         //--- the destructor runs while the widget tree is already going away. Reading a float per
         //--- frame is cheaper than either risk, and ClampZoom has already put it in range.
-        if (m_ScaleRestored)
-            s_LastScale = m_MapWidget.GetScale();
+        s_LastScale = m_MapWidget.GetScale();
 
         vector probe_origin;
         vector probe_far;
