@@ -122,7 +122,7 @@ None, deliberately — same as `Extra/SafeZone/`. The `config.cpp` rename is the
 is rebindable. Log verbosity is the only runtime knob: `-autorun-trace|-debug|-info|-warn|-none` on the
 command line, or `AutoRunLogLevel` in `serverDZ.cfg`.
 
-## Settled, and one thing that is not
+## Two things the sources get wrong, both settled by measurement
 
 ✅ **`VIGRID_AUTORUN_MOVEMENT_ANGLE = 0` is correct — measured 2026-08-16.** The character runs
 straight ahead. It is worth writing down because the alternative reads better than it is: `0` is what
@@ -130,12 +130,14 @@ this repo's own `DisableInput` passes and is the obvious *"no deviation"*, but v
 pass `1` instead, both the AI bot (`bot_hunt.c:145`) and the camera tools (`ctevent.c:50`), with no
 documented unit anywhere. **Do not "fix" it to 1.**
 
-⚠️ **`AutoRunMissionGameplay.AddActiveInputRestriction` may be dead weight.** Vanilla's entire body for
-the `INVENTORY` and `MAP` restrictors is `UAWalkRunForced.ForceEnable(true)` — *"force walk on!"* — so
-opening the inventory mid-route would quietly halve auto-run's speed, and the override counters it. But
-whether the movement-speed override already beats that pin is unmeasured. The test is one build:
-comment the body out, auto-run at a sprint, open the inventory, and watch. If it makes no difference,
-**delete it** rather than keep it as cargo.
+✅ **Vanilla's walk pin does not reach auto-run — measured 2026-08-16, and there is deliberately no
+`AddActiveInputRestriction` override.** Vanilla's entire body for the `INVENTORY` and `MAP` restrictors
+is `UAWalkRunForced.ForceEnable(true)` — *"force walk on!"* (`missiongameplay.c:1001-1024`) — which is
+what knocks a player down to a walk when they open their inventory. Read on its own that says
+auto-run's speed must halve, and one build shipped an override countering it. It doesn't:
+`OverrideMovementSpeed` sits downstream of the pin, so an auto-running sprint stays a sprint with the
+inventory open. The counter-call was **deleted rather than kept "just in case"** — a no-op guarded on
+`IsActive()` is indistinguishable from a working one, so it would have read as load-bearing forever.
 
 ## Testing
 

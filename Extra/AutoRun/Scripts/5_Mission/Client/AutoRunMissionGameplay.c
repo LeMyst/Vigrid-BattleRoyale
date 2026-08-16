@@ -52,34 +52,24 @@ modded class MissionGameplay
         HandleAutoRunToggle();
     }
 
-    /**
-     *  ⚠️ Undo vanilla's walk pin while auto-run is holding a speed.
+    /*
+     *  ✅ THERE IS DELIBERATELY NO AddActiveInputRestriction OVERRIDE HERE, and it is worth saying so
+     *  because the sources argue loudly that there should be.
      *
-     *  The entire body of AddActiveInputRestriction for INVENTORY and MAP is
-     *  UAWalkRunForced.ForceEnable(true) (missiongameplay.c:1001-1024) - "force walk on!". So opening
-     *  the inventory mid-route would quietly halve auto-run's speed, and the matching
-     *  RemoveActiveInputRestriction would hand it back on close, which reads as the feature randomly
-     *  losing its mind rather than as a restriction doing its job.
+     *  Vanilla's entire body for the INVENTORY and MAP restrictors is
+     *  UAWalkRunForced.ForceEnable(true) (missiongameplay.c:1001-1024) - "force walk on!" - which is
+     *  what knocks a player down to a walk when they open their inventory. Read on its own that says
+     *  opening the inventory mid-route must quietly halve auto-run's speed, and one build shipped
+     *  with an override countering it for exactly that reason.
      *
-     *  ⚠️ IT IS NOT YET MEASURED whether the movement-speed override already beats this pin - if it
-     *  does, this override is dead weight and should be DELETED rather than kept as cargo. The test
-     *  is one build: comment out the body, auto-run at a sprint, open the inventory, and watch
-     *  whether the character drops to a walk.
+     *  MEASURED 2026-08-16: it does not. OverrideMovementSpeed sits downstream of the walk pin, so an
+     *  auto-running sprint stays a sprint with the inventory open and the counter-call changed
+     *  nothing. It was deleted rather than kept "just in case" - a no-op guarded on IsActive() is
+     *  indistinguishable from a working one, so it would have read as load-bearing forever.
+     *
+     *  The same reasoning covers any other EInputRestrictors member: they act on UApi inputs, and the
+     *  override does not go through UApi.
      */
-    override void AddActiveInputRestriction(int restrictor)
-    {
-        super.AddActiveInputRestriction(restrictor);
-
-        if (!VigridAutoRunClient.GetInstance().IsActive())
-            return;
-        if (!GetUApi())
-            return;
-
-        if (restrictor == EInputRestrictors.INVENTORY)
-            GetUApi().GetInputByID(UAWalkRunForced).ForceEnable(false);
-        if (restrictor == EInputRestrictors.MAP)
-            GetUApi().GetInputByID(UAWalkRunForced).ForceEnable(false);
-    }
 
     /**
      *  Read the bind.
