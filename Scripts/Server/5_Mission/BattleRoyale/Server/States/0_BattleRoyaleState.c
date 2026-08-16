@@ -320,14 +320,25 @@ class BattleRoyaleState: Timeable
 
     void AddPlayer(PlayerBase player)
     {
-    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::AddPlayer: %1", player.GetIdentityName()));
+    	//--- GetCachedName, NOT GetIdentityName. The latter is declared on DAYZ-EXPANSION CORE's
+    	//--- modded PlayerBase and does not exist in vanilla at all, so this line - unchanged since
+    	//--- long before the Expansion removal - took the whole Mission module down the first time a
+    	//--- server booted without Expansion loaded. It is invisible to any grep for "Expansion":
+    	//--- it is a bare method call that looks exactly like vanilla API.
+    	//---
+    	//--- GetCachedName is vanilla (playerbase.c:9667) and is already this mod's canonical name
+    	//--- accessor - BR_SetCachedName exists to make it authoritative, and Party and KillFeed both
+    	//--- read it - so this also picks up the Steam-resolved name where Expansion's returned the
+    	//--- raw launcher one.
+    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::AddPlayer: %1", player.GetCachedName()));
         m_Players.Insert( player );
         OnPlayerCountChanged();
     }
 
     void RemovePlayer(PlayerBase player)
     {
-    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::RemovePlayer: %1", player.GetIdentityName()));
+    	//--- GetCachedName, not Expansion's GetIdentityName - see AddPlayer above.
+    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::RemovePlayer: %1", player.GetCachedName()));
 
         //--- The single leaderboard recording point. Every way out of a match funnels through here -
         //--- killed, disconnected, disconnected while unconscious, force-logged out, or kicked as

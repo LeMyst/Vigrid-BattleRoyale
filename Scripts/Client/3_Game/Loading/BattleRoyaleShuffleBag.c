@@ -1,7 +1,14 @@
-#ifndef SERVER
 /**
  *  A shuffle bag over a list of strings: keep handing out elements at random, but never repeat one
  *  until every other has had a turn.
+ *
+ *  ⚠️ DELIBERATELY UNGUARDED, AND IT HAS TO BE. Its only consumer, LoadingScreenBackground, carries
+ *  no guard either, so it compiles on the SERVER as well - where a `#ifndef SERVER` type simply does
+ *  not exist and the whole Game module fails with "Bad type 'BattleRoyaleShuffleBag'". The
+ *  ExpansionArray this replaced never hit that because Expansion Core is unguarded too.
+ *
+ *  An offline client cannot catch this by construction: SERVER is undefined there, so the guarded
+ *  type is always present and the module always compiles. It takes a real server launch.
  *
  *  This replaced ExpansionArray<string>.GetQuasiRandomElementAvoidRepetition(), which was the only
  *  thing the loading screen wanted from DayZ-Expansion and the last unguarded Expansion symbol
@@ -77,4 +84,3 @@ class BattleRoyaleShuffleBag
         }
     }
 }
-#endif
