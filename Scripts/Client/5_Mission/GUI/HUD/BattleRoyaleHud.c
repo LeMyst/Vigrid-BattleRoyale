@@ -139,7 +139,12 @@ class BattleRoyaleHud
 				speedNeededToReachZone = 99999; // Infinite speed needed if no time
 			}
 
-			BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 secondsToZone=%2 speedNeededToReachZone=%3", distExt, secondsToZone, speedNeededToReachZone));
+			//--- Gated so the string is not even BUILT at production log levels. This runs once per
+			//--- frame for as long as a player is outside the circle, which used to mean the tail end
+			//--- of a round and now means the whole pre-lock phase too - measured at ~60 lines/second
+			//--- per client, and string.Format runs before Debug() can reject it.
+			if (BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+				BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 secondsToZone=%2 speedNeededToReachZone=%3", distExt, secondsToZone, speedNeededToReachZone));
 
 			// Convert m/min thresholds to m/s for comparison (divide by 60)
 			float fastThreshold = 400.0 / 60.0;    // 6.67 m/s
