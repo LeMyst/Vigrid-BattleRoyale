@@ -286,6 +286,15 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected void DisablePlayerInput(PlayerBase process_player)
     {
+#ifdef VIGRID_AUTORUN
+        //--- ON THE LINE ABOVE THE FREEZE, and the order is load-bearing. Auto-run drives the very
+        //--- same HumanInputController.OverrideMovementSpeed that DisableInput uses, so the addon has
+        //--- to stop tracking this player BEFORE we write our own override. CancelFor deliberately
+        //--- does not touch the controller - see VigridAutoRunState for why releasing here would
+        //--- undo the freeze we are one line away from applying.
+        VigridAutoRunAPI.CancelFor(process_player);
+#endif
+
         process_player.DisableInput(true);
     }
 
