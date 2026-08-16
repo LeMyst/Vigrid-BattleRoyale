@@ -44,14 +44,17 @@ static const int VIGRID_AUTORUN_DEFAULT_SPEED = VIGRID_AUTORUN_SPEED_RUN;
 /**
  *  The value handed to OverrideMovementAngle while auto-run holds a speed.
  *
- *  ⚠️ THIS IS THE ONE NUMBER TO FLIP FIRST if the character veers off course or refuses to move at
- *  all, and it is a named constant for exactly that reason.
+ *  ✅ MEASURED 2026-08-16: 0 is correct. The character runs straight ahead. Do not "fix" it to 1.
  *
+ *  It is written down because the alternative is genuinely tempting on a reading of the sources.
  *  0 is what this repo's own PlayerBase.DisableInput passes and is the semantically obvious "no
- *  deviation from where the camera points". Vanilla's own call sites pass 1 instead - the AI bot
- *  (P:\scripts\4_world\systems\bot\bot_hunt.c:145) and the camera tools
- *  (P:\scripts\5_mission\gui\cameratools\ctevent.c:50) - with no documented unit anywhere, and the
- *  proto declaration (human.c:237) says nothing but "float value". Neither reading has been
- *  measured, so this ships at 0 and stays a single-variable experiment.
+ *  deviation from where the camera points" - but vanilla's own call sites pass 1 instead, both the
+ *  AI bot (P:\scripts\4_world\systems\bot\bot_hunt.c:145) and the camera tools
+ *  (P:\scripts\5_mission\gui\cameratools\ctevent.c:50), with no documented unit anywhere and a
+ *  proto declaration (human.c:237) that says nothing but "float value". Two plausible readings, and
+ *  the one vanilla uses more often is the wrong one here.
+ *
+ *  It stays a named constant anyway: if a future DayZ build ever does make auto-run veer, this is
+ *  still the one number to flip, and the experiment is one variable.
  */
 static const float VIGRID_AUTORUN_MOVEMENT_ANGLE = 0;

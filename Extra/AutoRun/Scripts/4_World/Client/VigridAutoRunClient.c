@@ -208,10 +208,14 @@ class VigridAutoRunClient
     }
 
     /**
-     *  What speed a press adopts. 0 from GetMovement means standing still, which has nothing to
-     *  adopt, so that one case falls back to the configured default.
+     *  What speed a press adopts.
      *
      *  Banded rather than rounded: EnfusionScript has no implicit float -> int narrowing to lean on.
+     *
+     *  A player who is already moving has an unambiguous answer, because the sprint modifier is
+     *  ALREADY folded into what GetMovement reports - Shift + W is a 3, so the moving cases need no
+     *  modifier check at all. Standing still is the only case with nothing to adopt, and it is the
+     *  only place the modifier has to be read directly.
      */
     private int ResolveStartSpeed(HumanInputController hic)
     {
@@ -226,7 +230,24 @@ class VigridAutoRunClient
         if (current_speed >= 0.5)
             return VIGRID_AUTORUN_SPEED_WALK;
 
+        //--- Standing still. Sprint + the bind means "set off at a sprint" - without this the only
+        //--- way to start a sprint from a standstill is to run first and press the bind again.
+        //---
+        //--- The arming latch below only watches the four movement keys, never UATurbo, so holding
+        //--- Shift across the toggle cannot cancel what it just started.
+        if (IsSprintModifierHeld())
+            return VIGRID_AUTORUN_SPEED_SPRINT;
+
         return VIGRID_AUTORUN_DEFAULT_SPEED;
+    }
+
+    //! Whether the sprint modifier (Shift by default) is down right now.
+    private bool IsSprintModifierHeld()
+    {
+        if (!GetUApi())
+            return false;
+
+        return GetUApi().GetInputByID(UATurbo).LocalValue() > 0;
     }
 
     /**

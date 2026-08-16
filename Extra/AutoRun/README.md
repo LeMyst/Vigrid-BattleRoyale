@@ -1,7 +1,8 @@
 # AutoRun
 
 Press **Z** while moving, let go of every key, and the character keeps going at the speed it was
-already doing. Press **Z** again — or touch any movement key — and it stops.
+already doing. From a standstill, **Shift + Z** sets off at a sprint and **Z** alone at a run. Press
+**Z** again — or touch any movement key — and it stops.
 
 Builds into `extra_autorun.pbo` and defines `VIGRID_AUTORUN`. It hooks vanilla and nothing else, so it
 works on any DayZ server; the Battle Royale mod is not required.
@@ -27,6 +28,11 @@ players coming off Expansion keep their muscle memory.
 Free letters are nearly exhausted: `K`, `O` and `P` are the only ones vanilla leaves unbound, and Map
 has taken `K` while Party has taken `P`. Rebindable in Options → Controls like every other bind.
 
+⚠️ **While DayZ-Expansion is still in the load order, `Z` drives both auto-runs.** Expansion's
+`UAExpansionAutoRunToggle` defaults to the same key — which is the point, players keep their muscle
+memory — but until Expansion is actually dropped, one press engages both and their cancel rules fight.
+Rebind Expansion's, or set `EnableAutoRun` to 0 in its general settings, for the transition period.
+
 ## What it does
 
 The mechanism is `HumanInputController.OverrideMovementSpeed` / `OverrideMovementAngle`
@@ -36,7 +42,14 @@ mod's own `PlayerBase.DisableInput` already uses exactly this pair with a speed 
 players.
 
 **The speed is adopted, not fixed.** A press reads `hic.GetMovement()` and holds whatever the player
-was already doing — sprint stays a sprint, a walk stays a walk. Pressed from standing it runs.
+was already doing — sprint stays a sprint, a walk stays a walk. The moving cases need no modifier
+check, because the sprint modifier is already folded into what `GetMovement` reports: Shift + W is
+a `3`.
+
+**From a standstill, the sprint modifier decides.** Shift + the bind sets off at a sprint; the bind
+alone sets off at a run. Standing still is the only case with nothing to adopt, so it is the only
+place `UATurbo` is read directly — and the arming latch below never watches `UATurbo`, so holding
+Shift across the toggle cannot cancel what it just started.
 
 **Sprint follows stamina.** `LimitsIsSprintDisabled()` is asked every frame; while it is true a
 requested sprint is held at a run, and it goes back to a sprint by itself once stamina recovers,
@@ -109,13 +122,13 @@ None, deliberately — same as `Extra/SafeZone/`. The `config.cpp` rename is the
 is rebindable. Log verbosity is the only runtime knob: `-autorun-trace|-debug|-info|-warn|-none` on the
 command line, or `AutoRunLogLevel` in `serverDZ.cfg`.
 
-## Two things that are not settled
+## Settled, and one thing that is not
 
-⚠️ **`VIGRID_AUTORUN_MOVEMENT_ANGLE` is the number to flip first** if the character veers off course or
-refuses to move at all. It ships at `0` — what this repo's own `DisableInput` passes, and the
-semantically obvious *"no deviation"* — but vanilla's own call sites pass `1` instead, both the AI bot
-(`bot_hunt.c:145`) and the camera tools (`ctevent.c:50`), with no documented unit anywhere. Neither
-reading has been measured. It is a named constant so the experiment is one variable.
+✅ **`VIGRID_AUTORUN_MOVEMENT_ANGLE = 0` is correct — measured 2026-08-16.** The character runs
+straight ahead. It is worth writing down because the alternative reads better than it is: `0` is what
+this repo's own `DisableInput` passes and is the obvious *"no deviation"*, but vanilla's own call sites
+pass `1` instead, both the AI bot (`bot_hunt.c:145`) and the camera tools (`ctevent.c:50`), with no
+documented unit anywhere. **Do not "fix" it to 1.**
 
 ⚠️ **`AutoRunMissionGameplay.AddActiveInputRestriction` may be dead weight.** Vanilla's entire body for
 the `INVENTORY` and `MAP` restrictors is `UAWalkRunForced.ForceEnable(true)` — *"force walk on!"* — so
