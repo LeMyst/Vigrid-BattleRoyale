@@ -46,8 +46,27 @@ class VigridMapMenu extends UIScriptedMenu
     //--- teammate walks, so it repaints on a timer instead - see Update.
     protected int m_LastTeamRepaintMs;
 
+    //--- The zoom the player was last using, carried across opens.
+    //---
+    //--- Static because it has to be: MapMissionBase.CreateScriptedMenu news a VigridMapMenu on every
+    //--- open and the engine destroys it on close, so no member can survive the round trip.
+    //---
+    //--- Session-scoped on purpose. It is deliberately NOT a field in map_client.json: persisting it
+    //--- would mean a synchronous JsonFileLoader write every time the map is shut, which in a match
+    //--- is often, to save a preference that costs one wheel scroll to restate.
+    //---
+    //--- Zero means "never set", so there is no reliance on static-initialiser semantics - see
+    //--- GetOpenScale, which folds that case together with an out-of-range value.
+    protected static float s_LastScale;
+
+    //--- Latched by DelayedCenter, and the capture in Update is gated on it. The frames before the
+    //--- deferred restore lands are the ones whose GetScale answers about a widget that has not been
+    //--- laid out yet; recording those would overwrite what we are trying to restore.
+    protected bool m_ScaleRestored;
+
     void VigridMapMenu()
     {
+        m_ScaleRestored = false;
         m_RenderDirty = true;
         m_LastRepaintMs = 0;
         m_LastMarkerSeq = -1;
@@ -69,7 +88,10 @@ class VigridMapMenu extends UIScriptedMenu
 
     override Widget Init()
     {
-        VigridMapLog.Debug("VigridMapMenu::Init");
+        //--- The scale is on this line because it is the one thing about an open that carries over
+        //--- from the last one: "did it reopen where I left it" is otherwise only answerable by eye,
+        //--- and a small zoom difference is exactly what an eye is worst at.
+        VigridMapLog.Debug("VigridMapMenu::Init (opening at scale " + GetOpenScale() + ")");
 
         layoutRoot = GetGame().GetWorkspace().CreateWidgets(VIGRID_MAP_PREFIX + "GUI/layouts/map_menu.layout");
         if (!layoutRoot)
@@ -131,6 +153,10 @@ class VigridMapMenu extends UIScriptedMenu
      *  pass, so the call made during Init lands on a widget that has no size yet and is silently
      *  dropped; the deferred one is the one that actually takes effect. Copied from the
      *  spawn-selection menu, which needed exactly this.
+     *
+     *  The POSITION is recentred on every open and the ZOOM is not, which is the asymmetry to keep:
+     *  the reason to open a map is to see where you are, but the zoom the player picked is a
+     *  preference they would otherwise have to restate on every open.
      */
     protected void CenterOnPlayer()
     {
@@ -144,7 +170,7 @@ class VigridMapMenu extends UIScriptedMenu
             target = GetGame().GetCurrentCameraPosition();
 
         m_MapWidget.SetMapPos(target);
-        m_MapWidget.SetScale(VIGRID_MAP_DEF_SCALE);
+        m_MapWidget.SetScale(GetOpenScale());
 
         GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(DelayedCenter, VIGRID_MAP_CENTER_DELAY_MS, false, target);
     }
@@ -155,8 +181,31 @@ class VigridMapMenu extends UIScriptedMenu
             return;
 
         m_MapWidget.SetMapPos(pos);
-        m_MapWidget.SetScale(VIGRID_MAP_DEF_SCALE);
+        m_MapWidget.SetScale(GetOpenScale());
         m_RenderDirty = true;
+
+        //--- Set last, and only here: from this point the widget holds the scale we asked for, so
+        //--- Update may start recording what the player does to it.
+        m_ScaleRestored = true;
+    }
+
+    /**
+     *  The scale to open at: the one the player left, or the default when there is nothing to restore.
+     *
+     *  Clamped on READ rather than left to ClampZoom. That would also correct it, one frame later,
+     *  at the cost of a frame drawn out of range and the spurious repaint its m_RenderDirty raises.
+     *  Doing it here also means a change to either limit cannot strand a value stored under the old
+     *  ones - it simply falls back to the default.
+     */
+    protected static float GetOpenScale()
+    {
+        if (s_LastScale < VIGRID_MAP_MIN_SCALE)
+            return VIGRID_MAP_DEF_SCALE;
+
+        if (s_LastScale > VIGRID_MAP_MAX_SCALE)
+            return VIGRID_MAP_DEF_SCALE;
+
+        return s_LastScale;
     }
 
     /**
@@ -403,6 +452,14 @@ class VigridMapMenu extends UIScriptedMenu
             return;
 
         ClampZoom();
+
+        //--- Recorded from the live widget every frame rather than on close. There is no zoom event
+        //--- to hook - the same reason ClampZoom above reads it per frame - and neither teardown hook
+        //--- is a safe substitute: OnHide is not guaranteed to pair with OnShow on every path, and
+        //--- the destructor runs while the widget tree is already going away. Reading a float per
+        //--- frame is cheaper than either risk, and ClampZoom has already put it in range.
+        if (m_ScaleRestored)
+            s_LastScale = m_MapWidget.GetScale();
 
         vector probe_origin;
         vector probe_far;

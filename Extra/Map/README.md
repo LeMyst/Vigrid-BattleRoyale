@@ -29,6 +29,11 @@ It hooks nothing of the host mod's, so it works on **any** DayZ server — Battl
 Pan and zoom are the engine's own. **You can keep running while the map is open**, and clicking the map
 does not fire the weapon underneath it.
 
+**The map reopens at the zoom you left it at**, for the rest of the game session — the position still
+recentres on you every time. It is held in a static rather than written to `map_client.json`, so a
+restart opens at `VIGRID_MAP_DEF_SCALE` again; persisting it would mean a synchronous JSON write every
+time the map is shut, which in a match is often, for a preference one wheel scroll restates.
+
 Placing, moving and clearing a marker all take effect **the moment you click**, not when the server
 answers — see *Design notes*. If the server refuses a placement outright, a message says so in the strip
 above the map instead.
@@ -239,7 +244,10 @@ without `OnHide`. A leaked exclude group would leave the player permanently unab
 ## Caveats
 
 - **Never override `OnMouseWheel`** on the map widget — native zoom dies. `ClampZoom()` holds the range
-  each frame instead, because there is no zoom event to hook.
+  each frame instead, because there is no zoom event to hook. The session-remembered zoom rides the
+  same per-frame read for the same reason: it records `GetScale()` in `Update()` rather than on close,
+  since `OnHide` is not guaranteed to pair with `OnShow` and the destructor runs after the widget tree
+  has started going away.
 - **An input exclude group resets every held input, so `{"aiming"}` is the only one used here.** Both
   `AddActiveInputExcludes` and `RemoveActiveInputExcludes` end in `GetUApi().UpdateControls()`, which
   rebuilds the control state and drops the **held** state of every input including `UATurbo` — so
