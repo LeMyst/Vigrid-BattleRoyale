@@ -102,6 +102,9 @@ modded class PluginDiagMenuClient
 
 		DiagMenu.BindCallback(m_BRDiagTraceTpClientID, CBBRDiagTraceTpClient);
 		DiagMenu.BindCallback(m_BRDiagTraceTpServerID, CBBRDiagTraceTpServer);
+		DiagMenu.BindCallback(m_BRDiagTraceAimClientID, CBBRDiagTraceAimClient);
+		DiagMenu.BindCallback(m_BRDiagTraceAimServerID, CBBRDiagTraceAimServer);
+		DiagMenu.BindCallback(m_BRDiagTpResyncID, CBBRDiagTpResync);
 		DiagMenu.BindCallback(m_BRDiagTraceTicksID, CBBRDiagTraceTicks);
 
 		DiagMenu.BindCallback(m_BRDiagLogLevelID, CBBRDiagLogLevel);
@@ -794,6 +797,36 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagTraceTicks(float value)
 	{
 		BattleRoyaleDiag.trace_teleport_ticks = (int)value;
+	}
+
+	static void CBBRDiagTraceAimClient(bool enabled)
+	{
+		BattleRoyaleDiag.trace_aim = enabled;
+	}
+
+	static void CBBRDiagTraceAimServer(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_TRACE_AIM, on, 0);
+	}
+
+	/**
+	 *  Gate the server's NotifyPlayerTeleported broadcast - the aim-desync fix.
+	 *
+	 *  Server-side state only: the client copy of teleport_resync is never read, so this does not
+	 *  set it. OFF is Run A of the measurement (reproduce the stale-proxy aim offset); ON is the
+	 *  shipped behaviour and what the entry shows at boot.
+	 */
+	static void CBBRDiagTpResync(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_TP_RESYNC, on, 0);
 	}
 
 	//=============================================================================================

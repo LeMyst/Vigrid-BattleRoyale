@@ -147,6 +147,86 @@ modded class PlayerBase
 
         m_BR_TraceTicksLeft = BattleRoyaleDiag.trace_teleport_ticks;
     }
+
+    //--- Aim trace state: the earliest GetTime() ms at which the next heartbeat line may go out,
+    //--- and the last values reported, so a real change logs immediately regardless of the clock.
+    protected int m_BR_AimTraceNextMs = 0;
+    protected float m_BR_AimTraceLastUD = 0;
+    protected bool m_BR_AimTraceHadHCW = false;
+
+    /**
+     *  One line describing this instance's copy of the base aiming angles.
+     *
+     *  THE INSTRUMENT FOR THE REMOTE-ADS-PITCH DESYNC. Aim pitch is never replicated as an absolute
+     *  value - HumanInputController.GetAimChange (human.c:31) is a per-tick delta, so the owner, the
+     *  server and every observer's proxy each integrate their OWN copy, and a copy that is reset
+     *  while the others are not stays offset until the real aim saturates the pitch clamp (which is
+     *  the players' "sweep full up then full down" workaround). Every instance runs CommandHandler,
+     *  so every instance logs itself: the server's log carries every player, each client's carries
+     *  the local player plus every proxy in the bubble. Diffing the three copies of one player -
+     *  matched on net= across machines, t= for alignment - names the diverging copy and the event.
+     *
+     *  Lives in the UNGUARDED part of this file for the same reason BR_LogTeleportState does: one
+     *  method instruments both sides.
+     *
+     *  Throttled to a 500 ms heartbeat per instance, but a change of more than a degree - or the
+     *  weapons modifier appearing/disappearing - logs at once, so the interesting edges (a command
+     *  restart zeroing the angle) land on the tick they happen.
+     */
+    void BR_LogAimState()
+    {
+        if ( !BattleRoyaleDiag.trace_aim )
+            return;
+
+        HumanCommandWeapons hcw = GetCommandModifier_Weapons();
+
+        float ud = 0;
+        bool has_hcw = false;
+        if ( hcw )
+        {
+            has_hcw = true;
+            ud = hcw.GetBaseAimingAngleUD();
+        }
+
+        int now = GetGame().GetTime();
+
+        bool due = false;
+        if ( now >= m_BR_AimTraceNextMs )
+            due = true;
+        if ( has_hcw != m_BR_AimTraceHadHCW )
+            due = true;
+        if ( Math.AbsFloat( ud - m_BR_AimTraceLastUD ) > 1.0 )
+            due = true;
+
+        if ( !due )
+            return;
+
+        m_BR_AimTraceNextMs = now + 500;
+        m_BR_AimTraceLastUD = ud;
+        m_BR_AimTraceHadHCW = has_hcw;
+
+        string side = "client";
+        if ( GetGame().IsServer() )
+            side = "server";
+
+        //--- The network id is the one identifier every machine agrees on for every instance - a
+        //--- proxy's identity name would work too, but the id needs no identity to be resolvable.
+        int net_low = 0;
+        int net_high = 0;
+        GetNetworkID( net_low, net_high );
+
+        //--- Built in steps: the funnel shape trips the expression-complexity ceiling.
+        string line = "[AimTrace][" + side + "] t=" + now;
+        line = line + " inst=" + typename.EnumToString( DayZPlayerInstanceType, GetInstanceType() );
+        line = line + " net=" + net_low;
+        line = line + " cmd=" + GetCurrentCommandID();
+        line = line + " hcw=" + has_hcw;
+        line = line + " ud=" + ud;
+        if ( hcw )
+            line = line + " lr=" + hcw.GetBaseAimingAngleLR();
+
+        BattleRoyaleUtils.Debug( line );
+    }
 #endif
 
     //--- Pending deferred reset, consumed by CommandHandler below.
@@ -238,6 +318,10 @@ modded class PlayerBase
             m_BR_TraceTicksLeft = m_BR_TraceTicksLeft - 1;
             BR_LogTeleportState("tick");
         }
+
+        //--- Sampled BEFORE the force-move consume below, so the last pre-restart angle is on
+        //--- record; the post-restart value logs next tick through the on-change trigger.
+        BR_LogAimState();
 #endif
 
         if ( m_BR_ForceMoveRequested )
@@ -248,6 +332,12 @@ modded class PlayerBase
             //--- the juncture, and ejecting somebody from a vehicle seat is not a teleport's job.
             if ( !GetCommand_Vehicle() && !GetCommand_Script() )
             {
+#ifdef DIAG_DEVELOPER
+                //--- The event the aim trace exists to bracket: mark it so the log needs no
+                //--- inference about which tick the restart landed on, on which instance.
+                if ( BattleRoyaleDiag.trace_aim )
+                    BattleRoyaleUtils.Debug( "[AimTrace] command restart on " + typename.EnumToString( DayZPlayerInstanceType, GetInstanceType() ) );
+#endif
                 //--- Mirror vanilla's own sequence for leaving a command
                 //--- (dayzplayerimplement.c:2381-2400): if physics says we are airborne, hand over
                 //--- to Fall so the engine runs its normal landing rather than dropping the player

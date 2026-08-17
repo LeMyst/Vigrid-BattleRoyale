@@ -773,6 +773,10 @@ class BattleRoyalePrepare: BattleRoyaleState
 		pCtx.Write( position );
 		pCtx.Write( direction );
 		player.SendSyncJuncture( BR_SYNC_JUNCTURE_TELEPORT, pCtx );
+
+		//--- The juncture restarts the command on the server and the owner; this reaches the third
+		//--- copy - every viewer's proxy. See the header on BattleRoyaleState.NotifyTeleportToViewers.
+		NotifyTeleportToViewers( player );
     }
 
     void ProcessPlayers()

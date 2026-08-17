@@ -57,6 +57,10 @@ class BattleRoyaleRPC
 
 		last_match = new BattleRoyaleLastMatch();
 
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotifyPlayerTeleported", this );
+
+		teleported_net_ids = new array<int>();
+
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
 
@@ -189,6 +193,7 @@ class BattleRoyaleRPC
 		//--- winner - against an empty table.
 		last_match.Clear();
 		last_match_seq = 0;
+		teleported_net_ids.Clear();
 		recap_killer_name = "";
 		recap_weapon_type = "";
 		recap_cause = BattleRoyaleKillCause.UNKNOWN;
@@ -199,6 +204,40 @@ class BattleRoyaleRPC
 		recap_hits = 0;
 		recap_valid = false;
 		recap_seq = 0;
+	}
+
+	//------------------------------------------------------------------------------------------
+	//--- Teleport resync: players the server says were just teleported.
+	//------------------------------------------------------------------------------------------
+
+	/**
+	 *  Network ids (low,high pairs, in arrival order) of players the server just teleported.
+	 *
+	 *  A QUEUE drained by BattleRoyaleClient.Update, never a latched value: match start teleports
+	 *  the whole lobby inside a few seconds, and a latch would keep only the last arrival between
+	 *  two client frames, silently skipping every other player's proxy.
+	 *
+	 *  Why it exists: the teleport juncture restarts the movement command on the server and on the
+	 *  owner, but a viewer's proxy integrates its own copy of the aim angles and was told nothing -
+	 *  the remote-ADS-pitch desync. See BattleRoyaleState.NotifyTeleportToViewers for the story.
+	 */
+	ref array<int> teleported_net_ids;
+
+	void NotifyPlayerTeleported( CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target )
+	{
+		Param2<int, int> data;
+
+		if ( !ctx.Read( data ) )
+		{
+			ReadFailed("NotifyPlayerTeleported");
+			return;
+		}
+
+		if ( type == CallType.Client )
+		{
+			teleported_net_ids.Insert( data.param1 );
+			teleported_net_ids.Insert( data.param2 );
+		}
 	}
 
 	//------------------------------------------------------------------------------------------

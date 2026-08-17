@@ -759,6 +759,51 @@ class BattleRoyaleState: Timeable
         GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "Unstuck", Math.RandomFloat(1, 3) * 1000 , false, new Param1<PlayerBase>( player ));
     }
 
+    /**
+     *  Tell every client this player was just teleported, so each restarts its LOCAL instance's
+     *  movement command - the third copy the juncture cannot reach.
+     *
+     *  THE AIM-DESYNC FIX. Aim pitch is integrated per instance from per-tick deltas
+     *  (HumanInputController.GetAimChange, human.c:31), never synced as an absolute value. The
+     *  teleport juncture restarts the Move command on the server (its own handler) and on the owner
+     *  (the client half), but a viewer's PROXY was told nothing - so a proxy that survives the
+     *  teleport kept the pre-teleport aim baseline, permanently offset from the owner's, and the
+     *  player looked to be aiming at the sky when they ADSed. Squadmates are the proxies that
+     *  survive: teams spawn together and never leave each other's bubble, which is why the bug read
+     *  as "sometimes, some players". The offset only cleared when the real aim saturated the pitch
+     *  clamp - the "sweep full up then full down" folk fix.
+     *
+     *  Broadcast rather than targeted: the server cannot know whose bubble holds this player. A
+     *  client whose bubble does NOT hold them fails the network-id lookup and drops the message,
+     *  which is correct - an absent proxy has no stale state to fix.
+     *
+     *  Called beside every LIVE-PLAYER send of BR_SYNC_JUNCTURE_TELEPORT. The corpse teleport in
+     *  BattleRoyaleSpectators is deliberately not one of them - a corpse has no aim.
+     */
+    protected void NotifyTeleportToViewers( PlayerBase player )
+    {
+        if( !player )
+            return;
+
+#ifdef DIAG_DEVELOPER
+        //--- Run A/B switch for the aim-desync measurement, diag builds only: a retail build
+        //--- broadcasts unconditionally (BattleRoyaleDiag does not exist there).
+        if( !BattleRoyaleDiag.teleport_resync )
+        {
+            BattleRoyaleUtils.Debug( "[AimTrace] teleport resync broadcast suppressed (diag)" );
+            return;
+        }
+#endif
+
+        int net_low = 0;
+        int net_high = 0;
+        player.GetNetworkID( net_low, net_high );
+        if( net_low == 0 && net_high == 0 )
+            return;
+
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotifyPlayerTeleported", new Param2<int, int>( net_low, net_high ), true );
+    }
+
     void Unstuck( PlayerBase player )
     {
         //--- 1-3 seconds have passed since DeferredUnstuck queued this, and a player can disconnect
@@ -789,6 +834,7 @@ class BattleRoyaleState: Timeable
         pCtx.Write( unstuck_position );
         pCtx.Write( direction );
         player.SendSyncJuncture( BR_SYNC_JUNCTURE_TELEPORT, pCtx );
+        NotifyTeleportToViewers( player );
         player.SetSynchDirty();
         player.wait_unstuck = false;
 
@@ -821,6 +867,7 @@ class BattleRoyaleState: Timeable
         pCtx.Write( position );
         pCtx.Write( direction );
         player.SendSyncJuncture( BR_SYNC_JUNCTURE_TELEPORT, pCtx );
+        NotifyTeleportToViewers( player );
         player.SetSynchDirty();
 
         BattleRoyaleUtils.Info( "[Diag] teleported " + GetPlayerLogName( player ) + " to " + position );

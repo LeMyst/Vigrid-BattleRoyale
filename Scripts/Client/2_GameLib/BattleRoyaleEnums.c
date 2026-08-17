@@ -58,6 +58,9 @@ enum BattleRoyaleDiagAction
     SET_FAKE_UNLOADED, //!< arg_i 0/1 - mark every lobby player un/loaded, to hold the #8 load gate open
     LOG_LOBBY_GATE,    //!< dump every term of both lobby start gates, i.e. why it is or is not starting
 
+    SET_TRACE_AIM,     //!< arg_i 0/1 - server-side aim-angle trace. See PlayerBase.BR_LogAimState.
+    SET_TP_RESYNC,     //!< arg_i 0/1 - gate the NotifyPlayerTeleported broadcast, for the aim-desync A/B runs
+
     COUNT //Do not move this
 }
 
