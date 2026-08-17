@@ -598,6 +598,35 @@ static const float BR_SPECTATE_POS_DAMP = 8.0;
 //beyond this distance the camera teleports instead of interpolating, so a retarget across the map
 //does not fly the camera over the terrain. Metres.
 static const float BR_SPECTATE_SNAP_DISTANCE = 30.0;
+//--- FIRST PERSON (#288). A purely LOCAL view preference: the camera is client-owned, every offset
+//--- below is client-side geometry, and nothing the server tracks changes - so this is the SECOND
+//--- spectate key with no server half, alongside the skeleton overlay, and the only one of the set
+//--- that is not admin-gated. A dead player watching their killer gets it too.
+//---
+//--- It applies in FOLLOW mode only. ORBIT is circling the final circle with no target to sit inside,
+//--- and FREE is a camera the admin is already flying by hand.
+//---
+//--- Eye offset from the target's HEAD BONE. Forward is along the camera's own facing, up is world up.
+//--- Vanilla's own DayZPlayerCamera1stPerson rides that same bone with "0.04 0.04 0"
+//--- (dayzplayercamera1stperson.c:20) - but it is attached directly to the bone and renders the local
+//--- player's first-person-only model. Ours is a free camera watching a FULLY RENDERED remote
+//--- character, so it needs enough clearance to sit in front of their face instead of inside it.
+static const float BR_SPECTATE_FP_FORWARD = 0.22;
+static const float BR_SPECTATE_FP_UP = 0.02;
+//first-person yaw damping, replacing BR_SPECTATE_YAW_DAMP while the eye is in the head. Snappier,
+//because at 3.5 m behind a character a lagging heading reads as a camera easing into place, and from
+//inside their skull the same lag reads as the whole world sliding.
+//
+//DAMPED AT ALL, rather than copied rigidly, because the source is the target's BODY yaw and body yaw
+//SNAPS IN STEPS as a character turns in place - the same property that rules it out for the map's
+//heading arrow. The damping is what turns those steps back into a continuous pan.
+static const float BR_SPECTATE_FP_YAW_DAMP = 14.0;
+//first-person tilt. LEVEL, and for the same reason BR_SPECTATE_PITCH is a constant: the target's real
+//look angle is not readable from a remote entity by any route this file trusts yet. So the view sits
+//in the right place, facing the right way, and does not follow the target's aim up or down.
+//BattleRoyaleSpectatorCamera.TraceHeadBone is the probe that will settle that; read its header before
+//replacing this with anything.
+static const float BR_SPECTATE_FP_PITCH = 0.0;
 //the no-target fallback: a slow orbit of the current play area centre.
 static const float BR_SPECTATE_ORBIT_RADIUS = 120.0;
 static const float BR_SPECTATE_ORBIT_HEIGHT = 60.0;

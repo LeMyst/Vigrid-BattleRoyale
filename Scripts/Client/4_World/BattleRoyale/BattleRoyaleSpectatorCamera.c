@@ -37,6 +37,10 @@ class BattleRoyaleSpectatorCamera extends Camera
     protected vector m_TargetPos;
     protected int m_Mode;
 
+    //--- FIRST PERSON (#288). Purely local - the server is never told, because nothing it owns
+    //--- changes. Only honoured in FOLLOW mode; see IsFirstPersonActive.
+    protected bool m_FirstPerson;
+
     protected vector m_SmoothPos;
     protected float m_Yaw;
     protected float m_Pitch;
@@ -64,6 +68,7 @@ class BattleRoyaleSpectatorCamera extends Camera
         m_TargetUid = "";
         m_TargetPos = "0 0 0";
         m_Mode = BR_SPECTATE_MODE_ORBIT;
+        m_FirstPerson = false;
         m_SmoothPos = "0 0 0";
         m_Yaw = 0;
         m_Pitch = BR_SPECTATE_PITCH;
@@ -133,6 +138,38 @@ class BattleRoyaleSpectatorCamera extends Camera
         return m_TargetUid;
     }
 
+    /**
+     *  Ask for the eye to sit in the target's head rather than over their shoulder.
+     *
+     *  Called every frame with an unchanged value, exactly like SetTarget, so it must stay cheap and
+     *  idempotent - which it is: the whole state is one bool, and the mode test that decides whether
+     *  it means anything is taken fresh each frame in IsFirstPersonActive.
+     */
+    void SetFirstPerson(bool first_person)
+    {
+        m_FirstPerson = first_person;
+    }
+
+    bool IsFirstPerson()
+    {
+        return m_FirstPerson;
+    }
+
+    /**
+     *  Is the first-person eye actually in force this frame?
+     *
+     *  The REQUEST is mode-independent and survives a mode change, so an admin who flips out to the
+     *  free camera and back lands in the view they left. What it means is not: ORBIT has no target to
+     *  sit inside, and FREE is a camera being flown by hand.
+     */
+    protected bool IsFirstPersonActive()
+    {
+        if (!m_FirstPerson)
+            return false;
+
+        return m_Mode == BR_SPECTATE_MODE_FOLLOW;
+    }
+
     override void EOnFrame(IEntity other, float timeSlice)
     {
         if (!GetGame())
@@ -196,6 +233,11 @@ class BattleRoyaleSpectatorCamera extends Camera
 
             BattleRoyaleUtils.Trace(string.Format("[Spectate] cam=%1 target=%2 dist=%3 entity=%4 pushes=%5",
                 GetPosition().ToString(), m_TargetPos.ToString(), target_distance, has_entity, m_BubblePushes));
+
+            //--- Only while somebody is actually sitting in the target's head, so an ordinary
+            //--- third-person session pays nothing for a measurement it cannot be part of.
+            if (m_FirstPerson && m_Target)
+                TraceHeadBone();
         }
 
         //--- FREE is a completely different camera: it is flown, not aimed at anything, so none of
@@ -212,17 +254,46 @@ class BattleRoyaleSpectatorCamera extends Camera
 
         PushCamPos(timeSlice);
 
-        //--- Shortest-arc yaw damping.
+        bool first_person = IsFirstPersonActive();
+
+        //--- Shortest-arc yaw damping. First person damps harder - see BR_SPECTATE_FP_YAW_DAMP for
+        //--- why it is damped at all rather than copying the target's heading rigidly.
+        float yaw_damp = BR_SPECTATE_YAW_DAMP;
+        if (first_person)
+            yaw_damp = BR_SPECTATE_FP_YAW_DAMP;
+
         float delta = Math.NormalizeAngle(desired_yaw - m_Yaw);
         if (delta > 180)
             delta = delta - 360;
 
-        m_Yaw = Math.NormalizeAngle(m_Yaw + delta * Math.Clamp(timeSlice * BR_SPECTATE_YAW_DAMP, 0, 1));
+        m_Yaw = Math.NormalizeAngle(m_Yaw + delta * Math.Clamp(timeSlice * yaw_damp, 0, 1));
 
-        if (m_Mode == BR_SPECTATE_MODE_ORBIT)
+        if (first_person)
+            m_Pitch = BR_SPECTATE_FP_PITCH;
+        else if (m_Mode == BR_SPECTATE_MODE_ORBIT)
             m_Pitch = BR_SPECTATE_ORBIT_PITCH;
         else
             m_Pitch = BR_SPECTATE_PITCH;
+
+        //--- FIRST PERSON IS RIGID, AND SKIPS BOTH OF THE CORRECTIONS BELOW. Positional damping would
+        //--- make the view swim inside the character's own head every time they moved, and the floor
+        //--- clamp would shove the camera up out of a PRONE target's skull the moment their eyes sat
+        //--- lower than FLOOR_CLEARANCE above the surface. Neither correction has anything to fix
+        //--- here: the eye is anchored to a bone that is already exactly where it should be.
+        //---
+        //--- m_SmoothPos and m_HasSnapped are still maintained, so switching back to third person
+        //--- eases out from the head rather than starting from a stale position half a match old.
+        if (first_person)
+        {
+            vector eye_pos = ResolveEyePosition(anchor);
+
+            m_SmoothPos = eye_pos;
+            m_HasSnapped = true;
+
+            SetPosition(eye_pos);
+            SetOrientation(Vector(m_Yaw, m_Pitch, 0));
+            return;
+        }
 
         vector desired_pos = ResolveBoom(anchor);
 
@@ -442,6 +513,95 @@ class BattleRoyaleSpectatorCamera extends Camera
 
         //--- No entity to read: hold the last heading rather than snapping to zero.
         return m_Yaw;
+    }
+
+    /**
+     *  The first-person eye: the anchor nudged forward along the camera's own facing.
+     *
+     *  The anchor is already the target's head bone (ResolveAnchor), so this is only the clearance
+     *  that keeps the near plane out of their face. Deliberately the MIRROR of ResolveBoom's sign -
+     *  that one subtracts the sin/cos pair to sit behind the target, this one adds it.
+     *
+     *  NO COLLISION TRACE, unlike the boom. The boom traces because it swings a 3.5 m arm through
+     *  whatever is behind the target; 22 cm off a head bone has nothing to hit that the character's
+     *  own body is not already standing in, and a trace here would collapse the eye onto the target
+     *  every frame - the exact failure the boom's own m_Target exclusion exists to prevent.
+     */
+    protected vector ResolveEyePosition(vector anchor)
+    {
+        float yaw_rad = m_Yaw * Math.DEG2RAD;
+
+        vector eye = anchor;
+        eye[0] = anchor[0] + Math.Sin(yaw_rad) * BR_SPECTATE_FP_FORWARD;
+        eye[1] = anchor[1] + BR_SPECTATE_FP_UP;
+        eye[2] = anchor[2] + Math.Cos(yaw_rad) * BR_SPECTATE_FP_FORWARD;
+
+        return eye;
+    }
+
+    /**
+     *  Report what the target's HEAD BONE says about where they are looking. A PROBE - nothing reads
+     *  its output, and the camera's orientation does not depend on it.
+     *
+     *  WHY IT IS A PROBE AND NOT THE ANSWER. First person takes its heading from the target's BODY
+     *  yaw and holds a level pitch, because that is the one orientation source this file trusts for a
+     *  REMOTE entity. That is honest but incomplete: a target aiming up a hill reads as level, and
+     *  their head's own free-look is invisible.
+     *
+     *  The bone transform IS the rendered answer - it is the animation result, not a command modifier
+     *  that GetCommandModifier_Weapons() may hand back as NULL for a remote entity, which is the trap
+     *  this class's header warns about and the reason BR_SPECTATE_PITCH is a constant. Checked: every
+     *  GetCommandModifier_Weapons call site in P:\scripts reads it on the LOCAL player only.
+     *
+     *  WHAT IS NOT KNOWN is the bone's axis convention. Vanilla's own consumer of GetBoneRotationWS
+     *  (P:\scripts\5_mission\gui\cameratools\cameratoolsmenu.c:614) swizzles the components and adds
+     *  325 / 245 / 290 degrees for LeftHand_Dummy - per-bone rigging, not a convention derivable from
+     *  the source. So it is measured rather than guessed, which is the rule this subsystem has paid
+     *  to learn: three explanations have been wrong here already.
+     *
+     *  ACCEPTANCE TEST for the follow-up build. Spectate a player in first person and have them look
+     *  straight ahead, then hard up, then hard down, then turn 90 degrees right. Whichever logged axis
+     *  tracks pitch through the first three and yaw through the fourth is the head's forward vector,
+     *  and the camera can be pointed straight down it. Until somebody runs that, BR_SPECTATE_FP_PITCH
+     *  stays level.
+     */
+    protected void TraceHeadBone()
+    {
+        Human human_target = Human.Cast(m_Target);
+        if (!human_target)
+            return;
+
+        int bone = human_target.GetBoneIndexByName("Head");
+        if (bone == -1)
+            return;
+
+        float bone_quat[4];
+        m_Target.GetBoneRotationWS(bone, bone_quat);
+
+        vector bone_angles = Math3D.QuatToAngles(bone_quat);
+
+        vector bone_mat[3];
+        Math3D.QuatToMatrix(bone_quat, bone_mat);
+
+        //--- Read out into locals first, then concatenate in steps. Both rules are load-bearing here:
+        //--- a single expression carrying this many terms is rejected outright with "Formula too
+        //--- complex", and an array read sharing an expression with a call has been measured in this
+        //--- repo to return an element of a DIFFERENT array.
+        vector target_orientation = m_Target.GetOrientation();
+        float body_yaw = target_orientation[0];
+
+        vector axis_x = bone_mat[0];
+        vector axis_y = bone_mat[1];
+        vector axis_z = bone_mat[2];
+
+        string angles_line = "[Spectate] head angles=" + bone_angles.ToString();
+        angles_line = angles_line + " body_yaw=" + body_yaw;
+        BattleRoyaleUtils.Trace(angles_line);
+
+        string axes_line = "[Spectate] head axes x=" + axis_x.ToString();
+        axes_line = axes_line + " y=" + axis_y.ToString();
+        axes_line = axes_line + " z=" + axis_z.ToString();
+        BattleRoyaleUtils.Trace(axes_line);
     }
 
     /**

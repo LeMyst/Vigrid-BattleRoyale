@@ -597,6 +597,47 @@ but without it the chain is five deep and only inferable from who you end up wat
 very next line; it is a return value in all but name, so **never read it anywhere but immediately
 after a `ResolveTarget` call**.
 
+#### First person
+
+**Space** flips the spectator camera between the over-the-shoulder boom and sitting in the watched
+player's head. `BattleRoyaleClient.SpectateToggleView` → `BattleRoyaleSpectatorCamera.SetFirstPerson`,
+pushed every frame beside `SetTarget`.
+
+- **No server half, and no admin gate** — the only spectate key with neither. The camera is
+  client-owned, the eye offset is client-side geometry, and nothing the server tracks changes, so
+  there is nothing to replicate and nothing to authorise. A dead player watching their killer gets it
+  as well as an admin. Compare F6, which is also client-only but is an admin tool by what it *reveals*;
+  this reveals strictly less than the camera already showed.
+- **FOLLOW only.** ORBIT has no target to sit inside and FREE is a camera the admin is flying by
+  hand, so the key answers with a notification in those two rather than doing nothing silently. The
+  *request* survives a mode change (`m_FirstPerson` vs `IsFirstPersonActive()`), so an admin who flips
+  out to the free camera and back lands in the view they left. It is cleared in `LeaveSpectate`.
+- **Rigid, and it skips both of the third-person corrections.** No positional damping — the view would
+  swim inside the character's own head — and no `SurfaceY` floor clamp, which would shove the camera
+  up out of a **prone** target's skull the moment their eyes sat below `BR_SPECTATE_FLOOR_CLEARANCE`.
+  No collision trace either: 22 cm off a head bone has nothing to hit that the body is not already
+  standing in, and a trace would collapse the eye onto the target every frame.
+- **It adds no HUD**, which is what #288 asked for. Rendering the watched player's vitals would also
+  hand anyone who died a live feed of an opponent's blood and health — a different feature, and a much
+  less innocent one.
+- ⚠️ **The yaw is the target's BODY yaw, damped, and the pitch is LEVEL — the view does not follow
+  where the target is actually looking.** That is a known, deliberate gap, not an oversight. Body yaw
+  is the one orientation this file trusts for a remote entity, and it is damped (`BR_SPECTATE_FP_YAW_DAMP`,
+  harder than third person's) because body yaw **snaps in steps** as a character turns in place — the
+  same property that rules it out for the map's heading arrow. `GetCommandModifier_Weapons()` is not
+  the answer: every call site in `P:\scripts` reads it on the **local** player only, and it can be NULL
+  for a remote entity, which silently flattens the camera — the trap the class header already warns
+  about and the reason `BR_SPECTATE_PITCH` is a constant.
+- **`BattleRoyaleSpectatorCamera.TraceHeadBone` is the probe that will close that gap**, and it is a
+  probe precisely because the answer is not derivable from the source. The head bone transform *is* the
+  rendered look direction, but its axis convention is per-bone rigging: vanilla's own consumer of
+  `GetBoneRotationWS` (`P:\scripts\5_mission\gui\cameratools\cameratoolsmenu.c:614`) swizzles the
+  components and adds 325/245/290° for `LeftHand_Dummy`. It logs the `QuatToAngles` result and all
+  three matrix basis vectors against the body yaw, on the existing 5 s trace cadence, only while
+  somebody is actually in first person. **Its acceptance test is in the method header** — look ahead,
+  hard up, hard down, then turn 90° right, and read which axis tracks what. Do not replace
+  `BR_SPECTATE_FP_PITCH` by guessing; three explanations have already been wrong in this subsystem.
+
 #### Admin spectate
 
 A second, separate session type on the same machinery: a free camera, target cycling, and a
@@ -903,7 +944,7 @@ The `stringtable` check (`Tools/Checks/stringtable.py`, via `Workbench/Batchfile
 
 Layouts live in `GUI/layouts/`. The dominant pattern is imperative — `GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/....layout")` then `FindAnyWidget("Name")`; most layouts have no `scriptclass`. `SpawnSelectionMenu` is a `UIScriptedMenu` (`MENU_SPAWN_SELECTION = 75` in `Scripts/Client/3_Game/Constants.c`, instantiated in `MissionBase.CreateScriptedMenu`). The only declarative `scriptclass` binding is the COT `master_controls.layout` → `BRMasterControlsForm`.
 
-Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2, `UADayZBRLeaderboard` = F4, plus the admin-spectate set `UADayZBRAdminSpectate` = F3, `UADayZBRSpectateMode` = F5, `UADayZBRSpectateNext`/`Prev` = →/←, `UADayZBRSpectateSkeleton` = F6), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`. The admin keys are refused server-side for anyone outside `admins_steamid64`, so the client-side check on them is presentation only — **except F6, which has no server half at all** and is gated by COT's own `ESP.View` permission instead (see *Spectating → Admin spectate*).
+Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2, `UADayZBRLeaderboard` = F4, `UADayZBRSpectateView` = Space, plus the admin-spectate set `UADayZBRAdminSpectate` = F3, `UADayZBRSpectateMode` = F5, `UADayZBRSpectateNext`/`Prev` = →/←, `UADayZBRSpectateSkeleton` = F6), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`. The admin keys are refused server-side for anyone outside `admins_steamid64`, so the client-side check on them is presentation only — **except F6, which has no server half at all** and is gated by COT's own `ESP.View` permission instead (see *Spectating → Admin spectate*). **Space is the one spectate key that is not admin-gated at all** (see *Spectating → First person*).
 
 #### Lobby name tags
 

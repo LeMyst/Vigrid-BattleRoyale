@@ -13,6 +13,7 @@
             <input name="UADayZBRSpectateNext" loc="STR_BR_KEYBIND_SPECTATENEXT" />
             <input name="UADayZBRSpectatePrev" loc="STR_BR_KEYBIND_SPECTATEPREV" />
             <input name="UADayZBRSpectateSkeleton" loc="STR_BR_KEYBIND_SPECTATESKELETON" />
+            <input name="UADayZBRSpectateView" loc="STR_BR_KEYBIND_SPECTATEVIEW" />
         </actions>
 
         <sorting name="dayzbr" loc="STR_BR_KEYBIND_CATEGORY">
@@ -24,6 +25,7 @@
             <input name="UADayZBRSpectateNext" />
             <input name="UADayZBRSpectatePrev" />
             <input name="UADayZBRSpectateSkeleton" />
+            <input name="UADayZBRSpectateView" />
         </sorting>
     </inputs>
     <preset>
@@ -58,6 +60,14 @@
              no server RPC behind this one and no server-side refusal to match. -->
         <input name="UADayZBRSpectateSkeleton">
             <btn name="kF6" />
+        </input>
+        <!-- First / third person while spectating. Space is vanilla's vault key, which is free here
+             for the one reason that matters: a spectator controls no character, so there is nothing
+             for a vault to act on, and the admin free camera does not read it either. Unlike the five
+             above, this one is NOT admin-only and has no server half - it changes where this client's
+             own camera sits and nothing else. -->
+        <input name="UADayZBRSpectateView">
+            <btn name="kSpace" />
         </input>
     </preset>
 </modded_inputs>

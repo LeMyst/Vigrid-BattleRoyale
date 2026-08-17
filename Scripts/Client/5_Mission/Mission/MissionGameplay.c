@@ -198,6 +198,14 @@ modded class MissionGameplay
 			if (GetUApi().GetInputByID(UADayZBRSpectateSkeleton).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateToggleSkeleton();
 			}
+			//--- Space. First / third person while spectating. Deliberately NOT in the admin block
+			//--- above: an ordinary dead spectator gets this one too (#288), and there is no server
+			//--- half to refuse it. Safe on Space because a spectator controls no character - the
+			//--- vanilla vault this key drives has nothing to act on, and the free camera does not
+			//--- use it either. The method itself is a no-op unless this client is spectating.
+			if (GetUApi().GetInputByID(UADayZBRSpectateView).LocalPress()) {
+				BattleRoyaleClient.Cast( m_BattleRoyale ).SpectateToggleView();
+			}
 			//--- Toggle, so the same key closes the board again. Answerable in any state, though it
 			//--- is mostly a lobby feature.
 			//---
