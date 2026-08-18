@@ -255,6 +255,36 @@ static const float VIGRID_MAP_TEAM_STALE_ALPHA = 0.5;
 //--- about 0.6 m in 100 ms, and at the default scale that is roughly one pixel.
 static const int VIGRID_MAP_TEAM_TICK_MS = 100;
 
+//--- ADMIN PLAYER LAYER. An arbitrary set of named, coloured people the host mod asked to be plotted
+//--- (VigridMapAPI.SetAdminPlayers) - in practice an admin spectator's overview of a whole match.
+//---
+//--- 12 px, deliberately smaller than the teammate triangle's 14 and the self dart's 16. There can be
+//--- sixty of these against at most a handful of teammates, so the layer has to stay quiet enough
+//--- that the map underneath it is still readable.
+static const float VIGRID_MAP_ADMIN_PX = 12.0;
+static const float VIGRID_MAP_ADMIN_LINE_WIDTH = 2.0;
+
+//--- Bound on pooled name labels, matching the host's own 64-row admin list cap. Reached in the
+//--- ordinary course of a full match, not just in pathological cases.
+static const int VIGRID_MAP_ADMIN_NAME_MAX = 64;
+
+//--- Pixels between the top of a glyph and the bottom of its name label.
+static const float VIGRID_MAP_ADMIN_NAME_GAP_PX = 3.0;
+
+//--- Fallback label size in real pixels, used only on the first frame before the pooled widget has
+//--- been shown and can report its own. MUST track the root size in map_admin_tag.layout.
+static const float VIGRID_MAP_ADMIN_NAME_W = 120.0;
+static const float VIGRID_MAP_ADMIN_NAME_H = 16.0;
+
+//--- Names are hidden below this zoom. At a wide zoom sixty labels overlap into an unreadable smear
+//--- and the glyphs alone carry the picture; the names come back as soon as the admin zooms into the
+//--- fight they care about. The glyphs themselves are never hidden.
+static const float VIGRID_MAP_ADMIN_NAME_MIN_SCALE = 0.14;
+
+//--- Throttle on the one funnel diagnostic this layer emits. It runs at the team layer's 10 Hz, so
+//--- without a throttle it would be six hundred lines a minute for as long as a map is open.
+static const int VIGRID_MAP_ADMIN_FUNNEL_MS = 2000;
+
 //--- 3D marker. Height offset lifts the tag off the ground so it is not buried in terrain.
 static const float VIGRID_MAP_MARKER_HEIGHT_OFFSET = 1.5;
 static const float VIGRID_MAP_MARKER_EDGE_MARGIN = 40.0;

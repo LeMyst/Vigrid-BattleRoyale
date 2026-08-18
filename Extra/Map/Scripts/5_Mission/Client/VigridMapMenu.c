@@ -22,6 +22,16 @@ class VigridMapMenu extends UIScriptedMenu
     protected CanvasWidget m_LineCanvas;
     protected CanvasWidget m_MarkerCanvas;
     protected CanvasWidget m_TeamCanvas;
+    protected CanvasWidget m_AdminCanvas;
+
+    //--- The name layer for the admin glyphs. A pool of widgets under a full-screen frame that is a
+    //--- SIBLING of the MapWidget - the only way to get text over this map, see map_menu.layout.
+    protected Widget m_AdminNameLayer;
+    protected ref array<Widget> m_AdminNameRows;
+    protected ref array<TextWidget> m_AdminNameTexts;
+    protected ref array<Widget> m_AdminNameBacks;
+    protected int m_LastAdminSeq;
+    protected int m_NextAdminFunnelMs;
 
     protected ref VigridMapMenuHandler m_Handler;
     protected IngameHud m_Hud;
@@ -68,6 +78,12 @@ class VigridMapMenu extends UIScriptedMenu
 
     void VigridMapMenu()
     {
+        m_AdminNameRows = new array<Widget>();
+        m_AdminNameTexts = new array<TextWidget>();
+        m_AdminNameBacks = new array<Widget>();
+        m_LastAdminSeq = -1;
+        m_NextAdminFunnelMs = 0;
+
         m_SettleTarget = vector.Zero;
         m_Settled = false;
         m_SettleFrames = 0;
@@ -128,6 +144,19 @@ class VigridMapMenu extends UIScriptedMenu
         m_TeamCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("TeamCanvas"));
         if (!m_TeamCanvas)
             VigridMapLog.Error("map_menu.layout has no TeamCanvas - teammates and pings disabled");
+
+        //--- Above TeamCanvas, so a live player draws over every placed pin. Logged rather than
+        //--- fatal, like the two above: losing this layer is worth far less than losing the map.
+        m_AdminCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("AdminCanvas"));
+        if (!m_AdminCanvas)
+            VigridMapLog.Error("map_menu.layout has no AdminCanvas - the host player layer is disabled");
+
+        //--- Found on layoutRoot, NOT on m_MapWidget, and that is the entire reason it can render:
+        //--- it is declared as a sibling of the MapWidget rather than a child of it. See the comment
+        //--- on MarkerToast above, and the one in map_menu.layout.
+        m_AdminNameLayer = layoutRoot.FindAnyWidget("AdminNameLayer");
+        if (!m_AdminNameLayer)
+            VigridMapLog.Error("map_menu.layout has no AdminNameLayer - host player names disabled");
 
         //--- Found on layoutRoot, not on m_MapWidget: the toast sits in the strip above the map, so
         //--- it is a sibling of the MapWidget rather than a child of it.
@@ -599,6 +628,17 @@ class VigridMapMenu extends UIScriptedMenu
             m_LastHotZoneSeq = VigridMapAPI.GetHotZoneSeq();
         }
 
+        //--- The admin layer has an edge AND a clock, unlike every other layer here, because it has
+        //--- both kinds of change. The sequence catches the set growing or shrinking - a player dies,
+        //--- an admin starts watching - and would be enough on its own if positions were static. They
+        //--- are not: the host re-pushes them twice a second, which the sequence does see, but a
+        //--- 2 Hz repaint of moving glyphs visibly steps. So it rides the team clock as well.
+        if (VigridMapAPI.GetAdminPlayerSeq() != m_LastAdminSeq)
+        {
+            m_RenderDirty = true;
+            m_LastAdminSeq = VigridMapAPI.GetAdminPlayerSeq();
+        }
+
         bool watchdog_due = (GetGame().GetTime() - m_LastRepaintMs) >= VIGRID_MAP_REPAINT_WATCHDOG_MS;
 
         //--- Two gates over one probe, because the two kinds of drawing change for different
@@ -639,6 +679,7 @@ class VigridMapMenu extends UIScriptedMenu
         {
             m_LastTeamRepaintMs = GetGame().GetTime();
             RenderTeam();
+            RenderAdminPlayers();
         }
     }
 
@@ -927,6 +968,206 @@ class VigridMapMenu extends UIScriptedMenu
         float heading = Math.NormalizeAngle(GetGame().GetCurrentCameraDirection().VectorToAngles()[0]);
 
         VigridMapRender.WorldRenderHeadingArrow(m_TeamCanvas, m_MapWidget, self_pos, heading, VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
+    }
+
+    /**
+     *  Players the host mod asked to be plotted: a square glyph each, and a name label over it.
+     *
+     *  POSITIONS COME FROM THE HOST, NOT FROM THE ENTITY LIST, and that is what makes this layer
+     *  worth having at all - the host's source is its server, so it covers players far outside this
+     *  client's network bubble. Building it from ClientData would show only whatever happens to be
+     *  within about a kilometre, which on a map is close to nothing.
+     *
+     *  NO HEADING on the glyph. The push carries no yaw, and a glyph implying a facing it was never
+     *  told would be worse than one that admits it does not know.
+     *
+     *  Both surfaces are cleared before ANY early return, on the rule the whole file follows: a
+     *  canvas keeps its draw list and a widget pool keeps its last position, so a return that skipped
+     *  either would burn the previous frame into the map until something else happened to repaint.
+     */
+    protected void RenderAdminPlayers()
+    {
+        int count = VigridMapAPI.GetAdminPlayerCount();
+
+        if (m_AdminCanvas)
+            m_AdminCanvas.Clear();
+
+        if (count == 0)
+        {
+            HideAdminNames(0);
+            if (m_AdminNameLayer)
+                m_AdminNameLayer.Show(false);
+            return;
+        }
+
+        if (!m_AdminCanvas)
+        {
+            HideAdminNames(0);
+            return;
+        }
+
+        //--- Names off at a wide zoom. Sixty labels at map-wide scale overlap into a smear that hides
+        //--- the terrain and tells the admin nothing; the glyphs alone carry the picture until they
+        //--- zoom into the fight they care about. The glyphs are never suppressed.
+        bool want_names = m_MapWidget.GetScale() >= VIGRID_MAP_ADMIN_NAME_MIN_SCALE;
+
+        float canvas_w;
+        float canvas_h;
+        m_AdminCanvas.GetScreenSize(canvas_w, canvas_h);
+
+        float map_x;
+        float map_y;
+        m_MapWidget.GetScreenPos(map_x, map_y);
+
+        int drawn = 0;
+        int labelled = 0;
+        int offscreen = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            vector pos = VigridMapAPI.GetAdminPlayerPos(i);
+            if (pos == vector.Zero)
+                continue;
+
+            int color = VigridMapAPI.GetAdminPlayerColor(i);
+
+            VigridMapRender.WorldRenderSquare(m_AdminCanvas, m_MapWidget, pos, VIGRID_MAP_ADMIN_PX, color, VIGRID_MAP_ADMIN_LINE_WIDTH);
+            drawn++;
+
+            if (!want_names)
+                continue;
+
+            //--- The glyph is drawn in CANVAS-local pixels; the label lives under a different parent
+            //--- and is positioned in ABSOLUTE screen pixels, so the map widget's own screen origin
+            //--- has to be added back on. Getting this wrong shifts the whole set of labels while
+            //--- their spacing stays perfect, which reads as an offset bug rather than a parent bug.
+            float cx;
+            float cy;
+            VigridMapRender.WorldToCanvas(m_MapWidget, Vector(pos[0], 0, pos[2]), cx, cy);
+
+            //--- Outside the visible map rect. Clipped by hand because AdminNameLayer is NOT a child
+            //--- of the MapWidget and so is not clipped by it - which is exactly the trade that makes
+            //--- the text render in the first place.
+            if (cx < 0 || cy < 0 || cx > canvas_w || cy > canvas_h)
+            {
+                offscreen++;
+                continue;
+            }
+
+            string name = VigridMapAPI.GetAdminPlayerName(i);
+            if (name == "")
+                continue;
+
+            if (labelled >= VIGRID_MAP_ADMIN_NAME_MAX)
+                continue;
+
+            if (PlaceAdminName(labelled, name, color, map_x + cx, map_y + cy))
+                labelled++;
+        }
+
+        HideAdminNames(labelled);
+
+        if (m_AdminNameLayer)
+            m_AdminNameLayer.Show(labelled > 0);
+
+        ReportAdminFunnel(count, drawn, labelled, offscreen, want_names);
+    }
+
+    //! Position one pooled name label, growing the pool if needed. Returns false when the widget
+    //! could not be created, which is what stops the caller counting a row that does not exist.
+    protected bool PlaceAdminName(int slot, string name, int color, float screen_x, float screen_y)
+    {
+        if (!m_AdminNameLayer)
+            return false;
+
+        while (m_AdminNameRows.Count() <= slot)
+        {
+            Widget row = GetGame().GetWorkspace().CreateWidgets(VIGRID_MAP_PREFIX + "GUI/layouts/map_admin_tag.layout", m_AdminNameLayer);
+            if (!row)
+                return false;
+
+            m_AdminNameRows.Insert(row);
+            m_AdminNameTexts.Insert(TextWidget.Cast(row.FindAnyWidget("AdminTagName")));
+            m_AdminNameBacks.Insert(row.FindAnyWidget("AdminTagBack"));
+        }
+
+        Widget row_widget = m_AdminNameRows.Get(slot);
+        if (!row_widget)
+            return false;
+
+        //--- Shown before being measured: a widget that has never been displayed reports zero size,
+        //--- and both offsets below are derived from that size.
+        row_widget.Show(true);
+
+        float row_w;
+        float row_h;
+        row_widget.GetScreenSize(row_w, row_h);
+        if (row_w <= 0)
+            row_w = VIGRID_MAP_ADMIN_NAME_W;
+        if (row_h <= 0)
+            row_h = VIGRID_MAP_ADMIN_NAME_H;
+
+        //--- SetPos anchors by the top-left corner, so centring on the glyph means half a width left,
+        //--- and sitting ABOVE it means a full height plus the glyph's own half-size up.
+        float px = screen_x - (row_w * 0.5);
+        float py = screen_y - row_h - (VIGRID_MAP_ADMIN_PX * 0.5) - VIGRID_MAP_ADMIN_NAME_GAP_PX;
+
+        row_widget.SetPos(px, py);
+
+        TextWidget text = m_AdminNameTexts.Get(slot);
+        if (text)
+        {
+            text.SetText(name);
+            text.SetColor(color);
+        }
+
+        return true;
+    }
+
+    //! Hide every pooled label from `from` on. Hidden, not unlinked: these are free-positioned under
+    //! a plain frame rather than laid out by a spacer, so a hidden row occupies nothing.
+    protected void HideAdminNames(int from)
+    {
+        for (int i = from; i < m_AdminNameRows.Count(); i++)
+        {
+            Widget row = m_AdminNameRows.Get(i);
+            if (row)
+                row.Show(false);
+        }
+    }
+
+    /**
+     *  ⚠ THE POINT OF THIS LINE IS THE UNTESTED WIDGET CONSTRUCT ABOVE.
+     *
+     *  Text over a MapWidget has never been done in this repo - script-created widgets parented to
+     *  one are positioned correctly and then never render, measured repeatedly - and AdminNameLayer
+     *  is a sibling declared in the layout specifically to dodge that. If it turns out siblings do
+     *  not render over a MapWidget either, the symptom is "glyphs but no names", which is
+     *  indistinguishable by eye from every other reason a name might be missing: the zoom gate, an
+     *  empty name in the payload, the pool failing to build, or the label being clipped out.
+     *
+     *  So the funnel names which one it was on the first run instead of costing a build per
+     *  hypothesis. Same instrument, and the same reasoning, as the [Lobby] tags line in the host mod,
+     *  which turned a three-way argument into a one-line answer.
+     */
+    protected void ReportAdminFunnel(int count, int drawn, int labelled, int offscreen, bool want_names)
+    {
+        if (GetGame().GetTime() < m_NextAdminFunnelMs)
+            return;
+
+        m_NextAdminFunnelMs = GetGame().GetTime() + VIGRID_MAP_ADMIN_FUNNEL_MS;
+
+        //--- Built in steps rather than as one expression: a single concatenation of this many terms
+        //--- is exactly the shape this engine rejects outright as "Formula too complex".
+        string line = "[Admin] rows=" + count.ToString();
+        line = line + " drawn=" + drawn.ToString();
+        line = line + " labelled=" + labelled.ToString();
+        line = line + " offscreen=" + offscreen.ToString();
+        line = line + " wantnames=" + want_names.ToString();
+        line = line + " pool=" + m_AdminNameRows.Count().ToString();
+        line = line + " layer=" + (m_AdminNameLayer != NULL).ToString();
+
+        VigridMapLog.Debug(line);
     }
 
     protected void RenderTeammates()

@@ -52,6 +52,29 @@ FrameWidgetClass MapMenuRoot {
    "text halign" center
    "text valign" center
   }
+  // NAMES FOR THE AdminCanvas GLYPHS, and it is a SIBLING of the MapWidget rather than a child of
+  // it - which is the whole reason this can exist at all. A CanvasWidget draws lines and nothing
+  // else, so there is no text on the map; and widgets CREATED FROM SCRIPT over a MapWidget get
+  // correct positions and are then never rendered, measured repeatedly in this repo. A declared
+  // sibling drawn above it by priority is the one construct left, and MarkerToast above is the
+  // working precedent for text over this menu.
+  //
+  // Empty in the layout: VigridMapMenu pools map_admin_tag.layout rows into it and positions them
+  // in REAL SCREEN PIXELS, so the geometry here is a full-screen frame and nothing more. clipchildren
+  // 0 because rows are hidden by script when they fall outside the map rect, not clipped.
+  FrameWidgetClass AdminNameLayer {
+   visible 0
+   clipchildren 0
+   ignorepointer 1
+   inheritalpha 0
+   position 0 0
+   size 1 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   priority 2100
+  }
   MapWidgetClass VigridMap {
    visible 1
    clipchildren 1
@@ -116,6 +139,21 @@ FrameWidgetClass MapMenuRoot {
      hexactsize 0
      vexactsize 0
      priority 1002
+    }
+    // Players the host mod asked to be plotted - in practice an admin spectator's overview of the
+    // whole match. Highest priority of the five, so a live player draws over every other glyph.
+    CanvasWidgetClass AdminCanvas {
+     visible 1
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     priority 1003
     }
    }
   }

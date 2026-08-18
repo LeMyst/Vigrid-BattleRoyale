@@ -55,6 +55,10 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagHudGroupsID, CBBRDiagHudGroups);
 		DiagMenu.BindCallback(m_BRDiagHudKillsID, CBBRDiagHudKills);
 		DiagMenu.BindCallback(m_BRDiagHudAudienceID, CBBRDiagHudAudience);
+		DiagMenu.BindCallback(m_BRDiagAdminFakeID, CBBRDiagAdminFake);
+		DiagMenu.BindCallback(m_BRDiagAdminFakePlayersID, CBBRDiagAdminFakePlayers);
+		DiagMenu.BindCallback(m_BRDiagAdminFakeDeadID, CBBRDiagAdminFakeDead);
+		DiagMenu.BindCallback(m_BRDiagAdminFakeSpreadID, CBBRDiagAdminFakeSpread);
 		DiagMenu.BindCallback(m_BRDiagHudCountdownID, CBBRDiagHudCountdown);
 		DiagMenu.BindCallback(m_BRDiagOpenSpawnMenuID, CBBRDiagOpenSpawnMenu);
 		DiagMenu.BindCallback(m_BRDiagOpenLeaderboardID, CBBRDiagOpenLeaderboard);
@@ -262,6 +266,26 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagHudAudience(float value)
 	{
 		BattleRoyaleDiag.hud_audience = (int)value;
+	}
+
+	static void CBBRDiagAdminFake(bool value)
+	{
+		BattleRoyaleDiag.admin_fake = value;
+	}
+
+	static void CBBRDiagAdminFakePlayers(float value)
+	{
+		BattleRoyaleDiag.admin_fake_players = (int)value;
+	}
+
+	static void CBBRDiagAdminFakeDead(float value)
+	{
+		BattleRoyaleDiag.admin_fake_dead = (int)value;
+	}
+
+	static void CBBRDiagAdminFakeSpread(float value)
+	{
+		BattleRoyaleDiag.admin_fake_spread = value;
 	}
 
 	static void CBBRDiagHudCountdown(float value)
