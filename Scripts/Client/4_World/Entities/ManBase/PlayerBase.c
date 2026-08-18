@@ -409,7 +409,22 @@ modded class PlayerBase
 			hic.OverrideMeleeEvade( override_type, false );
 			hic.OverrideRaise( override_type, false );
 			hic.OverrideFreeLook( override_type, false );
-			hic.SetDisabled( disabled );
+
+			//--- hic.SetDisabled() used to be called here, and IT WAS THE REMOTE-ADS-PITCH DESYNC.
+			//--- Measured 2026-08-17 (Run A of the aim trace): through the lobby, owner and server
+			//--- integrate the aim angles in perfect lockstep - then the moment this method ran with
+			//--- disabled=true, the SERVER's copy froze at its last value while the OWNER's kept
+			//--- moving (a constant-rate ramp to the +85 clamp), and the teleport restart later
+			//--- rode the server's copy to the OPPOSITE clamp. Post-unlock the two copies mirrored
+			//--- every delta again (lr identical to three decimals) but the ud baselines stayed
+			//--- ~80 degrees apart - B aiming level read as aiming into the ground on every other
+			//--- screen, until the player saturated the pitch clamp by sweeping full up then down.
+			//---
+			//--- Remote clients render the SERVER's copy (remote instances run no script
+			//--- CommandHandler - measured, zero trace lines), so a frozen server copy is what every
+			//--- other player sees. The freeze itself is carried by the overrides above, every one
+			//--- of which has vanilla call sites; SetDisabled has ZERO in all of P:\scripts, the
+			//--- same unvetted-symbol class as OverrideAimChangeX/Y. Do not put it back.
 		}
     }
 }
