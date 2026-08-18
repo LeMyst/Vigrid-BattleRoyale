@@ -603,6 +603,44 @@ after a `ResolveTarget` call**.
 player's head. `BattleRoyaleClient.SpectateToggleView` → `BattleRoyaleSpectatorCamera.SetFirstPerson`,
 pushed every frame beside `SetTarget`.
 
+⚠️ **UNFINISHED AS OF 2026-08-18 — the view is still not the player's view, and #288 is not closed.**
+Four builds were tested live and rejected; the toggle, the FOV, the head hiding and the bob are all
+addressed, but the *aim* still does not match what the player sees, which for a PvP game is the whole
+point of the feature (a spectator watching someone shoot a wall and score a kill). **Do not treat the
+list below as a design that works — treat it as the measurements that any next attempt must not
+re-derive.** The known-wrong approaches are recorded here precisely because three of them looked
+right on paper.
+
+**What is measured and settled** (do not re-litigate any of these):
+
+| Question | Answer | How |
+|---|---|---|
+| Which head bone axis is forward? | `GetBoneTransformWS` index **1** (0 is up, 2 is right) | measured here (body_yaw 17.647 → axis 1 `<0.3307,-0.0202,0.9435>` → atan2 19.3°), and COT uses `headTransform[1]` independently |
+| `Math3D.QuatToAngles` on that bone? | **Unusable** — first component runs ~90° off body yaw | same run; per-bone rigging, cf. vanilla's 325/245/290 for `LeftHand_Dummy` |
+| `GetCommandModifier_Weapons()` on a remote entity, client-side? | **NULL** | a build preferred it and logged `source=bone` on every sample |
+| Why is the spectator FOV wrong? | a bare `Camera` runs at the engine's 0.5236 rad default; vanilla's player cameras use `GetUserFOV()` | `plugincharplacement.c:15` / `dayzplayercamera_base.c:323` |
+| Why is the eye inside the skull? | vanilla's 4 cm offset works because first person draws the **headless** local model; a remote character is drawn in full | COT hides it with `SetHeadInvisible` |
+| Why does it bob? | the head bone carries animation swing; vanilla's camera takes **position** from the bone but **orientation** from input angles, never the bone | `dayzplayercamera1stperson.c:44-53` |
+
+**Wrong turns, each of which cost a build:** a 22 cm eye offset along *world* yaw (wrong frame and an
+order of magnitude too far — this is what made the perspective read as "not the player's camera");
+world-space position damping (cannot separate bob from travel, so it either bobs or drags); and the
+aim-angle route above.
+
+**Techniques taken from COT** (called or reproduced, never copied — CC BY-SA 4.0 against this repo's
+DSPL-SA, same position as `JMESPSkeleton`): smoothing the eye in the target's **model space**
+(`InvMultiply4` → lerp → `Multiply4`, their comment: *"Interpolate in model space so camera sticks to
+character"*, rate 5.0), hiding the head via `SetHeadInvisible`, and deriving aim from the weapon's
+`konec hlavne` → `usti hlavne` memory points.
+
+**Where it was left:** aim points down the weapon barrel when the barrel agrees with the head within
+`BR_SPECTATE_FP_AIM_MIN_DOT` (~14°), head bone otherwise. Still rejected on test. The next lead is
+that the barrel is the *weapon's* direction, not the *camera's* — DayZ offsets the weapon from the
+eye line, so matching the player's crosshair likely needs the sight/`"eye"` memory point and its
+direction rather than the muzzle pair, or a route to the remote player's actual camera angles that
+this session did not find. **Instrument before building: log the candidate direction against where
+the target's shots actually land.**
+
 - **No server half, and no admin gate** — the only spectate key with neither. The camera is
   client-owned, the eye offset is client-side geometry, and nothing the server tracks changes, so
   there is nothing to replicate and nothing to authorise. A dead player watching their killer gets it
@@ -620,23 +658,35 @@ pushed every frame beside `SetTarget`.
 - **It adds no HUD**, which is what #288 asked for. Rendering the watched player's vitals would also
   hand anyone who died a live feed of an opponent's blood and health — a different feature, and a much
   less innocent one.
-- ⚠️ **The yaw is the target's BODY yaw, damped, and the pitch is LEVEL — the view does not follow
-  where the target is actually looking.** That is a known, deliberate gap, not an oversight. Body yaw
-  is the one orientation this file trusts for a remote entity, and it is damped (`BR_SPECTATE_FP_YAW_DAMP`,
-  harder than third person's) because body yaw **snaps in steps** as a character turns in place — the
-  same property that rules it out for the map's heading arrow. `GetCommandModifier_Weapons()` is not
-  the answer: every call site in `P:\scripts` reads it on the **local** player only, and it can be NULL
-  for a remote entity, which silently flattens the camera — the trap the class header already warns
-  about and the reason `BR_SPECTATE_PITCH` is a constant.
-- **`BattleRoyaleSpectatorCamera.TraceHeadBone` is the probe that will close that gap**, and it is a
-  probe precisely because the answer is not derivable from the source. The head bone transform *is* the
-  rendered look direction, but its axis convention is per-bone rigging: vanilla's own consumer of
+- **The look comes from the target's HEAD BONE, and the axis was measured rather than guessed.** The
+  first build shipped body yaw with a level pitch plus a probe, because the bone's axis convention is
+  per-bone *rigging* and is not derivable from the source — vanilla's own consumer of
   `GetBoneRotationWS` (`P:\scripts\5_mission\gui\cameratools\cameratoolsmenu.c:614`) swizzles the
-  components and adds 325/245/290° for `LeftHand_Dummy`. It logs the `QuatToAngles` result and all
-  three matrix basis vectors against the body yaw, on the existing 5 s trace cadence, only while
-  somebody is actually in first person. **Its acceptance test is in the method header** — look ahead,
-  hard up, hard down, then turn 90° right, and read which axis tracks what. Do not replace
-  `BR_SPECTATE_FP_PITCH` by guessing; three explanations have already been wrong in this subsystem.
+  components and adds 325/245/290° for `LeftHand_Dummy`. The run on 2026-08-18 answered it: of the
+  three basis vectors from `Math3D.QuatToMatrix`, **axis 0 is world up, axis 1 is the head's forward
+  vector, axis 2 is its right.** With the target still at `body_yaw 17.647`, axis 1 read
+  `<0.3307, -0.0202, 0.9435>` → `atan2` 19.3°, i.e. body heading plus a small head turn; it tracked
+  across the full yaw circle over ten samples. `ResolveHeadLook` therefore takes yaw from
+  `Atan2(x, z)` and pitch from `Asin(y)`, clamped to vanilla's own ±85.
+- ⚠️ **`Math3D.QuatToAngles` is deliberately NOT used, and the same run is why** — its first component
+  ran a consistent ~90° off the body yaw (109.4 vs 17.6, 151.7 vs 57.2, −86.1 vs −172.9), which is
+  exactly that rigging offset. Read the **matrix basis vector** instead: a direction needs no
+  correction and cannot silently rot. `GetCommandModifier_Weapons()` is not an option either — every
+  call site in `P:\scripts` reads it on the **local** player, and it can be NULL for a remote entity,
+  which silently flattens the camera. That is still why the third-person boom's `BR_SPECTATE_PITCH`
+  is a constant.
+- **Damping is near-rigid (`BR_SPECTATE_FP_LOOK_DAMP`, 20 against third person's 6), and applies to
+  pitch as well as yaw.** It is no longer hiding a defect in the source — body yaw *snaps in steps*
+  and needed heavy damping, a head bone does not — it only absorbs a **remote** entity's bones
+  advancing at network rate rather than frame rate.
+- ⚠️ **`SetFOV` — a bare `Camera` runs at the engine's default scene FOV (0.5236 rad / 30°, named in
+  `plugincharplacement.c:15`), while both of vanilla's player cameras run at `GetUserFOV()` via
+  `StdFovUpdate` → `GetFOVByZoomType(NONE)`.** Never calling it gave the spectator a permanently
+  tighter view than the player being watched — reported against the first build. `ApplyFieldOfView`
+  fixes it **in both modes**, because the `Camera` is one object with one FOV, so third person was
+  equally wrong and merely had nothing to be compared against. Both units are radians already
+  (`camera.c:63-67`; vanilla passes one straight to the other at `plugincharplacement.c:66`), so
+  there is no conversion. No restore is needed — the camera object does not outlive the session.
 
 #### Admin spectate
 

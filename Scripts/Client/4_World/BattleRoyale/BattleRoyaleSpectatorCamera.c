@@ -20,10 +20,15 @@
  *      table and no GetMovementState() (whose behaviour for a REMOTE entity on a CLIENT is not
  *      something the vanilla source establishes).
  *
- *    - Camera.LookAt is not used and the target's aim angle is never read.
- *      GetCommandModifier_Weapons() can be NULL for a remote entity, in which case
- *      GetBaseAimingAngleUD() returns 0.0 and the camera silently goes flat with nothing in the log.
- *      Orientation is a damped yaw/pitch pair instead, and roll is never taken from the target.
+ *    - Camera.LookAt is not used and GetCommandModifier_Weapons() is never read. That modifier is
+ *      MEASURED NULL for a remote entity on a client (2026-08-18), which is why the third-person boom
+ *      holds a constant pitch rather than the target's aim. Orientation is a damped yaw/pitch pair,
+ *      and roll is never taken from the target.
+ *
+ *  FIRST PERSON (#288) is a third construction again, and none of the above applies to it: the eye
+ *  sits at the Head bone smoothed in the target's MODEL SPACE, and the view points down the WEAPON
+ *  BARREL whenever the weapon is up. See ResolveEyePosition and ResolveFirstPersonLook - both carry
+ *  the measurements that produced them, and both were wrong twice first.
  */
 class BattleRoyaleSpectatorCamera extends Camera
 {
@@ -40,6 +45,29 @@ class BattleRoyaleSpectatorCamera extends Camera
     //--- FIRST PERSON (#288). Purely local - the server is never told, because nothing it owns
     //--- changes. Only honoured in FOLLOW mode; see IsFirstPersonActive.
     protected bool m_FirstPerson;
+
+    //--- Last FOV handed to SetFOV, so ApplyFieldOfView can notice the user moving the slider
+    //--- mid-match without calling into the engine every frame. Zero means "never applied".
+    protected float m_AppliedFov;
+
+    //--- Near plane currently applied, same edge-tracking reason as m_AppliedFov. First person needs
+    //--- vanilla's tight 0.04 so the watched character's own skull does not clip the view.
+    protected float m_AppliedNearPlane;
+
+    //--- Which source the first-person look came from this frame: "weapon", "bone" or "none". Purely
+    //--- diagnostic, but the one line that says whether a spectator's crosshair is the player's - see
+    //--- ResolveFirstPersonLook.
+    protected string m_LookSource;
+
+    //--- First-person eye, held in the TARGET'S MODEL SPACE so it can be smoothed there. See
+    //--- ResolveEyePosition for why the frame matters; m_FpSeeded is cleared whenever there is no
+    //--- bone to smooth against, so the next good frame snaps instead of easing from a stale value.
+    protected vector m_FpEyeMS;
+    protected bool m_FpSeeded;
+
+    //--- The player whose head we asked COT to hide, so it can be put back on a retarget or on the
+    //--- way out. Weak, like m_Target: if they are freed there is nothing left to restore anyway.
+    protected PlayerBase m_HeadHiddenPlayer;
 
     protected vector m_SmoothPos;
     protected float m_Yaw;
@@ -69,6 +97,12 @@ class BattleRoyaleSpectatorCamera extends Camera
         m_TargetPos = "0 0 0";
         m_Mode = BR_SPECTATE_MODE_ORBIT;
         m_FirstPerson = false;
+        m_AppliedFov = 0;
+        m_AppliedNearPlane = 0;
+        m_LookSource = "none";
+        m_FpEyeMS = "0 0 0";
+        m_FpSeeded = false;
+        m_HeadHiddenPlayer = NULL;
         m_SmoothPos = "0 0 0";
         m_Yaw = 0;
         m_Pitch = BR_SPECTATE_PITCH;
@@ -86,6 +120,11 @@ class BattleRoyaleSpectatorCamera extends Camera
 
     void ~BattleRoyaleSpectatorCamera()
     {
+        //--- Never leave a headless character behind. The camera is destroyed when the session ends
+        //--- but the player it was watching is not, and the hide is a local render flag nothing else
+        //--- would ever clear.
+        ApplyHeadHide(false);
+
         if (s_Instance == this)
             s_Instance = NULL;
     }
@@ -234,10 +273,22 @@ class BattleRoyaleSpectatorCamera extends Camera
             BattleRoyaleUtils.Trace(string.Format("[Spectate] cam=%1 target=%2 dist=%3 entity=%4 pushes=%5",
                 GetPosition().ToString(), m_TargetPos.ToString(), target_distance, has_entity, m_BubblePushes));
 
-            //--- Only while somebody is actually sitting in the target's head, so an ordinary
-            //--- third-person session pays nothing for a measurement it cannot be part of.
+            //--- Only while somebody is actually sitting in the target's head. The probe this
+            //--- replaced dumped the whole bone basis to identify the forward axis; that question is
+            //--- answered (see ResolveHeadLook), so what is left is the far cheaper regression check:
+            //--- the derived look against the body yaw it used to be pinned to. A first-person yaw
+            //--- that never diverges from body_yaw means the bone read has silently stopped working.
             if (m_FirstPerson && m_Target)
-                TraceHeadBone();
+            {
+                vector target_orientation = m_Target.GetOrientation();
+                float body_yaw = target_orientation[0];
+
+                string look_line = "[Spectate] first person source=" + m_LookSource;
+                look_line = look_line + " yaw=" + m_Yaw;
+                look_line = look_line + " pitch=" + m_Pitch;
+                look_line = look_line + " body_yaw=" + body_yaw;
+                BattleRoyaleUtils.Trace(look_line);
+            }
         }
 
         //--- FREE is a completely different camera: it is flown, not aimed at anything, so none of
@@ -256,24 +307,53 @@ class BattleRoyaleSpectatorCamera extends Camera
 
         bool first_person = IsFirstPersonActive();
 
-        //--- Shortest-arc yaw damping. First person damps harder - see BR_SPECTATE_FP_YAW_DAMP for
-        //--- why it is damped at all rather than copying the target's heading rigidly.
-        float yaw_damp = BR_SPECTATE_YAW_DAMP;
-        if (first_person)
-            yaw_damp = BR_SPECTATE_FP_YAW_DAMP;
+        //--- The player's own FOV, in every mode. A bare Camera otherwise runs at the engine's
+        //--- default scene FOV, which is far tighter than what the watched player sees.
+        ApplyFieldOfView();
+        ApplyNearPlane(first_person);
 
+        float yaw_damp = BR_SPECTATE_YAW_DAMP;
+
+        //--- Third person holds a constant tilt, so it has nothing to damp; only first person, which
+        //--- tracks a live head, needs a damped pitch. Zero means "assign it outright".
+        float pitch_damp = 0;
+
+        float desired_pitch = BR_SPECTATE_PITCH;
+        if (m_Mode == BR_SPECTATE_MODE_ORBIT)
+            desired_pitch = BR_SPECTATE_ORBIT_PITCH;
+
+        if (first_person)
+        {
+            yaw_damp = BR_SPECTATE_FP_SMOOTH;
+            pitch_damp = BR_SPECTATE_FP_SMOOTH;
+
+            //--- Level, not the boom's -10 downward tilt, when there is nothing to read. This is the
+            //--- streamed-out case; the eye is on the last pushed position and simply looks straight.
+            desired_pitch = 0;
+
+            float look_yaw;
+            float look_pitch;
+
+            if (ResolveFirstPersonLook(look_yaw, look_pitch))
+            {
+                desired_yaw = look_yaw;
+                desired_pitch = look_pitch;
+            }
+        }
+
+        //--- Shortest-arc yaw damping.
         float delta = Math.NormalizeAngle(desired_yaw - m_Yaw);
         if (delta > 180)
             delta = delta - 360;
 
         m_Yaw = Math.NormalizeAngle(m_Yaw + delta * Math.Clamp(timeSlice * yaw_damp, 0, 1));
 
-        if (first_person)
-            m_Pitch = BR_SPECTATE_FP_PITCH;
-        else if (m_Mode == BR_SPECTATE_MODE_ORBIT)
-            m_Pitch = BR_SPECTATE_ORBIT_PITCH;
+        //--- Pitch is clamped to +/-85 rather than wrapped, so a plain lerp is correct here where the
+        //--- yaw above needs the shortest-arc treatment.
+        if (pitch_damp > 0)
+            m_Pitch = m_Pitch + (desired_pitch - m_Pitch) * Math.Clamp(timeSlice * pitch_damp, 0, 1);
         else
-            m_Pitch = BR_SPECTATE_PITCH;
+            m_Pitch = desired_pitch;
 
         //--- FIRST PERSON IS RIGID, AND SKIPS BOTH OF THE CORRECTIONS BELOW. Positional damping would
         //--- make the view swim inside the character's own head every time they moved, and the floor
@@ -285,7 +365,13 @@ class BattleRoyaleSpectatorCamera extends Camera
         //--- eases out from the head rather than starting from a stale position half a match old.
         if (first_person)
         {
-            vector eye_pos = ResolveEyePosition(anchor);
+            vector eye_pos = ResolveEyePosition(anchor, timeSlice);
+
+            //--- Hide the watched player's head while the eye is inside it, or the spectator is
+            //--- looking at the back of their own target's face. Vanilla gets away with a 4 cm offset
+            //--- because in first person it renders the local player's HEADLESS model; a remote
+            //--- character is drawn in full, which is what "I see the inside of the head" was.
+            ApplyHeadHide(true);
 
             m_SmoothPos = eye_pos;
             m_HasSnapped = true;
@@ -294,6 +380,11 @@ class BattleRoyaleSpectatorCamera extends Camera
             SetOrientation(Vector(m_Yaw, m_Pitch, 0));
             return;
         }
+
+        //--- Third person, or first person that could not anchor: give the head back and drop the
+        //--- model-space seed so the next entry snaps rather than easing from a stale offset.
+        ApplyHeadHide(false);
+        m_FpSeeded = false;
 
         vector desired_pos = ResolveBoom(anchor);
 
@@ -516,92 +607,387 @@ class BattleRoyaleSpectatorCamera extends Camera
     }
 
     /**
-     *  The first-person eye: the anchor nudged forward along the camera's own facing.
+     *  The first-person eye: the head bone, offset in the BONE'S OWN FRAME exactly as vanilla does.
      *
-     *  The anchor is already the target's head bone (ResolveAnchor), so this is only the clearance
-     *  that keeps the near plane out of their face. Deliberately the MIRROR of ResolveBoom's sign -
-     *  that one subtracts the sin/cos pair to sit behind the target, this one adds it.
+     *  WHY THE FRAME MATTERS, and what the first build got wrong. Vanilla's DayZPlayerCamera1stPerson
+     *  puts the camera at m_iDirectBone = Head with m_OffsetLS = "0.04 0.04 0" as the translation of
+     *  the camera transform - 4 cm up and 4 cm forward *of the bone*. The first build pushed 22 cm
+     *  along the camera's WORLD yaw from the bone origin instead, which is a different place by an
+     *  order of magnitude and does not rotate with the head. That is why the view read as "not the
+     *  player's camera" even once the look direction was right: the head bone is not where the
+     *  player's eye is, and the correction has to be applied in the head's frame.
+     *
+     *  Falls back to the world-up/forward pair when there is no bone basis to use, which is the
+     *  streamed-out case where the anchor is a server-pushed position rather than a bone at all.
      *
      *  NO COLLISION TRACE, unlike the boom. The boom traces because it swings a 3.5 m arm through
-     *  whatever is behind the target; 22 cm off a head bone has nothing to hit that the character's
+     *  whatever is behind the target; 4 cm off a head bone has nothing to hit that the character's
      *  own body is not already standing in, and a trace here would collapse the eye onto the target
      *  every frame - the exact failure the boom's own m_Target exclusion exists to prevent.
      */
-    protected vector ResolveEyePosition(vector anchor)
+    protected vector ResolveEyePosition(vector anchor, float timeSlice)
     {
-        float yaw_rad = m_Yaw * Math.DEG2RAD;
+        vector eye_pos;
+        vector forward;
 
-        vector eye = anchor;
-        eye[0] = anchor[0] + Math.Sin(yaw_rad) * BR_SPECTATE_FP_FORWARD;
-        eye[1] = anchor[1] + BR_SPECTATE_FP_UP;
-        eye[2] = anchor[2] + Math.Cos(yaw_rad) * BR_SPECTATE_FP_FORWARD;
+        if (!ResolveHeadFrame(eye_pos, forward))
+        {
+            //--- Streamed out: the anchor is a server-pushed position, not a bone. Nothing to smooth
+            //--- against either, so drop the model-space seed and take the anchor as-is.
+            m_FpSeeded = false;
 
-        return eye;
+            float yaw_rad = m_Yaw * Math.DEG2RAD;
+
+            vector fallback = anchor;
+            fallback[0] = anchor[0] + Math.Sin(yaw_rad) * BR_SPECTATE_FP_OFFSET_FORWARD;
+            fallback[1] = anchor[1] + BR_SPECTATE_FP_OFFSET_UP;
+            fallback[2] = anchor[2] + Math.Cos(yaw_rad) * BR_SPECTATE_FP_OFFSET_FORWARD;
+
+            return fallback;
+        }
+
+        //--- SMOOTHED IN THE CHARACTER'S MODEL SPACE, NOT IN WORLD SPACE, and that distinction is the
+        //--- entire bob fix. Head bob is motion of the head RELATIVE TO THE BODY; walking and turning
+        //--- are motion of the body through the world. Convert the eye into the character's own frame
+        //--- and smooth it there, and the first is damped away while the second is followed exactly,
+        //--- with no lag - which is not something world-space damping can do, since it cannot tell the
+        //--- two apart and trades bob against the camera dragging behind a sprinting player.
+        //---
+        //--- The technique is Community-Online-Tools', whose observer camera carries the comment
+        //--- "Interpolate in model space so camera sticks to character". Their rate is 5.0 and this
+        //--- matches it; the first build's rigid world-space eye and the second's damping of 20 both
+        //--- reproduced every stride faithfully, which is exactly what was reported.
+        vector object_tm[4];
+        m_Target.GetTransform(object_tm);
+
+        vector eye_ms = eye_pos.InvMultiply4(object_tm);
+
+        if (!m_FpSeeded)
+        {
+            m_FpSeeded = true;
+            m_FpEyeMS = eye_ms;
+        }
+        else
+        {
+            m_FpEyeMS = vector.Lerp(m_FpEyeMS, eye_ms, Math.Clamp(timeSlice * BR_SPECTATE_FP_SMOOTH, 0, 1));
+        }
+
+        return m_FpEyeMS.Multiply4(object_tm);
     }
 
     /**
-     *  Report what the target's HEAD BONE says about where they are looking. A PROBE - nothing reads
-     *  its output, and the camera's orientation does not depend on it.
+     *  Where the target is actually looking, from their HEAD BONE. Returns false when there is no
+     *  bone to read, and the caller then falls back to the body yaw.
      *
-     *  WHY IT IS A PROBE AND NOT THE ANSWER. First person takes its heading from the target's BODY
-     *  yaw and holds a level pitch, because that is the one orientation source this file trusts for a
-     *  REMOTE entity. That is honest but incomplete: a target aiming up a hill reads as level, and
-     *  their head's own free-look is invisible.
+     *  THE AXIS IS MEASURED, NOT ASSUMED, and that is the whole story of this method. The bone
+     *  transform is the rendered answer - the animation result, not a command modifier that
+     *  GetCommandModifier_Weapons() may hand back as NULL for a remote entity, which is the trap this
+     *  class's header warns about and the reason BR_SPECTATE_PITCH is still a constant for the
+     *  third-person boom. But the bone's axis convention is per-bone RIGGING: vanilla's own consumer
+     *  of GetBoneRotationWS (P:\scripts\5_mission\gui\cameratools\cameratoolsmenu.c:614) swizzles the
+     *  components and adds 325 / 245 / 290 degrees for LeftHand_Dummy, so nothing about the Head bone
+     *  is derivable from the source.
      *
-     *  The bone transform IS the rendered answer - it is the animation result, not a command modifier
-     *  that GetCommandModifier_Weapons() may hand back as NULL for a remote entity, which is the trap
-     *  this class's header warns about and the reason BR_SPECTATE_PITCH is a constant. Checked: every
-     *  GetCommandModifier_Weapons call site in P:\scripts reads it on the LOCAL player only.
+     *  So the first build shipped a probe instead of a guess, and the run on 2026-08-18 answered it
+     *  outright. With the target standing still at body_yaw 17.647:
      *
-     *  WHAT IS NOT KNOWN is the bone's axis convention. Vanilla's own consumer of GetBoneRotationWS
-     *  (P:\scripts\5_mission\gui\cameratools\cameratoolsmenu.c:614) swizzles the components and adds
-     *  325 / 245 / 290 degrees for LeftHand_Dummy - per-bone rigging, not a convention derivable from
-     *  the source. So it is measured rather than guessed, which is the rule this subsystem has paid
-     *  to learn: three explanations have been wrong here already.
+     *      head axes x=<-0.0072, 0.9997, 0.0239>  y=<0.3307, -0.0202, 0.9435>  z=<0.9437, 0.0147, -0.3305>
      *
-     *  ACCEPTANCE TEST for the follow-up build. Spectate a player in first person and have them look
-     *  straight ahead, then hard up, then hard down, then turn 90 degrees right. Whichever logged axis
-     *  tracks pitch through the first three and yaw through the fourth is the head's forward vector,
-     *  and the camera can be pointed straight down it. Until somebody runs that, BR_SPECTATE_FP_PITCH
-     *  stays level.
+     *  Axis 0 is world UP (its Y component pins to 1.0 in every sample). Axis 1 is the head's FORWARD
+     *  vector: atan2(0.3307, 0.9435) = 19.3 degrees against a body yaw of 17.6, i.e. the body's
+     *  heading plus the small amount the head was turned. It tracked correctly across nine further
+     *  samples spanning the full yaw circle. Axis 2 is the head's right.
+     *
+     *  Math3D.QuatToAngles is deliberately NOT used, and the same run is why: its first component ran
+     *  a consistent ~90 degrees off the body yaw (109.4 against 17.6, 151.7 against 57.2, -86.1
+     *  against -172.9), which is exactly the rigging offset above. A direction vector needs no such
+     *  correction, so reading the matrix is both simpler and the thing that cannot silently rot.
      */
-    protected void TraceHeadBone()
+    /**
+     *  The target's head bone as a frame: where the eye goes, and which way it looks.
+     *
+     *  GetBoneTransformWS rather than GetBoneRotationWS + GetBonePositionWS - one call, and the
+     *  translation comes back in the same matrix as the basis. Index 3 is the position, index 0 is
+     *  up, index 1 is FORWARD.
+     *
+     *  THAT AXIS HAS TWO INDEPENDENT CONFIRMATIONS, which is worth recording because it was the open
+     *  question for two builds. Measured here on 2026-08-18 (with the target still at body_yaw 17.647,
+     *  axis 1 read <0.3307, -0.0202, 0.9435>, i.e. atan2 -> 19.3 degrees), and Community-Online-Tools
+     *  independently uses `dir = headTransform[1]` off the same bone for its own first-person
+     *  observer camera. Math3D.QuatToAngles is still NOT usable - its first component runs ~90 degrees
+     *  off the body yaw, per-bone rigging exactly like the 325/245/290 offsets vanilla's camera tools
+     *  apply to LeftHand_Dummy.
+     *
+     *  The eye offset is applied in the BONE'S frame - vanilla's own m_OffsetLS "0.04 0.04 0", up then
+     *  forward (dayzplayercamera1stperson.c:20).
+     */
+    protected bool ResolveHeadFrame(out vector eye_pos, out vector forward)
     {
+        eye_pos = vector.Zero;
+        forward = vector.Zero;
+
+        if (!m_Target)
+            return false;
+
         Human human_target = Human.Cast(m_Target);
         if (!human_target)
-            return;
+            return false;
 
         int bone = human_target.GetBoneIndexByName("Head");
         if (bone == -1)
+            return false;
+
+        vector head_tm[4];
+        m_Target.GetBoneTransformWS(bone, head_tm);
+
+        vector axis_up = head_tm[0];
+        vector axis_forward = head_tm[1];
+        vector bone_pos = head_tm[3];
+
+        //--- A bone that has not been posed yet reports a zero or near-zero basis; normalising that
+        //--- would divide by ~0 and point the camera at nothing in particular.
+        if (axis_forward.Length() < 0.001)
+            return false;
+        if (axis_up.Length() < 0.001)
+            return false;
+
+        axis_up = axis_up.Normalized();
+        forward = axis_forward.Normalized();
+
+        vector up_offset = axis_up * BR_SPECTATE_FP_OFFSET_UP;
+        vector forward_offset = forward * BR_SPECTATE_FP_OFFSET_FORWARD;
+
+        eye_pos = bone_pos + up_offset + forward_offset;
+
+        return true;
+    }
+
+    /**
+     *  Where the target's WEAPON is pointing, in world space, or false when they are not holding one.
+     *
+     *  THIS IS THE ANSWER TO THE PvP CORRECTNESS PROBLEM. The head bone says where a character is
+     *  anatomically looking, which is close to but not the same as where their shot goes - so a
+     *  spectator watching the head sees the player put rounds into a wall and kill somebody standing
+     *  next to it. In a PvP game the centre of the spectator's screen has to be the centre of the
+     *  player's, and the only thing authoritative about that is the gun.
+     *
+     *  It is derived from the WEAPON'S OWN RENDER TRANSFORM plus its barrel memory points, so unlike
+     *  every aim accessor it needs nothing that is local-player-only: the weapon is attached to the
+     *  character and drawn in the correct orientation on every client, which is exactly what makes it
+     *  readable for a REMOTE target. Community-Online-Tools' observer camera derives its aim the same
+     *  way ("konec hlavne" to "usti hlavne"), which is where the memory point names come from.
+     *
+     *  ⚠️ THE ROUTE THIS REPLACES IS NOW MEASURED DEAD, not merely suspect.
+     *  GetCommandModifier_Weapons().GetBaseAimingAngleLR/UD is what vanilla composes a world aim from
+     *  (weapon_base.c:1707-1710) and the previous build preferred it, with the head bone as fallback
+     *  and a trace naming the winner. The run on 2026-08-18 logged `source=bone` on every sample: the
+     *  modifier is NULL for a remote entity on a client, exactly as this class's header always
+     *  claimed. That claim is no longer an assertion - do not re-add the aim-angle path.
+     */
+    protected bool ResolveWeaponAim(out vector aim_dir)
+    {
+        aim_dir = vector.Zero;
+
+        if (!BR_SPECTATE_FP_USE_WEAPON_AIM)
+            return false;
+
+        DayZPlayer dayz_target = DayZPlayer.Cast(m_Target);
+        if (!dayz_target)
+            return false;
+
+        HumanItemAccessor accessor = dayz_target.GetItemAccessor();
+        if (!accessor)
+            return false;
+
+        //--- Hidden in hands during some animations, and its transform is not to be trusted then.
+        if (accessor.IsItemInHandsHidden())
+            return false;
+
+        HumanInventory inventory = dayz_target.GetHumanInventory();
+        if (!inventory)
+            return false;
+
+        Weapon_Base weapon = Weapon_Base.Cast(inventory.GetEntityInHands());
+        if (!weapon)
+            return false;
+
+        vector weapon_tm[4];
+        weapon.GetTransform(weapon_tm);
+
+        vector start_ls = weapon.GetSelectionPositionLS("konec hlavne");
+        vector end_ls = weapon.GetSelectionPositionLS("usti hlavne");
+
+        vector start_ws = start_ls.Multiply4(weapon_tm);
+        vector end_ws = end_ls.Multiply4(weapon_tm);
+
+        vector barrel = end_ws - start_ws;
+
+        //--- A weapon whose model carries neither memory point hands back two zero vectors, so this
+        //--- is also the "not supported by this model" branch rather than only a degenerate one.
+        if (barrel.Length() < 0.001)
+            return false;
+
+        aim_dir = barrel.Normalized();
+
+        return true;
+    }
+
+    /**
+     *  The first-person look direction: the weapon when it is being aimed, the head otherwise.
+     *
+     *  WHY IT IS A CHOICE RATHER THAN JUST THE GUN. A lowered weapon points at the floor while the
+     *  player looks at the horizon, so following the barrel unconditionally would be far worse than
+     *  the head. What matters is that the two agree precisely at the moment that decides a fight, and
+     *  they only agree when the weapon is actually up.
+     *
+     *  The raised test is therefore THE AGREEMENT ITSELF - the dot product of the barrel against the
+     *  head's forward vector - rather than a stance query. Deliberate on two counts: it is
+     *  self-correcting, since the barrel is only ever adopted when it is already nearly where the
+     *  spectator was looking, so it can never throw the view somewhere surprising; and it avoids
+     *  IsRaised() / GetMovementState(), whose behaviour for a remote entity on a client this repo has
+     *  no measurement for. COT avoids it in the same place for the same reason and says so.
+     */
+    protected bool ResolveFirstPersonLook(out float yaw, out float pitch)
+    {
+        yaw = 0;
+        pitch = 0;
+
+        m_LookSource = "none";
+
+        vector eye_pos;
+        vector head_forward;
+
+        if (!ResolveHeadFrame(eye_pos, head_forward))
+            return false;
+
+        vector chosen = head_forward;
+        m_LookSource = "bone";
+
+        vector aim_dir;
+        if (ResolveWeaponAim(aim_dir))
+        {
+            float alignment = vector.Dot(aim_dir, head_forward);
+            if (alignment >= BR_SPECTATE_FP_AIM_MIN_DOT)
+            {
+                chosen = aim_dir;
+                m_LookSource = "weapon";
+            }
+        }
+
+        float dir_x = chosen[0];
+        float dir_y = chosen[1];
+        float dir_z = chosen[2];
+
+        yaw = Math.Atan2(dir_x, dir_z) * Math.RAD2DEG;
+
+        pitch = Math.Asin(Math.Clamp(dir_y, -1.0, 1.0)) * Math.RAD2DEG;
+        pitch = Math.Clamp(pitch, BR_SPECTATE_FP_PITCH_MIN, BR_SPECTATE_FP_PITCH_MAX);
+
+        return true;
+    }
+
+    /**
+     *  Hide the watched player's head while the eye is inside it, and put it back afterwards.
+     *
+     *  WHY THIS IS NEEDED AT ALL, and why vanilla's offsets alone are not enough. Vanilla's first
+     *  person camera sits 4 cm from the Head bone and gets away with it because it renders the LOCAL
+     *  player, whose first-person model has no head. A spectator is watching a REMOTE character drawn
+     *  in full, so the same 4 cm puts the eye inside their skull - reported as "I see the inside of
+     *  the spectated player head". Pushing the camera out in front of the face instead was the first
+     *  build's approach and is what made the perspective wrong; the head has to go, not the camera.
+     *
+     *  COT'S API, CALLED, NOT COPIED - the same licence position as JMESPSkeleton, and for the same
+     *  reason: Community-Online-Tools is CC BY-SA 4.0 and this repo is DSPL-SA, so adapting their
+     *  code is blocked, but calling a published method on a class they mod is interoperation and
+     *  carries no obligation. SetHeadInvisible is theirs, and it covers the head placeholder plus the
+     *  Headgear, Mask and Eyewear attachments - all four of which would otherwise still be floating
+     *  in front of the camera. Their own observer camera calls it on the spectated player the same
+     *  way, which is also the evidence that it is safe on a remote entity client-side.
+     *
+     *  No distance test, unlike COT's 0.25 m one: their camera can be anywhere, ours is pinned to the
+     *  bone by construction, so "first person is active on a live target" is the same condition.
+     *
+     *  ⚠️ RESTORING IT IS THE HALF THAT BITES. A head left hidden is a headless character for the
+     *  rest of the session, so every exit routes here: the third-person branch each frame, a retarget
+     *  (the equality test below catches it, and restores the OLD player rather than the current one),
+     *  and the destructor.
+     */
+    protected void ApplyHeadHide(bool wanted)
+    {
+#ifdef JM_COT
+        if (!BR_SPECTATE_FP_HIDE_HEAD)
             return;
 
-        float bone_quat[4];
-        m_Target.GetBoneRotationWS(bone, bone_quat);
+        PlayerBase target_player = NULL;
+        if (wanted)
+            target_player = PlayerBase.Cast(m_Target);
 
-        vector bone_angles = Math3D.QuatToAngles(bone_quat);
+        //--- Runs every frame, so the common case has to be a pointer compare and nothing else.
+        if (m_HeadHiddenPlayer == target_player)
+            return;
 
-        vector bone_mat[3];
-        Math3D.QuatToMatrix(bone_quat, bone_mat);
+        if (m_HeadHiddenPlayer)
+            m_HeadHiddenPlayer.SetHeadInvisible(false);
 
-        //--- Read out into locals first, then concatenate in steps. Both rules are load-bearing here:
-        //--- a single expression carrying this many terms is rejected outright with "Formula too
-        //--- complex", and an array read sharing an expression with a call has been measured in this
-        //--- repo to return an element of a DIFFERENT array.
-        vector target_orientation = m_Target.GetOrientation();
-        float body_yaw = target_orientation[0];
+        m_HeadHiddenPlayer = target_player;
 
-        vector axis_x = bone_mat[0];
-        vector axis_y = bone_mat[1];
-        vector axis_z = bone_mat[2];
+        if (m_HeadHiddenPlayer)
+            m_HeadHiddenPlayer.SetHeadInvisible(true);
+#endif
+    }
 
-        string angles_line = "[Spectate] head angles=" + bone_angles.ToString();
-        angles_line = angles_line + " body_yaw=" + body_yaw;
-        BattleRoyaleUtils.Trace(angles_line);
+    /**
+     *  Match the player's own field of view.
+     *
+     *  A bare Camera runs at the engine's default scene FOV - vanilla names it as 0.5236 rad / 30
+     *  degrees in plugincharplacement.c:15 - while both of vanilla's PLAYER cameras run at
+     *  GetUserFOV() via StdFovUpdate -> GetFOVByZoomType(ECameraZoomType.NONE)
+     *  (dayzplayercamera_base.c:323). Never calling SetFOV therefore gave the spectator a permanently
+     *  different, much tighter view than the player being watched, which is what #288 came back on.
+     *
+     *  APPLIED IN BOTH MODES, not just first person. The Camera is one object with one FOV, so third
+     *  person was equally wrong - it just had nothing to be compared against. Vanilla's own third
+     *  person camera uses the same GetUserFOV(), so this matches the game in both.
+     *
+     *  SetFOV takes RADIANS (camera.c:63-67) and GetUserFOV() is already in radians - vanilla passes
+     *  one straight to the other at plugincharplacement.c:66, so there is no conversion here. The
+     *  change guard is not for cost but so a user who moves the FOV slider mid-match is picked up.
+     */
+    protected void ApplyFieldOfView()
+    {
+        float wanted = GetDayZGame().GetUserFOV();
+        if (wanted <= 0)
+            return;
 
-        string axes_line = "[Spectate] head axes x=" + axis_x.ToString();
-        axes_line = axes_line + " y=" + axis_y.ToString();
-        axes_line = axes_line + " z=" + axis_z.ToString();
-        BattleRoyaleUtils.Trace(axes_line);
+        if (Math.AbsFloat(wanted - m_AppliedFov) < 0.0001)
+            return;
+
+        m_AppliedFov = wanted;
+        SetFOV(wanted);
+
+        BattleRoyaleUtils.Debug("[Spectate] camera FOV set to " + wanted + " rad");
+    }
+
+    /**
+     *  Tighten the near plane while the eye is 4 cm from a character's skull, and put it back for the
+     *  third-person boom.
+     *
+     *  Vanilla's first person camera sets m_fNearPlane = 0.04 and notes "0.07 default"
+     *  (dayzplayercamera1stperson.c:58). Without it the watched character's own head geometry clips
+     *  through the view - which reads as the picture being wrong rather than as clipping, and is a
+     *  plausible part of what "the FOV is still not good" was describing.
+     */
+    protected void ApplyNearPlane(bool first_person)
+    {
+        float wanted = BR_SPECTATE_NEAR_PLANE_DEFAULT;
+        if (first_person)
+            wanted = BR_SPECTATE_FP_NEAR_PLANE;
+
+        if (Math.AbsFloat(wanted - m_AppliedNearPlane) < 0.0001)
+            return;
+
+        m_AppliedNearPlane = wanted;
+        SetNearPlane(wanted);
     }
 
     /**
