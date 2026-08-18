@@ -59,6 +59,11 @@ class BattleRoyaleDiag
     static int hud_players = 60;
     static int hud_groups = 20;
     static int hud_kills = 3;
+    //--- How many people are spectating this player. The offline rig is the ONLY way to reach this
+    //--- element at all: SERVER is undefined offline, so no spectator can exist and the server half
+    //--- that produces the number is compiled out. Its range reaches 0 on purpose - 0 is the hidden
+    //--- state, and a fixture that cannot reach the branch under test cannot test it.
+    static int hud_audience = 2;
     static int hud_countdown = 60;
 
     //--- Zones. Same idea: synthetic circles centred on the player, which feed the HUD distance
@@ -139,6 +144,7 @@ class BattleRoyaleDiag
         hud_players = 60;
         hud_groups = 20;
         hud_kills = 3;
+        hud_audience = 2;
         hud_countdown = 60;
 
         zones_fake = false;

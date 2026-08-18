@@ -589,6 +589,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 			int hud_players = br_rpc.nb_players;
 			int hud_groups = br_rpc.nb_groups;
 			int hud_kills = br_rpc.player_kills;
+			int hud_audience = br_rpc.audience_count;
 
 #ifdef DIAG_DEVELOPER
 			if ( BattleRoyaleDiag.hud_force )
@@ -596,6 +597,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 				hud_players = BattleRoyaleDiag.hud_players;
 				hud_groups = BattleRoyaleDiag.hud_groups;
 				hud_kills = BattleRoyaleDiag.hud_kills;
+				hud_audience = BattleRoyaleDiag.hud_audience;
 			}
 #endif
 
@@ -627,6 +629,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 			// Update player kill count
 			gameplay.UpdateKillCount( hud_kills );
+
+			//--- How many people are watching this player. Deliberately here rather than in the
+			//--- spectate block further down, which early-returns for anyone who is not spectating -
+			//--- i.e. for exactly the living players this readout is for.
+			gameplay.UpdateAudienceCount( hud_audience );
 
 			// Update match start state
 			if( br_rpc.match_started && !b_MatchStarted )

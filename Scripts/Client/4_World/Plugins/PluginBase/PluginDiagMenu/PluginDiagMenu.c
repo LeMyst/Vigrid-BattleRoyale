@@ -52,6 +52,7 @@ modded class PluginDiagMenu
 	protected int m_BRDiagHudPlayersID;
 	protected int m_BRDiagHudGroupsID;
 	protected int m_BRDiagHudKillsID;
+	protected int m_BRDiagHudAudienceID;
 	protected int m_BRDiagHudCountdownID;
 	protected int m_BRDiagOpenSpawnMenuID;
 	protected int m_BRDiagOpenLeaderboardID;
@@ -142,6 +143,7 @@ modded class PluginDiagMenu
 		m_BRDiagHudPlayersID = GetModdedDiagID();
 		m_BRDiagHudGroupsID = GetModdedDiagID();
 		m_BRDiagHudKillsID = GetModdedDiagID();
+		m_BRDiagHudAudienceID = GetModdedDiagID();
 		m_BRDiagHudCountdownID = GetModdedDiagID();
 		m_BRDiagOpenSpawnMenuID = GetModdedDiagID();
 		m_BRDiagOpenLeaderboardID = GetModdedDiagID();
@@ -255,6 +257,12 @@ modded class PluginDiagMenu
 				//--- provoked with a real ten-player endgame and a settings edit.
 				DiagMenu.RegisterRange(m_BRDiagHudGroupsID, "", "Fake Groups", m_BRDiagHudMenuID, "-2, 40, 20, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudKillsID, "", "Fake Kills", m_BRDiagHudMenuID, "0, 20, 3, 1");
+				//--- Down to 0, which is the HIDDEN state - the audience row only appears above zero,
+				//--- like the kill count. This is the only way to exercise the element offline, where
+				//--- SERVER is undefined and no spectator can exist. The default here MUST match
+				//--- BattleRoyaleDiag.hud_audience: a range callback only fires on a CHANGE, so a
+				//--- mismatch silently uses the field's value rather than the number on screen.
+				DiagMenu.RegisterRange(m_BRDiagHudAudienceID, "", "Fake Audience", m_BRDiagHudMenuID, "0, 20, 2, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudCountdownID, "", "Fake Countdown", m_BRDiagHudMenuID, "0, 300, 60, 1");
 				DiagMenu.RegisterBool(m_BRDiagOpenSpawnMenuID, "", "Open Spawn Menu", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenLeaderboardID, "", "Open Leaderboard", m_BRDiagHudMenuID);

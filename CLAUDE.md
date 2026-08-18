@@ -369,7 +369,7 @@ Server-side only (`Scripts/Server/3_Game/Config/`, all `#ifdef SERVER`). `Battle
 
 | File in `$profile:Vigrid-BattleRoyale\` | Class | Registry key | Scope |
 |---|---|---|---|
-| `general_settings.json` | `BattleRoyaleGameData` | `GameData` | general match-flow settings not owned by another file below; also `admins_steamid64` (mission-locked) and the two spectate switches |
+| `general_settings.json` | `BattleRoyaleGameData` | `GameData` | general match-flow settings not owned by another file below; also `admins_steamid64` (mission-locked) and the three spectate switches |
 | `lobby_settings.json` | `BattleRoyaleLobbyData` | `LobbyData` | pre-match lobby flow: ready-up, autostart, spawn selection, forced team size |
 | `zone_settings.json` | `BattleRoyaleZoneData` | `ZoneData` | zone geometry, shrink timing, zone damage, shrink-notification timing, per-match radius flex, derived round timers |
 | `voice_settings.json` | `BattleRoyaleVoiceData` | `VoiceData` | party-only voice while frozen, speaking-list panel |
@@ -609,6 +609,49 @@ but without it the chain is five deep and only inferable from who you end up wat
 `m_LastResolveTier` is written at each of `ResolveTarget`'s five exits and read by the caller on the
 very next line; it is a return value in all but name, so **never read it anywhere but immediately
 after a `ResolveTarget` call**.
+
+#### The audience counter
+
+A living player is shown how many people are currently spectating **them** — an eye-and-number row
+on the HUD, hidden entirely at zero. It is the **last** row of `MatchInfoIconsPanel`, below the
+zone arrow, and that is deliberate: the grid reflows when a child is hidden, so a row that comes and
+goes mid-match shifts everything under it — put at the bottom it can move nothing, which is what
+keeps the clock and the distance arrow still. Gated on `show_spectator_count`
+(`general_settings.json` v6, defaults **on**); `spectate_enabled` already decides whether anyone can
+spectate at all, so on a server that never offers it this is never reached.
+
+⚠️ **The filter is `entry.is_admin` — the SESSION TYPE — and never membership of
+`admins_steamid64`.** An admin in *admin* spectate must not be counted: an operator watching is not
+part of the game, and surfacing it tells a player the exact moment they are being observed, the same
+leak the invisible anchor body and `SetMemberHidden` exist to prevent. But an admin who competed,
+died and took **ordinary** spectate is a real audience member and *does* count — key it on the
+roster instead and the number shown depends on who is on an admin list rather than on what sessions
+exist. `is_admin` is written in exactly one place (`BeginAdminSpectate`) and means precisely "this is
+an operator session". Two further exclusions: `pending_enter` (still on the death screen — the camera
+is not attached, they may press Quit, and `OnDeath`'s `target_uid` is the *provisional* one
+`BeginSpectate` re-resolves) and `target_uid == ""` (the T5 orbit, which has nobody to charge it to).
+
+⚠️ **`PushAudienceCounts()` is called from the TOP of `Tick()`, above BOTH of its early returns, and
+that position is load-bearing.** `m_Spectators.Count() == 0` is the *last spectator leaving* — the
+one moment the watched player has to be told zero — and `m_Ended` is `EndAll()` having cleared the
+table, so below either guard the count could be raised and never lowered, and **the winner would
+hold "12 watching" over the win screen for the rest of the session.** Nothing else needs a special
+case: `EndAll()` empties `m_Spectators`, so the tally simply comes back empty and the drain half
+pushes the zeros.
+
+It is a **recompute plus a diff**, not an incrementally maintained number, because the count is a
+many-to-one aggregate: a `Retarget` moves one spectator and changes **two** players' counts with no
+entry added or dropped, `BeginSpectate` clears `pending_enter`, and an admin session supersedes an
+ordinary one. `m_AudienceSent` (watched uid → count last pushed) exists solely because a recompute
+can see who *has* an audience but not who has just **stopped** having one. The admin switch gates the
+tally rather than the pass, so turning it off mid-match pushes everyone a zero instead of freezing
+the row on its last value.
+
+**Nothing identifying goes on the wire** — `SetAudienceCount` is a `Param1<int>` sent per identity,
+so a player learns they are being watched without learning who is dead. Diag: *HUD & Menus* → **Force
+HUD** + **Fake Audience** is the only way to reach the element offline, where `SERVER` is undefined
+and no spectator can exist; its range reaches 0 because 0 is the hidden state. Server side, **Log
+Spectators** dumps `m_AudienceSent`.
 
 #### Admin spectate
 

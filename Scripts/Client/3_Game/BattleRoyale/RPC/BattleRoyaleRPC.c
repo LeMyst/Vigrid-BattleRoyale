@@ -9,6 +9,7 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAudienceCount", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyNames", this );
@@ -121,6 +122,7 @@ class BattleRoyaleRPC
 		fade_state = false;
 		input_state = false;
 		player_kills = 0;
+		audience_count = 0;
 		match_started = false;
 		lobby_phase = false;
 		lobby_net_low.Clear();
@@ -713,6 +715,35 @@ class BattleRoyaleRPC
 			//--- was scored while this client had no entity to receive it - a spectating killer whose
 			//--- grenade landed after they died.
 			player_kills = data.param1;
+		}
+	}
+
+	// Set the number of people currently spectating this player
+
+	//--- How many people are watching ME right now (#285). Per-identity, never broadcast: it is a
+	//--- fact about one player and is only ever true for them.
+	//---
+	//--- Admins in ADMIN spectate are deliberately absent from this figure - an operator watching is
+	//--- not part of the game, and surfacing it would tell a player the moment they are observed. An
+	//--- admin who died and took ORDINARY spectate does count; the server filters on the session
+	//--- type, not on the admin roster. Nothing identifying arrives here - only the count.
+	int audience_count = 0;
+
+	void SetAudienceCount(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<int> data;
+		if( !ctx.Read( data ) )
+		{
+			ReadFailed("SetAudienceCount");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("SetAudienceCount: %1", data.param1));
+			//--- The server's authoritative total, like AddPlayerKill above and unlike an increment:
+			//--- 0 is a real value here, pushed the moment the last watcher leaves, and it is what
+			//--- takes the panel off the HUD.
+			audience_count = data.param1;
 		}
 	}
 

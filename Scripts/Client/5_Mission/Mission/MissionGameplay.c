@@ -72,6 +72,15 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.SetKillCount( count );
 	}
 
+	//! How many people are currently spectating this player (#285). Zero hides the row rather than
+	//! printing "0", exactly like the kill count above - and zero is a real pushed value, sent the
+	//! moment the last watcher leaves, so this is also how the row goes away again.
+	void UpdateAudienceCount(int count)
+	{
+		m_BattleRoyaleHud.ShowAudienceCount( count > 0 );
+		m_BattleRoyaleHud.SetAudienceCount( count );
+	}
+
 	void HideCountdownTimer()
 	{
 		m_BattleRoyaleHud.ShowCountdown( false );
