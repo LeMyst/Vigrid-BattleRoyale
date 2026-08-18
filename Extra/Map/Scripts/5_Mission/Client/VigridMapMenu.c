@@ -126,10 +126,11 @@ class VigridMapMenu extends UIScriptedMenu
         m_ZoneCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("ZoneCanvas"));
         m_LineCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("LineCanvas"));
 
-        //--- Markers are drawn onto a canvas rather than built as widgets. A canvas declared inside
-        //--- the MapWidget is the only overlay mechanism proven to render in this repo - the spawn
-        //--- selection screen's heat map uses exactly this - whereas widgets created from script
-        //--- over the map are positioned correctly and never appear.
+        //--- Markers are drawn onto a canvas rather than built as widgets. A widget DECLARED inside
+        //--- the MapWidget renders - the spawn selection screen's heat map is a canvas doing exactly
+        //--- this, and the AdminName<n> labels below are TextWidgets doing it too - whereas a widget
+        //--- CREATED FROM SCRIPT over the map is positioned correctly and never appears, whatever it
+        //--- is parented to. Declaration is the discriminator, not the widget class.
         m_MarkerCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("MarkerCanvas"));
         if (!m_MarkerCanvas)
             VigridMapLog.Error("map_menu.layout has no MarkerCanvas - markers disabled");
@@ -853,10 +854,11 @@ class VigridMapMenu extends UIScriptedMenu
     /**
      *  Every marker we may see, drawn onto the marker canvas.
      *
-     *  Drawn rather than built out of widgets. A CanvasWidget declared inside the MapWidget is the
-     *  only overlay this engine reliably renders here - the spawn selection heat map proves it -
-     *  while widgets created from script over the map get correct positions and never appear. Since
-     *  markers carry no text today, nothing is lost by drawing them.
+     *  Drawn rather than built out of widgets. A widget DECLARED inside the MapWidget renders - the
+     *  spawn selection heat map proves it for canvases, and the AdminName<n> labels for TextWidgets -
+     *  while one CREATED FROM SCRIPT over the map gets correct positions and never appears. Markers
+     *  carry no text, so a canvas costs them nothing; a declared pool would be the route if they
+     *  ever needed one.
      */
     protected void RenderMarkers(VigridMapClient client)
     {

@@ -40,16 +40,18 @@ above the map instead.
 
 ## What is drawn
 
-Every overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen space.
-Canvas offers only `DrawLine` and `Clear`, so every glyph is a fan of strokes and **no text can be
-drawn on a canvas at all**.
+Every glyph overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen
+space. Canvas offers only `DrawLine` and `Clear`, so every glyph is a fan of strokes.
 
-Text therefore never lives inside the `MapWidget`. There are two pieces of it and both are **siblings**
-of the map, drawn above it by `priority`: the marker refusal message, which sits in the strip above the
-map rather than over it, and the **name labels on the host player layer**, which do overlap the map and
-are positioned in real screen pixels by script. Widgets *created from script* over a `MapWidget` are
-positioned correctly and then never rendered — measured repeatedly — so a declared sibling is the only
-mechanism available.
+**Text is possible on the map, but only from widgets DECLARED in the layout.** The name labels on the
+host player layer are 32 `TextWidget`s declared inside the `MapWidget` (`AdminName0`..`AdminName31`);
+script binds them once and thereafter only positions and fills them. A widget *created from script*
+over a `MapWidget` is positioned correctly, reports the right size, passes every clip test and is
+never drawn — and that holds whether it is parented to the map or to a declared sibling frame above
+it, both measured 2026-08-18. The trade is that a declared pool **cannot grow at runtime**, so a match
+busier than the pool loses names while keeping every glyph.
+
+(The marker refusal message is text too, but it sits in the strip *above* the map rather than over it.)
 
 | Glyph | Means |
 |---|---|
