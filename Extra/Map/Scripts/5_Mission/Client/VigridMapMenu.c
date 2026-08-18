@@ -170,11 +170,7 @@ class VigridMapMenu extends UIScriptedMenu
      */
     protected void CenterOnPlayer()
     {
-        vector target = vector.Zero;
-
-        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
-        if (player)
-            target = player.GetPosition();
+        vector target = ResolveSelfPos();
 
         if (target == vector.Zero)
             target = GetGame().GetCurrentCameraPosition();
@@ -185,6 +181,34 @@ class VigridMapMenu extends UIScriptedMenu
         m_MapWidget.SetScale(GetOpenScale());
 
         GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(DelayedCenter, VIGRID_MAP_CENTER_DELAY_MS, false, target);
+    }
+
+    /**
+     *  Where "you" are, for both the self glyph and the recentre-on-open.
+     *
+     *  The host mod's override wins when one is in force. That is the whole of #277: while an admin
+     *  spectates, their body is parked somewhere as a network anchor and the camera is elsewhere, so
+     *  GetGame().GetPlayer() answers the anchor and the glyph landed on it. The minimap never had the
+     *  bug because it re-centres on the camera every tick and never asks the player.
+     *
+     *  ⚠ NOT SIMPLY "USE THE CAMERA WHEN ONE DIFFERS". In ordinary third-person play the camera sits
+     *  several metres behind the character, and the map is panned by the player rather than pinned to
+     *  the camera - so reading the camera unconditionally would put every player's glyph behind
+     *  themselves. Only an explicit assertion from the host can tell the two situations apart, which
+     *  is why this is a pushed override and not something inferred here.
+     *
+     *  Returns vector.Zero when there is neither an override nor a player; both callers handle it.
+     */
+    protected vector ResolveSelfPos()
+    {
+        if (VigridMapAPI.HasSelfPositionOverride())
+            return VigridMapAPI.GetSelfPositionOverride();
+
+        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
+        if (player)
+            return player.GetPosition();
+
+        return vector.Zero;
     }
 
     /**
@@ -874,9 +898,9 @@ class VigridMapMenu extends UIScriptedMenu
     /**
      *  The local player: where you are, and which way you are facing.
      *
-     *  Position taken straight from GetGame().GetPlayer() and never through the team API. The client
-     *  entity list does not contain the local player, so asking Party for your own slot returns the
-     *  interpolated server push and your glyph would trail you by up to half a second.
+     *  Position from ResolveSelfPos - i.e. the player's own body, and never through the team API. The
+     *  client entity list does not contain the local player, so asking Party for your own slot returns
+     *  the interpolated server push and your glyph would trail you by up to half a second.
      *
      *  POSITION FROM THE BODY, ANGLE FROM THE CAMERA - and the split is deliberate. The minimap
      *  passes the camera position for both only because it re-centres its map on the camera every
@@ -885,6 +909,10 @@ class VigridMapMenu extends UIScriptedMenu
      *  reason written up at length in VigridMapMinimap.DrawHeadingArrow: body yaw is the animated
      *  leg orientation, which snaps in steps and does not return to its start after a full 360.
      *
+     *  ...EXCEPT when the host has asserted an override, which is the one case where the body is not
+     *  where the player is playing from - see ResolveSelfPos. The angle needs no such treatment: it
+     *  already comes from the camera, and while spectating that is exactly the right camera.
+     *
      *  Note the aim axes are excluded while the map is open (MapMissionGameplay.UpdateAimSuppression),
      *  so this reads as the heading you had when you opened the map and holds still while you pan.
      *  That is the intent - it answers "which way was I facing", not "which way am I turning" - but
@@ -892,13 +920,13 @@ class VigridMapMenu extends UIScriptedMenu
      */
     protected void RenderSelfGlyph()
     {
-        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
-        if (!player)
+        vector self_pos = ResolveSelfPos();
+        if (self_pos == vector.Zero)
             return;
 
         float heading = Math.NormalizeAngle(GetGame().GetCurrentCameraDirection().VectorToAngles()[0]);
 
-        VigridMapRender.WorldRenderHeadingArrow(m_TeamCanvas, m_MapWidget, player.GetPosition(), heading, VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
+        VigridMapRender.WorldRenderHeadingArrow(m_TeamCanvas, m_MapWidget, self_pos, heading, VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
     }
 
     protected void RenderTeammates()

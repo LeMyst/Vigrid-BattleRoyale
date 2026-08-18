@@ -226,6 +226,55 @@ class VigridMapAPI
     {
         return s_HotZoneSeq;
     }
+
+    //--- Where to draw "you", when that is not where the local player's body is. Zero means "no
+    //--- override in force", which is the normal case and costs one vector compare per read.
+    private static vector s_SelfOverride;
+
+    /**
+     *  Publish a position to draw the local player at, instead of their body.
+     *
+     *  ⚠ STATED AS A GENERAL CONTRACT, NOT AS ITS CALLER'S USE CASE, exactly like
+     *  VigridPartyAPI.SetMemberHidden: A HOST MOD CAN PUT THE LOCAL PLAYER SOMEWHERE THAT IS NOT
+     *  WHERE THEIR BODY IS. This addon cannot detect that and must not try - it has no concept of a
+     *  match, a camera or a spectator - so the host asserts it.
+     *
+     *  What prompted it: a spectating admin's body is parked somewhere as a network anchor while the
+     *  camera flies, so GetGame().GetPlayer().GetPosition() answers the anchor and the fullscreen
+     *  map drew the self glyph on it. The minimap was always right, because it re-centres on the
+     *  camera every tick and never asks the player at all.
+     *
+     *  ONLY THE POSITION IS OVERRIDDEN, never the heading. The heading is already read from the
+     *  camera on both maps and is therefore already correct while spectating - see the docblock on
+     *  VigridMapMinimap.DrawHeadingArrow for why it can never come from body yaw.
+     *
+     *  Safe to call every frame; the caller owns the clear. Idempotent and session-scoped.
+     */
+    static void SetSelfPositionOverride(vector pos)
+    {
+        s_SelfOverride = pos;
+    }
+
+    //! Drop the override and go back to drawing the player's own body.
+    //!
+    //! ⚠ THE CALLER OWNS THIS, and leaving it set strands the self glyph at a position the player
+    //! left long ago - with no error and nothing on screen to say why. Clear it on every path out,
+    //! including the ones that are not a clean exit. Same warning, and the same reason, as
+    //! VigridPartyAPI.SetMemberHidden's.
+    static void ClearSelfPositionOverride()
+    {
+        s_SelfOverride = vector.Zero;
+    }
+
+    static bool HasSelfPositionOverride()
+    {
+        return s_SelfOverride != vector.Zero;
+    }
+
+    static vector GetSelfPositionOverride()
+    {
+        return s_SelfOverride;
+    }
 #endif
 
 #ifdef SERVER

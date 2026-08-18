@@ -100,6 +100,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         // previous match's circles would still be drawn after a server change.
         VigridMapAPI.ClearZones();
         VigridMapAPI.ClearHotZones();
+        VigridMapAPI.ClearSelfPositionOverride();
 #endif
     }
 
@@ -751,6 +752,21 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			VigridMapAPI.SetZones( map_current_center, map_current_radius, map_next_center, map_next_radius );
+
+			// Where the map should draw "you". While spectating the local PlayerBase is the corpse,
+			// or for an admin the parked anchor body - neither of which is where this client is
+			// actually looking from - so the fullscreen map drew the self glyph on the body while
+			// the camera was somewhere else entirely (#277). The minimap never had the bug: it
+			// re-centres on the camera every tick and never asks the player.
+			//
+			// Asserted rather than inferred, and the API says so at length: the map addon has no
+			// concept of a spectator and must not try to detect one. Cleared on the other branch
+			// AND in the destructor, because a stranded override pins the glyph somewhere the
+			// player left, silently.
+			if( IsSpectating() )
+				VigridMapAPI.SetSelfPositionOverride( GetGame().GetCurrentCameraPosition() );
+			else
+				VigridMapAPI.ClearSelfPositionOverride();
 
 			// Same push, same deal: the addon diffs internally, so calling this every frame costs a
 			// count comparison on a normal frame and a walk only when the pair actually changed.
