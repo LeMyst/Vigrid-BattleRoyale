@@ -20,6 +20,10 @@ class VigridPartyClient
     private bool m_RequestedSync;
     private int m_PingCooldownDueMs;
 
+    //--- Repeat suppression for Announce. See its header for why chat needed none of this.
+    private string m_LastAnnounceKey;
+    private int m_AnnounceRepeatDueMs;
+
 #ifdef DIAG_DEVELOPER
     //! Last frame's latch state, so Update can spot the falling edge and re-sync.
     private bool m_WasFakeSession;
@@ -49,6 +53,8 @@ class VigridPartyClient
         m_LastInviteSeq = 0;
         m_RequestedSync = false;
         m_PingCooldownDueMs = 0;
+        m_LastAnnounceKey = "";
+        m_AnnounceRepeatDueMs = 0;
 
 #ifdef DIAG_DEVELOPER
         m_WasFakeSession = false;
@@ -108,6 +114,18 @@ class VigridPartyClient
         m_Hud.Update();
     }
 
+    /**
+     *  Surface everything the server has queued for this player.
+     *
+     *  Drains the WHOLE queue in one pass, deliberately. NotificationSystem shows five at a time and
+     *  defers the rest, releasing them LIFO at about one per second - so a burst of more than five
+     *  would arrive reordered and late. Nothing this addon sends can produce such a burst: the
+     *  server emits one message per event per recipient (SendNotify / NotifyParty), and the most
+     *  that has ever landed in one frame is the two of a leader disconnecting - DISBANDED beside
+     *  NEW_LEADER. Pacing the drain would buy nothing against that and would cost a due-time field,
+     *  a partial-drain cursor and a second place for a message to be delayed. The one repeatable
+     *  source in the addon is the client-local Announce path, rate-limited at the source instead.
+     */
     private void DrainNotifications(VigridPartyRPC rpc)
     {
         int count = rpc.pending_notifications.Count();
@@ -116,16 +134,33 @@ class VigridPartyClient
 
         for (int i = 0; i < count; i++)
         {
-            GetGame().Chat(rpc.pending_notifications.Get(i), "colorFriendly");
+            //--- Read the element into a local before the call - the container-aliasing shape
+            //--- recorded in CLAUDE.md, and this line is being touched anyway.
+            string message = rpc.pending_notifications.Get(i);
+            Notify(message, VIGRID_PARTY_NOTIFY_SECONDS);
         }
 
         rpc.pending_notifications.Clear();
     }
 
     /**
-     *  Surface an incoming invitation. The menu may well be closed, so this goes to chat along with
-     *  the key that opens it - resolved live rather than hard-coded, since the player may have
-     *  rebound it.
+     *  Surface an incoming invitation. The menu may well be closed, so this draws over whatever is
+     *  on screen, along with the key that opens it - resolved live rather than hard-coded, since
+     *  the player may have rebound it.
+     *
+     *  ONE notification, not two: the prompt is the title and the keybind hint is the detail line,
+     *  which is exactly the shape notification_element.layout is built for - a headline over a
+     *  subordinate line. Three reasons it must not be two:
+     *
+     *    - Only five notifications are visible at once and the overflow is released LIFO, so of two
+     *      it is the HINT that gets deferred. A player would be told they were invited and not told
+     *      which key answers it - the one combination worse than either message alone.
+     *    - Two elements carry two independent timers and fade apart; the prompt and the key that
+     *      answers it have to disappear together.
+     *    - It halves this addon's peak claim on those five slots.
+     *
+     *  The invitation is also the one message that does not wear the generic party title: the
+     *  prompt itself is the headline, which is right for the message that must not be missed.
      */
     private void AnnounceInvite(VigridPartyRPC rpc)
     {
@@ -138,10 +173,9 @@ class VigridPartyClient
             return;
 
         StringLocaliser prompt = new StringLocaliser("STR_PARTY_INVITE_PROMPT", rpc.invite_inviter_name);
-        GetGame().Chat(prompt.Format(), "colorImportant");
-
         StringLocaliser hint = new StringLocaliser("STR_PARTY_TOAST_HINT", InputUtils.GetButtonNameFromInput(VIGRID_PARTY_INPUT_MENU, EInputDeviceType.MOUSE_AND_KEYBOARD));
-        GetGame().Chat(hint.Format(), "colorImportant");
+
+        NotifyExtended(prompt.Format(), hint.Format(), VIGRID_PARTY_NOTIFY_INVITE_SECONDS);
     }
 
     // ---------------------------------------------------------------- client -> server
@@ -392,11 +426,69 @@ class VigridPartyClient
      *
      *  Deliberately not routed through VP_Notify: every condition that produces one of these is
      *  detectable before the RPC is sent, so the server never has to say anything on this path.
+     *
+     *  This is the ONLY message in the addon a player can repeat at will, and moving off chat is
+     *  what makes that matter. PlacePing answers PING_DISABLED and PING_NO_PARTY BEFORE it reaches
+     *  its cooldown check and PING_NO_TARGET before the cooldown is set, and ClearPings has no
+     *  cooldown at all - so a held or mashed key produces one message per press. A chat line costs
+     *  nothing; a notification takes one of five slots, and the sixth onwards is deferred and
+     *  released LIFO at about one per second, so the same mash would leave a stale, out-of-order
+     *  tail crawling down the screen long after the player stopped pressing. Repeats of the same
+     *  key inside the window are therefore dropped - keyed on the KEY rather than on time alone, so
+     *  a different message still gets through immediately.
      */
     private void Announce(string key)
     {
+        int now_ms = GetGame().GetTime();
+        if (key == m_LastAnnounceKey && now_ms < m_AnnounceRepeatDueMs)
+            return;
+
+        m_LastAnnounceKey = key;
+        m_AnnounceRepeatDueMs = now_ms + VIGRID_PARTY_NOTIFY_REPEAT_MS;
+
         StringLocaliser message = new StringLocaliser(key);
-        GetGame().Chat(message.Format(), "colorFriendly");
+        Notify(message.Format(), VIGRID_PARTY_NOTIFY_SECONDS);
+    }
+
+    /**
+     *  Put one line on screen.
+     *
+     *  NOT GetGame().Chat, and that is the whole of issue #275: chat is a channel a player can turn
+     *  off, and this addon has things to say that have to be read. Vanilla's NotificationSystem
+     *  draws top-centre over an open menu, fades itself out, and is declared in 3_Game as part of
+     *  the base game - so this costs config.cpp nothing and its three requiredAddons stand.
+     *
+     *  AddNotificationExtended rather than AddNotification: the enum form needs a NotificationType
+     *  that only a modded enum plus an entry in VANILLA'S OWN scripts/data/notifications.json can
+     *  supply, and an unregistered type renders the literal string "please_add_a_title".
+     *
+     *  The title is a constant and the message goes in the detail line, because Detail is the
+     *  widget carrying `wrap 1` - anything of variable length belongs there.
+     */
+    private void Notify(string message, float seconds)
+    {
+        NotifyExtended(VIGRID_PARTY_NOTIFY_TITLE, message, seconds);
+    }
+
+    /**
+     *  Two-line form: a headline and a subordinate line that are halves of one event.
+     *
+     *  The guard is not decoration. AddNotificationExtended dereferences its static m_Instance with
+     *  no check of its own, and a null there unwinds the stack - which here would take the rest of
+     *  VigridPartyClient.Update with it, every frame, silently killing the name tags, the pings and
+     *  the HUD panel. In practice it cannot be null: DayZGame.OnInitialize calls
+     *  NotificationSystem.InitInstance() long before any mission exists, and only ~DayZGame clears
+     *  it. If it ever is, one log line beats a dead HUD. The fallback must not be chat.
+     */
+    private void NotifyExtended(string title, string detail, float seconds)
+    {
+        if (!NotificationSystem.GetInstance())
+        {
+            VigridPartyLog.Warn("NotificationSystem unavailable; dropped notification: " + title);
+            return;
+        }
+
+        NotificationSystem.AddNotificationExtended(seconds, title, detail, VIGRID_PARTY_NOTIFY_ICON);
     }
 }
 #endif

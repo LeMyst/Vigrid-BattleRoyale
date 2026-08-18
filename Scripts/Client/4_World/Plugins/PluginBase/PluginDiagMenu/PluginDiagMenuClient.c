@@ -82,6 +82,7 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagPartyOnlineCountID, CBBRDiagPartyOnlineCount);
 		DiagMenu.BindCallback(m_BRDiagPartyOnlineApplyID, CBBRDiagPartyOnlineApply);
 		DiagMenu.BindCallback(m_BRDiagPartyInviteMeID, CBBRDiagPartyInviteMe);
+		DiagMenu.BindCallback(m_BRDiagPartyNotifyID, CBBRDiagPartyNotify);
 		DiagMenu.BindCallback(m_BRDiagPartyOfflineID, CBBRDiagPartyOffline);
 		DiagMenu.BindCallback(m_BRDiagPartyPingID, CBBRDiagPartyPing);
 		DiagMenu.BindCallback(m_BRDiagPartyClearID, CBBRDiagPartyClear);
@@ -605,6 +606,19 @@ modded class PluginDiagMenuClient
 			return;
 
 		VigridPartyAPI.DebugReceiveInvite();
+		DiagMenu.SetValue(id, false);
+	}
+
+	//! Queue a burst of fabricated notifications, the only offline route to DrainNotifications.
+	//! EIGHT rather than five on purpose: vanilla shows five at once and defers the rest, releasing
+	//! them LIFO at about one per second, so a fixture of five or fewer could never reach the
+	//! behaviour it exists to exercise.
+	static void CBBRDiagPartyNotify(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		VigridPartyAPI.DebugNotify( 8 );
 		DiagMenu.SetValue(id, false);
 	}
 

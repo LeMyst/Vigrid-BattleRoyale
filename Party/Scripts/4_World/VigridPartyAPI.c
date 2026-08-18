@@ -1148,6 +1148,27 @@ class VigridPartyAPI
     }
 
     /**
+     *  Push a burst of fabricated notifications into the queue the client controller drains.
+     *
+     *  The only way to reach VigridPartyClient.DrainNotifications from a single offline client:
+     *  every other Debug* path applies itself locally and never goes near VP_Notify, which is the
+     *  one thing that fills this array. Deliberately asked for MORE than the five vanilla shows at
+     *  once, so the deferral and its LIFO release order are visible rather than theoretical - a
+     *  fixture that fits cannot reach the feature it exists to exercise.
+     */
+    static void DebugNotify(int count)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        for (int i = 0; i < count; i++)
+        {
+            rpc.pending_notifications.Insert("Fake notification " + (i + 1).ToString());
+        }
+
+        VigridPartyLog.Debug("DebugNotify queued " + count.ToString());
+    }
+
+    /**
      *  Answer the fabricated invitation.
      *
      *  Accepting joins SOMEBODY ELSE'S party - the inviter takes slot 0 and you take slot 1. That is

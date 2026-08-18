@@ -114,6 +114,40 @@ static const int VIGRID_PARTY_PLAYERLIST_COOLDOWN_MS = 1000;
 //--- Persistence write debounce.
 static const int VIGRID_PARTY_FLUSH_DEBOUNCE_MS = 5000;
 
+//--- Player-facing notifications. Everything this addon says to a player goes through vanilla's
+//--- NotificationSystem rather than chat: chat is a channel a player can - and often does - turn
+//--- off entirely, and an invitation is not a message anyone may miss. (Issue #275.)
+//---
+//--- Both durations are QUANTISED TO WHOLE SECONDS. NotificationSystem.Update accumulates a 1.0 s
+//--- threshold and subtracts 1.0 per pass, so a fractional value here buys nothing; the element
+//--- then fades for a further NOTIFICATION_FADE_TIME (3 s) after expiry, so time on screen is
+//--- roughly the figure plus three. Only FIVE are visible at once and the overflow is released
+//--- LIFO at about one per second - which is why the invitation is one notification and not two,
+//--- and why Announce rate-limits repeats. See VigridPartyClient for both.
+static const float VIGRID_PARTY_NOTIFY_SECONDS = 7.0;
+static const float VIGRID_PARTY_NOTIFY_INVITE_SECONDS = 15.0;
+
+//--- Title line. A stringtable key WITH the '#': the Title widget is a RichTextWidget and SetText
+//--- resolves the token - the same contract vanilla's own scripts/data/notifications.json uses,
+//--- where every m_TitleText is a "#..." key. Deliberately its own key rather than a borrowed
+//--- STR_PARTY_MENU_TITLE, which is the party dialog's heading: the moment anybody qualifies that
+//--- one ("Party Menu"), every notification on screen would silently retitle with it.
+static const string VIGRID_PARTY_NOTIFY_TITLE = "#STR_PARTY_TITLE";
+
+//--- Icon, in NotificationUI's "set:<imageset> image:<name>" form; it is handed straight to
+//--- ImageWidget.LoadImageFile at runtime. NO imageSets[] entry is needed in config.cpp and none
+//--- exists - dayz_gui ships with the base game, and this addon already loads out of it through
+//--- the very same call (VigridPartyHud.LayoutRow). notification_friend is vanilla's own
+//--- "something happened involving another player" glyph, used for NotificationType
+//--- FRIEND_CONNECTED. Passing "" instead would leave the layout's default console triangle,
+//--- which reads as a warning rather than as a team message.
+static const string VIGRID_PARTY_NOTIFY_ICON = "set:dayz_gui image:notification_friend";
+
+//--- Repeat suppression for the client-local ping feedback. See VigridPartyClient.Announce: it is
+//--- the only message a player can trigger at will, and unlike a chat line a notification occupies
+//--- one of those five slots.
+static const int VIGRID_PARTY_NOTIFY_REPEAT_MS = 3000;
+
 //--- Nametag rendering.
 static const float VIGRID_PARTY_TAG_EDGE_MARGIN = 48.0;    // px inset when clamped to the screen edge
 static const float VIGRID_PARTY_TAG_FADE_DISTANCE = 400.0; // m, used when max distance is unlimited
