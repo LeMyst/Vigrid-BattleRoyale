@@ -37,6 +37,11 @@ class BattleRoyaleDiag
     //! How many CommandHandler ticks to keep logging for after a teleport juncture arrives.
     static int trace_teleport_ticks = 20;
 
+    //! Log each player instance's base aiming angles. The instrument that found the remote-ADS-
+    //! pitch desync - note it measured that REMOTE instances run no script CommandHandler, so only
+    //! the owner and the server ever produce lines. See PlayerBase.BR_LogAimState.
+    static bool trace_aim = false;
+
     //! Seconds between "[Spectate] cam=..." samples. Vanilla-ish 5 s is right for a background
     //! sanity check and far too coarse for a deliberate range test, where the interesting window is
     //! the 20-30 s after the target is flung out - 5 samples is not enough to tell a sustained
@@ -127,6 +132,7 @@ class BattleRoyaleDiag
         chat_mirror = true;
         trace_teleport = false;
         trace_teleport_ticks = 20;
+        trace_aim = false;
         spectate_trace_interval = 5.0;
 
         hud_force = false;

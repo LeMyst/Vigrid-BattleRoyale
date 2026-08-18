@@ -1952,6 +1952,13 @@ class BattleRoyaleServer: BattleRoyaleBase
                 break;
             }
 
+            case BattleRoyaleDiagAction.SET_TRACE_AIM:
+            {
+                BattleRoyaleDiag.trace_aim = (data.param2 != 0);
+                BattleRoyaleUtils.Info("[Diag] aim trace -> " + BattleRoyaleDiag.trace_aim);
+                break;
+            }
+
             case BattleRoyaleDiagAction.KILL_SELF:
             {
                 //--- The entry point to the entire spectate feature. Without this, dying needs a

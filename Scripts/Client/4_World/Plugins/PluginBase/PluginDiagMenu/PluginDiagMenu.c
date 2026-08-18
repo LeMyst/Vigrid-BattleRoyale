@@ -105,6 +105,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagTraceTpClientID;
 	protected int m_BRDiagTraceTpServerID;
 	protected int m_BRDiagTraceTicksID;
+	protected int m_BRDiagTraceAimClientID;
+	protected int m_BRDiagTraceAimServerID;
 
 	//--- Logging
 	protected int m_BRDiagLogMenuID;
@@ -188,6 +190,8 @@ modded class PluginDiagMenu
 		m_BRDiagTraceTpClientID = GetModdedDiagID();
 		m_BRDiagTraceTpServerID = GetModdedDiagID();
 		m_BRDiagTraceTicksID = GetModdedDiagID();
+		m_BRDiagTraceAimClientID = GetModdedDiagID();
+		m_BRDiagTraceAimServerID = GetModdedDiagID();
 
 		m_BRDiagLogMenuID = GetModdedDiagID();
 		m_BRDiagLogLevelID = GetModdedDiagID();
@@ -380,6 +384,13 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagTraceTpClientID, "", "Trace TP (Client)", m_BRDiagTraceMenuID);
 				DiagMenu.RegisterBool(m_BRDiagTraceTpServerID, "", "Trace TP (Server)", m_BRDiagTraceMenuID);
 				DiagMenu.RegisterRange(m_BRDiagTraceTicksID, "", "Trace Ticks", m_BRDiagTraceMenuID, "0, 60, 20, 1");
+				//--- The aim-desync instrument: each player instance logs its own copy of the base
+				//--- aiming angles, so the owner's and the server's can be diffed. It is what
+				//--- measured the 2026-08-18 desync (SetDisabled freezing the server's copy) - and
+				//--- that remote instances run no script CommandHandler, so proxies produce no
+				//--- lines and remote rendering follows the SERVER's copy.
+				DiagMenu.RegisterBool(m_BRDiagTraceAimClientID, "", "Trace Aim (Client)", m_BRDiagTraceMenuID);
+				DiagMenu.RegisterBool(m_BRDiagTraceAimServerID, "", "Trace Aim (Server)", m_BRDiagTraceMenuID);
 			}
 
 			//--- Logging. Index 0 is "Default", i.e. resolve from the -br-* flags and serverDZ.cfg

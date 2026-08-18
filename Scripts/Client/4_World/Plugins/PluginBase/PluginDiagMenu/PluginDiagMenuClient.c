@@ -102,6 +102,8 @@ modded class PluginDiagMenuClient
 
 		DiagMenu.BindCallback(m_BRDiagTraceTpClientID, CBBRDiagTraceTpClient);
 		DiagMenu.BindCallback(m_BRDiagTraceTpServerID, CBBRDiagTraceTpServer);
+		DiagMenu.BindCallback(m_BRDiagTraceAimClientID, CBBRDiagTraceAimClient);
+		DiagMenu.BindCallback(m_BRDiagTraceAimServerID, CBBRDiagTraceAimServer);
 		DiagMenu.BindCallback(m_BRDiagTraceTicksID, CBBRDiagTraceTicks);
 
 		DiagMenu.BindCallback(m_BRDiagLogLevelID, CBBRDiagLogLevel);
@@ -794,6 +796,20 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagTraceTicks(float value)
 	{
 		BattleRoyaleDiag.trace_teleport_ticks = (int)value;
+	}
+
+	static void CBBRDiagTraceAimClient(bool enabled)
+	{
+		BattleRoyaleDiag.trace_aim = enabled;
+	}
+
+	static void CBBRDiagTraceAimServer(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_TRACE_AIM, on, 0);
 	}
 
 	//=============================================================================================
