@@ -264,15 +264,20 @@ static const int VIGRID_MAP_TEAM_TICK_MS = 100;
 static const float VIGRID_MAP_ADMIN_PX = 12.0;
 static const float VIGRID_MAP_ADMIN_LINE_WIDTH = 2.0;
 
-//--- Bound on pooled name labels, matching the host's own 64-row admin list cap. Reached in the
-//--- ordinary course of a full match, not just in pathological cases.
+//--- Upper bound on the label scan in Init. The REAL pool size is whatever map_menu.layout declares
+//--- (32 today) - the bind loop stops at the first gap, so the layout is the single source of truth
+//--- and this is only here to stop an unbounded FindAnyWidget walk. Raise it if the layout ever
+//--- declares more than this many.
+//---
+//--- ⚠️ The pool cannot grow at runtime: the labels have to be DECLARED to render at all (see
+//--- map_menu.layout). Glyphs stay uncapped, so a busier match loses names before it loses positions.
 static const int VIGRID_MAP_ADMIN_NAME_MAX = 64;
 
 //--- Pixels between the top of a glyph and the bottom of its name label.
 static const float VIGRID_MAP_ADMIN_NAME_GAP_PX = 3.0;
 
-//--- Fallback label size in real pixels, used only on the first frame before the pooled widget has
-//--- been shown and can report its own. MUST track the root size in map_admin_tag.layout.
+//--- Fallback label size in real pixels, used only on the first frame before the label has been
+//--- shown and can report its own. MUST track the AdminName<n> size in map_menu.layout.
 static const float VIGRID_MAP_ADMIN_NAME_W = 120.0;
 static const float VIGRID_MAP_ADMIN_NAME_H = 16.0;
 

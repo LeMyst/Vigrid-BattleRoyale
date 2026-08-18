@@ -24,12 +24,9 @@ class VigridMapMenu extends UIScriptedMenu
     protected CanvasWidget m_TeamCanvas;
     protected CanvasWidget m_AdminCanvas;
 
-    //--- The name layer for the admin glyphs. A pool of widgets under a full-screen frame that is a
-    //--- SIBLING of the MapWidget - the only way to get text over this map, see map_menu.layout.
-    protected Widget m_AdminNameLayer;
-    protected ref array<Widget> m_AdminNameRows;
+    //--- Name labels for the admin glyphs, BOUND from the layout rather than created. See the block
+    //--- comment on AdminName0 in map_menu.layout for the measurement behind that.
     protected ref array<TextWidget> m_AdminNameTexts;
-    protected ref array<Widget> m_AdminNameBacks;
     protected int m_LastAdminSeq;
     protected int m_NextAdminFunnelMs;
 
@@ -78,9 +75,7 @@ class VigridMapMenu extends UIScriptedMenu
 
     void VigridMapMenu()
     {
-        m_AdminNameRows = new array<Widget>();
         m_AdminNameTexts = new array<TextWidget>();
-        m_AdminNameBacks = new array<Widget>();
         m_LastAdminSeq = -1;
         m_NextAdminFunnelMs = 0;
 
@@ -151,12 +146,25 @@ class VigridMapMenu extends UIScriptedMenu
         if (!m_AdminCanvas)
             VigridMapLog.Error("map_menu.layout has no AdminCanvas - the host player layer is disabled");
 
-        //--- Found on layoutRoot, NOT on m_MapWidget, and that is the entire reason it can render:
-        //--- it is declared as a sibling of the MapWidget rather than a child of it. See the comment
-        //--- on MarkerToast above, and the one in map_menu.layout.
-        m_AdminNameLayer = layoutRoot.FindAnyWidget("AdminNameLayer");
-        if (!m_AdminNameLayer)
-            VigridMapLog.Error("map_menu.layout has no AdminNameLayer - host player names disabled");
+        //--- Bind the declared label pool. Found on m_MapWidget, like the canvases and for exactly the
+        //--- same reason: a DECLARED child of the MapWidget renders, and a script-created one does
+        //--- not - measured, see map_menu.layout. The loop stops at the first gap, so the pool size
+        //--- lives in the layout alone and this does not have to be told how big it is.
+        int name_slot = 0;
+        while (name_slot < VIGRID_MAP_ADMIN_NAME_MAX)
+        {
+            TextWidget label = TextWidget.Cast(m_MapWidget.FindAnyWidget("AdminName" + name_slot.ToString()));
+            if (!label)
+                break;
+
+            m_AdminNameTexts.Insert(label);
+            name_slot++;
+        }
+
+        if (m_AdminNameTexts.Count() == 0)
+            VigridMapLog.Error("map_menu.layout declares no AdminName<n> labels - host player names disabled");
+        else
+            VigridMapLog.Debug("Bound " + m_AdminNameTexts.Count().ToString() + " admin name label(s)");
 
         //--- Found on layoutRoot, not on m_MapWidget: the toast sits in the strip above the map, so
         //--- it is a sibling of the MapWidget rather than a child of it.
@@ -995,8 +1003,6 @@ class VigridMapMenu extends UIScriptedMenu
         if (count == 0)
         {
             HideAdminNames(0);
-            if (m_AdminNameLayer)
-                m_AdminNameLayer.Show(false);
             return;
         }
 
@@ -1015,19 +1021,9 @@ class VigridMapMenu extends UIScriptedMenu
         //--- silently hid every label at the zoom an admin actually uses.
         bool want_names = m_MapWidget.GetScale() <= VIGRID_MAP_ADMIN_NAME_MAX_SCALE;
 
-        //--- Shown BEFORE any row is measured. A child of a hidden parent can report a zero screen
-        //--- size, and PlaceAdminName derives both of its offsets from that size - so measuring first
-        //--- and revealing afterwards would misplace every label on the frame the layer appears.
-        if (m_AdminNameLayer && want_names)
-            m_AdminNameLayer.Show(true);
-
         float canvas_w;
         float canvas_h;
         m_AdminCanvas.GetScreenSize(canvas_w, canvas_h);
-
-        float map_x;
-        float map_y;
-        m_MapWidget.GetScreenPos(map_x, map_y);
 
         int drawn = 0;
         int labelled = 0;
@@ -1047,17 +1043,17 @@ class VigridMapMenu extends UIScriptedMenu
             if (!want_names)
                 continue;
 
-            //--- The glyph is drawn in CANVAS-local pixels; the label lives under a different parent
-            //--- and is positioned in ABSOLUTE screen pixels, so the map widget's own screen origin
-            //--- has to be added back on. Getting this wrong shifts the whole set of labels while
-            //--- their spacing stays perfect, which reads as an offset bug rather than a parent bug.
+            //--- Both the glyph and the label are now positioned in the SAME canvas-local pixels -
+            //--- the label is a child of the MapWidget, like the canvas it is drawn over, so no
+            //--- screen-origin correction is needed. It was needed while the labels lived under a
+            //--- full-screen sibling frame, which is the arrangement that turned out not to render.
             float cx;
             float cy;
             VigridMapRender.WorldToCanvas(m_MapWidget, Vector(pos[0], 0, pos[2]), cx, cy);
 
-            //--- Outside the visible map rect. Clipped by hand because AdminNameLayer is NOT a child
-            //--- of the MapWidget and so is not clipped by it - which is exactly the trade that makes
-            //--- the text render in the first place.
+            //--- Outside the visible map rect. The MapWidget carries clipchildren 1 so this is now
+            //--- belt and braces, but it also keeps a label from being counted as drawn when it is
+            //--- not - which is what makes the funnel line below trustworthy.
             if (cx < 0 || cy < 0 || cx > canvas_w || cy > canvas_h)
             {
                 offscreen++;
@@ -1068,97 +1064,90 @@ class VigridMapMenu extends UIScriptedMenu
             if (name == "")
                 continue;
 
-            if (labelled >= VIGRID_MAP_ADMIN_NAME_MAX)
+            //--- Bounded by the DECLARED pool, which cannot grow at runtime. Glyphs are uncapped, so
+            //--- a busier match loses names before it loses positions.
+            if (labelled >= m_AdminNameTexts.Count())
                 continue;
 
-            if (PlaceAdminName(labelled, name, color, map_x + cx, map_y + cy))
+            if (PlaceAdminName(labelled, name, color, cx, cy))
                 labelled++;
         }
 
         HideAdminNames(labelled);
 
-        if (m_AdminNameLayer)
-            m_AdminNameLayer.Show(labelled > 0);
-
         ReportAdminFunnel(count, drawn, labelled, offscreen, want_names);
     }
 
-    //! Position one pooled name label, growing the pool if needed. Returns false when the widget
-    //! could not be created, which is what stops the caller counting a row that does not exist.
-    protected bool PlaceAdminName(int slot, string name, int color, float screen_x, float screen_y)
+    /**
+     *  Fill and position one label from the declared pool.
+     *
+     *  Returns false when the slot does not exist, which is what stops the caller counting a label
+     *  it never drew. Nothing is created here - the pool is bound once in Init from the layout.
+     *
+     *  `cx`/`cy` are CANVAS-LOCAL pixels, the same coordinates the glyph was drawn at, because the
+     *  label is a child of the same MapWidget.
+     */
+    protected bool PlaceAdminName(int slot, string name, int color, float cx, float cy)
     {
-        if (!m_AdminNameLayer)
+        if (slot < 0 || slot >= m_AdminNameTexts.Count())
             return false;
 
-        while (m_AdminNameRows.Count() <= slot)
-        {
-            Widget row = GetGame().GetWorkspace().CreateWidgets(VIGRID_MAP_PREFIX + "GUI/layouts/map_admin_tag.layout", m_AdminNameLayer);
-            if (!row)
-                return false;
-
-            m_AdminNameRows.Insert(row);
-            m_AdminNameTexts.Insert(TextWidget.Cast(row.FindAnyWidget("AdminTagName")));
-            m_AdminNameBacks.Insert(row.FindAnyWidget("AdminTagBack"));
-        }
-
-        Widget row_widget = m_AdminNameRows.Get(slot);
-        if (!row_widget)
+        TextWidget label = m_AdminNameTexts.Get(slot);
+        if (!label)
             return false;
 
-        //--- Shown before being measured: a widget that has never been displayed reports zero size,
-        //--- and both offsets below are derived from that size.
-        row_widget.Show(true);
+        label.SetText(name);
+        label.SetColor(color);
+
+        //--- Shown before being measured: a widget that has never been displayed reports a zero
+        //--- size, and both offsets below are derived from it.
+        label.Show(true);
 
         float row_w;
         float row_h;
-        row_widget.GetScreenSize(row_w, row_h);
+        label.GetScreenSize(row_w, row_h);
         if (row_w <= 0)
             row_w = VIGRID_MAP_ADMIN_NAME_W;
         if (row_h <= 0)
             row_h = VIGRID_MAP_ADMIN_NAME_H;
 
-        //--- SetPos anchors by the top-left corner, so centring on the glyph means half a width left,
-        //--- and sitting ABOVE it means a full height plus the glyph's own half-size up.
-        float px = screen_x - (row_w * 0.5);
-        float py = screen_y - row_h - (VIGRID_MAP_ADMIN_PX * 0.5) - VIGRID_MAP_ADMIN_NAME_GAP_PX;
+        //--- SetPos anchors by the top-left corner, so centring on the glyph is half a width left,
+        //--- and sitting above it is a full height plus the glyph's own half-size up.
+        float px = cx - (row_w * 0.5);
+        float py = cy - row_h - (VIGRID_MAP_ADMIN_PX * 0.5) - VIGRID_MAP_ADMIN_NAME_GAP_PX;
 
-        row_widget.SetPos(px, py);
-
-        TextWidget text = m_AdminNameTexts.Get(slot);
-        if (text)
-        {
-            text.SetText(name);
-            text.SetColor(color);
-        }
-
+        label.SetPos(px, py);
         return true;
     }
 
-    //! Hide every pooled label from `from` on. Hidden, not unlinked: these are free-positioned under
-    //! a plain frame rather than laid out by a spacer, so a hidden row occupies nothing.
+    //! Hide every pooled label from `from` on. The pool is declared and fixed, so this only ever
+    //! hides - there is nothing to unlink and nothing to free.
     protected void HideAdminNames(int from)
     {
-        for (int i = from; i < m_AdminNameRows.Count(); i++)
+        for (int i = from; i < m_AdminNameTexts.Count(); i++)
         {
-            Widget row = m_AdminNameRows.Get(i);
-            if (row)
-                row.Show(false);
+            TextWidget label = m_AdminNameTexts.Get(i);
+            if (label)
+                label.Show(false);
         }
     }
 
     /**
-     *  ⚠ THE POINT OF THIS LINE IS THE UNTESTED WIDGET CONSTRUCT ABOVE.
+     *  The funnel that found both of this layer's bugs, kept because it earned its place twice.
      *
-     *  Text over a MapWidget has never been done in this repo - script-created widgets parented to
-     *  one are positioned correctly and then never render, measured repeatedly - and AdminNameLayer
-     *  is a sibling declared in the layout specifically to dodge that. If it turns out siblings do
-     *  not render over a MapWidget either, the symptom is "glyphs but no names", which is
-     *  indistinguishable by eye from every other reason a name might be missing: the zoom gate, an
-     *  empty name in the payload, the pool failing to build, or the label being clipped out.
+     *  "Glyphs but no names" is indistinguishable by eye from five different causes - the zoom gate,
+     *  an empty name in the payload, the pool failing to bind, a label clipped out, or the widget
+     *  genuinely not rendering. Each reading named one directly:
      *
-     *  So the funnel names which one it was on the first run instead of costing a build per
-     *  hypothesis. Same instrument, and the same reasoning, as the [Lobby] tags line in the host mod,
-     *  which turned a three-way argument into a one-line answer.
+     *    rows=12 drawn=12 labelled=0  wantnames=false pool=0  -> the zoom GATE, comparison inverted
+     *    rows=12 drawn=12 labelled=12 wantnames=true  pool=12 -> everything ran; NOTHING RENDERED
+     *
+     *  The second is what proved script-created widgets do not draw over a MapWidget even from a
+     *  declared sibling frame, and sent the pool into the layout. Neither answer was reachable by
+     *  reading the code, and each would otherwise have cost a build per hypothesis.
+     *
+     *  `scale` is logged raw and not just the verdict it produced: without it, "wantnames=false"
+     *  says a gate fired but not whether the THRESHOLD or the COMPARISON was wrong.
      */
     protected void ReportAdminFunnel(int count, int drawn, int labelled, int offscreen, bool want_names)
     {
@@ -1178,8 +1167,7 @@ class VigridMapMenu extends UIScriptedMenu
         //--- gate fired but not whether the threshold or the COMPARISON was wrong - which is exactly
         //--- the ambiguity that cost this feature a build.
         line = line + " scale=" + m_MapWidget.GetScale().ToString();
-        line = line + " pool=" + m_AdminNameRows.Count().ToString();
-        line = line + " layer=" + (m_AdminNameLayer != NULL).ToString();
+        line = line + " pool=" + m_AdminNameTexts.Count().ToString();
 
         VigridMapLog.Debug(line);
     }
