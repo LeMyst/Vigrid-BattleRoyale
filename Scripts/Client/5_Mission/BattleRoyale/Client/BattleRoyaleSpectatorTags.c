@@ -29,6 +29,18 @@ class BattleRoyaleSpectatorTags
     protected ref array<Widget> m_TagHealthBacks;
     protected ref array<Widget> m_TagHealthFills;
 
+    //--- A SECOND POOL, for corpse tags (#278), rather than more rows in the first one.
+    //---
+    //--- The two are driven by unrelated payloads that change length independently - the living
+    //--- roster shrinks as the dead list grows - so sharing one pool would mean the surplus-hiding
+    //--- loop could never be a simple "everything past N". They also render differently enough
+    //--- (no health bar, no edge clamp, no follow highlight) that one RenderSlot serving both would
+    //--- be a thicket of flags.
+    protected ref array<Widget> m_DeadTags;
+    protected ref array<TextWidget> m_DeadNames;
+    protected ref array<TextWidget> m_DeadInfos;
+    protected ref array<Widget> m_DeadHealthBacks;
+
     void BattleRoyaleSpectatorTags()
     {
         m_Tags = new array<Widget>();
@@ -36,6 +48,10 @@ class BattleRoyaleSpectatorTags
         m_TagInfos = new array<TextWidget>();
         m_TagHealthBacks = new array<Widget>();
         m_TagHealthFills = new array<Widget>();
+        m_DeadTags = new array<Widget>();
+        m_DeadNames = new array<TextWidget>();
+        m_DeadInfos = new array<TextWidget>();
+        m_DeadHealthBacks = new array<Widget>();
         m_RootFailed = false;
     }
 
@@ -99,12 +115,43 @@ class BattleRoyaleSpectatorTags
         }
     }
 
+    //! Same growth-only pooling as EnsureCapacity, on the same layout. The health bar is hidden once
+    //! at creation rather than per frame: a corpse has no health worth drawing, and the widget never
+    //! comes back for the life of the row.
+    protected void EnsureDeadCapacity(int wanted)
+    {
+        if (!m_Root)
+            return;
+
+        while (m_DeadTags.Count() < wanted)
+        {
+            Widget tag = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/spectator_tag.layout", m_Root);
+            if (!tag)
+                return;
+
+            Widget health_back = tag.FindAnyWidget("TagHealthBack");
+            if (health_back)
+                health_back.Show(false);
+
+            m_DeadTags.Insert(tag);
+            m_DeadNames.Insert(TextWidget.Cast(tag.FindAnyWidget("TagName")));
+            m_DeadInfos.Insert(TextWidget.Cast(tag.FindAnyWidget("TagInfo")));
+            m_DeadHealthBacks.Insert(health_back);
+        }
+    }
+
     protected void HideAll()
     {
         int count = m_Tags.Count();
         for (int i = 0; i < count; i++)
         {
             m_Tags.Get(i).Show(false);
+        }
+
+        int dead_count = m_DeadTags.Count();
+        for (int d = 0; d < dead_count; d++)
+        {
+            m_DeadTags.Get(d).Show(false);
         }
 
         if (m_Root)
@@ -136,7 +183,12 @@ class BattleRoyaleSpectatorTags
         }
 
         int count = br_rpc.admin_uids.Count();
-        if (count == 0)
+        int dead_count = br_rpc.admin_dead_names.Count();
+
+        //--- Corpses are checked too, so "no living players" is no longer a reason to hide the whole
+        //--- overlay. It is a real state - the last two players trade kills and the match has not
+        //--- yet ended - and it is exactly when the bodies are the only thing left to look at.
+        if (count == 0 && dead_count == 0)
         {
             HideAll();
             return;
@@ -183,6 +235,145 @@ class BattleRoyaleSpectatorTags
         {
             m_Tags.Get(j).Show(false);
         }
+
+        RenderDeadTags(br_rpc, self_pos, parent_w, parent_h);
+    }
+
+    /**
+     *  Names over nearby bodies (#278).
+     *
+     *  PROXIMITY IS THE WHOLE RULE, and it is a rule rather than a clutter cap: a name over every
+     *  corpse in the match would be unreadable by the final circle, which is precisely when an admin
+     *  most wants to know who fell where. BR_SPECTATE_CORPSE_TAG_RANGE_M is tens of metres, against
+     *  the skeleton overlay's 500 - the skeleton says "a fight happened over there", this says "and
+     *  that is who it was", and only the second question needs the camera to have flown over.
+     *
+     *  Positions come straight from the server and are never resolved to an entity, unlike the living
+     *  rows. A corpse outside the network bubble has no entity to find, and the one this WOULD find
+     *  in the local list may be a body the server has since carried elsewhere - so the pushed death
+     *  position is both the only always-available answer and the correct one. See
+     *  BattleRoyaleSpectators.PushAdminDeadList.
+     *
+     *  NO EDGE CLAMP, deliberately, where the living tags have one. An off-screen living player is
+     *  worth knowing about - they can shoot someone - whereas an off-screen body at 40 m is clutter
+     *  pinned to the rim of the screen for no benefit.
+     */
+    protected void RenderDeadTags(BattleRoyaleRPC br_rpc, vector self_pos, float parent_w, float parent_h)
+    {
+        int count = br_rpc.admin_dead_names.Count();
+
+        //--- The two arrays are filled together and must be read together; a mismatch means a partial
+        //--- packet and the shorter one wins rather than indexing off the end.
+        int positions_count = br_rpc.admin_dead_positions.Count();
+        if (positions_count < count)
+            count = positions_count;
+
+        EnsureDeadCapacity(count);
+
+        int rendered = 0;
+        for (int i = 0; i < count; i++)
+        {
+            if (i >= m_DeadTags.Count())
+                break;
+
+            if (RenderDeadSlot(i, br_rpc, self_pos, parent_w, parent_h))
+                rendered = i + 1;
+        }
+
+        //--- Everything past the last row that DREW, not past the last row considered - a body out of
+        //--- range leaves a hole, and the loop below is what closes it.
+        for (int j = rendered; j < m_DeadTags.Count(); j++)
+        {
+            m_DeadTags.Get(j).Show(false);
+        }
+    }
+
+    //! One corpse row. Returns false when the body is out of range or behind the camera, which is
+    //! what tells the caller this slot did not draw.
+    protected bool RenderDeadSlot(int slot, BattleRoyaleRPC br_rpc, vector self_pos, float parent_w, float parent_h)
+    {
+        Widget tag = m_DeadTags.Get(slot);
+        if (!tag)
+            return false;
+
+        //--- One array read per line, before any call consumes it.
+        vector death_pos = br_rpc.admin_dead_positions.Get(slot);
+        if (death_pos == vector.Zero)
+        {
+            tag.Show(false);
+            return false;
+        }
+
+        float distance = vector.Distance(self_pos, death_pos);
+        if (distance > BR_SPECTATE_CORPSE_TAG_RANGE_M)
+        {
+            tag.Show(false);
+            return false;
+        }
+
+        vector anchor = death_pos;
+        anchor[1] = anchor[1] + BR_SPECTATE_CORPSE_TAG_HEIGHT_OFFSET;
+
+        vector screen_pos = GetGame().GetScreenPosRelative(anchor);
+        if (!IsOnScreen(screen_pos))
+        {
+            tag.Show(false);
+            return false;
+        }
+
+        tag.Show(true);
+
+        float tag_w;
+        float tag_h;
+        tag.GetScreenSize(tag_w, tag_h);
+        if (tag_w <= 0)
+            tag_w = BR_SPECTATE_TAG_SIZE_W;
+        if (tag_h <= 0)
+            tag_h = BR_SPECTATE_TAG_SIZE_H;
+
+        float px = (screen_pos[0] * parent_w) - (tag_w * 0.5);
+        float py = (screen_pos[1] * parent_h) - tag_h - BR_SPECTATE_TAG_GAP_PX;
+        tag.SetPos(px, py);
+
+        //--- Faded over the last stretch of the range rather than cut, so a tag thins out as the
+        //--- camera drifts away instead of blinking off. Same reasoning as the lobby tags'.
+        float alpha = 1.0;
+        if (distance > BR_SPECTATE_CORPSE_TAG_FADE_START_M)
+        {
+            float fade_span = BR_SPECTATE_CORPSE_TAG_RANGE_M - BR_SPECTATE_CORPSE_TAG_FADE_START_M;
+            if (fade_span > 0)
+                alpha = Math.Clamp(1.0 - ((distance - BR_SPECTATE_CORPSE_TAG_FADE_START_M) / fade_span), 0, 1);
+        }
+
+        tag.SetAlpha(alpha);
+
+        //--- Sorted BELOW every living tag. A body and its killer are often within a metre of each
+        //--- other, and the living name is the one that matters.
+        tag.SetSort(Math.Round(5000 - Math.Clamp(distance, 0, 4999)));
+
+        TextWidget name_widget = m_DeadNames.Get(slot);
+        if (name_widget)
+        {
+            string victim = br_rpc.admin_dead_names.Get(slot);
+
+            //--- TranslateString rather than letting SetText resolve the key in place, and the
+            //--- reason is the PLAYER NAME on the other side of the concatenation. SetText resolves
+            //--- every #token in the string it is given, not just a leading one - so a player called
+            //--- "#foo" would have their own name eaten as a failed lookup. Resolving the key first
+            //--- and appending afterwards means only the half we control is ever interpreted.
+            string prefix = Widget.TranslateString("#STR_BR_SPECTATE_DEAD_PREFIX");
+            name_widget.SetText(prefix + " " + victim);
+            name_widget.SetColor(BR_SPECTATE_CORPSE_TAG_COLOUR);
+        }
+
+        TextWidget info_widget = m_DeadInfos.Get(slot);
+        if (info_widget)
+        {
+            info_widget.SetText(FormatDistance(distance));
+            info_widget.SetColor(BR_SPECTATE_CORPSE_TAG_COLOUR);
+        }
+
+        return true;
     }
 
     protected void RenderSlot(int slot, BattleRoyaleRPC br_rpc, vector self_pos, string highlight_uid, float parent_w, float parent_h, bool can_lerp, float lerp_t)

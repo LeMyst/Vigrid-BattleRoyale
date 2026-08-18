@@ -589,6 +589,34 @@ static const int BR_LOBBY_TAG_DIAG_MS = 2000;
 //--- here would only invite the two to be confused.
 static const int BR_LOBBY_TAG_COLOUR = 0xFFFFFFFF;
 
+//--- CORPSE NAMETAGS. A name over a dead body, so an admin flying over a fight can tell who died
+//--- there (#278). Proximity only - a name over every corpse in the match would bury the map by the
+//--- final circle, which is exactly when an admin most wants to read it.
+//---
+//--- Tens of metres, not the skeleton overlay's 500: the skeleton says "a fight happened over
+//--- there", this says "this is who that is", and the second question is only asked up close.
+static const float BR_SPECTATE_CORPSE_TAG_RANGE_M = 40.0;
+//--- Fade over the last stretch, so a tag thins out rather than blinking off as the camera drifts.
+static const float BR_SPECTATE_CORPSE_TAG_FADE_START_M = 32.0;
+//--- Metres above the death position. Much lower than the living tag's 1.9, because a body lies
+//--- FLAT - anchoring a corpse tag at standing height floats it well clear of the thing it names.
+static const float BR_SPECTATE_CORPSE_TAG_HEIGHT_OFFSET = 0.6;
+//--- Dim and desaturated, so a corpse tag never competes with a living one at a glance. It is
+//--- deliberately NOT a team colour: the party a dead player was on is no longer information an
+//--- admin can act on, and colouring it would put a second team-coloured name over a fight.
+static const int BR_SPECTATE_CORPSE_TAG_COLOUR = 0xFFA09490;
+//--- Bound on corpse rows, matching BR_ADMIN_LIST_MAX for the same no-RPC-chunking reason. A full
+//--- match ends with 59 bodies, so this is reached in the ordinary course of a game, not just in
+//--- pathological cases.
+static const int BR_ADMIN_DEAD_LIST_MAX = 64;
+//--- How often the dead list is RECONSIDERED. It is not a push rate: the set is append-only and is
+//--- sent only when it has actually grown, plus the keepalive below for an admin who started
+//--- watching after the last death.
+static const int BR_ADMIN_DEAD_PUSH_MS = 2000;
+//--- Re-send even with nothing new, on the same reasoning as BR_AUDIENCE_KEEPALIVE_MS: an admin who
+//--- enters spectate during a lull would otherwise wait for the next death to see any corpse at all.
+static const int BR_ADMIN_DEAD_KEEPALIVE_MS = 10000;
+
 //--- SKELETON OVERLAY. How far from the CAMERA a player is still drawn, in metres of view depth.
 //--- Ours, not COT's: JMESPModule culls at its own ESPRadius (200 m by default and an admin's
 //--- personal COT setting), which is well inside the range a spectating admin watches from and is

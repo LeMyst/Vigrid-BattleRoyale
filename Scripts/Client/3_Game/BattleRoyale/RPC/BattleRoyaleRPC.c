@@ -31,6 +31,10 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EndSpectate", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminDeadList", this );
+
+		admin_dead_names = new array<string>();
+		admin_dead_positions = new array<vector>();
 
 		admin_uids = new array<string>();
 		admin_names = new array<string>();
@@ -175,6 +179,8 @@ class BattleRoyaleRPC
 		admin_healths.Clear();
 		admin_kills.Clear();
 		admin_parties.Clear();
+		admin_dead_names.Clear();
+		admin_dead_positions.Clear();
 		admin_recv_ms = 0;
 		admin_prev_recv_ms = 0;
 		admin_seq = 0;
@@ -465,6 +471,34 @@ class BattleRoyaleRPC
 
 		admin_recv_ms = GetGame().GetTime();
 		admin_seq = admin_seq + 1;
+	}
+
+	//! Names and death positions of every body worth tagging, for the admin overlay (#278).
+	//!
+	//! Positions are where each player FELL and never move afterwards - see the docblock on
+	//! BattleRoyaleSpectators.PushAdminDeadList for why the live corpse position would be wrong. No
+	//! uids and no party indices: a dead player's team is not actionable, and the wire carries the
+	//! minimum either way.
+	//!
+	//! Append-only and pushed on change, so unlike admin_positions there is nothing to interpolate
+	//! and no previous sample to keep.
+	ref array<string> admin_dead_names;
+	ref array<vector> admin_dead_positions;
+
+	void SetAdminDeadList(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<array<string>, array<vector>> dead_data;
+		if( !ctx.Read( dead_data ) )
+		{
+			ReadFailed("SetAdminDeadList");
+			return;
+		}
+
+		if( type != CallType.Client )
+			return;
+
+		admin_dead_names.Copy( dead_data.param1 );
+		admin_dead_positions.Copy( dead_data.param2 );
 	}
 
 	void SetSpectateOffer(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
