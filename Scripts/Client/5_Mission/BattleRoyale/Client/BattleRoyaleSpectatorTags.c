@@ -261,20 +261,35 @@ class BattleRoyaleSpectatorTags
         ApplyRow(slot, br_rpc, uid, distance, highlight_uid);
     }
 
-    //! Text, health bar and colour for one row.
+    /**
+     *  Text, health bar and colour for one row.
+     *
+     *  ⚠ EVERY ARRAY READ IS ON ITS OWN LINE, ABOVE THE CALL THAT CONSUMES IT. An array read sharing
+     *  an expression with a call has been measured in this codebase to return ANOTHER ARRAY'S
+     *  contents entirely - see BattleRoyaleZone, where `a_AllowRadius.Get(i+1) + GetStepReach(i+1)`
+     *  silently handed back a_StaticSizes. Four reads here were previously inlined as call arguments,
+     *  which is exactly that shape; none was ever observed misbehaving, but the failure texture is
+     *  "wrong and plausible" rather than a crash, so it would not have been.
+     */
     protected void ApplyRow(int slot, BattleRoyaleRPC br_rpc, string uid, float distance, string highlight_uid)
     {
         TextWidget name_widget = m_TagNames.Get(slot);
         if (name_widget)
         {
-            name_widget.SetText(br_rpc.admin_names.Get(slot));
+            string row_name = br_rpc.admin_names.Get(slot);
+            name_widget.SetText(row_name);
 
             //--- The player the camera is following, marked so cycling has visible feedback even in
             //--- FREE mode where the camera is not pointed at them.
             if (uid == highlight_uid && highlight_uid != "")
+            {
                 name_widget.SetColor(BR_SPECTATE_TAG_TARGET_COLOUR);
+            }
             else
-                name_widget.SetColor(SlotColour(br_rpc.admin_slots.Get(slot)));
+            {
+                int row_party = br_rpc.admin_parties.Get(slot);
+                name_widget.SetColor(SlotColour(row_party));
+            }
         }
 
         TextWidget info_widget = m_TagInfos.Get(slot);
@@ -295,7 +310,8 @@ class BattleRoyaleSpectatorTags
         Widget fill = m_TagHealthFills.Get(slot);
         if (fill)
         {
-            float health = Math.Clamp(br_rpc.admin_healths.Get(slot), 0, 1);
+            float row_health = br_rpc.admin_healths.Get(slot);
+            float health = Math.Clamp(row_health, 0, 1);
             fill.SetSize(health, 1.0);
             fill.SetColor(HealthColour(health));
         }
@@ -467,17 +483,21 @@ class BattleRoyaleSpectatorTags
         return whole.ToString() + "." + fraction.ToString() + "km";
     }
 
-    //! Party colour for a slot, or plain white when solo / without the addon.
-    protected int SlotColour(int slot)
+    /**
+     *  Team colour for a party index, or plain white when solo.
+     *
+     *  A one-line delegate, and it stays a named method rather than an inlined call because it is the
+     *  seam that was WRONG: it used to hand a party SLOT to VigridPartyAPI.GetColourForSlot, so every
+     *  party's first member came out amber and the overlay could not answer the only question it
+     *  exists to answer (#276). Keeping the name here keeps that history attached to the call site.
+     *
+     *  No #ifdef VIGRID_PARTY any more. The server already resolves solo to -1 - including for a
+     *  server whose party manager is switched off - so there is nothing left for a Party guard to
+     *  decide, and BattleRoyaleTeamColour names no Party symbol.
+     */
+    protected int SlotColour(int party_index)
     {
-        if (slot < 0)
-            return BR_SPECTATE_TAG_SOLO_COLOUR;
-
-#ifdef VIGRID_PARTY
-        return VigridPartyAPI.GetColourForSlot(slot, 1.0);
-#else
-        return BR_SPECTATE_TAG_SOLO_COLOUR;
-#endif
+        return BattleRoyaleTeamColour.ForParty(party_index, 1.0);
     }
 
     //! Green through amber to red. A ramp rather than tiers, so a bar that is visibly moving reads

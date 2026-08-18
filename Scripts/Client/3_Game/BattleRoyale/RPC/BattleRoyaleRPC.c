@@ -38,7 +38,7 @@ class BattleRoyaleRPC
 		admin_prev_positions = new array<vector>();
 		admin_healths = new array<float>();
 		admin_kills = new array<int>();
-		admin_slots = new array<int>();
+		admin_parties = new array<int>();
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
@@ -174,7 +174,7 @@ class BattleRoyaleRPC
 		admin_prev_positions.Clear();
 		admin_healths.Clear();
 		admin_kills.Clear();
-		admin_slots.Clear();
+		admin_parties.Clear();
 		admin_recv_ms = 0;
 		admin_prev_recv_ms = 0;
 		admin_seq = 0;
@@ -402,7 +402,10 @@ class BattleRoyaleRPC
 	ref array<vector> admin_prev_positions;
 	ref array<float> admin_healths;
 	ref array<int> admin_kills;
-	ref array<int> admin_slots;
+	//! Match-local PARTY index per player, -1 for solo. Resolved to a colour client-side by
+	//! BattleRoyaleTeamColour.ForParty. Was the party SLOT index until #276 - see the docblock on
+	//! BattleRoyaleSpectators.AdminListPartyIndexOf for why the two are not interchangeable.
+	ref array<int> admin_parties;
 	int admin_recv_ms = 0;
 	int admin_prev_recv_ms = 0;
 	int admin_seq = 0;
@@ -452,7 +455,7 @@ class BattleRoyaleRPC
 		admin_positions.Copy( data.param3 );
 		admin_healths.Copy( data.param4 );
 		admin_kills.Copy( data.param5 );
-		admin_slots.Copy( data.param6 );
+		admin_parties.Copy( data.param6 );
 
 		//--- A roster that changed LENGTH cannot be interpolated against the previous one - index i
 		//--- is a different player now - so drop the old sample rather than lerping between two

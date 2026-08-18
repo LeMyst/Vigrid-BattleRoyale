@@ -145,6 +145,14 @@ class BattleRoyaleSpectators
     protected int m_NextAudienceMs;
     protected int m_NextAudienceKeepaliveMs;
 
+    //! Party id -> the team colour index that party holds for this match, assigned first-seen.
+    //!
+    //! Never cleared mid-match, and that IS the feature: a colour must not move under an admin who
+    //! is using it to read a fight. The process restarts between matches (9_BattleRoyaleRestart),
+    //! so there is nothing to reset - the map dies with the object. Bounded by the number of parties,
+    //! which is bounded by half the player cap.
+    protected ref map<string, int> m_PartyColourIndex;
+
     //! Which tier the LAST ResolveTarget call returned from. Written at every one of its five exits
     //! and read by the caller on the very next line, so it is a return value in all but name - a
     //! second out-parameter would have to be threaded through three call sites for a field nothing
@@ -161,6 +169,7 @@ class BattleRoyaleSpectators
         m_NextAdminListMs = 0;
         m_Ended = false;
         m_AudienceSent = new map<string, int>();
+        m_PartyColourIndex = new map<string, int>();
         m_NextAudienceMs = 0;
         m_NextAudienceKeepaliveMs = 0;
         m_LastResolveTier = 0;
@@ -2346,7 +2355,7 @@ class BattleRoyaleSpectators
         array<vector> positions = new array<vector>();
         array<float> healths = new array<float>();
         array<int> kills = new array<int>();
-        array<int> slots = new array<int>();
+        array<int> parties = new array<int>();
 
         int count = roster.Count();
         int i = 0;
@@ -2377,7 +2386,7 @@ class BattleRoyaleSpectators
             positions.Insert(candidate.GetPosition());
             healths.Insert(candidate.GetHealth01("", "Health"));
             kills.Insert(candidate.br_kills);
-            slots.Insert(AdminListSlotOf(candidate));
+            parties.Insert(AdminListPartyIndexOf(candidate));
         }
 
         int spectators = m_Spectators.Count();
@@ -2393,7 +2402,7 @@ class BattleRoyaleSpectators
             if (!identity)
                 continue;
 
-            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", new Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>>(uids, names, positions, healths, kills, slots), true, identity);
+            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", new Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>>(uids, names, positions, healths, kills, parties), true, identity);
         }
     }
 
@@ -2579,13 +2588,51 @@ class BattleRoyaleSpectators
         return true;
     }
 
-    //! Party slot for the overlay's colour, or -1 without the addon / without a party.
-    //! GetMemberIndex is join-ordered and never reshuffled, so a player keeps their colour for the
-    //! whole match - which is the property the overlay needs and the reason not to derive one here.
-    protected int AdminListSlotOf(PlayerBase player)
+    /**
+     *  Match-local index of this player's PARTY, for the overlay's team colour. -1 means solo.
+     *
+     *  ⚠ THIS USED TO BE GetMemberIndex, AND THAT WAS THE BUG (#276). GetMemberIndex is the player's
+     *  slot INSIDE their own party - 0 for the leader, 1 for the second to join - so every party's
+     *  first member came out the same colour and the overlay answered "which of my teammates is
+     *  that" to somebody who is in none of the parties. The question an admin asks is "are those two
+     *  on the same side", which needs an index over PARTIES, not over members.
+     *
+     *  KEYED ON THE PARTY ID, NOT ON A POSITION IN ANY LIST. The obvious alternative - walk
+     *  VigridPartyAPI.GetGroups(roster) and use the group's position - re-partitions the living
+     *  population every push, so a team's colour would change the moment somebody in an earlier
+     *  group died. GetPartyId is a stable string for the life of the party, and the first-seen order
+     *  recorded in m_PartyColourIndex is fixed for the whole match by construction.
+     *
+     *  A party reduced to ONE living member keeps its colour. They do have a team - they are the
+     *  last of it - and dropping them to neutral mid-match would make a colour blink out at exactly
+     *  the moment an admin is watching that fight.
+     *
+     *  IsReady() rather than #ifdef VIGRID_PARTY alone: the addon ships in this repo, so the #else
+     *  arm is dead on every real server, but party_settings.json can still switch the manager off -
+     *  in which case every player is correctly solo and the whole overlay goes neutral. This is the
+     *  #158 rule; the guard LOOKS like it covers the case and does not.
+     */
+    protected int AdminListPartyIndexOf(PlayerBase player)
     {
 #ifdef VIGRID_PARTY
-        return VigridPartyAPI.GetMemberIndex(player);
+        if (!VigridPartyAPI.IsReady())
+            return -1;
+
+        string party_id = VigridPartyAPI.GetPartyId(player);
+        if (party_id == "")
+            return -1;
+
+        if (!m_PartyColourIndex)
+            m_PartyColourIndex = new map<string, int>();
+
+        if (m_PartyColourIndex.Contains(party_id))
+            return m_PartyColourIndex.Get(party_id);
+
+        int assigned = m_PartyColourIndex.Count();
+        m_PartyColourIndex.Insert(party_id, assigned);
+
+        BattleRoyaleUtils.Debug(string.Format("[Spectate] Party %1 takes team colour index %2", party_id, assigned));
+        return assigned;
 #else
         return -1;
 #endif
