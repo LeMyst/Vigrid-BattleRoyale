@@ -81,6 +81,7 @@ modded class PluginDiagMenu
 	protected int m_BRDiagPartyOnlineCountID;
 	protected int m_BRDiagPartyOnlineApplyID;
 	protected int m_BRDiagPartyInviteMeID;
+	protected int m_BRDiagPartyNotifyID;
 	protected int m_BRDiagPartyOfflineID;
 	protected int m_BRDiagPartyPingID;
 	protected int m_BRDiagPartyClearID;
@@ -174,6 +175,7 @@ modded class PluginDiagMenu
 		m_BRDiagPartyOnlineCountID = GetModdedDiagID();
 		m_BRDiagPartyOnlineApplyID = GetModdedDiagID();
 		m_BRDiagPartyInviteMeID = GetModdedDiagID();
+		m_BRDiagPartyNotifyID = GetModdedDiagID();
 		m_BRDiagPartyOfflineID = GetModdedDiagID();
 		m_BRDiagPartyPingID = GetModdedDiagID();
 		m_BRDiagPartyClearID = GetModdedDiagID();
@@ -349,6 +351,7 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterRange(m_BRDiagPartyOnlineCountID, "", "Fake Online Players", m_BRDiagPartyMenuID, "0, 60, 20, 1");
 				DiagMenu.RegisterBool(m_BRDiagPartyOnlineApplyID, "", "Apply Fake Online", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyInviteMeID, "", "Fake Incoming Invite", m_BRDiagPartyMenuID);
+				DiagMenu.RegisterBool(m_BRDiagPartyNotifyID, "", "Fake Notifications", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyOfflineID, "", "Toggle Member Offline", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyPingID, "", "Add Fake Ping", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyClearID, "", "Clear Fakes", m_BRDiagPartyMenuID);
