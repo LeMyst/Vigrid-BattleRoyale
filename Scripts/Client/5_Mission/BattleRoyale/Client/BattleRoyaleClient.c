@@ -50,6 +50,12 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected bool b_SkeletonOverlay;
     protected int m_NextSkeletonDiagMs;
 
+    //--- Is this spectator sitting in the watched player's head rather than over their shoulder?
+    //--- OURS AND ONLY OURS - the server is never told, because nothing it owns changes. Pushed to the
+    //--- camera every frame beside SetTarget, and cleared in LeaveSpectate so a later session starts
+    //--- in third person rather than in whatever the last one ended in.
+    protected bool b_FirstPerson;
+
     //--- Whether the out-of-zone tint is currently running via the requester directly, which is the
     //--- spectator path. Edge-tracked because PPERequesterBase.Stop() walks the whole request
     //--- structure and queues a manager pass - it must not be called every frame. The LIVING player
@@ -903,6 +909,12 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- Shared with the zone logic, so the camera and the tint always agree on the subject.
         Object target = ResolveSpectateSubject( br_rpc );
 
+        //--- Pushed every frame rather than on the toggle edge, for the same reason SetTarget is: the
+        //--- camera is created by the engine and this is the one place that is guaranteed to be
+        //--- holding a live reference to it. A press that landed while it did not exist would
+        //--- otherwise be lost with nothing to say so.
+        camera.SetFirstPerson( b_FirstPerson );
+
         camera.SetTarget( target, br_rpc.spectate_target_uid, br_rpc.spectate_target_pos, br_rpc.spectate_mode );
     }
 
@@ -1310,6 +1322,11 @@ class BattleRoyaleClient: BattleRoyaleBase
         if( b_SkeletonOverlay )
             SetSkeletonOverlay( false );
 
+        //--- Back to third person for the next session. The camera object outlives an admin's toggle
+        //--- in and out, so a flag left set here would put them back inside somebody's head without
+        //--- having pressed anything.
+        b_FirstPerson = false;
+
         if( GetGame().GetUIManager() )
             GetGame().GetUIManager().ShowUICursor( false );
     }
@@ -1449,6 +1466,50 @@ class BattleRoyaleClient: BattleRoyaleBase
             return;
 
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", new Param1<int>( direction ), true );
+    }
+
+    /**
+     *  Space. Flip between the over-the-shoulder camera and sitting in the watched player's head.
+     *
+     *  THE ONLY SPECTATE KEY THAT IS NOT ADMIN-GATED, and the second with no server half at all.
+     *  #288 asks for it for a dead player as well as an admin, and there is nothing here to
+     *  authorise: the camera is client-owned, the eye offset is client-side geometry, and the server
+     *  tracks nothing that changes. Compare F6, which is also client-only but is an admin tool by
+     *  what it reveals; this one reveals strictly less than the camera already showed.
+     *
+     *  IT DELIBERATELY ADDS NO HUD. #288 asks for first person to look like third person does, and
+     *  third person shows nothing: EnterSpectate hid the vanilla HUD and nothing here brings it back.
+     *  Rendering the watched player's vitals would also be a live feed of an opponent's blood and
+     *  health to anyone who died - which is a different feature, and a much less innocent one.
+     *
+     *  Only FOLLOW has a head to sit in, so the other two modes get an answer rather than a key that
+     *  silently does nothing - the failure mode this codebase keeps rediscovering.
+     */
+    void SpectateToggleView()
+    {
+        if( !IsSpectating() )
+            return;
+
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc )
+            return;
+
+        //--- Tested against the mode the SERVER last pushed, exactly like AdminSpectateCycleMode -
+        //--- there is no locally-toggled copy of it to drift.
+        if( br_rpc.spectate_mode != BR_SPECTATE_MODE_FOLLOW )
+        {
+            NotifyLocal( "#STR_BR_SPECTATE_VIEW_UNAVAILABLE" );
+            return;
+        }
+
+        b_FirstPerson = !b_FirstPerson;
+
+        if( b_FirstPerson )
+            NotifyLocal( "#STR_BR_SPECTATE_VIEW_FIRST" );
+        else
+            NotifyLocal( "#STR_BR_SPECTATE_VIEW_THIRD" );
+
+        BattleRoyaleUtils.Info("[Spectate] First person " + b_FirstPerson);
     }
 
     /**

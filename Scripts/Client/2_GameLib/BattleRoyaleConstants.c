@@ -598,6 +598,73 @@ static const float BR_SPECTATE_POS_DAMP = 8.0;
 //beyond this distance the camera teleports instead of interpolating, so a retarget across the map
 //does not fly the camera over the terrain. Metres.
 static const float BR_SPECTATE_SNAP_DISTANCE = 30.0;
+//--- FIRST PERSON (#288). A purely LOCAL view preference: the camera is client-owned, every offset
+//--- below is client-side geometry, and nothing the server tracks changes - so this is the SECOND
+//--- spectate key with no server half, alongside the skeleton overlay, and the only one of the set
+//--- that is not admin-gated. A dead player watching their killer gets it too.
+//---
+//--- It applies in FOLLOW mode only. ORBIT is circling the final circle with no target to sit inside,
+//--- and FREE is a camera the admin is already flying by hand.
+//---
+//--- Eye offset from the target's HEAD BONE, in the BONE'S OWN FRAME - up along bone axis 0, forward
+//--- along bone axis 1 (the axes measured in BattleRoyaleSpectatorCamera.ResolveHeadLook).
+//---
+//--- THESE ARE VANILLA'S NUMBERS, not tuned ones. DayZPlayerCamera1stPerson sets
+//--- m_OffsetLS = "0.04 0.04 0" with the comment "x - up, y - forward" and applies it as the
+//--- translation of the camera transform against m_iDirectBone = Head (dayzplayercamera1stperson.c:20
+//--- and :50-53). The first build instead pushed 0.22 m along the camera's WORLD yaw from the bone
+//--- origin, which is both five times too far and in the wrong frame - so the eye sat in front of the
+//--- face rather than where the player's own camera is, and the perspective was visibly not theirs.
+static const float BR_SPECTATE_FP_OFFSET_UP = 0.04;
+static const float BR_SPECTATE_FP_OFFSET_FORWARD = 0.04;
+//near plane while in first person, again vanilla's own figure for this exact camera
+//(dayzplayercamera1stperson.c:58, "0.07 default"). An eye 4 cm from a head needs it: at the engine
+//default the character's own skull clips through the view.
+static const float BR_SPECTATE_FP_NEAR_PLANE = 0.04;
+//and what to put back for the third-person boom. Vanilla names 0.07 as the default in the same line
+//it overrides it, so this restores the engine's own value rather than inventing one.
+static const float BR_SPECTATE_NEAR_PLANE_DEFAULT = 0.07;
+//point the first-person view down the target's WEAPON BARREL when the weapon is up, instead of down
+//their head bone.
+//
+//THIS IS A PvP CORRECTNESS REQUIREMENT, not a polish item. The head bone is where a character is
+//anatomically looking, which is a few degrees off where the gun points - so a spectator sees a player
+//shoot a wall and kill somebody beside it. The centre of the spectator's screen has to be the centre
+//of the player's. The barrel comes from the weapon's own render transform, which is replicated, so it
+//works for a REMOTE target where every aim accessor does not.
+//
+//⚠️ The route this replaced - GetCommandModifier_Weapons().GetBaseAimingAngleLR/UD, what vanilla
+//itself composes a world aim from - is MEASURED DEAD for a remote entity on a client: a build that
+//preferred it logged `source=bone` on every sample on 2026-08-18. Do not re-add it.
+static const bool BR_SPECTATE_FP_USE_WEAPON_AIM = true;
+//how closely the barrel must agree with the head before it is believed, as a dot product. A LOWERED
+//weapon points at the floor while the player looks at the horizon, so following it unconditionally
+//would be far worse than the head; the two only line up when the weapon is actually raised, which is
+//also the only moment the precision matters. 0.97 is about 14 degrees.
+//
+//The agreement IS the raised test, deliberately - it is self-correcting (the barrel can only ever be
+//adopted when it is already nearly where the spectator was looking) and it avoids IsRaised() /
+//GetMovementState(), whose behaviour for a remote entity on a client is unmeasured here.
+static const float BR_SPECTATE_FP_AIM_MIN_DOT = 0.97;
+//first-person smoothing rate, for the eye position AND the look angles.
+//
+//5.0 IS COMMUNITY-ONLINE-TOOLS' OWN FIGURE for its observer camera (CAMERA_FOV_SPEED_MODIFIER), and
+//it is used here because the eye is now smoothed the way theirs is - in the TARGET'S MODEL SPACE, so
+//that head bob is damped away while the character's travel through the world is followed with no lag
+//at all. See BattleRoyaleSpectatorCamera.ResolveEyePosition. The first build was rigid and the second
+//damped at 20 in world space; both reproduced every stride faithfully, which was the complaint.
+static const float BR_SPECTATE_FP_SMOOTH = 5.0;
+//hide the watched character's head while sitting in it. Vanilla can use a 4 cm eye offset because in
+//first person it draws the LOCAL player's headless model; a spectator sees a remote character drawn
+//in full, so without this the view is the inside of their skull. Uses COT's SetHeadInvisible, which
+//also covers Headgear, Mask and Eyewear. Set false if it ever misbehaves - the fallback is the
+//inside-the-head view, so this is a switch for diagnosis rather than a supported configuration.
+static const bool BR_SPECTATE_FP_HIDE_HEAD = true;
+//first-person pitch limits. Vanilla DayZPlayerCamera1stPerson clamps its own up/down look to +/-85
+//(CONST_UD_MIN / CONST_UD_MAX, dayzplayercamera1stperson.c:6-7); matching it means a head bone caught
+//mid-ragdoll cannot roll the view past vertical.
+static const float BR_SPECTATE_FP_PITCH_MIN = -85.0;
+static const float BR_SPECTATE_FP_PITCH_MAX = 85.0;
 //the no-target fallback: a slow orbit of the current play area centre.
 static const float BR_SPECTATE_ORBIT_RADIUS = 120.0;
 static const float BR_SPECTATE_ORBIT_HEIGHT = 60.0;

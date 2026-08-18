@@ -608,6 +608,97 @@ but without it the chain is five deep and only inferable from who you end up wat
 very next line; it is a return value in all but name, so **never read it anywhere but immediately
 after a `ResolveTarget` call**.
 
+#### First person
+
+**Space** flips the spectator camera between the over-the-shoulder boom and sitting in the watched
+player's head. `BattleRoyaleClient.SpectateToggleView` → `BattleRoyaleSpectatorCamera.SetFirstPerson`,
+pushed every frame beside `SetTarget`.
+
+⚠️ **UNFINISHED AS OF 2026-08-18 — the view is still not the player's view, and #288 is not closed.**
+Four builds were tested live and rejected; the toggle, the FOV, the head hiding and the bob are all
+addressed, but the *aim* still does not match what the player sees, which for a PvP game is the whole
+point of the feature (a spectator watching someone shoot a wall and score a kill). **Do not treat the
+list below as a design that works — treat it as the measurements that any next attempt must not
+re-derive.** The known-wrong approaches are recorded here precisely because three of them looked
+right on paper.
+
+**What is measured and settled** (do not re-litigate any of these):
+
+| Question | Answer | How |
+|---|---|---|
+| Which head bone axis is forward? | `GetBoneTransformWS` index **1** (0 is up, 2 is right) | measured here (body_yaw 17.647 → axis 1 `<0.3307,-0.0202,0.9435>` → atan2 19.3°), and COT uses `headTransform[1]` independently |
+| `Math3D.QuatToAngles` on that bone? | **Unusable** — first component runs ~90° off body yaw | same run; per-bone rigging, cf. vanilla's 325/245/290 for `LeftHand_Dummy` |
+| `GetCommandModifier_Weapons()` on a remote entity, client-side? | **NULL** | a build preferred it and logged `source=bone` on every sample |
+| Why is the spectator FOV wrong? | a bare `Camera` runs at the engine's 0.5236 rad default; vanilla's player cameras use `GetUserFOV()` | `plugincharplacement.c:15` / `dayzplayercamera_base.c:323` |
+| Why is the eye inside the skull? | vanilla's 4 cm offset works because first person draws the **headless** local model; a remote character is drawn in full | COT hides it with `SetHeadInvisible` |
+| Why does it bob? | the head bone carries animation swing; vanilla's camera takes **position** from the bone but **orientation** from input angles, never the bone | `dayzplayercamera1stperson.c:44-53` |
+
+**Wrong turns, each of which cost a build:** a 22 cm eye offset along *world* yaw (wrong frame and an
+order of magnitude too far — this is what made the perspective read as "not the player's camera");
+world-space position damping (cannot separate bob from travel, so it either bobs or drags); and the
+aim-angle route above.
+
+**Techniques taken from COT** (called or reproduced, never copied — CC BY-SA 4.0 against this repo's
+DSPL-SA, same position as `JMESPSkeleton`): smoothing the eye in the target's **model space**
+(`InvMultiply4` → lerp → `Multiply4`, their comment: *"Interpolate in model space so camera sticks to
+character"*, rate 5.0), hiding the head via `SetHeadInvisible`, and deriving aim from the weapon's
+`konec hlavne` → `usti hlavne` memory points.
+
+**Where it was left:** aim points down the weapon barrel when the barrel agrees with the head within
+`BR_SPECTATE_FP_AIM_MIN_DOT` (~14°), head bone otherwise. Still rejected on test. The next lead is
+that the barrel is the *weapon's* direction, not the *camera's* — DayZ offsets the weapon from the
+eye line, so matching the player's crosshair likely needs the sight/`"eye"` memory point and its
+direction rather than the muzzle pair, or a route to the remote player's actual camera angles that
+this session did not find. **Instrument before building: log the candidate direction against where
+the target's shots actually land.**
+
+- **No server half, and no admin gate** — the only spectate key with neither. The camera is
+  client-owned, the eye offset is client-side geometry, and nothing the server tracks changes, so
+  there is nothing to replicate and nothing to authorise. A dead player watching their killer gets it
+  as well as an admin. Compare F6, which is also client-only but is an admin tool by what it *reveals*;
+  this reveals strictly less than the camera already showed.
+- **FOLLOW only.** ORBIT has no target to sit inside and FREE is a camera the admin is flying by
+  hand, so the key answers with a notification in those two rather than doing nothing silently. The
+  *request* survives a mode change (`m_FirstPerson` vs `IsFirstPersonActive()`), so an admin who flips
+  out to the free camera and back lands in the view they left. It is cleared in `LeaveSpectate`.
+- **Rigid, and it skips both of the third-person corrections.** No positional damping — the view would
+  swim inside the character's own head — and no `SurfaceY` floor clamp, which would shove the camera
+  up out of a **prone** target's skull the moment their eyes sat below `BR_SPECTATE_FLOOR_CLEARANCE`.
+  No collision trace either: 22 cm off a head bone has nothing to hit that the body is not already
+  standing in, and a trace would collapse the eye onto the target every frame.
+- **It adds no HUD**, which is what #288 asked for. Rendering the watched player's vitals would also
+  hand anyone who died a live feed of an opponent's blood and health — a different feature, and a much
+  less innocent one.
+- **The look comes from the target's HEAD BONE, and the axis was measured rather than guessed.** The
+  first build shipped body yaw with a level pitch plus a probe, because the bone's axis convention is
+  per-bone *rigging* and is not derivable from the source — vanilla's own consumer of
+  `GetBoneRotationWS` (`P:\scripts\5_mission\gui\cameratools\cameratoolsmenu.c:614`) swizzles the
+  components and adds 325/245/290° for `LeftHand_Dummy`. The run on 2026-08-18 answered it: of the
+  three basis vectors from `Math3D.QuatToMatrix`, **axis 0 is world up, axis 1 is the head's forward
+  vector, axis 2 is its right.** With the target still at `body_yaw 17.647`, axis 1 read
+  `<0.3307, -0.0202, 0.9435>` → `atan2` 19.3°, i.e. body heading plus a small head turn; it tracked
+  across the full yaw circle over ten samples. `ResolveHeadLook` therefore takes yaw from
+  `Atan2(x, z)` and pitch from `Asin(y)`, clamped to vanilla's own ±85.
+- ⚠️ **`Math3D.QuatToAngles` is deliberately NOT used, and the same run is why** — its first component
+  ran a consistent ~90° off the body yaw (109.4 vs 17.6, 151.7 vs 57.2, −86.1 vs −172.9), which is
+  exactly that rigging offset. Read the **matrix basis vector** instead: a direction needs no
+  correction and cannot silently rot. `GetCommandModifier_Weapons()` is not an option either — every
+  call site in `P:\scripts` reads it on the **local** player, and it can be NULL for a remote entity,
+  which silently flattens the camera. That is still why the third-person boom's `BR_SPECTATE_PITCH`
+  is a constant.
+- **Damping is near-rigid (`BR_SPECTATE_FP_LOOK_DAMP`, 20 against third person's 6), and applies to
+  pitch as well as yaw.** It is no longer hiding a defect in the source — body yaw *snaps in steps*
+  and needed heavy damping, a head bone does not — it only absorbs a **remote** entity's bones
+  advancing at network rate rather than frame rate.
+- ⚠️ **`SetFOV` — a bare `Camera` runs at the engine's default scene FOV (0.5236 rad / 30°, named in
+  `plugincharplacement.c:15`), while both of vanilla's player cameras run at `GetUserFOV()` via
+  `StdFovUpdate` → `GetFOVByZoomType(NONE)`.** Never calling it gave the spectator a permanently
+  tighter view than the player being watched — reported against the first build. `ApplyFieldOfView`
+  fixes it **in both modes**, because the `Camera` is one object with one FOV, so third person was
+  equally wrong and merely had nothing to be compared against. Both units are radians already
+  (`camera.c:63-67`; vanilla passes one straight to the other at `plugincharplacement.c:66`), so
+  there is no conversion. No restore is needed — the camera object does not outlive the session.
+
 #### Admin spectate
 
 A second, separate session type on the same machinery: a free camera, target cycling, and a
@@ -914,7 +1005,7 @@ The `stringtable` check (`Tools/Checks/stringtable.py`, via `Workbench/Batchfile
 
 Layouts live in `GUI/layouts/`. The dominant pattern is imperative — `GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/....layout")` then `FindAnyWidget("Name")`; most layouts have no `scriptclass`. `SpawnSelectionMenu` is a `UIScriptedMenu` (`MENU_SPAWN_SELECTION = 75` in `Scripts/Client/3_Game/Constants.c`, instantiated in `MissionBase.CreateScriptedMenu`). The only declarative `scriptclass` binding is the COT `master_controls.layout` → `BRMasterControlsForm`.
 
-Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2, `UADayZBRLeaderboard` = F4, plus the admin-spectate set `UADayZBRAdminSpectate` = F3, `UADayZBRSpectateMode` = F5, `UADayZBRSpectateNext`/`Prev` = →/←, `UADayZBRSpectateSkeleton` = F6), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`. The admin keys are refused server-side for anyone outside `admins_steamid64`, so the client-side check on them is presentation only — **except F6, which has no server half at all** and is gated by COT's own `ESP.View` permission instead (see *Spectating → Admin spectate*).
+Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2, `UADayZBRLeaderboard` = F4, `UADayZBRSpectateView` = Space, plus the admin-spectate set `UADayZBRAdminSpectate` = F3, `UADayZBRSpectateMode` = F5, `UADayZBRSpectateNext`/`Prev` = →/←, `UADayZBRSpectateSkeleton` = F6), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`. The admin keys are refused server-side for anyone outside `admins_steamid64`, so the client-side check on them is presentation only — **except F6, which has no server half at all** and is gated by COT's own `ESP.View` permission instead (see *Spectating → Admin spectate*). **Space is the one spectate key that is not admin-gated at all** (see *Spectating → First person*).
 
 #### Lobby name tags
 
