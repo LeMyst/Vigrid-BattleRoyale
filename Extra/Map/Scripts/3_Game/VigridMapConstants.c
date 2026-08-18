@@ -276,10 +276,19 @@ static const float VIGRID_MAP_ADMIN_NAME_GAP_PX = 3.0;
 static const float VIGRID_MAP_ADMIN_NAME_W = 120.0;
 static const float VIGRID_MAP_ADMIN_NAME_H = 16.0;
 
-//--- Names are hidden below this zoom. At a wide zoom sixty labels overlap into an unreadable smear
-//--- and the glyphs alone carry the picture; the names come back as soon as the admin zooms into the
-//--- fight they care about. The glyphs themselves are never hidden.
-static const float VIGRID_MAP_ADMIN_NAME_MIN_SCALE = 0.14;
+//--- Names are hidden when zoomed OUT past this. Sixty labels at map-wide zoom overlap into an
+//--- unreadable smear and the glyphs alone carry the picture; the names come back as the admin zooms
+//--- into the fight they care about. The glyphs themselves are never hidden.
+//---
+//--- ⚠️ SCALE RUNS 0 (FULLY ZOOMED IN) TO 1 (FULLY OUT) - see VIGRID_MAP_DEF_SCALE above. So this is
+//--- a MAXIMUM and the test is `scale <= this`, which reads backwards until you remember that a
+//--- BIGGER number is LESS detail. Written as `>=` first time round, which hid the labels at exactly
+//--- the zoom an admin actually uses and showed them only when zoomed out to the whole map - i.e.
+//--- inverted on both halves at once, and silent, because the glyphs kept drawing either way.
+//---
+//--- 0.35 against a 0.20 default open and vanilla's own 0.33: names are up when the map opens and
+//--- stay up all the way in, and only go when the admin pulls back past roughly a third of the map.
+static const float VIGRID_MAP_ADMIN_NAME_MAX_SCALE = 0.35;
 
 //--- Throttle on the one funnel diagnostic this layer emits. It runs at the team layer's 10 Hz, so
 //--- without a throttle it would be six hundred lines a minute for as long as a map is open.

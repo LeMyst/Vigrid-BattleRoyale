@@ -1009,7 +1009,11 @@ class VigridMapMenu extends UIScriptedMenu
         //--- Names off at a wide zoom. Sixty labels at map-wide scale overlap into a smear that hides
         //--- the terrain and tells the admin nothing; the glyphs alone carry the picture until they
         //--- zoom into the fight they care about. The glyphs are never suppressed.
-        bool want_names = m_MapWidget.GetScale() >= VIGRID_MAP_ADMIN_NAME_MIN_SCALE;
+        //---
+        //--- ⚠️ `<=`, NOT `>=`. Scale is 0 fully zoomed IN and 1 fully OUT, so a bigger number means
+        //--- less detail and the threshold is a MAXIMUM. The first version had this backwards and
+        //--- silently hid every label at the zoom an admin actually uses.
+        bool want_names = m_MapWidget.GetScale() <= VIGRID_MAP_ADMIN_NAME_MAX_SCALE;
 
         //--- Shown BEFORE any row is measured. A child of a hidden parent can report a zero screen
         //--- size, and PlaceAdminName derives both of its offsets from that size - so measuring first
@@ -1170,6 +1174,10 @@ class VigridMapMenu extends UIScriptedMenu
         line = line + " labelled=" + labelled.ToString();
         line = line + " offscreen=" + offscreen.ToString();
         line = line + " wantnames=" + want_names.ToString();
+        //--- The SCALE itself, not just the verdict it produced. Without it "wantnames=false" says a
+        //--- gate fired but not whether the threshold or the COMPARISON was wrong - which is exactly
+        //--- the ambiguity that cost this feature a build.
+        line = line + " scale=" + m_MapWidget.GetScale().ToString();
         line = line + " pool=" + m_AdminNameRows.Count().ToString();
         line = line + " layer=" + (m_AdminNameLayer != NULL).ToString();
 
