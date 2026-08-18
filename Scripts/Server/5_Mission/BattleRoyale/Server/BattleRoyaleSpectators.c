@@ -135,6 +135,16 @@ class BattleRoyaleSpectators
     protected int m_NextAdminListMs;
     protected bool m_Ended;
 
+    //! Watched uid -> the audience count last PUSHED to that player (#285).
+    //!
+    //! It exists for one reason: PushAudienceCounts is a RECOMPUTE, so it can see who has an
+    //! audience but not who has just STOPPED having one. A uid that falls out of the tally is a
+    //! player who needs a zero, and without this map there is nothing left to notice that - they
+    //! would sit on a stale number for the rest of the match.
+    protected ref map<string, int> m_AudienceSent;
+    protected int m_NextAudienceMs;
+    protected int m_NextAudienceKeepaliveMs;
+
     //! Which tier the LAST ResolveTarget call returned from. Written at every one of its five exits
     //! and read by the caller on the very next line, so it is a return value in all but name - a
     //! second out-parameter would have to be threaded through three call sites for a field nothing
@@ -150,6 +160,9 @@ class BattleRoyaleSpectators
         m_NextCarryMs = 0;
         m_NextAdminListMs = 0;
         m_Ended = false;
+        m_AudienceSent = new map<string, int>();
+        m_NextAudienceMs = 0;
+        m_NextAudienceKeepaliveMs = 0;
         m_LastResolveTier = 0;
     }
 
@@ -846,6 +859,24 @@ class BattleRoyaleSpectators
 
     void Tick()
     {
+        //--- (0) THE AUDIENCE COUNTER, and it sits ABOVE the two early returns below DELIBERATELY.
+        //--- Each of them swallows exactly the transition that matters most:
+        //---
+        //---   m_Spectators.Count() == 0  is the LAST spectator leaving - the one moment the player
+        //---                              being watched has to be told zero. Below the guard, the
+        //---                              count could be raised and never lowered.
+        //---   m_Ended                    EndAll() clears the table, so at match end everybody's
+        //---                              audience really is zero. Below the guard, the winner holds
+        //---                              "12 watching" over the win screen for the rest of the
+        //---                              session.
+        //---
+        //--- Nothing else has to change for either case: EndAll() empties m_Spectators, so the tally
+        //--- simply comes back empty and the drain half of the pass pushes the zeros.
+        //---
+        //--- Self-throttled, and once its sent-map has drained the entire cost per tick is one time
+        //--- comparison and two Count() calls.
+        PushAudienceCounts();
+
         if (m_Ended)
             return;
         if (m_Spectators.Count() == 0)
@@ -2366,6 +2397,188 @@ class BattleRoyaleSpectators
         }
     }
 
+    //------------------------------------------------------------------------------------------
+    //--- Audience counter (#285)
+    //------------------------------------------------------------------------------------------
+
+    /**
+     *  Tell each watched player how many people are currently watching them.
+     *
+     *  A RECOMPUTE, not an increment, and that is the whole design. The count is a many-to-one
+     *  aggregate, so it moves on far more than add and remove: a Retarget shifts one spectator and
+     *  changes TWO players' counts with no entry added or dropped, BeginSpectate clears
+     *  pending_enter, and an admin session supersedes an ordinary one. Keeping five mutation sites
+     *  in step with one derived number is how it would go wrong; rebuilding the tally is
+     *  O(spectators) once a second.
+     *
+     *  Called from the TOP of Tick(), above its two early returns - see the comment there for why
+     *  that position is load-bearing rather than tidy.
+     */
+    protected void PushAudienceCounts()
+    {
+        int now = GetGame().GetTime();
+        if (now < m_NextAudienceMs)
+            return;
+
+        m_NextAudienceMs = now + BR_AUDIENCE_PUSH_MS;
+
+        //--- Nothing to count and nothing outstanding to clear. This is the entire cost of the
+        //--- feature on a match where nobody has died yet, on a server with spectating switched off,
+        //--- and on every tick after the last count has been zeroed out.
+        if (m_Spectators.Count() == 0 && m_AudienceSent.Count() == 0)
+            return;
+
+        //--- Re-assert every value this often even when nothing changed. An edge-only push is
+        //--- invisibly wrong for a client that missed one, which is the lesson the play areas taught
+        //--- when they were edge-only until a reconnect proved otherwise.
+        bool force = false;
+        if (now >= m_NextAudienceKeepaliveMs)
+        {
+            m_NextAudienceKeepaliveMs = now + BR_AUDIENCE_KEEPALIVE_MS;
+            force = true;
+        }
+
+        //--- The admin switch gates the TALLY, not the pass. With it off the tally comes back empty
+        //--- and the drain below pushes everyone a zero, so turning it off mid-match clears the row
+        //--- instead of freezing it on whatever number was last shown.
+        bool enabled = BattleRoyaleConfig.GetConfig().GetGameData().show_spectator_count;
+
+        map<string, int> tally = new map<string, int>();
+        int i = 0;
+        int count = 0;
+
+        if (enabled)
+        {
+            count = m_Spectators.Count();
+            for (i = 0; i < count; i++)
+            {
+                BattleRoyaleSpectatorEntry entry = m_Spectators.GetElement(i);
+                if (!CountsAsAudience(entry))
+                    continue;
+
+                //--- Read into a local before the call that consumes it. Same rule as PushTeamState
+                //--- in the party manager and the aliasing measured in BattleRoyaleZone: a container
+                //--- read nested inside a call has been seen to return another container's contents.
+                string watched = entry.target_uid;
+
+                int running = 0;
+                if (tally.Contains(watched))
+                    running = tally.Get(watched);
+
+                tally.Set(watched, running + 1);
+            }
+        }
+
+        //--- (a) everyone who has an audience right now.
+        count = tally.Count();
+        for (i = 0; i < count; i++)
+        {
+            string watched_uid = tally.GetKey(i);
+            int watchers = tally.GetElement(i);
+
+            if (!force && AlreadySentAudience(watched_uid, watchers))
+                continue;
+
+            //--- Deliberately NOT recorded when the identity failed to resolve, so a client that was
+            //--- mid-drop is retried on the next pass rather than remembered as up to date.
+            if (!SendAudience(watched_uid, watchers))
+                continue;
+
+            m_AudienceSent.Set(watched_uid, watchers);
+        }
+
+        //--- (b) ...and everyone who HAD one and no longer does. Collected first: removing from a map
+        //--- while walking it is the same hazard Tick()'s key copy exists for.
+        array<string> stale = new array<string>();
+        count = m_AudienceSent.Count();
+        for (i = 0; i < count; i++)
+        {
+            string sent_uid = m_AudienceSent.GetKey(i);
+            if (tally.Contains(sent_uid))
+                continue;
+
+            stale.Insert(sent_uid);
+        }
+
+        count = stale.Count();
+        for (i = 0; i < count; i++)
+        {
+            //--- Dropped whether or not the send landed, unlike (a): an identity that no longer
+            //--- resolves is a player who has left, and there is nobody left to correct.
+            string drop_uid = stale.Get(i);
+            SendAudience(drop_uid, 0);
+            m_AudienceSent.Remove(drop_uid);
+        }
+    }
+
+    //! Is this exactly what this player was last told? Split out of the caller so the map read is
+    //! not nested inside the condition consuming it.
+    protected bool AlreadySentAudience(string watched_uid, int watchers)
+    {
+        if (!m_AudienceSent.Contains(watched_uid))
+            return false;
+
+        int previous = m_AudienceSent.Get(watched_uid);
+        return previous == watchers;
+    }
+
+    /**
+     *  Is this spectator part of somebody's audience?
+     *
+     *  Three exclusions, and the first is the point of the whole feature.
+     */
+    protected bool CountsAsAudience(BattleRoyaleSpectatorEntry entry)
+    {
+        if (!entry)
+            return false;
+
+        //--- An ADMIN SESSION is an operator action, not part of the game. Surfacing it would tell a
+        //--- player the exact moment they are being observed, which is the one thing admin spectate
+        //--- must never leak - the same reason the anchor body is carried invisibly and the party
+        //--- hide exists.
+        //---
+        //--- THE TEST IS THE SESSION TYPE, NOT MEMBERSHIP OF admins_steamid64, and that distinction
+        //--- is load-bearing. An admin who competed, died and took ORDINARY spectate is a real
+        //--- audience member watching for the same reason as anybody else; keying on the operator
+        //--- roster would silently uncount them, so the number shown would depend on who is on an
+        //--- admin list rather than on what sessions exist. is_admin is written in exactly one place
+        //--- (BeginAdminSpectate) and means precisely "this is an operator session".
+        if (entry.is_admin)
+            return false;
+
+        //--- Still on the death screen: the camera is not attached, they may press Quit and never
+        //--- watch anybody at all, and target_uid is the PROVISIONAL value OnDeath records for
+        //--- logging, which BeginSpectate re-resolves. Counting it would show an audience of 1 for up
+        //--- to BR_SPECTATE_ENTRY_DELAY_MS and then move it to a different player for no reason
+        //--- visible on either screen.
+        if (entry.pending_enter)
+            return false;
+
+        //--- T5: orbiting the final circle with nobody to follow. There is no one to charge it to,
+        //--- and "" must never enter m_AudienceSent, where it would fail IdentityOfUid for ever.
+        if (entry.target_uid == "")
+            return false;
+
+        return true;
+    }
+
+    /**
+     *  Push one player their own audience count. Returns whether it went out.
+     *
+     *  Per-identity, never broadcast: this is a fact about ONE player and is only ever true for
+     *  them. Only the count goes on the wire - no names and no uids, so a player learns that they
+     *  are being watched without learning who is dead.
+     */
+    protected bool SendAudience(string watched_uid, int watchers)
+    {
+        PlayerIdentity identity = IdentityOfUid(watched_uid);
+        if (!identity)
+            return false;
+
+        GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAudienceCount", new Param1<int>(watchers), true, identity);
+        return true;
+    }
+
     //! Party slot for the overlay's colour, or -1 without the addon / without a party.
     //! GetMemberIndex is join-ordered and never reshuffled, so a player keeps their colour for the
     //! whole match - which is the property the overlay needs and the reason not to derive one here.
@@ -2392,9 +2605,22 @@ class BattleRoyaleSpectators
     {
         int spectators = m_Spectators.Count();
         int deaths = m_DeathOrder.Count();
+        int audiences = m_AudienceSent.Count();
         int i = 0;
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] --- table: %1 spectator(s), %2 death(s), ended=%3", spectators, deaths, m_Ended));
+
+        //--- What each watched player was last TOLD, which is the only view of the audience counter
+        //--- there is: the tally itself is rebuilt and discarded inside every pass. Cross-check it
+        //--- against the number actually on each client's HUD.
+        for (i = 0; i < audiences; i++)
+        {
+            //--- Both reads on their own lines rather than nested in the Format call - the container
+            //--- aliasing shape this repo has measured returning another container's contents.
+            string audience_uid = m_AudienceSent.GetKey(i);
+            int audience_count = m_AudienceSent.GetElement(i);
+            BattleRoyaleUtils.Info(string.Format("[Spectate]   audience %1 = %2", audience_uid, audience_count));
+        }
 
         for (i = 0; i < spectators; i++)
         {

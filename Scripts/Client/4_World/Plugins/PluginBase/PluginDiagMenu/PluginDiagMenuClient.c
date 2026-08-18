@@ -54,6 +54,7 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagHudPlayersID, CBBRDiagHudPlayers);
 		DiagMenu.BindCallback(m_BRDiagHudGroupsID, CBBRDiagHudGroups);
 		DiagMenu.BindCallback(m_BRDiagHudKillsID, CBBRDiagHudKills);
+		DiagMenu.BindCallback(m_BRDiagHudAudienceID, CBBRDiagHudAudience);
 		DiagMenu.BindCallback(m_BRDiagHudCountdownID, CBBRDiagHudCountdown);
 		DiagMenu.BindCallback(m_BRDiagOpenSpawnMenuID, CBBRDiagOpenSpawnMenu);
 		DiagMenu.BindCallback(m_BRDiagOpenLeaderboardID, CBBRDiagOpenLeaderboard);
@@ -254,6 +255,11 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagHudKills(float value)
 	{
 		BattleRoyaleDiag.hud_kills = (int)value;
+	}
+
+	static void CBBRDiagHudAudience(float value)
+	{
+		BattleRoyaleDiag.hud_audience = (int)value;
 	}
 
 	static void CBBRDiagHudCountdown(float value)

@@ -7,12 +7,14 @@ class BattleRoyaleHud
     protected Widget m_GroupCountPanel;
     protected Widget m_ZoneDistancePanel;
     protected Widget m_KillCountPanel;
+    protected Widget m_AudienceCountPanel;
     protected Widget m_CountdownPanel;
 
     protected TextWidget m_PlayerTextWidget;
     protected TextWidget m_GroupTextWidget;
     protected TextWidget m_DistanceTextWidget;
     protected TextWidget m_KillTextWidget;
+    protected TextWidget m_AudienceTextWidget;
     protected TextWidget m_CountdownTextWidget;
     
     protected ImageWidget m_DistanceZoneArrow;
@@ -34,12 +36,14 @@ class BattleRoyaleHud
         m_GroupCountPanel = Widget.Cast( m_Root.FindAnyWidget( "GroupsCountPanel" ) );
         m_ZoneDistancePanel = Widget.Cast( m_Root.FindAnyWidget( "ZoneDistancePanel" ) );
         m_KillCountPanel = Widget.Cast( m_Root.FindAnyWidget( "KillCountPanel" ) );
+        m_AudienceCountPanel = Widget.Cast( m_Root.FindAnyWidget( "AudienceCountPanel" ) );
         m_CountdownPanel = Widget.Cast( m_Root.FindAnyWidget( "CountdownPanel" ) );
 
         m_PlayerTextWidget = TextWidget.Cast( m_PlayerCountPanel.FindAnyWidget( "PlayerText" ) );
         m_GroupTextWidget = TextWidget.Cast( m_GroupCountPanel.FindAnyWidget( "GroupText" ) );
         m_DistanceTextWidget = TextWidget.Cast( m_ZoneDistancePanel.FindAnyWidget( "DistanceText" ) );
         m_KillTextWidget = TextWidget.Cast( m_KillCountPanel.FindAnyWidget( "KillCountText" ) );
+        m_AudienceTextWidget = TextWidget.Cast( m_AudienceCountPanel.FindAnyWidget( "AudienceText" ) );
         m_CountdownTextWidget = TextWidget.Cast( m_CountdownPanel.FindAnyWidget( "CountdownText" ) );
         
         m_DistanceZoneArrow = ImageWidget.Cast( m_Root.FindAnyWidget( "ZoneIcon" ) );
@@ -49,6 +53,7 @@ class BattleRoyaleHud
         m_GroupCountPanel.Show( false );
         m_ZoneDistancePanel.Show( false );
         m_KillCountPanel.Show( false );
+        m_AudienceCountPanel.Show( false );
         m_CountdownPanel.Show( false );
     }
 
@@ -90,6 +95,13 @@ class BattleRoyaleHud
     void ShowKillCount( bool show )
     {
         m_KillCountPanel.Show( show );
+    }
+
+    //! How many people are watching this player. Hidden outright at zero rather than showing a "0",
+    //! same as the kill count above - nobody watching is the normal state and does not need a row.
+    void ShowAudienceCount( bool show )
+    {
+        m_AudienceCountPanel.Show( show );
     }
 
     void ShowCountdown( bool show )
@@ -216,12 +228,25 @@ class BattleRoyaleHud
 
     void SetKillCount(int count)
     {
-        if(!m_CountdownTextWidget)
+        //--- The widget this method actually writes to. It used to guard m_CountdownTextWidget and
+        //--- report "Called SetCountdown", then dereference m_KillTextWidget unguarded - a
+        //--- copy-paste that made the guard test the wrong widget in both directions.
+        if(!m_KillTextWidget)
         {
-            Error("Called SetCountdown but widget is null!");
+            Error("Called SetKillCount but widget is null!");
             return;
         }
         m_KillTextWidget.SetText( count.ToString() );
+    }
+
+    void SetAudienceCount(int count)
+    {
+        if(!m_AudienceTextWidget)
+        {
+            Error("Called SetAudienceCount but widget is null!");
+            return;
+        }
+        m_AudienceTextWidget.SetText( count.ToString() );
     }
 
     void SetCountdown(int value)

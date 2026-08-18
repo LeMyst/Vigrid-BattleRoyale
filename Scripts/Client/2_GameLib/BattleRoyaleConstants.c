@@ -388,6 +388,23 @@ static const int BR_SPECTATE_MODE_ORBIT = 1;
 //--- only ever pushes FREE in response to an admin-gated request.
 static const int BR_SPECTATE_MODE_FREE = 2;
 
+//--- AUDIENCE COUNT. How many people are currently watching one living player (#285). The tally is
+//--- rebuilt from the spectator table once per push rather than maintained incrementally: the count
+//--- is a many-to-one aggregate, so it also moves on a Retarget - one spectator changes target and
+//--- TWO players' counts change with no entry added or removed - and on BeginSpectate clearing
+//--- pending_enter, and on an admin session superseding an ordinary one.
+//---
+//--- Same 1 Hz as the spectate keepalive above. A number describing how many people are watching
+//--- never needs sub-second accuracy, and a wave of deaths must not become ten pushes a second.
+static const int BR_AUDIENCE_PUSH_MS = 1000;
+//--- Re-assert every value this often even when nothing changed, matching ResendGameInfo's 5 s. An
+//--- edge-only push is invisibly wrong for a client that missed one; the play areas were edge-only
+//--- until a reconnect proved that was not enough (#269).
+static const int BR_AUDIENCE_KEEPALIVE_MS = 5000;
+//--- No wire sentinel is needed here, so the named-sentinel rule further down this file (see
+//--- BR_HUD_GROUPS_NONE) does not apply: every value this field carries is a real count, and 0
+//--- means nobody is watching, which the client renders by hiding the panel outright.
+
 //--- ADMIN SPECTATE. Gated on admins_steamid64 plus admin_spectate_enabled (general_settings.json).
 //---
 //--- The governing rule is that admin spectate requires being a NON-PARTICIPANT: alive, holding a
