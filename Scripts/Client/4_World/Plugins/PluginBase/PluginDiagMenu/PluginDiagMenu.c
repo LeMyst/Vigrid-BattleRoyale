@@ -53,6 +53,10 @@ modded class PluginDiagMenu
 	protected int m_BRDiagHudGroupsID;
 	protected int m_BRDiagHudKillsID;
 	protected int m_BRDiagHudAudienceID;
+	protected int m_BRDiagAdminFakeID;
+	protected int m_BRDiagAdminFakePlayersID;
+	protected int m_BRDiagAdminFakeDeadID;
+	protected int m_BRDiagAdminFakeSpreadID;
 	protected int m_BRDiagHudCountdownID;
 	protected int m_BRDiagOpenSpawnMenuID;
 	protected int m_BRDiagOpenLeaderboardID;
@@ -144,6 +148,10 @@ modded class PluginDiagMenu
 		m_BRDiagHudGroupsID = GetModdedDiagID();
 		m_BRDiagHudKillsID = GetModdedDiagID();
 		m_BRDiagHudAudienceID = GetModdedDiagID();
+		m_BRDiagAdminFakeID = GetModdedDiagID();
+		m_BRDiagAdminFakePlayersID = GetModdedDiagID();
+		m_BRDiagAdminFakeDeadID = GetModdedDiagID();
+		m_BRDiagAdminFakeSpreadID = GetModdedDiagID();
 		m_BRDiagHudCountdownID = GetModdedDiagID();
 		m_BRDiagOpenSpawnMenuID = GetModdedDiagID();
 		m_BRDiagOpenLeaderboardID = GetModdedDiagID();
@@ -264,6 +272,24 @@ modded class PluginDiagMenu
 				//--- mismatch silently uses the field's value rather than the number on screen.
 				DiagMenu.RegisterRange(m_BRDiagHudAudienceID, "", "Fake Audience", m_BRDiagHudMenuID, "0, 20, 2, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudCountdownID, "", "Fake Countdown", m_BRDiagHudMenuID, "0, 300, 60, 1");
+				//--- ADMIN SPECTATE OVERLAY (#276-#279). Fabricates the two admin payloads client-side
+				//--- and claims the admin+spectating flags, so the team colours, the corpse tags, the
+				//--- tag suppression under the map and the map's own player layer are all reachable
+				//--- from LaunchOffline.bat. Every real Spectate entry is server-side and SERVER is
+				//--- undefined offline, so without this all four need a three-client MP session.
+				DiagMenu.RegisterBool(m_BRDiagAdminFakeID, "", "Fake Admin Overlay", m_BRDiagHudMenuID);
+				//--- ⚠ THE DEFAULTS HERE MUST MATCH BattleRoyaleDiag - a range callback only fires on
+				//--- a CHANGE, so a mismatch silently uses the field rather than the number on screen.
+				//---
+				//--- Reaches 20 because the point of the walk is that it does not collide, and a
+				//--- fixture that only ever shows three teams cannot show that. The fabricated party
+				//--- indices are deliberately NON-CONTIGUOUS (see BattleRoyaleClient.ApplyFakeAdmin):
+				//--- contiguous ones are the easy case, and a fixture built to pass cannot fail.
+				DiagMenu.RegisterRange(m_BRDiagAdminFakePlayersID, "", "Fake Admin Players", m_BRDiagHudMenuID, "0, 20, 12, 1");
+				//--- Bodies are placed to STRADDLE BR_SPECTATE_CORPSE_TAG_RANGE_M, so the distance
+				//--- gate is exercised in both directions rather than only the one that draws.
+				DiagMenu.RegisterRange(m_BRDiagAdminFakeDeadID, "", "Fake Admin Bodies", m_BRDiagHudMenuID, "0, 10, 6, 1");
+				DiagMenu.RegisterRange(m_BRDiagAdminFakeSpreadID, "", "Fake Admin Spread (m)", m_BRDiagHudMenuID, "20, 600, 120, 10");
 				DiagMenu.RegisterBool(m_BRDiagOpenSpawnMenuID, "", "Open Spawn Menu", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenLeaderboardID, "", "Open Leaderboard", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagFakeLeaderboardID, "", "Fake Leaderboard", m_BRDiagHudMenuID);

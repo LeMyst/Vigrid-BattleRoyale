@@ -79,6 +79,22 @@ class BattleRoyaleDiag
     //--- the property under test cannot test it.
     static bool zones_fake_no_current = false;
 
+    //--- ADMIN SPECTATE OVERLAY. Fabricates the whole SetAdminPlayerList / SetAdminDeadList payload
+    //--- client-side, which is the only way any of #276-#279 can be seen without a three-client MP
+    //--- session plus an admin steamid: every existing Spectate diag entry is SERVER-side, and SERVER
+    //--- is undefined offline, so the half that produces this data is compiled out.
+    //---
+    //--- Drives four things at once - the team colours on the tags, the corpse tags, the tag
+    //--- suppression while the map is open, and the map's own player layer - because all four read
+    //--- the same two payloads.
+    static bool admin_fake = false;
+    static int admin_fake_players = 12;
+    static int admin_fake_dead = 6;
+
+    //--- Metres from the player that the fabricated ring is drawn at. Small enough that the tags are
+    //--- legible on screen, large enough that the map glyphs do not stack into one blob.
+    static float admin_fake_spread = 120.0;
+
     //--- Kill feed. Read by the "Push Fake Kill" / "Fill Feed" callbacks at the moment they fire,
     //--- rather than mirroring the entry ids, so no id has to leave the plugin class.
     static int kf_cause = 0;
@@ -151,6 +167,11 @@ class BattleRoyaleDiag
         zone_radius = 1500;
         zone_next_radius = 600;
         zones_fake_no_current = false;
+
+        admin_fake = false;
+        admin_fake_players = 12;
+        admin_fake_dead = 6;
+        admin_fake_spread = 120.0;
 
         kf_cause = 0;
         kf_with_weapon = true;

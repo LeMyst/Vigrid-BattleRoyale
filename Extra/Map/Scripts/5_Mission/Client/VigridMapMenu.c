@@ -22,6 +22,13 @@ class VigridMapMenu extends UIScriptedMenu
     protected CanvasWidget m_LineCanvas;
     protected CanvasWidget m_MarkerCanvas;
     protected CanvasWidget m_TeamCanvas;
+    protected CanvasWidget m_AdminCanvas;
+
+    //--- Name labels for the admin glyphs, BOUND from the layout rather than created. See the block
+    //--- comment on AdminName0 in map_menu.layout for the measurement behind that.
+    protected ref array<TextWidget> m_AdminNameTexts;
+    protected int m_LastAdminSeq;
+    protected int m_NextAdminFunnelMs;
 
     protected ref VigridMapMenuHandler m_Handler;
     protected IngameHud m_Hud;
@@ -68,6 +75,10 @@ class VigridMapMenu extends UIScriptedMenu
 
     void VigridMapMenu()
     {
+        m_AdminNameTexts = new array<TextWidget>();
+        m_LastAdminSeq = -1;
+        m_NextAdminFunnelMs = 0;
+
         m_SettleTarget = vector.Zero;
         m_Settled = false;
         m_SettleFrames = 0;
@@ -115,10 +126,11 @@ class VigridMapMenu extends UIScriptedMenu
         m_ZoneCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("ZoneCanvas"));
         m_LineCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("LineCanvas"));
 
-        //--- Markers are drawn onto a canvas rather than built as widgets. A canvas declared inside
-        //--- the MapWidget is the only overlay mechanism proven to render in this repo - the spawn
-        //--- selection screen's heat map uses exactly this - whereas widgets created from script
-        //--- over the map are positioned correctly and never appear.
+        //--- Markers are drawn onto a canvas rather than built as widgets. A widget DECLARED inside
+        //--- the MapWidget renders - the spawn selection screen's heat map is a canvas doing exactly
+        //--- this, and the AdminName<n> labels below are TextWidgets doing it too - whereas a widget
+        //--- CREATED FROM SCRIPT over the map is positioned correctly and never appears, whatever it
+        //--- is parented to. Declaration is the discriminator, not the widget class.
         m_MarkerCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("MarkerCanvas"));
         if (!m_MarkerCanvas)
             VigridMapLog.Error("map_menu.layout has no MarkerCanvas - markers disabled");
@@ -128,6 +140,32 @@ class VigridMapMenu extends UIScriptedMenu
         m_TeamCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("TeamCanvas"));
         if (!m_TeamCanvas)
             VigridMapLog.Error("map_menu.layout has no TeamCanvas - teammates and pings disabled");
+
+        //--- Above TeamCanvas, so a live player draws over every placed pin. Logged rather than
+        //--- fatal, like the two above: losing this layer is worth far less than losing the map.
+        m_AdminCanvas = CanvasWidget.Cast(m_MapWidget.FindAnyWidget("AdminCanvas"));
+        if (!m_AdminCanvas)
+            VigridMapLog.Error("map_menu.layout has no AdminCanvas - the host player layer is disabled");
+
+        //--- Bind the declared label pool. Found on m_MapWidget, like the canvases and for exactly the
+        //--- same reason: a DECLARED child of the MapWidget renders, and a script-created one does
+        //--- not - measured, see map_menu.layout. The loop stops at the first gap, so the pool size
+        //--- lives in the layout alone and this does not have to be told how big it is.
+        int name_slot = 0;
+        while (name_slot < VIGRID_MAP_ADMIN_NAME_MAX)
+        {
+            TextWidget label = TextWidget.Cast(m_MapWidget.FindAnyWidget("AdminName" + name_slot.ToString()));
+            if (!label)
+                break;
+
+            m_AdminNameTexts.Insert(label);
+            name_slot++;
+        }
+
+        if (m_AdminNameTexts.Count() == 0)
+            VigridMapLog.Error("map_menu.layout declares no AdminName<n> labels - host player names disabled");
+        else
+            VigridMapLog.Debug("Bound " + m_AdminNameTexts.Count().ToString() + " admin name label(s)");
 
         //--- Found on layoutRoot, not on m_MapWidget: the toast sits in the strip above the map, so
         //--- it is a sibling of the MapWidget rather than a child of it.
@@ -170,11 +208,7 @@ class VigridMapMenu extends UIScriptedMenu
      */
     protected void CenterOnPlayer()
     {
-        vector target = vector.Zero;
-
-        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
-        if (player)
-            target = player.GetPosition();
+        vector target = ResolveSelfPos();
 
         if (target == vector.Zero)
             target = GetGame().GetCurrentCameraPosition();
@@ -185,6 +219,34 @@ class VigridMapMenu extends UIScriptedMenu
         m_MapWidget.SetScale(GetOpenScale());
 
         GetGame().GetCallQueue(CALL_CATEGORY_GUI).CallLater(DelayedCenter, VIGRID_MAP_CENTER_DELAY_MS, false, target);
+    }
+
+    /**
+     *  Where "you" are, for both the self glyph and the recentre-on-open.
+     *
+     *  The host mod's override wins when one is in force. That is the whole of #277: while an admin
+     *  spectates, their body is parked somewhere as a network anchor and the camera is elsewhere, so
+     *  GetGame().GetPlayer() answers the anchor and the glyph landed on it. The minimap never had the
+     *  bug because it re-centres on the camera every tick and never asks the player.
+     *
+     *  ⚠ NOT SIMPLY "USE THE CAMERA WHEN ONE DIFFERS". In ordinary third-person play the camera sits
+     *  several metres behind the character, and the map is panned by the player rather than pinned to
+     *  the camera - so reading the camera unconditionally would put every player's glyph behind
+     *  themselves. Only an explicit assertion from the host can tell the two situations apart, which
+     *  is why this is a pushed override and not something inferred here.
+     *
+     *  Returns vector.Zero when there is neither an override nor a player; both callers handle it.
+     */
+    protected vector ResolveSelfPos()
+    {
+        if (VigridMapAPI.HasSelfPositionOverride())
+            return VigridMapAPI.GetSelfPositionOverride();
+
+        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
+        if (player)
+            return player.GetPosition();
+
+        return vector.Zero;
     }
 
     /**
@@ -575,6 +637,17 @@ class VigridMapMenu extends UIScriptedMenu
             m_LastHotZoneSeq = VigridMapAPI.GetHotZoneSeq();
         }
 
+        //--- The admin layer has an edge AND a clock, unlike every other layer here, because it has
+        //--- both kinds of change. The sequence catches the set growing or shrinking - a player dies,
+        //--- an admin starts watching - and would be enough on its own if positions were static. They
+        //--- are not: the host re-pushes them twice a second, which the sequence does see, but a
+        //--- 2 Hz repaint of moving glyphs visibly steps. So it rides the team clock as well.
+        if (VigridMapAPI.GetAdminPlayerSeq() != m_LastAdminSeq)
+        {
+            m_RenderDirty = true;
+            m_LastAdminSeq = VigridMapAPI.GetAdminPlayerSeq();
+        }
+
         bool watchdog_due = (GetGame().GetTime() - m_LastRepaintMs) >= VIGRID_MAP_REPAINT_WATCHDOG_MS;
 
         //--- Two gates over one probe, because the two kinds of drawing change for different
@@ -615,6 +688,7 @@ class VigridMapMenu extends UIScriptedMenu
         {
             m_LastTeamRepaintMs = GetGame().GetTime();
             RenderTeam();
+            RenderAdminPlayers();
         }
     }
 
@@ -780,10 +854,11 @@ class VigridMapMenu extends UIScriptedMenu
     /**
      *  Every marker we may see, drawn onto the marker canvas.
      *
-     *  Drawn rather than built out of widgets. A CanvasWidget declared inside the MapWidget is the
-     *  only overlay this engine reliably renders here - the spawn selection heat map proves it -
-     *  while widgets created from script over the map get correct positions and never appear. Since
-     *  markers carry no text today, nothing is lost by drawing them.
+     *  Drawn rather than built out of widgets. A widget DECLARED inside the MapWidget renders - the
+     *  spawn selection heat map proves it for canvases, and the AdminName<n> labels for TextWidgets -
+     *  while one CREATED FROM SCRIPT over the map gets correct positions and never appears. Markers
+     *  carry no text, so a canvas costs them nothing; a declared pool would be the route if they
+     *  ever needed one.
      */
     protected void RenderMarkers(VigridMapClient client)
     {
@@ -874,9 +949,9 @@ class VigridMapMenu extends UIScriptedMenu
     /**
      *  The local player: where you are, and which way you are facing.
      *
-     *  Position taken straight from GetGame().GetPlayer() and never through the team API. The client
-     *  entity list does not contain the local player, so asking Party for your own slot returns the
-     *  interpolated server push and your glyph would trail you by up to half a second.
+     *  Position from ResolveSelfPos - i.e. the player's own body, and never through the team API. The
+     *  client entity list does not contain the local player, so asking Party for your own slot returns
+     *  the interpolated server push and your glyph would trail you by up to half a second.
      *
      *  POSITION FROM THE BODY, ANGLE FROM THE CAMERA - and the split is deliberate. The minimap
      *  passes the camera position for both only because it re-centres its map on the camera every
@@ -885,6 +960,10 @@ class VigridMapMenu extends UIScriptedMenu
      *  reason written up at length in VigridMapMinimap.DrawHeadingArrow: body yaw is the animated
      *  leg orientation, which snaps in steps and does not return to its start after a full 360.
      *
+     *  ...EXCEPT when the host has asserted an override, which is the one case where the body is not
+     *  where the player is playing from - see ResolveSelfPos. The angle needs no such treatment: it
+     *  already comes from the camera, and while spectating that is exactly the right camera.
+     *
      *  Note the aim axes are excluded while the map is open (MapMissionGameplay.UpdateAimSuppression),
      *  so this reads as the heading you had when you opened the map and holds still while you pan.
      *  That is the intent - it answers "which way was I facing", not "which way am I turning" - but
@@ -892,13 +971,207 @@ class VigridMapMenu extends UIScriptedMenu
      */
     protected void RenderSelfGlyph()
     {
-        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
-        if (!player)
+        vector self_pos = ResolveSelfPos();
+        if (self_pos == vector.Zero)
             return;
 
         float heading = Math.NormalizeAngle(GetGame().GetCurrentCameraDirection().VectorToAngles()[0]);
 
-        VigridMapRender.WorldRenderHeadingArrow(m_TeamCanvas, m_MapWidget, player.GetPosition(), heading, VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
+        VigridMapRender.WorldRenderHeadingArrow(m_TeamCanvas, m_MapWidget, self_pos, heading, VIGRID_MAP_SELF_PX, VIGRID_MAP_COLOR_SELF, VIGRID_MAP_SELF_LINE_WIDTH);
+    }
+
+    /**
+     *  Players the host mod asked to be plotted: a square glyph each, and a name label over it.
+     *
+     *  POSITIONS COME FROM THE HOST, NOT FROM THE ENTITY LIST, and that is what makes this layer
+     *  worth having at all - the host's source is its server, so it covers players far outside this
+     *  client's network bubble. Building it from ClientData would show only whatever happens to be
+     *  within about a kilometre, which on a map is close to nothing.
+     *
+     *  NO HEADING on the glyph. The push carries no yaw, and a glyph implying a facing it was never
+     *  told would be worse than one that admits it does not know.
+     *
+     *  Both surfaces are cleared before ANY early return, on the rule the whole file follows: a
+     *  canvas keeps its draw list and a widget pool keeps its last position, so a return that skipped
+     *  either would burn the previous frame into the map until something else happened to repaint.
+     */
+    protected void RenderAdminPlayers()
+    {
+        int count = VigridMapAPI.GetAdminPlayerCount();
+
+        if (m_AdminCanvas)
+            m_AdminCanvas.Clear();
+
+        if (count == 0)
+        {
+            HideAdminNames(0);
+            return;
+        }
+
+        if (!m_AdminCanvas)
+        {
+            HideAdminNames(0);
+            return;
+        }
+
+        //--- Names off at a wide zoom. Sixty labels at map-wide scale overlap into a smear that hides
+        //--- the terrain and tells the admin nothing; the glyphs alone carry the picture until they
+        //--- zoom into the fight they care about. The glyphs are never suppressed.
+        //---
+        //--- ⚠️ `<=`, NOT `>=`. Scale is 0 fully zoomed IN and 1 fully OUT, so a bigger number means
+        //--- less detail and the threshold is a MAXIMUM. The first version had this backwards and
+        //--- silently hid every label at the zoom an admin actually uses.
+        bool want_names = m_MapWidget.GetScale() <= VIGRID_MAP_ADMIN_NAME_MAX_SCALE;
+
+        float canvas_w;
+        float canvas_h;
+        m_AdminCanvas.GetScreenSize(canvas_w, canvas_h);
+
+        int drawn = 0;
+        int labelled = 0;
+        int offscreen = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            vector pos = VigridMapAPI.GetAdminPlayerPos(i);
+            if (pos == vector.Zero)
+                continue;
+
+            int color = VigridMapAPI.GetAdminPlayerColor(i);
+
+            VigridMapRender.WorldRenderSquare(m_AdminCanvas, m_MapWidget, pos, VIGRID_MAP_ADMIN_PX, color, VIGRID_MAP_ADMIN_LINE_WIDTH);
+            drawn++;
+
+            if (!want_names)
+                continue;
+
+            //--- Both the glyph and the label are now positioned in the SAME canvas-local pixels -
+            //--- the label is a child of the MapWidget, like the canvas it is drawn over, so no
+            //--- screen-origin correction is needed. It was needed while the labels lived under a
+            //--- full-screen sibling frame, which is the arrangement that turned out not to render.
+            float cx;
+            float cy;
+            VigridMapRender.WorldToCanvas(m_MapWidget, Vector(pos[0], 0, pos[2]), cx, cy);
+
+            //--- Outside the visible map rect. The MapWidget carries clipchildren 1 so this is now
+            //--- belt and braces, but it also keeps a label from being counted as drawn when it is
+            //--- not - which is what makes the funnel line below trustworthy.
+            if (cx < 0 || cy < 0 || cx > canvas_w || cy > canvas_h)
+            {
+                offscreen++;
+                continue;
+            }
+
+            string name = VigridMapAPI.GetAdminPlayerName(i);
+            if (name == "")
+                continue;
+
+            //--- Bounded by the DECLARED pool, which cannot grow at runtime. Glyphs are uncapped, so
+            //--- a busier match loses names before it loses positions.
+            if (labelled >= m_AdminNameTexts.Count())
+                continue;
+
+            if (PlaceAdminName(labelled, name, color, cx, cy))
+                labelled++;
+        }
+
+        HideAdminNames(labelled);
+
+        ReportAdminFunnel(count, drawn, labelled, offscreen, want_names);
+    }
+
+    /**
+     *  Fill and position one label from the declared pool.
+     *
+     *  Returns false when the slot does not exist, which is what stops the caller counting a label
+     *  it never drew. Nothing is created here - the pool is bound once in Init from the layout.
+     *
+     *  `cx`/`cy` are CANVAS-LOCAL pixels, the same coordinates the glyph was drawn at, because the
+     *  label is a child of the same MapWidget.
+     */
+    protected bool PlaceAdminName(int slot, string name, int color, float cx, float cy)
+    {
+        if (slot < 0 || slot >= m_AdminNameTexts.Count())
+            return false;
+
+        TextWidget label = m_AdminNameTexts.Get(slot);
+        if (!label)
+            return false;
+
+        label.SetText(name);
+        label.SetColor(color);
+
+        //--- Shown before being measured: a widget that has never been displayed reports a zero
+        //--- size, and both offsets below are derived from it.
+        label.Show(true);
+
+        float row_w;
+        float row_h;
+        label.GetScreenSize(row_w, row_h);
+        if (row_w <= 0)
+            row_w = VIGRID_MAP_ADMIN_NAME_W;
+        if (row_h <= 0)
+            row_h = VIGRID_MAP_ADMIN_NAME_H;
+
+        //--- SetPos anchors by the top-left corner, so centring on the glyph is half a width left,
+        //--- and sitting above it is a full height plus the glyph's own half-size up.
+        float px = cx - (row_w * 0.5);
+        float py = cy - row_h - (VIGRID_MAP_ADMIN_PX * 0.5) - VIGRID_MAP_ADMIN_NAME_GAP_PX;
+
+        label.SetPos(px, py);
+        return true;
+    }
+
+    //! Hide every pooled label from `from` on. The pool is declared and fixed, so this only ever
+    //! hides - there is nothing to unlink and nothing to free.
+    protected void HideAdminNames(int from)
+    {
+        for (int i = from; i < m_AdminNameTexts.Count(); i++)
+        {
+            TextWidget label = m_AdminNameTexts.Get(i);
+            if (label)
+                label.Show(false);
+        }
+    }
+
+    /**
+     *  The funnel that found both of this layer's bugs, kept because it earned its place twice.
+     *
+     *  "Glyphs but no names" is indistinguishable by eye from five different causes - the zoom gate,
+     *  an empty name in the payload, the pool failing to bind, a label clipped out, or the widget
+     *  genuinely not rendering. Each reading named one directly:
+     *
+     *    rows=12 drawn=12 labelled=0  wantnames=false pool=0  -> the zoom GATE, comparison inverted
+     *    rows=12 drawn=12 labelled=12 wantnames=true  pool=12 -> everything ran; NOTHING RENDERED
+     *
+     *  The second is what proved script-created widgets do not draw over a MapWidget even from a
+     *  declared sibling frame, and sent the pool into the layout. Neither answer was reachable by
+     *  reading the code, and each would otherwise have cost a build per hypothesis.
+     *
+     *  `scale` is logged raw and not just the verdict it produced: without it, "wantnames=false"
+     *  says a gate fired but not whether the THRESHOLD or the COMPARISON was wrong.
+     */
+    protected void ReportAdminFunnel(int count, int drawn, int labelled, int offscreen, bool want_names)
+    {
+        if (GetGame().GetTime() < m_NextAdminFunnelMs)
+            return;
+
+        m_NextAdminFunnelMs = GetGame().GetTime() + VIGRID_MAP_ADMIN_FUNNEL_MS;
+
+        //--- Built in steps rather than as one expression: a single concatenation of this many terms
+        //--- is exactly the shape this engine rejects outright as "Formula too complex".
+        string line = "[Admin] rows=" + count.ToString();
+        line = line + " drawn=" + drawn.ToString();
+        line = line + " labelled=" + labelled.ToString();
+        line = line + " offscreen=" + offscreen.ToString();
+        line = line + " wantnames=" + want_names.ToString();
+        //--- The SCALE itself, not just the verdict it produced. Without it "wantnames=false" says a
+        //--- gate fired but not whether the threshold or the COMPARISON was wrong - which is exactly
+        //--- the ambiguity that cost this feature a build.
+        line = line + " scale=" + m_MapWidget.GetScale().ToString();
+        line = line + " pool=" + m_AdminNameTexts.Count().ToString();
+
+        VigridMapLog.Debug(line);
     }
 
     protected void RenderTeammates()

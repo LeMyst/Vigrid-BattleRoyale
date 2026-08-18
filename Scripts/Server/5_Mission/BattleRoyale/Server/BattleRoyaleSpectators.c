@@ -145,6 +145,21 @@ class BattleRoyaleSpectators
     protected int m_NextAudienceMs;
     protected int m_NextAudienceKeepaliveMs;
 
+    //! Cadence and change-detection for the corpse nametag list (#278). The set is append-only, so
+    //! m_LastDeadPushCount is enough to know whether anything is worth sending; the keepalive covers
+    //! an admin who entered spectate during a lull and would otherwise wait for the next death.
+    protected int m_NextDeadListMs;
+    protected int m_NextDeadKeepaliveMs;
+    protected int m_LastDeadPushCount;
+
+    //! Party id -> the team colour index that party holds for this match, assigned first-seen.
+    //!
+    //! Never cleared mid-match, and that IS the feature: a colour must not move under an admin who
+    //! is using it to read a fight. The process restarts between matches (9_BattleRoyaleRestart),
+    //! so there is nothing to reset - the map dies with the object. Bounded by the number of parties,
+    //! which is bounded by half the player cap.
+    protected ref map<string, int> m_PartyColourIndex;
+
     //! Which tier the LAST ResolveTarget call returned from. Written at every one of its five exits
     //! and read by the caller on the very next line, so it is a return value in all but name - a
     //! second out-parameter would have to be threaded through three call sites for a field nothing
@@ -161,6 +176,10 @@ class BattleRoyaleSpectators
         m_NextAdminListMs = 0;
         m_Ended = false;
         m_AudienceSent = new map<string, int>();
+        m_PartyColourIndex = new map<string, int>();
+        m_NextDeadListMs = 0;
+        m_NextDeadKeepaliveMs = 0;
+        m_LastDeadPushCount = -1;
         m_NextAudienceMs = 0;
         m_NextAudienceKeepaliveMs = 0;
         m_LastResolveTier = 0;
@@ -972,6 +991,16 @@ class BattleRoyaleSpectators
         {
             m_NextAdminListMs = now + BR_ADMIN_CAMPOS_PUSH_MS;
             PushAdminList();
+        }
+
+        //--- (5) THE CORPSE LIST, on its own much slower clock. Deliberately NOT folded into the
+        //--- 500 ms admin push above: that one carries motion and has to keep up with it, while this
+        //--- one describes bodies that by definition never move again. Sending 59 names and positions
+        //--- twice a second to say nothing changed would be the largest recurring payload in the mod.
+        if (now >= m_NextDeadListMs)
+        {
+            m_NextDeadListMs = now + BR_ADMIN_DEAD_PUSH_MS;
+            PushAdminDeadList(now);
         }
     }
 
@@ -2346,7 +2375,7 @@ class BattleRoyaleSpectators
         array<vector> positions = new array<vector>();
         array<float> healths = new array<float>();
         array<int> kills = new array<int>();
-        array<int> slots = new array<int>();
+        array<int> parties = new array<int>();
 
         int count = roster.Count();
         int i = 0;
@@ -2377,7 +2406,7 @@ class BattleRoyaleSpectators
             positions.Insert(candidate.GetPosition());
             healths.Insert(candidate.GetHealth01("", "Health"));
             kills.Insert(candidate.br_kills);
-            slots.Insert(AdminListSlotOf(candidate));
+            parties.Insert(AdminListPartyIndexOf(candidate));
         }
 
         int spectators = m_Spectators.Count();
@@ -2393,8 +2422,99 @@ class BattleRoyaleSpectators
             if (!identity)
                 continue;
 
-            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", new Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>>(uids, names, positions, healths, kills, slots), true, identity);
+            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", new Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>>(uids, names, positions, healths, kills, parties), true, identity);
         }
+    }
+
+    /**
+     *  Build the corpse nametag payload and send it to every admin currently spectating (#278).
+     *
+     *  ⚠ POSITIONS ARE WHERE THEY FELL, NOT WHERE THE BODY IS NOW, and that is the correct answer
+     *  rather than a shortcut. CarryCorpse moves a spectator's own corpse hundreds of metres to drag
+     *  the network bubble along - but a carried body's REPLICATED position does not follow, so no
+     *  client renders it anywhere at all (measured; see the Spectating notes in CLAUDE.md). Tagging
+     *  the server-side position would therefore put a name in empty air, hundreds of metres from any
+     *  visible body, and leave the place the fight actually happened unlabelled. death_pos is where a
+     *  body appears to everyone, and it is also the thing the admin is asking about.
+     *
+     *  That is also what makes the set APPEND-ONLY: a death position never changes, so there is
+     *  nothing to re-send except a longer list. Hence the count comparison rather than a diff.
+     *
+     *  NO UIDS ON THE WIRE, matching SetAdminPlayerList's own reasoning, and no party index either -
+     *  a dead player's team is not something an admin can act on, and a second team-coloured name
+     *  over a fight is exactly the stacking the overlay already had to fix once.
+     */
+    protected void PushAdminDeadList(int now)
+    {
+        //--- Same cheap bail as PushAdminList: on a match with nobody watching this is the whole
+        //--- cost of the feature.
+        if (!HasAdminSpectator())
+            return;
+
+        int total = m_DeathOrder.Count();
+
+        bool keepalive_due = now >= m_NextDeadKeepaliveMs;
+
+        //--- Nothing new and nothing owed. The keepalive exists because an admin who entered spectate
+        //--- during a lull would otherwise see no corpses until somebody else died.
+        if (total == m_LastDeadPushCount && !keepalive_due)
+            return;
+
+        if (keepalive_due)
+            m_NextDeadKeepaliveMs = now + BR_ADMIN_DEAD_KEEPALIVE_MS;
+
+        array<string> names = new array<string>();
+        array<vector> positions = new array<vector>();
+
+        int i = 0;
+        for (i = 0; i < total; i++)
+        {
+            if (names.Count() >= BR_ADMIN_DEAD_LIST_MAX)
+            {
+                BattleRoyaleUtils.Warn(string.Format("[Spectate] Admin dead list truncated at %1 of %2 bodies", BR_ADMIN_DEAD_LIST_MAX, total));
+                break;
+            }
+
+            //--- One array read per line, and the map read on its own line too, before any call
+            //--- consumes either. The shape measured elsewhere in this codebase to hand back another
+            //--- array's contents entirely.
+            string victim_uid = m_DeathOrder.Get(i);
+            if (victim_uid == "")
+                continue;
+
+            BattleRoyaleDeathRecord record = m_Deaths.Get(victim_uid);
+            if (!record)
+                continue;
+
+            string victim_name = record.victim_name;
+            if (victim_name == "")
+                continue;
+
+            names.Insert(victim_name);
+            positions.Insert(record.death_pos);
+        }
+
+        m_LastDeadPushCount = total;
+
+        int spectators = m_Spectators.Count();
+        int sent = 0;
+        for (i = 0; i < spectators; i++)
+        {
+            BattleRoyaleSpectatorEntry entry = m_Spectators.GetElement(i);
+            if (!entry)
+                continue;
+            if (!entry.is_admin)
+                continue;
+
+            PlayerIdentity identity = IdentityOfUid(entry.uid);
+            if (!identity)
+                continue;
+
+            GetRPCManager().SendRPC(RPC_DAYZBR_NAMESPACE, "SetAdminDeadList", new Param2<array<string>, array<vector>>(names, positions), true, identity);
+            sent++;
+        }
+
+        BattleRoyaleUtils.Debug(string.Format("[Spectate] Dead list: %1 bodies to %2 admin(s), keepalive=%3", names.Count(), sent, keepalive_due));
     }
 
     //------------------------------------------------------------------------------------------
@@ -2579,13 +2699,51 @@ class BattleRoyaleSpectators
         return true;
     }
 
-    //! Party slot for the overlay's colour, or -1 without the addon / without a party.
-    //! GetMemberIndex is join-ordered and never reshuffled, so a player keeps their colour for the
-    //! whole match - which is the property the overlay needs and the reason not to derive one here.
-    protected int AdminListSlotOf(PlayerBase player)
+    /**
+     *  Match-local index of this player's PARTY, for the overlay's team colour. -1 means solo.
+     *
+     *  ⚠ THIS USED TO BE GetMemberIndex, AND THAT WAS THE BUG (#276). GetMemberIndex is the player's
+     *  slot INSIDE their own party - 0 for the leader, 1 for the second to join - so every party's
+     *  first member came out the same colour and the overlay answered "which of my teammates is
+     *  that" to somebody who is in none of the parties. The question an admin asks is "are those two
+     *  on the same side", which needs an index over PARTIES, not over members.
+     *
+     *  KEYED ON THE PARTY ID, NOT ON A POSITION IN ANY LIST. The obvious alternative - walk
+     *  VigridPartyAPI.GetGroups(roster) and use the group's position - re-partitions the living
+     *  population every push, so a team's colour would change the moment somebody in an earlier
+     *  group died. GetPartyId is a stable string for the life of the party, and the first-seen order
+     *  recorded in m_PartyColourIndex is fixed for the whole match by construction.
+     *
+     *  A party reduced to ONE living member keeps its colour. They do have a team - they are the
+     *  last of it - and dropping them to neutral mid-match would make a colour blink out at exactly
+     *  the moment an admin is watching that fight.
+     *
+     *  IsReady() rather than #ifdef VIGRID_PARTY alone: the addon ships in this repo, so the #else
+     *  arm is dead on every real server, but party_settings.json can still switch the manager off -
+     *  in which case every player is correctly solo and the whole overlay goes neutral. This is the
+     *  #158 rule; the guard LOOKS like it covers the case and does not.
+     */
+    protected int AdminListPartyIndexOf(PlayerBase player)
     {
 #ifdef VIGRID_PARTY
-        return VigridPartyAPI.GetMemberIndex(player);
+        if (!VigridPartyAPI.IsReady())
+            return -1;
+
+        string party_id = VigridPartyAPI.GetPartyId(player);
+        if (party_id == "")
+            return -1;
+
+        if (!m_PartyColourIndex)
+            m_PartyColourIndex = new map<string, int>();
+
+        if (m_PartyColourIndex.Contains(party_id))
+            return m_PartyColourIndex.Get(party_id);
+
+        int assigned = m_PartyColourIndex.Count();
+        m_PartyColourIndex.Insert(party_id, assigned);
+
+        BattleRoyaleUtils.Debug(string.Format("[Spectate] Party %1 takes team colour index %2", party_id, assigned));
+        return assigned;
 #else
         return -1;
 #endif

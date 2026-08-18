@@ -481,10 +481,72 @@ static const float BR_SPECTATE_TAG_EDGE_MARGIN = 60.0;
 //--- Off-screen tags are dimmed rather than hidden: an admin wants to know somebody is behind them.
 static const float BR_SPECTATE_TAG_OFFSCREEN_ALPHA = 0.45;
 //--- Name colour for the player the camera is currently following, and for anyone with no party.
-//--- The target colour is deliberately not any VigridPartyPalette slot, so it cannot be mistaken
-//--- for a team colour.
-static const int BR_SPECTATE_TAG_TARGET_COLOUR = 0xFFFFDD44;
+//---
+//--- ⚠ THE TARGET COLOUR MUST BE ONE THE TEAM WALK CANNOT PRODUCE, and saturation is the axis
+//--- that guarantees it. Every generated team colour is a pastel - BR_TEAM_COLOUR_SAT_* tops out at
+//--- 0.50 - so a FULLY saturated hue is unmistakable at a glance and can never collide, whatever
+//--- hue the walk lands on. Measured: the nearest generated colour to this one is dE 35.7 away.
+//--- The old 0xFFFFDD44 was amber at ~0.73 saturation, which cleared the old eight-slot
+//--- VigridPartyPalette but sits close enough to a generated pastel amber to be read as "that team"
+//--- rather than as "the one I am following".
+static const int BR_SPECTATE_TAG_TARGET_COLOUR = 0xFFFFC400;
 static const int BR_SPECTATE_TAG_SOLO_COLOUR = 0xFFFFFFFF;
+
+//--- TEAM COLOURS FOR THE ADMIN OVERLAY. One colour per PARTY, so an admin can see who is fighting
+//--- alongside whom - not one per party SLOT, which is what VigridPartyPalette answers and which
+//--- paints every party's first member the same amber.
+//---
+//--- ⚠ VigridPartyPalette IS DELIBERATELY NOT USED HERE, and it is not an oversight. It is eight
+//--- hues wrapping on `slot % 8`, which is right for its own job - telling YOUR OWN teammates apart,
+//--- where the party is at most 16 and you are in it - and wrong for this one, where a match can
+//--- hold thirty parties and two of them sharing amber is exactly the question being asked.
+//---
+//--- HONESTY ABOUT WHAT THIS CAN DELIVER: categorical colour tops out around ten to twelve hues a
+//--- human can hold apart, so thirty distinguishable team colours do not exist and nothing here
+//--- pretends otherwise. What the walk does guarantee is that no two parties share a colour and
+//--- that ADJACENT indices are as far apart as the circle allows - which is what an admin actually
+//--- needs, since the question is "are those two on the same side", not "which of the thirty teams
+//--- is the mauve one". Proximity, the health bar and the follow highlight carry the rest.
+//---
+//--- The step is the GOLDEN ANGLE rather than a random draw. Random collides: at thirty parties the
+//--- birthday problem makes two near-identical hues better than even odds, which is the failure this
+//--- exists to avoid. The golden angle needs no retry loop, is deterministic (so two admins watching
+//--- the same match see the same colours), and is optimal-by-construction at every count rather than
+//--- at one count chosen in advance.
+static const float BR_TEAM_COLOUR_GOLDEN_ANGLE = 137.508;
+//--- A second axis under the hue, cycled per party, so two teams that happen to land near the same
+//--- hue still differ in weight. Low saturation and high value IS the pastel, and it is what keeps
+//--- every team legible over dark terrain where a fully saturated hue would read as an alert.
+//---
+//--- ⚠ SIX TIERS, AND THE COUNT IS LOAD-BEARING RATHER THAN A ROUND NUMBER. A golden-angle walk puts
+//--- its closest hue pairs at FIBONACCI offsets - 8, 13 and 21 apart - and a tier count that DIVIDES
+//--- one of those leaves that pair on identical saturation and value, separated by hue alone. At the
+//--- first-written 3 tiers, parties 21 apart collided almost exactly: measured dE 2.9 in CIE Lab,
+//--- which is the just-noticeable threshold, i.e. indistinguishable in practice. 6 divides none of
+//--- 8, 13 or 21.
+//---
+//--- The values below were SEARCHED rather than picked, maximising the worst-case Lab distance over a
+//--- full 30-party match inside a pastel envelope (sat 0.24-0.52, val 0.78-1.00). Measured over 30
+//--- parties: worst pair anywhere dE 13.0 ("clearly different"), worst ADJACENT pair dE 46.4, nearest
+//--- team colour to the solo white dE 20.6, and to BR_SPECTATE_TAG_TARGET_COLOUR dE 35.7. Thirty is
+//--- the real ceiling - a party needs two members, so sixty players cannot make more of them.
+//---
+//--- ⚠ THESE TWELVE NUMBERS ARE ONE PACKAGE. Changing a single saturation does not make one team
+//--- look slightly different; it moves the worst-case pair somewhere else entirely. Re-run the search
+//--- rather than nudging a value by eye.
+static const int BR_TEAM_COLOUR_TIERS = 6;
+static const float BR_TEAM_COLOUR_SAT_A = 0.34;
+static const float BR_TEAM_COLOUR_SAT_B = 0.42;
+static const float BR_TEAM_COLOUR_SAT_C = 0.27;
+static const float BR_TEAM_COLOUR_SAT_D = 0.50;
+static const float BR_TEAM_COLOUR_SAT_E = 0.27;
+static const float BR_TEAM_COLOUR_SAT_F = 0.46;
+static const float BR_TEAM_COLOUR_VAL_A = 0.87;
+static const float BR_TEAM_COLOUR_VAL_B = 0.98;
+static const float BR_TEAM_COLOUR_VAL_C = 0.81;
+static const float BR_TEAM_COLOUR_VAL_D = 0.94;
+static const float BR_TEAM_COLOUR_VAL_E = 1.00;
+static const float BR_TEAM_COLOUR_VAL_F = 0.94;
 
 //--- LOBBY NAME TAGS. A name over every non-teammate while the players are still gathered in the
 //--- lobby, replacing the "point at somebody to read their name" tag this mod used to re-enable
@@ -526,6 +588,34 @@ static const int BR_LOBBY_TAG_DIAG_MS = 2000;
 //--- party's own coloured name tags - so there is no palette slot to honour and a second colour
 //--- here would only invite the two to be confused.
 static const int BR_LOBBY_TAG_COLOUR = 0xFFFFFFFF;
+
+//--- CORPSE NAMETAGS. A name over a dead body, so an admin flying over a fight can tell who died
+//--- there (#278). Proximity only - a name over every corpse in the match would bury the map by the
+//--- final circle, which is exactly when an admin most wants to read it.
+//---
+//--- Tens of metres, not the skeleton overlay's 500: the skeleton says "a fight happened over
+//--- there", this says "this is who that is", and the second question is only asked up close.
+static const float BR_SPECTATE_CORPSE_TAG_RANGE_M = 40.0;
+//--- Fade over the last stretch, so a tag thins out rather than blinking off as the camera drifts.
+static const float BR_SPECTATE_CORPSE_TAG_FADE_START_M = 32.0;
+//--- Metres above the death position. Much lower than the living tag's 1.9, because a body lies
+//--- FLAT - anchoring a corpse tag at standing height floats it well clear of the thing it names.
+static const float BR_SPECTATE_CORPSE_TAG_HEIGHT_OFFSET = 0.6;
+//--- Dim and desaturated, so a corpse tag never competes with a living one at a glance. It is
+//--- deliberately NOT a team colour: the party a dead player was on is no longer information an
+//--- admin can act on, and colouring it would put a second team-coloured name over a fight.
+static const int BR_SPECTATE_CORPSE_TAG_COLOUR = 0xFFA09490;
+//--- Bound on corpse rows, matching BR_ADMIN_LIST_MAX for the same no-RPC-chunking reason. A full
+//--- match ends with 59 bodies, so this is reached in the ordinary course of a game, not just in
+//--- pathological cases.
+static const int BR_ADMIN_DEAD_LIST_MAX = 64;
+//--- How often the dead list is RECONSIDERED. It is not a push rate: the set is append-only and is
+//--- sent only when it has actually grown, plus the keepalive below for an admin who started
+//--- watching after the last death.
+static const int BR_ADMIN_DEAD_PUSH_MS = 2000;
+//--- Re-send even with nothing new, on the same reasoning as BR_AUDIENCE_KEEPALIVE_MS: an admin who
+//--- enters spectate during a lull would otherwise wait for the next death to see any corpse at all.
+static const int BR_ADMIN_DEAD_KEEPALIVE_MS = 10000;
 
 //--- SKELETON OVERLAY. How far from the CAMERA a player is still drawn, in metres of view depth.
 //--- Ours, not COT's: JMESPModule culls at its own ESPRadius (200 m by default and an admin's

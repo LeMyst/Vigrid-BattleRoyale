@@ -255,6 +255,50 @@ static const float VIGRID_MAP_TEAM_STALE_ALPHA = 0.5;
 //--- about 0.6 m in 100 ms, and at the default scale that is roughly one pixel.
 static const int VIGRID_MAP_TEAM_TICK_MS = 100;
 
+//--- ADMIN PLAYER LAYER. An arbitrary set of named, coloured people the host mod asked to be plotted
+//--- (VigridMapAPI.SetAdminPlayers) - in practice an admin spectator's overview of a whole match.
+//---
+//--- 12 px, deliberately smaller than the teammate triangle's 14 and the self dart's 16. There can be
+//--- sixty of these against at most a handful of teammates, so the layer has to stay quiet enough
+//--- that the map underneath it is still readable.
+static const float VIGRID_MAP_ADMIN_PX = 12.0;
+static const float VIGRID_MAP_ADMIN_LINE_WIDTH = 2.0;
+
+//--- Upper bound on the label scan in Init. The REAL pool size is whatever map_menu.layout declares
+//--- (32 today) - the bind loop stops at the first gap, so the layout is the single source of truth
+//--- and this is only here to stop an unbounded FindAnyWidget walk. Raise it if the layout ever
+//--- declares more than this many.
+//---
+//--- ⚠️ The pool cannot grow at runtime: the labels have to be DECLARED to render at all (see
+//--- map_menu.layout). Glyphs stay uncapped, so a busier match loses names before it loses positions.
+static const int VIGRID_MAP_ADMIN_NAME_MAX = 64;
+
+//--- Pixels between the top of a glyph and the bottom of its name label.
+static const float VIGRID_MAP_ADMIN_NAME_GAP_PX = 3.0;
+
+//--- Fallback label size in real pixels, used only on the first frame before the label has been
+//--- shown and can report its own. MUST track the AdminName<n> size in map_menu.layout.
+static const float VIGRID_MAP_ADMIN_NAME_W = 120.0;
+static const float VIGRID_MAP_ADMIN_NAME_H = 16.0;
+
+//--- Names are hidden when zoomed OUT past this. Sixty labels at map-wide zoom overlap into an
+//--- unreadable smear and the glyphs alone carry the picture; the names come back as the admin zooms
+//--- into the fight they care about. The glyphs themselves are never hidden.
+//---
+//--- ⚠️ SCALE RUNS 0 (FULLY ZOOMED IN) TO 1 (FULLY OUT) - see VIGRID_MAP_DEF_SCALE above. So this is
+//--- a MAXIMUM and the test is `scale <= this`, which reads backwards until you remember that a
+//--- BIGGER number is LESS detail. Written as `>=` first time round, which hid the labels at exactly
+//--- the zoom an admin actually uses and showed them only when zoomed out to the whole map - i.e.
+//--- inverted on both halves at once, and silent, because the glyphs kept drawing either way.
+//---
+//--- 0.35 against a 0.20 default open and vanilla's own 0.33: names are up when the map opens and
+//--- stay up all the way in, and only go when the admin pulls back past roughly a third of the map.
+static const float VIGRID_MAP_ADMIN_NAME_MAX_SCALE = 0.35;
+
+//--- Throttle on the one funnel diagnostic this layer emits. It runs at the team layer's 10 Hz, so
+//--- without a throttle it would be six hundred lines a minute for as long as a map is open.
+static const int VIGRID_MAP_ADMIN_FUNNEL_MS = 2000;
+
 //--- 3D marker. Height offset lifts the tag off the ground so it is not buried in terrain.
 static const float VIGRID_MAP_MARKER_HEIGHT_OFFSET = 1.5;
 static const float VIGRID_MAP_MARKER_EDGE_MARGIN = 40.0;

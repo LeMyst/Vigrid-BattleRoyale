@@ -40,10 +40,18 @@ above the map instead.
 
 ## What is drawn
 
-Every overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen space.
-Canvas offers only `DrawLine` and `Clear`, so there is no text anywhere **on** the map and every glyph
-is a fan of strokes. (The refusal message is the one piece of text, and it is a `TextWidget` sibling of
-the `MapWidget` sitting in the strip above it, not an overlay on it.)
+Every glyph overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen
+space. Canvas offers only `DrawLine` and `Clear`, so every glyph is a fan of strokes.
+
+**Text is possible on the map, but only from widgets DECLARED in the layout.** The name labels on the
+host player layer are 32 `TextWidget`s declared inside the `MapWidget` (`AdminName0`..`AdminName31`);
+script binds them once and thereafter only positions and fills them. A widget *created from script*
+over a `MapWidget` is positioned correctly, reports the right size, passes every clip test and is
+never drawn — and that holds whether it is parented to the map or to a declared sibling frame above
+it, both measured 2026-08-18. The trade is that a declared pool **cannot grow at runtime**, so a match
+busier than the pool loses names while keeping every glyph.
+
+(The marker refusal message is text too, but it sits in the strip *above* the map rather than over it.)
 
 | Glyph | Means |
 |---|---|
@@ -54,6 +62,7 @@ the `MapWidget` sitting in the strip above it, not an overlay on it.)
 | Hollow triangle | A teammate |
 | Lighter diamond | A party ping |
 | Notched dart | You, on both maps — carries your heading, and the largest glyph on either |
+| Hollow square | A player the host mod asked to be plotted, in the colour it supplied — in practice an admin spectator's overview of a whole match. Carries a name label above it, and **no heading**: the host push has no facing in it, and a glyph implying one it was never told would be worse than one that admits it does not know |
 
 ## The compass strip
 

@@ -31,6 +31,10 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EndSpectate", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminDeadList", this );
+
+		admin_dead_names = new array<string>();
+		admin_dead_positions = new array<vector>();
 
 		admin_uids = new array<string>();
 		admin_names = new array<string>();
@@ -38,7 +42,7 @@ class BattleRoyaleRPC
 		admin_prev_positions = new array<vector>();
 		admin_healths = new array<float>();
 		admin_kills = new array<int>();
-		admin_slots = new array<int>();
+		admin_parties = new array<int>();
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
@@ -174,7 +178,9 @@ class BattleRoyaleRPC
 		admin_prev_positions.Clear();
 		admin_healths.Clear();
 		admin_kills.Clear();
-		admin_slots.Clear();
+		admin_parties.Clear();
+		admin_dead_names.Clear();
+		admin_dead_positions.Clear();
 		admin_recv_ms = 0;
 		admin_prev_recv_ms = 0;
 		admin_seq = 0;
@@ -402,7 +408,10 @@ class BattleRoyaleRPC
 	ref array<vector> admin_prev_positions;
 	ref array<float> admin_healths;
 	ref array<int> admin_kills;
-	ref array<int> admin_slots;
+	//! Match-local PARTY index per player, -1 for solo. Resolved to a colour client-side by
+	//! BattleRoyaleTeamColour.ForParty. Was the party SLOT index until #276 - see the docblock on
+	//! BattleRoyaleSpectators.AdminListPartyIndexOf for why the two are not interchangeable.
+	ref array<int> admin_parties;
 	int admin_recv_ms = 0;
 	int admin_prev_recv_ms = 0;
 	int admin_seq = 0;
@@ -452,7 +461,7 @@ class BattleRoyaleRPC
 		admin_positions.Copy( data.param3 );
 		admin_healths.Copy( data.param4 );
 		admin_kills.Copy( data.param5 );
-		admin_slots.Copy( data.param6 );
+		admin_parties.Copy( data.param6 );
 
 		//--- A roster that changed LENGTH cannot be interpolated against the previous one - index i
 		//--- is a different player now - so drop the old sample rather than lerping between two
@@ -462,6 +471,34 @@ class BattleRoyaleRPC
 
 		admin_recv_ms = GetGame().GetTime();
 		admin_seq = admin_seq + 1;
+	}
+
+	//! Names and death positions of every body worth tagging, for the admin overlay (#278).
+	//!
+	//! Positions are where each player FELL and never move afterwards - see the docblock on
+	//! BattleRoyaleSpectators.PushAdminDeadList for why the live corpse position would be wrong. No
+	//! uids and no party indices: a dead player's team is not actionable, and the wire carries the
+	//! minimum either way.
+	//!
+	//! Append-only and pushed on change, so unlike admin_positions there is nothing to interpolate
+	//! and no previous sample to keep.
+	ref array<string> admin_dead_names;
+	ref array<vector> admin_dead_positions;
+
+	void SetAdminDeadList(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<array<string>, array<vector>> dead_data;
+		if( !ctx.Read( dead_data ) )
+		{
+			ReadFailed("SetAdminDeadList");
+			return;
+		}
+
+		if( type != CallType.Client )
+			return;
+
+		admin_dead_names.Copy( dead_data.param1 );
+		admin_dead_positions.Copy( dead_data.param2 );
 	}
 
 	void SetSpectateOffer(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
