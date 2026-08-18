@@ -157,14 +157,18 @@ modded class PlayerBase
     /**
      *  One line describing this instance's copy of the base aiming angles.
      *
-     *  THE INSTRUMENT FOR THE REMOTE-ADS-PITCH DESYNC. Aim pitch is never replicated as an absolute
-     *  value - HumanInputController.GetAimChange (human.c:31) is a per-tick delta, so the owner, the
-     *  server and every observer's proxy each integrate their OWN copy, and a copy that is reset
-     *  while the others are not stays offset until the real aim saturates the pitch clamp (which is
-     *  the players' "sweep full up then full down" workaround). Every instance runs CommandHandler,
-     *  so every instance logs itself: the server's log carries every player, each client's carries
-     *  the local player plus every proxy in the bubble. Diffing the three copies of one player -
-     *  matched on net= across machines, t= for alignment - names the diverging copy and the event.
+     *  THE INSTRUMENT THAT FOUND THE REMOTE-ADS-PITCH DESYNC. Aim pitch is never replicated as an
+     *  absolute value - HumanInputController.GetAimChange (human.c:31) is a per-tick delta, so the
+     *  owner and the server each integrate their OWN copy, and a copy that freezes while the other
+     *  keeps moving stays offset until the real aim saturates the pitch clamp (the players' "sweep
+     *  full up then full down" workaround). Diffing the two copies of one player - matched on net=
+     *  across machines - is what convicted hic.SetDisabled in DisableInput below.
+     *
+     *  TWO copies, not three, and that is itself a measurement (2026-08-18): a REMOTE instance
+     *  never runs this override - zero trace lines from proxies on a client with the toggle on -
+     *  so proxies hold no integrated aim copy at all and what an observer renders follows the
+     *  SERVER's copy. The server's log carries every player; each client's log carries only its
+     *  own. Do not build anything on "the proxy's copy of the aim"; there is none reachable here.
      *
      *  Lives in the UNGUARDED part of this file for the same reason BR_LogTeleportState does: one
      *  method instruments both sides.

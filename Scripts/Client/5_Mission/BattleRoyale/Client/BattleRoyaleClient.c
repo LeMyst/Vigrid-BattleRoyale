@@ -625,25 +625,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 				br_previous_input_state = br_rpc.input_state;
 			}
 
-			//--- Teleport resync: restart the LOCAL instance of every player the server says was
-			//--- just teleported, proxies included - the aim-desync fix's client half. The flag is
-			//--- one-shot and consumed in CommandHandler, so hitting the local player here on top of
-			//--- the juncture is idempotent. A network id this client cannot resolve is a player
-			//--- outside the bubble: dropped on purpose, since an absent proxy has no stale state
-			//--- and a fresh one seeds from the server.
-			while( br_rpc.teleported_net_ids.Count() >= 2 )
-			{
-				//--- Element reads on their own lines before any call - the container-aliasing rule.
-				int tp_net_low = br_rpc.teleported_net_ids.Get(0);
-				int tp_net_high = br_rpc.teleported_net_ids.Get(1);
-				br_rpc.teleported_net_ids.RemoveOrdered(0);
-				br_rpc.teleported_net_ids.RemoveOrdered(0);
-
-				PlayerBase tp_player = PlayerBase.Cast( GetGame().GetObjectByNetworkId( tp_net_low, tp_net_high ) );
-				if( tp_player )
-					tp_player.BR_NotifyTeleported();
-			}
-
 			// Update player kill count
 			gameplay.UpdateKillCount( hud_kills );
 

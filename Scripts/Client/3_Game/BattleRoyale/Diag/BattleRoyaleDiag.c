@@ -37,14 +37,10 @@ class BattleRoyaleDiag
     //! How many CommandHandler ticks to keep logging for after a teleport juncture arrives.
     static int trace_teleport_ticks = 20;
 
-    //! Log each player instance's base aiming angles (owner, server and every proxy log their own
-    //! copy). The instrument for the remote-ADS-pitch desync. See PlayerBase.BR_LogAimState.
+    //! Log each player instance's base aiming angles. The instrument that found the remote-ADS-
+    //! pitch desync - note it measured that REMOTE instances run no script CommandHandler, so only
+    //! the owner and the server ever produce lines. See PlayerBase.BR_LogAimState.
     static bool trace_aim = false;
-
-    //! Gate on the NotifyPlayerTeleported broadcast - the aim-desync fix. Exists ONLY so Run A of
-    //! the measurement can reproduce the stale-proxy offset without a rebuild; a retail build (no
-    //! DIAG, this class absent) broadcasts unconditionally. Server-side, set over BRDiagAction.
-    static bool teleport_resync = true;
 
     //! Seconds between "[Spectate] cam=..." samples. Vanilla-ish 5 s is right for a background
     //! sanity check and far too coarse for a deliberate range test, where the interesting window is
@@ -137,7 +133,6 @@ class BattleRoyaleDiag
         trace_teleport = false;
         trace_teleport_ticks = 20;
         trace_aim = false;
-        teleport_resync = true;
         spectate_trace_interval = 5.0;
 
         hud_force = false;

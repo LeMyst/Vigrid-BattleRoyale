@@ -1959,13 +1959,6 @@ class BattleRoyaleServer: BattleRoyaleBase
                 break;
             }
 
-            case BattleRoyaleDiagAction.SET_TP_RESYNC:
-            {
-                BattleRoyaleDiag.teleport_resync = (data.param2 != 0);
-                BattleRoyaleUtils.Info("[Diag] teleport resync broadcast -> " + BattleRoyaleDiag.teleport_resync);
-                break;
-            }
-
             case BattleRoyaleDiagAction.KILL_SELF:
             {
                 //--- The entry point to the entire spectate feature. Without this, dying needs a
