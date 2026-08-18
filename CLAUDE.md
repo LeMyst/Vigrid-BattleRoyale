@@ -780,6 +780,57 @@ it carries SteamID64s, which `SetLeaderboard` deliberately keeps off the wire fo
 reason. That push is also why **tags work at any range while models do not**: positions come from the
 server, bones do not.
 
+**Names are coloured per PARTY, and that field is NOT `VigridPartyPalette` (#276).** The wire carries a
+match-local party index (`admin_parties`, was `admin_slots`) which
+`BattleRoyaleTeamColour.ForParty` turns into a generated pastel. Five things are load-bearing:
+
+- ⚠️ **The bug was a SEMANTIC one on a field that already existed and already drew.** The server filled
+  it with `VigridPartyAPI.GetMemberIndex` — the player's slot *inside* their own party — so every
+  party's first member came out amber and the overlay answered "which of my teammates is that" to
+  somebody who is in none of the parties. Nothing was missing; the wrong index was being sent.
+- **The index is keyed on `GetPartyId()`**, a stable string, into `m_PartyColourIndex`, assigned
+  first-seen. Deliberately **not** a position in `GetGroups(roster)`, which re-partitions the living
+  population every push — a team's colour would change whenever somebody in an earlier group died. A
+  party reduced to one living member keeps its colour: they are the last of a team, not a solo.
+- **The palette is not reused because it cannot answer this question.** It is eight hues wrapping on
+  `slot % 8`, right for a party of at most 16 that you are in, wrong for a match holding thirty
+  parties where two sharing amber *is* the question. Both still exist and neither should be pointed
+  at the other's job.
+- **The walk is the GOLDEN ANGLE with six sat/val tiers, and the tier count is not a round number.**
+  A golden-angle walk puts its closest hue pairs at Fibonacci offsets (8, 13, 21), and a tier count
+  dividing one of them leaves that pair separated by hue alone. At the first-written 3 tiers, parties
+  21 apart measured **dE 2.9** in CIE Lab — the just-noticeable threshold, i.e. indistinguishable. Six
+  divides none of them. The twelve tier values were *searched*, not picked; measured over 30 parties:
+  worst pair anywhere **dE 13.0**, worst adjacent pair **dE 46.4**, nearest to the solo white
+  **dE 20.6**. They are one package — changing one saturation moves the worst-case pair elsewhere.
+- ⚠️ **Thirty distinguishable colours do not exist and the code says so.** Categorical colour tops out
+  around ten to twelve. What is guaranteed is that no two parties share a colour and that adjacent
+  indices are far apart, which is what "are those two on the same side" needs. Do not "fix" this by
+  adding hues. `BR_SPECTATE_TAG_TARGET_COLOUR` is now a **fully saturated** amber precisely because
+  every generated colour is a pastel (sat ≤ 0.50), so the follow highlight can never collide.
+
+**A nearby body gets a name too (#278)**, from a second RPC, `SetAdminDeadList` — names and positions
+only, no uids and no party index. Four things about it:
+
+- ⚠️ **The positions are where each player FELL, not where the body is now**, and that is correct
+  rather than lazy. `CarryCorpse` moves a spectator's corpse hundreds of metres, but a carried body's
+  *replicated* position does not follow (measured, above), so no client renders it anywhere — tagging
+  the live server position would put a name in empty air and leave the fight unlabelled.
+- That is also what makes the set **append-only**, which is why it rides a 2 s clock with a count
+  comparison rather than the 500 ms player push. A keepalive covers an admin entering spectate in a
+  lull. 59 names and positions at 2 Hz would be the largest recurring payload in the mod.
+- **Proximity is a rule, not a clutter cap**: `BR_SPECTATE_CORPSE_TAG_RANGE_M` is 40 m against the
+  skeleton overlay's 500. The skeleton says a fight happened over there; the tag says who it was.
+- Corpse tags are dim, carry no health bar, sort *below* every living tag, fade over the last 8 m and
+  are **not edge-clamped** — an off-screen body is clutter where an off-screen living player is worth
+  knowing about. They are deliberately not team-coloured.
+
+**Both screen-space overlays are suppressed while the fullscreen map is open (#279)** — the tags and
+the COT skeleton canvas, via `BattleRoyaleClient.IsFullscreenMapOpen()`. ⚠️ **The skeleton guard sits
+BELOW the canvas `Clear()`, not above it**: a `CanvasWidget` keeps its draw list, so an earlier return
+burns the last frame of skeletons into the map for as long as it stays open. The map plots the same
+players itself — see *Map → the admin player layer*.
+
 **Skeletons are COT's renderer, called rather than copied — but from OUR loop, not COT's.** F6
 (`UADayZBRSpectateSkeleton`) is the one admin key with **no server half**, because it changes only
 what this client draws. `BattleRoyaleClient.UpdateSkeletonOverlay` runs each frame and calls
@@ -1340,6 +1391,13 @@ The Battle Royale mod talks to it **only** through `VigridMapAPI` (`Scripts/4_Wo
   - Delivery is **per-identity from `BattleRoyaleServer.PlayerLoadedIn`**, not a broadcast, which is what covers a mid-match joiner. Verified live: two clients received on their own load-in 13 s apart, which a broadcast could not have produced.
 
   `BattleRoyaleZoneData.Validate()` truncates the two arrays to equal length and drops anything undrawable, so no consumer re-checks the pair. Note the arrays are **per-mission overridable** like everything else in that file — and because the override is per-key rather than a merge, a mission that sets `hot_zone_centers` and forgets `hot_zone_radii` produces exactly the length mismatch `Validate()` clamps.
+- Client: `SetSelfPositionOverride` / `ClearSelfPositionOverride` — **where to draw "you" when that is not where your body is (#277).** Stated as a general contract, like `VigridPartyAPI.SetMemberHidden`: *a host mod can put the local player somewhere that is not where their body is.* The map addon has no concept of a spectator and must not try to detect one. `VigridMapMenu.ResolveSelfPos` feeds **both** `RenderSelfGlyph` and `CenterOnPlayer` — the second matters, or opening the map while spectating still centres on the anchor body even with the glyph in the right place. ⚠️ **Only the POSITION is overridden, never the heading**: the heading already comes from the camera on both maps and is therefore already right while spectating. ⚠️ **And it is asserted, not inferred** — "use the camera when it differs from the body" would put every third-person player's glyph several metres behind themselves. The **minimap needed no change at all**, because it re-centres on the camera every tick and never asks the player; that asymmetry is what the bug was.
+- Client: `SetAdminPlayers` / `ClearAdminPlayers` — **an arbitrary set of named, coloured people to plot (#279).** In practice an admin spectator's overview of a whole match. Four things are load-bearing:
+  - **The addon is told nothing about what they are.** Colours arrive as resolved ARGB ints, precisely so no concept of a party crosses the seam — unlike teammates, which need `VigridMapTeam`. **No indirection file is needed here**, because nothing on this side reads another addon; the host pushes.
+  - **Positions are the host's SERVER positions, which is the whole point.** An admin watches from far outside the network bubble, so a layer built from `ClientData` would show a handful of players at most. It is also why nothing is interpolated: a glyph 4 km away steps by about a pixel.
+  - **A hollow square**, the last silhouette not spent on the marker, zone, teammate, ping and self dart — and the only one with a flat top edge, which the eye reads before it can count vertices. It carries **no heading**: the push has no yaw, and implying a facing it was never told is worse than admitting it does not know.
+  - **It has an edge AND a clock**, unlike every other layer. The sequence catches the set growing or shrinking; the team clock covers positions moving, since a 2 Hz repaint of moving glyphs visibly steps.
+- ⚠️ **`AdminNameLayer` is the one place text goes over this map, and it is a SIBLING of the `MapWidget`, never a child.** A `CanvasWidget` draws lines only, and widgets created from script over a `MapWidget` are positioned correctly and then never render — measured repeatedly. So the name pool is declared in `map_menu.layout` beside the map and above it by `priority`, following `MarkerToast`, and is `SetPos`ed in **real screen pixels** (`MapToScreen` + the map's own `GetScreenPos`) while the glyph beneath it is drawn in canvas-local ones. It also has to be **clipped by hand**, since it is not inside the `MapWidget` to be clipped by it — which is exactly the trade that makes the text render. If this ever turns out not to work either, the symptom is "glyphs but no names", indistinguishable by eye from the zoom gate, an empty name, a pool that failed to build or a label clipped out — so the layer emits a throttled `[Admin] rows= drawn= labelled= offscreen=` funnel line naming which, rather than costing a build per hypothesis.
 - Server: `ClearAllMarkers()` from `1_BattleRoyaleDebug.Activate()`, beside the SafeZone call; `SetMarkersActive(bool)`.
 
 Party is reached **only** through `VigridMapTeam` (`Scripts/4_World/VigridMapTeam.c`) — the addon's only `#ifdef VIGRID_PARTY` code, verified by grep. It is in 4_World rather than 5_Mission precisely so its server half can serve `VigridMapMarkerStore` too; every body has an `#else` returning an empty answer, so `Party/config.cpp` renamed to `.disabled` leaves a working map with teammates and pings simply absent.

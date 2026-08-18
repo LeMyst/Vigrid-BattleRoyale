@@ -41,9 +41,15 @@ above the map instead.
 ## What is drawn
 
 Every overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen space.
-Canvas offers only `DrawLine` and `Clear`, so there is no text anywhere **on** the map and every glyph
-is a fan of strokes. (The refusal message is the one piece of text, and it is a `TextWidget` sibling of
-the `MapWidget` sitting in the strip above it, not an overlay on it.)
+Canvas offers only `DrawLine` and `Clear`, so every glyph is a fan of strokes and **no text can be
+drawn on a canvas at all**.
+
+Text therefore never lives inside the `MapWidget`. There are two pieces of it and both are **siblings**
+of the map, drawn above it by `priority`: the marker refusal message, which sits in the strip above the
+map rather than over it, and the **name labels on the host player layer**, which do overlap the map and
+are positioned in real screen pixels by script. Widgets *created from script* over a `MapWidget` are
+positioned correctly and then never rendered — measured repeatedly — so a declared sibling is the only
+mechanism available.
 
 | Glyph | Means |
 |---|---|
@@ -54,6 +60,7 @@ the `MapWidget` sitting in the strip above it, not an overlay on it.)
 | Hollow triangle | A teammate |
 | Lighter diamond | A party ping |
 | Notched dart | You, on both maps — carries your heading, and the largest glyph on either |
+| Hollow square | A player the host mod asked to be plotted, in the colour it supplied — in practice an admin spectator's overview of a whole match. Carries a name label above it, and **no heading**: the host push has no facing in it, and a glyph implying one it was never told would be worse than one that admits it does not know |
 
 ## The compass strip
 

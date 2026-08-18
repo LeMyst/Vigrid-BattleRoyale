@@ -1011,6 +1011,12 @@ class VigridMapMenu extends UIScriptedMenu
         //--- zoom into the fight they care about. The glyphs are never suppressed.
         bool want_names = m_MapWidget.GetScale() >= VIGRID_MAP_ADMIN_NAME_MIN_SCALE;
 
+        //--- Shown BEFORE any row is measured. A child of a hidden parent can report a zero screen
+        //--- size, and PlaceAdminName derives both of its offsets from that size - so measuring first
+        //--- and revealing afterwards would misplace every label on the frame the layer appears.
+        if (m_AdminNameLayer && want_names)
+            m_AdminNameLayer.Show(true);
+
         float canvas_w;
         float canvas_h;
         m_AdminCanvas.GetScreenSize(canvas_w, canvas_h);
