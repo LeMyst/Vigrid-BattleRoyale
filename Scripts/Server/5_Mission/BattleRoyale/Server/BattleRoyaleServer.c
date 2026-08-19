@@ -56,13 +56,18 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateMode", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCamPos", this);
+        //--- The VPP admin panel's one button. Its only caller is MenuBattleRoyaleManager.c, which is
+        //--- itself #ifdef VPPADMINTOOLS, so registration and caller are guarded on the same define
+        //--- and match.
+        //---
+        //--- ⚠️ The COT panel does NOT use this channel and never did - BRMasterControlsModule talks
+        //--- over ScriptRPC with its own id range. A comment here used to claim JM_COT was this RPC's
+        //--- only caller and that a COT-without-VPP build therefore had a live button and nothing
+        //--- listening; neither half was true. Whether the VPP surface is kept at all is #307.
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
 #ifdef DIAG_DEVELOPER
-        //--- Guarded on the same define as its handler, unlike NextState above, whose registration
-        //--- is VPPADMINTOOLS while its only caller is JM_COT - a COT-without-VPP build has a live
-        //--- button and nothing listening.
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "BRDiagAction", this );
 #endif
 

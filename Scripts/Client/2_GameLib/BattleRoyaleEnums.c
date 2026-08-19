@@ -1,4 +1,19 @@
-//#ifdef JM_COT
+/**
+ *  Admin panel wire ids. Carried by ScriptRPC and dispatched by BRMasterControlsModule.OnRPC
+ *  through the window its GetRPCMin() / GetRPCMax() declare.
+ *
+ *  Not guarded: an enum costs nothing in a retail build, and guarding it would mean guarding every
+ *  mention of it. Same reasoning as BattleRoyaleDiagAction below.
+ *
+ *  ⚠️ APPEND ONLY - the value travels on the wire, so renumbering desyncs a client that was not
+ *  rebuilt alongside the server.
+ *
+ *  The `Reserved*` slots are retired features whose senders and handlers have been deleted. They
+ *  are kept rather than removed precisely BECAUSE of the append-only rule: dropping one renumbers
+ *  every value after it. AddFakePlayer / AddFakeGroup moved to the diag menu (see PluginDiagMenu.c);
+ *  SpawnHorde / SpawnChemicals never had a button or a server case at all, and were dead in three
+ *  layers at once - enum value, module sender and form handler.
+ */
 enum BattleRoyaleCOTStateMachineRPC
 {
     INVALID = 11000, //Do not move this
@@ -6,15 +21,43 @@ enum BattleRoyaleCOTStateMachineRPC
     Next,
     Pause,
     Resume,
-    AddFakePlayer,
-    AddFakeGroup,
+    ReservedAddFakePlayer,   //!< RESERVED - do not reuse, do not remove
+    ReservedAddFakeGroup,    //!< RESERVED - do not reuse, do not remove
     SpawnAirdrop,
-    SpawnHorde,
-    SpawnChemicals,
+    ReservedSpawnHorde,      //!< RESERVED - do not reuse, do not remove
+    ReservedSpawnChemicals,  //!< RESERVED - do not reuse, do not remove
+
+    //--- One id for every state-changing admin action; which action rides in the payload as a
+    //--- BattleRoyaleAdminAction. Same shape as BRDiagAction and for the same reason: a new action
+    //--- then costs an enum value and a switch case rather than a wire change.
+    AdminAction,
+
+    StatusRequest,  //!< client -> server, no payload. Answered per identity, never broadcast.
+    StatusReply,    //!< server -> client, one serialized BattleRoyaleAdminStatus.
 
     COUNT //Do not move this
 }
-//#endif
+
+
+/**
+ *  What a BattleRoyaleCOTStateMachineRPC.AdminAction is asking the server to do.
+ *
+ *  Append only, for the same reason as the enum above - the value is written into the AdminAction
+ *  payload and therefore travels on the wire.
+ *
+ *  Every one of these is authorized server-side by BRMasterControlsModule.AuthorizeAdminAction
+ *  against a named COT permission plus the admins_steamid64 floor. The client-side permission check
+ *  only decides whether the control is drawn.
+ */
+enum BattleRoyaleAdminAction
+{
+    INVALID = 13000, //Do not move this
+
+    LOBBY_SET_HOLD,   //!< arg_i 0/1 - hold the lobby open, or release it
+    LOBBY_START_NOW,  //!< start the match now, bypassing every start gate but the group-count floor
+
+    COUNT //Do not move this
+}
 
 
 /**
