@@ -826,6 +826,29 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void ReadyUp(PlayerBase player)
     {
+        if(!player)
+            return;
+
+        /**
+         *  ⚠️ THE ROSTER IS THE AUTHORITY ON WHO MAY BE READY, and this guard is what enforces it.
+         *
+         *  m_ReadyList used to be appended to unconditionally, so anyone the lobby did not hold
+         *  could still be marked ready - and the vote counts readies against GetPlayers().Count().
+         *  A player removed from the match and then force-readied therefore produced "1/1 ready"
+         *  while the actual player was not ready and was not even in the match: the numerator came
+         *  from the ready list and the denominator from the roster, and the two no longer described
+         *  the same set of people.
+         *
+         *  Guarded HERE rather than at the two call sites, because it is an invariant of the ready
+         *  list rather than a rule about admins: you cannot be ready for a match you are not in.
+         *  RemovePlayer already drops them from m_ReadyList; this is the other half.
+         */
+        if(!ContainsPlayer(player))
+        {
+            BattleRoyaleUtils.Warn("[Lobby] refused ready-up for " + player.player_name + ": they are not on the lobby roster.");
+            return;
+        }
+
         if(m_ReadyList.Find(player) != -1)
         {
             MessagePlayerUntranslated(player, "STR_BR_YOU_ALREADY_READIED_UP");

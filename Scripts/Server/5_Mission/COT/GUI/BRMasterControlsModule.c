@@ -206,6 +206,9 @@ modded class BRMasterControlsModule
             case BattleRoyaleAdminAction.PLAYER_REMOVE:
                 Action_PlayerRemove( senderRPC, arg_uid );
             break;
+            case BattleRoyaleAdminAction.PLAYER_ADD:
+                Action_PlayerAdd( senderRPC, arg_uid );
+            break;
             case BattleRoyaleAdminAction.PLAYER_UNSTUCK:
                 Action_PlayerUnstuck( senderRPC, arg_uid );
             break;
@@ -350,10 +353,70 @@ modded class BRMasterControlsModule
         //--- OnPlayerTick's not-in-state branch schedules a late-join kick for. Exempt them, or
         //--- "remove from match" silently becomes "kick in 15 seconds".
         br_server.ExemptFromLateJoinKick( uid );
+
+        //--- ⚠️ RemovePlayer IS NOT A NEUTRAL ROSTER EDIT. It is the mod's single leaderboard
+        //--- recording point: it calls BattleRoyaleLeaderboard.RecordExit and
+        //--- BattleRoyaleMatchStats.RecordExit, booking this player a finishing placement. Both
+        //--- dedupe by uid and latch, so a later Add + Remove cannot double-score - but equally,
+        //--- PLAYER_ADD CANNOT UNDO THE RECORDING. Mid-match this is arguably right (they are out of
+        //--- the match), and in the lobby it is harmless because neither recorder is armed until the
+        //--- match begins. It is called out because "remove" reads like something reversible and the
+        //--- ladder half of it is not.
         state.RemovePlayer( subject );
 
         BattleRoyaleUtils.Info("[Admin] removed " + SubjectName( subject ) + " from the match roster (still connected).");
         ReportAdminAction( instance, BR_WEBHOOK_TYPE_PLAYER, "Removed " + SubjectName( subject ) + " from the match (not disconnected)." );
+    }
+
+    /**
+     *  Put a removed player back on the roster.
+     *
+     *  The undo for a mis-clicked Remove, which otherwise had none - once off the roster a player was
+     *  stuck outside the match with no way back short of a server restart.
+     *
+     *  ⚠️ It restores the ROSTER only. If the match had already begun, RemovePlayer will have
+     *  recorded their exit on the leaderboard and in the match summary, and both recorders latch by
+     *  uid - so their placement stands and this cannot revoke it. In the lobby, where neither is
+     *  armed yet, the undo is complete. The log line says which case applied rather than leaving the
+     *  operator to guess.
+     */
+    protected void Action_PlayerAdd( PlayerIdentity senderRPC, string uid )
+    {
+        JMPlayerInstance instance;
+        if ( !AuthorizeAdminAction( senderRPC, BR_PERM_PLAYER_MANAGE, "PlayerAdd", instance ) )
+            return;
+
+        BattleRoyaleServer br_server;
+        if ( !Class.CastTo( br_server, GetBR() ) )
+            return;
+
+        BattleRoyaleState state = br_server.GetCurrentState();
+        if ( !state )
+            return;
+
+        PlayerBase subject = ResolveSubject( senderRPC, uid, "PlayerAdd" );
+        if ( !subject )
+            return;
+
+        if ( state.ContainsPlayer( subject ) )
+        {
+            BattleRoyaleUtils.Warn("[Admin] add-to-match: " + SubjectName( subject ) + " is already on the roster.");
+            return;
+        }
+
+        state.AddPlayer( subject );
+
+        //--- Said out loud, because the two cases differ in a way the operator cannot see. Asked of
+        //--- the match summary rather than the leaderboard because the leaderboard is additionally
+        //--- gated on enable_leaderboard, so it would answer "no" on a server that simply has the
+        //--- ladder switched off.
+        BattleRoyaleMatchStats stats = BattleRoyaleMatchStats.GetInstance();
+        if ( stats && stats.IsRecording() )
+            BattleRoyaleUtils.Warn("[Admin] added " + SubjectName( subject ) + " back to the match - but their exit was already recorded and that cannot be undone.");
+        else
+            BattleRoyaleUtils.Info("[Admin] added " + SubjectName( subject ) + " back to the match roster.");
+
+        ReportAdminAction( instance, BR_WEBHOOK_TYPE_PLAYER, "Added " + SubjectName( subject ) + " back to the match." );
     }
 
     protected void Action_PlayerUnstuck( PlayerIdentity senderRPC, string uid )

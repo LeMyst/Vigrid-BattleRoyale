@@ -1407,7 +1407,17 @@ class BattleRoyaleServer: BattleRoyaleBase
             PlayerBase senderBase = m_DebugStateObj.GetPlayerFromIdentity(sender);
             if(!senderBase)
             {
-                Error("Debug state does not contain player requesting ready up!");
+                //--- ⚠️ WARN, NOT Error(). The global Error() is Error2("", err) - it raises a VM
+                //--- exception and unwinds the script stack, which on a live server is a far worse
+                //--- outcome than a dead keypress.
+                //---
+                //--- This branch used to be unreachable in practice: GetPlayerFromIdentity searches
+                //--- the state roster, and before the admin console the only ways off that roster
+                //--- were dying or disconnecting, neither of which leaves somebody able to press F1.
+                //--- "Remove from match" made it reachable - a player who is still connected, still
+                //--- has a body, and is no longer on the roster - so a single F1 from them would
+                //--- have taken the server's script VM down.
+                BattleRoyaleUtils.Warn("[Lobby] ready-up from " + GetIdentityLogName(sender) + " ignored: they are not on the lobby roster.");
                 return;
             }
 

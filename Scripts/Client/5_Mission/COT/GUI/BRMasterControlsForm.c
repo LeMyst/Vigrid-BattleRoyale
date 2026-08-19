@@ -26,6 +26,7 @@ class BRMasterControlsForm: JMFormBase
     private UIActionText m_txt_SelectedStats;
     private UIActionButton m_btn_Ready;
     private UIActionButton m_btn_Remove;
+    private UIActionButton m_btn_Add;
     private UIActionButton m_btn_Unstuck;
     private UIActionButton m_btn_TpCircle;
     private UIActionButton m_btn_CancelKick;
@@ -117,11 +118,14 @@ class BRMasterControlsForm: JMFormBase
             m_txt_Selected      = UIActionManager.CreateText( wrapper, "#STR_BR_COT_PLAYER_SELECTED", "-" );
             m_txt_SelectedStats = UIActionManager.CreateText( wrapper, " ", "-" );
 
-        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 5 );
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
             m_btn_Ready      = UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PLAYER_READY", this, "PlayerReady_Clicked" );
             m_btn_Unstuck    = UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PLAYER_UNSTUCK", this, "PlayerUnstuck_Clicked" );
             m_btn_TpCircle   = UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PLAYER_TPCIRCLE", this, "PlayerTpCircle_Clicked" );
+
+        wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 3 );
             m_btn_Remove     = UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PLAYER_REMOVE", this, "PlayerRemove_Clicked" );
+            m_btn_Add        = UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PLAYER_ADD", this, "PlayerAdd_Clicked" );
             m_btn_CancelKick = UIActionManager.CreateButton( wrapper, "#STR_BR_COT_PLAYER_KEEPJOIN", this, "PlayerCancelKick_Clicked" );
 
         //--- SCOREBOARD ---------------------------------------------------------------------------
@@ -490,14 +494,26 @@ class BRMasterControlsForm: JMFormBase
         m_txt_SelectedStats.SetText( detail );
 
         SetPlayerActionsEnabled( true );
+
+        //--- Per-action gating, so a button is never offered for a state it cannot apply to. Each of
+        //--- these has a server-side refusal behind it as well - the panel works off a snapshot that
+        //--- is up to a poll old, so it can be wrong for a moment and must not be the only guard.
         m_btn_CancelKick.SetEnabled( row.late_join_seconds >= 0 );
         m_btn_Remove.SetEnabled( row.in_state );
+        m_btn_Add.SetEnabled( !row.in_state );
+
+        //--- ⚠️ Only a player the lobby actually holds may be readied. Marking somebody off the
+        //--- roster ready produced "1/1 ready" with the real player not ready: the ready count and
+        //--- the denominator were drawn from two different sets of people. The server refuses it in
+        //--- ReadyUp too - this just stops the button inviting it.
+        m_btn_Ready.SetEnabled( row.in_state && !row.ready );
     }
 
     private void SetPlayerActionsEnabled( bool enabled )
     {
         m_btn_Ready.SetEnabled( enabled );
         m_btn_Remove.SetEnabled( enabled );
+        m_btn_Add.SetEnabled( enabled );
         m_btn_Unstuck.SetEnabled( enabled );
         m_btn_TpCircle.SetEnabled( enabled );
         m_btn_CancelKick.SetEnabled( enabled );
@@ -745,6 +761,14 @@ class BRMasterControlsForm: JMFormBase
             return;
 
         m_Module.SendAdminAction( BattleRoyaleAdminAction.PLAYER_REMOVE, 0, 0, SelectedUid() );
+    }
+
+    void PlayerAdd_Clicked(UIEvent eid, UIActionBase action)
+    {
+        if ( eid != UIEvent.CLICK )
+            return;
+
+        m_Module.SendAdminAction( BattleRoyaleAdminAction.PLAYER_ADD, 0, 0, SelectedUid() );
     }
 
     void PlayerUnstuck_Clicked(UIEvent eid, UIActionBase action)

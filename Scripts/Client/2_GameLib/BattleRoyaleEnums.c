@@ -84,6 +84,11 @@ enum BattleRoyaleAdminAction
     ZONE_LOCK_NOW,           //!< lock the incoming circle immediately, ending the travel window early
     ZONE_SELFTEST,           //!< arg_i = iterations; runs the generator acceptance harness and logs it
 
+    //--- Appended rather than filed next to PLAYER_REMOVE, which is where it belongs by meaning.
+    //--- These values travel on the wire, so inserting one renumbers every value after it - and the
+    //--- append-only rule is not worth bending for tidiness.
+    PLAYER_ADD,              //!< put a removed player back on the roster - the undo for PLAYER_REMOVE
+
     COUNT //Do not move this
 }
 
