@@ -337,7 +337,13 @@ class VigridPartyClient
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
 
-        if (!rpc.enabled || !rpc.ping_enabled)
+        //--- Silent, unlike the ping switch below: with the whole manager off there is no party
+        //--- system on this server at all, and telling the player that *pings* are disabled points
+        //--- them at the wrong setting. It also costs one of NotificationSystem's five slots.
+        if (!rpc.enabled)
+            return;
+
+        if (!rpc.ping_enabled)
         {
             Announce("STR_PARTY_PING_DISABLED");
             return;
