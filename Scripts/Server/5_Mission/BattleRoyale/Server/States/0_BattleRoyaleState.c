@@ -226,7 +226,7 @@ class BattleRoyaleState: Timeable
         return false;
     }
 
-    ref array<PlayerBase> GetPlayers()
+    array<PlayerBase> GetPlayers()
     {
         return m_Players;
     }
@@ -266,10 +266,10 @@ class BattleRoyaleState: Timeable
         OnPlayerCountChanged();
     }
 
-    ref array<PlayerBase> RemoveAllPlayers()
+    array<PlayerBase> RemoveAllPlayers()
     {
     	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleState::RemoveAllPlayers: removed %1 players", m_Players.Count()));
-        ref array<PlayerBase> result_array = new array<PlayerBase>();
+        array<PlayerBase> result_array = new array<PlayerBase>();
         result_array.InsertAll(m_Players);
         m_Players.Clear();
         OnPlayerCountChanged();
@@ -607,7 +607,7 @@ class BattleRoyaleState: Timeable
 //            return false;
 
 		// Avoid namalsk ice (and others)
-        ref array<string> bad_surface_types = {
+        array<string> bad_surface_types = {
             "nam_seaice",
             "nam_lakeice_ext"
         };

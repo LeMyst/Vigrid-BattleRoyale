@@ -185,7 +185,7 @@ class BattleRoyaleZone
             BattleRoyaleUtils.Warn("[BattleRoyaleZone] zone_settings." + setting_name + " has only " + entry_count + " entries but num_zones is " + i_NumRounds + "! Zones beyond entry " + (entry_count - 1) + " have no configuration.");
     }
 
-    static ref BattleRoyaleZone GetZone(int x = 1)
+    static BattleRoyaleZone GetZone(int x = 1)
     {
         BattleRoyaleZone m_Zone;
 
@@ -217,12 +217,12 @@ class BattleRoyaleZone
         }
     }
 
-    ref BattleRoyalePlayArea GetArea()
+    BattleRoyalePlayArea GetArea()
     {
         return m_PlayArea;
     }
 
-    ref BattleRoyaleZone GetParent()
+    BattleRoyaleZone GetParent()
     {
         return m_ParentZone;
     }
@@ -238,7 +238,7 @@ class BattleRoyaleZone
     int GetZoneNumber()
     {
         int number = 1;
-        ref BattleRoyaleZone parent = m_ParentZone;
+        BattleRoyaleZone parent = m_ParentZone;
         while(parent)
         {
             parent = parent.GetParent();
@@ -812,7 +812,7 @@ class BattleRoyaleZone
 
         for(i = 0; i < s_POI.Count(); i++)
         {
-            ref array<float> poi = s_POI.Get(i);
+            array<float> poi = s_POI.Get(i);
             if(!poi || poi.Count() < 2)
                 continue;
 
@@ -1335,7 +1335,7 @@ class BattleRoyaleZone
             for(roll = 0; roll < BR_ZONE_SEED_ROLLS; roll++)
             {
                 idx = (poi_base + roll) % s_FeasiblePOI.Count();
-                ref array<float> poi = s_FeasiblePOI.Get(idx);
+                array<float> poi = s_FeasiblePOI.Get(idx);
                 if(!poi || poi.Count() < 2)
                     continue;
 
@@ -1734,10 +1734,10 @@ class BattleRoyaleZone
     //--- relaunches could not establish what 200 runs inside one boot establish directly.
     void RunSelfTest(int iterations)
     {
-        ref array<vector> chain = new array<vector>();
-        ref array<int> depth_hist = new array<int>();
-        ref array<int> seed_hist = new array<int>();
-        ref array<int> tier_total = new array<int>();
+        array<vector> chain = new array<vector>();
+        array<int> depth_hist = new array<int>();
+        array<int> seed_hist = new array<int>();
+        array<int> tier_total = new array<int>();
         int completed = 0;
         int failed = 0;
         int run;
@@ -1774,7 +1774,7 @@ class BattleRoyaleZone
         //--- static sizes either way; and GetRadiusGrowth reads the committed play area rather than this
         //--- array. What it buys is that s_ChainRadii is never left describing a chain nobody plays -
         //--- same intent as the RNG reseed at the bottom of this method, and cheap enough to just do.
-        ref array<float> committed_radii = new array<float>();
+        array<float> committed_radii = new array<float>();
 
         if(iterations < 1)
             return;
@@ -1919,7 +1919,7 @@ class BattleRoyaleZone
     //--- Build every circle. Runs once per process; every later call is a lookup.
     protected void GenerateAll()
     {
-        ref array<vector> chain = new array<vector>();
+        array<vector> chain = new array<vector>();
 
         ResetGenerationStats();
         BuildFeasiblePOIList();

@@ -491,7 +491,7 @@ class BattleRoyaleSpectators
         string teammate_uid = "";
         int i = 0;
         int hop = 0;
-        ref set<string> visited = new set<string>();
+        set<string> visited = new set<string>();
 
         if (record)
             party = record.party_id;

@@ -107,7 +107,7 @@ class BattleRoyaleWin: BattleRoyaleState
 		}
 
         // Spawn chickens
-		ref array<string> chickens = {"Animal_GallusGallusDomesticus", "Animal_GallusGallusDomesticusF_Brown", "Animal_GallusGallusDomesticusF_Spotted", "Animal_GallusGallusDomesticusF_White"};
+		array<string> chickens = {"Animal_GallusGallusDomesticus", "Animal_GallusGallusDomesticusF_Brown", "Animal_GallusGallusDomesticusF_Spotted", "Animal_GallusGallusDomesticusF_White"};
 
 		for (int j = 0; j < 10; j++)
 		{

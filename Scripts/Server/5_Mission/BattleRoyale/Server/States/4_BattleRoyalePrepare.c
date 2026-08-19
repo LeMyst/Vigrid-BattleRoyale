@@ -448,7 +448,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         return Vector(x, y, z);
     }
 
-    protected ref Param2<vector, NamedLocation> GetRandomSpawnPosition()
+    protected Param2<vector, NamedLocation> GetRandomSpawnPosition()
     {
         vector random_pos = "0 0 0";
         NamedLocation village;
@@ -458,7 +458,7 @@ class BattleRoyalePrepare: BattleRoyaleState
         {
             vector village_pos = "0 0 0";
             BattleRoyaleUtils.Trace("Spawn in zone " + spawn_zone_number);
-            ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(spawn_zone_number).GetArea();
+            BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(spawn_zone_number).GetArea();
             for(int village_spawn_try = 1; village_spawn_try <= 200; village_spawn_try++)
             {
                 BattleRoyaleUtils.Trace("Try to spawn in village " + village_spawn_try);
@@ -548,7 +548,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             //--- A failed generation leaves a zero-radius placeholder rather than NULL, and both
             //--- shapes would make the disc draw meaningless - so fall straight through to the
             //--- map-wide search instead of dereferencing or sampling a point.
-            ref BattleRoyalePlayArea start_area = BattleRoyaleZone.GetZone(spawn_zone_number).GetArea();
+            BattleRoyalePlayArea start_area = BattleRoyaleZone.GetZone(spawn_zone_number).GetArea();
             vector zone_center = "0 0 0";
             float zone_radius = 0.0;
             if(start_area)
@@ -647,7 +647,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected void Teleport(PlayerBase process_player)
     {
-        ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
+        Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
         vector position = random_pos.param1;
         NamedLocation village = random_pos.param2;
 
@@ -679,7 +679,7 @@ class BattleRoyalePrepare: BattleRoyaleState
             if (!roster_player)
                 continue;
 
-            ref array<PlayerBase> solo = new array<PlayerBase>();
+            array<PlayerBase> solo = new array<PlayerBase>();
             solo.Insert(roster_player);
             groups.Insert(solo);
         }
@@ -690,7 +690,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
     protected void TeleportGroup(array<PlayerBase> group)
     {
-        ref Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
+        Param2<vector, NamedLocation> random_pos = GetRandomSpawnPosition();
         vector position = random_pos.param1;
         NamedLocation village = random_pos.param2;
 
@@ -1049,9 +1049,9 @@ class BattleRoyalePrepare: BattleRoyaleState
     //--- Index loop with a null check, not a foreach - see the note on the BattleRoyaleDebugState
     //--- override this mirrors. m_Players is already cleared by the time this runs, so a throw
     //--- here loses the roster during state migration.
-    override ref array<PlayerBase> RemoveAllPlayers()
+    override array<PlayerBase> RemoveAllPlayers()
     {
-        ref array<PlayerBase> players = super.RemoveAllPlayers();
+        array<PlayerBase> players = super.RemoveAllPlayers();
         for(int i = 0; i < players.Count(); i++)
         {
             PlayerBase player = players[i];

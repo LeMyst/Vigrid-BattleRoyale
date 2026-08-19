@@ -134,7 +134,7 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 		{
 			// admins_steamid64 is a server-operator concern (who is immune to kick/zone restriction),
 			// not mission content - a mission pack must never be able to grant itself admin immunity.
-			ref array<string> lockedAdmins = admins_steamid64;
+			array<string> lockedAdmins = admins_steamid64;
 
 			if (!JsonFileLoader<BattleRoyaleGameData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);

@@ -461,7 +461,7 @@ class BattleRoyaleLeaderboard
         if (m_ByUid.Contains(uid))
             return m_ByUid.Get(uid);
 
-        ref BattleRoyaleLeaderboardEntry entry = new BattleRoyaleLeaderboardEntry();
+        BattleRoyaleLeaderboardEntry entry = new BattleRoyaleLeaderboardEntry();
         entry.uid = uid;
         entry.name = uid;
 

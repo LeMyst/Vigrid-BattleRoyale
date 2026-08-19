@@ -278,7 +278,7 @@ class VigridPartyAPI
             if (!player)
                 continue;
 
-            ref array<PlayerBase> solo = new array<PlayerBase>();
+            array<PlayerBase> solo = new array<PlayerBase>();
             solo.Insert(player);
             groups.Insert(solo);
         }

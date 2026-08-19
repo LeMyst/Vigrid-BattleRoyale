@@ -469,7 +469,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		int offset, dx, dz;
 
 		// Create a grid data structure to count spawn points in each cell
-		ref map<int, int> grid_density = new map<int, int>();
+		map<int, int> grid_density = new map<int, int>();
 
 		// Count spawn points in each grid cell
 		for (int i = 0; i < m_HeatMapSpawnPoints.Count(); i++)

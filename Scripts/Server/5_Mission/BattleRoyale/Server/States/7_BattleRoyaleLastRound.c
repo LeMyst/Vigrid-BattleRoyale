@@ -89,7 +89,7 @@ class BattleRoyaleLastRound: BattleRoyaleState
         SendCountdown( m_FinalZoneLockTimer );
 
         //send play area to clients
-        ref BattleRoyalePlayArea m_PreviousArea = NULL;
+        BattleRoyalePlayArea m_PreviousArea = NULL;
         if(GetPreviousZone())
             m_PreviousArea = GetPreviousZone().GetArea();
 
