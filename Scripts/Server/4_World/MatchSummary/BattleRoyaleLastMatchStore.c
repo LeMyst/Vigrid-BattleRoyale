@@ -39,7 +39,7 @@ class BattleRoyaleLastMatchStore
      */
     static BattleRoyaleLastMatchFile Load()
     {
-        ref BattleRoyaleLastMatchFile store = NULL;
+        BattleRoyaleLastMatchFile store = NULL;
 
         if (!FileExist(BATTLEROYALE_LASTMATCH_FILE))
         {
@@ -134,7 +134,7 @@ class BattleRoyaleLastMatchStore
      */
     private static void Prune(BattleRoyaleLastMatchFile store)
     {
-        ref set<string> seen = new set<string>();
+        set<string> seen = new set<string>();
         int i = 0;
 
         for (i = store.rows.Count() - 1; i >= 0; i--)
@@ -169,7 +169,7 @@ class BattleRoyaleLastMatchStore
         //--- Best place first, and BEFORE the cap below so a file longer than the cap keeps the top
         //--- places rather than whichever rows happened to be stored first. Insertion sort: bounded
         //--- by the cap, and stable for equal places.
-        ref array<ref BattleRoyaleLastMatchRow> sorted = new array<ref BattleRoyaleLastMatchRow>();
+        array<ref BattleRoyaleLastMatchRow> sorted = new array<ref BattleRoyaleLastMatchRow>();
         for (i = 0; i < store.rows.Count(); i++)
         {
             BattleRoyaleLastMatchRow to_place = store.rows.Get(i);
@@ -204,7 +204,7 @@ class BattleRoyaleLastMatchStore
      */
     private static BattleRoyaleLastMatchFile ParseSummaryFile(string path)
     {
-        ref BattleRoyaleLastMatchFile store = NULL;
+        BattleRoyaleLastMatchFile store = NULL;
         string error_message = "";
 
         if (!FileExist(path))

@@ -15,9 +15,9 @@ class Timeable
         delete m_Timers;
     }
 
-    ref Timer AddTimer(float duration, Managed obj, string fn_name, Param params = NULL, bool loop = false)
+    Timer AddTimer(float duration, Managed obj, string fn_name, Param params = NULL, bool loop = false)
     {
-        ref Timer m_Timer = new Timer;
+        Timer m_Timer = new Timer;
         m_Timer.Run( duration, obj, fn_name, params, loop );
         
         if(loop)

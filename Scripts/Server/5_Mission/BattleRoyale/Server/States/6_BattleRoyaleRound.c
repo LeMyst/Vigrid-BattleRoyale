@@ -181,7 +181,7 @@ class BattleRoyaleRound: BattleRoyaleState
             }
 
 			//send play area to clients
-			ref BattleRoyalePlayArea m_PreviousArea = NULL;
+			BattleRoyalePlayArea m_PreviousArea = NULL;
 			if(GetPreviousZone())
 				m_PreviousArea = GetPreviousZone().GetArea();
 
@@ -192,7 +192,7 @@ class BattleRoyaleRound: BattleRoyaleState
 				SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
         }
 
-        ref BattleRoyalePlayArea m_ThisArea = NULL;
+        BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
         {
             GetZone().OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
@@ -418,11 +418,11 @@ class BattleRoyaleRound: BattleRoyaleState
         b_ZoneLocked = true;
 
         //send play area to clients
-        ref BattleRoyalePlayArea m_PreviousArea = NULL;
+        BattleRoyalePlayArea m_PreviousArea = NULL;
         if(GetPreviousZone())
             m_PreviousArea = GetPreviousZone().GetArea();
 
-        ref BattleRoyalePlayArea m_ThisArea = NULL;
+        BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
             m_ThisArea = GetZone().GetArea();
 

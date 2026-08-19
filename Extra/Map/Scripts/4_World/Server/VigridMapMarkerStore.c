@@ -123,7 +123,7 @@ class VigridMapMarkerStore
 
         //--- Held in a ref local before being handed over: Set() releases whatever was there first,
         //--- so the replacement has to already exist.
-        ref VigridMapMarker marker = new VigridMapMarker(uid, slot, clean_pos, clean_label, now_ms);
+        VigridMapMarker marker = new VigridMapMarker(uid, slot, clean_pos, clean_label, now_ms);
         m_Markers.Set(uid, marker);
 
         m_SetVersion = m_SetVersion + 1;

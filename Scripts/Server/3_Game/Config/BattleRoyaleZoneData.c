@@ -296,8 +296,8 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		string hz_raw;
 		vector hz_center;
 		float hz_radius;
-		ref array<string> hz_centers_kept;
-		ref array<float> hz_radii_kept;
+		array<string> hz_centers_kept;
+		array<float> hz_radii_kept;
 
 		if (GetGame() && GetGame().GetWorld())
 			world_size = GetGame().GetWorld().GetWorldSize();

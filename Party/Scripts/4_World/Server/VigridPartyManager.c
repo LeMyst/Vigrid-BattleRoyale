@@ -430,7 +430,7 @@ class VigridPartyManager
 
             if (party_id == "")
             {
-                ref array<PlayerBase> solo = new array<PlayerBase>();
+                array<PlayerBase> solo = new array<PlayerBase>();
                 solo.Insert(player);
                 groups.Insert(solo);
                 continue;
@@ -442,7 +442,7 @@ class VigridPartyManager
                 continue;
             }
 
-            ref array<PlayerBase> group = new array<PlayerBase>();
+            array<PlayerBase> group = new array<PlayerBase>();
             group.Insert(player);
             group_of_party.Set(party_id, groups.Count());
             groups.Insert(group);
@@ -566,7 +566,7 @@ class VigridPartyManager
 
     private VigridParty CreatePartyFor(string uid)
     {
-        ref VigridParty party = new VigridParty();
+        VigridParty party = new VigridParty();
         party.id = NewPartyId();
         party.created_at = VigridPartyTime.NowHours();
         party.last_seen_hours = party.created_at;
@@ -674,10 +674,10 @@ class VigridPartyManager
         //--- One pass over the population for everything below. GetPlayerByUid and NameOfUid each
         //--- walk GetGame().GetPlayers(), so reaching for them per member inside the loops that
         //--- follow would make this quadratic in a full lobby.
-        ref array<PlayerBase> pool = new array<PlayerBase>();
-        ref array<VigridParty> existing = new array<VigridParty>();
-        ref array<int> existing_sizes = new array<int>();
-        ref map<string, string> names = new map<string, string>();
+        array<PlayerBase> pool = new array<PlayerBase>();
+        array<VigridParty> existing = new array<VigridParty>();
+        array<int> existing_sizes = new array<int>();
+        map<string, string> names = new map<string, string>();
 
         int population_count = population.Count();
         for (int i = 0; i < population_count; i++)
@@ -721,7 +721,7 @@ class VigridPartyManager
             pool.Set(j, swap);
         }
 
-        ref VigridPartyAutoGroupPlan plan = VigridPartyAutoGroup.Plan(pool.Count(), existing_sizes, min_size, m_Settings.max_party_size, min_groups, remainder);
+        VigridPartyAutoGroupPlan plan = VigridPartyAutoGroup.Plan(pool.Count(), existing_sizes, min_size, m_Settings.max_party_size, min_groups, remainder);
 
         string summary = "AutoGroup min_size=" + min_size + " floor=" + min_groups;
         summary = summary + " pool=" + pool.Count() + " -> " + plan.Repr();
@@ -738,7 +738,7 @@ class VigridPartyManager
 
         //--- Slot -> party. The leading slots are parties that already exist; the rest are created
         //--- lazily by the first member the plan assigns to them.
-        ref array<VigridParty> slot_party = new array<VigridParty>();
+        array<VigridParty> slot_party = new array<VigridParty>();
         int slot_count = plan.slot_size.Count();
         for (int a = 0; a < slot_count; a++)
         {
@@ -748,7 +748,7 @@ class VigridPartyManager
                 slot_party.Insert(NULL);
         }
 
-        ref array<VigridParty> touched = new array<VigridParty>();
+        array<VigridParty> touched = new array<VigridParty>();
 
         int pool_count = pool.Count();
         for (int b = 0; b < pool_count; b++)
@@ -1709,7 +1709,7 @@ class VigridPartyManager
         m_LastInviteMs.Set(inviter_uid, now_ms);
 
         string invite_id = "i" + now_ms.ToString() + "-" + Math.RandomInt(0x1000, 0xFFFF).ToString();
-        ref VigridPartyInvite invite = new VigridPartyInvite(
+        VigridPartyInvite invite = new VigridPartyInvite(
             invite_id, inviter_uid, invitee_uid, party.id,
             now_ms + m_Settings.invite_ttl_seconds * 1000);
 
@@ -2077,7 +2077,7 @@ class VigridPartyManager
 
         //--- Held in a ref local before being handed over, exactly as an invite is: AddPing evicts
         //--- before it inserts, so the new marker has to survive a few statements first.
-        ref VigridPartyPing ping = new VigridPartyPing(uid, position, now_ms, expires_at_ms);
+        VigridPartyPing ping = new VigridPartyPing(uid, position, now_ms, expires_at_ms);
         party.AddPing(ping, m_Settings.ping_max_per_player);
 
         BroadcastPings(party);

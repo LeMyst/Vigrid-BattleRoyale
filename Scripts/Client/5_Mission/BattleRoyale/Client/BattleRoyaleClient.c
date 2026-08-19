@@ -880,7 +880,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 					if ( br_rpc.b_ArtillerySound )
 					{
-						ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+						EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
 						m_ArtySound.SetAutodestroy(true);
 					}
 				}
@@ -1688,7 +1688,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         b_IsReady = true; //this only runs once
 
-        ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
+        Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
         //--- No target: the server resolves the subject from the RPC sender identity. Sending one
         //--- would be ignored, and inviting it back is how the ready-up-anyone exploit worked.
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false );
@@ -2119,7 +2119,7 @@ class BattleRoyaleClient: BattleRoyaleBase
      */
     void RequestLeaderboard( int board )
     {
-        ref Param1<int> requested_board = new Param1<int>( board );
+        Param1<int> requested_board = new Param1<int>( board );
         //--- No target - see ReadyUp above.
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", requested_board, true );
     }

@@ -315,7 +315,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 					if(GetCurrentState().IsActive())
 						GetCurrentState().Deactivate(); //deactivate old state
 
-					ref array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
+					array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 					for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 					{
 						if(players[i])
@@ -680,7 +680,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- another call does not evaluate reliably. Keep it flat.
         bool sender_is_admin = IsAdminIdentity( sender );
 
-        ref Param1<bool> admin_flag = new Param1<bool>( sender_is_admin );
+        Param1<bool> admin_flag = new Param1<bool>( sender_is_admin );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", admin_flag, true, sender );
 
         //--- And where the match currently is, for the same reason: this client missed every
@@ -688,7 +688,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- means an admin, everyone else being kicked - reads the shipped default and behaves as
         //--- though the lobby were still running. Flat, like the admin verdict above.
         bool in_lobby = IsLobbyPhase();
-        ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
+        Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true, sender );
 
         //--- And the hot zones, for the same reason and to the same client. Static config, so this is
@@ -1097,8 +1097,8 @@ class BattleRoyaleServer: BattleRoyaleBase
         if( configured == 0 )
             return;  //--- nothing configured
 
-        ref array<string> near_centers = new array<string>();
-        ref array<float> near_radii = new array<float>();
+        array<string> near_centers = new array<string>();
+        array<float> near_radii = new array<float>();
 
         //--- Flattened to the ground plane: these are 2D circles, and a play area's centre carries a
         //--- terrain height that would otherwise inflate every distance.
@@ -1128,7 +1128,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- would take the caller's remaining work with it.
         //--- Plain array<T>, NOT ref array<T>, matching SetLobbyNames above - the send and the read
         //--- side have to spell the type the same way, and this is the pair that is known to work.
-        ref Param2<array<string>, array<float>> payload = new Param2<array<string>, array<float>>( near_centers, near_radii );
+        Param2<array<string>, array<float>> payload = new Param2<array<string>, array<float>>( near_centers, near_radii );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", payload, true, recipient );
 
         string who = "broadcast";
@@ -1223,7 +1223,7 @@ class BattleRoyaleServer: BattleRoyaleBase
                 names.Insert( subject.player_name );
             }
 
-            ref Param3<array<int>, array<int>, array<string>> payload = new Param3<array<int>, array<int>, array<string>>( net_low, net_high, names );
+            Param3<array<int>, array<int>, array<string>> payload = new Param3<array<int>, array<int>, array<string>>( net_low, net_high, names );
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyNames", payload, true, identity );
         }
     }
@@ -1239,7 +1239,7 @@ class BattleRoyaleServer: BattleRoyaleBase
     void BroadcastLobbyPhase()
     {
         bool in_lobby = IsLobbyPhase();
-        ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
+        Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true );
     }
 
@@ -1509,12 +1509,12 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         BattleRoyaleLastMatchFile previous = BattleRoyaleMatchStats.GetInstance().GetPrevious();
 
-        ref array<string> names = new array<string>();
-        ref array<int> places = new array<int>();
-        ref array<int> kills = new array<int>();
-        ref array<int> damage = new array<int>();
-        ref array<int> survived = new array<int>();
-        ref array<int> groups = new array<int>();
+        array<string> names = new array<string>();
+        array<int> places = new array<int>();
+        array<int> kills = new array<int>();
+        array<int> damage = new array<int>();
+        array<int> survived = new array<int>();
+        array<int> groups = new array<int>();
 
         int self_index = -1;
         int field_size = 0;
@@ -1760,7 +1760,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                 //--- Readies everyone through the real ReadyUp path, so the countdown, the messages
                 //--- and the vote threshold all behave exactly as they would with real players.
-                ref array<PlayerBase> lobby_players = lobby.GetPlayers();
+                array<PlayerBase> lobby_players = lobby.GetPlayers();
                 for(int r = 0; r < lobby_players.Count(); r++)
                 {
                     if(lobby_players[r])

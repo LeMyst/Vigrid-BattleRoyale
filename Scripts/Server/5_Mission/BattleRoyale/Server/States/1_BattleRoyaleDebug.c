@@ -95,7 +95,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         int not_loaded = 0;
 
-        ref array<PlayerBase> players = GetPlayers();
+        array<PlayerBase> players = GetPlayers();
         for(int i = 0; i < players.Count(); i++)
         {
             PlayerBase player = players.Get(i);
@@ -258,7 +258,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
      */
     void BR_DiagSetAllUnloaded(bool unloaded)
     {
-        ref array<PlayerBase> players = GetPlayers();
+        array<PlayerBase> players = GetPlayers();
         int marked = 0;
 
         for(int i = 0; i < players.Count(); i++)
@@ -649,10 +649,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         m_ReadyList.RemoveItem( player );
     }
 
-    override ref array<PlayerBase> RemoveAllPlayers()
+    override array<PlayerBase> RemoveAllPlayers()
     {
         m_ReadyList.Clear();
-        ref array<PlayerBase> players = super.RemoveAllPlayers();
+        array<PlayerBase> players = super.RemoveAllPlayers();
         return players;
     }
 }

@@ -61,7 +61,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
         //--- i_NumStartingPlayers, not the live count: the rounds decide which zone to skip to from
         //--- the countdown snapshot, so using the live count here can advertise a different circle.
         i_SpawnZoneNumber = GetDynamicStartingZone(i_NumStartingPlayers);
-        ref BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_SpawnZoneNumber).GetArea();
+        BattleRoyalePlayArea spawn_area = BattleRoyaleZone.GetZone(i_SpawnZoneNumber).GetArea();
         vector v_FirstZoneCenter = spawn_area.GetCenter();
         float f_FirstZoneRadius = spawn_area.GetRadius();
         float f_SpawnSelectionRadius = m_LobbySettings.spawn_selection_radius;
@@ -158,7 +158,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 #ifdef VIGRID_PARTY
 		BattleRoyaleUtils.Trace("Resolving a shared spawn point for every party with undecided members");
 
-		ref array<PlayerBase> players = GetPlayers();
+		array<PlayerBase> players = GetPlayers();
 		array<ref array<PlayerBase>> groups = VigridPartyAPI.GetGroups(players);
 
 		for(int g = 0; g < groups.Count(); g++)

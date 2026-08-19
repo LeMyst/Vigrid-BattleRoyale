@@ -71,10 +71,10 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         if (br_instance)
         {
             int starting_zone = GetDynamicStartingZone(i_NumStartingPlayers);
-            ref BattleRoyaleZone start_zone = BattleRoyaleZone.GetZone(starting_zone);
+            BattleRoyaleZone start_zone = BattleRoyaleZone.GetZone(starting_zone);
             if (start_zone)
             {
-                ref BattleRoyalePlayArea start_area = start_zone.GetArea();
+                BattleRoyalePlayArea start_area = start_zone.GetArea();
                 if (start_area)
                     br_instance.SetHotZoneReference(start_area.GetCenter(), start_area.GetRadius());
             }
@@ -122,7 +122,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     protected int GetFirstZoneLockExtraMs()
     {
         int first_zone_number = GetDynamicStartingZone(i_NumStartingPlayers);
-        ref BattleRoyaleZone first_zone = BattleRoyaleZone.GetZone( first_zone_number );
+        BattleRoyaleZone first_zone = BattleRoyaleZone.GetZone( first_zone_number );
         if(!first_zone)
             return 0;
 
@@ -196,7 +196,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         //--- the countdown snapshot, so using the live count here can advertise a different circle.
         m_Zone = m_Zone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers));
         m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
-        ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
+        BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
 
         BattleRoyaleUtils.Trace(m_ThisArea.GetCenter());
         BattleRoyaleUtils.Trace(m_ThisArea.GetRadius());
@@ -244,12 +244,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     void OpenLeaderboardMatch()
     {
         int field_size = GetPlayers().Count();
-        ref map<string, int> group_sizes = new map<string, int>();
+        map<string, int> group_sizes = new map<string, int>();
 
         //--- The match summary needs two more snapshots taken at this same instant: which squad each
         //--- player belongs to, and what everyone was called while they all still had an identity.
-        ref map<string, int> group_index = new map<string, int>();
-        ref map<string, string> names = new map<string, string>();
+        map<string, int> group_index = new map<string, int>();
+        map<string, string> names = new map<string, string>();
         bool grouped = false;
 
         //--- Seeded with the SOLO partition first, then overwritten by the party block below. That
