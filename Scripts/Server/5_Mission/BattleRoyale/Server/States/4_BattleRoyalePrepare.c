@@ -441,7 +441,14 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         vector building_candidate;
         if (BattleRoyalePOIResolver.GetSpawnCandidate(village.GetName(), building_candidate))
+        {
+            //--- Says WHICH path produced the position. Without it the two are indistinguishable
+            //--- afterwards - a spawn can be reconstructed from the log but not attributed, and the
+            //--- fix for "that spawn was poor" is completely different depending on whether it came
+            //--- from a fringe building or from the disc fallback landing in an empty field.
+            BattleRoyaleUtils.Trace("[Spawn] " + village.GetName() + " via BUILDING at " + building_candidate);
             return building_candidate;
+        }
 
         //--- FALLBACK: the disc draw, but around the resolved anchor and sized by the resolved extent.
         //--- Reached when the POI resolved nothing (a hamlet under poi_min_buildings, a POI the type
@@ -484,6 +491,11 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Distance from village center: " + distance + " (from an initial radius of " + village_pad + ")");
 
         BattleRoyaleUtils.Trace("Trying to spawn player to " + village.Name + " (" + village.Type + ") with a radius of " + village_pad);
+
+        //--- Paired with the BUILDING line above. This path draws from open ground inside the town's
+        //--- radius and can legitimately land in a field, so knowing a spawn came from here is the
+        //--- first thing to establish when one looks wrong.
+        BattleRoyaleUtils.Trace("[Spawn] " + village.GetName() + " via DISC r=" + village_pad + " at " + Vector(x, y, z));
 
         return Vector(x, y, z);
     }
@@ -797,13 +809,37 @@ class BattleRoyalePrepare: BattleRoyaleState
         //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
         //TODO: force stand up
 
-		vector direction;
+		vector direction = "0 0 0";
 
         if (village)
         {
-            direction = vector.Direction(player.GetPosition(), village.Position);
-        } else {
-            //random direction
+            //--- Face the middle of the town, so the player lands looking INTO the buildings rather
+            //--- than at whatever happened to be behind them.
+            //---
+            //--- ⚠️ Measured FROM `position`, the spot they are about to be teleported to - NOT from
+            //--- player.GetPosition(). The teleport has not happened yet: SendSyncJuncture below is
+            //--- what performs it, so GetPosition() still returns the LOBBY, and the old form was
+            //--- computing a map-scale bearing from the lobby to the village. That is a fixed
+            //--- direction for everybody in the match, and it has nothing to do with where the town
+            //--- is relative to the player.
+            //---
+            //--- ⚠️ And aimed at the RESOLVED anchor, not village.Position, which is the CfgWorlds
+            //--- map label and therefore the empty field beside the town - so the old form pointed
+            //--- players away from the buildings even once the distance was right.
+            vector face_target = BattleRoyalePOIResolver.GetAnchor(village.GetName(), village.Position);
+
+            direction = vector.Direction(position, face_target);
+
+            //--- Horizontal only. vector.Direction keeps the height difference, and a town centre up
+            //--- a hillside would otherwise pitch the player's view at the sky or the ground.
+            direction[1] = 0;
+        }
+
+        //--- Random facing when there is no village, and also when the player has landed effectively
+        //--- ON the anchor - a zero-length direction has no meaning and would leave the facing to
+        //--- whatever the juncture makes of it.
+        if (direction.Length() < 0.001)
+        {
             float dir = Math.RandomFloat(0, 360); //non-inclusive, 360==0
             vector playerDir = vector.YawToVector(dir);
             direction = Vector(playerDir[0], 0, playerDir[1]);

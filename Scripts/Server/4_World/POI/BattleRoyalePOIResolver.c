@@ -65,7 +65,10 @@ class BattleRoyalePOIResolver
 {
     //--- Bump when the ALGORITHM changes in a way that invalidates stored results. Parameter changes
     //--- are caught by the signature instead, so this only moves for code changes.
-    static const int BR_POI_CACHE_VERSION = 1;
+    //--- v2: FillSample restricted to buildings inside the derived extent. A v1 cache holds fringe
+    //--- outliers as spawn anchors, and nothing in the parameter signature would have caught that -
+    //--- no SETTING changed, only the algorithm. This is what that distinction is for.
+    static const int BR_POI_CACHE_VERSION = 2;
 
     //--- Distance weighting of the centroid. w = 1 - FALLOFF * (d/R)^2, so a building at the centre
     //--- counts 1.0 and one at the rim counts 0.25.
@@ -403,7 +406,7 @@ class BattleRoyalePOIResolver
         entry.building_count = found.Count();
         entry.extent = ComputeExtent(settings, center, found);
 
-        FillSample(entry, found);
+        FillSample(entry, center, found);
         return true;
     }
 
@@ -559,21 +562,54 @@ class BattleRoyalePOIResolver
     //--- Keeps at most BR_POI_SAMPLE_CAP buildings, evenly spread through the collected list rather
     //--- than the first N. The engine returns objects in its own spatial order, so taking a prefix
     //--- would systematically favour one part of the town.
-    protected static void FillSample(BattleRoyalePOICacheEntry entry, array<vector> found)
+    //---
+    //--- ⚠️ ONLY BUILDINGS INSIDE THE DERIVED EXTENT ARE KEPT, and that filter is the difference
+    //--- between "spawned in the village" and "spawned next to a shed in a field".
+    //---
+    //--- The scan reaches poi_scan_radius_m (350) so that a large town's extent can be measured at
+    //--- all, but the extent itself is the 80th percentile - so the outer band of every collection is
+    //--- fringe: an isolated barn, a lone outbuilding, the corner of the next hamlet. Sampling evenly
+    //--- across the whole collection gives those the same weight as a house on the main street.
+    //---
+    //--- Measured live: a player dropped at Vybor landed 16.5 m from Land_Shed_M3, a shed over 300 m
+    //--- from the town centre and outside the 203 m extent - technically "next to a building" and
+    //--- exactly the wrong experience. Both towns sampled that day spanned 26-330 m from their
+    //--- anchor, with 5 of 32 entries beyond the extent.
+    protected static void FillSample(BattleRoyalePOICacheEntry entry, vector center, array<vector> found)
     {
-        int step = found.Count() / BR_POI_SAMPLE_CAP;
+        ref array<vector> core = new array<vector>;
+        int i;
+
+        for (i = 0; i < found.Count(); i++)
+        {
+            vector p = found.Get(i);
+
+            float dx = p[0] - center[0];
+            float dz = p[2] - center[2];
+
+            if (Math.Sqrt((dx * dx) + (dz * dz)) <= entry.extent)
+                core.Insert(p);
+        }
+
+        //--- Nothing inside the extent should be impossible - the extent is a percentile OF these
+        //--- same distances, so at least 80% of them qualify by construction - but a degenerate town
+        //--- clamped by poi_extent_min_m could in principle empty it, and a spawn table with no
+        //--- entries silently disables the building path for that town.
+        if (core.Count() == 0)
+            core = found;
+
+        int step = core.Count() / BR_POI_SAMPLE_CAP;
         if (step < 1)
             step = 1;
 
         int taken = 0;
-        int i;
 
-        for (i = 0; i < found.Count() && taken < BR_POI_SAMPLE_CAP; i += step)
+        for (i = 0; i < core.Count() && taken < BR_POI_SAMPLE_CAP; i += step)
         {
-            vector p = found.Get(i);
+            vector q = core.Get(i);
 
-            entry.buildings.Insert(p[0]);
-            entry.buildings.Insert(p[2]);
+            entry.buildings.Insert(q[0]);
+            entry.buildings.Insert(q[2]);
             taken++;
         }
     }
