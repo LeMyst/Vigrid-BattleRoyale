@@ -86,9 +86,38 @@ Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 
 
 ## Testing
 
-**There are no tests, no linter, and no CI.** `.github/` contains only `copilot-instructions.md`.
+**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~4 s) holds 13 checks over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
 
-Validation loop: `Deploy.bat` → launch (`ClientEXE` defaults to `DayZDiag_x64.exe`) → read the `.rpt` in the profile directory for script errors.
+```bash
+python Tools/check.py            # everything
+python Tools/check.py --list     # name every check
+python Tools/check.py --only rpc # one (repeatable, or comma-separated)
+python Tools/check.py -W         # warnings fail too - what CI runs
+```
+
+| Check | Catches |
+|---|---|
+| `asset-paths` | every `Vigrid-BattleRoyale/...` asset reference resolves |
+| `configs` | `CfgPatches` names unique, `requiredAddons` resolve, no stripped vanilla parents |
+| `data` | tracked JSON parses; no UTF-8 BOM on any data file |
+| `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls are `#ifdef`-guarded |
+| `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
+| `extra-index` | every `Extra/` addon has a README, an index entry and a config |
+| `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
+| `inputs` | every `Inputs.xml` parses, and its three sections agree |
+| `menu-ids` | no two `MENU_*` constants share an id across the PBOs |
+| `rpc` | every `AddRPC` name has a matching CF handler method |
+| `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
+| `stringtable` | every `STR_*` key referenced is defined, in its own addon's table |
+| `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |
+
+**What it does NOT do is compile anything**, so a green run says nothing about whether the mod loads. Every check decides from source text alone, and what they cover is precisely the class of defect that fails **silently at runtime with a clean `.rpt`** — a dead RPC registration, a colliding menu id, an unguarded server file, a settings field that loads back empty. `-W` is affordable because the tree is clean, so a new warning must never be left to pass silently.
+
+⚠️ **CI cannot build the mod and no hosted runner can** — binarize/rapify/pack need DayZ Tools, Windows and a mounted `P:`. A self-hosted Windows runner would be *worse than nothing*: `P:\Vigrid-BattleRoyale` is a single global junction, so a CI job would silently steal the build target from whatever interactive session was mid-build.
+
+⚠️ **A check that stops catching anything still goes green.** `settings-version` was fixed in #309 after its `MEMBER` pattern — which has no notion of brace depth — read three ordinary **local variables** as brand-new settings fields simply because a diff re-added those lines. When changing a check, prove it in both directions: construct an input it must reject and confirm it still does, exactly as with the diag fixtures elsewhere in this file.
+
+Validation loop for anything the suite cannot see: `Deploy.bat` → launch (`ClientEXE` defaults to `DayZDiag_x64.exe`) → read the `.rpt` in the profile directory for script errors.
 
 **Reach for `LaunchOffline.bat` first, and only escalate to `LaunchLocalMP.bat N` when the test genuinely needs a server.** It is one process instead of two-to-four, it loads in ~90 s, and it gives a real controllable character — so the whole client half of the mod is testable in it: HUD and widget layout, menus and keybinds, the map addon, the compass, name tags, world markers, `#ifndef SERVER` code paths, and anything judged by eye. What it cannot reach is the mod itself: `SERVER` is undefined offline, so all of `Scripts/Server/**` compiles out — no `BattleRoyaleServer`, no states, no zones, no RPCs, no settings JSONs. Anything keyed on match state, a second player, or a server→client push needs MP.
 
