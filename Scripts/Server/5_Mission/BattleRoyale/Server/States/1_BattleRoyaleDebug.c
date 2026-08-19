@@ -767,6 +767,17 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         status.lobby_can_start_now = BR_CanStartNow();
     }
 
+    //--- Has this player readied up? For the admin console's roster, which shows the vote per player
+    //--- rather than only the total - "6 of 8 ready" does not say WHICH two the operator should be
+    //--- chasing. m_ReadyList stays protected; this is the whole of the read side.
+    bool BR_IsReady(PlayerBase player)
+    {
+        if(!player)
+            return false;
+
+        return (m_ReadyList.Find( player ) != -1);
+    }
+
     int GetReadyCount()
     {
         int ready_count = 0;

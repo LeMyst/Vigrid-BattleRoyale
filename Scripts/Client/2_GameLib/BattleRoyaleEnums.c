@@ -35,6 +35,17 @@ enum BattleRoyaleCOTStateMachineRPC
     StatusRequest,  //!< client -> server, no payload. Answered per identity, never broadcast.
     StatusReply,    //!< server -> client, one serialized BattleRoyaleAdminStatus.
 
+    //--- The per-player table. Its own request/reply pair rather than riding StatusReply, because it
+    //--- is an order of magnitude larger and is only wanted while a panel is actually showing it -
+    //--- a separate id is what lets the client not ask.
+    RosterRequest,
+    RosterReply,    //!< server -> client, one serialized BattleRoyaleAdminRoster. CARRIES UIDS.
+
+    //--- The generated circle table. Static for the whole process once generation has run, so the
+    //--- client asks once and caches rather than polling.
+    ZoneRequest,
+    ZoneReply,      //!< server -> client, one serialized BattleRoyaleAdminZoneTable.
+
     COUNT //Do not move this
 }
 
@@ -55,6 +66,23 @@ enum BattleRoyaleAdminAction
 
     LOBBY_SET_HOLD,   //!< arg_i 0/1 - hold the lobby open, or release it
     LOBBY_START_NOW,  //!< start the match now, bypassing every start gate but the group-count floor
+
+    //--- Player operations. arg_uid names the SUBJECT; the ACTOR is always resolved from `sender`,
+    //--- never from the payload - a client may not name who it is acting as.
+    PLAYER_READY,            //!< force one lobby player to ready up
+    PLAYER_READY_ALL,        //!< every lobby player; ignores arg_uid
+    PLAYER_REMOVE,           //!< drop them from the match roster WITHOUT disconnecting them
+    PLAYER_UNSTUCK,          //!< ignoring the cooldown and AllowsUnstuck()
+    PLAYER_TP_CIRCLE,        //!< to the circle currently in play, lobby centre before that
+    PLAYER_EXEMPT_LATEJOIN,  //!< cancel a pending late-join kick and exempt them from further ones
+
+    //--- Announcements. arg_text is the message, arg_f how long it stays on screen.
+    ANNOUNCE_ALL,            //!< ignores arg_uid
+    ANNOUNCE_PLAYER,         //!< whispered to arg_uid
+
+    //--- Zone pacing.
+    ZONE_LOCK_NOW,           //!< lock the incoming circle immediately, ending the travel window early
+    ZONE_SELFTEST,           //!< arg_i = iterations; runs the generator acceptance harness and logs it
 
     COUNT //Do not move this
 }

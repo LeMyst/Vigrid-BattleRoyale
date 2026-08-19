@@ -549,6 +549,89 @@ class BattleRoyaleServer: BattleRoyaleBase
     }
 
     /**
+     *  Seconds left on this uid's pending late-join kick, or -1 when none is running.
+     *
+     *  For the admin console: until this existed there was no way to SEE that somebody was on a
+     *  disconnect countdown, which made "why did that player drop?" unanswerable after the fact.
+     *
+     *  ⚠️ Only an ARMED entry has a deadline. ScheduleLateJoinKick merely records the joiner; the
+     *  clock does not start until ArmLateJoiner, driven by the client's own PlayerLoadedIn - because
+     *  a countdown started at connect is mostly loading screen (measured: ClientPrepare -> ClientNew
+     *  alone took 20 s). An unarmed entry is pending but not yet counting, and answering 0 for it
+     *  would read as "about to be kicked".
+     */
+    int BR_GetLateJoinSecondsLeft(string uid)
+    {
+        if(uid == "")
+            return -1;
+        if(!a_LateJoiners)
+            return -1;
+
+        int now = GetGame().GetTime();
+
+        for(int i = 0; i < a_LateJoiners.Count(); i++)
+        {
+            BattleRoyaleLateJoiner entry = a_LateJoiners[i];
+            if(!entry)
+                continue;
+            if(entry.plain_id != uid)
+                continue;
+            if(!entry.armed)
+                return -1;
+
+            int left_ms = entry.deadline_ms - now;
+            if(left_ms < 0)
+                left_ms = 0;
+
+            return left_ms / 1000;
+        }
+
+        return -1;
+    }
+
+    /**
+     *  Cancel a pending late-join kick and stop it being re-scheduled.
+     *
+     *  ⚠️ BOTH halves are required and dropping either makes this useless. Forgetting the entry
+     *  alone leaves OnPlayerTick's not-in-state branch free to schedule a fresh kick on the very
+     *  next tick - that branch runs for anyone the current state does not hold, which is exactly the
+     *  player being rescued. Exempting alone leaves the already-armed deadline running. So: exempt
+     *  first, then forget.
+     *
+     *  Returns false when the uid names nobody connected, so the caller can say so rather than
+     *  reporting a success that did nothing.
+     */
+    bool BR_CancelLateJoinKick(string uid)
+    {
+        if(uid == "")
+            return false;
+
+        ExemptFromLateJoinKick( uid );
+
+        PlayerBase subject = NULL;
+        array<Man> population = new array<Man>();
+        GetGame().GetPlayers( population );
+
+        for(int i = 0; i < population.Count(); i++)
+        {
+            PlayerBase candidate = PlayerBase.Cast( population[i] );
+            if(!candidate)
+                continue;
+            if(candidate.player_steamid == uid)
+            {
+                subject = candidate;
+                break;
+            }
+        }
+
+        if(!subject)
+            return false;
+
+        ForgetLateJoiner( subject, subject.GetIdentity() );
+        return true;
+    }
+
+    /**
      *  True if this player is allowed to stay connected while holding no state (admins only).
      *
      *  Checks admins_steamid64 DIRECTLY as well as the a_LateJoinExempt list, and that is a fix
