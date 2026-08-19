@@ -53,8 +53,14 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 		// Override from mission folder
 		if (FileExist(GetMissionPath()))
 		{
+			//--- Restored if the mission pass empties it - see BattleRoyaleDataBase.CopyStrings.
+			ref array<string> keptAvoid = CopyStrings(avoid_city_spawn);
+
 			if (!JsonFileLoader<BattleRoyaleSpawnsData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
+
+			if (!avoid_city_spawn || avoid_city_spawn.Count() == 0)
+				avoid_city_spawn = keptAvoid;
 		}
 	}
 

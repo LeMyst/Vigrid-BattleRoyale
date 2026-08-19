@@ -161,6 +161,131 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //--- It is here because the interesting cases are combinatorial and the local rig runs three
     //--- clients, which cannot produce a four-way split, a top-up that also leaves a remainder, or
     //--- the max_party_size overflow.
+    //--- How often a building-adjacent spawn candidate is actually ACCEPTED by IsSafeForTeleport.
+    //---
+    //--- This exists because the obvious failure of the building-based spawn is invisible from the
+    //--- outside. GetSpawnCandidate offsets from a building's ORIGIN, and a large structure -
+    //--- Land_HouseBlock_3F is tens of metres long - can easily still contain a point 4-14 m from its
+    //--- origin. IsSafeForTeleport then rejects that candidate every single time, so big buildings
+    //--- would be systematically under-represented as spawn anchors and the retry loop would quietly
+    //--- fall through to the disc draw, undoing the feature while every log line still looked healthy.
+    //---
+    //--- Lives here rather than in BattleRoyalePrepare because IsSafeForTeleport is a BattleRoyaleState
+    //--- method and this state is the one that is actually active with no players in the match. It
+    //--- rides poi_resolve_selftest rather than adding a setting: it is the same feature's acceptance
+    //--- gate, one step further down.
+    //---
+    //--- check_zone is false because the play area is irrelevant to the question being asked, which is
+    //--- purely "is this spot clear of geometry".
+    protected void RunSpawnAcceptanceSelfTest()
+    {
+        BattleRoyalePOIsData poi_settings = BattleRoyaleConfig.GetConfig().GetPOIsData();
+        if (!poi_settings || poi_settings.poi_resolve_selftest <= 0)
+            return;
+
+        ref array<string> names = new array<string>;
+        BattleRoyalePOIResolver.GetResolvedNames(names);
+
+        if (names.Count() == 0)
+            return;
+
+        int accepted = 0;
+        int rejected = 0;
+        int no_candidate = 0;
+        int worst_pois = 0;
+        int i;
+        int s;
+
+        float t0 = GetGame().GetTickTime();
+
+        for (i = 0; i < names.Count(); i++)
+        {
+            string poi_name = names.Get(i);
+            int poi_ok = 0;
+
+            for (s = 0; s < BR_SPAWN_SELFTEST_SAMPLES; s++)
+            {
+                vector candidate;
+                if (!BattleRoyalePOIResolver.GetSpawnCandidate(poi_name, candidate))
+                {
+                    no_candidate++;
+                    continue;
+                }
+
+                if (IsSafeForTeleport(candidate[0], candidate[1], candidate[2], false))
+                {
+                    accepted++;
+                    poi_ok++;
+                }
+                else
+                    rejected++;
+            }
+
+            //--- A town where NOTHING is acceptable is the shape that matters - an average hides it,
+            //--- and every spawn there falls silently through to the disc draw. But a zero out of
+            //--- BR_SPAWN_SELFTEST_SAMPLES is NOT evidence of that on its own, and saying so would
+            //--- make this warning worthless.
+            //---
+            //--- ⚠️ MEASURED: at a 33% overall rate, P(0 of 8) is 4%, so across 77 POIs about three
+            //--- towns come up empty by luck alone - and three did. Two runs then named six DIFFERENT
+            //--- towns, one of which was Zelenogorsk, a town with 409 buildings that obviously cannot
+            //--- be unspawnable. A warning that accuses a different innocent town every boot trains
+            //--- the reader to ignore it.
+            //---
+            //--- So a zero only triggers a SECOND, longer pass, and only a town that fails that too is
+            //--- reported. The confirm pass is why the sample count can stay small: it runs for a
+            //--- handful of POIs rather than all 77, so the common case stays fast.
+            if (poi_ok == 0 && ConfirmDeadPOI(poi_name))
+            {
+                worst_pois++;
+                BattleRoyaleUtils.Warn("[SpawnSelfTest] " + poi_name + " accepted nothing in " + BR_SPAWN_SELFTEST_CONFIRM.ToString() + " further attempts - spawns there fall back to the disc draw.");
+            }
+        }
+
+        float elapsed_ms = (GetGame().GetTickTime() - t0) * 1000.0;
+        int total = accepted + rejected;
+
+        int percent = 0;
+        if (total > 0)
+            percent = (accepted * 100) / total;
+
+        string line = "[SpawnSelfTest] ";
+        line = line + names.Count().ToString() + " POIs x " + BR_SPAWN_SELFTEST_SAMPLES.ToString();
+        line = line + " - accepted " + accepted.ToString();
+        line = line + ", rejected " + rejected.ToString();
+        line = line + " (" + percent.ToString() + "%)";
+        line = line + ", no candidate " + no_candidate.ToString();
+        line = line + ", dead POIs " + worst_pois.ToString();
+        line = line + " (" + elapsed_ms.ToString() + " ms)";
+        BattleRoyaleUtils.Info(line);
+
+        //--- The threshold is set from the RETRY BUDGET, not from what looks like a healthy number.
+        //--- GetRandomSpawnPosition draws up to 50 candidates per village and each draw picks a fresh
+        //--- building and a fresh offset, so at 42% the chance of exhausting that budget is about
+        //--- 1e-12 and at 15% it is still under 1 in 3000. Warning at "below half" would fire on a
+        //--- perfectly healthy server - which it did, at the measured 42%.
+        if (percent < BR_SPAWN_SELFTEST_WARN_PERCENT)
+            BattleRoyaleUtils.Warn("[SpawnSelfTest] acceptance is low enough to strain the 50-draw retry budget - spawns will often fall through to the disc draw. Raise BR_SPAWN_BUILDING_OFFSET_MIN_M so candidates clear the building they are measured from.");
+    }
+
+    //--- Second opinion on a POI that scored zero, with a much longer draw. Only a town that fails
+    //--- this too is worth telling anybody about - see the note at the call site.
+    protected bool ConfirmDeadPOI(string poi_name)
+    {
+        int s;
+        for (s = 0; s < BR_SPAWN_SELFTEST_CONFIRM; s++)
+        {
+            vector candidate;
+            if (!BattleRoyalePOIResolver.GetSpawnCandidate(poi_name, candidate))
+                continue;
+
+            if (IsSafeForTeleport(candidate[0], candidate[1], candidate[2], false))
+                return false;
+        }
+
+        return true;
+    }
+
     protected void RunAutoGroupSelfTest()
     {
         if ( i_AutoGroupSelfTest <= 0 )
@@ -560,6 +685,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         //--- One match per process, so this runs at most once.
         RunAutoGroupSelfTest();
 #endif
+
+        //--- Outside the VIGRID_PARTY guard above - nothing about spawn placement involves parties.
+        RunSpawnAcceptanceSelfTest();
 
         super.Activate();
     }

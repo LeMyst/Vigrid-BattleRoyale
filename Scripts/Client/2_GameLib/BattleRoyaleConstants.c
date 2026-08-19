@@ -944,6 +944,63 @@ static const float BR_ZONE_SMALL_CIRCLE_R = 200.0;
 //"centred within this of the town's CfgWorlds point", not "somewhere in the town".
 static const float BR_ZONE_POI_JITTER_M = 10.0;
 
+//--- POI RESOLUTION FROM BUILDINGS.
+//---
+//--- A CfgWorlds "Names" entry carries only name, position[] and type - no radius and no extent
+//--- (verified across ChernarusPlus and Enoch; no vanilla script reads the block at all). That
+//--- position is a MAP-LABEL anchor, placed to keep the text off the buildings, so it routinely sits
+//--- outside the settlement it names. Measured on ChernarusPlus 2026-08-19: Settlement_Chernogorsk,
+//--- the largest coastal city on the map, has TWO buildings within 100 m of its label - a news stand
+//--- and a car wreck - and the city proper does not appear until 200 m. Prigorodki has four.
+//---
+//--- The resolver replaces that label with an anchor derived from the buildings actually present.
+
+//--- Mean-shift convergence: stop re-centring once a pass moves the anchor less than this.
+static const float BR_POI_RESOLVE_CONVERGE_M = 15.0;
+
+//--- How many building positions are kept per POI. The spawn side picks one at random and offsets a
+//--- few metres from it, which is what makes an L-shaped or valley town work where a centroid alone
+//--- would drop players in the gap. Capped because this is cached to disk and 306 POIs x N vectors
+//--- is the whole file size.
+static const int BR_POI_SAMPLE_CAP = 32;
+
+//--- Spawn offset from the chosen building's ORIGIN. Far enough that IsSafeForTeleport's 2.5 m sphere
+//--- cast and 2x10x2 box clear the building itself, close enough that the player is unambiguously in
+//--- the town - the derived extent of a real town is 200-290 m, so even the far end of this range is
+//--- deep inside it.
+//---
+//--- ⚠️ THE OFFSET IS MEASURED FROM THE ORIGIN, NOT FROM THE WALL, and that is what makes the minimum
+//--- load-bearing rather than cosmetic. A building's origin sits near its centre, so anything shorter
+//--- than its half-extent is a point INSIDE the building, which IsSafeForTeleport rejects every single
+//--- time - biasing spawns towards small buildings and, for a town of large ones, rejecting every
+//--- candidate it ever draws. Vanilla residential footprints run ~8-20 m and apartment blocks
+//--- (Land_HouseBlock_3F) past 25 m, so the minimum has to clear roughly half of that.
+//---
+//--- Measured on ChernarusPlus, 77 POIs x 8 candidates, via the acceptance self test in
+//--- BattleRoyaleDebug: at 4-14 m only 33% of candidates were accepted. Do not lower these without
+//--- re-running that test.
+static const float BR_SPAWN_BUILDING_OFFSET_MIN_M = 10.0;
+static const float BR_SPAWN_BUILDING_OFFSET_MAX_M = 28.0;
+
+//--- Candidates drawn per POI by the spawn acceptance self test in BattleRoyaleDebug, and the
+//--- acceptance percentage below which it warns. Each sample costs an IsSafeForTeleport, which is a
+//--- sphere cast plus a box collide, so this is deliberately small - it is a health check, not a
+//--- survey, and it only runs when poi_resolve_selftest is on.
+static const int BR_SPAWN_SELFTEST_SAMPLES = 8;
+
+//--- Confirmation draws for a POI that scored zero on the pass above. At the measured ~42% overall
+//--- rate a zero-of-8 happens by luck for roughly one town in eighty, so the first pass alone cannot
+//--- tell an unusable town from an unlucky one - two runs named six different towns, one of them
+//--- Zelenogorsk, which has 409 buildings. 40 further draws put a false positive at about 1e-9. It
+//--- only runs for the handful of POIs that scored zero, so it costs almost nothing.
+static const int BR_SPAWN_SELFTEST_CONFIRM = 40;
+
+//--- Warn below this acceptance percentage. Derived from the retry budget rather than from a
+//--- comfortable-looking number: GetRandomSpawnPosition draws up to 50 candidates per village, so
+//--- even 15% leaves under a 1-in-3000 chance of exhausting it. 50 was the first guess and fired on a
+//--- perfectly healthy 42% server.
+static const int BR_SPAWN_SELFTEST_WARN_PERCENT = 15;
+
 //Search budgets. Every one of these bounds WORK only - none of them can cause a failure, because
 //the witness step at the end of TryPlaceLevel cannot be rejected.
 static const int   BR_ZONE_LEVEL_RETRIES = 3;   //attempts at a level before it takes the witness step
