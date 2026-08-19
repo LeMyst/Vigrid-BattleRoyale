@@ -6,4 +6,4 @@ logoOver = "Vigrid-BattleRoyale/GUI/textures/Mod_Logo.paa";		// on mouse hover o
 tooltip = "DayZ Battle Royale";									// tooltip on mouse hover
 overview = "DayZ Battle Royale Mod";							// overview
 author = "Myst, KeganH, check credits";							// author
-version = "0.1.0-Vigrid";										// version
+version = "0.2.0-Vigrid";										// version

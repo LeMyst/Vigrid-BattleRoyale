@@ -151,7 +151,7 @@ PROBES = [
      True),
 
     ("version: mod.cpp drifts from the constant", "version",
-     "mod.cpp", replace('version = "0.1.0-Vigrid"', 'version = "9.9.9-probe"')),
+     "mod.cpp", replace('version = "0.2.0-Vigrid"', 'version = "9.9.9-probe"')),
 
     ("configs: duplicate CfgPatches addon name", "configs",
      "Extra/SpawnCarFull/config.cpp",

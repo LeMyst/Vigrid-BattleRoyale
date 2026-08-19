@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.0-Vigrid";
+static const string BATTLEROYALE_VERSION = "0.2.0-Vigrid";
 
 #ifdef DIAG
 #define BR_TRACE_ENABLED
