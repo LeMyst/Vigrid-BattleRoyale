@@ -781,7 +781,7 @@ FrameWidgetClass main_menu_root {
      }
     }
     ButtonWidgetClass message_button {
-     visible 0
+     visible 1
      color 1 1 1 0
      position 0.5 0
      size 45 33
