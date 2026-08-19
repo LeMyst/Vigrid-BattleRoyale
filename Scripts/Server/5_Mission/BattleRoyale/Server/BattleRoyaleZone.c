@@ -2057,6 +2057,35 @@ class BattleRoyaleZone
 				city_position = {override_position[0], override_position[2]};
 				BattleRoyaleUtils.Trace("Override " + city + " position!");
 			}
+			else if( city_position.Count() >= 2 )
+			{
+				//--- Move the POI onto the town's real centre, when the resolver found one.
+				//---
+				//--- end_in_villages seeds the final circle on this point with only
+				//--- BR_ZONE_POI_JITTER_M of jitter, and a CfgWorlds position is a map-LABEL anchor
+				//--- placed to keep the text off the buildings - so without this the endgame is
+				//--- centred on the field beside the town it names. Measured on ChernarusPlus:
+				//--- Chernogorsk's label has two buildings within 100 m of it.
+				//---
+				//--- Deliberately BELOW the admin override, and deliberately not folded into it: the
+				//--- resolver's own table already contains admin overrides, but it is empty when
+				//--- resolve_poi_from_buildings is off, and reading it alone would then silently
+				//--- disable override_poi_positions along with the feature.
+				//---
+				//--- Same 2-element rule as above - GetAnchor returns a full vector and only x and z
+				//--- may be written back.
+				vector poi_label = "0 0 0";
+				poi_label[0] = city_position[0];
+				poi_label[2] = city_position[1];
+
+				vector poi_anchor = BattleRoyalePOIResolver.GetAnchor( city, poi_label );
+				if( poi_anchor != poi_label )
+				{
+					city_position = {poi_anchor[0], poi_anchor[2]};
+					if(trace_pois)
+						BattleRoyaleUtils.Trace("Resolved " + city + " onto its buildings at " + city_position);
+				}
+			}
 
 			if(trace_pois)
 				BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);

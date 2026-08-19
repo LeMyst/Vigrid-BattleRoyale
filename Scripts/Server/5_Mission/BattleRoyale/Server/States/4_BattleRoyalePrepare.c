@@ -352,19 +352,28 @@ class BattleRoyalePrepare: BattleRoyaleState
 
 					if(use_radius)
 					{
-						// TODO: Move this to configuration file
 						if (town_entry.Type == NamedLocation.CITY)
 							village_pad = 300.0;
 						else if (town_entry.Type == NamedLocation.CAPITAL)
 							village_pad = 500.0;
 						else
 							village_pad = 150.0;
+
+						//--- Real footprint where one is known, so "does this town reach the starting
+						//--- circle" is asked about the town rather than about a per-type guess. The
+						//--- literals above stay as the fallback for an unresolved POI.
+						village_pad = BattleRoyalePOIResolver.GetExtent(town_entry.GetName(), village_pad);
 					}
 					else
 						village_pad = 0.0;
 
+					//--- Tested at the resolved anchor too - the label can sit a couple of hundred
+					//--- metres outside the town, so an overlap test against it can both accept a town
+					//--- that is really out of the circle and reject one that is really in it.
+					vector town_anchor = BattleRoyalePOIResolver.GetAnchor(town_entry.GetName(), town_entry.Position);
+
 					// Check if city area is in the area, otherwise skip it
-					if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_entry.Position, village_pad), m_SpawnsSettings.extra_spawn_radius))
+					if(!area.IsAreaOverlap(new BattleRoyalePlayArea(town_anchor, village_pad), m_SpawnsSettings.extra_spawn_radius))
 						continue;
 				}
 
@@ -417,10 +426,35 @@ class BattleRoyalePrepare: BattleRoyaleState
         return villages && villages.Count() == 0;
     }
 
+    //--- Where in this village to put a player.
+    //---
+    //--- PREFERRED PATH: a few metres from a REAL BUILDING picked at random from the ones the
+    //--- resolver found. A centroid plus a radius cannot describe a town that is L-shaped, strung
+    //--- along a valley, or split by a river - it puts players in the gap. "Next to one of this
+    //--- town's actual buildings" is correct for any shape, and it is also what a battle-royale drop
+    //--- is supposed to feel like.
+    //---
+    //--- The offset matters as much as the building: IsSafeForTeleport rejects any candidate whose
+    //--- 2.5 m sphere cast or 2x10x2 box touches a structure, so spawning ON the building position
+    //--- would be rejected every time and burn all 50 attempts.
     protected vector GetRandomVillagePosition(NamedLocation village)
     {
-        float village_x = village.Position[0];
-        float village_z = village.Position[2];
+        vector building_candidate;
+        if (BattleRoyalePOIResolver.GetSpawnCandidate(village.GetName(), building_candidate))
+            return building_candidate;
+
+        //--- FALLBACK: the disc draw, but around the resolved anchor and sized by the resolved extent.
+        //--- Reached when the POI resolved nothing (a hamlet under poi_min_buildings, a POI the type
+        //--- filter skipped, or resolve_poi_from_buildings off entirely), in which case GetAnchor and
+        //--- GetExtent both hand back exactly what this method used before.
+        //---
+        //--- Centre on the anchor rather than on village.Position: taking the extent from the resolver
+        //--- while taking the centre from the label would describe a circle around a point the radius
+        //--- was never measured from.
+        vector village_anchor = BattleRoyalePOIResolver.GetAnchor(village.GetName(), village.Position);
+
+        float village_x = village_anchor[0];
+        float village_z = village_anchor[2];
         float village_pad;
 
         if (village.Type == NamedLocation.CITY)
@@ -429,6 +463,12 @@ class BattleRoyalePrepare: BattleRoyaleState
             village_pad = 500.0;
         else
             village_pad = 100.0;
+
+        //--- Retires the two hardcoded pads above, which carried a "TODO: Move this to configuration
+        //--- file" and were badly wrong in both directions: measured on ChernarusPlus the real extent
+        //--- of a Capital is ~272 m against the 500 m assumed here, so nearly half the draw area was
+        //--- never in the town at all.
+        village_pad = BattleRoyalePOIResolver.GetExtent(village.GetName(), village_pad);
 
         float radius, angle, x, z, y;
         // Use Math.Pow with power > 1 to concentrate points toward the center

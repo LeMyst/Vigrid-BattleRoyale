@@ -143,6 +143,20 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- per-round cost. Note i_NumRounds is read above and the state list below is sized from
         //--- it, so generation has to observe the same already-validated num_zones - it does, both
         //--- read it through GetZoneData().
+        //--- Resolve every POI to where its town actually is, BEFORE the circles are generated.
+        //---
+        //--- The ordering is load-bearing: a CfgWorlds "Names" position is a map-label anchor placed
+        //--- to keep the text off the buildings, and BattleRoyaleZone seeds the final circle on it
+        //--- with only BR_ZONE_POI_JITTER_M of jitter - so with end_in_villages on, an unresolved run
+        //--- centres the endgame on the field beside the town. Measured on ChernarusPlus,
+        //--- Settlement_Chernogorsk has two buildings within 100 m of its label.
+        //---
+        //--- Safe to run here: measured 2026-08-19, the object tree is fully populated at
+        //--- MissionServer.OnInit - an OnInit pass and a lobby pass returned bit-identical counts at
+        //--- every sample. Cost is first-touch per region (~12 s cold across 306 POIs), which is why
+        //--- the result is cached to the mission folder and later boots pay nothing.
+        BattleRoyalePOIResolver.Init();
+
         BattleRoyaleZone.PrepareGeneration();
 
         //--- initialize all states (in order from start to finish)
