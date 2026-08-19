@@ -41,9 +41,15 @@ UPGRADE_TOUCHED = re.compile(r"^\+.*\bversion\s*<\s*\d+")
 
 
 def git(*args: str) -> tuple[int, str]:
+    # `text=True` alone decodes with the LOCALE codec, which on a Windows box is cp1252 - so the
+    # first non-ASCII byte in a diffed settings file raised UnicodeDecodeError inside subprocess's
+    # reader thread, and `run()` then returned stdout=None for the check to crash on. The repo's
+    # sources are UTF-8, so say so. errors="replace" because this output is scanned for `+` lines
+    # and version numbers: a mangled character in a comment must not take the whole check down.
     result = subprocess.run(
-        ["git", "-C", str(repo_root()), *args], capture_output=True, text=True)
-    return result.returncode, result.stdout
+        ["git", "-C", str(repo_root()), *args],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return result.returncode, result.stdout or ""
 
 
 def merge_base() -> str | None:

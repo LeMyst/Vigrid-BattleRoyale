@@ -649,6 +649,45 @@ static const int BR_ADMIN_REFUSED_PHASE = 2;
 static const int BR_ADMIN_OFFER_RESPAWN = 3;
 static const int BR_ADMIN_ALLOW_SPECTATE = 4;
 
+//--- THE COT ADMIN PANEL (BRMasterControlsModule). ---------------------------------------------
+//--- How often a panel that is open asks the server for a fresh BattleRoyaleAdminStatus. The client
+//--- polls rather than the server pushing, so that "who has the panel open" needs no server-side
+//--- subscription table and a closed panel costs nothing - the same request/response shape
+//--- RequestLeaderboard already uses.
+static const int BR_ADMIN_STATUS_INTERVAL_MS = 1000;
+
+//--- groups_alive when the party manager cannot answer. NOT 0 and NOT the player count: with the
+//--- manager disabled GetGroupCount() returns one group per player, which is a real number that
+//--- happens to be wrong, and showing it under a group heading is worse than showing nothing.
+//--- Mirrors the BR_HUD_GROUPS_NONE sentinel the HUD already uses for the same reason (#158).
+static const int BR_ADMIN_GROUPS_UNKNOWN = -1;
+
+//--- COT permission strings. One per action group rather than one blanket pair, so an operator can
+//--- hand a moderator role the lobby controls without handing over the whole state machine.
+//---
+//--- ⚠️ THESE ARE NOT THE ONLY GATE AND MUST NEVER BE THE ONLY GATE. A COT permission is checked on
+//--- the CLIENT to decide whether a control is drawn; the server re-checks it, and also allows
+//--- anyone in admins_steamid64 regardless. That list is mission-locked by design
+//--- (BattleRoyaleGameData.LoadMission snapshots and restores it), so it is the one authorization
+//--- that content cannot grant itself - which is why it stays as the floor rather than being
+//--- replaced by roles. See BRMasterControlsModule.AuthorizeAdminAction.
+//--- ⚠️ THE VIEW STRING KEEPS ITS OLD NAME ON PURPOSE. It is the one permission that was already
+//--- live and already working, so any operator who has granted it to a role would silently lose the
+//--- panel if it were renamed to match the newer ones. A tidier name is not worth breaking every
+//--- existing COT role config for. The retired "BattleRoyale.StateMachine.Update" is NOT kept -
+//--- it was registered and never read anywhere, so nothing can depend on it.
+static const string BR_PERM_VIEW = "BattleRoyale.StateMachine.View";
+static const string BR_PERM_MATCH_CONTROL = "BattleRoyale.Match.Control";
+static const string BR_PERM_LOBBY_CONTROL = "BattleRoyale.Lobby.Control";
+
+//--- Webhook connection suffixes, one per action group. COT builds the connection name as
+//--- GetModuleName() + type, so these are bare suffixes rather than whole names, and they are what
+//--- an operator subscribes a Discord channel to in COT's own webhook form. Split rather than one
+//--- firehose so "somebody skipped a round" and "somebody held the lobby" can go to different
+//--- places - or so one can be subscribed and the other ignored.
+static const string BR_WEBHOOK_TYPE_MATCH = "Match";
+static const string BR_WEBHOOK_TYPE_LOBBY = "Lobby";
+
 //--- CORPSE CARRY. The replication bubble is centred on the spectator's CORPSE, not on the camera -
 //--- UpdateSpectatorPosition does not move it (measured both directions 2026-08-10). So a target
 //--- beyond DayZ's default 1000 m networkRangePlayers simply is not replicated, and the spectator

@@ -61,6 +61,31 @@ class BattleRoyaleState: Timeable
     protected static vector s_FutureAreaCenter = "0 0 0";
     protected static float s_FutureAreaRadius = 0.0;
 
+    //--- Read-only accessors, because the four above are `protected` and the COT admin readout is
+    //--- neither a state nor a subclass of one. Getters rather than making the fields public: the
+    //--- write side is deliberately funnelled through SendCurrentPlayArea / SendFuturePlayArea,
+    //--- which also push the RPC, and a public field would let a future caller set a circle that
+    //--- no client was ever told about.
+    static vector GetAnnouncedCurrentCenter()
+    {
+        return s_CurrentAreaCenter;
+    }
+
+    static float GetAnnouncedCurrentRadius()
+    {
+        return s_CurrentAreaRadius;
+    }
+
+    static vector GetAnnouncedFutureCenter()
+    {
+        return s_FutureAreaCenter;
+    }
+
+    static float GetAnnouncedFutureRadius()
+    {
+        return s_FutureAreaRadius;
+    }
+
     string GetName()
     {
         return "Unknown State";
@@ -184,6 +209,62 @@ class BattleRoyaleState: Timeable
             return false;
 
         return !IsActive();
+    }
+
+    /**
+     *  Milliseconds left on whatever this state is counting down to, or BR_COUNTDOWN_NONE.
+     *
+     *  ⚠️ The IsRunning() test is LOAD-BEARING and not defensive, for the same reason SendCountdown
+     *  documents: a one-shot Timer that has already fired sets m_time = 0 BEFORE invoking its
+     *  callback (TimerBase.Tick, P:\scripts\3_game\tools\tools.c), so GetRemaining() on a fired
+     *  timer hands back its FULL DURATION. Drop the guard and a finished countdown reads as a fresh
+     *  one - which on a readout looks like a clock that jumps back to the top rather than like a bug.
+     */
+    int GetCountdownRemainingMs()
+    {
+        if(!m_CountdownTimer)
+            return BR_COUNTDOWN_NONE;
+
+        if(!m_CountdownTimer.IsRunning())
+            return BR_COUNTDOWN_NONE;
+
+        int remaining_ms = (int)Math.Round( m_CountdownTimer.GetRemaining() * 1000 );
+        if(remaining_ms <= 0)
+            return BR_COUNTDOWN_NONE;
+
+        return remaining_ms;
+    }
+
+    /**
+     *  Fill in whatever this state knows for the COT admin readout.
+     *
+     *  A virtual rather than the panel reaching in, because the interesting fields are per-state and
+     *  most of them are `protected` where they live - BattleRoyaleDebug owns the whole lobby start
+     *  gate, and publishing a dozen accessors so an unrelated 5_Mission module could recompute it
+     *  would put the knowledge in the wrong place and let the two drift.
+     *
+     *  The base fills only what every state has. Overriders should call super and then add their own.
+     */
+    void BR_FillAdminStatus(BattleRoyaleAdminStatus status)
+    {
+        if(!status)
+            return;
+
+        status.state_name = GetName();
+        status.state_paused = IsPaused();
+        status.players_alive = GetPlayers().Count();
+        status.countdown_ms = GetCountdownRemainingMs();
+
+        //--- ⚠️ Ask whether the party manager can actually answer before believing a group count.
+        //--- #ifdef VIGRID_PARTY says the addon is COMPILED IN, not that parties are in play: with
+        //--- the manager disabled GetGroupCount() degrades to one group per player, a number always
+        //--- identical to players_alive. That is correct for the logic tests that consume it and
+        //--- wrong to put on screen under a group heading, which is #158 exactly.
+        status.groups_alive = BR_ADMIN_GROUPS_UNKNOWN;
+#ifdef VIGRID_PARTY
+        if( VigridPartyAPI.IsReady() )
+            status.groups_alive = VigridPartyAPI.GetGroupCount( GetPlayers() );
+#endif
     }
 
     bool SkipState(BattleRoyaleState _previousState)  //if true, we will skip activating/deactivating this state entirely

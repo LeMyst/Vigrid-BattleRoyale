@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
-	int version = 4;  // Config version
+	int version = 5;  // Config version
 
 	// Lobby spawn location are in the spawns settings located in the mission folder.
 
@@ -35,6 +35,25 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 	// The autostart system will not start the match if the minimum waiting time (min_waiting_time) is not reached
     bool autostart_enabled = true;  // Enable autostart
     float autostart_delay = 750.0;  // Delay before autostart
+
+	// Admin-held lobby. At true the lobby never starts a match on its own - every automatic start
+	// path is suppressed, and the match begins only when an admin presses "Start Match Now" in the
+	// COT panel. At false (the shipped default) nothing changes and the server behaves as it always
+	// has, so an existing server upgrades with no change in behaviour.
+	//
+	// This is the BOOT default. An admin can hold or release the lobby at any time from the panel
+	// while it is already running, which is the ordinary way to use it; this key is for a server
+	// that should always come up waiting for a human - a scheduled event, a tournament, a server
+	// that is only played on when somebody is around to run it.
+	//
+	// It suppresses the automatic paths and nothing else: the ready-up system still works, players
+	// still ready up, the lobby still explains itself, and the vote still shows its count. What no
+	// longer happens is the vote or the autostart curve deciding on its own that it is time.
+	//
+	// ⚠️ A manual start is still refused when there are not at least two groups. The match-end
+	// condition is "one side left", so a match force-started with a single group would end on its
+	// first tick - that floor is not an automation the hold is meant to override.
+	bool manual_start = false;
 
 	// Forced team size - "duos", "trios", and so on.
 	// At 1 (the default) nothing happens and everyone who did not build a party plays solo.
@@ -181,6 +200,18 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 			// neither of these has any. Shipped default is 0, i.e. the feature is off, so an existing
 			// server upgrades with no change in behaviour.
 			version = 4;
+			Save();
+		}
+
+		if (version < 5)
+		{
+			// v5 added manual_start, a SCALAR, so the v3/v4 reasoning applies again: a v4 file has no
+			// such key, deserialization leaves the field initialiser in place, and Load()'s re-save
+			// materialises it. Only a `ref array` needs an explicit branch here, its initialiser not
+			// surviving deserialization - which is why the v2 block has two and none of the later
+			// ones has any. Shipped default is false, i.e. the lobby starts matches by itself exactly
+			// as before, so an existing server upgrades with no change in behaviour.
+			version = 5;
 			Save();
 		}
 	}
