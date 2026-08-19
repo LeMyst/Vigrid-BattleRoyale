@@ -679,6 +679,45 @@ static const int BR_ADMIN_GROUPS_UNKNOWN = -1;
 static const string BR_PERM_VIEW = "BattleRoyale.StateMachine.View";
 static const string BR_PERM_MATCH_CONTROL = "BattleRoyale.Match.Control";
 static const string BR_PERM_LOBBY_CONTROL = "BattleRoyale.Lobby.Control";
+//--- Split from Match.Control because these are the ones that touch a specific PLAYER, which is the
+//--- boundary an operator most often wants to draw: a moderator who may unstick somebody and shout
+//--- at the server, but may not skip rounds or force-start a match.
+static const string BR_PERM_PLAYER_MANAGE = "BattleRoyale.Player.Manage";
+static const string BR_PERM_ANNOUNCE = "BattleRoyale.Announce";
+static const string BR_PERM_ZONE_CONTROL = "BattleRoyale.Zone.Control";
+
+//--- ANNOUNCEMENTS. -----------------------------------------------------------------------------
+//--- Free admin text is the one payload in this module authored by a human rather than by the
+//--- server, so it is the one that needs bounding.
+//---
+//--- ⚠️ The cap is enforced SERVER-SIDE. The panel also caps it, but that is convenience: a client
+//--- that sends the RPC directly is not going through the panel at all.
+static const int BR_ANNOUNCE_MAX_CHARS = 200;
+static const float BR_ANNOUNCE_MIN_SECONDS = 3.0;
+static const float BR_ANNOUNCE_MAX_SECONDS = 30.0;
+static const float BR_ANNOUNCE_DEFAULT_SECONDS = 10.0;
+
+//--- How often the panel re-asks for the per-player table while it is on screen. Deliberately
+//--- slower than the status poll: it is the largest recurring payload here (uids and names for the
+//--- whole population), and a roster does not change at 1 Hz.
+static const int BR_ADMIN_ROSTER_INTERVAL_MS = 2000;
+
+//--- Cap on rows in one roster reply. A 60-slot server is the realistic ceiling; the constant exists
+//--- so the payload can never be unbounded if that assumption stops holding.
+static const int BR_ADMIN_ROSTER_MAX_ROWS = 80;
+
+//--- Iterations for the on-demand zone self test. Well under the 200 the boot-time gate uses:
+//--- this runs on a LIVE server with players connected, where a multi-second stall is a stutter
+//--- everybody feels, not a boot cost nobody sees.
+static const int BR_ADMIN_SELFTEST_RUNS = 25;
+
+//--- Fixed-size display pools in the panel. Both are DECLARED counts rather than grow-on-demand
+//--- lists: COT's UIActionManager creates a widget per call and nothing in the panel un-creates one,
+//--- so a pool that grew with the population would leak widgets every time somebody joined. The
+//--- scoreboard shows the leaders and says how many rows it omitted; the zone table is bounded by
+//--- num_zones anyway, which cannot sensibly exceed this.
+static const int BR_ADMIN_SCOREBOARD_ROWS = 8;
+static const int BR_ADMIN_ZONE_ROWS = 10;
 
 //--- Webhook connection suffixes, one per action group. COT builds the connection name as
 //--- GetModuleName() + type, so these are bare suffixes rather than whole names, and they are what
@@ -687,6 +726,8 @@ static const string BR_PERM_LOBBY_CONTROL = "BattleRoyale.Lobby.Control";
 //--- places - or so one can be subscribed and the other ignored.
 static const string BR_WEBHOOK_TYPE_MATCH = "Match";
 static const string BR_WEBHOOK_TYPE_LOBBY = "Lobby";
+static const string BR_WEBHOOK_TYPE_PLAYER = "Player";
+static const string BR_WEBHOOK_TYPE_ANNOUNCE = "Announce";
 
 //--- CORPSE CARRY. The replication bubble is centred on the spectator's CORPSE, not on the camera -
 //--- UpdateSpectatorPosition does not move it (measured both directions 2026-08-10). So a target

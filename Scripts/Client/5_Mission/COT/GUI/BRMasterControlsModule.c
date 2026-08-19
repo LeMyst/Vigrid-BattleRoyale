@@ -7,10 +7,20 @@ class BRMasterControlsModule: JMRenderableModuleBase
     protected ref BattleRoyaleAdminStatus m_Status;
     protected int m_StatusSeq;
 
+    protected ref BattleRoyaleAdminRoster m_Roster;
+    protected int m_RosterSeq;
+
+    protected ref BattleRoyaleAdminZoneTable m_ZoneTable;
+    protected int m_ZoneSeq;
+
     void BRMasterControlsModule()
     {
         m_Status = new BattleRoyaleAdminStatus();
         m_StatusSeq = 0;
+        m_Roster = new BattleRoyaleAdminRoster();
+        m_RosterSeq = 0;
+        m_ZoneTable = new BattleRoyaleAdminZoneTable();
+        m_ZoneSeq = 0;
 
         //--- ⚠️ Registering a permission is not enforcing one. These decide whether the CLIENT draws
         //--- a control; the server re-checks every one of them in AuthorizeAdminAction, and also
@@ -66,6 +76,8 @@ class BRMasterControlsModule: JMRenderableModuleBase
     {
         types.Insert( BR_WEBHOOK_TYPE_MATCH );
         types.Insert( BR_WEBHOOK_TYPE_LOBBY );
+        types.Insert( BR_WEBHOOK_TYPE_PLAYER );
+        types.Insert( BR_WEBHOOK_TYPE_ANNOUNCE );
     }
 
     override int GetRPCMin()
@@ -89,6 +101,26 @@ class BRMasterControlsModule: JMRenderableModuleBase
     int GetStatusSeq()
     {
         return m_StatusSeq;
+    }
+
+    BattleRoyaleAdminRoster GetRoster()
+    {
+        return m_Roster;
+    }
+
+    int GetRosterSeq()
+    {
+        return m_RosterSeq;
+    }
+
+    BattleRoyaleAdminZoneTable GetZoneTable()
+    {
+        return m_ZoneTable;
+    }
+
+    int GetZoneSeq()
+    {
+        return m_ZoneSeq;
     }
 
     //client side functionality (these get called)
@@ -125,13 +157,33 @@ class BRMasterControlsModule: JMRenderableModuleBase
      *  because its values travel on the wire, so a design that needs a new id per feature makes
      *  every feature a wire change.
      */
-    void SendAdminAction(int action, int arg_i = 0, float arg_f = 0)
+    //--- ⚠️ The write order here is the contract RPC_AdminAction reads back, and the two string slots
+    //--- have FIXED roles rather than being reused per action: arg_uid always names the subject,
+    //--- arg_text is always free text. An action that needs neither still sends both as "".
+    void SendAdminAction(int action, int arg_i = 0, float arg_f = 0, string arg_uid = "", string arg_text = "")
     {
         ScriptRPC rpc = new ScriptRPC();
         rpc.Write( action );
         rpc.Write( arg_i );
         rpc.Write( arg_f );
+        rpc.Write( arg_uid );
+        rpc.Write( arg_text );
         rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.AdminAction, true, NULL );
+    }
+
+    void RequestRoster()
+    {
+        ScriptRPC rpc = new ScriptRPC();
+        rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.RosterRequest, true, NULL );
+    }
+
+    //--- Asked once when the zone section is first shown, not polled: the chain is generated once per
+    //--- process and never changes afterwards. Only `current` moves, and the status readout already
+    //--- carries the live radius.
+    void RequestZoneTable()
+    {
+        ScriptRPC rpc = new ScriptRPC();
+        rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.ZoneRequest, true, NULL );
     }
 
     //--- Pull, not push: the server has no idea who has the panel open, and a subscription table
@@ -153,6 +205,12 @@ class BRMasterControlsModule: JMRenderableModuleBase
         {
             case BattleRoyaleCOTStateMachineRPC.StatusReply:
                 RPC_StatusReply( ctx );
+            break;
+            case BattleRoyaleCOTStateMachineRPC.RosterReply:
+                RPC_RosterReply( ctx );
+            break;
+            case BattleRoyaleCOTStateMachineRPC.ZoneReply:
+                RPC_ZoneReply( ctx );
             break;
         }
     }
@@ -186,6 +244,52 @@ class BRMasterControlsModule: JMRenderableModuleBase
 
         m_Status = incoming;
         m_StatusSeq++;
+    }
+
+    //--- Same deserialize-into-a-fresh-instance-and-swap discipline as the status reply: a truncated
+    //--- payload must leave the previous roster standing rather than produce a half-updated one.
+    protected void RPC_RosterReply( ParamsReadContext ctx )
+    {
+        string payload;
+        if ( !ctx.Read( payload ) )
+            return;
+        if ( payload == "" )
+            return;
+
+        BattleRoyaleAdminRoster incoming = new BattleRoyaleAdminRoster();
+
+        string error;
+        JsonSerializer serializer = new JsonSerializer();
+        if ( !serializer.ReadFromString( incoming, payload, error ) )
+        {
+            BattleRoyaleUtils.Warn( "[Admin] roster reply could not be parsed: " + error );
+            return;
+        }
+
+        m_Roster = incoming;
+        m_RosterSeq++;
+    }
+
+    protected void RPC_ZoneReply( ParamsReadContext ctx )
+    {
+        string payload;
+        if ( !ctx.Read( payload ) )
+            return;
+        if ( payload == "" )
+            return;
+
+        BattleRoyaleAdminZoneTable incoming = new BattleRoyaleAdminZoneTable();
+
+        string error;
+        JsonSerializer serializer = new JsonSerializer();
+        if ( !serializer.ReadFromString( incoming, payload, error ) )
+        {
+            BattleRoyaleUtils.Warn( "[Admin] zone table reply could not be parsed: " + error );
+            return;
+        }
+
+        m_ZoneTable = incoming;
+        m_ZoneSeq++;
     }
 #endif
 }
