@@ -105,6 +105,15 @@ class BattleRoyaleSpectatorEntry
     //! spectating at once do not share one clock and starve each other.
     int next_anchor_ms;
 
+    //! Earliest time THIS entry's carry pass may run (#280). Per-entry for exactly the reason
+    //! next_anchor_ms is, and for one more: with a single shared clock every spectator evaluated on
+    //! the same tick, and since many of them watch the same few survivors their corpses end up at the
+    //! IDENTICAL position, so they cross BR_SPECTATE_CARRY_STEP_M together too - a burst of S
+    //! teleports in one frame. Seeded with a random phase by SeedCarryPhase.
+    //!
+    //! Zero while BR_SPECTATE_CARRY_STAGGER is off, in which case nothing reads it.
+    int next_carry_ms;
+
     void BattleRoyaleSpectatorEntry(string spectator_uid, string spectator_name)
     {
         uid = spectator_uid;
@@ -119,6 +128,25 @@ class BattleRoyaleSpectatorEntry
         mode = BR_SPECTATE_MODE_ORBIT;
         cam_pos = "0 0 0";
         next_anchor_ms = 0;
+        next_carry_ms = 0;
+    }
+
+    /**
+     *  Draw this entry's carry phase.
+     *
+     *  Called where the carry starts MATTERING - BeginSpectate and BeginAdminSpectate - and never
+     *  from the constructor. An entry is built at death and then sits through the whole death screen
+     *  (BR_SPECTATE_ENTRY_DELAY_MS, 20 s), so a phase drawn at construction has long expired by the
+     *  time the first pass runs; worse, two players who died in the same fight would both start
+     *  their first real pass on the same tick and re-correlate immediately.
+     *
+     *  Unwrapped Math.RandomInt, the idiom throughout this mod. It consumes from the global stream,
+     *  which is fine: this runs at spectate time, long after BattleRoyaleZone.PrepareGeneration has
+     *  committed the chain, so a zone_generation_seed replay is unaffected.
+     */
+    void SeedCarryPhase()
+    {
+        next_carry_ms = GetGame().GetTime() + Math.RandomInt(0, BR_SPECTATE_CARRY_PHASE_MS);
     }
 }
 
@@ -166,6 +194,47 @@ class BattleRoyaleSpectators
     //! branches on. Never read it anywhere but immediately after a ResolveTarget call.
     protected int m_LastResolveTier;
 
+    //==========================================================================================
+    //--- LOAD COUNTERS (#280). Unguarded, on the same footing as BattleRoyaleZone.s_SurfaceCalls:
+    //--- an int increment is free, and a counter that only exists in a diag build cannot answer a
+    //--- question about a live server. Only the REPORT is throttled, and only the two switches that
+    //--- steer a measurement are diag-gated.
+    //---
+    //--- The identity and roster columns are not padding. Without something to be a percentage OF,
+    //--- "the carry costs X" decides nothing - and what it has to be compared against is the 10 Hz
+    //--- liveness sweep in the same Tick(), which does the same shape of work ten times as often.
+    //==========================================================================================
+
+    //! Walks = how many times the whole list was fetched. Scanned = the sum of those lists' LENGTHS,
+    //! which is an UPPER BOUND on comparisons rather than the true count: every one of these walks
+    //! early-exits on a match. The bound is the honest figure to quote for FindBodyByUid, where the
+    //! miss case dominates, and it is pessimistic by at most a factor of two for the others.
+    static int s_IdentityWalks;
+    static int s_IdentityScanned;
+    static int s_RosterWalks;
+    static int s_RosterScanned;
+    //! THE term this issue is about: O(S x N), and N is every Man in the world, which only grows -
+    //! the mod never deletes a body.
+    static int s_BodyWalks;
+    static int s_BodyScanned;
+    static int s_Teleports;
+    static int s_CarryFirst;
+    static int s_CarryStep;
+    static int s_CarryEvals;
+    //! Most MoveCorpse calls in ONE Tick pass since the last report. This is the correlation
+    //! measurement: with the stagger off it should approach the spectator count, with it on roughly
+    //! a tenth of that. Everything else here is a rate; this is the peak.
+    static int s_BurstMax;
+
+    //! Time spent inside Tick's per-entry loop, accumulated across the reporting window.
+    //!
+    //! GetTickTime() is float SECONDS and advances within a frame; GetGame().GetTime() is integer
+    //! milliseconds and a single pass of this loop reads 0 from it, which is how "free" gets
+    //! concluded from a measurement that never had the resolution to say so. Accumulated across the
+    //! window rather than reported per pass for the same reason.
+    protected float m_TickSeconds;
+    protected int m_NextLoadMs;
+
     void BattleRoyaleSpectators()
     {
         m_Deaths = new map<string, ref BattleRoyaleDeathRecord>();
@@ -183,6 +252,9 @@ class BattleRoyaleSpectators
         m_NextAudienceMs = 0;
         m_NextAudienceKeepaliveMs = 0;
         m_LastResolveTier = 0;
+        m_TickSeconds = 0;
+        m_NextLoadMs = 0;
+        ResetLoadCounters();
     }
 
     static BattleRoyaleSpectators GetInstance()
@@ -213,6 +285,8 @@ class BattleRoyaleSpectators
         GetGame().GetPlayerIndentities(identities);
 
         int count = identities.Count();
+        s_IdentityWalks++;
+        s_IdentityScanned = s_IdentityScanned + count;
         for (int i = 0; i < count; i++)
         {
             PlayerIdentity candidate = identities.Get(i);
@@ -250,6 +324,9 @@ class BattleRoyaleSpectators
             return NULL;
 
         int count = roster.Count();
+        s_RosterWalks++;
+        s_RosterScanned = s_RosterScanned + count;
+
         for (int i = 0; i < count; i++)
         {
             PlayerBase candidate = roster.Get(i);
@@ -276,6 +353,40 @@ class BattleRoyaleSpectators
 #else
         return "";
 #endif
+    }
+
+    /**
+     *  Is the corpse carry running at all?
+     *
+     *  Same two-line shape as PartyIdOf above, and for the same reason: the #ifdef lives here so
+     *  Tick() and CarryCorpse() read as plain code. In a retail build this compiles to the constant.
+     *
+     *  This is the A/B that PRICES the carry. With it off, CarryCorpse returns on its first line and
+     *  the ENTIRE evaluation is skipped - both list walks and both array allocations - so the
+     *  difference in the load line's tickms between two windows is the carry's cost, allocations
+     *  included. That is a better instrument than a nested timer around the carry branch, which
+     *  would measure the code but not what the allocator does afterwards.
+     */
+    protected bool CarryEnabled()
+    {
+#ifdef DIAG_DEVELOPER
+        if (BattleRoyaleDiag.carry_enabled_override >= 0)
+            return (BattleRoyaleDiag.carry_enabled_override > 0);
+#endif
+
+        return BR_SPECTATE_CARRY_CORPSE;
+    }
+
+    //! Is the per-entry carry phase in effect, rather than the one global clock? See
+    //! BR_SPECTATE_CARRY_STAGGER - and note the constant, not the override, is what ships.
+    protected bool CarryStaggered()
+    {
+#ifdef DIAG_DEVELOPER
+        if (BattleRoyaleDiag.carry_stagger_override >= 0)
+            return (BattleRoyaleDiag.carry_stagger_override > 0);
+#endif
+
+        return BR_SPECTATE_CARRY_STAGGER;
     }
 
     //------------------------------------------------------------------------------------------
@@ -924,12 +1035,24 @@ class BattleRoyaleSpectators
         //--- BR_SPECTATE_CARRY_CORPSE is checked inside CarryCorpse rather than here, because it
         //--- governs dragging a DEAD player's loot across the map - a gameplay trade that has nothing
         //--- to say about an admin carrying their own live body under their own camera.
+        //---
+        //--- This ONE clock is the correlated baseline (#280): it fires for every entry on the same
+        //--- tick. It is superseded per entry when the stagger is on - see the loop below - and kept
+        //--- rather than deleted precisely so both behaviours are reachable within one match.
         bool do_carry = false;
         if (now >= m_NextCarryMs)
         {
             m_NextCarryMs = now + BR_SPECTATE_CARRY_INTERVAL_MS;
             do_carry = true;
         }
+
+        //--- The measured region (#280) is the per-entry loop and nothing else: the key copy above
+        //--- and the admin list below are separately throttled and are not what the issue asks about.
+        //--- GetTickTime() is float SECONDS and moves within a frame - GetGame().GetTime() is integer
+        //--- ms and would read 0 for a whole pass, which is how "it is free" gets concluded from an
+        //--- instrument that never had the resolution to say it.
+        float tick_started = GetGame().GetTickTime();
+        int teleports_before = s_Teleports;
 
         for (i = 0; i < uids.Count(); i++)
         {
@@ -975,14 +1098,42 @@ class BattleRoyaleSpectators
             //--- entity, not on the camera - within range of what is being watched. An admin's
             //--- anchor is their own live body and it follows the CAMERA; a dead player's is their
             //--- corpse and it follows the TARGET.
-            if (do_carry)
+            //--- TWO CLOCKS, and only one of them runs. The global one is the correlated baseline;
+            //--- the per-entry one is the stagger (#280). Both are kept so that ONE match can be
+            //--- measured either way - spectator, target and body counts all differ between any two
+            //--- matches, so a pre/post comparison across runs would not be a comparison at all.
+            //---
+            //--- The admin anchor is deliberately included. It is still CALLED once per second, only
+            //--- phase-shifted, so its own 5 s clock and its BR_ADMIN_ANCHOR_URGENT_M bypass keep the
+            //--- latency they had; and its FindBodyByUid - which runs BEFORE that urgent check, so it
+            //--- is paid every second regardless - gets spread along with everything else.
+            bool carry_now = do_carry;
+            if (CarryStaggered())
             {
+                carry_now = false;
+                if (now >= entry.next_carry_ms)
+                {
+                    entry.next_carry_ms = now + BR_SPECTATE_CARRY_INTERVAL_MS;
+                    carry_now = true;
+                }
+            }
+
+            if (carry_now)
+            {
+                s_CarryEvals++;
+
                 if (entry.is_admin)
                     CarryAnchorBody(entry);
                 else
                     CarryCorpse(entry);
             }
         }
+
+        m_TickSeconds = m_TickSeconds + (GetGame().GetTickTime() - tick_started);
+
+        int burst = s_Teleports - teleports_before;
+        if (burst > s_BurstMax)
+            s_BurstMax = burst;
 
         //--- (f) the admin overlay list. Outside the per-entry loop: it builds the roster payload
         //--- once and fans it out to whichever admins are watching, rather than rebuilding it per
@@ -1002,6 +1153,91 @@ class BattleRoyaleSpectators
             m_NextDeadListMs = now + BR_ADMIN_DEAD_PUSH_MS;
             PushAdminDeadList(now);
         }
+
+        ReportCarryLoad(now, uids.Count());
+    }
+
+    /**
+     *  One throttled block saying what the carry pass actually costs (#280).
+     *
+     *  Kept rather than deleted once it answered, for the reason BattleRoyaleLobbyTags.ReportFunnel
+     *  is kept: the question "is the corpse carry expensive" has at least three plausible answers -
+     *  the per-frame teleport burst, the total walk volume, or nothing at all - and only a funnel
+     *  separates them. It costs one integer comparison per tick once the window is open, and the
+     *  whole thing is dead the moment nobody is spectating, because Tick() returns above it.
+     *
+     *  THREE LINES, EACH BUILT IN STEPS. The first alone carries a dozen concatenation terms, which
+     *  is exactly the shape that trips "Formula too complex" - a hard compile error that packing does
+     *  not catch and that only surfaces when the game loads the module.
+     *
+     *  Debug rather than Info, matching the per-carry line it sits beside. On a DIAG server these
+     *  mirror into chat, so turn Chat Mirror off before a measurement run or the load lines evict
+     *  what you were reading.
+     */
+    protected void ReportCarryLoad(int now, int spectators)
+    {
+        if (now < m_NextLoadMs)
+            return;
+
+        m_NextLoadMs = now + BR_SPECTATE_LOAD_DIAG_MS;
+
+        string line = "[Spectate] load specs=" + spectators;
+        line = line + " evals=" + s_CarryEvals;
+        line = line + " tp=" + s_Teleports;
+        line = line + " (first=" + s_CarryFirst;
+        line = line + " step=" + s_CarryStep + ")";
+        line = line + " burstmax=" + s_BurstMax;
+        BattleRoyaleUtils.Debug(line);
+
+        //--- walks/scanned. Scanned is the sum of the list LENGTHS, i.e. an upper bound on compares.
+        //--- The ident column is the control: it is the same shape of work at 10 Hz instead of 1 Hz,
+        //--- so a body figure far under it says the carry is not what to optimise.
+        string walks = "[Spectate] load   body=" + s_BodyWalks;
+        walks = walks + "/" + s_BodyScanned;
+        walks = walks + " roster=" + s_RosterWalks;
+        walks = walks + "/" + s_RosterScanned;
+        walks = walks + " ident=" + s_IdentityWalks;
+        walks = walks + "/" + s_IdentityScanned;
+        BattleRoyaleUtils.Debug(walks);
+
+        //--- The two switch states are load-bearing, not decoration: a log spanning an A/B cannot be
+        //--- attributed afterwards without them, and the whole point of the toggles is to run both
+        //--- conditions inside one match.
+        float tick_ms = m_TickSeconds * 1000.0;
+
+        string cost = "[Spectate] load   tickms=" + tick_ms;
+        cost = cost + " window=" + BR_SPECTATE_LOAD_DIAG_MS;
+        cost = cost + " carry=" + CarryEnabled();
+        cost = cost + " stagger=" + CarryStaggered();
+        BattleRoyaleUtils.Debug(cost);
+
+        ResetLoadCounters();
+    }
+
+    //! Zero the window. Called after every report, and once from the constructor - the counters are
+    //! static, so a second BattleRoyaleSpectators in one process would otherwise inherit the first's.
+    protected void ResetLoadCounters()
+    {
+        s_IdentityWalks = 0;
+        s_IdentityScanned = 0;
+        s_RosterWalks = 0;
+        s_RosterScanned = 0;
+        s_BodyWalks = 0;
+        s_BodyScanned = 0;
+        s_Teleports = 0;
+        s_CarryFirst = 0;
+        s_CarryStep = 0;
+        s_CarryEvals = 0;
+        s_BurstMax = 0;
+        m_TickSeconds = 0;
+    }
+
+    //! Report NOW and restart the window, so a measurement run can be bracketed exactly rather than
+    //! waiting out the throttle and catching part of the previous condition. Diag-driven.
+    void ReportCarryLoadNow()
+    {
+        m_NextLoadMs = 0;
+        ReportCarryLoad(GetGame().GetTime(), m_Spectators.Count());
     }
 
     /**
@@ -1025,7 +1261,7 @@ class BattleRoyaleSpectators
      */
     protected void CarryCorpse(BattleRoyaleSpectatorEntry entry)
     {
-        if (!BR_SPECTATE_CARRY_CORPSE)
+        if (!CarryEnabled())
             return;
         if (!entry)
             return;
@@ -1057,6 +1293,7 @@ class BattleRoyaleSpectators
             //--- "where was the corpse at 21:17:48" had no answer anywhere in the log.
             BattleRoyaleUtils.Debug(string.Format("[Spectate] Carry %1: body %2 -> %3 (%4 m)", entry.uid, corpse_pos.ToString(), target_pos.ToString(), separation));
 
+            s_CarryStep++;
             MoveCorpse(corpse, target_pos);
             return;
         }
@@ -1090,6 +1327,7 @@ class BattleRoyaleSpectators
 
         BattleRoyaleUtils.Info(string.Format("[Spectate] Carry %1: dropped gear at %2 (%3 left), body -> target at %4 (%5 m)", entry.uid, corpse_pos.ToString(), left, target_pos.ToString(), separation));
 
+        s_CarryFirst++;
         MoveCorpse(corpse, target_pos);
     }
 
@@ -1116,6 +1354,8 @@ class BattleRoyaleSpectators
         GetGame().GetPlayers(everyone);
 
         int count = everyone.Count();
+        s_BodyWalks++;
+        s_BodyScanned = s_BodyScanned + count;
         for (int i = 0; i < count; i++)
         {
             PlayerBase candidate = PlayerBase.Cast(everyone.Get(i));
@@ -1202,6 +1442,8 @@ class BattleRoyaleSpectators
         if (!corpse)
             return;
 
+        s_Teleports++;
+
         position[1] = GetGame().SurfaceY(position[0], position[2]);
 
         ScriptJunctureData pCtx = new ScriptJunctureData;
@@ -1261,6 +1503,11 @@ class BattleRoyaleSpectators
 
         entry.pending_enter = false;
         entry.entered_ms = GetGame().GetTime();
+
+        //--- Drawn HERE, not in the constructor: the entry was built at death and has been sitting
+        //--- out the death screen ever since, so a construction-time phase has long expired - and two
+        //--- players who died in the same fight would re-correlate on their very first pass.
+        entry.SeedCarryPhase();
 
         Push(entry, identity);
         Notify(entry, identity);
@@ -1785,6 +2032,7 @@ class BattleRoyaleSpectators
         entry.is_admin = true;
         entry.pending_enter = false;   //--- no death screen to wait out
         entry.entered_ms = GetGame().GetTime();
+        entry.SeedCarryPhase();
         entry.cam_pos = body.GetPosition();
         entry.target_uid = ResolveAdminTarget(uid, "");
         entry.mode = BR_SPECTATE_MODE_FOLLOW;
@@ -2857,6 +3105,231 @@ class BattleRoyaleSpectators
 
         death_pos = record.death_pos;
         return true;
+    }
+
+    /**
+     *  Price the carry pass at a FULL LOBBY, from a three-client test (#280).
+     *
+     *  WHY IT EXISTS. LaunchLocalMP.bat tops out at three clients, so at most two ordinary
+     *  spectators can ever exist in a real test - and the thing #280 suspects is what happens with
+     *  sixty. The repo's usual answer to "the case that matters is unreachable with three clients"
+     *  is a synthetic self test at boot (zone_selftest_runs, auto_group_selftest), but that does NOT
+     *  transfer here: at boot there are zero Man entities, so the one term that scales - the world
+     *  walk in FindBodyByUid - would have nothing to walk. It has to run mid-match, hence a one-shot.
+     *
+     *  WHY NOT JUST CREATE SIXTY BODIES. Because that is what crashed a dedicated server twice, in
+     *  this very subsystem: CreateObjectEx faulted at 0x0 and CreatePlayer at 0x9, neither catchable
+     *  in script. See CLAUDE.md -> Spectating. Phase 2 pads an ARRAY instead, which is faithful
+     *  because the work being priced is a Cast plus a comparison against a CACHED string member -
+     *  identical whichever body the element points at.
+     *
+     *  WHAT IT CANNOT PRICE, stated rather than hidden: the proto GetPlayers() fill itself at N=60.
+     *  Phase 1 measures it at the live N and it is a linear engine-side array copy, so its N=60 cost
+     *  is bounded by roughly (60 / live N) times a figure already on screen.
+     */
+    void BenchCarry(string requester_uid, int bodies)
+    {
+        if (m_Ended)
+        {
+            BattleRoyaleUtils.Warn("[Spectate][Bench] refused: the match has ended");
+            return;
+        }
+
+        int want = bodies;
+        if (want < 1)
+            want = 1;
+        if (want > BR_SPECTATE_BENCH_MAX)
+            want = BR_SPECTATE_BENCH_MAX;
+
+        array<PlayerIdentity> identities = new array<PlayerIdentity>();
+        GetGame().GetPlayerIndentities(identities);
+
+        array<Man> everyone = new array<Man>();
+        GetGame().GetPlayers(everyone);
+
+        int live_p = identities.Count();
+        int live_n = everyone.Count();
+        if (live_n < 1)
+        {
+            BattleRoyaleUtils.Warn("[Spectate][Bench] refused: no Man entities in the world");
+            return;
+        }
+
+        int live_r = 0;
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if (server)
+        {
+            BattleRoyaleState bench_state = server.GetCurrentState();
+            if (bench_state)
+            {
+                array<PlayerBase> roster = bench_state.GetPlayers();
+                if (roster)
+                    live_r = roster.Count();
+            }
+        }
+
+        int iterations = BR_SPECTATE_BENCH_ITERATIONS;
+        //--- Divisor kept as an explicit float. Every per-call figure below is a float divided by
+        //--- the iteration count, and an int divisor is exactly the shape that quietly truncates.
+        float iters_f = iterations;
+        float want_f = want;
+        int b = 0;
+        int w = 0;
+        float started = 0;
+
+        //--- PHASE 1. The three real lookups at the real N, timed as batches. All pure reads.
+        started = GetGame().GetTickTime();
+        for (b = 0; b < iterations; b++)
+        {
+            IdentityOfUid(requester_uid);
+        }
+        float ident_ms = (GetGame().GetTickTime() - started) * 1000.0;
+
+        started = GetGame().GetTickTime();
+        for (b = 0; b < iterations; b++)
+        {
+            LivingPlayerByUid(requester_uid);
+        }
+        float roster_ms = (GetGame().GetTickTime() - started) * 1000.0;
+
+        started = GetGame().GetTickTime();
+        for (b = 0; b < iterations; b++)
+        {
+            FindBodyByUid(requester_uid);
+        }
+        float body_ms = (GetGame().GetTickTime() - started) * 1000.0;
+
+        string p1 = "[Spectate][Bench] phase1 live P=" + live_p;
+        p1 = p1 + " R=" + live_r;
+        p1 = p1 + " N=" + live_n;
+        p1 = p1 + " iters=" + iterations;
+        BattleRoyaleUtils.Info(p1);
+
+        string p1b = "[Spectate][Bench] phase1 per-call us: ident=" + ((ident_ms * 1000.0) / iters_f);
+        p1b = p1b + " roster=" + ((roster_ms * 1000.0) / iters_f);
+        p1b = p1b + " body=" + ((body_ms * 1000.0) / iters_f);
+        BattleRoyaleUtils.Info(p1b);
+
+        //--- PHASE 2. The world walk at N = want, without creating a single entity. The uid searched
+        //--- for is one that cannot exist, so every iteration is the WORST case: a full walk with no
+        //--- early exit, which is exactly the miss that dominates FindBodyByUid in a real pass.
+        array<Man> padded = new array<Man>();
+        while (padded.Count() < want)
+        {
+            for (b = 0; b < live_n; b++)
+            {
+                if (padded.Count() >= want)
+                    break;
+
+                //--- Read into a local on its own line before the call. Same container-aliasing rule
+                //--- BattleRoyaleZone documents, and this loop is exactly its shape.
+                Man source = everyone.Get(b);
+                padded.Insert(source);
+            }
+        }
+
+        string absent = "bench-no-such-uid";
+        int padded_count = padded.Count();
+        int hits = 0;
+
+        started = GetGame().GetTickTime();
+        for (b = 0; b < want; b++)
+        {
+            for (w = 0; w < padded_count; w++)
+            {
+                PlayerBase candidate = PlayerBase.Cast(padded.Get(w));
+                if (!candidate)
+                    continue;
+                if (candidate.player_steamid != absent)
+                    continue;
+
+                hits++;
+            }
+        }
+        float pass_ms = (GetGame().GetTickTime() - started) * 1000.0;
+
+        //--- PHASE 3a. The teleport's SCRIPT half, with nothing sent. SurfaceY is the call the zone
+        //--- generator bothers to count, so it is the part most likely to dominate server-side.
+        PlayerBase own_body = FindBodyByUid(requester_uid);
+        float surface_ms = 0;
+        if (own_body)
+        {
+            vector probe = own_body.GetPosition();
+            started = GetGame().GetTickTime();
+            for (b = 0; b < iterations; b++)
+            {
+                probe[1] = GetGame().SurfaceY(probe[0], probe[2]);
+
+                ScriptJunctureData probe_ctx = new ScriptJunctureData;
+                probe_ctx.Write( probe );
+                probe_ctx.Write( own_body.GetDirection() );
+            }
+            surface_ms = (GetGame().GetTickTime() - started) * 1000.0;
+        }
+
+        string p2 = "[Spectate][Bench] phase2 match loop at N=" + padded_count;
+        p2 = p2 + " x " + want + " passes = " + pass_ms;
+        p2 = p2 + " ms (hits=" + hits + ")";
+        BattleRoyaleUtils.Info(p2);
+
+        string p3 = "[Spectate][Bench] phase3a juncture prep per-call us=" + ((surface_ms * 1000.0) / iters_f);
+        BattleRoyaleUtils.Info(p3);
+
+        //--- PHASE 3b. The only part with side effects, and the only one that is refused.
+        //---
+        //--- Allowed ONLY for an ordinary spectator whose corpse is already carried: that body has
+        //--- already been emptied by DropAllItems and is already unreplicated, and the junctures land
+        //--- on the presser's own connection. Refused outright on a LIVE body - the admin anchor case
+        //--- - because that one is simulated and its teleports replicate to everybody.
+        //---
+        //--- Sent to the body's CURRENT position, so nothing actually moves.
+        float move_ms = -1;
+        BattleRoyaleSpectatorEntry entry = m_Spectators.Get(requester_uid);
+        bool may_move = false;
+        if (entry)
+        {
+            if (!entry.is_admin)
+            {
+                if (entry.corpse_carried)
+                    may_move = true;
+            }
+        }
+
+        if (may_move)
+        {
+            if (own_body)
+            {
+                vector hold = own_body.GetPosition();
+                started = GetGame().GetTickTime();
+                for (b = 0; b < want; b++)
+                {
+                    MoveCorpse(own_body, hold);
+                }
+                move_ms = (GetGame().GetTickTime() - started) * 1000.0;
+            }
+        }
+
+        if (move_ms < 0)
+            BattleRoyaleUtils.Info("[Spectate][Bench] phase3b skipped - needs an ordinary spectator whose corpse is already carried");
+        else
+            BattleRoyaleUtils.Info("[Spectate][Bench] phase3b " + want + " real MoveCorpse = " + move_ms + " ms");
+
+        //--- THE PROJECTION. One carry pass at S spectators is S x (one roster walk + one world walk)
+        //--- plus whatever teleports fire, and phase 2 measured exactly S passes over N bodies.
+        float per_pass_ms = pass_ms + (want_f * ((roster_ms + body_ms) / iters_f));
+
+        string proj = "[Spectate][Bench] projected " + want + " spectators x " + padded_count;
+        proj = proj + " bodies: " + (want * padded_count) + " compares/pass";
+        proj = proj + ", " + per_pass_ms + " ms/pass at 1 Hz";
+        BattleRoyaleUtils.Info(proj);
+
+        //--- The control. The same shape of work already runs at 10 Hz right beside the carry, so
+        //--- this is what the number above has to be a percentage OF.
+        float sweep_ms = (want_f * 10.0) * ((ident_ms + roster_ms) / iters_f);
+
+        string cmp = "[Spectate][Bench] compare: the 10 Hz liveness sweep at S=" + want;
+        cmp = cmp + " costs " + sweep_ms + " ms/s";
+        BattleRoyaleUtils.Info(cmp);
     }
 
 #endif

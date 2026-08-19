@@ -48,6 +48,24 @@ class BattleRoyaleDiag
     //! entity=0 from the transient one every teleport produces. Client-side, read by the camera.
     static float spectate_trace_interval = 5.0;
 
+    //--- CORPSE CARRY LOAD (#280). Read by BattleRoyaleSpectators on the SERVER, which is why they
+    //--- sit in the shared block beside trace_teleport rather than in the client-only one below.
+    //---
+    //--- OVERRIDES with a "not overriding" sentinel, exactly like log_level_override above, and NOT
+    //--- bools mirroring the two constants. Two reasons, and the second is the one that would have
+    //--- bitten: a mirror can drift from the constant it copies, and Reset() is only ever called
+    //--- client-side - so on the server a static's INITIALISER is the only thing that ever writes it,
+    //--- and the sentinel makes "nobody has touched this" resolve through to the constant rather than
+    //--- through to whatever the initialiser happened to say.
+    //---
+    //--- -1 = resolve normally from the constant. 0 = force off. 1 = force on.
+    //---
+    //--- They exist because spectator count, target count and body count all differ between any two
+    //--- matches, so correlated and staggered can only honestly be compared INSIDE one match. Same
+    //--- discipline as one-variable-per-build, applied to one run.
+    static int carry_enabled_override = -1;
+    static int carry_stagger_override = -1;
+
 #ifndef SERVER
     //=========================================================================================
     //--- Client only.
@@ -117,6 +135,12 @@ class BattleRoyaleDiag
     //--- goto_state is - a range callback plausibly fires on every step while scrubbing.
     static int tp_target_distance = 1200;
 
+    //--- How many bodies the carry bench projects to. Held client-side and sent only when "Bench
+    //--- Carry" is pressed, for the same reason tp_target_distance is - a range callback plausibly
+    //--- fires on every step while scrubbing, and this one has a phase with real side effects.
+    //--- Defaults to a full lobby, which is the load the projection exists to answer for.
+    static int bench_bodies = 60;
+
     //--- Match Flow's "Jump To State" target. Held client-side and sent only when "Jump: Go" is
     //--- pressed: a range callback plausibly fires on every step while scrubbing, and nothing here
     //--- should be able to fire ten RPCs on the way to state 10.
@@ -155,6 +179,8 @@ class BattleRoyaleDiag
         trace_teleport_ticks = 20;
         trace_aim = false;
         spectate_trace_interval = 5.0;
+        carry_enabled_override = -1;
+        carry_stagger_override = -1;
 
         hud_force = false;
         hud_players = 60;
@@ -178,6 +204,7 @@ class BattleRoyaleDiag
         party_size = 3;
         party_online_count = 20;
         tp_target_distance = 1200;
+        bench_bodies = 60;
 
         goto_state = 0;
 
