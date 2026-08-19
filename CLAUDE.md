@@ -550,6 +550,61 @@ hold a spectator's view hostage; the gear drops via vanilla `DropAllItems` befor
 moves, then it re-carries every `STEP_M` (250) of drift. Measured: carry fired at 252 m with
 `0 left` on the body, and the target then tracked to **1237 m with `entity=1`** — past the old wall.
 
+#### What the carry costs, measured (#280, 2026-08-19)
+
+⚠️ **The teleports were never the cost, and #280's premise is answered: 60 real `MoveCorpse` calls in
+one frame measure under a millisecond.** What costs anything is the *evaluation* — the per-spectator
+roster walk plus full-world walk — and a full lobby of it is **1.3 ms once per second**, i.e. 3-6% of
+one server frame, arriving in one frame per second. That is real but small, and it is the shape where
+decorrelation *spreads without reducing*.
+
+Two instruments, both kept. `BattleRoyaleSpectators` carries **static walk counters** at the four
+expensive primitives and reports a throttled three-line `[Spectate] load ...` block every
+`BR_SPECTATE_LOAD_DIAG_MS` (10 s, not the lobby tags' 2 s — a spectator re-carries only every ~40 s of
+the target running). **`Bench Carry`** (diag *Spectate*, with *Bench Bodies*) projects a full lobby
+from a three-client test, which is the only way to reach it: `LaunchLocalMP.bat` caps at 3.
+
+⚠️ **Two ordinary spectators in a LIVE match is impossible with three clients, and this is structural
+rather than a setup mistake.** An ordinary spectator is by definition a dead player removed from
+`m_Players`, so two of them leaves one survivor, `IsOneSideLeft` is satisfied and
+`6_BattleRoyaleRound.IsComplete` deactivates the round. Two spectators needs four clients. What that
+costs is only `burstmax`, which is pinned at 1 at S=1 and so cannot show the stagger working; every
+other column is unaffected, and the bench prices a 60-body burst directly anyway.
+
+**The volume model is exact.** Steady state at S=1, P=3, R=2, N=3, per 10 s window: `ident` 100 walks
+/ 300 scanned, `body` 10 / 30, `roster` 128 / 256 — against a prediction of 100/300 and 10/30. The
+**ident:body walk ratio is 10:1**, and it is scale-invariant (both terms are S × population), so the
+carry's world walk stays about a tenth of what `Tick`'s own 10 Hz liveness sweep already does. If the
+carry is ever worth optimising, that sweep is worth it ten times more.
+
+**The carry's own behaviour, same run**: registered on T1, first carry 3 s later at 1906 m (past the
+750 m backstop, the target having already gone), `(0 left)` after `DropAllItems`, then step carries at
+**251.8 / 254.1 / 255.7 / 252.4 m** against a 250 m threshold, ~40 s apart, `evals=10` per 10 s.
+
+⚠️ **`GetTickTime()` IS QUANTISED, at about 0.977 ms (1/1024 s) — and the failure signature is not the
+one the code predicted.** The comment on `m_TickSeconds` used to say a quantised clock would make the
+window read exactly `0.000`, "a self-evident failure". It does not: it reports **0.98 / 1.95 / 2.93 /
+4.09 ms** from windows whose every other counter was identical, which reads like a real measurement
+with real variance. Consequences:
+
+- Any bench phase reporting `0` means **under one tick**, not free. At a 3-player population, 200
+  iterations of `IdentityOfUid` and of `FindBodyByUid` each fitted inside one tick — which is why
+  `BR_SPECTATE_BENCH_ITERATIONS` is now 2000.
+- `tickms` at a small spectator count is quantisation noise, so the **`Carry Enabled` A/B cannot
+  resolve anything there** — the tick-to-tick spread is 4×, far larger than the carry. It becomes
+  meaningful only at a spectator count three clients cannot reach.
+- **Believe the bench and the walk counters instead.** The counters are exact integers; the bench's
+  phase 2 clears the resolution by a factor of 33 and was reproducible (0.98 and 1.04 ms across two
+  presses).
+
+**Verdict: the stagger ships on** (`BR_SPECTATE_CARRY_STAGGER`), because it costs one `int` and about
+eight lines and it does cut the peak roughly tenfold by quantising into the ten 10 Hz ticks of its
+interval. But it is **not** a fix for a problem that was found — 1.3 ms/s is not a problem — and its
+own comment says it spreads rather than reduces. **The real lever, if a full lobby ever does show
+one, is a per-pass `uid -> body` index** (O(S×N) -> O(N+S)), which would take that 1.3 ms to roughly
+0.02 ms *and* helps the 10 Hz sweep that the same measurement shows is ten times the volume. Do not
+build it on suspicion; the numbers above are what to re-measure against.
+
 **A teleported target still derenders, and that is now the only way to see the old symptom.** The
 same run shows a 19 s `entity=0` window immediately after a diag `TP Target` moved the watched
 player 1136 m — and it happened while the target was *99 m* from the death spot, i.e. the opposite

@@ -226,12 +226,26 @@ class BattleRoyaleSpectators
     //! a tenth of that. Everything else here is a rate; this is the peak.
     static int s_BurstMax;
 
-    //! Time spent inside Tick's per-entry loop, accumulated across the reporting window.
-    //!
-    //! GetTickTime() is float SECONDS and advances within a frame; GetGame().GetTime() is integer
-    //! milliseconds and a single pass of this loop reads 0 from it, which is how "free" gets
-    //! concluded from a measurement that never had the resolution to say so. Accumulated across the
-    //! window rather than reported per pass for the same reason.
+    /**
+     *  Time spent inside Tick's per-entry loop, accumulated across the reporting window.
+     *
+     *  GetTickTime() is float SECONDS and advances within a frame, where GetGame().GetTime() is
+     *  integer milliseconds and a single pass of this loop reads 0 from it. Accumulated across the
+     *  window rather than reported per pass for the same reason.
+     *
+     *  CORRECTED 2026-08-19, and the correction matters more than the original claim. The comment
+     *  here used to predict that a quantised clock would make the window read exactly 0.000 - "a
+     *  self-evident failure". IT DOES NOT. Measured on a live server, GetTickTime resolves to about
+     *  0.977 ms (1/1024 s), so a quiet window reports 0.98, 1.95, 2.93 or 4.09 - small multiples of
+     *  one tick, from windows whose every other counter was IDENTICAL. That reads like a real
+     *  measurement with real variance, which is the worse failure of the two.
+     *
+     *  So at a small population this figure is quantisation noise, and the carry-enabled A/B it was
+     *  built for cannot resolve anything: the tick-to-tick spread (4x) dwarfs what the carry costs.
+     *  It becomes meaningful only once the per-window total is well above a few ticks, i.e. at a
+     *  spectator count a three-client test cannot reach. Until then, believe the BENCH - its phase 2
+     *  clears the resolution by a factor of 33 - and believe the WALK COUNTERS, which are exact.
+     */
     protected float m_TickSeconds;
     protected int m_NextLoadMs;
 
@@ -1049,8 +1063,8 @@ class BattleRoyaleSpectators
         //--- The measured region (#280) is the per-entry loop and nothing else: the key copy above
         //--- and the admin list below are separately throttled and are not what the issue asks about.
         //--- GetTickTime() is float SECONDS and moves within a frame - GetGame().GetTime() is integer
-        //--- ms and would read 0 for a whole pass, which is how "it is free" gets concluded from an
-        //--- instrument that never had the resolution to say it.
+        //--- ms and would read 0 for a whole pass. Note GetTickTime is quantised too, at ~0.977 ms:
+        //--- see m_TickSeconds for what that does to this number and when to believe it.
         float tick_started = GetGame().GetTickTime();
         int teleports_before = s_Teleports;
 

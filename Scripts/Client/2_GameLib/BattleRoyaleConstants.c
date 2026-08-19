@@ -702,9 +702,17 @@ static const int BR_SPECTATE_LOAD_DIAG_MS = 10000;
 //--- Ceiling on the bench one-shot's REAL-teleport phase, which is the only part of it with side
 //--- effects. 64 is a full lobby, i.e. the largest burst a real match can produce.
 static const int BR_SPECTATE_BENCH_MAX = 64;
-//--- Iterations for the bench's read-only phases. Large enough that the batch clears the timer's
-//--- resolution comfortably, small enough to stay inside one frame.
-static const int BR_SPECTATE_BENCH_ITERATIONS = 200;
+//--- Iterations for the bench's read-only phases.
+//---
+//--- 2000, not the 200 first written. MEASURED 2026-08-19: at a 3-player population, 200 iterations
+//--- of IdentityOfUid and of FindBodyByUid each came back as "0 ms" - not because they are free but
+//--- because the whole batch fitted inside ONE tick of GetTickTime, whose resolution is ~0.977 ms
+//--- (see BR_SPECTATE_LOAD_DIAG_MS). A batch that cannot clear the clock reports a bound, not a
+//--- measurement, and a bound of zero reads exactly like free.
+//---
+//--- Only the read-only phases use this. Phase 3b is capped by BR_SPECTATE_BENCH_MAX instead,
+//--- because it is the one with side effects.
+static const int BR_SPECTATE_BENCH_ITERATIONS = 2000;
 //seconds the dead screen takes to clear once spectating begins.
 static const float BR_SPECTATE_FADE_SECONDS = 1.0;
 //how close a local entity must be to the server-pushed position to be accepted as the target, when
