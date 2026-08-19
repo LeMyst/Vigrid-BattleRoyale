@@ -134,12 +134,38 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 		{
 			// admins_steamid64 is a server-operator concern (who is immune to kick/zone restriction),
 			// not mission content - a mission pack must never be able to grant itself admin immunity.
-			array<string> lockedAdmins = admins_steamid64;
+			//
+			//--- ⚠️ THIS LOCK WAS A NO-OP UNTIL 2026-08-19, AND IT FAILED IN BOTH DIRECTIONS.
+			//--- It read `array<string> lockedAdmins = admins_steamid64;`, which copies the REFERENCE:
+			//--- the deserializer clears the existing array in place, so `lockedAdmins` denoted the
+			//--- very array being emptied and refilled, and assigning it back afterwards was a no-op.
+			//--- A mission pack that set admins_steamid64 therefore kept its own list - exactly what
+			//--- the lock exists to forbid - and one that omitted the key emptied the operator's list
+			//--- instead, so nobody was exempt from the late-join kick. CopyStrings copies contents.
+			ref array<string> lockedAdmins = CopyStrings(admins_steamid64);
+
+			//--- The loadout arrays are legitimate mission content, so they are RESTORED-IF-EMPTY
+			//--- rather than locked: a mission that dresses players differently still wins, but one
+			//--- that says nothing about them no longer strips every player naked.
+			ref array<string> keptClothes = CopyStrings(player_starting_clothes);
+			ref array<string> keptItems = CopyStrings(player_starting_items);
+			ref array<int> keptShortcuts = CopyInts(player_starting_items_shortcut);
 
 			if (!JsonFileLoader<BattleRoyaleGameData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
 
+			//--- Unconditional: this one is a lock, not a restore-if-empty. A mission that specifies
+			//--- an admin list must lose, not win.
 			admins_steamid64 = lockedAdmins;
+
+			if (!player_starting_clothes || player_starting_clothes.Count() == 0)
+				player_starting_clothes = keptClothes;
+
+			if (!player_starting_items || player_starting_items.Count() == 0)
+				player_starting_items = keptItems;
+
+			if (!player_starting_items_shortcut || player_starting_items_shortcut.Count() == 0)
+				player_starting_items_shortcut = keptShortcuts;
 		}
 	}
 

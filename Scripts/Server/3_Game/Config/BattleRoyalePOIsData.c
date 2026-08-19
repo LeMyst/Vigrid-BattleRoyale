@@ -244,26 +244,6 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 		}
 	}
 
-	//--- Element-wise copy into a NEW array. Assigning the field to a local only copies the reference,
-	//--- and the JSON deserializer empties the existing array in place - so a reference "snapshot" is
-	//--- cleared along with the thing it was meant to preserve. Always copy the contents.
-	protected ref array<string> CopyStrings(array<string> source)
-	{
-		ref array<string> copy = new array<string>;
-
-		if (!source)
-			return copy;
-
-		int i;
-		for (i = 0; i < source.Count(); i++)
-		{
-			string value = source.Get(i);
-			copy.Insert(value);
-		}
-
-		return copy;
-	}
-
 	//--- Clamp rather than halt. Runs after BOTH the profile and mission passes, so a mission override
 	//--- is checked too. MUST NOT Save() - Load() re-saves before the mission pass, so persisting a
 	//--- clamp would overwrite the admin's file permanently.

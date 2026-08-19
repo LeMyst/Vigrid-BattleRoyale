@@ -163,8 +163,75 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		// Override from mission folder
 		if (FileExist(GetMissionPath()))
 		{
+			//--- Every ref array in this class is snapshotted and restored if the mission pass leaves
+			//--- it empty - see the note on BattleRoyaleDataBase.CopyStrings for why that is necessary
+			//--- and why the copy has to be of the contents rather than the reference.
+			//---
+			//--- This is not hypothetical here. The shipped mission zone_settings.json lists
+			//--- end_avoid_type, end_avoid_city, first_zone_polygon, static_sizes, static_timers and
+			//--- min_players - and says nothing about the rest, so on any server using it
+			//--- zone_notification_minutes and zone_notification_seconds were both loading EMPTY and
+			//--- the shrink warnings were silently switched off. hot_zone_centers / hot_zone_radii and
+			//--- avoid_surface_types were in the same position; they merely happen to default empty,
+			//--- so nobody noticed.
+			//---
+			//--- A mission file written before a field existed is the normal case, not an edge case:
+			//--- every array added to this class from now on lands in exactly that situation.
+			ref array<int> keptNotifyMinutes = CopyInts(zone_notification_minutes);
+			ref array<int> keptNotifySeconds = CopyInts(zone_notification_seconds);
+			ref array<string> keptAvoidType = CopyStrings(end_avoid_type);
+			ref array<string> keptAvoidCity = CopyStrings(end_avoid_city);
+			ref array<string> keptFinalPolygon = CopyStrings(final_zone_polygon);
+			ref array<string> keptFirstPolygon = CopyStrings(first_zone_polygon);
+			ref array<float> keptStaticSizes = CopyFloats(static_sizes);
+			ref array<int> keptStaticTimers = CopyInts(static_timers);
+			ref array<int> keptMinPlayers = CopyInts(min_players);
+			ref array<string> keptAvoidSurfaces = CopyStrings(avoid_surface_types);
+			ref array<string> keptHotCenters = CopyStrings(hot_zone_centers);
+			ref array<float> keptHotRadii = CopyFloats(hot_zone_radii);
+
 			if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
+
+			if (!zone_notification_minutes || zone_notification_minutes.Count() == 0)
+				zone_notification_minutes = keptNotifyMinutes;
+
+			if (!zone_notification_seconds || zone_notification_seconds.Count() == 0)
+				zone_notification_seconds = keptNotifySeconds;
+
+			if (!end_avoid_type || end_avoid_type.Count() == 0)
+				end_avoid_type = keptAvoidType;
+
+			if (!end_avoid_city || end_avoid_city.Count() == 0)
+				end_avoid_city = keptAvoidCity;
+
+			if (!final_zone_polygon || final_zone_polygon.Count() == 0)
+				final_zone_polygon = keptFinalPolygon;
+
+			if (!first_zone_polygon || first_zone_polygon.Count() == 0)
+				first_zone_polygon = keptFirstPolygon;
+
+			if (!static_sizes || static_sizes.Count() == 0)
+				static_sizes = keptStaticSizes;
+
+			if (!static_timers || static_timers.Count() == 0)
+				static_timers = keptStaticTimers;
+
+			if (!min_players || min_players.Count() == 0)
+				min_players = keptMinPlayers;
+
+			if (!avoid_surface_types || avoid_surface_types.Count() == 0)
+				avoid_surface_types = keptAvoidSurfaces;
+
+			//--- The pair Validate() truncates to equal length. Restoring them independently is
+			//--- correct: a mission that specifies one and not the other is a misconfiguration
+			//--- Validate() already clamps, and it should clamp what the admin actually wrote rather
+			//--- than a half-restored mixture.
+			if (!hot_zone_centers || hot_zone_centers.Count() == 0)
+				hot_zone_centers = keptHotCenters;
+
+			if (!hot_zone_radii || hot_zone_radii.Count() == 0)
+				hot_zone_radii = keptHotRadii;
 		}
 	}
 
@@ -279,6 +346,41 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 	//--- on the clamped number. They all go through GetZoneData(), so they do.
 	override void Validate()
 	{
+		//--- Effective array sizes, read back off the live object AFTER both the profile and the
+		//--- mission pass. This is the tell for the mission-override array wipe: a count of 0 for
+		//--- something that ships non-empty means the mission JSON omitted the key and the field was
+		//--- silently emptied, which for the two notify arrays means the shrink warnings are off and
+		//--- nothing else says so. Cheap, once per boot, and it is what makes the failure visible
+		//--- rather than something a player reports weeks later.
+		//--- Counted through null guards, matching how the rest of this method reads these arrays.
+		//--- A JSON field can legitimately deserialize to null, and a DIAGNOSTIC that dereferences it
+		//--- would take server init down - which is a far worse outcome than the silent emptying it
+		//--- exists to report.
+		int c_notify_min = 0;
+		int c_notify_sec = 0;
+		int c_avoid_type = 0;
+		int c_avoid_surface = 0;
+		int c_hot = 0;
+
+		if (zone_notification_minutes)
+			c_notify_min = zone_notification_minutes.Count();
+		if (zone_notification_seconds)
+			c_notify_sec = zone_notification_seconds.Count();
+		if (end_avoid_type)
+			c_avoid_type = end_avoid_type.Count();
+		if (avoid_surface_types)
+			c_avoid_surface = avoid_surface_types.Count();
+		if (hot_zone_centers)
+			c_hot = hot_zone_centers.Count();
+
+		string counts = "[BattleRoyaleZone] effective arrays - notify_min ";
+		counts = counts + c_notify_min.ToString();
+		counts = counts + ", notify_sec " + c_notify_sec.ToString();
+		counts = counts + ", avoid_type " + c_avoid_type.ToString();
+		counts = counts + ", avoid_surface " + c_avoid_surface.ToString();
+		counts = counts + ", hot_zones " + c_hot.ToString();
+		BattleRoyaleUtils.Info(counts);
+
 		//--- EnfusionScript allows one declaration per name per method scope, so every local the
 		//--- checks below need is declared here rather than at first use.
 		int limit = num_zones;

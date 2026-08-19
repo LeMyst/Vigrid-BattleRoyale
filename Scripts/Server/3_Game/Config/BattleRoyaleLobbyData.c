@@ -139,8 +139,20 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 		// Override from mission folder
 		if (FileExist(GetMissionPath()))
 		{
+			//--- Restored if the mission pass empties them - see BattleRoyaleDataBase.CopyStrings.
+			//--- These two are the lobby loadout, so an omitted key would leave every player in the
+			//--- lobby with nothing at all.
+			ref array<string> keptLobbyItems = CopyStrings(player_lobby_items);
+			ref array<int> keptLobbyShortcuts = CopyInts(player_lobby_items_shortcut);
+
 			if (!JsonFileLoader<BattleRoyaleLobbyData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
+
+			if (!player_lobby_items || player_lobby_items.Count() == 0)
+				player_lobby_items = keptLobbyItems;
+
+			if (!player_lobby_items_shortcut || player_lobby_items_shortcut.Count() == 0)
+				player_lobby_items_shortcut = keptLobbyShortcuts;
 		}
 	}
 
