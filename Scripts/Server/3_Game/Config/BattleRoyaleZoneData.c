@@ -174,8 +174,14 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // range and warns when the window sits outside it.
     //
     // 45 s/player spans that range over a realistic lobby: 28 players -> 1260 s, 42 -> 1890, 57 -> 2565.
+    // ⚠️ match_min_seconds MUST SIT CLEARLY BELOW the shortest match the ladder can play, not level
+    // with it. The shortest varies per layout because the derived round timers do - measured 1196,
+    // 1209, 1239 and 1243 s across four ChernarusPlus chains - and at 1200 the 1196 s layout missed by
+    // FOUR SECONDS, so the "too short" walk pushed every lobby up a tier and the ladder collapsed from
+    // three usable tiers to two. A discrete ladder has no way to add four seconds; it can only add a
+    // whole circle. 1080 leaves real headroom under the whole observed spread.
     float match_seconds_per_player = 45.0;
-    int match_min_seconds = 1200;  // 20 min - just under the shortest match the stock ladder can play
+    int match_min_seconds = 1080;  // 18 min - safely under the ~1200 s floor of the stock ladder
     int match_max_seconds = 2700;  // 45 min - just over the longest, so the full ladder stays reachable
 
     // Walk player counts 1..N at boot and report the tier each one would open on, the circle's radius,

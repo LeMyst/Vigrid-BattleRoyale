@@ -157,6 +157,14 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- the result is cached to the mission folder and later boots pay nothing.
         BattleRoyalePOIResolver.Init();
 
+        //--- The building census, which the derived ladder rates circles by. GATED, because it is the
+        //--- most expensive thing the mod can do at boot: on a map with no cache yet it scans the whole
+        //--- world once (tens of seconds) and stores it in scan_cache.json beside the POI anchors; every
+        //--- later boot reads the file. A server with derive_zone_ladder off must not pay a second for
+        //--- a number nothing reads, so it is asked for here rather than lazily from the generator.
+        if (m_ZoneData.derive_zone_ladder)
+            BattleRoyaleBuildingCensus.Init();
+
         BattleRoyaleZone.PrepareGeneration();
 
         //--- initialize all states (in order from start to finish)

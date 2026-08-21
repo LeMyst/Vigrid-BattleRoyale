@@ -1895,45 +1895,24 @@ class BattleRoyaleZone
     }
 
     /**
-     *  Count the lootable buildings inside every placed circle (#284, replacing the POI count).
+     *  Lootable buildings inside each placed circle, from the cached map-wide census.
      *
-     *  ⚠️ WHY A LATTICE OF SMALL PROBES AND NOT ONE BIG QUERY. GetObjectsAtPosition fills an array
-     *  with EVERY object in range - trees, bushes and rocks included, and they outnumber buildings by
-     *  orders of magnitude. Asking it for a 3375 m radius would hand back a six-figure array to walk.
-     *  The resolver's proven working point is a ~350 m probe, so this tiles the largest circle with
-     *  squares of BR_ZONE_CENSUS_CELL_M and probes each one's circumcircle.
+     *  This replaced a per-circle native scan that cost 8.7 s on EVERY boot (167 probes over one
+     *  3375 m circle, measured on ChernarusPlus) and could only ever see relative poverty, because
+     *  with no map-wide figure the reference density had to be the largest circle's own - pinning that
+     *  circle at factor 1.0 and rating opening circles of 1316, 2744 and 3174 buildings identically.
      *
-     *  ⚠️ EVERY BUILDING IS COUNTED EXACTLY ONCE, and that is what the square test buys. Probe circles
-     *  must overlap to cover a plane, so a plain radius test would double-count the seams; accepting a
-     *  building only when it falls inside the probe's OWN square makes the cells a partition. Without
-     *  it the dense town centres - precisely where seams are most likely - would be inflated most.
-     *
-     *  The circles are nested, so one pass over the largest one serves all six: each accepted building
-     *  is tested against every circle's radius as it is found, and no position list is retained.
+     *  BattleRoyaleBuildingCensus scans the world once, caches it in scan_cache.json, and hands
+     *  back exact counts for any circle. See its header for why the scan is a lattice of small probes
+     *  and why each building is counted exactly once.
      */
     protected void CensusBuildings()
     {
         int i;
-        int cell_x;
-        int cell_z;
-        int cells_x;
-        int found_here;
-        int accepted;
-        int started_ms;
-        float cell;
-        float probe_r;
-        float min_x;
-        float min_z;
-        float bx;
-        float bz;
-        float dx;
-        float dz;
-        float largest_r;
+        int count;
+        float radius;
         vector centre;
-        vector probe = "0 0 0";
-        vector building;
-        array<vector> found;
-        BattleRoyalePlayArea outer;
+        BattleRoyalePlayArea area;
 
         s_PlayAreaBuildings = new array<int>();
         s_CensusCells = 0;
@@ -1943,120 +1922,30 @@ class BattleRoyaleZone
         if (!m_PlayAreas || m_PlayAreas.Count() == 0)
             return;
 
-        for (i = 0; i < m_PlayAreas.Count(); i++)
+        if (!BattleRoyaleBuildingCensus.IsReady())
         {
-            s_PlayAreaBuildings.Insert(0);
-        }
-
-        //--- The largest circle is the last entry: the array is smallest-first.
-        outer = m_PlayAreas.Get(m_PlayAreas.Count() - 1);
-        if (!outer)
-            return;
-
-        centre = outer.GetCenter();
-        largest_r = outer.GetRadius();
-        if (largest_r <= 0)
-            return;
-
-        cell = BR_ZONE_CENSUS_CELL_M;
-        probe_r = cell * 0.7072;              //--- circumradius of the square, so the cell is covered
-
-        cells_x = Math.Ceil((largest_r * 2) / cell) + 1;
-        if ((cells_x * cells_x) > BR_ZONE_CENSUS_MAX_CELLS)
-        {
-            BattleRoyaleUtils.Warn("[BattleRoyaleZone] building census would need " + (cells_x * cells_x) + " probes for a " + largest_r + " m circle, over the " + BR_ZONE_CENSUS_MAX_CELLS + " cap - skipping it and falling back to the POI count. Raise BR_ZONE_CENSUS_CELL_M for this map.");
-            return;
-        }
-
-        started_ms = GetGame().GetTime();
-
-        min_x = centre[0] - largest_r;
-        min_z = centre[2] - largest_r;
-
-        for (cell_z = 0; cell_z < cells_x; cell_z++)
-        {
-            for (cell_x = 0; cell_x < cells_x; cell_x++)
-            {
-                probe[0] = min_x + (cell_x * cell) + (cell * 0.5);
-                probe[2] = min_z + (cell_z * cell) + (cell * 0.5);
-
-                //--- Skip a cell whose square cannot reach the circle at all. Cheap arithmetic that
-                //--- removes the corners of the bounding box, i.e. about a fifth of the probes.
-                dx = probe[0] - centre[0];
-                dz = probe[2] - centre[2];
-                if (Math.Sqrt((dx * dx) + (dz * dz)) > (largest_r + probe_r))
-                    continue;
-
-                found = new array<vector>();
-                BattleRoyalePOIResolver.CollectBuildingsAt(probe, probe_r, found);
-                s_CensusCells++;
-
-                found_here = found.Count();
-                for (i = 0; i < found_here; i++)
-                {
-                    building = found.Get(i);
-                    bx = building[0];
-                    bz = building[2];
-
-                    //--- THE PARTITION TEST - see the header. Half-open on both axes so a building on
-                    //--- a shared edge belongs to exactly one cell.
-                    if (bx < (probe[0] - (cell * 0.5)) || bx >= (probe[0] + (cell * 0.5)))
-                        continue;
-                    if (bz < (probe[2] - (cell * 0.5)) || bz >= (probe[2] + (cell * 0.5)))
-                        continue;
-
-                    s_CensusFound++;
-                    TallyBuilding(bx, bz);
-                }
-            }
-        }
-
-        s_CensusMs = GetGame().GetTime() - started_ms;
-
-        accepted = s_CensusFound;
-        if (accepted == 0)
-        {
-            //--- Not a theoretical branch: if GetObjectsAtPosition ever stops returning statics at
-            //--- range on some map or build, rating every circle zero would silently hand every lobby
-            //--- the smallest opening circle. Say so and let BuildDerivedLadder fall back.
-            BattleRoyaleUtils.Warn("[BattleRoyaleZone] building census found NOTHING in " + s_CensusCells + " probes - falling back to the POI count for loot density. Check that GetObjectsAtPosition returns statics on this map.");
+            //--- No census: BuildDerivedLadder falls back to POI counts and says so in the boot report.
             s_PlayAreaBuildings = NULL;
             return;
         }
-
-        BattleRoyaleUtils.Info("[BattleRoyaleZone] building census: " + s_CensusCells + " probes, " + accepted + " lootable buildings, " + s_CensusMs + " ms.");
-    }
-
-    //--- Add one building to every circle that contains it. Split out so the census loop above holds
-    //--- no array reads next to a call - see ComputeAllowRadii.
-    protected void TallyBuilding(float bx, float bz)
-    {
-        int i;
-        int previous;
-        float dx;
-        float dz;
-        float radius;
-        vector centre;
-        BattleRoyalePlayArea area;
 
         for (i = 0; i < m_PlayAreas.Count(); i++)
         {
             area = m_PlayAreas.Get(i);
             if (!area)
+            {
+                s_PlayAreaBuildings.Insert(0);
                 continue;
+            }
 
             centre = area.GetCenter();
             radius = area.GetRadius();
 
-            dx = bx - centre[0];
-            dz = bz - centre[2];
-
-            if (((dx * dx) + (dz * dz)) > (radius * radius))
-                continue;
-
-            previous = s_PlayAreaBuildings.Get(i);
-            s_PlayAreaBuildings.Set(i, previous + 1);
+            count = BattleRoyaleBuildingCensus.CountInCircle(centre, radius);
+            s_PlayAreaBuildings.Insert(count);
         }
+
+        s_CensusFound = BattleRoyaleBuildingCensus.GetBuildingCount();
     }
 
     //--- Lootable buildings inside this circle, or -1 when no census ran.
@@ -2078,8 +1967,6 @@ class BattleRoyaleZone
         int density_count;
         int derived_min;
         int floor_players;
-        int outer_index;
-        int outer_count;
         float radius;
         float area_m2;
         float circle_density;
@@ -2090,12 +1977,9 @@ class BattleRoyaleZone
         float metres_per_player;
         float factor_min;
         float factor_max;
-        float outer_radius;
-        float outer_m2;
         bool use_buildings;
         vector centre;
         BattleRoyalePlayArea area;
-        BattleRoyalePlayArea outer_area;
 
         s_PlayAreaPOICount = new array<int>();
         s_PlayAreaMinPlayers = new array<int>();
@@ -2120,33 +2004,24 @@ class BattleRoyaleZone
         if(floor_players < 1)
             floor_players = 1;
 
-        //--- THE YARDSTICK. Buildings when the census ran, POIs only as a fallback.
+        //--- THE YARDSTICK: the whole map's building density. Buildings when the census is available,
+        //--- POI counts only as a fallback.
         //---
-        //--- ⚠️ The reference is the LARGEST CIRCLE's own density, not the map's. A map-wide building
-        //--- census is not affordable - it would mean probing all 236 km2 of Chernarus rather than the
-        //--- 36 km2 the match is played in - and the useful question is anyway "which circles are the
-        //--- rich ones inside this match's play area", which is exactly what this measures. The
-        //--- opening circle therefore sits at factor 1.0 by construction and is the baseline.
+        //--- ⚠️ IT IS MAP-WIDE AND THAT IS THE POINT, not a detail. An earlier build used the largest
+        //--- circle's own density as the reference, which pins that circle at factor 1.0 by
+        //--- construction - so a chain landing in a uniformly loot-poor region rated exactly like one
+        //--- in a rich region, and opening circles holding 1316, 2744 and 3174 buildings were all
+        //--- rated for 33 players. Against an absolute reference a poor region genuinely lowers every
+        //--- rating, the selection walk stops at a BIGGER circle, and the match gains a shrink - which
+        //--- is the behaviour #284 asked for and the relative reference could not express.
         world_area = f_WorldSize * f_WorldSize;
         map_density = 0;
         use_buildings = false;
 
-        if(s_PlayAreaBuildings && m_PlayAreas && m_PlayAreas.Count() > 0)
+        if(BattleRoyaleBuildingCensus.IsReady() && s_PlayAreaBuildings)
         {
-            outer_index = m_PlayAreas.Count() - 1;
-            outer_area = m_PlayAreas.Get(outer_index);
-            outer_count = GetBuildingCount(outer_index);
-
-            if(outer_area && outer_count > 0)
-            {
-                outer_radius = outer_area.GetRadius();
-                outer_m2 = Math.PI * outer_radius * outer_radius;
-                if(outer_m2 > 0)
-                {
-                    map_density = outer_count / outer_m2;
-                    use_buildings = true;
-                }
-            }
+            map_density = BattleRoyaleBuildingCensus.GetMapDensity();
+            use_buildings = (map_density > 0);
         }
 
         if(!use_buildings && world_area > 0 && s_POI)

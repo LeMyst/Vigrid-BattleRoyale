@@ -683,24 +683,6 @@ class BattleRoyalePOIResolver
     // Cache
     // ---------------------------------------------------------------------------------------------
 
-    //--- MISSION folder, not profile - and that is the right home rather than a preference.
-    //---
-    //--- This cache is per-MAP data (it is a description of one world's towns), and the mission is the
-    //--- thing in this stack that is already per-map. Keeping them together means a server that runs
-    //--- several maps gets one cache each for free, they travel with the mission if it is copied to
-    //--- another host, and deleting a mission takes its derived data with it instead of leaving an
-    //--- orphan in the profile.
-    //---
-    //--- Note this makes it the ONE file the mod writes under $mission:. Every settings class writes
-    //--- only to $profile: on purpose, because those are the admin's hand-edited inputs and a mission
-    //--- copy would silently shadow them - but this is generated output that nobody edits, so that
-    //--- reasoning does not apply. The world_name check in LoadCache stays anyway: it costs nothing
-    //--- and it still catches one mission folder being pointed at a different terrain.
-    protected static string GetCachePath()
-    {
-        return BATTLEROYALE_SETTINGS_MISSION_FOLDER + "poi_cache.json";
-    }
-
     //--- Every parameter that changes the result. Anything added to the scan MUST be added here too,
     //--- or that setting becomes silently inert on any server that already has a cache file.
     protected static string BuildSignature(BattleRoyalePOIsData settings)
@@ -765,93 +747,100 @@ class BattleRoyalePOIResolver
 
     protected static bool LoadCache(string world_name, string signature)
     {
-        if (!FileExist(GetCachePath()))
-            return false;
+        BattleRoyaleScanCacheFile cache = BattleRoyaleScanCache.Get(world_name);
+        int i;
+        BattleRoyalePOICacheEntry entry;
 
-        string error_message;
-        ref BattleRoyalePOICacheFile file = new BattleRoyalePOICacheFile();
-
-        if (!JsonFileLoader<BattleRoyalePOICacheFile>.LoadFile(GetCachePath(), file, error_message))
+        if (cache && cache.poi_version == BR_POI_CACHE_VERSION && cache.poi_signature == signature)
         {
-            //--- Warn, never Error: BattleRoyaleUtils.Error routes to Error2(), which raises a VM
-            //--- exception and would take server init down over a corrupt cache file that we are
-            //--- perfectly able to rebuild.
-            BattleRoyaleUtils.Warn("[POIResolver] poi_cache.json could not be read (" + error_message + ") - rescanning.");
-            return false;
+            if (cache.poi_entries && cache.poi_entries.Count() > 0)
+            {
+                for (i = 0; i < cache.poi_entries.Count(); i++)
+                {
+                    entry = cache.poi_entries.Get(i);
+                    if (entry)
+                        s_Resolved.Insert(entry.poi_name, entry);
+                }
+
+                return s_Resolved.Count() > 0;
+            }
         }
+        else if (cache && cache.poi_version != 0 && cache.poi_signature != signature)
+        {
+            //--- Said out loud because the OTHER section is deliberately kept: a POI setting
+            //--- changing must not cost the 40 s building scan.
+            BattleRoyaleUtils.Info("[POIResolver] scan settings changed since the cache was written - rescanning POIs only.");
+        }
+
+        return LoadLegacyCache(world_name, signature);
+    }
+
+    /**
+     *  The pre-consolidation poi_cache.json, read once so a server updating to this build does not
+     *  throw away a POI scan it already paid for. On success the entries are folded into the shared
+     *  container immediately, so this path is taken exactly once and the old file can be deleted.
+     */
+    protected static bool LoadLegacyCache(string world_name, string signature)
+    {
+        string error_message;
+        ref BattleRoyalePOICacheFile file;
+        int i;
+        BattleRoyalePOICacheEntry entry;
+
+        if (!FileExist(BattleRoyaleScanCache.GetLegacyPOIPath()))
+            return false;
+
+        file = new BattleRoyalePOICacheFile();
+        if (!JsonFileLoader<BattleRoyalePOICacheFile>.LoadFile(BattleRoyaleScanCache.GetLegacyPOIPath(), file, error_message))
+            return false;
 
         if (file.cache_version != BR_POI_CACHE_VERSION)
-        {
-            BattleRoyaleUtils.Info("[POIResolver] cache is version " + file.cache_version + ", expected " + BR_POI_CACHE_VERSION + " - rescanning.");
             return false;
-        }
-
-        //--- A server that switches map must not read the previous map's towns. Nothing else keys on
-        //--- the world, so without this the cache is actively dangerous rather than merely stale.
         if (file.world_name != world_name)
-        {
-            BattleRoyaleUtils.Info("[POIResolver] cache was built for " + file.world_name + ", this is " + world_name + " - rescanning.");
             return false;
-        }
-
         if (file.signature != signature)
-        {
-            BattleRoyaleUtils.Info("[POIResolver] scan settings changed since the cache was written - rescanning.");
             return false;
-        }
-
         if (!file.entries || file.entries.Count() == 0)
             return false;
 
-        int i;
         for (i = 0; i < file.entries.Count(); i++)
         {
-            BattleRoyalePOICacheEntry entry = file.entries.Get(i);
-            if (!entry || entry.poi_name == "")
-                continue;
-
-            //--- A `ref array` field does NOT get its initialiser back after deserialization, so an
-            //--- entry can legitimately load with a null list. Repair it rather than letting every
-            //--- later Count() call dereference null - the anchor and extent are still good.
-            if (!entry.buildings)
-                entry.buildings = new array<float>;
-
-            s_Resolved.Set(entry.poi_name, entry);
+            entry = file.entries.Get(i);
+            if (entry)
+                s_Resolved.Insert(entry.poi_name, entry);
         }
 
-        return s_Resolved.Count() > 0;
+        if (s_Resolved.Count() == 0)
+            return false;
+
+        BattleRoyaleUtils.Info("[POIResolver] migrated " + s_Resolved.Count() + " POIs out of the old poi_cache.json - it is no longer read and can be deleted.");
+        SaveCache(world_name, signature);
+        return true;
     }
 
     protected static void SaveCache(string world_name, string signature)
     {
-        ref BattleRoyalePOICacheFile file = new BattleRoyalePOICacheFile();
-        file.cache_version = BR_POI_CACHE_VERSION;
-        file.world_name = world_name;
-        file.signature = signature;
-
+        BattleRoyaleScanCacheFile cache = BattleRoyaleScanCache.Get(world_name);
         int i;
+        BattleRoyalePOICacheEntry entry;
+
+        if (!cache)
+            return;
+
+        cache.world_name = world_name;
+        cache.poi_version = BR_POI_CACHE_VERSION;
+        cache.poi_signature = signature;
+        cache.poi_entries = new array<ref BattleRoyalePOICacheEntry>;
+
         for (i = 0; i < s_Resolved.Count(); i++)
         {
-            BattleRoyalePOICacheEntry entry = s_Resolved.GetElement(i);
+            entry = s_Resolved.GetElement(i);
             if (entry)
-                file.entries.Insert(entry);
+                cache.poi_entries.Insert(entry);
         }
 
-        //--- $mission:Vigrid-BattleRoyale\ is optional for the settings classes - they only ever READ
-        //--- from it - so on most servers it does not exist at all and the save would fail on a
-        //--- missing directory. MakeDirectory is a no-op when it is already there.
-        MakeDirectory(BATTLEROYALE_SETTINGS_MISSION_FOLDER);
-
-        string error_message;
-        if (!JsonFileLoader<BattleRoyalePOICacheFile>.SaveFile(GetCachePath(), file, error_message))
-        {
-            //--- Not fatal. The scan already ran and this boot is fully resolved; only the NEXT boot
-            //--- pays for the failure, by scanning again.
-            BattleRoyaleUtils.Warn("[POIResolver] could not write poi_cache.json (" + error_message + ") - the next boot will rescan.");
-            return;
-        }
-
-        BattleRoyaleUtils.Info("[POIResolver] wrote " + file.entries.Count() + " POIs to poi_cache.json");
+        BattleRoyaleScanCache.Save();
+        BattleRoyaleUtils.Info("[POIResolver] wrote " + cache.poi_entries.Count() + " POIs to scan_cache.json");
     }
 
     // ---------------------------------------------------------------------------------------------
