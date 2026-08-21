@@ -2305,6 +2305,11 @@ class BattleRoyaleZone
         int poi_count;
         int duration;
         int bucket;
+        int moved = 0;
+        int span_seconds;
+        int shortest = 0;
+        int longest = 0;
+        int floor_zone;
         float radius;
         float per_poi;
         string line;
@@ -2321,9 +2326,42 @@ class BattleRoyaleZone
 
         BattleRoyaleUtils.Info("[BattleRoyaleZone][LadderTest] walking 1.." + max_players + " players on " + GetGame().GetWorldName() + "...");
 
+        //--- What this ladder can actually produce, before anything is asked of it. Reported first
+        //--- because it is the yardstick every duration setting has to be chosen against, and because
+        //--- an operator who sets match_max_seconds below `longest` has made the biggest circle
+        //--- unreachable at every population - which looks like a working feature and is not.
+        //---
+        //--- ⚠️ THE RANGE IS OVER LEGAL STARTING TIERS, i.e. 1..floor_zone, NOT 1..num_zones. The walk
+        //--- can never start past floor_zone (min_zone_num is an explicit "play at least this many
+        //--- circles"), so pricing zone num_zones reports a match nobody can ever be given. Written
+        //--- that way first, and the warning below then fired against a 394 s "shortest" that the very
+        //--- next line contradicted with 1242 s - advising the operator to fix a setting that was fine.
+        floor_zone = Math.Max(1, i_NumRounds - m_ZoneSettings.min_zone_num + 1);
+
+        for(k = 1; k <= floor_zone; k++)
+        {
+            span_seconds = BattleRoyaleState.GetMatchDurationSeconds(k);
+            if(k == 1)
+                longest = span_seconds;
+
+            shortest = span_seconds;
+        }
+
+        line = "[BattleRoyaleZone][LadderTest]   this ladder can play " + shortest + " s (zone " + floor_zone + ")";
+        line = line + " to " + longest + " s (zone 1),";
+        line = line + " i.e. starting tiers 1.." + floor_zone + " at min_zone_num " + m_ZoneSettings.min_zone_num + ".";
+        BattleRoyaleUtils.Info(line);
+
         for(p = 1; p <= max_players; p++)
         {
             zone_number = BattleRoyaleState.GetDynamicStartingZone(p);
+
+            //--- ON THE VERY NEXT LINE, and nowhere else - s_LastBoundMove is a return value in all
+            //--- but name. It is what makes "the duration bound is quietly deciding this on its own"
+            //--- visible: the chosen tier alone cannot show it, because a hijacked answer looks exactly
+            //--- like a legitimate one.
+            if(BattleRoyaleState.s_LastBoundMove != 0)
+                moved++;
 
             //--- Read into a local before the Set(), per ComputeAllowRadii's rule. This is the gate's
             //--- own tally; a misread here would be believed.
@@ -2376,13 +2414,42 @@ class BattleRoyaleZone
                 line = line + " zone" + k + "=" + bucket;
         }
         BattleRoyaleUtils.Info("[BattleRoyaleZone][LadderTest]   tier histogram:" + line);
+        BattleRoyaleUtils.Info("[BattleRoyaleZone][LadderTest]   duration bound moved the tier for " + moved + " of " + max_players + " player counts.");
 
         if(distinct <= 1)
             BattleRoyaleUtils.Warn("[BattleRoyaleZone][LadderTest] every player count from 1 to " + max_players + " opens on the SAME circle - the ladder is not adapting to anything. Check zone_metres_per_player against static_sizes, and min_zone_num against num_zones.");
 
+        //--- ⚠️ THE ONE THE HISTOGRAM CANNOT SHOW. A bound that overrides most of the walk still leaves
+        //--- several populated buckets - it has simply replaced the player-count and loot answer with a
+        //--- clock, and every tier boundary you are looking at is the clock's. Measured on ChernarusPlus
+        //--- during #284's own acceptance run: 100 of 100 moved, and the largest circle was unreachable
+        //--- at every population, while the histogram looked perfectly healthy at two buckets.
+        if(moved > (max_players / 2))
+            BattleRoyaleUtils.Warn("[BattleRoyaleZone][LadderTest] the duration bound moved the tier for MOST player counts - it, not the player count or the loot density, is choosing the opening circle. Set match_seconds_per_player / match_min_seconds / match_max_seconds against the range reported above.");
+
+        WarnIfDurationWindowUnreachable(shortest, longest);
+
         //--- Put the memo back. The walk left it holding max_players, and the match about to be played
         //--- must recompute rather than inherit a self test's last answer.
         BattleRoyaleState.ResetDynamicZoneMemo();
+    }
+
+    //--- Split out of RunLadderSelfTest purely for scope: EnfusionScript allows one declaration per
+    //--- name per method scope, and that method has already spent the obvious ones.
+    protected void WarnIfDurationWindowUnreachable(int shortest, int longest)
+    {
+        BattleRoyaleZoneData settings;
+
+        if(!m_ZoneSettings || !m_ZoneSettings.bound_match_duration)
+            return;
+
+        settings = m_ZoneSettings;
+
+        if(longest > 0 && settings.match_max_seconds < longest)
+            BattleRoyaleUtils.Warn("[BattleRoyaleZone][LadderTest] match_max_seconds (" + settings.match_max_seconds + ") is below the longest match this ladder can play (" + longest + " s), so the LARGEST circle can never be chosen at any population. Raise it, or shorten static_timers.");
+
+        if(shortest > 0 && settings.match_min_seconds > shortest)
+            BattleRoyaleUtils.Warn("[BattleRoyaleZone][LadderTest] match_min_seconds (" + settings.match_min_seconds + ") is above the shortest match this ladder can play (" + shortest + " s), so the lengthening walk can never be satisfied. Lower it, or raise min_zone_num.");
     }
 
     //--- Build every circle. Runs once per process; every later call is a lookup.

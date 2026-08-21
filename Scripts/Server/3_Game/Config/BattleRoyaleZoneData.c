@@ -162,11 +162,21 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // NOTE it can only move the tier within [1, num_zones - min_zone_num + 1]; min_zone_num still wins.
     bool bound_match_duration = false;
 
-    // Target match length as seconds per starting player, then clamped to the two bounds below. The
-    // issue's rough starting point is 0.5 min per player, i.e. 30 s - tune it from real matches.
-    float match_seconds_per_player = 30.0;
-    int match_min_seconds = 900;   // 15 min
-    int match_max_seconds = 2400;  // 40 min
+    // Target match length as seconds per starting player, then clamped to the two bounds below.
+    //
+    // ⚠️ THESE THREE MUST OVERLAP WHAT THE LADDER CAN ACTUALLY PRODUCE, or the bound decides every
+    // match on its own and the player-count and loot terms never reach the answer. #284's rough
+    // starting point was 0.5 min per player; measured on ChernarusPlus at stock sizes with derived
+    // timers on, the legal matches are 1260 s (zone 3, the min_zone_num floor), 1903 s (zone 2) and
+    // ~2560 s (zone 1) - so 30 s/player with a 2400 s ceiling made the largest circle UNREACHABLE at
+    // any population and collapsed a hundred player counts onto two tiers. Caught by
+    // zone_ladder_selftest_players, which is exactly what it is for; it now reports the achievable
+    // range and warns when the window sits outside it.
+    //
+    // 45 s/player spans that range over a realistic lobby: 28 players -> 1260 s, 42 -> 1890, 57 -> 2565.
+    float match_seconds_per_player = 45.0;
+    int match_min_seconds = 1200;  // 20 min - just under the shortest match the stock ladder can play
+    int match_max_seconds = 2700;  // 45 min - just over the longest, so the full ladder stays reachable
 
     // Walk player counts 1..N at boot and report the tier each one would open on, the circle's radius,
     // the POIs inside it and the resulting match length. 0 = off. This is the acceptance gate for the

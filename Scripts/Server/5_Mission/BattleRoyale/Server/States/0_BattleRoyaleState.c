@@ -1023,6 +1023,15 @@ class BattleRoyaleState: Timeable
         return total;
     }
 
+    //--- How many tiers BoundMatchDuration moved the last answer by, signed. Written at its single
+    //--- exit and read by RunLadderSelfTest on the very next line - a return value in all but name,
+    //--- the same shape as BattleRoyaleSpectators.m_LastResolveTier, and to be read NOWHERE ELSE.
+    //---
+    //--- It exists because "the bound is quietly deciding every match on its own" is invisible from the
+    //--- chosen tier alone: the answer looks like a normal tier, it is just not the one the player
+    //--- count and the loot density asked for. That is the shape of failure this repo keeps shipping.
+    static int s_LastBoundMove = 0;
+
     //--- Drop the memo. Only BattleRoyaleZone.RunLadderSelfTest needs this: it walks a range of player
     //--- counts at boot and must not leave the match about to be played reading its last answer.
     static void ResetDynamicZoneMemo()
@@ -1110,6 +1119,8 @@ class BattleRoyaleState: Timeable
         int target;
         string line;
 
+        s_LastBoundMove = 0;
+
         if(!zone_settings || !zone_settings.bound_match_duration)
             return candidate_zone;
 
@@ -1151,6 +1162,7 @@ class BattleRoyaleState: Timeable
         }
 
         total = GetMatchDurationSeconds(chosen);
+        s_LastBoundMove = chosen - candidate_zone;
 
         //--- Built in steps: six fields in one concatenation is past the expression complexity ceiling.
         line = "[BattleRoyaleState] match duration bound: " + num_players + " player(s), target " + target + " s";
