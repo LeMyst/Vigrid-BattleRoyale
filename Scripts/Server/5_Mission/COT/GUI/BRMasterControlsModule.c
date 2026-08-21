@@ -1036,6 +1036,7 @@ modded class BRMasterControlsModule
 
             //--- Both answer -1 when the ladder was never derived, which is distinct from a real zero.
             row.poi_count = BattleRoyaleZone.GetPOICount( i );
+            row.building_count = BattleRoyaleZone.GetBuildingCount( i );
             row.derived_min_players = BattleRoyaleZone.GetDerivedMinPlayers( i );
 
             if ( zone )

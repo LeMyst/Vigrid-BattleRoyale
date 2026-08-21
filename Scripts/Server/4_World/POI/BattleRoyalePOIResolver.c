@@ -181,6 +181,33 @@ class BattleRoyalePOIResolver
         return entry.extent;
     }
 
+    /**
+     *  Lootable buildings around `center`, for anyone who needs a building census rather than a POI.
+     *
+     *  A thin public door onto CollectBuildings, so the two rules that make the count meaningful stay
+     *  in ONE place: Building.Cast rather than IsBuilding() (see CollectBuildings for why Well and
+     *  FuelStation would otherwise be dropped), and the poi_scan_exclude list, which removes wrecks,
+     *  fences, gates and mobile toilets - town furniture that is a Building and holds no loot.
+     *
+     *  Added for BattleRoyaleZone's derived ladder (#284): POI COUNT DOES NOT MEASURE LOOT. Sampled
+     *  over 400 random circles per radius against the Central Economy's own loot points - lootmax per
+     *  building type from mapgroupproto.xml times every instance in mapgrouppos.xml - POI count
+     *  correlates 0.15-0.29, and filtering it down to settlement types does not rescue it (0.01-0.42).
+     *  The count of buildings inside the circle correlates 0.993-0.995.
+     */
+    static void CollectBuildingsAt(vector center, float radius, out array<vector> found)
+    {
+        BattleRoyaleConfig config = BattleRoyaleConfig.GetConfig();
+        if (!config)
+            return;
+
+        BattleRoyalePOIsData settings = config.GetPOIsData();
+        if (!settings)
+            return;
+
+        CollectBuildings(settings, center, found, radius);
+    }
+
     //--- A random building position in this town.
     //---
     //--- This, rather than the anchor, is what the spawn side should prefer: a centroid alone puts
@@ -410,12 +437,17 @@ class BattleRoyalePOIResolver
         return true;
     }
 
-    protected static void CollectBuildings(BattleRoyalePOIsData settings, vector center, out array<vector> found)
+    //--- `radius` defaults to the configured POI scan radius, which is what every resolver call site
+    //--- wants; CollectBuildingsAt passes its own so a census can tile the map at its own cell size.
+    protected static void CollectBuildings(BattleRoyalePOIsData settings, vector center, out array<vector> found, float radius = -1)
     {
         ref array<Object> objects = new array<Object>;
         ref array<CargoBase> cargos = new array<CargoBase>;
 
-        GetGame().GetObjectsAtPosition(center, settings.poi_scan_radius_m, objects, cargos);
+        if (radius <= 0)
+            radius = settings.poi_scan_radius_m;
+
+        GetGame().GetObjectsAtPosition(center, radius, objects, cargos);
 
         int i;
         for (i = 0; i < objects.Count(); i++)

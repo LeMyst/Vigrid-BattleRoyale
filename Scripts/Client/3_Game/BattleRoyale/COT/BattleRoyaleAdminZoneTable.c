@@ -45,6 +45,10 @@ class BattleRoyaleAdminZoneRow
     //--- empty ground. This is the loot-density input to the derived min_players beside it.
     int   poi_count = -1;
 
+    //--- Lootable buildings inside this circle, and the loot-density input that replaced poi_count.
+    //--- -1 when no census ran, which is distinct from a circle with genuinely no buildings in it.
+    int   building_count = -1;
+
     //--- How many players this circle is rated for. `min_players` is the AUTHORED zone_settings.json
     //--- entry and `derived_min_players` is what derive_zone_ladder computes; the table's
     //--- `derive_ladder` flag says which of the two the match is using. Both are shown either way, for

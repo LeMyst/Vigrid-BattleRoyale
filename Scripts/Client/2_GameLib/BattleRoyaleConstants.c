@@ -1105,6 +1105,26 @@ static const float BR_ZONE_TIMER_OPENING_SPREAD = 0.5;
 static const float BR_ZONE_LADDER_MIN_M_PER_PLAYER = 10.0;
 static const float BR_ZONE_LADDER_MAX_M_PER_PLAYER = 2000.0;
 
+//--- BUILDING CENSUS. The loot-density input, replacing the POI count that shipped first.
+//
+//POI COUNT DOES NOT MEASURE LOOT, and that is measured rather than argued. Scoring 400 random circles
+//per radius on ChernarusPlus against the Central Economy's own loot points - mapgroupproto.xml's
+//lootmax per building type times every instance placed by mapgrouppos.xml - gives:
+//    POI count            0.290 / 0.157 / 0.147   at r = 1125 / 2250 / 3375
+//    settlement POIs only 0.416 / 0.012 / 0.103   (the obvious "filter out the hills" fix; it fails)
+//    BUILDINGS INSIDE     0.993 / 0.995 / 0.995
+//The markers were never the right unit: 285 of them on Chernarus describe 150 distinct places, 94 are
+//hills and viewpoints, and a town plus the office marker beside it is one place counted twice.
+//
+//CELL_M is the square the map is tiled with; each probe asks for that square's circumcircle (x0.7072),
+//which lands at ~354 m - the radius BattleRoyalePOIResolver already runs at and reports as sound. One
+//big query instead would return every tree in tens of km2 in a single array.
+static const float BR_ZONE_CENSUS_CELL_M   = 500.0;
+//Probes for the largest circle at stock sizes: (2*3375/500 + 1)^2 = 196 before the corner cull. The cap
+//is a guard for an absurd static_sizes, not a tuning knob - past it the census is skipped and the
+//ladder falls back to POI counts rather than spending an unbounded boot.
+static const int   BR_ZONE_CENSUS_MAX_CELLS = 900;
+
 //How far the duration bound may walk the starting tier in one direction before giving up. The ladder
 //is at most num_zones long, so this only exists so a misconfiguration cannot spin.
 static const int   BR_MATCH_DURATION_MAX_STEPS = 16;

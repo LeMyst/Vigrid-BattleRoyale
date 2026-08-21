@@ -667,6 +667,12 @@ class BRMasterControlsForm: JMFormBase
             if ( row.derived_min_players >= 0 )
                 line += "/" + row.derived_min_players.ToString();
 
+            //--- Buildings first: that is the density input. poi is kept beside it because the two
+            //--- disagreeing is the interesting reading, and a -1 building count means the census
+            //--- did not run and the ladder fell back to the markers.
+            if ( row.building_count >= 0 )
+                line += "  bld " + row.building_count.ToString();
+
             if ( row.poi_count >= 0 )
                 line += "  poi " + row.poi_count.ToString();
 
