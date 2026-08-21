@@ -1117,6 +1117,8 @@ class BattleRoyaleState: Timeable
         int steps;
         int total;
         int target;
+        int here;
+        int there;
         string line;
 
         s_LastBoundMove = 0;
@@ -1131,31 +1133,39 @@ class BattleRoyaleState: Timeable
 
         chosen = Math.Round(Math.Clamp(candidate_zone, 1, floor_zone));
 
-        //--- Too long: drop the largest circle, one tier at a time. BR_MATCH_DURATION_MAX_STEPS is a
-        //--- backstop only - floor_zone bounds this to at most num_zones iterations anyway.
+        //--- ⚠️ STEP ONLY WHILE THE STEP GETS CLOSER TO THE TARGET. The obvious version - "step up
+        //--- while total > target" - has a cliff, because a ladder cannot make a small correction: the
+        //--- only move available is a WHOLE CIRCLE. Measured on a real chain at 43 players: zone 2 ran
+        //--- 32:47 against a 32:15 target, so it stepped up to zone 3 at 20:48 - giving up TWELVE
+        //--- MINUTES of match to save 32 seconds of overshoot, and landing 687 s from the target
+        //--- instead of 32.
+        //---
+        //--- Comparing the distance either side makes a modest overshoot preferable to a huge
+        //--- undershoot, which is what "bound the duration" was always supposed to mean. It also folds
+        //--- the two directions into one rule: the window is already baked into `target` by the clamp
+        //--- above, so moving toward the target IS moving toward the window, and the shorten and
+        //--- lengthen walks can no longer disagree about a tier.
         for(steps = 0; steps < BR_MATCH_DURATION_MAX_STEPS; steps++)
         {
             if(chosen >= floor_zone)
                 break;
 
-            total = GetMatchDurationSeconds(chosen);
-            if(total <= target)
+            here = Math.AbsInt(GetMatchDurationSeconds(chosen) - target);
+            there = Math.AbsInt(GetMatchDurationSeconds(chosen + 1) - target);
+            if(there >= here)
                 break;
 
             chosen++;
         }
 
-        //--- Too short: add a circle back. Measured against match_min_seconds rather than against the
-        //--- target, so the two walks cannot fight over the same tier - the target sits inside the
-        //--- window by construction, so shortening stops at or below it and lengthening stops at or
-        //--- above the minimum.
         for(steps = 0; steps < BR_MATCH_DURATION_MAX_STEPS; steps++)
         {
             if(chosen <= 1)
                 break;
 
-            total = GetMatchDurationSeconds(chosen);
-            if(total >= zone_settings.match_min_seconds)
+            here = Math.AbsInt(GetMatchDurationSeconds(chosen) - target);
+            there = Math.AbsInt(GetMatchDurationSeconds(chosen - 1) - target);
+            if(there >= here)
                 break;
 
             chosen--;
