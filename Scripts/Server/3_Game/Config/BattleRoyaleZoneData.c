@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 6;  // Config version
+	int version = 7;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -107,6 +107,74 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // 7_BattleRoyaleLastRound, which plays out an already-locked circle. Ignored unless shrink_type is
     // 3 (static), the only mode static_timers applies to.
     bool derive_timers_from_geometry = false;
+
+    // --- Derived ladder (v7) ---
+
+    // Derive WHICH circle a given population opens on, and HOW MANY circles exist, instead of reading
+    // the hand-authored min_players table and num_zones. static_sizes stays yours: this changes the
+    // selection, never the geometry, so the generator and every proof in BattleRoyaleZone.c are
+    // untouched. OFF by default like every other derivation in this file.
+    //
+    // Two things become derived:
+    //   * min_players[i], from the circle's radius and from how much LOOT it actually encloses - the
+    //     count of POIs inside the placed circle, against this map's mean POI density. See
+    //     BattleRoyaleZone.BuildDerivedLadder for the formula and for why a loot-RICH circle gets a
+    //     HIGHER min_players (it reads backwards and is right).
+    //   * num_zones, from zone_opening_world_fraction below.
+    bool derive_zone_ladder = false;
+
+    // Metres of opening-circle RADIUS per player. The shipped min_players table is linear in radius -
+    // 3375/33 = 2250/22 = 1125/11 = 102.3 - so this default reproduces it exactly WHEN
+    // zone_poi_density_weight is 0. LOWER means a bigger opening circle for the same crowd.
+    float zone_metres_per_player = 102.3;
+
+    // Nobody opens on a circle rated for fewer than this. The shipped table's four smallest tiers all
+    // sit on 10, which is what this reproduces.
+    int zone_min_players_floor = 10;
+
+    // How much the enclosed loot density is allowed to move the answer. 0 = ignore POIs entirely and
+    // rate every circle on its radius alone; 1 = apply the full density ratio. The result is clamped
+    // to [zone_poi_factor_min, zone_poi_factor_max] either way, because a circle over a single dense
+    // town should not be rated for triple the players.
+    //
+    // SET IT TO 0 FIRST when tuning zone_metres_per_player: that is the setting under which the derived
+    // table must reproduce min_players entry for entry, and it is the only clean way to tell a mistuned
+    // radius from a loud density term. Above 0 the derived numbers will NOT match the authored ones -
+    // every circle is nested around a village seed, so every circle reads denser than the map mean. See
+    // BattleRoyaleZone.BuildDerivedLadder for which half of that is signal and which half is bias.
+    float zone_poi_density_weight = 1.0;
+    float zone_poi_factor_min = 0.5;
+    float zone_poi_factor_max = 1.5;
+
+    // The opening circle's radius as a fraction of the map width, used to DERIVE num_zones: tiers
+    // larger than this are dropped, so a bigger opening circle keeps more shrink steps and a small one
+    // does not drag. 0.22 is the figure Validate()'s advisory below already recommends (PUBG's Erangel
+    // is 8 km with a ~2 km first circle, i.e. 0.25), and on a 15360 m map it keeps static_sizes up to
+    // 3375 and drops 4500 - exactly the shipped num_zones of 6.
+    float zone_opening_world_fraction = 0.22;
+
+    // --- Match duration bound (v7) ---
+
+    // Bound how long a whole match runs by moving the starting tier. Starting one tier smaller drops
+    // the largest circle and its round, so this is the same lever the dynamic starting zone already
+    // pulls - it just pulls it against a clock instead of against a player count. OFF by default.
+    //
+    // NOTE it can only move the tier within [1, num_zones - min_zone_num + 1]; min_zone_num still wins.
+    bool bound_match_duration = false;
+
+    // Target match length as seconds per starting player, then clamped to the two bounds below. The
+    // issue's rough starting point is 0.5 min per player, i.e. 30 s - tune it from real matches.
+    float match_seconds_per_player = 30.0;
+    int match_min_seconds = 900;   // 15 min
+    int match_max_seconds = 2400;  // 40 min
+
+    // Walk player counts 1..N at boot and report the tier each one would open on, the circle's radius,
+    // the POIs inside it and the resulting match length. 0 = off. This is the acceptance gate for the
+    // three settings above, for the same reason zone_selftest_runs is the one for placement: the
+    // interesting cases are combinatorial and LaunchLocalMP.bat tops out at three clients. It also
+    // reports a TIER HISTOGRAM, which is what catches the failure mode this codebase keeps hitting -
+    // a derivation that compiles, runs, and never actually changes the answer.
+    int zone_ladder_selftest_players = 0;
 
     // --- Hot zones (v5) ---
 
@@ -334,6 +402,18 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			version = 6;
 			Save();  // Save the upgraded config
 		}
+
+		if (version < 7)
+		{
+			// The derived-ladder and match-duration fields were INTRODUCED in v7. Like the v5 and v6
+			// branches above, this one refills NOTHING: every field added is a SCALAR, and a missing
+			// scalar key leaves the field initialiser in place. Only a ref array needs the refill
+			// treatment the v3 and v4 branches give it. So every server upgrading to v7 picks up
+			// derive_zone_ladder OFF and bound_match_duration OFF from the declarations above, which
+			// is what those defaults are chosen for - nothing about an existing server moves.
+			version = 7;
+			Save();  // Save the upgraded config
+		}
 	}
 
 	//--- Clamp anything internally inconsistent so a misconfiguration degrades into a shorter but
@@ -391,6 +471,12 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		float factor;
 		float smallest;
 
+		//--- Derived ladder locals (v7). Same reason as above: one declaration per name per method
+		//--- scope, so they are here rather than at first use.
+		int derived_limit;
+		float opening_cap;
+		string derive_line;
+
 		//--- Hot zone locals. Same reason: one declaration per name per method scope.
 		int hz;
 		int hz_count;
@@ -419,6 +505,78 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			}
 
 			BattleRoyaleUtils.Info("[BattleRoyaleZoneData] scale_sizes_to_world: world " + world_size + " / reference " + reference_world_size + " = x" + factor + " on the span above the final circle. Largest circle is now " + static_sizes[static_sizes.Count() - 1] + ".");
+		}
+
+		//--- (0b) DERIVE num_zones from the map (#284 point 2), after any scaling above so it sees the
+		//--- real sizes and before every clamp below so they run over the result. Keep the largest tier
+		//--- that still fits zone_opening_world_fraction of the world width, and drop the rest.
+		//---
+		//--- This has to happen HERE and not in the generator: BattleRoyaleServer.Init() reads num_zones
+		//--- to size the state list before a single circle is placed, so every reader must already agree
+		//--- on the derived number. They all go through GetZoneData(), so they do.
+		//---
+		//--- Only ever LOWERS num_zones. Raising it would index past whatever static_timers/min_players
+		//--- the admin actually wrote, and clamp (1) below would take it straight back off anyway.
+		if (derive_zone_ladder && static_sizes && static_sizes.Count() > 0 && world_size > 0)
+		{
+			opening_cap = world_size * zone_opening_world_fraction;
+
+			derived_limit = 0;
+			for (i = 0; i < static_sizes.Count(); i++)
+			{
+				if (static_sizes[i] > opening_cap)
+					break;
+
+				derived_limit = i + 1;
+			}
+
+			//--- A cap below even the final circle would leave nothing to play. One tier is a match
+			//--- with a single circle, which is degenerate but playable; zero is not.
+			if (derived_limit < 1)
+				derived_limit = 1;
+
+			//--- Built in steps. Eleven concatenated terms in one expression is at the "Formula too
+			//--- complex" ceiling, and that is a hard compile error packing does not catch.
+			derive_line = "[BattleRoyaleZoneData] derive_zone_ladder: opening circle capped at " + opening_cap + " m";
+			derive_line = derive_line + " (" + zone_opening_world_fraction + " x " + world_size + ")";
+			derive_line = derive_line + " - num_zones " + limit + " -> " + derived_limit + ".";
+			BattleRoyaleUtils.Info(derive_line);
+
+			limit = derived_limit;
+		}
+
+		//--- (0c) Sanity-bound the tuning knobs, so a typo in the JSON degrades instead of producing a
+		//--- ladder nothing can open on. Only the ones that divide or multiply; the rest are read
+		//--- through Math.Clamp at the point of use.
+		if (derive_zone_ladder)
+		{
+			if (zone_metres_per_player < BR_ZONE_LADDER_MIN_M_PER_PLAYER || zone_metres_per_player > BR_ZONE_LADDER_MAX_M_PER_PLAYER)
+			{
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] zone_metres_per_player is " + zone_metres_per_player + ", outside [" + BR_ZONE_LADDER_MIN_M_PER_PLAYER + ", " + BR_ZONE_LADDER_MAX_M_PER_PLAYER + "] - clamping for this boot. The shipped min_players table works out to 102.3.");
+				zone_metres_per_player = Math.Clamp(zone_metres_per_player, BR_ZONE_LADDER_MIN_M_PER_PLAYER, BR_ZONE_LADDER_MAX_M_PER_PLAYER);
+			}
+
+			if (zone_poi_factor_min <= 0 || zone_poi_factor_max < zone_poi_factor_min)
+			{
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] zone_poi_factor_min/max are " + zone_poi_factor_min + "/" + zone_poi_factor_max + ", which is not a usable range - resetting to 0.5/1.5 for this boot.");
+				zone_poi_factor_min = 0.5;
+				zone_poi_factor_max = 1.5;
+			}
+
+			if (zone_min_players_floor < 1)
+			{
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] zone_min_players_floor is " + zone_min_players_floor + " - raising it to 1. A floor of zero would make every circle match a one-player lobby.");
+				zone_min_players_floor = 1;
+			}
+		}
+
+		//--- (0d) The duration bound's own range. An inverted pair would make the "too short" and "too
+		//--- long" tests both true and the walk would oscillate; BR_MATCH_DURATION_MAX_STEPS bounds it
+		//--- either way, but a silently inverted target is worth naming.
+		if (bound_match_duration && match_max_seconds < match_min_seconds)
+		{
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] match_max_seconds (" + match_max_seconds + ") is below match_min_seconds (" + match_min_seconds + ") - using the minimum as the maximum for this boot.");
+			match_max_seconds = match_min_seconds;
 		}
 
 		//--- (1) num_zones may not exceed the shortest of the three parallel settings arrays. This

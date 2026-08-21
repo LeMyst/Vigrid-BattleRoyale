@@ -632,6 +632,8 @@ class BRMasterControlsForm: JMFormBase
         header += "  zones " + table.num_zones.ToString();
         header += "  derived " + FormatBool( table.derive_timers );
         header += "  flex " + FormatBool( table.allow_flex );
+        header += "  ladder " + FormatBool( table.derive_ladder );
+        header += "  bound " + FormatBool( table.bound_duration );
         m_txt_ZoneHeader.SetText( header );
 
         for ( int slot = 0; slot < m_ZoneRows.Count(); slot++ )
@@ -656,6 +658,17 @@ class BRMasterControlsForm: JMFormBase
             //--- Shown whether or not the setting is on: this column is what an operator consults to
             //--- decide whether to turn it on, so hiding it when it is off defeats the purpose.
             line += "  geo " + row.derived_timer_s.ToString() + "s";
+            line += "  loot " + row.opening_timer_s.ToString() + "s";
+
+            //--- Authored rating, and the derived one beside it when there is one. The header's
+            //--- `ladder` flag says which is in force; showing only the live one would make the column
+            //--- useless for deciding whether to switch.
+            line += "  mp " + row.min_players.ToString();
+            if ( row.derived_min_players >= 0 )
+                line += "/" + row.derived_min_players.ToString();
+
+            if ( row.poi_count >= 0 )
+                line += "  poi " + row.poi_count.ToString();
 
             if ( row.growth_m > 0 )
                 line += "  grew " + Math.Round( row.growth_m ).ToString() + " m";

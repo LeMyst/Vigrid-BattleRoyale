@@ -1075,6 +1075,40 @@ static const float BR_ZONE_TIMER_FIGHT_SECONDS = 125.0;
 static const float BR_ZONE_TIMER_MIN_SECONDS = 60.0;
 static const float BR_ZONE_TIMER_MAX_SECONDS = 900.0;
 
+//--- THE OPENING ROUND IS A LOOT ROUND, NOT A FIGHT ROUND (#284 point 4).
+//
+//It is the one round with NO inbound travel to price: 4_BattleRoyalePrepare spawns everybody INSIDE
+//the circle that round is going to lock (spawns_settings.spawn_in_first_zone), so the "travel from
+//circle i+1 into circle i" model every other round uses has nothing to measure. What the round is
+//actually for is looting, plus whatever sprinting a player still owes to get from where they landed
+//to where they want to be inside that circle.
+//
+//SPREAD is the fraction of the opening radius a spawned player still owes on average - half of it,
+//since spawns are drawn across the circle rather than from its edge. LOOT is the allowance for the
+//looting itself, calibrated the same way BR_ZONE_TIMER_FIGHT_SECONDS was: on ChernarusPlus stock
+//sizes the opening circle is r = 3375, so the travel term is 3375 * 0.5 / 6 / 0.80 = 352 s, and
+//145 + 352 = 497 s against the shipped static_timers[5] = 495. Near-neutral by arithmetic.
+//
+//That LOOT (145) sits just above FIGHT (125) is the sanity signal to keep: a round spent looting an
+//untouched map should run a little longer than a round spent fighting an equipped one.
+static const float BR_ZONE_TIMER_LOOT_SECONDS  = 145.0;
+static const float BR_ZONE_TIMER_OPENING_SPREAD = 0.5;
+
+//--- DERIVED LADDER (#284 points 1-3, opt-in via zone_settings.derive_zone_ladder /
+//--- bound_match_duration).
+//
+//The derived min_players table is calibrated to REPRODUCE the shipped one, which turned out to be
+//linear in RADIUS rather than in area: 3375/33 = 2250/22 = 1125/11 = 102.3 m per player, with the
+//four smaller tiers all sitting on a floor of 10. Both figures are zone_settings fields
+//(zone_metres_per_player, zone_min_players_floor) so a server can tune them without a rebuild; these
+//are only the sanity bounds on what it may be tuned to.
+static const float BR_ZONE_LADDER_MIN_M_PER_PLAYER = 10.0;
+static const float BR_ZONE_LADDER_MAX_M_PER_PLAYER = 2000.0;
+
+//How far the duration bound may walk the starting tier in one direction before giving up. The ladder
+//is at most num_zones long, so this only exists so a misconfiguration cannot spin.
+static const int   BR_MATCH_DURATION_MAX_STEPS = 16;
+
 //Self test. Generates full chains headlessly and reports the failure/backtrack/tier distribution,
 //which is what turns "relaunch the server twenty times and hope" into a number.
 static const int   BR_ZONE_SELFTEST_DEFAULT_RUNS = 50;

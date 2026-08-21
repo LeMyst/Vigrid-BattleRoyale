@@ -989,6 +989,8 @@ modded class BRMasterControlsModule
         table.num_zones = zone_settings.num_zones;
         table.derive_timers = zone_settings.derive_timers_from_geometry;
         table.allow_flex = zone_settings.allow_zone_size_flex;
+        table.derive_ladder = zone_settings.derive_zone_ladder;
+        table.bound_duration = zone_settings.bound_match_duration;
 
         BattleRoyaleZone zone = BattleRoyaleZone.GetZone( 1 );
 
@@ -1027,9 +1029,19 @@ modded class BRMasterControlsModule
             if ( BattleRoyaleZone.s_PlayAreaDurationOffsets && i < BattleRoyaleZone.s_PlayAreaDurationOffsets.Count() )
                 row.offset_s = BattleRoyaleZone.s_PlayAreaDurationOffsets.Get( i );
 
+            //--- The admin's authored rating, shown beside the derived one below so the table lines up
+            //--- with zone_settings.json whichever of the two the match is using.
+            if ( zone_settings.min_players && i < zone_settings.min_players.Count() )
+                row.min_players = zone_settings.min_players.Get( i );
+
+            //--- Both answer -1 when the ladder was never derived, which is distinct from a real zero.
+            row.poi_count = BattleRoyaleZone.GetPOICount( i );
+            row.derived_min_players = BattleRoyaleZone.GetDerivedMinPlayers( i );
+
             if ( zone )
             {
                 row.derived_timer_s = zone.GetDerivedTimer( i );
+                row.opening_timer_s = zone.GetOpeningTimer( i );
                 row.growth_m = zone.GetRadiusGrowth( i );
             }
 

@@ -17,6 +17,16 @@ class BattleRoyaleZone
     protected ref array<int> a_StaticTimers;
     protected ref array<int> a_MinPlayers;
 
+    //--- Derived ladder (#284). When on, GetZoneMinPlayers answers from s_PlayAreaMinPlayers - built
+    //--- once from the PLACED circles - instead of from a_MinPlayers. a_MinPlayers stays the admin's
+    //--- untouched input, exactly as a_StaticSizes does under radius flex.
+    protected bool b_DeriveLadder;
+    protected float f_MetresPerPlayer;
+    protected int i_MinPlayersFloor;
+    protected float f_POIDensityWeight;
+    protected float f_POIFactorMin;
+    protected float f_POIFactorMax;
+
     protected bool b_EndInVillages;
 
     //--- Tier-1 land requirement, from zone_settings so it can be tuned per map without a rebuild.
@@ -107,6 +117,13 @@ class BattleRoyaleZone
         a_avoidType = m_ZoneSettings.end_avoid_type;
         a_avoidCity = m_ZoneSettings.end_avoid_city;
         f_MinLandFraction = m_ZoneSettings.zone_min_land_fraction;
+
+        b_DeriveLadder = m_ZoneSettings.derive_zone_ladder;
+        f_MetresPerPlayer = m_ZoneSettings.zone_metres_per_player;
+        i_MinPlayersFloor = m_ZoneSettings.zone_min_players_floor;
+        f_POIDensityWeight = m_ZoneSettings.zone_poi_density_weight;
+        f_POIFactorMin = m_ZoneSettings.zone_poi_factor_min;
+        f_POIFactorMax = m_ZoneSettings.zone_poi_factor_max;
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
@@ -202,7 +219,16 @@ class BattleRoyaleZone
             if(z_Index > 0)
             {
                 //m_Zones[z_Index] = new BattleRoyaleZone(m_Zones[z_Index - 1]);
-                m_Zone = new BattleRoyaleZone(m_Zones.Get(z_Index - 1));
+                //
+                //--- RECURSE for the parent rather than reading m_Zones directly. A zone's SETTINGS
+                //--- INDEX is derived by walking its parent chain (GetZoneNumber), so a zone built with
+                //--- a NULL parent silently believes it is zone 1 and reads the wrong radius, timer and
+                //--- min_players. The map read this replaces returned exactly that whenever anybody
+                //--- asked for zone 3 before zone 2 - no error, no warning, just a plausible wrong
+                //--- answer. Every caller happens to ask in ascending order today, and #284 added two
+                //--- more that also do, which is precisely the kind of invariant that holds until it
+                //--- does not. Depth is num_zones, i.e. under ten.
+                m_Zone = new BattleRoyaleZone(GetZone(z_Index));
             } else {
                 // First zone
                 //m_Zones[0] = new BattleRoyaleZone;
@@ -265,7 +291,21 @@ class BattleRoyaleZone
         return (i_ShrinkType == 3);
     }
 
-    int GetZoneTimer()
+    /**
+     *  How long the round that plays this circle runs, in seconds.
+     *
+     *  `is_opening_round` says this circle is the FIRST one played this match - i.e. its zone number is
+     *  the dynamic starting zone. That is not a property of the circle, it is a property of the match,
+     *  which is why it is a parameter rather than something this method works out for itself.
+     *
+     *  ⚠️ IT MUST STAY A PARAMETER. BattleRoyaleState.GetDynamicStartingZone's duration bound calls
+     *  this once per candidate tier to price a whole match; if this method asked
+     *  GetDynamicStartingZone which tier was the opening one, the two would call each other forever.
+     *  The three callers all already know: 6_BattleRoyaleRound compares its own zone_num against the
+     *  starting zone two lines below, 5_BattleRoyaleStartMatch is by definition pricing that round, and
+     *  the duration bound is iterating candidates.
+     */
+    int GetZoneTimer(bool is_opening_round = false)
     {
         if (i_ShrinkType ==  3)
         {
@@ -281,15 +321,38 @@ class BattleRoyaleZone
                 return 300;
             }
 
+            //--- THE OPENING ROUND IS A LOOT ROUND (#284 point 4), and this branch has to come FIRST.
+            //---
+            //--- It is the one round with no inbound travel to price: 4_BattleRoyalePrepare spawns
+            //--- everybody inside the very circle this round is going to lock, so the "travel from
+            //--- circle i+1 into circle i" model below has nothing to measure. What it costs is looting
+            //--- plus the sprint a spawned player still owes inside that circle - see
+            //--- BR_ZONE_TIMER_LOOT_SECONDS and CommitChain, which precomputes it for every index.
+            //---
+            //--- ⚠️ THIS ALSO FIXES A REAL BUG, and it is why "just exclude index n-1" below is not
+            //--- enough. Index n-1 is the opening round ONLY when the match starts at zone 1. With a
+            //--- dynamic starting zone the opening round is index n-Z, and it was being handed
+            //--- derived[n-Z] - the travel from circle n-Z+1, a circle that was SKIPPED and never
+            //--- played. A plausible number for a journey nobody made.
+            if(IsDerivedTimingActive() && is_opening_round)
+            {
+                float opening = GetOpeningTimer(timer_index);
+                if(opening > 0)
+                    return Math.Round(opening);
+            }
+
             //--- Derived timing (#241 part 3), when it is on and this round has a geometry to derive
             //--- from. Note it deliberately does NOT add GetDurationOffset: the derivation already uses
             //--- the real placed distance and the radii in force, so the offset's travel bonus and its
             //--- growth term would both be counted twice.
             //---
-            //--- Index n-1 is the OPENING round and is excluded on purpose. It has no predecessor circle,
+            //--- Index n-1 is still excluded, and now only as a BACKSTOP. It has no predecessor circle,
             //--- so CommitChain leaves its derived entry at 0; taken literally that would clamp to
             //--- BR_ZONE_TIMER_MIN_SECONDS and collapse the one round where players are spread over the
-            //--- whole map. Its length is a drop-phase pacing choice, so it stays the admin's number.
+            //--- whole map. In practice the loot branch above already claimed it whenever the match
+            //--- starts at zone 1, which is the only way that index is ever played - so what reaches
+            //--- here is a caller that did not know it was pricing the opening round, and
+            //--- static_timers is the right answer for it.
             if(IsDerivedTimingActive() && timer_index < (i_NumRounds - 1))
             {
                 float derived = GetDerivedTimer(timer_index);
@@ -306,6 +369,14 @@ class BattleRoyaleZone
     int GetZoneMinPlayers()
     {
         int min_players_index = GetZoneSettingsIndex();
+
+        //--- The derived table when it is on and this circle has an entry (#284 point 1). Falls
+        //--- through to the admin's a_MinPlayers otherwise, so a boot where generation never ran -
+        //--- and therefore where BuildDerivedLadder never ran either - still answers something sane
+        //--- rather than zero.
+        if(b_DeriveLadder && s_PlayAreaMinPlayers && min_players_index >= 0 && min_players_index < s_PlayAreaMinPlayers.Count())
+            return s_PlayAreaMinPlayers.Get(min_players_index);
+
         if(min_players_index < 0 || min_players_index >= a_MinPlayers.Count())
         {
             //--- 0 makes GetDynamicStartingZone settle on zone 1, so a short min_players degrades
@@ -343,6 +414,46 @@ class BattleRoyaleZone
             return 0;
 
         return s_PlayAreaDerivedTimers[play_area_index];
+    }
+
+    //--- What the round playing this circle would cost if it were the OPENING round. Same indexing as
+    //--- everything else here. 0 means "nothing computed for this index", i.e. CommitChain never ran.
+    float GetOpeningTimer(int play_area_index)
+    {
+        if(!s_PlayAreaOpeningTimers)
+            return 0;
+
+        if(play_area_index < 0 || play_area_index >= s_PlayAreaOpeningTimers.Count())
+            return 0;
+
+        return s_PlayAreaOpeningTimers[play_area_index];
+    }
+
+    //--- POIs inside this circle. -1 means "not counted", which is the honest answer on a boot where
+    //--- BuildDerivedLadder never ran - distinct from a genuine 0, i.e. a circle over empty ground.
+    static int GetPOICount(int play_area_index)
+    {
+        if(!s_PlayAreaPOICount)
+            return -1;
+
+        if(play_area_index < 0 || play_area_index >= s_PlayAreaPOICount.Count())
+            return -1;
+
+        return s_PlayAreaPOICount.Get(play_area_index);
+    }
+
+    //--- The derived min_players for this circle, or -1 when the ladder was never derived. Distinct
+    //--- from GetZoneMinPlayers, which answers with the admin's table when the feature is off; this one
+    //--- is for diagnostics that want to show BOTH.
+    static int GetDerivedMinPlayers(int play_area_index)
+    {
+        if(!s_PlayAreaMinPlayers)
+            return -1;
+
+        if(play_area_index < 0 || play_area_index >= s_PlayAreaMinPlayers.Count())
+            return -1;
+
+        return s_PlayAreaMinPlayers.Get(play_area_index);
     }
 
     //--- How much circle `play_area_index` grew for this match, in metres. 0 when flex is off or when
@@ -867,6 +978,27 @@ class BattleRoyaleZone
     //--- Index n-1 - the opening round - is always 0 and unused. It has no predecessor circle, so there
     //--- is no travel to derive from; GetZoneTimer keeps that round on static_timers.
     static ref array<float> s_PlayAreaDerivedTimers;
+
+    //--- What each round would cost IF IT WERE THE OPENING ROUND (#284 point 4): loot allowance plus
+    //--- the sprint a spawned player still owes inside the circle, and no inbound travel at all -
+    //--- 4_BattleRoyalePrepare spawns everybody inside the circle the opening round is going to lock.
+    //---
+    //--- Filled for EVERY index, unconditionally, in CommitChain. Which index is the opening one is not
+    //--- known until the countdown (it is the dynamic starting zone), and CommitChain is the only place
+    //--- allowed to compute a timing term - see its header - so the answer is precomputed for all of
+    //--- them and GetZoneTimer picks. It also means the diag zone table can show the column whichever
+    //--- tier the match ends up opening on.
+    static ref array<float> s_PlayAreaOpeningTimers;
+
+    //--- POIs inside each placed circle, and the min_players derived from that plus the radius
+    //--- (#284 point 1). Parallel to m_PlayAreas and static for the same reason it is: the circles are
+    //--- generated once per process and every zone object reads the same set.
+    //---
+    //--- Written ONLY by BuildDerivedLadder, from the committed play areas, once per process. Not from
+    //--- CommitChain: these are not timing terms, and s_POI is only guaranteed populated after
+    //--- BuildFeasiblePOIList has run.
+    static ref array<int> s_PlayAreaPOICount;
+    static ref array<int> s_PlayAreaMinPlayers;
 
     //=====================================================================================
     //--- Placement.
@@ -1580,6 +1712,7 @@ class BattleRoyaleZone
         float travel;
         float derived;
         float parent_radius;
+        float opening;
         vector centre;
         vector from_2d;
         vector to_2d;
@@ -1587,6 +1720,7 @@ class BattleRoyaleZone
         m_PlayAreas = new array<ref BattleRoyalePlayArea>();
         s_PlayAreaDurationOffsets = new array<float>();
         s_PlayAreaDerivedTimers = new array<float>();
+        s_PlayAreaOpeningTimers = new array<float>();
 
         for(i = 0; i < chain.Count(); i++)
         {
@@ -1601,6 +1735,22 @@ class BattleRoyaleZone
             m_PlayAreas.Insert(new BattleRoyalePlayArea(centre, radius));
             s_PlayAreaDurationOffsets.Insert(0);
             s_PlayAreaDerivedTimers.Insert(0);
+
+            //--- The opening-round price for THIS circle, computed for every index because which one
+            //--- is the opening circle depends on the player count and is not known until the
+            //--- countdown. Loot allowance plus the sprint a spawned player still owes inside the
+            //--- circle; no inbound travel, because the opening round is the one round players start
+            //--- already inside its circle. Divided by the lock fraction for the same reason the
+            //--- derived timer below is: the circle bites at 80% of the round, so a travel term has to
+            //--- fit in that 80%.
+            opening = BR_ZONE_TIMER_LOOT_SECONDS + (((radius * BR_ZONE_TIMER_OPENING_SPREAD) / BR_ZONE_TIMER_SPEED_MPS) / BR_ZONE_LOCK_FRACTION);
+
+            if(opening < BR_ZONE_TIMER_MIN_SECONDS)
+                opening = BR_ZONE_TIMER_MIN_SECONDS;
+            if(opening > BR_ZONE_TIMER_MAX_SECONDS)
+                opening = BR_ZONE_TIMER_MAX_SECONDS;
+
+            s_PlayAreaOpeningTimers.Insert(opening);
         }
 
         //--- The travel between circle i and circle i-1 belongs to the round that moves players INTO
@@ -1675,6 +1825,217 @@ class BattleRoyaleZone
             }
 
             s_PlayAreaDerivedTimers.Set(i - 1, derived);
+        }
+    }
+
+    //=====================================================================================
+    //--- DERIVED LADDER (#284 point 1). How many players each PLACED circle is rated for, from its
+    //--- radius and from how much loot it actually encloses.
+    //---
+    //--- Run once per process from GenerateAll, immediately after CommitChain, and UNCONDITIONALLY -
+    //--- same reasoning as s_PlayAreaDerivedTimers: computing it costs n x |s_POI| distance tests
+    //--- (~1700 on ChernarusPlus, pure arithmetic, no native calls) and it means the boot report and
+    //--- the admin zone table can show what turning derive_zone_ladder on WOULD do, which is precisely
+    //--- when an operator wants to know.
+    //---
+    //--- NOT in CommitChain, for two reasons: these are not timing terms, so the "every timing term is
+    //--- computed here" rule does not want them; and s_POI is only guaranteed populated after
+    //--- BuildFeasiblePOIList, which GenerateAll calls and CommitChain has no business depending on.
+    //=====================================================================================
+
+    //--- POIs whose position falls inside this circle. s_POI is already avoid-list filtered and
+    //--- resolved onto real buildings, so it counts "places worth looting" rather than "labels in
+    //--- CfgWorlds". Squared distance, so no square root and no native call.
+    protected int CountPOIsInCircle(vector centre, float radius)
+    {
+        int i;
+        int hits = 0;
+        float dx;
+        float dz;
+        float px;
+        float pz;
+        float r2 = radius * radius;
+        array<float> poi;
+
+        if(!s_POI || radius <= 0)
+            return 0;
+
+        for(i = 0; i < s_POI.Count(); i++)
+        {
+            //--- Element into a local before anything reads it, per ComputeAllowRadii's rule.
+            poi = s_POI.Get(i);
+            if(!poi)
+                continue;
+            if(poi.Count() < 2)
+                continue;
+
+            //--- s_POI holds 2-element [x, z] pairs - poi[1] is Z, not Y.
+            px = poi[0];
+            pz = poi[1];
+
+            dx = px - centre[0];
+            dz = pz - centre[2];
+
+            if(((dx * dx) + (dz * dz)) <= r2)
+                hits++;
+        }
+
+        return hits;
+    }
+
+    protected void BuildDerivedLadder()
+    {
+        int i;
+        int poi_count;
+        int derived_min;
+        int floor_players;
+        float radius;
+        float area_m2;
+        float circle_density;
+        float map_density;
+        float world_area;
+        float ratio;
+        float factor;
+        float metres_per_player;
+        float factor_min;
+        float factor_max;
+        vector centre;
+        BattleRoyalePlayArea area;
+
+        s_PlayAreaPOICount = new array<int>();
+        s_PlayAreaMinPlayers = new array<int>();
+
+        if(!m_PlayAreas)
+            return;
+
+        //--- Because this runs whether or not the feature is on, the knobs have not necessarily been
+        //--- through BattleRoyaleZoneData.Validate's clamp - that block is gated on derive_zone_ladder.
+        //--- Bound them here too rather than dividing by a hand-edited zero.
+        metres_per_player = Math.Clamp(f_MetresPerPlayer, BR_ZONE_LADDER_MIN_M_PER_PLAYER, BR_ZONE_LADDER_MAX_M_PER_PLAYER);
+
+        factor_min = f_POIFactorMin;
+        factor_max = f_POIFactorMax;
+        if(factor_min <= 0 || factor_max < factor_min)
+        {
+            factor_min = 0.5;
+            factor_max = 1.5;
+        }
+
+        floor_players = i_MinPlayersFloor;
+        if(floor_players < 1)
+            floor_players = 1;
+
+        //--- The yardstick: this map's mean POI density, against which each circle is dense or sparse.
+        world_area = f_WorldSize * f_WorldSize;
+        map_density = 0;
+        if(world_area > 0 && s_POI)
+            map_density = s_POI.Count() / world_area;
+
+        for(i = 0; i < m_PlayAreas.Count(); i++)
+        {
+            area = m_PlayAreas.Get(i);
+            if(!area)
+            {
+                s_PlayAreaPOICount.Insert(0);
+                s_PlayAreaMinPlayers.Insert(floor_players);
+                continue;
+            }
+
+            centre = area.GetCenter();
+            radius = area.GetRadius();
+
+            poi_count = CountPOIsInCircle(centre, radius);
+            s_PlayAreaPOICount.Insert(poi_count);
+
+            //--- ⚠️ THE DIRECTION READS BACKWARDS AND IS RIGHT. A circle DENSER than the map average
+            //--- gets a HIGHER min_players, which makes GetDynamicStartingZone's walk pass over it and
+            //--- settle on a SMALLER opening circle. That is the wanted behaviour: a loot-rich region
+            //--- feeds the same crowd on less ground. The instinct to make a rich circle "support more
+            //--- players" and therefore be picked more readily has the selection walk backwards - it
+            //--- takes the FIRST circle whose rating is below the population, largest first.
+            //---
+            //--- A map with no POIs at all leaves the factor at 1, i.e. radius alone, rather than
+            //--- collapsing every circle onto the floor.
+            factor = 1.0;
+            area_m2 = Math.PI * radius * radius;
+
+            if(map_density > 0 && area_m2 > 0)
+            {
+                circle_density = poi_count / area_m2;
+                ratio = circle_density / map_density;
+                factor = 1.0 + ((ratio - 1.0) * f_POIDensityWeight);
+            }
+
+            factor = Math.Clamp(factor, factor_min, factor_max);
+
+            //--- Linear in RADIUS, not in area, and that is measured rather than chosen: the shipped
+            //--- min_players table works out to 3375/33 = 2250/22 = 1125/11 = 102.3 m per player, with
+            //--- the four smaller tiers on a floor of 10. So the RADIUS TERM ALONE - i.e.
+            //--- zone_poi_density_weight = 0 - reproduces {10, 10, 10, 11, 22, 33} exactly, and that is
+            //--- the neutrality check to run when tuning this: set the weight to 0 and the derived
+            //--- column in the boot report must match zone_settings.json entry for entry.
+            //---
+            //--- ⚠️ AT THE DEFAULT WEIGHT OF 1 IT DOES NOT MATCH, AND THAT IS EXPECTED, NOT A BUG.
+            //--- Every circle in the chain is nested around a village seed (end_in_villages), so every
+            //--- circle is denser than the map mean and the factor is above 1 for all of them - most at
+            //--- the small end, where the circle is a town and the map is a country. Two consequences
+            //--- worth knowing before tuning: that part of the factor is a smooth function of radius
+            //--- rather than a statement about this match, so it is absorbed by lowering
+            //--- zone_metres_per_player rather than by fighting the weight; and what is left AFTER it -
+            //--- the run-to-run difference between a chain that landed in a dense part of the map and
+            //--- one that did not - is the real signal, and is what #284 asked for.
+            derived_min = Math.Round((radius / metres_per_player) * factor);
+            if(derived_min < floor_players)
+                derived_min = floor_players;
+
+            s_PlayAreaMinPlayers.Insert(derived_min);
+        }
+    }
+
+    //--- One row per circle, in ARRAY order like LogGeneratedChain (index 0 is the FINAL circle).
+    //--- Built in steps: a row carries six fields and a single concatenated expression past about ten
+    //--- terms is "Formula too complex", a hard compile error that packing does not catch.
+    protected void LogDerivedLadder()
+    {
+        int i;
+        int poi_count;
+        int derived_min;
+        int authored_min;
+        string head;
+        string row;
+        BattleRoyalePlayArea area;
+
+        if(!m_PlayAreas || !s_PlayAreaMinPlayers)
+            return;
+
+        head = "[BattleRoyaleZone] derived ladder: derive_zone_ladder=";
+        head = head + b_DeriveLadder;
+        head = head + " metres_per_player=" + f_MetresPerPlayer;
+        head = head + " floor=" + i_MinPlayersFloor;
+        head = head + " poi_weight=" + f_POIDensityWeight;
+        BattleRoyaleUtils.Info(head);
+
+        for(i = 0; i < m_PlayAreas.Count(); i++)
+        {
+            //--- Every read into a local on its own line before it is used - see ComputeAllowRadii.
+            area = m_PlayAreas.Get(i);
+            if(!area)
+                continue;
+
+            poi_count = GetPOICount(i);
+            derived_min = GetDerivedMinPlayers(i);
+
+            authored_min = -1;
+            if(a_MinPlayers && i < a_MinPlayers.Count())
+                authored_min = a_MinPlayers[i];
+
+            row = "[BattleRoyaleZone]   [" + i + "] radius=" + area.GetRadius();
+            row = row + " pois=" + poi_count;
+            row = row + " min_players derived=" + derived_min;
+            row = row + " authored=" + authored_min;
+            row = row + " opening_timer=" + GetOpeningTimer(i);
+
+            BattleRoyaleUtils.Info(row);
         }
     }
 
@@ -1916,6 +2277,114 @@ class BattleRoyaleZone
         Math.Randomize(Math.RandomInt(1, 2000000000));
     }
 
+    /**
+     *  Walk player counts 1..max_players and report which circle each one would open on (#284).
+     *
+     *  The acceptance gate for derive_zone_ladder and bound_match_duration, and it exists for exactly
+     *  the reason zone_selftest_runs does: the interesting cases are combinatorial in a variable
+     *  (the player count) that LaunchLocalMP.bat can only ever set to three.
+     *
+     *  ⚠️ THE TIER HISTOGRAM IS THE POINT, not the rows. This repo has twice shipped a derivation that
+     *  compiled, ran, and never once changed the answer - BR_ZONE_OFFSET_MIN_DISTANCE at 1500 against
+     *  a longest possible step under 1000, and TryGrowLevel sitting after a tier that had already
+     *  accepted a looser bar. Both were caught by a counter, and neither was visible from the code.
+     *  A histogram with one populated bucket means the ladder is dead code however good the formula is.
+     *
+     *  Touches nothing the match reads: it asks the same questions the countdown will ask and then puts
+     *  the memo back, the same discipline RunSelfTest applies to s_ChainRadii.
+     */
+    void RunLadderSelfTest(int max_players)
+    {
+        array<int> tier_hist = new array<int>();
+        int p;
+        int k;
+        int zone_number;
+        int settings_index;
+        int last_zone = -1;
+        int distinct = 0;
+        int poi_count;
+        int duration;
+        int bucket;
+        float radius;
+        float per_poi;
+        string line;
+        BattleRoyaleZone zone;
+        BattleRoyalePlayArea area;
+
+        if(max_players < 1)
+            return;
+
+        for(k = 0; k <= i_NumRounds; k++)
+        {
+            tier_hist.Insert(0);
+        }
+
+        BattleRoyaleUtils.Info("[BattleRoyaleZone][LadderTest] walking 1.." + max_players + " players on " + GetGame().GetWorldName() + "...");
+
+        for(p = 1; p <= max_players; p++)
+        {
+            zone_number = BattleRoyaleState.GetDynamicStartingZone(p);
+
+            //--- Read into a local before the Set(), per ComputeAllowRadii's rule. This is the gate's
+            //--- own tally; a misread here would be believed.
+            if(zone_number >= 0 && zone_number < tier_hist.Count())
+            {
+                bucket = tier_hist.Get(zone_number);
+                tier_hist.Set(zone_number, bucket + 1);
+            }
+
+            //--- One row per CHANGE rather than one per player count: the answer is a step function and
+            //--- printing every step of a flat stretch would hide the steps that matter.
+            if(zone_number == last_zone)
+                continue;
+
+            last_zone = zone_number;
+            distinct++;
+
+            settings_index = i_NumRounds - zone_number;
+
+            radius = 0;
+            zone = BattleRoyaleZone.GetZone(zone_number);
+            if(zone)
+            {
+                area = zone.GetArea();
+                if(area)
+                    radius = area.GetRadius();
+            }
+
+            poi_count = GetPOICount(settings_index);
+            duration = BattleRoyaleState.GetMatchDurationSeconds(zone_number);
+
+            per_poi = 0;
+            if(poi_count > 0)
+                per_poi = p / (poi_count * 1.0);
+
+            line = "[BattleRoyaleZone][LadderTest]   " + p + "+ players -> zone " + zone_number;
+            line = line + " (index " + settings_index + ")";
+            line = line + " r=" + radius;
+            line = line + " pois=" + poi_count;
+            line = line + " players/poi=" + per_poi;
+            line = line + " match=" + duration + " s";
+            BattleRoyaleUtils.Info(line);
+        }
+
+        line = "";
+        for(k = 0; k < tier_hist.Count(); k++)
+        {
+            bucket = tier_hist.Get(k);
+            if(bucket > 0)
+                line = line + " zone" + k + "=" + bucket;
+        }
+        BattleRoyaleUtils.Info("[BattleRoyaleZone][LadderTest]   tier histogram:" + line);
+
+        if(distinct <= 1)
+            BattleRoyaleUtils.Warn("[BattleRoyaleZone][LadderTest] every player count from 1 to " + max_players + " opens on the SAME circle - the ladder is not adapting to anything. Check zone_metres_per_player against static_sizes, and min_zone_num against num_zones.");
+
+        //--- Put the memo back. The walk left it holding max_players, and the match about to be played
+        //--- must recompute rather than inherit a self test's last answer.
+        BattleRoyaleState.ResetDynamicZoneMemo();
+    }
+
     //--- Build every circle. Runs once per process; every later call is a lookup.
     protected void GenerateAll()
     {
@@ -1932,7 +2401,13 @@ class BattleRoyaleZone
         }
 
         CommitChain(chain);
+
+        //--- Below CommitChain, because it measures the COMMITTED circles, and below
+        //--- BuildFeasiblePOIList above, because it reads s_POI.
+        BuildDerivedLadder();
+
         LogGeneratedChain();
+        LogDerivedLadder();
     }
 
     //--- Seed handling + an explicit, logged boot step.
@@ -1947,6 +2422,7 @@ class BattleRoyaleZone
     {
         int configured;
         int runs;
+        int ladder_players;
         BattleRoyaleConfig config = BattleRoyaleConfig.GetConfig();
 
         if(s_Prepared)
@@ -1989,6 +2465,13 @@ class BattleRoyaleZone
         runs = config.GetZoneData().zone_selftest_runs;
         if(zone && runs > 0)
             zone.RunSelfTest(runs);
+
+        //--- The ladder gate (#284). AFTER RunSelfTest, because that one churns s_ChainRadii 200 times
+        //--- and restores it at the end; this one reads the committed circles and would otherwise be
+        //--- reporting radii from a throwaway chain.
+        ladder_players = config.GetZoneData().zone_ladder_selftest_players;
+        if(zone && ladder_players > 0)
+            zone.RunLadderSelfTest(ladder_players);
     }
 
 	BattleRoyalePlayArea GetBattleRoyalePlayAreas(int zone_number)

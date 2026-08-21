@@ -35,6 +35,23 @@ class BattleRoyaleAdminZoneRow
     //--- which is precisely when an operator wants to know what turning it on would do.
     int   derived_timer_s = 0;
 
+    //--- What this round would cost if it were the OPENING one - a loot allowance plus the sprint a
+    //--- spawned player still owes inside the circle, with no inbound travel. Which round that is
+    //--- depends on the player count, so it is computed for every circle and shown for every circle.
+    int   opening_timer_s = 0;
+
+    //--- POIs inside this circle - villages, towns, the CfgWorlds names the final circle can seed on,
+    //--- after the avoid lists. -1 means "not counted", which is a different thing from a circle over
+    //--- empty ground. This is the loot-density input to the derived min_players beside it.
+    int   poi_count = -1;
+
+    //--- How many players this circle is rated for. `min_players` is the AUTHORED zone_settings.json
+    //--- entry and `derived_min_players` is what derive_zone_ladder computes; the table's
+    //--- `derive_ladder` flag says which of the two the match is using. Both are shown either way, for
+    //--- the same reason derived_timer_s is - an operator consults the column to decide.
+    int   min_players = 0;
+    int   derived_min_players = -1;
+
     //--- Committed radius minus the admin's static size, i.e. what allow_zone_size_flex spent here.
     //--- Rare at stock settings (~0.1% of placements on ChernarusPlus), so a non-zero value is worth
     //--- seeing.
@@ -60,6 +77,11 @@ class BattleRoyaleAdminZoneTable
     //--- would use. Without this the column is ambiguous in the one direction that matters.
     bool derive_timers = false;
     bool allow_flex = false;
+
+    //--- Whether the derived_min_players column is what the match is actually using, and whether the
+    //--- starting tier is being moved to fit a duration target. Same ambiguity the flag above removes.
+    bool derive_ladder = false;
+    bool bound_duration = false;
 
     ref array<ref BattleRoyaleAdminZoneRow> rows = new array<ref BattleRoyaleAdminZoneRow>();
 }

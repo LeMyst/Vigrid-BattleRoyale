@@ -116,8 +116,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
      *
      *  Same zone ShowFirstZone() advertises, and i_NumStartingPlayers rather than the live count for
      *  the same reason: the rounds decide which circle to skip to from the countdown snapshot, so the
-     *  live count can name a different one. GetZoneTimer() is the accessor 6_BattleRoyaleRound.Init
-     *  uses, so a flexed or derived round-one length is already folded in.
+     *  live count can name a different one. GetZoneTimer() is the accessor 6_BattleRoyaleRound.Activate
+     *  uses, so a flexed or derived round-one length is already folded in - including the loot pricing,
+     *  which is why the `true` below is not optional.
      */
     protected int GetFirstZoneLockExtraMs()
     {
@@ -126,7 +127,10 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         if(!first_zone)
             return 0;
 
-        int round_seconds = first_zone.GetZoneTimer();
+        //--- `true`: this is by definition the OPENING round, so it is priced as a loot round rather
+        //--- than a fight one (#284 point 4). 6_BattleRoyaleRound.Activate passes the same flag for the
+        //--- same round, and the two must agree - this figure is what the HUD colours the clock against.
+        int round_seconds = first_zone.GetZoneTimer( true );
         int round_ms = round_seconds * 1000;
 
         return (int)( round_ms * BR_ZONE_LOCK_FRACTION );
