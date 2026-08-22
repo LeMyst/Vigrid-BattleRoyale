@@ -880,9 +880,14 @@ class BattleRoyaleState: Timeable
         player.next_unstuck_time = GetGame().GetTickTime() + BR_UNSTUCK_COOLDOWN_SECONDS;
     }
 
-#ifdef DIAG_DEVELOPER
     /**
-     *  Diag only: put `player` at `position` down the same sync juncture the unstuck path uses.
+     *  Put `player` at `position` down the same sync juncture the unstuck path uses.
+     *
+     *  NOT #ifdef-guarded, unlike BR_DiagTeleportRing below it: the COT master controls' "teleport
+     *  to the live circle" admin action calls it, and that ships. It was inside the diag block until
+     *  2026-08-22, which compiled on every local launch (the whole rig is DayZDiag_x64.exe, where
+     *  DIAG_DEVELOPER is defined) and killed the Mission module outright on the first release server
+     *  - "Undefined function 'BattleRoyaleState.BR_DiagTeleport'". Gate the CALLERS, never this.
      *
      *  Deliberately NOT a SetPosition. The juncture is what carries the teleport to the client half
      *  as well, and it is the code path the mod's own teleport bugs live in - a debug teleport that
@@ -910,6 +915,7 @@ class BattleRoyaleState: Timeable
         BattleRoyaleUtils.Info( "[Diag] teleported " + GetPlayerLogName( player ) + " to " + position );
     }
 
+#ifdef DIAG_DEVELOPER
     /**
      *  Put `player` exactly `radius` metres from `origin`, for the spectator range test.
      *

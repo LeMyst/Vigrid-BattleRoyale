@@ -36,6 +36,16 @@ for %%k in (%brRequired%) do (
 	if errorlevel 1 set /a failed=1
 )
 
+REM Retail executables instead of the diag ones, for one launch. BR_RELEASE=1 in the environment
+REM is the per-invocation form (that is all Release.bat sets) and wins over the config key, so a
+REM release run needs no user.cfg edit. Swapped BEFORE the echoes below so they report what will
+REM actually be launched, and after the required-key loop so gameDirectory/serverDirectory are known.
+if "%BR_RELEASE%"=="1" set "ReleaseEXE=1"
+if %failed%==0 if "%ReleaseEXE%"=="1" (
+	call "%~dp0_ReleaseEXE.bat" %~1
+	if errorlevel 1 exit /b 1
+)
+
 echo ClientLaunchParams is: "%clientLaunchParams%"
 echo ServerLaunchParams is: "%serverLaunchParams%"
 echo PlayerName is: "%playerName%"
