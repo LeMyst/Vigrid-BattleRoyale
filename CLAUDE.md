@@ -1297,7 +1297,7 @@ The choice is purely a look, and the two layers are interchangeable as far as th
 
 ### Ear plugs (`Extra/EarPlugs/`)
 
-`J` cycles the local client through Off → Light → Heavy. Builds into `extra_earplugs.pbo`, defines `VIGRID_EARPLUGS`, stages `3_Game` + `5_Mission`, every file `#ifndef SERVER`. **It is the one `Extra/` addon with no API at all** — nothing in the host mod calls it, so the discipline rule costs it only its own logger, constants, `stringtable.csv` and `Data/Inputs.xml`. Per-player level in `$profile:Vigrid-EarPlugs\earplugs_client.json`.
+`J` cycles the local client through Off → Light → Heavy. Builds into `extra_earplugs.pbo`, defines `VIGRID_EARPLUGS`, stages `3_Game` + `5_Mission`, every file `#ifndef SERVER`. **Alone among the self-contained addons here — KillFeed, SafeZone, Map — it exposes no API**, because nothing in the host mod needs to talk to it, so the discipline rule costs it only its own logger, constants, `stringtable.csv` and `Data/Inputs.xml`. (Twelve of the smaller `Extra/` tweaks have no API either; they hook vanilla directly and have nothing to expose.) Per-player level in `$profile:Vigrid-EarPlugs\earplugs_client.json`.
 
 **The idea is DaemonForge's `DayZ-EarPlugs`, which is GPLv3, and none of their code or art is here.** GPLv3 §7 forbids adding DSPL-SA's non-commercial / DayZ-only restrictions to a combined work — the same reasoning that blocked porting COT's `JMESPSkeleton`. That is why the indicator is a text badge rather than their `volume_*.edds`, and why the architecture below shares nothing with theirs.
 

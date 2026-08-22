@@ -85,6 +85,8 @@ handler leave the PBO, while the fullscreen map is untouched.
 
 The other twelve declare none, so nothing can `#ifdef`-guard against them.
 
-`VIGRID_EARPLUGS` is a third kind again: it guards nothing anywhere, because EarPlugs is the one
-addon here with no API at all. It is declared so that a future host-mod call site has something to
-test, and so the addon does not look like an oversight beside the others.
+`VIGRID_EARPLUGS` is a third kind again: it guards nothing anywhere, because EarPlugs exposes no API
+for the host mod to call. It is declared so that a future call site has something to test, and so the
+addon does not look like an oversight beside the others. (Twelve of the smaller tweaks above have no
+API either — they hook vanilla directly. EarPlugs is the first of the self-contained addons, the
+KillFeed / SafeZone / Map class, that needs none.)
