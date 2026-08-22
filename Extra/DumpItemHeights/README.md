@@ -78,23 +78,25 @@ are deliberately absent: the box is measured in **model space** so the spawn pos
 and vanilla's own preview spawner carries a literal `//! Don't use ECE_UPDATEPATHGRAPH !!!` warning
 (`P:\scripts\5_mission\gui\scriptconsoleitemstab.c:697`).
 
-The box comes from a three-step fallback chain, and which step fired is recorded per row:
+The box comes from a two-step chain, and every row then has to pass a trust gate:
 
-| `source` | Call | Notes |
+| `source` | Meaning | `trusted` |
 |---|---|---|
-| `collision` | `obj.GetCollisionBox(min_max)` | the good one — returns `bool` |
-| `memorypoint` | `box_placing_min` / `box_placing_max` memory points | vanilla's own fallback, `hologram.c:1067`; authored placement bounds |
-| `clipping` | `obj.ClippingInfo(min_max)` | render bounds, loosest. `proto float` returning a radius, so it has **no failure signal** and is the last resort by construction |
+| `collision` | `GetCollisionBox` returned true and the box survived inspection | **1** |
+| `memorypoint` | `box_placing_min` / `box_placing_max`, vanilla's own fallback (`hologram.c:1067`) | **1** |
+| `nocollision` | no collision box and no memory points — size written as **0** | 0 |
+| `suspect2m` | a box came back with an axis within 0.01 of exactly 2.0 — a placeholder, not geometry | 0 |
+| `zero` | a box came back with `size_y <= 0` | 0 |
 
-`GetCollisionRadius()` goes out as its own `radius` column regardless — a free sanity check on rows
-that fell through to `clipping`.
+**`ClippingInfo` is deliberately not a fallback value.** It is recorded in its own `clip_y` column for
+diagnostics and never written into `size_*` — see the measurement below for why.
 
 ## Output
 
 `<ClientProfileDirectory>\item_heights.csv`
 
 ```
-classname,tree,scope,size_x,size_y,size_z,min_y,max_y,radius,source
+classname,tree,scope,trusted,size_x,size_y,size_z,min_y,max_y,clip_y,radius,source
 ```
 
 | Column | Meaning |
@@ -102,10 +104,12 @@ classname,tree,scope,size_x,size_y,size_z,min_y,max_y,radius,source
 | `classname` | the config class — the same string used in `types.xml` |
 | `tree` | which config tree it came from: `CfgVehicles`, `CfgWeapons` or `CfgMagazines` |
 | `scope` | config visibility. Always `2`, since `scope < 2` is filtered out |
-| `size_x` / `size_y` / `size_z` | bounding-box width / **height** / depth in metres, model space |
+| **`trusted`** | **1 = the numbers are real, 0 = they are not. Consumers must filter on this.** |
+| `size_x` / `size_y` / `size_z` | bounding-box width / **height** / depth in metres, model space. **Zero when `trusted=0` and `source=nocollision`** |
 | `min_y` / `max_y` | how far the geometry reaches below / above the model origin. `size_y = max_y - min_y` |
-| `radius` | `GetCollisionRadius()`, the bounding *sphere*. A cross-check, not a dimension |
-| `source` | which measurement produced the box — see the table above |
+| `clip_y` | `ClippingInfo`'s height. **Diagnostics only — do not use as a height**, it over-reports by ~5× |
+| `radius` | `GetCollisionRadius()`, the bounding *sphere*. Unreliable (`AKM` reports 2.619) — diagnostics only |
+| `source` | which measurement produced the box, or why it was rejected — see the table above |
 
 `min_y` is worth reading alongside `size_y`: `min_y ≈ 0` means the origin sits at the item's base,
 while `min_y ≈ -size_y / 2` means it sits at the centre and half the item hangs below the point it is
@@ -117,34 +121,68 @@ to millimetres.
 Progress goes to the client `script_*.log` (not the `.rpt`, which stops recording once the world has
 loaded) as `[DumpItemHeights] i=N/M dumped=K`, one line per chunk.
 
-## Measured results (2026-08-13, ChernarusPlus, full mod list)
+## ⚠️ Why `trusted` exists — the measurement that produced it
+
+The first version of this addon published a bounding box for every row with no trust signal, and a
+minority of them were wrong. `Izh43Shotgun` came out as **2.785 m** tall (its siblings are ~0.19), so
+a consuming tool compared it against `<point height="…"/>`, found no loot point that tall, and
+reported the weapon as unspawnable — while in game it spawns fine.
+
+A dedicated probe settled it on 2026-08-17. **Two plausible theories were killed:**
+
+1. **It is not a timing artefact.** The obvious explanation was that the box is read in the same
+   frame the object is created, before geometry has streamed in. Subjects were created once, kept
+   alive and re-measured on a widening schedule — 12 samples over 480 frames / ~30 s. **Every subject
+   gave exactly one distinct reading**, suspects and controls alike. So "read it a frame later"
+   cannot help, and neither can "run it twice and diff" — the wrong answers are perfectly
+   reproducible.
+2. **It is not the spawn flags.** Five variants — the current mask, vanilla's Script Console mask
+   (`+ECE_TRACE`), no physics at all, `+ECE_SETUP`, and a second instance created after the first —
+   were **bit-identical** for every class. The box cannot be recovered by creating the object
+   differently.
+
+**What it actually is — two independent failure modes:**
+
+- **`ClippingInfo` is not a usable fallback.** Measured against known-good *controls*, it
+  over-reports by roughly 5×: `AKM` `clip_y` **0.986** against a true **0.169**, `Izh18Shotgun`
+  **0.87** against **0.191**. So the old build's `clipping` rows were not merely imprecise, they were
+  wrong — *including* the ones that looked plausible (`Derringer_Black` 0.299, `GP25` 0.294). It is
+  now recorded in `clip_y` and never used as a size.
+- **`GetCollisionBox` can return `true` and still hand back a placeholder.** `Groza`
+  (2 / 2.192 / 2.001) and `P1` (2.034 / 0.139 / 2.001) both did. Real geometry does not land on
+  2.000, hence the `suspect2m` check.
+
+**Which classes lose their box**: every `CfgWeapons` row that fails is a non-standard-muzzle weapon —
+`Izh43Shotgun` and `SawedoffIzh43Shotgun` and all three `Derringer`s (double barrels), `GP25` and
+`M203` (grenade launchers), `RPG7`, `Crossbow` ×5, `DartGun`, `Shockpistol`, `SawedoffB95`. Those are
+exactly the weapons whose `InitMuzzleArray` vanilla expects to be overridden, and `Izh43Shotgun` was
+caught throwing `WeaponStableState.ValidateMuzzleArray` from inside `Weapon_Base`'s constructor
+*during* `CreateObjectEx`. **Whether that throw is what prevents the collision geometry being
+attached, or the model simply has none, was not established** — and the fix does not depend on it,
+because either way the box is unobtainable and the only honest answer is to say so.
+
+## Measured results (2026-08-17, ChernarusPlus, full mod list)
 
 ```
-# dumped=2099 skipped_scope=3333 skipped_kind=561 skipped_create=0
+# dumped=2064 skipped_scope=3333 skipped_kind=596 skipped_create=0
+# trusted=1869 nocollision=177 suspect2m=5 zero=13
 ```
 
-| Tree | Children | Dumped | `collision` | `clipping` |
+| Tree | Children | Dumped | `trusted=1` | `trusted=0` |
 |---|---:|---:|---:|---:|
-| `CfgVehicles` | 5671 | 1859 | 1698 | 161 |
-| `CfgWeapons` | 194 | 117 | 96 | 21 |
+| `CfgVehicles` | 5671 | 1824 | 1682 | 142 |
+| `CfgWeapons` | 194 | 117 | 94 | 23 |
 | `CfgMagazines` | 128 | 123 | 93 | 30 |
-| | | **2099** | **1887** | **212** |
+| | | **2064** | **1869** | **195** |
 
-`memorypoint` never fired. `collision` being ~90% is the check that `ECE_CREATEPHYSICS` is actually
-taking effect — if it ever drops, the numbers are the looser render bounds and are not to be trusted.
-`skipped_kind` is `CfgVehicles`-only by construction, which is the regression check on
-`PassesKindFilter`.
+`memorypoint` never fires in practice. Sanity spot-checks, all `trusted=1`: `TunaCan` 0.025,
+`Apple` 0.101, `WaterBottle` 0.27, `FirefighterAxe` 0.95, `Barrel_Blue` 0.81, `Mosin9130` 0.184
+(× 1.236 long), `M4A1` 0.22, `Mag_STANAG_30Rnd` 0.211. Note a firearm's length is `size_x` — `size_y`
+is the height of it lying flat, which is the clearance a loot point actually has to give it.
 
-Sanity spot-checks: `TunaCan` 0.025, `Apple` 0.101, `WaterBottle` 0.27, `FirefighterAxe` 0.95,
-`Barrel_Blue` 0.81, `Mosin9130` 0.184 (× 1.236 long), `M4A1` 0.22, `Mag_STANAG_30Rnd` 0.211. Note a
-firearm's length is `size_x` — `size_y` is the height of it lying flat, which is the clearance a loot
-point actually has to give it.
-
-**Expect ~6 `ValidateMuzzleArray` entries in `crash_*.log`, and ignore them.** They are non-fatal
-vanilla script errors from `WeaponStableState`, raised while a handful of `CfgWeapons` classes build
-their FSM, and they are logged rather than fatal because `LaunchOffline.bat` passes
-`newErrorsAreWarnings 1`. The run completes and every weapon still gets a row — verified by the row
-accounting above summing exactly to `dumped`.
+**Expect `ValidateMuzzleArray` entries in `crash_*.log`, and ignore them.** They are non-fatal vanilla
+script errors, logged rather than fatal because `LaunchOffline.bat` passes `newErrorsAreWarnings 1`.
+The run completes and the row accounting sums exactly to `dumped`.
 
 ## Caveats
 
@@ -153,13 +191,19 @@ accounting above summing exactly to `dumped`.
   `CreateObjectEx` on one **hard-crashes the client** — `Access violation. Illegal read ... at 0x31c`
   inside the engine, uncatchable. Measured 2026-08-13 on `ItemOptics` (`CfgVehicles` index 56). Every
   item that actually spawns as loot is `scope=2`, so nothing real is lost.
-- ⚠️ **`source=clipping` rows are low confidence, and 13 of them are all-zero.** Clipping info is
-  render bounds, and it has no failure signal — a class with no geometry at all silently yields a
-  zero box (`ExpansionBanknote*_InsanityStack`). Some are worse than useless: the base-building kits
-  (`ShelterKit`, `WatchtowerKit`, `FenceKit`, `TerritoryFlagKit`) all report an identical `size_y` of
-  3.664, which is the *deployed structure's* bounds rather than the kit item's. **Filter on
-  `source == "collision"` for anything you intend to trust**, and treat a zero row as "no data", not
-  as a flat item.
+- ⚠️ **`trusted=1` means "this is the engine's collision box", not "this is the visual height".** The
+  gate catches the two failure modes described above; it does **not** verify that a returned box is
+  semantically the object. `BarrelHoles_*` (2.822), `OvenIndoor` (2.834) and `FireplaceIndoor`
+  (2.347) are `collision`-sourced and pass the gate, but a barrel is not 2.8 m tall — those boxes
+  look like they include an interaction volume. They are deployables rather than ordinary loot, so
+  they rarely matter, but a consumer that reports "unspawnable" should treat a tall `trusted=1` row
+  with the same suspicion as a tall anything.
+- ⚠️ **`suspect2m` has a known false positive.** `ShelterFabric` and `ShelterLeather` measure
+  0.003 × 2.001 × 1.002, which is a *perfectly plausible 2 × 1 m tarp*, and they are rejected anyway
+  because the rule cannot tell a real 2.0 from a placeholder 2.0. Rejecting a good row is the safe
+  direction; publishing a bad one is not.
+- **Character heads are excluded** (`IsKindOf(name, "Head")`). They pass the `Inventory_Base` test but
+  are not loot, never appear in `types.xml`, and measure the whole character rig (~2.17 m). 35 rows.
 - **Loot only.** Within `CfgVehicles`, `Inventory_Base` covers clothing, optics, containers, food,
   traps and explosives — everything under it. It does **not** cover `House` / `HouseNoDestruct`
   (buildings, and a surprising number of camping, cooking and radio items inherit `HouseNoDestruct`)
