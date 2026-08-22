@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!--
+    No <exclude> group here, deliberately, and adding one would be actively harmful.
+
+    Auto-run's whole job is to keep a movement input alive while nothing is held, and both
+    AddActiveInputExcludes and RemoveActiveInputExcludes end in GetUApi().UpdateControls() - "call
+    this on each change of exclusion" - which rebuilds the whole control state and drops the HELD
+    state of every input, UATurbo included. See Extra/Map/Data/Inputs.xml for the longer version of
+    that story.
+
+    Nothing is suppressed either. The four movement inputs are read here only to CANCEL auto-run;
+    UAInput.Supress must never be pointed at a movement key, because its contract is "supress press
+    event for next frame while not pressed ATM - otherwise until release".
+-->
+<modded_inputs>
+    <inputs>
+        <actions>
+            <!-- loc= takes a BARE stringtable key with no leading '#'. Keys live in this
+                 addon's own stringtable.csv - auto-run must not reference a STR_BR_* key. -->
+            <input name="UAVigridAutoRunToggle" loc="STR_AUTORUN_KEYBIND_TOGGLE" />
+        </actions>
+
+        <sorting name="vigridautorun" loc="STR_AUTORUN_KEYBIND_CATEGORY">
+            <input name="UAVigridAutoRunToggle" />
+        </sorting>
+    </inputs>
+    <preset>
+        <!--
+            Z, not X. kX is vanilla UAToggleWeapons (change firearm fire mode, and it also pokes the
+            zeroing HUD - preset_keymouseprimary.xml:193, consumed at missiongameplay.c:551), so a
+            bind there fires twice on every press. kZ's only vanilla binding is UAMoveDown, which
+            sits under the preset's "DEBUG SPECIFIC / Freefly Camera" block and is unreachable in
+            normal gameplay - which is also why DayZ-Expansion's own auto-run defaulted to it, so
+            players coming off Expansion keep their muscle memory.
+
+            Free letters are nearly exhausted: K, O and P are the only ones vanilla leaves unbound,
+            and Map has taken K, Party has taken P. Community-Online-Tools is the one to check if a
+            bind ever does two things at once - its Inputs.xml is what collided with Party's Y.
+        -->
+        <input name="UAVigridAutoRunToggle">
+            <btn name="kZ" />
+        </input>
+    </preset>
+</modded_inputs>

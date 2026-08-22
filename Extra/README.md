@@ -4,7 +4,7 @@
 be lifted out of this repository and shipped on its own; none is required for the Battle Royale mod to
 function.
 
-**17 folders, 15 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
+**18 folders, 16 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
 parked.
 
 ## How this folder works
@@ -28,6 +28,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 
 | Addon | PBO | Side | What it does |
 |---|---|---|---|
+| [AutoRun](AutoRun/README.md) | `extra_autorun.pbo` | both | Hold a movement speed with no keys held — press **Z**, release everything, keep running |
 | [ChangeFeedbackURL](ChangeFeedbackURL/README.md) | `extra_changefeedbackurl.pbo` | client | Points the vanilla Feedback button at this mod's GitHub repo instead of Bohemia's tracker. **Not standalone** |
 | [DefaultFullAuto](DefaultFullAuto/README.md) | `extra_defaultfullauto.pbo` | server | Weapons spawn already set to full auto where they have one |
 | [DisableFogChernarusPlus](DisableFogChernarusPlus/README.md) | *disabled* | — | Removes fog on Chernarus+. Parked: it does nothing on Vigrid |
@@ -59,14 +60,16 @@ Most of these have no settings at all. The ones that do:
 | LimitUnconsciousTime | `serverDZ.cfg`: `BRDisableUnconsciousness`, or `-br-disable-unconsciousness` on the command line |
 | PreventWeaponRaise | `serverDZ.cfg`: `BRDisablePreventWeaponRaise` — server-read, mirrored to each client as a netsync bool |
 | SafeZone | none — controlled entirely through its API |
+| AutoRun | none — the keybind is the whole interface, rebindable in Options → Controls |
 
 ## Compile-time defines
 
-Only five addons declare a `defines[]`, which is what lets the mod guard its call sites with
+Only six addons declare a `defines[]`, which is what lets the mod guard its call sites with
 `#ifdef`:
 
 | Define | Addon | Used by the mod? |
 |---|---|---|
+| `VIGRID_AUTORUN` | AutoRun | yes — 2 call sites |
 | `DUMP_ITEM_HEIGHTS` | DumpItemHeights | no — declared for consistency only, and **not defined in a normal build** since the addon is parked |
 | `KILLFEED` | KillFeed | yes — 5 call sites |
 | `VIGRID_SAFEZONE` | SafeZone | yes — 2 call sites |
@@ -81,3 +84,7 @@ Comment either out of `Extra/Map/config.cpp` and that feature's class, its widge
 handler leave the PBO, while the fullscreen map is untouched.
 
 The other twelve declare none, so nothing can `#ifdef`-guard against them.
+
+`VIGRID_AUTORUN` guards two call sites and both are about one thing: the host mod freezes players by
+writing `HumanInputController.OverrideMovementSpeed`, which is the very override auto-run holds. See
+[AutoRun/README.md](AutoRun/README.md) for why the server's cancel deliberately does not release it.

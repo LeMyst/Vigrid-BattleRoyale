@@ -788,6 +788,15 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// Input enable/disable
 			if( br_previous_input_state != br_rpc.input_state && player )
 			{
+#ifdef VIGRID_AUTORUN
+				//--- Before DisableInput, and the order matters. Auto-run re-asserts its own
+				//--- OverrideMovementSpeed every frame, which is the same override DisableInput
+				//--- writes - so without this the freeze would lose the fight. SetAllowed(false)
+				//--- also cancels a hold in progress, so there is no separate cancel to make.
+				//--- input_state is TRUE for "disable", hence the negation.
+				VigridAutoRunAPI.SetAllowed( !br_rpc.input_state );
+#endif
+
 				player.DisableInput( br_rpc.input_state );
 				br_previous_input_state = br_rpc.input_state;
 			}
