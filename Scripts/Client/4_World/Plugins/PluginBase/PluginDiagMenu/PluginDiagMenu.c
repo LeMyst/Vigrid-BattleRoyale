@@ -18,8 +18,9 @@
  *  is compiled at all, so Match Flow and Spawn / Teleport doing nothing there is expected.
  *
  *  ID BUDGET. Ids come from GetModdedDiagID(), which counts up from DiagMenuIDs.MODDED_MENU (~235)
- *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 67,
- *  measured from the canary line rather than counted by hand (the previous "47" was one short). Do
+ *  against an engine hard cap of 512 SHARED WITH EVERY OTHER MOD LOADED. This tree spends 81,
+ *  measured from the canary line rather than counted by hand - it has been wrong twice now, once at
+ *  "47" and again at "67", each time because somebody added entries without re-reading the log. Do
  *  not allocate an id for something a bag field can carry: an entry whose value is only ever read
  *  when another entry fires does not need its id kept.
  */
@@ -105,6 +106,11 @@ modded class PluginDiagMenu
 	protected int m_BRDiagTpTargetGoID;
 	protected int m_BRDiagTpCorpseID;
 	protected int m_BRDiagSpectateTraceID;
+	protected int m_BRDiagCarryEnabledID;
+	protected int m_BRDiagCarryStaggerID;
+	protected int m_BRDiagLogCarryLoadID;
+	protected int m_BRDiagBenchBodiesID;
+	protected int m_BRDiagBenchCarryID;
 
 	//--- Teleport Trace
 	protected int m_BRDiagTraceMenuID;
@@ -197,6 +203,14 @@ modded class PluginDiagMenu
 		m_BRDiagTpTargetGoID = GetModdedDiagID();
 		m_BRDiagTpCorpseID = GetModdedDiagID();
 		m_BRDiagSpectateTraceID = GetModdedDiagID();
+		//--- Allocated INSIDE the Spectate block rather than appended after Chat Mirror, so
+		//--- m_BRDiagChatMirrorID stays the last id and BRDiagVerifyRegistration's canary still
+		//--- guards the tail of the range.
+		m_BRDiagCarryEnabledID = GetModdedDiagID();
+		m_BRDiagCarryStaggerID = GetModdedDiagID();
+		m_BRDiagLogCarryLoadID = GetModdedDiagID();
+		m_BRDiagBenchBodiesID = GetModdedDiagID();
+		m_BRDiagBenchCarryID = GetModdedDiagID();
 
 		m_BRDiagTraceMenuID = GetModdedDiagID();
 		m_BRDiagTraceTpClientID = GetModdedDiagID();
@@ -414,6 +428,30 @@ modded class PluginDiagMenu
 				//--- entity=0, so the answer is whether it returns to 1 and stays, and 5 s sampling
 				//--- cannot tell those apart.
 				DiagMenu.RegisterRange(m_BRDiagSpectateTraceID, "", "Trace Interval (s)", m_BRDiagSpectateMenuID, "0.5, 10, 5, 0.5");
+
+				//--- CORPSE CARRY LOAD (#280). Both toggles START from their compile-time constant,
+				//--- so the menu shows what the build actually does rather than a default that
+				//--- happens to be false - and until one is pressed the server is still resolving
+				//--- through the constant, not through an override.
+				//---
+				//--- Carry Enabled is the A/B that PRICES the carry: off, CarryCorpse returns on its
+				//--- first line and the whole evaluation is skipped, so the difference in the load
+				//--- line's tickms between two windows is what the carry costs.
+				DiagMenu.RegisterBool(m_BRDiagCarryEnabledID, "", "Carry Enabled", m_BRDiagSpectateMenuID);
+				DiagMenu.SetValue(m_BRDiagCarryEnabledID, BR_SPECTATE_CARRY_CORPSE);
+				//--- Off is the correlated baseline - every spectator on one clock. Keeping it
+				//--- reachable is what lets ONE match measure both, which matters because spectator,
+				//--- target and body counts all differ between any two matches.
+				DiagMenu.RegisterBool(m_BRDiagCarryStaggerID, "", "Carry Stagger", m_BRDiagSpectateMenuID);
+				DiagMenu.SetValue(m_BRDiagCarryStaggerID, BR_SPECTATE_CARRY_STAGGER);
+				//--- Report now and restart the window, so a run is bracketed exactly rather than
+				//--- waiting out the 10 s throttle and catching part of the previous condition.
+				DiagMenu.RegisterBool(m_BRDiagLogCarryLoadID, "", "Log Carry Load", m_BRDiagSpectateMenuID);
+				//--- The projection to a full lobby, which three clients cannot otherwise reach.
+				//--- Bodies and trigger are two entries for the same reason TP Target is - and here
+				//--- it matters more, since the last phase has real side effects.
+				DiagMenu.RegisterRange(m_BRDiagBenchBodiesID, "", "Bench Bodies", m_BRDiagSpectateMenuID, "1, 64, 60, 1");
+				DiagMenu.RegisterBool(m_BRDiagBenchCarryID, "", "Bench Carry", m_BRDiagSpectateMenuID);
 			}
 
 			DiagMenu.RegisterMenu(m_BRDiagTraceMenuID, "Teleport Trace", m_BRDiagRootMenuID);

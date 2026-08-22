@@ -105,6 +105,11 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagTpTargetGoID, CBBRDiagTpTargetGo);
 		DiagMenu.BindCallback(m_BRDiagTpCorpseID, CBBRDiagTpCorpse);
 		DiagMenu.BindCallback(m_BRDiagSpectateTraceID, CBBRDiagSpectateTrace);
+		DiagMenu.BindCallback(m_BRDiagCarryEnabledID, CBBRDiagCarryEnabled);
+		DiagMenu.BindCallback(m_BRDiagCarryStaggerID, CBBRDiagCarryStagger);
+		DiagMenu.BindCallback(m_BRDiagLogCarryLoadID, CBBRDiagLogCarryLoad);
+		DiagMenu.BindCallback(m_BRDiagBenchBodiesID, CBBRDiagBenchBodies);
+		DiagMenu.BindCallback(m_BRDiagBenchCarryID, CBBRDiagBenchCarry);
 
 		DiagMenu.BindCallback(m_BRDiagTraceTpClientID, CBBRDiagTraceTpClient);
 		DiagMenu.BindCallback(m_BRDiagTraceTpServerID, CBBRDiagTraceTpServer);
@@ -815,6 +820,71 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagSpectateTrace(float value)
 	{
 		BattleRoyaleDiag.spectate_trace_interval = value;
+	}
+
+	/**
+	 *  Run the corpse carry at all (#280).
+	 *
+	 *  The A/B that prices it: with it off CarryCorpse returns on its first line, so the whole
+	 *  evaluation - both list walks and both array allocations - is skipped, and the difference in
+	 *  the "[Spectate] load" line's tickms between two windows IS the carry's cost. Sent server-side
+	 *  because that is where the pass runs; the flip is in memory only and is not persisted.
+	 */
+	static void CBBRDiagCarryEnabled(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_CARRY_ENABLED, on, 0);
+	}
+
+	//! Per-entry carry phase vs the one global clock. Off is the correlated baseline, and it is kept
+	//! reachable so ONE match can be measured both ways - spectator, target and body counts all
+	//! differ between any two matches, so a cross-run comparison would not be a comparison.
+	static void CBBRDiagCarryStagger(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_CARRY_STAGGER, on, 0);
+	}
+
+	//! Report the carry-load counters now and restart the window, so a measurement run is bracketed
+	//! exactly rather than waiting out the 10 s throttle and catching part of the previous condition.
+	static void CBBRDiagLogCarryLoad(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.LOG_CARRY_LOAD, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	//! Held client-side and sent only when Bench Carry is pressed, for the same reason
+	//! tp_target_distance is: a range callback plausibly fires on every step while scrubbing, and
+	//! this one drives a probe whose last phase has real side effects.
+	static void CBBRDiagBenchBodies(float value)
+	{
+		BattleRoyaleDiag.bench_bodies = (int)value;
+	}
+
+	/**
+	 *  Price one carry pass at a full lobby.
+	 *
+	 *  LaunchLocalMP.bat tops out at three clients, so at most two ordinary spectators can exist in
+	 *  a real test and the load #280 is about cannot be produced live. This measures the real
+	 *  primitives at the live population, then re-runs the world-walk against a padded array at the
+	 *  requested body count, and projects. See BattleRoyaleSpectators.BenchCarry.
+	 */
+	static void CBBRDiagBenchCarry(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SPECTATE_BENCH_CARRY, BattleRoyaleDiag.bench_bodies, 0);
+		DiagMenu.SetValue(id, false);
 	}
 
 	//=============================================================================================

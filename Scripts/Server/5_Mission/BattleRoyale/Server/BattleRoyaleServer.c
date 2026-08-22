@@ -2234,6 +2234,46 @@ class BattleRoyaleServer: BattleRoyaleBase
                 break;
             }
 
+            case BattleRoyaleDiagAction.SET_CARRY_ENABLED:
+            {
+                //--- An OVERRIDE with a -1 sentinel, not a bool mirroring the constant: untouched, the
+                //--- compile-time BR_SPECTATE_CARRY_CORPSE still governs, so a diag session cannot
+                //--- silently change what the shipped build does.
+                BattleRoyaleDiag.carry_enabled_override = 0;
+                if(data.param2 != 0)
+                    BattleRoyaleDiag.carry_enabled_override = 1;
+
+                BattleRoyaleUtils.Info("[Diag] corpse carry -> " + BattleRoyaleDiag.carry_enabled_override + " (this process only). Off is the A/B that prices it.");
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_CARRY_STAGGER:
+            {
+                BattleRoyaleDiag.carry_stagger_override = 0;
+                if(data.param2 != 0)
+                    BattleRoyaleDiag.carry_stagger_override = 1;
+
+                BattleRoyaleUtils.Info("[Diag] carry stagger -> " + BattleRoyaleDiag.carry_stagger_override + " (this process only)");
+                break;
+            }
+
+            case BattleRoyaleDiagAction.LOG_CARRY_LOAD:
+            {
+                //--- Report and restart the window, so a measurement run is bracketed exactly rather
+                //--- than waiting out the 10 s throttle and catching part of the previous condition.
+                BattleRoyaleSpectators.GetInstance().ReportCarryLoadNow();
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SPECTATE_BENCH_CARRY:
+            {
+                if(!sender)
+                    break;
+
+                BattleRoyaleSpectators.GetInstance().BenchCarry(sender.GetPlainId(), data.param2);
+                break;
+            }
+
             default:
             {
                 BattleRoyaleUtils.Warn("[Diag] unknown action " + data.param1);

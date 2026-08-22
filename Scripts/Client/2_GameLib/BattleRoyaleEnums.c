@@ -136,6 +136,16 @@ enum BattleRoyaleDiagAction
 
     SET_TRACE_AIM,     //!< arg_i 0/1 - server-side aim-angle trace. See PlayerBase.BR_LogAimState.
 
+    SET_CARRY_ENABLED,   //!< arg_i 0/1 - run the corpse carry at all. The A/B that PRICES it: off,
+                         //!< CarryCorpse returns on its first line and the whole evaluation - both
+                         //!< walks and both allocations - is skipped, so the difference in the load
+                         //!< line's tickms between two windows IS the carry's cost.
+    SET_CARRY_STAGGER,   //!< arg_i 0/1 - per-entry carry phase vs the one global clock (#280)
+    LOG_CARRY_LOAD,      //!< report the carry-load counters NOW and reset the window, so a
+                         //!< measurement run can be bracketed exactly rather than waiting out the
+                         //!< 10 s throttle and catching part of the previous condition
+    SPECTATE_BENCH_CARRY,//!< arg_i = bodies to project to; price the carry pass at a full lobby
+
     COUNT //Do not move this
 }
 

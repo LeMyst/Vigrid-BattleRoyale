@@ -756,6 +756,43 @@ static const float BR_SPECTATE_CARRY_BYSTANDER_M = 50.0;
 //--- How often the carry pass runs. It resolves bodies by walking every Man in the world, so it is
 //--- deliberately not on the 10 Hz tick.
 static const int BR_SPECTATE_CARRY_INTERVAL_MS = 1000;
+
+//--- STAGGER. Every spectator's carry pass was gated by ONE global clock, so all S of them evaluated
+//--- - and, after the first carry, teleported - on the same tick. Many spectators watch the SAME few
+//--- survivors, and their corpses then sit at the IDENTICAL position, which is what makes the STEP_M
+//--- crossing perfectly correlated rather than merely simultaneous.
+//---
+//--- It SPREADS the work, it does not reduce it: per-tick peak drops about tenfold, since a phase
+//--- equal to the interval quantises into its ten 10 Hz ticks, while the total per second is
+//--- unchanged. If the load diagnostic ever indicts total walk VOLUME rather than per-frame burst,
+//--- this is the wrong tool and a per-pass uid -> body index is the right one.
+//---
+//--- Off restores the single global clock. That is not dead code: it is the baseline, and keeping it
+//--- reachable is what lets one match measure both behaviours - see BattleRoyaleDiag.carry_stagger.
+static const bool BR_SPECTATE_CARRY_STAGGER = true;
+//--- Per-entry phase, drawn once when spectating begins. Equal to the interval, so entries land
+//--- uniformly across its ten 10 Hz ticks: larger only delays the first carry, smaller leaves the
+//--- tail bunched. Costs at most one interval of extra latency on the FIRST carry - about 6 m of
+//--- drift at sprint speed, against a 250 m trigger, a 750 m backstop and a ~1000 m wall.
+static const int BR_SPECTATE_CARRY_PHASE_MS = 1000;
+//--- Throttle on the carry-load diagnostic. 10 s rather than the 2 s BR_LOBBY_TAG_DIAG_MS uses: a
+//--- spectator re-carries only every ~40 s of the target running, so a 2 s window mostly reads zero
+//--- and the interesting columns never leave the noise.
+static const int BR_SPECTATE_LOAD_DIAG_MS = 10000;
+//--- Ceiling on the bench one-shot's REAL-teleport phase, which is the only part of it with side
+//--- effects. 64 is a full lobby, i.e. the largest burst a real match can produce.
+static const int BR_SPECTATE_BENCH_MAX = 64;
+//--- Iterations for the bench's read-only phases.
+//---
+//--- 2000, not the 200 first written. MEASURED 2026-08-19: at a 3-player population, 200 iterations
+//--- of IdentityOfUid and of FindBodyByUid each came back as "0 ms" - not because they are free but
+//--- because the whole batch fitted inside ONE tick of GetTickTime, whose resolution is ~0.977 ms
+//--- (see BR_SPECTATE_LOAD_DIAG_MS). A batch that cannot clear the clock reports a bound, not a
+//--- measurement, and a bound of zero reads exactly like free.
+//---
+//--- Only the read-only phases use this. Phase 3b is capped by BR_SPECTATE_BENCH_MAX instead,
+//--- because it is the one with side effects.
+static const int BR_SPECTATE_BENCH_ITERATIONS = 2000;
 //seconds the dead screen takes to clear once spectating begins.
 static const float BR_SPECTATE_FADE_SECONDS = 1.0;
 //how close a local entity must be to the server-pushed position to be accepted as the target, when
