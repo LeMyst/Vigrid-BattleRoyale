@@ -1,0 +1,24 @@
+# Addon-name PREFIXES belonging to mods this repo treats as OPTIONAL.
+#
+# An addon named here must NEVER appear in a requiredAddons[]. Requiring an addon the server may
+# not have loaded is FATAL, not a soft ordering hint: the engine stops during addon load with
+#
+#     Addon 'BattleRoyale_Scripts_Client' requires addon 'DayZExpansion_Scripts'
+#
+# and an RPT that ends after the header - no addon list, no script_*.log, nothing to read, because
+# scripts never reach compilation. On a headless server the message is a modal / stdout, so a
+# server run as a service shows nothing whatsoever. That killed a live server on 2026-08-22.
+#
+# THIS FILE IS THE SECOND LOCK, and it exists because the first one failed. DayZExpansion_Scripts
+# sat in external_addons.txt in good faith, on the documented belief that an unresolvable
+# requiredAddons entry is merely ignored and only stops constraining load order. It is not, and it
+# does not. So an entry here fires even when external_addons.txt permits the name, and re-adding it
+# there cannot silence this check.
+#
+# Reach for an optional mod with `#ifdef <its CfgMods class>` instead - see CLAUDE.md. Ordering
+# this mod's `modded class`es after another mod's is done by -mod= order (Workbench/project.cfg),
+# never by requiring one of its addons.
+#
+#   <prefix>   # which mod, and how the repo reaches it instead
+
+DayZExpansion   # DayZ-Expansion - guarded with #ifdef DZ_Expansion / DZ_Expansion_Core

@@ -2,11 +2,20 @@ class CfgPatches
 {
     class BattleRoyale_Scripts_Client
     {
+        //--- DO NOT ADD "DayZExpansion_Scripts" BACK HERE. It was kept until 2026-08-22 to
+        //--- order this mod's modded classes after Expansion's, on the belief that a
+        //--- requiredAddons entry for an ABSENT addon is harmless. It is not: a dedicated
+        //--- server without Expansion dies at addon load with the modal
+        //---     Addon 'BattleRoyale_Scripts_Client' requires addon 'DayZExpansion_Scripts'
+        //--- and an RPT that stops after the header - no addon list, no script log, nothing
+        //--- to read. #267 only ever verified this against an OFFLINE CLIENT, and project.cfg
+        //--- ships Expansion in AdditionalMPMods, so no Expansion-less server had ever booted
+        //--- with the entry present. The ordering it bought is now bought by -mod= order
+        //--- instead: list @Vigrid-BattleRoyale AFTER the Expansion mods (project.cfg does).
         requiredAddons[]=
         {
             "DZ_Data",
-            "DZ_Scripts",
-            "DayZExpansion_Scripts"
+            "DZ_Scripts"
         };
     };
 };

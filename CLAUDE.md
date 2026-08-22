@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A DayZ Standalone mod (Bohemia Interactive Enfusion engine) implementing battle-royale gameplay, written in **EnfusionScript** (`.c` files). Originally by Kegan, maintained by Myst. Version `0.1.0-Vigrid`, defined in `Scripts/Client/2_GameLib/BattleRoyaleConstants.c` and mirrored in `mod.cpp`.
+A DayZ Standalone mod (Bohemia Interactive Enfusion engine) implementing battle-royale gameplay, written in **EnfusionScript** (`.c` files). Originally by Kegan, maintained by Myst. Version `0.2.0-Vigrid`, defined in `Scripts/Client/2_GameLib/BattleRoyaleConstants.c` and mirrored in `mod.cpp`.
 
 Hard dependencies (mod load order set in `Workbench/project.cfg`): [CF](https://github.com/Arkensor/DayZ-CommunityFramework), [Dabs Framework](https://github.com/InclementDab/DayZ-Dabs-Framework), [Community-Online-Tools](https://github.com/Jacob-Mango/DayZ-CommunityOnlineTools). Each link is the mod's source repository — consult it for a dependency's API rather than guessing.
 
-⚠️ **[DayZ-Expansion](https://github.com/salutesh/DayZ-Expansion-Scripts) is NO LONGER a hard dependency — the mod compiles and runs on both sides without it** — but `Scripts/Client/config.cpp` still lists `DayZExpansion_Scripts` in `requiredAddons` **on purpose**, and that is not an oversight to tidy up: it is what orders this mod's `modded class`es after Expansion's when Expansion *is* loaded, and a `requiredAddons` entry for an absent addon is harmless. What remains optional and guarded:
+⚠️ **[DayZ-Expansion](https://github.com/salutesh/DayZ-Expansion-Scripts) is NO LONGER a hard dependency — the mod compiles and runs on both sides without it.** **A `requiredAddons` entry for an ABSENT addon is NOT harmless, and this file asserted the opposite until 2026-08-22.** `Scripts/Client/config.cpp` listed `DayZExpansion_Scripts` deliberately, to order this mod's `modded class`es after Expansion's; on a dedicated server with Expansion not loaded that killed the server outright at addon load, with the modal *"Addon 'BattleRoyale_Scripts_Client' requires addon 'DayZExpansion_Scripts'"* and **an RPT that stops after the header** — no addon list, no `script_*.log`, nothing to read, because scripts never got as far as compiling. That signature is the fingerprint of a `CfgPatches` dependency failure and is worth recognising on sight; note the error goes to a modal / stdout, so a server run as a service shows nothing at all.
+
+The entry is gone. **Ordering against Expansion is now done by `-mod=` order instead** — `project.cfg` lists `@Vigrid-BattleRoyale` last, after the three Expansion mods, where it used to sit before them and let `requiredAddons` do the work. Two lessons generalise. `Tools/check.py`'s `configs` check *did* resolve the name — `DayZExpansion_Scripts` was simply sitting in `Tools/allowlists/external_addons.txt`, added in good faith under the same wrong belief, so **the allowlist entry is what made the check complicit** rather than blind. It now carries a second lock, `Tools/allowlists/optional_addons.txt`, tested to reject the name **even when re-allowlisted**. And — the part worth carrying furthest — **no local launch in this repo could ever have caught it**, for a reason that has nothing to do with Expansion: see *Testing → the local rig demotes fatal errors* below. What remains optional and guarded:
 
 | Reached through | Guard | Gives up when absent |
 |---|---|---|
@@ -109,7 +111,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | Check | Catches |
 |---|---|
 | `asset-paths` | every `Vigrid-BattleRoyale/...` asset reference resolves |
-| `configs` | `CfgPatches` names unique, `requiredAddons` resolve, no stripped vanilla parents |
+| `configs` | `CfgPatches` names unique, `requiredAddons` resolve **and name no optional mod's addon**, no stripped vanilla parents |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` class — a bug an offline client cannot see |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls are `#ifdef`-guarded |
@@ -128,6 +130,14 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 ⚠️ **CI cannot build the mod and no hosted runner can** — binarize/rapify/pack need DayZ Tools, Windows and a mounted `P:`. A self-hosted Windows runner would be *worse than nothing*: `P:\Vigrid-BattleRoyale` is a single global junction, so a CI job would silently steal the build target from whatever interactive session was mid-build.
 
 ⚠️ **A check that stops catching anything still goes green.** `settings-version` was fixed in #309 after its `MEMBER` pattern — which has no notion of brace depth — read three ordinary **local variables** as brand-new settings fields simply because a diff re-added those lines. When changing a check, prove it in both directions: construct an input it must reject and confirm it still does, exactly as with the diag fixtures elsewhere in this file.
+
+⚠️ **THE ENTIRE LOCAL RIG RUNS `DayZDiag_x64.exe` WITH `-newErrorsAreWarnings=1`, ON BOTH SIDES, SO NO LOCAL LAUNCH CAN REPRODUCE A FATAL CONFIG OR ADDON ERROR.** `project.cfg:7-8` set *both* `ClientEXE` and `ServerEXE` to the diag exe, and `user_sample.cfg:31-32` put `-newErrorsAreWarnings=1` on both `ServerLaunchParams` and `ClientLaunchParams`. Production runs `DayZServer_x64.exe` with neither.
+
+The measurement that established this (2026-08-22): the `DayZExpansion_Scripts` `requiredAddons` entry killed a remote server outright, and a local server booted **the very same afternoon, with Expansion genuinely absent from its mod list** — `-mod=@Vigrid-BattleRoyale;@CF;@Community-Online-Tools;@Dabs Framework;@Vehicle3PP`, no Expansion anywhere — and produced a full RPT, a full `script_*.log` and a playable server. **The bug was present in every local run and left no trace in any of them.** `grep -ril "requires addon"` over `ServerProfileDirectory` and every client profile returns *nothing*: the error is not merely demoted to a warning you could go looking for, it is demoted and then **not logged at all**.
+
+So: a clean diag `.rpt` is evidence about *script*, and no evidence at all about whether the mod will load on a real server. The only two things that can catch this class of defect are `Tools/check.py` and an actual `DayZServer_x64.exe` boot. If you need the latter locally, override `ServerEXE` and drop `-newErrorsAreWarnings=1` from `ServerLaunchParams` in `user.cfg`.
+
+⚠️ **`user.cfg` is read last-wins, and Myst's carries a dozen commented-out `AdditionalMPMods` lines with two or three live ones.** The effective mod list is the *last uncommented* assignment, not the first, and not the one that looks canonical. Read it with `grep -n "^AdditionalMPMods"` and take the bottom hit — assuming the wrong line is how "Expansion is always loaded locally" got asserted in this file and was wrong within the hour.
 
 Validation loop for anything the suite cannot see: `Deploy.bat` → launch (`ClientEXE` defaults to `DayZDiag_x64.exe`) → read the `.rpt` in the profile directory for script errors.
 

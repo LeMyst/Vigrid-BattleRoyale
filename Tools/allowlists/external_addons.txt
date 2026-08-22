@@ -1,8 +1,15 @@
 # Addon names this repo's `requiredAddons[]` may reference without declaring them.
 #
 # Everything else must resolve to a CfgPatches class declared somewhere in this repo. That is what
-# catches a renamed folder orphaning a dependent - a requiredAddons entry naming an addon that no
-# longer exists does not fail the build, it just stops constraining load order.
+# catches a renamed folder orphaning a dependent.
+#
+# AN ENTRY HERE IS A PROMISE THAT EVERY SERVER RUNNING THIS MOD HAS THAT ADDON LOADED - so only
+# vanilla and the three HARD dependencies belong here. It is not a soft ordering hint and an
+# unresolvable entry is not ignored: the engine refuses to start, during addon load, with
+# `Addon 'X' requires addon 'Y'` and an RPT that ends after the header. DayZExpansion_Scripts was
+# listed here until 2026-08-22 and killed a live server the first time one booted without
+# Expansion. For a mod that may be ABSENT, use `#ifdef <its CfgMods class>` and see
+# Tools/allowlists/optional_addons.txt, which rejects the name even if it reappears here.
 #
 #   <addon>   # who ships it
 
@@ -12,4 +19,3 @@ DZ_Sounds_Effects       # vanilla
 DZ_Gear_Navigation      # vanilla - declares CfgLocationTypes
 DZ_Worlds_Chernarusplus_World   # vanilla - the ChernarusPlus world PBO, required by Extra/DisableFogChernarusPlus
 JM_CF_Scripts           # Community Framework (CF)
-DayZExpansion_Scripts   # DayZ-Expansion
