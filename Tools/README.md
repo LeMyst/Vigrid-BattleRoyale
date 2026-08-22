@@ -31,6 +31,13 @@ discover. A missing stringtable key. A typo'd layout path, which draws nothing a
 `BattleRoyale*` symbol leaking into a standalone addon. A `MENU_*` id collision, which does not
 error — one menu just opens the other.
 
+The last two rows are a slightly different animal, and they are the expensive ones. They fail
+**loudly** rather than silently — a dead script module, not a quiet no-op — but only on a machine
+the iteration loop never visits. `SERVER` is undefined offline and `DIAG_DEVELOPER` is defined on
+every local launch, so both classes of defect compile perfectly all the way to the point where
+somebody starts a real server. Catching them from source text is worth far more than the second
+they cost.
+
 | Check | What it asserts |
 |---|---|
 | `stringtable` | every `STR_*` referenced is defined, **in its own addon's** table |
@@ -45,6 +52,8 @@ error — one menu just opens the other.
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
+| `client-only-types` | no server-compiled file names a `#ifndef SERVER` type |
+| `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method |
 
 ## Two rules for anyone adding a check
 
