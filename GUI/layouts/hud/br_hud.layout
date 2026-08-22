@@ -62,7 +62,9 @@ FrameWidgetClass BattleRoyaleHudFrame {
            vexactpos 0
            hexactsize 1
            vexactsize 1
-           image0 "set:expansion_iconset image:icon_group"
+             // Ours, in the mod's own atlas - vanilla has no group glyph. Composited from two
+             // copies of vanilla's icon_player at Pos 0 256 of dayzbr_gui.edds; see the imageset.
+             image0 "set:battleroyale_gui image:GroupIcon"
            mode blend
            "src alpha" 1
            "no wrap" 1
@@ -105,7 +107,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
            vexactpos 0
            hexactsize 1
            vexactsize 1
-           imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\persona_64x64.edds"
+           image0 "set:dayz_gui image:icon_player"
            mode blend
            "src alpha" 1
            "no wrap" 1
@@ -153,7 +155,7 @@ FrameWidgetClass BattleRoyaleHudFrame {
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\skull_1_64x64.edds"
+         image0 "set:dayz_gui image:iconSkull"
          mode blend
          "src alpha" 1
          "no wrap" 1
@@ -190,13 +192,24 @@ FrameWidgetClass BattleRoyaleHudFrame {
        {
         ImageWidgetClass CountdownIcon {
          position 0 0
-         size 32 32
+         // 28, not 32: the icon must fit the row its GridSpacer parent gives it, and that
+         // height scales with the viewport while this size does not. Re-measure with the
+         // [HudRect] dump after any change to MatchInfoIconsPanel.
+         size 28 28
          halign right_ref
          hexactpos 0
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         image0 "set:expansion_iconset image:clock_blank"
+         // Ours. Vanilla's ccgui_enforce IconTime is a 16px source and this widget draws at 32 -
+         // more on a wide screen, since a declared size is viewport-scaled - so it was being
+         // upscaled 2-3x and the hands turned to mush. Drawn at 64 so the HUD only downsamples.
+         //
+         // Two alternates sit beside it in the atlas - swap the name and nothing else:
+         //   ClockSimple  ring + two hands (in use)
+         //   ClockTicks   also marks at 12/3/6/9, busier
+         //   ClockSolid   filled disc with the hands knocked out, heaviest
+         image0 "set:battleroyale_gui image:ClockSimple"
          mode blend
          "src alpha" 1
          "no wrap" 1
@@ -233,13 +246,26 @@ FrameWidgetClass BattleRoyaleHudFrame {
         ImageWidgetClass ZoneIcon {
          ignorepointer 1
          position 0 0
-         size 32 32
+         // 28, not 32: the icon must fit the row its GridSpacer parent gives it, and that
+         // height scales with the viewport while this size does not. Re-measure with the
+         // [HudRect] dump after any change to MatchInfoIconsPanel.
+         size 28 28
          halign right_ref
          hexactpos 0
          vexactpos 0
          hexactsize 1
          vexactsize 1
-         imageTexture "DayZExpansion\\Core\\GUI\\icons\\hud\\arrow_64x64.edds"
+         // RESTS POINTING UP, which is what BattleRoyaleHud.SetDistance's SetRotation(0,0,angle)
+         // already assumes. Vanilla's icon_arrow rested pointing DOWN and so aimed 180 degrees
+         // out; it also read as a plain triangle, and at 45 or 135 degrees of rotation became an
+         // unreadable blob. All four of ours are drawn resting up, so swapping needs no code change.
+         //
+         // Three alternates sit beside this one in the atlas - swap the name and nothing else:
+         //   ZoneArrowNeedle   slim compass needle (in use)
+         //   ZoneArrowDart     notched dart. the map already uses this silhouette for YOU
+         //   ZoneArrowClassic  head on a stem, the heaviest
+         //   ZoneArrowChevron  open chevron, weakest when rotated - reads as an L
+         image0 "set:battleroyale_gui image:ZoneArrowNeedle"
          mode blend
          "src alpha" 1
          "no wrap" 1
@@ -277,7 +303,10 @@ FrameWidgetClass BattleRoyaleHudFrame {
         ImageWidgetClass AudienceIcon {
          ignorepointer 1
          position 0 0
-         size 32 32
+         // 28 for the same reason as CountdownIcon and ZoneIcon: this row is 20.23 px tall at
+         // 1280x720 and a declared 32 renders 21.33, overflowing it. Measured with the [HudRect]
+         // dump, not assumed - the clip is only ~1 px, which is easy to read as a soft edge.
+         size 28 28
          halign right_ref
          hexactpos 0
          vexactpos 0

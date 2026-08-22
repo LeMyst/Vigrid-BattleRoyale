@@ -15,6 +15,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     protected ref BattleRoyaleSpeakingList m_SpeakingList;
 
+    //--- The mod's own notification stack, and what replaced ExpansionNotification. Fed from two
+    //--- places: the server's NotificationMessage RPC, which queues onto BattleRoyaleRPC and is
+    //--- drained here, and NotifyLocal() below for the notifications this client raises for itself.
+    protected ref BattleRoyaleToasts m_Toasts;
+
     //--- The "YOU SURVIVED" overlay. Created straight into the workspace, so it is owned by nobody
     //--- else and has to be unlinked here - see the creation site in Update().
     protected Widget m_WinScreen;
@@ -118,6 +123,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 #endif
 
 		m_SpeakingList = new BattleRoyaleSpeakingList();
+		m_Toasts = new BattleRoyaleToasts();
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -148,6 +154,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int br_diag_req_spawn_menu = 0;
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
+    protected int br_diag_req_toasts = 0;
 
     /**
      *  Fabricate the whole admin spectate overlay payload, so #276-#279 are reachable offline.
@@ -393,6 +400,61 @@ class BattleRoyaleClient: BattleRoyaleBase
             GetGame().GetUIManager().CloseAll();
             GetGame().GetUIManager().EnterScriptedMenu( MENU_BR_DEAD, NULL );
         }
+
+        if ( br_diag_req_toasts != BattleRoyaleDiag.req_push_toasts )
+        {
+            br_diag_req_toasts = BattleRoyaleDiag.req_push_toasts;
+            BR_DiagPushToasts();
+        }
+    }
+
+    /**
+     *  Raise a random 1-3 toasts from a fixture built so it can FAIL.
+     *
+     *  The pool is deliberately uneven in length:
+     *    - a short key, which should hug BR_TOAST_MIN_HEIGHT_PX
+     *    - a medium key that takes most of a line
+     *    - STR_BR_UNSTUCK_INFORMATION, two full sentences and the longest notification the mod
+     *      actually sends. It is the wrap case, and in French it is longer again.
+     *    - a literal string, which is the shape the RPC path delivers after localising - the keys
+     *      here are passed with their '#' and resolved by the widget, as NotifyLocal does, so both
+     *      routes into the widget get exercised.
+     *
+     *  If a plate does not grow for the long one, the text clips and it is obvious. If the stack
+     *  steps by a fixed height rather than each row's own, rows overlap or gap and that is obvious
+     *  too. A fixture that only ever raised one short toast would look perfect under either bug -
+     *  the same trap as the leaderboard fixture that fitted its viewport and so could not scroll.
+     *
+     *  ⚠️ RANDOM COUNT MEANS ANY SINGLE PRESS MAY MISS A CASE - that is the cost of it being random,
+     *  and it is worth paying because a varying count is what exercises the pooling: a burst on top
+     *  of live toasts is what caught the fourth plate binding to the wrong widget. Press it a few
+     *  times rather than reading anything into one press.
+     */
+    protected void BR_DiagPushToasts()
+    {
+        if ( !m_Toasts )
+            return;
+
+        array<string> pool = new array<string>();
+        pool.Insert( "#STR_BR_MATCH_STARTED" );
+        pool.Insert( "#STR_BR_UNSTUCK_INFORMATION" );
+        pool.Insert( "#STR_BR_TAKING_DAMAGE" );
+        pool.Insert( "Toast fixture: literal text, no stringtable lookup." );
+
+        int count = Math.RandomIntInclusive( 1, 3 );
+
+        //--- Drawn WITHOUT replacement, so a three-toast press is three different messages rather
+        //--- than the same one three times - which would tell you nothing about per-row sizing.
+        for ( int i = 0; i < count; i++ )
+        {
+            int pick = Math.RandomInt( 0, pool.Count() );
+            string message = pool.Get( pick );
+            pool.Remove( pick );
+
+            m_Toasts.Push( message, DAYZBR_MSG_TIME );
+        }
+
+        BattleRoyaleUtils.Debug( "[Toasts] diag raised " + count.ToString() + " toast(s)" );
     }
 #endif
     /**
@@ -624,6 +686,13 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- (BattleRoyaleDebug.GetNotLoadedCount) - and it is sent unconditionally because the
         //--- client knows neither whether it joined late nor whether the lobby is waiting on it.
         SendLoadedInOnce( player );
+
+		//--- Notifications, ticked ABOVE the !gameplay guard below on purpose. The stack is parented
+		//--- to the workspace rather than to the mission, and a toast raised on the way out - a
+		//--- late-join kick is the standard case - has to keep fading rather than freeze on screen.
+		//--- It costs one call that returns on an empty queue when nothing is up.
+		if ( m_Toasts )
+			m_Toasts.Update( delta );
 
 		float distExt;
 		float distInt;
@@ -2100,7 +2169,8 @@ class BattleRoyaleClient: BattleRoyaleBase
      */
     protected void NotifyLocal( string key )
     {
-        ExpansionNotification( DAYZBR_MSG_TITLE, key, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME ).Create();
+        if ( m_Toasts )
+            m_Toasts.Push( key, DAYZBR_MSG_TIME );
     }
 
     //! Does this client believe it is an admin? Pushed once by the server on connect. Used to gate

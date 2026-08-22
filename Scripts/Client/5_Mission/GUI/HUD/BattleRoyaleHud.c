@@ -66,6 +66,56 @@ class BattleRoyaleHud
     {
         is_shown = show;
         m_Root.Show( show );
+
+        if ( show )
+            DiagIconRects();
+    }
+
+    /**
+     *  Dump the real rects of the two icon widgets and their parents, once per HUD show.
+     *
+     *  The clock renders visibly clipped along its bottom edge, and giving the artwork a margin did
+     *  NOT fix it - so the cause is the widget rect, not the glyph. Everything here is read back with
+     *  GetScreenPos / GetScreenSize rather than echoing the layout, because the layout's declared
+     *  numbers are scaled by viewport/1920 and the question is what they actually became. A height
+     *  smaller than the width is the tell: it means something is squashing the box rather than
+     *  cropping the image.
+     */
+    protected void DiagIconRects()
+    {
+        //--- The grid every icon row sits in. Named MatchInfoIconsPanel, NOT ZonePanel - the latter
+        //--- was this dump's original subject and no longer exists, so it logged NULL forever. A
+        //--- diagnostic that silently names a deleted widget is worse than none.
+        DiagRect( "MatchInfoIconsPanel", m_Root.FindAnyWidget( "MatchInfoIconsPanel" ) );
+        DiagRect( "CountdownPanel", m_CountdownPanel );
+        DiagRect( "CountdownIcon", m_ImageClock );
+        DiagRect( "ZoneDistancePanel", m_ZoneDistancePanel );
+        DiagRect( "ZoneIcon", m_DistanceZoneArrow );
+        //--- Third icon in the same grid, so it is subject to the same row fit. Not ours, but there
+        //--- is no reason to measure two of the three.
+        DiagRect( "AudienceCountPanel", m_AudienceCountPanel );
+        DiagRect( "AudienceIcon", m_Root.FindAnyWidget( "AudienceIcon" ) );
+    }
+
+    protected void DiagRect( string name, Widget w )
+    {
+        if ( !w )
+        {
+            BattleRoyaleUtils.Debug( "[HudRect] " + name + " NULL" );
+            return;
+        }
+
+        float x;
+        float y;
+        float sw;
+        float sh;
+        w.GetScreenPos( x, y );
+        w.GetScreenSize( sw, sh );
+
+        string line = "[HudRect] " + name;
+        line = line + " pos " + x.ToString() + "," + y.ToString();
+        line = line + " size " + sw.ToString() + "x" + sh.ToString();
+        BattleRoyaleUtils.Debug( line );
     }
 
     //show/hide control
@@ -136,8 +186,8 @@ class BattleRoyaleHud
         }
         else
         {
-            m_DistanceZoneArrow.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
-            m_DistanceTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+            m_DistanceZoneArrow.SetColor(BR_COLOR_ALERT);
+            m_DistanceTextWidget.SetColor(BR_COLOR_ALERT);
 
 			// Calculate speed needed to reach the zone in time (m/s)
 			float speedNeededToReachZone = 0;
@@ -165,14 +215,14 @@ class BattleRoyaleHud
 			if (speedNeededToReachZone > fastThreshold)
 			{
 				// Need to move faster than 400m/min (6.67m/s) - RED (impossible)
-				m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
-				m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ERROR);
+				m_CountdownTextWidget.SetColor(BR_COLOR_ALERT);
+				m_ImageClock.SetColor(BR_COLOR_ALERT);
 			}
 			else if (speedNeededToReachZone > mediumThreshold)
 			{
 				// Need to move between 240m/min and 400m/min (4-6.67m/s) - ORANGE (difficult)
-				m_CountdownTextWidget.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
-				m_ImageClock.SetColor(COLOR_EXPANSION_NOTIFICATION_ORANGE);
+				m_CountdownTextWidget.SetColor(BR_COLOR_WARN);
+				m_ImageClock.SetColor(BR_COLOR_WARN);
 			}
 			else
 			{

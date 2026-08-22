@@ -65,6 +65,7 @@ modded class PluginDiagMenu
 	protected int m_BRDiagLastMatchCauseID;
 	protected int m_BRDiagLastMatchNotPlayedID;
 	protected int m_BRDiagOpenDeathScreenID;
+	protected int m_BRDiagPushToastsID;
 	protected int m_BRDiagFadeID;
 
 	//--- Kill Feed
@@ -161,6 +162,7 @@ modded class PluginDiagMenu
 		m_BRDiagLastMatchCauseID = GetModdedDiagID();
 		m_BRDiagLastMatchNotPlayedID = GetModdedDiagID();
 		m_BRDiagOpenDeathScreenID = GetModdedDiagID();
+		m_BRDiagPushToastsID = GetModdedDiagID();
 		m_BRDiagFadeID = GetModdedDiagID();
 
 		m_BRDiagKillFeedMenuID = GetModdedDiagID();
@@ -305,6 +307,14 @@ modded class PluginDiagMenu
 				DiagMenu.SetValue(m_BRDiagLastMatchCauseID, BattleRoyaleKillCause.FIREARM);
 				DiagMenu.RegisterBool(m_BRDiagLastMatchNotPlayedID, "", "Did Not Play", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenDeathScreenID, "", "Open Death Screen", m_BRDiagHudMenuID);
+				//--- Toasts, which are otherwise unreachable offline - every real one is a server
+				//--- push. Raises a RANDOM 1-3 from a pool of deliberately uneven lengths, because
+				//--- the things most likely to be wrong only show with more than one and with a
+				//--- varying count: whether a long message wraps and grows its plate, whether the
+				//--- stack spaces rows by their own heights instead of a fixed step, and whether the
+				//--- widget pool rebinds correctly when a burst lands on top of live toasts. That
+				//--- last one is what caught the fourth plate drawing empty. Press it a few times.
+				DiagMenu.RegisterBool(m_BRDiagPushToastsID, "", "Push Toasts", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagFadeID, "", "Fade", m_BRDiagHudMenuID);
 			}
 

@@ -320,14 +320,25 @@ class BattleRoyaleState: Timeable
 
     void AddPlayer(PlayerBase player)
     {
-    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::AddPlayer: %1", player.GetIdentityName()));
+    	//--- GetCachedName, NOT GetIdentityName. The latter is declared on DAYZ-EXPANSION CORE's
+    	//--- modded PlayerBase and does not exist in vanilla at all, so this line - unchanged since
+    	//--- long before the Expansion removal - took the whole Mission module down the first time a
+    	//--- server booted without Expansion loaded. It is invisible to any grep for "Expansion":
+    	//--- it is a bare method call that looks exactly like vanilla API.
+    	//---
+    	//--- GetCachedName is vanilla (playerbase.c:9667) and is already this mod's canonical name
+    	//--- accessor - BR_SetCachedName exists to make it authoritative, and Party and KillFeed both
+    	//--- read it - so this also picks up the Steam-resolved name where Expansion's returned the
+    	//--- raw launcher one.
+    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::AddPlayer: %1", player.GetCachedName()));
         m_Players.Insert( player );
         OnPlayerCountChanged();
     }
 
     void RemovePlayer(PlayerBase player)
     {
-    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::RemovePlayer: %1", player.GetIdentityName()));
+    	//--- GetCachedName, not Expansion's GetIdentityName - see AddPlayer above.
+    	BattleRoyaleUtils.Info(string.Format("BattleRoyaleState::RemovePlayer: %1", player.GetCachedName()));
 
         //--- The single leaderboard recording point. Every way out of a match funnels through here -
         //--- killed, disconnected, disconnected while unconscious, force-logged out, or kicked as
@@ -599,27 +610,13 @@ class BattleRoyaleState: Timeable
 		}
     }
 
-    //CreateNotification( ref StringLocaliser title, ref StringLocaliser text, string icon, int color, float time, PlayerIdentity identity ) ()
-    void MessagePlayers(string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
-    {
-		BattleRoyaleUtils.Info(string.Format("MessagePlayers: %1", message));
-        StringLocaliser text = new StringLocaliser( message );
-        ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create();
-    }
-
-    void MessagePlayer(PlayerBase player, string message, float time = DAYZBR_MSG_TIME, string param1 = "", string param2 = "", string param3 = "", string param4 = "", string param5 = "")
-    {
-        if(player)
-        {
-            PlayerIdentity identity = player.GetIdentity();
-            if(identity)
-            {
-            	BattleRoyaleUtils.Info(string.Format("MessagePlayer: %1 %2", identity.GetName(), message));
-                StringLocaliser text = new StringLocaliser( message );
-                ExpansionNotification(DAYZBR_MSG_TITLE, text, DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, time).Create(identity);
-            }
-        }
-    }
+	//--- There were MessagePlayers() and MessagePlayer() here, the localise-on-the-server twins of the
+	//--- four Untranslated helpers below. They called ExpansionNotification directly and had NO CALL
+	//--- SITES ANYWHERE - every notification in the mod already went out through the Untranslated
+	//--- pair, which ships a bare stringtable key over the mod's own NotificationMessage RPC and lets
+	//--- the client localise it. They were deleted rather than ported, because porting them would
+	//--- have meant keeping a second way to do the same thing, and the wrong one: localising server
+	//--- side bakes in the SERVER's language, and Myst's own client runs in French.
 
 	/*
 	 * Send a message to all players, with standard message duration

@@ -128,6 +128,11 @@ class BattleRoyaleDiag
     static int req_open_leaderboard = 0;
     static int req_open_death_screen = 0;
 
+    //--- Raise a burst of test toasts. The notification stack is otherwise unreachable offline:
+    //--- every real toast is a server push, and the one client-raised toast (NotifyLocal, on the F6
+    //--- skeleton toggle) needs an admin spectate session to get at.
+    static int req_push_toasts = 0;
+
     //--- Which BattleRoyaleKillCause the fake recap uses. Cycled so every recap branch and every
     //--- STR_BR_CAUSE_* key can be eyeballed without dying nine different ways on a live server.
     static int lastmatch_cause = BattleRoyaleKillCause.FIREARM;
@@ -184,6 +189,7 @@ class BattleRoyaleDiag
         req_open_spawn_menu = 0;
         req_open_leaderboard = 0;
         req_open_death_screen = 0;
+        req_push_toasts = 0;
         lastmatch_cause = BattleRoyaleKillCause.FIREARM;
         lastmatch_not_played = false;
         suppress_alive_close = false;

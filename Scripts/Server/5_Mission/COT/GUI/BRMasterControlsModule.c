@@ -152,9 +152,15 @@ modded class BRMasterControlsModule
         }
 
 #ifdef EXPANSIONMODMISSIONS
-		//--- StringLocaliser takes a BARE stringtable key with no leading '#' (Expansion's own
-		//--- call sites do the same) - a sentence here reaches the player untranslated.
-		ExpansionNotification(new StringLocaliser( DAYZBR_MSG_TITLE ), new StringLocaliser( "STR_BR_COT_AIRDROP_SENT" ), DAYZBR_MSG_IMAGE, COLOR_EXPANSION_NOTIFICATION_INFO, DAYZBR_MSG_TIME).Create();
+		//--- Broadcast the announcement on the mod's OWN wire, not Expansion's. The payload is the
+		//--- bare stringtable key with no leading '#'; BattleRoyaleRPC.NotificationMessage localises
+		//--- it on arrival, so each client reads it in its own language.
+		//---
+		//--- This is the same Param7 shape BattleRoyaleState.MessagePlayersUntranslatedTimed sends,
+		//--- written out here because this class is a COT module rather than a state and so has no
+		//--- access to those helpers. The five trailing strings are the %1..%5 substitutions; this
+		//--- message takes none.
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( "STR_BR_COT_AIRDROP_SENT", DAYZBR_MSG_TIME, "", "", "", "", "" ), true );
 		ExpansionMissionModule.s_Instance.CallAirdrop(sender_man.GetPosition());
 		ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Called an airdrop." );
 #endif

@@ -3,8 +3,10 @@ class LoadingScreenBackground
 	string MapName;
 	ref array<string> Path;
 
+	//--- Built on first use and kept for the session, so the no-repeat run survives across loads.
+	//--- [NonSerialized()] because Path is what comes out of LoadingScreens.json; this is derived.
 	[NonSerialized()]
-	ref ExpansionArray<string> m_Path;
+	ref BattleRoyaleShuffleBag m_Path;
 
 	void LoadingScreenBackground(string map_name, array<string> texture_path)
 	{
@@ -15,9 +17,9 @@ class LoadingScreenBackground
 	string GetRandomPath()
 	{
         if (!m_Path)
-            m_Path = new ExpansionArray<string>(Path);
+            m_Path = new BattleRoyaleShuffleBag(Path);
 
-        return m_Path.GetQuasiRandomElementAvoidRepetition();
+        return m_Path.Draw();
 	}
 };
 

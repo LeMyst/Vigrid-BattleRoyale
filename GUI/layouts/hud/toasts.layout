@@ -1,0 +1,25 @@
+// The toast stack. Rows are created into this from BattleRoyaleToasts.BuildRows() and positioned
+// with SetPos, so this file declares no children of its own.
+//
+// The full-screen `size 1 1` + `hexactsize 0` frame is the ONE container shape whose GetScreenSize()
+// reports real pixels, which is what makes a script SetPos in real pixels land where it was asked to.
+// map_markers_3d.layout and the party name tags rely on the same thing. Do not wrap the rows in an
+// intermediate sized panel: a declared position/size is scaled by viewport/1920 while SetPos is not,
+// and mixing the two shifts the whole group while its internal spacing stays perfect - which reads
+// as anything but a coordinate bug.
+//
+// priority sits above the world markers (40) and the two floating tag overlays (50), and below the
+// death screen (900) - a dead player is being asked a question and a toast must not cover it.
+FrameWidgetClass BattleRoyaleToastsRoot {
+ visible 1
+ ignorepointer 1
+ clipchildren 0
+ color 1 1 1 1
+ position 0 0
+ size 1 1
+ hexactpos 0
+ vexactpos 0
+ hexactsize 0
+ vexactsize 0
+ priority 60
+}

@@ -20,6 +20,54 @@ ImageSetClass {
    Size 494 238
    Flags 0
   }
+  ImageSetDefClass GroupIcon {
+   Name "GroupIcon"
+   Pos 0 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ZoneArrowNeedle {
+   Name "ZoneArrowNeedle"
+   Pos 64 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ZoneArrowDart {
+   Name "ZoneArrowDart"
+   Pos 128 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ZoneArrowClassic {
+   Name "ZoneArrowClassic"
+   Pos 192 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ZoneArrowChevron {
+   Name "ZoneArrowChevron"
+   Pos 256 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ClockSimple {
+   Name "ClockSimple"
+   Pos 320 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ClockTicks {
+   Name "ClockTicks"
+   Pos 384 256
+   Size 64 64
+   Flags 0
+  }
+  ImageSetDefClass ClockSolid {
+   Name "ClockSolid"
+   Pos 448 256
+   Size 64 64
+   Flags 0
+  }
  }
  Groups {
  }
