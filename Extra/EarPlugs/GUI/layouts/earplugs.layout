@@ -9,6 +9,17 @@
 // m_Root.GetScreenSize() reports real pixels and children SetPos'd in those pixels land correctly.
 // VigridMapMarkers3D, VigridPartyNametags and VigridMapCompass all rely on exactly this.
 //
+// ⚠️ FOUR TEXT WIDGETS FOR TWO LABELS, AND THAT IS THE POINT. Glyph size is fixed by the DECLARED
+// font face and there is no SetFont; SetTextExactSize was measured to do nothing on this mod (28/18/13
+// on one widget rendered 28/28/28). So N sizes means N widgets, and VigridEarPlugsHud.PickTier shows
+// one pair and hides the other - the same construct as VigridMapCompass's three label tiers.
+//
+// The first version had ONE pair and scaled the backdrop by viewport/1920. That is the bug this
+// replaced: at 1920+ it looked right, but at 1280 the box shrank to 127x23 while the text stayed at
+// its fixed pixel size, so "BOUCHONS" overran "FORT" and the whole badge clipped. A box whose
+// contents cannot scale must not scale either - it is now sized from the MEASURED text instead, which
+// also means no language can overflow it.
+//
 // THREE ALPHA/STYLE TRAPS, all of which fail silently with a clean .rpt:
 //
 //  1. `color` on a PanelWidget TINTS ITS STYLE TEXTURE - it is not a fill. With no `style` line the
@@ -51,8 +62,10 @@ FrameWidgetClass EarPlugsRoot {
    color 0 0 0 0.7
    style rover_sim_colorable
   }
-  // "EAR PLUGS" - the constant half, left aligned.
-  TextWidgetClass EarPlugsLabel {
+
+  // ── Large tier: viewport >= VIGRID_EARPLUGS_HUD_TIER_W. These two faces are what 1440p already
+  //    rendered correctly, so the look at that size is deliberately unchanged.
+  TextWidgetClass EarPlugsLabelLarge {
    visible 1
    ignorepointer 1
    inheritalpha 1
@@ -73,9 +86,7 @@ FrameWidgetClass EarPlugsRoot {
    "text halign" left
    "text valign" center
   }
-  // The level - the half that changes. Right aligned so the two never collide however long the
-  // localized level word turns out to be.
-  TextWidgetClass EarPlugsLevel {
+  TextWidgetClass EarPlugsLevelLarge {
    visible 1
    ignorepointer 1
    inheritalpha 1
@@ -93,7 +104,52 @@ FrameWidgetClass EarPlugsRoot {
    "shadow offset" 1 1
    "size to text h" 0
    "size to text v" 0
-   "text halign" right
+   "text halign" left
+   "text valign" center
+  }
+
+  // ── Small tier: viewport < VIGRID_EARPLUGS_HUD_TIER_W, i.e. 720p and 1080p. One step down each,
+  //    so the badge stays a similar fraction of the screen instead of eating a seventh of its width.
+  TextWidgetClass EarPlugsLabelSmall {
+   visible 0
+   ignorepointer 1
+   inheritalpha 1
+   position 0 0
+   size 90 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 1 1 1
+   text "#STR_EARPLUGS_HUD_LABEL"
+   font "gui/fonts/metron-bold12"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" left
+   "text valign" center
+  }
+  TextWidgetClass EarPlugsLevelSmall {
+   visible 0
+   ignorepointer 1
+   inheritalpha 1
+   position 90 0
+   size 56 26
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 1 0.82 0.28 1
+   text "#STR_EARPLUGS_LEVEL_LIGHT"
+   font "gui/fonts/metron-bold16"
+   "shadow size" 3
+   "shadow color" 0 0 0 1
+   "shadow offset" 1 1
+   "size to text h" 0
+   "size to text v" 0
+   "text halign" left
    "text valign" center
   }
  }

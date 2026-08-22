@@ -79,15 +79,35 @@ static const float VIGRID_EARPLUGS_EPSILON = 0.01;
 //--- construction: drop the attenuation and keep the volume scaling.
 static const bool VIGRID_EARPLUGS_SCALE_RADIO = true;
 
-//--- HUD badge. Authored against a 1920-wide screen and scaled by parent_w / REFERENCE_W, because
-//--- SetPos and SetSize take REAL screen pixels while a layout's declared position and size are
-//--- scaled by viewport/1920. Mixing the two shifts a whole group while its spacing stays correct,
-//--- which reads as anything but a coordinate bug.
+//--- HUD badge. Its POSITION is authored against a 1920-wide screen and scaled by
+//--- parent_w / REFERENCE_W, because SetPos and SetSize take REAL screen pixels while a layout's
+//--- declared position and size are scaled by viewport/1920. Mixing the two shifts a whole group
+//--- while its spacing stays correct, which reads as anything but a coordinate bug.
 static const float VIGRID_EARPLUGS_HUD_REFERENCE_W = 1920.0;
 static const float VIGRID_EARPLUGS_HUD_X = 26.0;
 static const float VIGRID_EARPLUGS_HUD_Y = 64.0;
-static const float VIGRID_EARPLUGS_HUD_W = 190.0;
-static const float VIGRID_EARPLUGS_HUD_H = 34.0;
+
+//--- ONLY THE POSITION IS VIEWPORT-SCALED. The badge's SIZE is derived from the measured
+//--- text, and must be: glyph size is fixed by the declared font face, so a box that scaled
+//--- with the viewport shrank under its own contents. At 1280 wide it came out 127x23 while
+//--- the text stayed at its authored pixel size, and "BOUCHONS" overran "FORT" - correct at
+//--- 1440p, clipped at 720p. Sizing from the text also means no localization can overflow it,
+//--- which the old fixed 55/45 split could only ever approximate.
+
+//--- Viewport width at or above which the large font tier is used. Below it, one step down on
+//--- each face - see earplugs.layout, which carries a widget per tier because there is no
+//--- SetFont and SetTextExactSize was measured to do nothing.
+static const float VIGRID_EARPLUGS_HUD_TIER_W = 1920.0;
+
+//--- Padding around and between the two words, per tier. NOT viewport-scaled, for the same
+//--- reason the box is not: these sit alongside fixed-pixel glyphs and must stay in proportion
+//--- to them, not to the screen.
+static const float VIGRID_EARPLUGS_HUD_PAD_LARGE = 14.0;
+static const float VIGRID_EARPLUGS_HUD_GAP_LARGE = 26.0;
+static const float VIGRID_EARPLUGS_HUD_VPAD_LARGE = 8.0;
+static const float VIGRID_EARPLUGS_HUD_PAD_SMALL = 10.0;
+static const float VIGRID_EARPLUGS_HUD_GAP_SMALL = 18.0;
+static const float VIGRID_EARPLUGS_HUD_VPAD_SMALL = 6.0;
 
 //--- Alpha while the plugs are simply in. Low enough to be furniture, high enough to be noticed -
 //--- this is the fix for a player forgetting they are deaf, so it must never fade to nothing.
