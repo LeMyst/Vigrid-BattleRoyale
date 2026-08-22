@@ -19,8 +19,14 @@ class BattleRoyaleState: Timeable
     //--- pure waste. It was being called once per spawn candidate through IsSafeForTeleport, which
     //--- meant two config fetches and a zone scan several hundred times per player.
     //--- -1 means "nothing memoized yet"; a real player count is never negative.
-    protected int i_DynamicZoneMemoPlayers = -1;
-    protected int i_DynamicZoneMemoResult = 1;
+    //---
+    //--- STATIC, along with GetDynamicStartingZone itself. The comment above is the argument for it -
+    //--- the answer depends only on num_players plus config plus the generated circles, all fixed for
+    //--- the life of the process - so a per-state memo was recomputing the same answer once per state
+    //--- for no reason. It has to be static now anyway: BattleRoyaleZone.RunLadderSelfTest asks the
+    //--- same question at boot, before any state instance exists.
+    static int i_DynamicZoneMemoPlayers = -1;
+    static int i_DynamicZoneMemoResult = 1;
 
     //static int i_StartingZone = 1; // Default zone is the biggest one
 
@@ -965,8 +971,77 @@ class BattleRoyaleState: Timeable
     }
 #endif
 
+    /**
+     *  How long a whole match starting at zone `start_zone` would run, in seconds (#284 point 3).
+     *
+     *  Starting at zone Z plays rounds for zones Z..num_zones - i.e. settings indices num_zones-Z down
+     *  to 0 - and then 7_BattleRoyaleLastRound plays out the final circle on static_timers[0]. Ahead of
+     *  all of it sits 5_BattleRoyaleStartMatch's warm-up, round_duration_minutes / 2.
+     *
+     *  The `opening` flag is passed explicitly per candidate, which is what stops this and
+     *  BattleRoyaleZone.GetZoneTimer calling each other forever - see that method's header.
+     */
+    static int GetMatchDurationSeconds(int start_zone)
+    {
+        BattleRoyaleConfig config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleGameData game_settings;
+        BattleRoyaleZoneData zone_settings;
+        BattleRoyaleZone zone;
+        int total = 0;
+        int k;
+        int num_zones;
+        bool is_opening;
+
+        if(!config)
+            return 0;
+
+        game_settings = config.GetGameData();
+        zone_settings = config.GetZoneData();
+        if(!game_settings || !zone_settings)
+            return 0;
+
+        num_zones = zone_settings.num_zones;
+
+        //--- The warm-up, which is the same figure 5_BattleRoyaleStartMatch puts in i_FirstRoundDelay.
+        total = (60 * game_settings.round_duration_minutes) / 2;
+
+        for(k = start_zone; k <= num_zones; k++)
+        {
+            zone = BattleRoyaleZone.GetZone(k);
+            if(!zone)
+                continue;
+
+            is_opening = (k == start_zone);
+            total = total + zone.GetZoneTimer(is_opening);
+        }
+
+        //--- The endgame. 7_BattleRoyaleLastRound reads static_timers[0] directly rather than going
+        //--- through GetZoneTimer, so this reads it the same way - the two must not be able to disagree.
+        if(zone_settings.static_timers && zone_settings.static_timers.Count() > 0)
+            total = total + zone_settings.static_timers[0];
+
+        return total;
+    }
+
+    //--- How many tiers BoundMatchDuration moved the last answer by, signed. Written at its single
+    //--- exit and read by RunLadderSelfTest on the very next line - a return value in all but name,
+    //--- the same shape as BattleRoyaleSpectators.m_LastResolveTier, and to be read NOWHERE ELSE.
+    //---
+    //--- It exists because "the bound is quietly deciding every match on its own" is invisible from the
+    //--- chosen tier alone: the answer looks like a normal tier, it is just not the one the player
+    //--- count and the loot density asked for. That is the shape of failure this repo keeps shipping.
+    static int s_LastBoundMove = 0;
+
+    //--- Drop the memo. Only BattleRoyaleZone.RunLadderSelfTest needs this: it walks a range of player
+    //--- counts at boot and must not leave the match about to be played reading its last answer.
+    static void ResetDynamicZoneMemo()
+    {
+        i_DynamicZoneMemoPlayers = -1;
+        i_DynamicZoneMemoResult = 1;
+    }
+
 	// Maybe this should be moved to another class, maybe not
-    int GetDynamicStartingZone(int num_players)
+    static int GetDynamicStartingZone(int num_players)
     {
 		//--- Answer the memo before touching config. Same num_players always gives the same zone, so
 		//--- the repeated calls from the spawn search cost nothing after the first.
@@ -1013,11 +1088,117 @@ class BattleRoyaleState: Timeable
 			resolved_zone = last_try_zone;
 		}
 
+		resolved_zone = BoundMatchDuration(resolved_zone, num_players);
+
 		i_DynamicZoneMemoPlayers = num_players;
 		i_DynamicZoneMemoResult = resolved_zone;
 
 		return resolved_zone;
 	}
+
+    /**
+     *  Move the starting tier until the whole match fits the configured duration window (#284 point 3).
+     *
+     *  The lever is the one the dynamic starting zone already pulls: a HIGHER zone number is a smaller
+     *  opening circle and one fewer round, so raising it shortens the match and lowering it lengthens
+     *  it. Nothing else changes - no radius, no timer, no geometry.
+     *
+     *  ⚠️ The walk is bounded on BOTH sides by things that are not the clock. It may not go below zone
+     *  1, and it may not go above `floor_zone` (num_zones - min_zone_num + 1), because min_zone_num is
+     *  an explicit "never play fewer than this many circles" and a duration target must not quietly
+     *  override it. So the window is a preference, not a guarantee: when the ladder cannot reach it,
+     *  the closest legal tier is used and the shortfall is logged rather than forced.
+     */
+    static int BoundMatchDuration(int candidate_zone, int num_players)
+    {
+        BattleRoyaleZoneData zone_settings = BattleRoyaleConfig.GetConfig().GetZoneData();
+        int chosen;
+        int floor_zone;
+        int steps;
+        int total;
+        int target;
+        int here;
+        int there;
+        string line;
+
+        s_LastBoundMove = 0;
+
+        if(!zone_settings || !zone_settings.bound_match_duration)
+            return candidate_zone;
+
+        floor_zone = Math.Max(1, zone_settings.num_zones - zone_settings.min_zone_num + 1);
+
+        target = Math.Round(zone_settings.match_seconds_per_player * num_players);
+        target = Math.Round(Math.Clamp(target, zone_settings.match_min_seconds, zone_settings.match_max_seconds));
+
+        chosen = Math.Round(Math.Clamp(candidate_zone, 1, floor_zone));
+
+        //--- ⚠️ STEP ONLY WHILE THE STEP GETS CLOSER TO THE TARGET. The obvious version - "step up
+        //--- while total > target" - has a cliff, because a ladder cannot make a small correction: the
+        //--- only move available is a WHOLE CIRCLE. Measured on a real chain at 43 players: zone 2 ran
+        //--- 32:47 against a 32:15 target, so it stepped up to zone 3 at 20:48 - giving up TWELVE
+        //--- MINUTES of match to save 32 seconds of overshoot, and landing 687 s from the target
+        //--- instead of 32.
+        //---
+        //--- Comparing the distance either side makes a modest overshoot preferable to a huge
+        //--- undershoot, which is what "bound the duration" was always supposed to mean. It also folds
+        //--- the two directions into one rule: the window is already baked into `target` by the clamp
+        //--- above, so moving toward the target IS moving toward the window, and the shorten and
+        //--- lengthen walks can no longer disagree about a tier.
+        for(steps = 0; steps < BR_MATCH_DURATION_MAX_STEPS; steps++)
+        {
+            if(chosen >= floor_zone)
+                break;
+
+            here = Math.AbsInt(GetMatchDurationSeconds(chosen) - target);
+            there = Math.AbsInt(GetMatchDurationSeconds(chosen + 1) - target);
+            if(there >= here)
+                break;
+
+            chosen++;
+        }
+
+        for(steps = 0; steps < BR_MATCH_DURATION_MAX_STEPS; steps++)
+        {
+            if(chosen <= 1)
+                break;
+
+            here = Math.AbsInt(GetMatchDurationSeconds(chosen) - target);
+            there = Math.AbsInt(GetMatchDurationSeconds(chosen - 1) - target);
+            if(there >= here)
+                break;
+
+            chosen--;
+        }
+
+        total = GetMatchDurationSeconds(chosen);
+        s_LastBoundMove = chosen - candidate_zone;
+
+        //--- Built in steps: six fields in one concatenation is past the expression complexity ceiling.
+        line = "[BattleRoyaleState] match duration bound: " + num_players + " player(s), target " + target + " s";
+        line = line + " [" + zone_settings.match_min_seconds + ".." + zone_settings.match_max_seconds + "]";
+        line = line + " - starting zone " + candidate_zone + " -> " + chosen;
+        line = line + " (" + total + " s, floor_zone " + floor_zone + ")";
+
+        //--- Info only when it actually moved the tier. On the live path this runs once per match and
+        //--- either level is fine, but BattleRoyaleZone.RunLadderSelfTest calls it once per player
+        //--- count - a hundred Info lines saying "no change" would bury the summary it prints itself.
+        if(chosen != candidate_zone)
+            BattleRoyaleUtils.Info(line);
+        else
+            BattleRoyaleUtils.Debug(line);
+
+        //--- The window is a preference, not a guarantee - see the header. Say so when the closest
+        //--- legal tier still misses it, because a silently missed target is indistinguishable from a
+        //--- bound that never ran.
+        if(total > zone_settings.match_max_seconds)
+            BattleRoyaleUtils.Warn("[BattleRoyaleState] the closest legal tier still runs " + total + " s, above match_max_seconds (" + zone_settings.match_max_seconds + "). Lower min_zone_num, or shorten static_timers.");
+
+        if(total < zone_settings.match_min_seconds)
+            BattleRoyaleUtils.Warn("[BattleRoyaleState] the closest legal tier only runs " + total + " s, below match_min_seconds (" + zone_settings.match_min_seconds + "). Raise num_zones, or lengthen static_timers.");
+
+        return chosen;
+    }
 
 	void OnPlayerDisconnected(PlayerBase player)
 	{

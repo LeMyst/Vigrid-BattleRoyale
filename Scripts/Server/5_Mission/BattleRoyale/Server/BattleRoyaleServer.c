@@ -157,6 +157,14 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- the result is cached to the mission folder and later boots pay nothing.
         BattleRoyalePOIResolver.Init();
 
+        //--- The building census, which the derived ladder rates circles by. GATED, because it is the
+        //--- most expensive thing the mod can do at boot: on a map with no cache yet it scans the whole
+        //--- world once (tens of seconds) and stores it in scan_cache.json beside the POI anchors; every
+        //--- later boot reads the file. A server with derive_zone_ladder off must not pay a second for
+        //--- a number nothing reads, so it is asked for here rather than lazily from the generator.
+        if (m_ZoneData.derive_zone_ladder)
+            BattleRoyaleBuildingCensus.Init();
+
         BattleRoyaleZone.PrepareGeneration();
 
         //--- initialize all states (in order from start to finish)
@@ -1994,6 +2002,9 @@ class BattleRoyaleServer: BattleRoyaleBase
                 float offset;
                 float derived;
                 float growth;
+                float opening;
+                int pois;
+                int derived_mp;
                 string row;
                 BattleRoyaleZone dump_zone = BattleRoyaleZone.GetZone(1);
 
@@ -2013,11 +2024,19 @@ class BattleRoyaleServer: BattleRoyaleBase
                     //--- would do.
                     derived = 0;
                     growth = 0;
+                    opening = 0;
                     if(dump_zone)
                     {
                         derived = dump_zone.GetDerivedTimer(z);
                         growth = dump_zone.GetRadiusGrowth(z);
+                        opening = dump_zone.GetOpeningTimer(z);
                     }
+
+                    //--- The loot-density inputs, on the same terms as the two above: reported whether
+                    //--- or not derive_zone_ladder is on, because what an operator wants from this dump
+                    //--- is what turning it on would do. -1 means BuildDerivedLadder never ran.
+                    pois = BattleRoyaleZone.GetPOICount(z);
+                    derived_mp = BattleRoyaleZone.GetDerivedMinPlayers(z);
 
                     row = "[Diag]   [" + z + "] center=" + area.GetCenter();
                     row = row + " radius=" + area.GetRadius();
@@ -2025,6 +2044,9 @@ class BattleRoyaleServer: BattleRoyaleBase
                         row = row + " (grew +" + growth + ")";
                     row = row + " duration_offset=" + offset;
                     row = row + " derived_timer=" + derived;
+                    row = row + " opening_timer=" + opening;
+                    row = row + " pois=" + pois;
+                    row = row + " derived_min_players=" + derived_mp;
 
                     BattleRoyaleUtils.Info(row);
                 }

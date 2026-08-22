@@ -102,6 +102,20 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override void Activate()
     {
+        //--- RE-READ THE ROUND LENGTH HERE, do not trust the one Init() cached.
+        //---
+        //--- Init() runs from this state's constructor, inside BattleRoyaleServer.Init() at boot -
+        //--- before a single player has connected, so it cannot know which round is the opening one.
+        //--- The opening round is priced as a LOOT round (#284 point 4) and every other round is priced
+        //--- exactly as before, so this changes nothing for rounds 2..n. Init()'s value stays as the
+        //--- boot-time default the trace lines and the admin zone table read.
+        bool is_opening_round = false;
+        if(m_Zone)
+        {
+            is_opening_round = (GetDynamicStartingZone(i_NumStartingPlayers) == m_Zone.GetZoneNumber());
+            i_RoundTimeInSeconds = m_Zone.GetZoneTimer(is_opening_round);
+        }
+
         //we just activated this round (players not yet transfered from previous state)
         int time_till_end = i_RoundTimeInSeconds * 1000;
         //--- Was an inline 0.80 here (0.75 before that). Named now because zone_settings'
