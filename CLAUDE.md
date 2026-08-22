@@ -82,7 +82,7 @@ Build result: `Workbench/Logs/Build.log`, plus marker files `Build.success` / `B
 | `_LaunchServer.bat <SteamID>` | Clear logs + storage, then start the dedicated server. |
 | `SetupLaunch.bat <MP\|SP>` | Preamble for every `Launch*.bat`: config, validation, mod list, kill running game. Deliberately no `setlocal` — it exports into the caller. |
 
-Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`, `Party`) plus 15 `extra_*`. Renaming a top-level folder renames its PBO. PBO names are lowercased by the build, so `Extra/KillFeed` packs as `extra_killfeed.pbo`.
+Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`, `Party`) plus 17 `extra_*`. Renaming a top-level folder renames its PBO. PBO names are lowercased by the build, so `Extra/KillFeed` packs as `extra_killfeed.pbo`.
 
 ## Testing
 
@@ -1130,6 +1130,10 @@ Layouts live in `GUI/layouts/`. The dominant pattern is imperative — `GetGame(
 
 Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUnstuck` = F2, `UADayZBRLeaderboard` = F4, plus the admin-spectate set `UADayZBRAdminSpectate` = F3, `UADayZBRSpectateMode` = F5, `UADayZBRSpectateNext`/`Prev` = →/←, `UADayZBRSpectateSkeleton` = F6), registered via `inputs = "Vigrid-BattleRoyale/Data/Inputs.xml"` in `Scripts/Client/config.cpp`. The admin keys are refused server-side for anyone outside `admins_steamid64`, so the client-side check on them is presentation only — **except F6, which has no server half at all** and is gated by COT's own `ESP.View` permission instead (see *Spectating → Admin spectate*).
 
+**Five `inputs=` declarations now ship**, which is supported — @DayZ-Expansion ships three. The full key map across them, so a sixth does not collide: **F1–F6** and **←/→** (Battle Royale, `Data/Inputs.xml`), **P/T/Y** (Party), **M/N/K** (Map), **Z** (AutoRun), **J** (EarPlugs). Check Community-Online-Tools' own `Inputs.xml` before claiming another letter — that is what collided with Party's `Y`.
+
+⚠️ **"Unbound in vanilla" is a stronger claim than it looks, and only K, O and P actually qualify.** The two letters this mod took beyond those — `Z` for auto-run and `J` for ear plugs — are both bound in `P:\bin\preset_keymouseprimary.xml`, and both are safe for the same reason: their bindings sit under blocks that are unreachable in normal gameplay. `kZ` is `UAMoveDown` under **DEBUG SPECIFIC / Freefly Camera**; `kJ` is `UABuldSlow` under **BULDOZER SPECIFIC**, whose only script reference is the suppression list at `scriptconsole.c:531`. Check that file rather than assuming a letter is free — grep for `name="kX"` and read which comment block it falls under.
+
 #### Lobby name tags
 
 Every living non-teammate wears their name over their head while the players are still gathered
@@ -1568,6 +1572,27 @@ Note `alphaFadeStartScale`/`alphaFadeEndScale` are `2` (satellite at every zoom)
 
 The choice is purely a look, and the two layers are interchangeable as far as the addon is concerned: every overlay is a `CanvasWidget` child drawing in screen space over whatever the `MapWidget` renders, so none of the map work depends on which layer is underneath.
 
+### Ear plugs (`Extra/EarPlugs/`)
+
+`J` cycles the local client through Off → Light → Heavy. Builds into `extra_earplugs.pbo`, defines `VIGRID_EARPLUGS`, stages `3_Game` + `5_Mission`, every file `#ifndef SERVER`. **Alone among the self-contained addons here — KillFeed, SafeZone, Map — it exposes no API**, because nothing in the host mod needs to talk to it, so the discipline rule costs it only its own logger, constants, `stringtable.csv` and `Data/Inputs.xml`. (Twelve of the smaller `Extra/` tweaks have no API either; they hook vanilla directly and have nothing to expose.) Per-player level in `$profile:Vigrid-EarPlugs\earplugs_client.json`.
+
+**The idea is DaemonForge's `DayZ-EarPlugs`, which is GPLv3, and none of their code or art is here.** GPLv3 §7 forbids adding DSPL-SA's non-commercial / DayZ-only restrictions to a combined work — the same reasoning that blocked porting COT's `JMESPSkeleton`. That is why the indicator is a text badge rather than their `volume_*.edds`, and why the architecture below shares nothing with theirs.
+
+Two independent halves, either removable without the other:
+
+- **Volume** — `AbstractSoundScene.SetSoundVolume` / `SetRadioVolume`, scaled to a *fraction of the player's own setting* (×0.40 / ×0.12). Music, VOIP and SpeechEx are deliberately untouched: **this mod ships parties, so a player who plugs their ears must still hear their squad.**
+- **Muffle** — `Man.SetMasterAttenuation` (`P:\scripts\3_game\entities\man.c:41`) with two new classes under `CfgSoundEffects >> AttenuationsEffects` in the addon's `config.cpp`, modelled on vanilla's `BurlapSackAttenuation`. Both zero the `Echo` block, unlike every vanilla preset — those all model something wrapped round your head and therefore reverberate; earplugs only take the top off. ⚠️ It is a *master* filter, so it may reach VOIP regardless of the bus table; that is the one open question, and dropping it leaves the volume half intact.
+
+⚠️ **THE BASELINE IS MEASURED, NOT READ, AND THIS IS THE PART THAT LOOKS WRONG UNTIL YOU CHECK.** The obvious source is `g_Game.m_volume_sound`, and it is stale: those five fields are written in exactly one place, `DayZGame.DeferredInit` (`dayzgame.c:1130-1134`), and never again — so any Options change invalidates them, and **vanilla inherits its own bug**, since `MissionGameplay.OnPlayerRespawned` restores from them. Instead, *while the level is Off, whatever the engine reports is the baseline*, refreshed on the 4 Hz tick behind alive-and-above-zero guards (both of vanilla's zeroing paths would otherwise latch a baseline of 0 and leave the player permanently silent).
+
+⚠️ **THE TOGGLE WRITES, THE RECONCILER ONLY EVER LOWERS.** Vanilla moves these buses constantly — zeroes all five on death (`dayzplayerimplement.c:861`), zeroes sound on uncon start (`playerbase.c:3534`), restores from `m_volume_*` on uncon stop (`playerbase.c:3581`) and on unpause/respawn (`missiongameplay.c:1626`) — and **`BattleRoyaleClient.EnterSpectate` restores all five too**, which would blast a player who died with earplugs in. One rule covers every case: restored-to-baseline reads as `current > desired` and is re-lowered; a vanilla mute reads as `current < desired` and is left alone; Off is a no-op. The single path allowed to *raise* is the keypress. Corrections use `time = 0`, since a fade would read as above-target for its whole duration and re-fire each tick; the toggle's own fade is protected by a `VIGRID_EARPLUGS_FADE_MS` settle window.
+
+**The attenuation slot is global, single-valued and shared** with vanilla's uncon / burlap / flashbang / deafness. So: write only when it is empty or already ours, clear only when it is ours (clearing blindly un-muffles an unconscious player), and re-apply on the tick once it returns to `""`. Flashbang re-asserts behind a defer timer and wins; nothing flaps, because both sides only write when the slot is theirs or empty.
+
+**The badge is persistent by design** — full alpha for 2 s after a change, then eased to an idle alpha it never drops below. A fading-out indicator is the reference implementation's actual bug: a player who forgets is permanently half-deaf with no cue. A change *to* Off gets the inverse — flash "OUT", then hide.
+
+At trace level every reconciler decision logs its own reason (`corrected`, `already-at-target`, `below-target-leaving-alone`, `yielded-to:<name>`, `settling`) **but only when the reason changes** — unconditional logging at 4 Hz buries the one line that mattered.
+
 ### Vigrid API / webhooks
 
 `Scripts/Server/3_Game/BattleRoyale/Webhook/` — REST via `GetRestApi().GetRestContext(BATTLEROYALE_API_ENDPOINT)`. Every call site is gated on `BattleRoyaleConfig.GetConfig().GetServerData().enable_vigrid_api`; `use_autolock` is a separate, independent gate that is *not* covered by it. Each webhook pairs with a `RestCallback` subclass that retries from `i_TryLeft`.
@@ -1591,7 +1616,7 @@ Note the imageset's internal name is `battleroyale_gui`, not the filename `dayzb
 
 ## Notes
 
-- `Extra/` holds 18 independent single-purpose sub-addons, each its own PBO. 16 are built; `Extra/DisableFogChernarusPlus/` and `Extra/DumpItemHeights/` are parked as `config.cpp.disabled` and produce no PBO. Most are small script tweaks; the exceptions are `Extra/KillFeed/`, `Extra/SafeZone/`, `Extra/Map/` and `Extra/AutoRun/`, self-contained addons documented under *Architecture → Kill feed*, *→ Safe zone / lobby truce*, *→ Map* and *→ Auto-run*. Each folder carries its own `README.md`, indexed by `Extra/README.md`.
+- `Extra/` holds 19 independent single-purpose sub-addons, each its own PBO. 17 are built; `Extra/DisableFogChernarusPlus/` and `Extra/DumpItemHeights/` are parked as `config.cpp.disabled` and produce no PBO. Most are small script tweaks; the exceptions are `Extra/KillFeed/`, `Extra/SafeZone/`, `Extra/Map/`, `Extra/AutoRun/` and `Extra/EarPlugs/`, self-contained addons documented under *Architecture → Kill feed*, *→ Safe zone / lobby truce*, *→ Map*, *→ Auto-run* and *→ Ear plugs*. Each folder carries its own `README.md`, indexed by `Extra/README.md`.
 - **An incremental `Deploy.bat` does not always delete the PBO of an addon you just disabled.** It cleans orphans only sometimes, so a `config.cpp` → `.disabled` rename can leave the previous PBO in `%ModBuildDirectory%` and the addon still loads — which silently invalidates a discipline negative-build. Check the output folder and delete the `.pbo` plus its `.bisign` by hand. **The same applies to `CopyExtraPBOs`**: turning it off does not remove the third-party PBOs a previous build already copied there.
 - **`Tools/edds.py` reads and rewrites the Enfusion `.edds` texture container**, whose format is documented in that file's header (decoded from scratch; two traps — the chunk table runs *smallest mip first*, and the LZ4 blocks inside a chunk are *linked*). `selftest` is its acceptance gate and is the thing to run first. It is what took the twelve loading screens from 120 MB of uncompressed BGRA8 to 15.4 MB of DXT1.
 - `Extra/RandomMenuGear/` re-dresses the main-menu intro character in a random outfit plus a slung rifle and a melee weapon, re-rolled on every menu show. It hooks vanilla `IntroSceneCharacter.CreateNewCharacterById` (creation, prev/next arrows) and `MainMenu.OnShow` (returning from a submenu — that path calls `OnChangeCharacter(false)` and never recreates the character). It is **not** a fix for the broken character save that makes the menu character render naked; it only decorates the spawned object. Gear is applied with `GameInventory.CreateAttachmentEx` and deliberately never written into `MenuDefaultCharacterData` — that map is serialized to the server on connect and saved locally, so writing to it would leak menu gear into the real spawn loadout. Same discipline rule as `Party/` and `Extra/KillFeed/`: no `BattleRoyale*` symbol may be referenced.

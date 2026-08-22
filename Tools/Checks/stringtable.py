@@ -40,6 +40,7 @@ OWNERS = {
     "STR_PARTY_": "Party/stringtable.csv",
     "STR_KF_": "Extra/KillFeed/stringtable.csv",
     "STR_MAP_": "Extra/Map/stringtable.csv",
+    "STR_EARPLUGS_": "Extra/EarPlugs/stringtable.csv",
 }
 
 #  Preceded by `"` (a bare key, the form server script sends over the wire) or `#` (the localised
