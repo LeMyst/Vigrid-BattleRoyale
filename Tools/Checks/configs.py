@@ -1,7 +1,7 @@
 """
  *  config.cpp structure.
  *
- *  Four things, each of which the build accepts happily and the game gets wrong:
+ *  Five things, each of which the build accepts happily and the game gets wrong:
  *
  *    - a config with no CfgPatches, or two configs claiming the same addon name (addon names are
  *      one flat namespace, exactly like menu ids);
@@ -9,6 +9,9 @@
  *      the build - it just stops constraining load order, and this mod depends on that ordering
  *      (Scripts_Server requires Scripts_Client so that server code can `modded class` over
  *      client-declared classes);
+ *    - a requiredAddons entry naming an OPTIONAL mod's addon, which is the one entry in this list
+ *      that does not merely misbehave: the server refuses to start. See the second-lock note
+ *      below and Tools/allowlists/optional_addons.txt;
  *    - two adjacent array entries with no comma between them, which is a rapify syntax error that
  *      only surfaces when the game loads the module - the documented MOVING_ZONE trap in
  *      Scripts/Client/config.cpp's defines[];
@@ -28,7 +31,8 @@ from Checks._source import (
 )
 
 NAME = "configs"
-SUMMARY = "CfgPatches names unique, requiredAddons resolve, no stripped vanilla parents"
+SUMMARY = ("CfgPatches names unique, requiredAddons resolve and name no optional mod, "
+           "no stripped vanilla parents")
 
 CLASS = re.compile(r"\bclass\s+([A-Za-z_]\w*)\s*(?::\s*([A-Za-z_]\w*)\s*)?([{;])")
 ARRAY = re.compile(r"\b([A-Za-z_]\w*)\s*\[\s*\]\s*=\s*\{", re.MULTILINE)
@@ -126,6 +130,7 @@ def run() -> list[Finding]:
     findings: list[Finding] = []
     declared: dict[str, str] = {}
     external = allowlist("external_addons")
+    optional = allowlist("optional_addons")
     parents = {
         name.strip(): parent.strip()
         for entry in allowlist("vanilla_config_parents")
@@ -203,9 +208,27 @@ def run() -> list[Finding]:
         del depths  # only needed inside addon_names; kept explicit so the intent is not misread
 
     #  requiredAddons resolution, once every config has contributed its declarations.
+    #
+    #  The optional test runs FIRST and deliberately outranks both `declared` and `external`. It is
+    #  the second lock: DayZExpansion_Scripts was allowlisted in external_addons.txt in good faith,
+    #  on this file's own documented belief that an unresolvable entry merely stops constraining
+    #  load order. That belief was wrong - the server refuses to start - and putting the optional
+    #  test after the allowlist would let the exact mistake that caused the outage silence the
+    #  check written to catch it.
     for path in configs + disabled:
         text = strip_comments(read(path))
         for entry, line in required_addons(text):
+            prefix = next((p for p in optional if entry.startswith(p)), None)
+            if prefix is not None:
+                findings.append(error(
+                    f"requiredAddons names `{entry}`, an addon of an OPTIONAL mod "
+                    f"({optional[prefix] or prefix}) - a server without that mod loaded refuses to "
+                    f"START, during addon load, leaving an RPT that ends after the header and no "
+                    f"script log at all. Ordering against another mod is done by -mod= order in "
+                    f"Workbench/project.cfg; reach the mod itself with #ifdef",
+                    path, line,
+                ))
+                continue
             if entry in declared or entry in external:
                 continue
             findings.append(error(
