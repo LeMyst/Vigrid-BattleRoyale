@@ -73,6 +73,7 @@ Windows-only. Requires DayZ Tools (Steam) and a mounted `P:\` work drive.
 | `LaunchOffline.bat` | Single-player with `SPMission`. |
 | `LaunchServer.bat` | Dedicated server (clears logs + `storage_*` first). |
 | `LaunchLocalMP.bat [1\|2\|3]` | Server + N local clients. `LaunchLocalMP2.bat` / `MP3.bat` are wrappers for `2` / `3`. |
+| `Release.bat <Launcher.bat> [args]` | Run any launcher against the **retail** exes instead of the diag ones — `Release.bat LaunchServer.bat`. The only local way to reproduce a fatal config/addon error; see *Testing* below. |
 | `LaunchClient.bat [A\|B\|C]` | One client connecting to `127.0.0.1`. `LaunchClientB.bat` / `C.bat` are wrappers for `B` / `C`. |
 | `KillGame.bat` | Kill all DayZ/Diag processes. |
 | `ClearLogs.bat ["<dir>"]` | Clear **game** logs (`.rpt`, `.ADM`, `.mdmp`) from one profile dir, or all of them when called with no argument — not build logs. |
@@ -93,13 +94,14 @@ Build result: `Workbench/Logs/Build.log`, plus marker files `Build.success` / `B
 | `_SafeDir.bat <path>` | Gate in front of every recursive delete. Normalises the path and exports it as `%brSafeDir%`. Exit `0` safe, `1` unsafe — a drive root, UNC, bare `X:`, leading `\`, or an exact match on a system dir like `%USERPROFILE%` — `2` well-formed but absent (caller skips quietly). Used by `ClearLogs.bat` / `ClearStorage.bat`, whose paths come from the gitignored `user.cfg`. |
 | `_LaunchClient.bat <A\|B\|C>` | Resolve the slot's `Player[B\|C]SteamID` / `Player[B\|C]Name` / `Client[B\|C]ProfileDirectory` and start it. |
 | `_LaunchServer.bat <SteamID>` | Clear logs + storage, then start the dedicated server. |
+| `_ReleaseEXE.bat <MP\|SP>` | Swap `ClientEXE` / `ServerEXE` for the retail ones and strip the diag-only launch parameters, then export the lot back into `SetupLaunch.bat`. Called only when `ReleaseEXE=1`. |
 | `SetupLaunch.bat <MP\|SP>` | Preamble for every `Launch*.bat`: config, validation, mod list, kill running game. Deliberately no `setlocal` — it exports into the caller. |
 
 Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 mod PBOs (`Data`, `GUI`, `LanguageCore`, `Models_Shapes`, `Sounds`, `Scripts_Client`, `Scripts_Server`, `Party`) plus 17 `extra_*`. Renaming a top-level folder renames its PBO. PBO names are lowercased by the build, so `Extra/KillFeed` packs as `extra_killfeed.pbo`.
 
 ## Testing
 
-**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~4 s) holds 14 checks over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
+**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~5 s) holds 15 checks over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
 
 ```bash
 python Tools/check.py            # everything
@@ -114,6 +116,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `configs` | `CfgPatches` names unique, `requiredAddons` resolve **and name no optional mod's addon**, no stripped vanilla parents |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` class — a bug an offline client cannot see |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
+| `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method — the defect no local launch can see |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls are `#ifdef`-guarded |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
@@ -135,7 +138,22 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 
 The measurement that established this (2026-08-22): the `DayZExpansion_Scripts` `requiredAddons` entry killed a remote server outright, and a local server booted **the very same afternoon, with Expansion genuinely absent from its mod list** — `-mod=@Vigrid-BattleRoyale;@CF;@Community-Online-Tools;@Dabs Framework;@Vehicle3PP`, no Expansion anywhere — and produced a full RPT, a full `script_*.log` and a playable server. **The bug was present in every local run and left no trace in any of them.** `grep -ril "requires addon"` over `ServerProfileDirectory` and every client profile returns *nothing*: the error is not merely demoted to a warning you could go looking for, it is demoted and then **not logged at all**.
 
-So: a clean diag `.rpt` is evidence about *script*, and no evidence at all about whether the mod will load on a real server. The only two things that can catch this class of defect are `Tools/check.py` and an actual `DayZServer_x64.exe` boot. If you need the latter locally, override `ServerEXE` and drop `-newErrorsAreWarnings=1` from `ServerLaunchParams` in `user.cfg`.
+So: a clean diag `.rpt` is evidence about *script*, and no evidence at all about whether the mod will load on a real server. The only two things that can catch this class of defect are `Tools/check.py` and an actual `DayZServer_x64.exe` boot.
+
+**`Release.bat` is that second one, and it needs no `user.cfg` edit.** It wraps any launcher — `Release.bat LaunchServer.bat`, `Release.bat LaunchLocalMP.bat 2`, `Release.bat LaunchOffline.bat` — by setting `BR_RELEASE=1`, which `SetupLaunch.bat` turns into `ReleaseEXE=1`; `_ReleaseEXE.bat` then swaps in `ReleaseClientEXE` / `ReleaseServerEXE` (`DayZ_x64.exe` / `DayZServer_x64.exe`) and **strips every diag-only launch parameter — `-newErrorsAreWarnings` and `-filePatching` — from both sides**, naming each one it drops. Reach for it before shipping anything that touches `config.cpp`, `requiredAddons`, `defines[]` or a `#ifdef` guard. Four things are worth knowing:
+
+- **The strip is a rebuild, not a string replace.** `%VAR:search=replace%` splits at the *first* `=`, so it cannot express removing `-newErrorsAreWarnings=1`, whose own value contains one. `_ReleaseEXE.bat` tokenises the parameter string and drops any token containing a diag needle instead — which is also why every needle in `brDiagFlags` must itself be `=`-free.
+- **The retail server exe is usually in a different folder from the diag one**, which lives in the client install that `ServerDirectory` often points at. `ReleaseServerDirectory` / `ReleaseClientDirectory` override the two directories for release launches only; a missing exe is a hard error naming the exact path it looked at.
+- ⚠️ **`-br-autoconnect` is `#ifdef DIAG_DEVELOPER` and is therefore gone**, so retail clients stop at the main menu and have to be connected by hand (Direct connect, `127.0.0.1`). The whole diag menu and all its fixtures go with it — so a release run tests *loading*, not the diag rig.
+- **`ReleaseEXE=1` in `user.cfg` is the persistent form**, but prefer the wrapper: `Release.bat` uses `setlocal`, so the next launch is a diag one again and nobody is left wondering why the diag menu vanished.
+
+**The defect class it exists for, with a worked example.** `BattleRoyaleState.BR_DiagTeleport` sat inside a `#ifdef DIAG_DEVELOPER` block while `BRMasterControlsModule`'s *production* "teleport to the live circle" admin action called it unguarded — right under a comment asserting it was ungated. `DIAG_DEVELOPER` is defined on every local launch, so it compiled cleanly every time; the first retail server took the whole Mission module down with `Undefined function 'BattleRoyaleState.BR_DiagTeleport'`, followed by a cascade of `Bad type 'Param2'` / `Can't find class Param3` / `Bad type 'map'` lines. **That cascade is a red herring — the template types are fine; fix the FIRST error and the rest go.** Fixed 2026-08-22 by moving the method out of the guard (its doc comment now says why), leaving `BR_DiagTeleportRing` inside it since all of *its* callers are diag. The rule is **gate the callers, never the shared helper**, and `Tools/check.py`'s `diag-guards` check now enforces it. Three things about that check are worth knowing:
+
+- ⚠️ **It is exact for classes and APPROXIMATE for methods.** Enfusion class names are globally unique, so a class declared only inside a diag guard really is absent from a retail build; method names are per-class and the check has no type information, so a diag-only method colliding with a **vanilla** method that shipping code calls would be a false positive. `Tools/allowlists/diag_refs.txt` is for exactly that and nothing else — a symbol from this repo landing there is almost certainly the real bug.
+- **Two exclusions carry the whole signal-to-noise ratio**, and a prototype without them emitted 137 KB of findings, none real. A name declared *unguarded anywhere* in the tree is not diag-only; and **a declaration line does not end in `;` while a call statement does**, which is what stops `int level = GetGame().ServerConfigGetInt(...);` reading as a declaration of `ServerConfigGetInt`.
+- ⚠️ **It skips addons parked as `config.cpp.disabled`.** They produce no PBO, so nothing under them is compiled and a declaration there cannot make a symbol diag-only anywhere — `Extra/DumpItemHeights/` declares a diag-only `Close()`, which collided with vanilla `UIScriptedMenu.Close()` and reported eight shipping call sites as broken.
+
+Proven in both directions, as a new check must be: re-introducing the real bug reports `BRMasterControlsModule.c:484` and nothing else, a synthetic unguarded reference to the `BattleRoyaleDiag` class reports that, and the ~120 genuinely diag-only symbols called only from diag code stay silent.
 
 ⚠️ **`user.cfg` is read last-wins, and Myst's carries a dozen commented-out `AdditionalMPMods` lines with two or three live ones.** The effective mod list is the *last uncommented* assignment, not the first, and not the one that looks canonical. Read it with `grep -n "^AdditionalMPMods"` and take the bottom hit — assuming the wrong line is how "Expansion is always loaded locally" got asserted in this file and was wrong within the hour.
 

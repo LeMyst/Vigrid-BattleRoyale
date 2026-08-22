@@ -1,0 +1,18 @@
+# References the `diag-guards` check should not report, as `<repo-relative path>:<symbol>`.
+#
+# The check is exact for classes - Enfusion class names are globally unique, so a name declared
+# only inside a diag guard really is absent from a retail build. It is APPROXIMATE for methods,
+# because method names are per-class and the check has no type information: a diag-only method
+# whose name happens to match a VANILLA method that shipping code calls would be reported here.
+#
+# So the one legitimate use of this file is that collision. If the entry you are about to add is a
+# symbol declared in THIS repo, you almost certainly have the real bug instead - gate the caller,
+# or move the helper out of the diag block. `BR_DiagTeleport` looked exactly like a false positive
+# and killed a production server.
+#
+# Two things already keep the collision rate at zero without any entries here, and are worth
+# knowing before adding one:
+#   - a name declared unguarded ANYWHERE in the tree is not diag-only, whatever else declares it;
+#   - `override` declarations never establish diag-only-ness, since the parent already has them.
+#
+#   <repo-relative path>:<symbol>   # why the reference is safe
