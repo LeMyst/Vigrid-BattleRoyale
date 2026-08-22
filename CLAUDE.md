@@ -6,7 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A DayZ Standalone mod (Bohemia Interactive Enfusion engine) implementing battle-royale gameplay, written in **EnfusionScript** (`.c` files). Originally by Kegan, maintained by Myst. Version `0.1.0-Vigrid`, defined in `Scripts/Client/2_GameLib/BattleRoyaleConstants.c` and mirrored in `mod.cpp`.
 
-Hard dependencies (mod load order set in `Workbench/project.cfg`): [CF](https://github.com/Arkensor/DayZ-CommunityFramework), [Dabs Framework](https://github.com/InclementDab/DayZ-Dabs-Framework), [Community-Online-Tools](https://github.com/Jacob-Mango/DayZ-CommunityOnlineTools), [DayZ-Expansion](https://github.com/salutesh/DayZ-Expansion-Scripts). `Scripts/Client/config.cpp` requires `DayZExpansion_Scripts`. Each link is the mod's source repository — consult it for a dependency's API rather than guessing.
+Hard dependencies (mod load order set in `Workbench/project.cfg`): [CF](https://github.com/Arkensor/DayZ-CommunityFramework), [Dabs Framework](https://github.com/InclementDab/DayZ-Dabs-Framework), [Community-Online-Tools](https://github.com/Jacob-Mango/DayZ-CommunityOnlineTools). Each link is the mod's source repository — consult it for a dependency's API rather than guessing.
+
+⚠️ **[DayZ-Expansion](https://github.com/salutesh/DayZ-Expansion-Scripts) is NO LONGER a hard dependency — the mod compiles and runs on both sides without it** — but `Scripts/Client/config.cpp` still lists `DayZExpansion_Scripts` in `requiredAddons` **on purpose**, and that is not an oversight to tidy up: it is what orders this mod's `modded class`es after Expansion's when Expansion *is* loaded, and a `requiredAddons` entry for an absent addon is harmless. What remains optional and guarded:
+
+| Reached through | Guard | Gives up when absent |
+|---|---|---|
+| `m_NewsFeed`, `Expansion_OnGeneralSettingsUpdated` | `#ifdef DZ_Expansion` | Expansion's news feed panel is no longer hidden in the Esc menu |
+| `GetExpansionClientVersion()` | `#ifdef DZ_Expansion_Core` | the Expansion version segment in the two version lines |
+| `ExpansionMissionModule.CallAirdrop` | `#ifdef EXPANSIONMODMISSIONS` | airdrops |
+| `ExpansionNotificationSettings` (Extra/KillFeed) | `#ifdef EXPANSIONMODKILLFEED` | suppressing Expansion's own kill feed |
+
+⚠️ **`DZ_Expansion` and `DZ_Expansion_Core` are Expansion's `CfgMods` CLASS NAMES, not `defines[]` entries.** The engine auto-defines the class name of every loaded mod, which is the only way to `#ifdef` a mod that publishes no flags — and Expansion publishes none. Same mechanism that defines `DabsFramework` and `JM_CommunityFramework`, neither of which appears in any `defines[]` either.
 
 ## Workflow
 
@@ -86,7 +97,7 @@ Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 
 
 ## Testing
 
-**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~4 s) holds 13 checks over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
+**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~4 s) holds 14 checks over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
 
 ```bash
 python Tools/check.py            # everything
@@ -99,6 +110,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 |---|---|
 | `asset-paths` | every `Vigrid-BattleRoyale/...` asset reference resolves |
 | `configs` | `CfgPatches` names unique, `requiredAddons` resolve, no stripped vanilla parents |
+| `client-only-types` | no server-compiled file names a `#ifndef SERVER` class — a bug an offline client cannot see |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls are `#ifdef`-guarded |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
@@ -120,6 +132,10 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 Validation loop for anything the suite cannot see: `Deploy.bat` → launch (`ClientEXE` defaults to `DayZDiag_x64.exe`) → read the `.rpt` in the profile directory for script errors.
 
 **Reach for `LaunchOffline.bat` first, and only escalate to `LaunchLocalMP.bat N` when the test genuinely needs a server.** It is one process instead of two-to-four, it loads in ~90 s, and it gives a real controllable character — so the whole client half of the mod is testable in it: HUD and widget layout, menus and keybinds, the map addon, the compass, name tags, world markers, `#ifndef SERVER` code paths, and anything judged by eye. What it cannot reach is the mod itself: `SERVER` is undefined offline, so all of `Scripts/Server/**` compiles out — no `BattleRoyaleServer`, no states, no zones, no RPCs, no settings JSONs. Anything keyed on match state, a second player, or a server→client push needs MP.
+
+⚠️ **Offline cannot validate GUARDS EITHER, and that is stronger than "it skips the server files".** With `SERVER` undefined, a `#ifndef SERVER` type is *always* present, so unguarded code that names one compiles perfectly offline and takes down a whole module on a dedicated server — `loadingscreenbackground.c(9): Bad type 'BattleRoyaleShuffleBag'` was exactly this, and `BattleRoyaleSpectatorCamera` carries a comment about the same thing happening to `BattleRoyaleRPC` before it. The `client-only-types` check exists to catch this without a server boot; it does not remove the need to actually boot one before believing a change is safe.
+
+⚠️ **A dependency on another mod can also be a bare method call that no grep for that mod's name will find.** `PlayerBase.GetIdentityName()` is declared on Expansion Core's modded `PlayerBase` and reads exactly like vanilla API at the call site; it sat in `0_BattleRoyaleState` for a long time and only surfaced the first time a server booted without Expansion. **The only reliable audit is to compile with the other mod absent** — `AdditionalSPMods` / `AdditionalMPMods` in `user.cfg` is where you take it out.
 
 `SPMission` must point at a mission whose `CreateCustomMission` returns a **`MissionGameplay`** — currently `.\Missions\empty.ChernarusPlus`, whose master is `Workbench/Missions/empty.ChernarusPlus/` in this repo and which `SetupMod.bat` deploys (an `init.c` and nothing else; the world comes from the folder suffix, so another map needs only a renamed copy). Community-Online-Tools then does the rest: its `modded class MissionGameplay.OnMissionStart` sees `IsMissionOffline()` and spawns you at a random `CfgWorlds` named location with a fixed loadout (military kit, plus a knife, Magnum, Shovel and Hatchet already on quickbar slots 0-3).
 
@@ -1102,6 +1118,22 @@ the target's **head bone** rather than a stance offset, and never reads the targ
 `GetCommandModifier_Weapons()` can be NULL for a remote entity, which would silently flatten the
 camera.
 
+### Notifications (toasts)
+
+Every player-facing message from this mod is a **toast**: `BattleRoyaleToasts` (`Scripts/Client/5_Mission/GUI/HUD/`) plus `GUI/layouts/hud/toasts.layout` and `toast_row.layout`. It replaced `ExpansionNotification`, which was the last unguarded reason the client needed Expansion loaded.
+
+**The wire did not change.** The server still ships a bare stringtable key over the existing `NotificationMessage` RPC and the client localises it on arrival — see *Localization* below, which is unaffected. Two producers reach the widget and they hand over different things on purpose: the RPC path arrives **already localised** (the `%1..%5` substitution and the `READY_KEY` / `UNSTUCK_KEY` tokens must happen first), while `BattleRoyaleClient.NotifyLocal` passes a `#key` untouched and lets the widget resolve it.
+
+Five things are load-bearing, and each was a bug first:
+
+- ⚠️ **`"size to text v"` MUST STAY 0.** On a wrapping widget it reports height **zero** *and* overrides an explicit `SetSize`, so the row ends up `W×0` and draws an empty plate with no text. Vanilla never pairs it with `wrap` either.
+- **`GetTextSize()` already returns the WRAPPED size** — width of the longest line, full block height (measured `301×66` for three 22 px lines at a 528 px wrap). So the height comes straight off it; **do not divide by the wrap width to count lines**, that double-counts and only shows up on the first message long enough to wrap twice.
+- **`RichTextWidget.GetContentHeight()` is the obvious API and has ZERO call sites in `P:\scripts`** — the shape that compiles, runs and silently does nothing. Not used.
+- **The pool binds by TOAST ID, not by a flag on the model.** A new toast inserts at index 0 and shifts every existing model onto a different widget, so a per-model "already bound" flag skips `SetText` on the widget that just changed content.
+- ⚠️ **`BR_TOAST_TOP_PX` is in REFERENCE pixels and is scaled by `screen_w / 1920`**, because the compass strip it clears scales the same way. Held at flat pixels the gap between them changed with the resolution (68 / 54 / 40 px at 1280 / 1920 / 2560) and looked right only where it was eyeballed.
+
+Diag: **HUD & Menus → Push Toasts** raises a random 1-3 from a pool of uneven lengths. The varying count is the point — a burst landing on top of live toasts is what exposed the pooling bug above.
+
 ### Localization
 
 `LanguageCore/stringtable.csv`, keys prefixed `STR_BR_`. The `Party/` addon carries its own `stringtable.csv` at its PBO root with `STR_PARTY_*` keys — the engine loads one per addon — so party strings do not go here, and the same goes for every `Extra/` addon that has strings at all (`STR_KF_*`, `STR_MAP_*`, `STR_AUTORUN_*`). Five reference styles:
@@ -1604,6 +1636,15 @@ Client-side matchmaking is `MatchMakingWebhook` (`Scripts/Client/3_Game/BattleRo
 Script and JSON references use the PBO-relative form with forward slashes: `Vigrid-BattleRoyale/GUI/layouts/...`. `config.cpp` `samples[]` uses backslashes with a leading slash. Profile/mission paths use `$profile:` / `$mission:` with **escaped** backslashes (`"$profile:Vigrid-BattleRoyale\\"`). The prefix comes from `PrefixLinkRoot` in `Workbench/project.cfg`.
 
 Note the imageset's internal name is `battleroyale_gui`, not the filename `dayzbr_gui` — hence `"set:battleroyale_gui image:..."`.
+
+**The atlas carries the mod's own HUD icons as well as the two logos**: `GroupIcon`, four zone arrows (`ZoneArrowNeedle` in use, plus `Dart` / `Classic` / `Chevron`) and three clocks (`ClockSimple` in use, plus `Ticks` / `Solid`), all 64x64 in the free row at y=256. The alternates are there so a swap is one name in `br_hud.layout` and no rebuild of the texture.
+
+⚠️ **Editing `dayzbr_gui.edds` is a script job, not an Object Builder one** — `Tools/edds.py` parses and re-emits the container (see *Notes*). Two rules, both learned the hard way:
+
+- **Patch each mip from its own original; never regenerate the chain from a new mip 0.** The engine samples the lower mips when an icon draws small, so rebuilding them with a different filter quietly restyles the two logos at small sizes for no reason. Below ~mip 6 a 64 px icon is sub-pixel and is left alone.
+- **Give every glyph a MARGIN off its cell edge.** Vanilla does — `icon_player` is 15 px of ink in a 20 px cell — and drawn edge to edge a shape has no slack for the rounding the HUD introduces scaling 64 down to its drawn size, so the touching side renders visibly flattened. It matters most for `ZoneIcon`, which is **rotated**, so any side can be the clipped one.
+
+⚠️ **A HUD icon's declared size must fit the row its `GridSpacer` parent gives it, and that row SCALES with the viewport while an exact size does not.** The three icons in `MatchInfoIconsPanel` are `28 28` rather than `32 32` for exactly this reason: the row measures 20.23 px at 1280x720 and a declared 32 renders 21.33 into it. Re-measure with `BattleRoyaleHud.DiagIconRects` (`[HudRect]`, once per `ShowHud`) after any change to that panel — reading the rects back beats reasoning about the layout, which got this wrong twice.
 
 ## Adding things
 
