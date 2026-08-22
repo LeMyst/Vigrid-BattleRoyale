@@ -5,7 +5,7 @@
  * TODO: move these constants into something a bit easier for modders to work with, that way any 3rd party can launch their own BR off my framework
  */
 
-static const string BATTLEROYALE_VERSION = "0.1.0-Vigrid";
+static const string BATTLEROYALE_VERSION = "0.2.0-Vigrid";
 
 #ifdef DIAG
 #define BR_TRACE_ENABLED
@@ -388,6 +388,23 @@ static const int BR_SPECTATE_MODE_ORBIT = 1;
 //--- only ever pushes FREE in response to an admin-gated request.
 static const int BR_SPECTATE_MODE_FREE = 2;
 
+//--- AUDIENCE COUNT. How many people are currently watching one living player (#285). The tally is
+//--- rebuilt from the spectator table once per push rather than maintained incrementally: the count
+//--- is a many-to-one aggregate, so it also moves on a Retarget - one spectator changes target and
+//--- TWO players' counts change with no entry added or removed - and on BeginSpectate clearing
+//--- pending_enter, and on an admin session superseding an ordinary one.
+//---
+//--- Same 1 Hz as the spectate keepalive above. A number describing how many people are watching
+//--- never needs sub-second accuracy, and a wave of deaths must not become ten pushes a second.
+static const int BR_AUDIENCE_PUSH_MS = 1000;
+//--- Re-assert every value this often even when nothing changed, matching ResendGameInfo's 5 s. An
+//--- edge-only push is invisibly wrong for a client that missed one; the play areas were edge-only
+//--- until a reconnect proved that was not enough (#269).
+static const int BR_AUDIENCE_KEEPALIVE_MS = 5000;
+//--- No wire sentinel is needed here, so the named-sentinel rule further down this file (see
+//--- BR_HUD_GROUPS_NONE) does not apply: every value this field carries is a real count, and 0
+//--- means nobody is watching, which the client renders by hiding the panel outright.
+
 //--- ADMIN SPECTATE. Gated on admins_steamid64 plus admin_spectate_enabled (general_settings.json).
 //---
 //--- The governing rule is that admin spectate requires being a NON-PARTICIPANT: alive, holding a
@@ -464,10 +481,72 @@ static const float BR_SPECTATE_TAG_EDGE_MARGIN = 60.0;
 //--- Off-screen tags are dimmed rather than hidden: an admin wants to know somebody is behind them.
 static const float BR_SPECTATE_TAG_OFFSCREEN_ALPHA = 0.45;
 //--- Name colour for the player the camera is currently following, and for anyone with no party.
-//--- The target colour is deliberately not any VigridPartyPalette slot, so it cannot be mistaken
-//--- for a team colour.
-static const int BR_SPECTATE_TAG_TARGET_COLOUR = 0xFFFFDD44;
+//---
+//--- ⚠ THE TARGET COLOUR MUST BE ONE THE TEAM WALK CANNOT PRODUCE, and saturation is the axis
+//--- that guarantees it. Every generated team colour is a pastel - BR_TEAM_COLOUR_SAT_* tops out at
+//--- 0.50 - so a FULLY saturated hue is unmistakable at a glance and can never collide, whatever
+//--- hue the walk lands on. Measured: the nearest generated colour to this one is dE 35.7 away.
+//--- The old 0xFFFFDD44 was amber at ~0.73 saturation, which cleared the old eight-slot
+//--- VigridPartyPalette but sits close enough to a generated pastel amber to be read as "that team"
+//--- rather than as "the one I am following".
+static const int BR_SPECTATE_TAG_TARGET_COLOUR = 0xFFFFC400;
 static const int BR_SPECTATE_TAG_SOLO_COLOUR = 0xFFFFFFFF;
+
+//--- TEAM COLOURS FOR THE ADMIN OVERLAY. One colour per PARTY, so an admin can see who is fighting
+//--- alongside whom - not one per party SLOT, which is what VigridPartyPalette answers and which
+//--- paints every party's first member the same amber.
+//---
+//--- ⚠ VigridPartyPalette IS DELIBERATELY NOT USED HERE, and it is not an oversight. It is eight
+//--- hues wrapping on `slot % 8`, which is right for its own job - telling YOUR OWN teammates apart,
+//--- where the party is at most 16 and you are in it - and wrong for this one, where a match can
+//--- hold thirty parties and two of them sharing amber is exactly the question being asked.
+//---
+//--- HONESTY ABOUT WHAT THIS CAN DELIVER: categorical colour tops out around ten to twelve hues a
+//--- human can hold apart, so thirty distinguishable team colours do not exist and nothing here
+//--- pretends otherwise. What the walk does guarantee is that no two parties share a colour and
+//--- that ADJACENT indices are as far apart as the circle allows - which is what an admin actually
+//--- needs, since the question is "are those two on the same side", not "which of the thirty teams
+//--- is the mauve one". Proximity, the health bar and the follow highlight carry the rest.
+//---
+//--- The step is the GOLDEN ANGLE rather than a random draw. Random collides: at thirty parties the
+//--- birthday problem makes two near-identical hues better than even odds, which is the failure this
+//--- exists to avoid. The golden angle needs no retry loop, is deterministic (so two admins watching
+//--- the same match see the same colours), and is optimal-by-construction at every count rather than
+//--- at one count chosen in advance.
+static const float BR_TEAM_COLOUR_GOLDEN_ANGLE = 137.508;
+//--- A second axis under the hue, cycled per party, so two teams that happen to land near the same
+//--- hue still differ in weight. Low saturation and high value IS the pastel, and it is what keeps
+//--- every team legible over dark terrain where a fully saturated hue would read as an alert.
+//---
+//--- ⚠ SIX TIERS, AND THE COUNT IS LOAD-BEARING RATHER THAN A ROUND NUMBER. A golden-angle walk puts
+//--- its closest hue pairs at FIBONACCI offsets - 8, 13 and 21 apart - and a tier count that DIVIDES
+//--- one of those leaves that pair on identical saturation and value, separated by hue alone. At the
+//--- first-written 3 tiers, parties 21 apart collided almost exactly: measured dE 2.9 in CIE Lab,
+//--- which is the just-noticeable threshold, i.e. indistinguishable in practice. 6 divides none of
+//--- 8, 13 or 21.
+//---
+//--- The values below were SEARCHED rather than picked, maximising the worst-case Lab distance over a
+//--- full 30-party match inside a pastel envelope (sat 0.24-0.52, val 0.78-1.00). Measured over 30
+//--- parties: worst pair anywhere dE 13.0 ("clearly different"), worst ADJACENT pair dE 46.4, nearest
+//--- team colour to the solo white dE 20.6, and to BR_SPECTATE_TAG_TARGET_COLOUR dE 35.7. Thirty is
+//--- the real ceiling - a party needs two members, so sixty players cannot make more of them.
+//---
+//--- ⚠ THESE TWELVE NUMBERS ARE ONE PACKAGE. Changing a single saturation does not make one team
+//--- look slightly different; it moves the worst-case pair somewhere else entirely. Re-run the search
+//--- rather than nudging a value by eye.
+static const int BR_TEAM_COLOUR_TIERS = 6;
+static const float BR_TEAM_COLOUR_SAT_A = 0.34;
+static const float BR_TEAM_COLOUR_SAT_B = 0.42;
+static const float BR_TEAM_COLOUR_SAT_C = 0.27;
+static const float BR_TEAM_COLOUR_SAT_D = 0.50;
+static const float BR_TEAM_COLOUR_SAT_E = 0.27;
+static const float BR_TEAM_COLOUR_SAT_F = 0.46;
+static const float BR_TEAM_COLOUR_VAL_A = 0.87;
+static const float BR_TEAM_COLOUR_VAL_B = 0.98;
+static const float BR_TEAM_COLOUR_VAL_C = 0.81;
+static const float BR_TEAM_COLOUR_VAL_D = 0.94;
+static const float BR_TEAM_COLOUR_VAL_E = 1.00;
+static const float BR_TEAM_COLOUR_VAL_F = 0.94;
 
 //--- LOBBY NAME TAGS. A name over every non-teammate while the players are still gathered in the
 //--- lobby, replacing the "point at somebody to read their name" tag this mod used to re-enable
@@ -510,6 +589,34 @@ static const int BR_LOBBY_TAG_DIAG_MS = 2000;
 //--- here would only invite the two to be confused.
 static const int BR_LOBBY_TAG_COLOUR = 0xFFFFFFFF;
 
+//--- CORPSE NAMETAGS. A name over a dead body, so an admin flying over a fight can tell who died
+//--- there (#278). Proximity only - a name over every corpse in the match would bury the map by the
+//--- final circle, which is exactly when an admin most wants to read it.
+//---
+//--- Tens of metres, not the skeleton overlay's 500: the skeleton says "a fight happened over
+//--- there", this says "this is who that is", and the second question is only asked up close.
+static const float BR_SPECTATE_CORPSE_TAG_RANGE_M = 40.0;
+//--- Fade over the last stretch, so a tag thins out rather than blinking off as the camera drifts.
+static const float BR_SPECTATE_CORPSE_TAG_FADE_START_M = 32.0;
+//--- Metres above the death position. Much lower than the living tag's 1.9, because a body lies
+//--- FLAT - anchoring a corpse tag at standing height floats it well clear of the thing it names.
+static const float BR_SPECTATE_CORPSE_TAG_HEIGHT_OFFSET = 0.6;
+//--- Dim and desaturated, so a corpse tag never competes with a living one at a glance. It is
+//--- deliberately NOT a team colour: the party a dead player was on is no longer information an
+//--- admin can act on, and colouring it would put a second team-coloured name over a fight.
+static const int BR_SPECTATE_CORPSE_TAG_COLOUR = 0xFFA09490;
+//--- Bound on corpse rows, matching BR_ADMIN_LIST_MAX for the same no-RPC-chunking reason. A full
+//--- match ends with 59 bodies, so this is reached in the ordinary course of a game, not just in
+//--- pathological cases.
+static const int BR_ADMIN_DEAD_LIST_MAX = 64;
+//--- How often the dead list is RECONSIDERED. It is not a push rate: the set is append-only and is
+//--- sent only when it has actually grown, plus the keepalive below for an admin who started
+//--- watching after the last death.
+static const int BR_ADMIN_DEAD_PUSH_MS = 2000;
+//--- Re-send even with nothing new, on the same reasoning as BR_AUDIENCE_KEEPALIVE_MS: an admin who
+//--- enters spectate during a lull would otherwise wait for the next death to see any corpse at all.
+static const int BR_ADMIN_DEAD_KEEPALIVE_MS = 10000;
+
 //--- SKELETON OVERLAY. How far from the CAMERA a player is still drawn, in metres of view depth.
 //--- Ours, not COT's: JMESPModule culls at its own ESPRadius (200 m by default and an admin's
 //--- personal COT setting), which is well inside the range a spectating admin watches from and is
@@ -541,6 +648,86 @@ static const int BR_ADMIN_REFUSED_COMPETING = 1;
 static const int BR_ADMIN_REFUSED_PHASE = 2;
 static const int BR_ADMIN_OFFER_RESPAWN = 3;
 static const int BR_ADMIN_ALLOW_SPECTATE = 4;
+
+//--- THE COT ADMIN PANEL (BRMasterControlsModule). ---------------------------------------------
+//--- How often a panel that is open asks the server for a fresh BattleRoyaleAdminStatus. The client
+//--- polls rather than the server pushing, so that "who has the panel open" needs no server-side
+//--- subscription table and a closed panel costs nothing - the same request/response shape
+//--- RequestLeaderboard already uses.
+static const int BR_ADMIN_STATUS_INTERVAL_MS = 1000;
+
+//--- groups_alive when the party manager cannot answer. NOT 0 and NOT the player count: with the
+//--- manager disabled GetGroupCount() returns one group per player, which is a real number that
+//--- happens to be wrong, and showing it under a group heading is worse than showing nothing.
+//--- Mirrors the BR_HUD_GROUPS_NONE sentinel the HUD already uses for the same reason (#158).
+static const int BR_ADMIN_GROUPS_UNKNOWN = -1;
+
+//--- COT permission strings. One per action group rather than one blanket pair, so an operator can
+//--- hand a moderator role the lobby controls without handing over the whole state machine.
+//---
+//--- ⚠️ THESE ARE NOT THE ONLY GATE AND MUST NEVER BE THE ONLY GATE. A COT permission is checked on
+//--- the CLIENT to decide whether a control is drawn; the server re-checks it, and also allows
+//--- anyone in admins_steamid64 regardless. That list is mission-locked by design
+//--- (BattleRoyaleGameData.LoadMission snapshots and restores it), so it is the one authorization
+//--- that content cannot grant itself - which is why it stays as the floor rather than being
+//--- replaced by roles. See BRMasterControlsModule.AuthorizeAdminAction.
+//--- ⚠️ THE VIEW STRING KEEPS ITS OLD NAME ON PURPOSE. It is the one permission that was already
+//--- live and already working, so any operator who has granted it to a role would silently lose the
+//--- panel if it were renamed to match the newer ones. A tidier name is not worth breaking every
+//--- existing COT role config for. The retired "BattleRoyale.StateMachine.Update" is NOT kept -
+//--- it was registered and never read anywhere, so nothing can depend on it.
+static const string BR_PERM_VIEW = "BattleRoyale.StateMachine.View";
+static const string BR_PERM_MATCH_CONTROL = "BattleRoyale.Match.Control";
+static const string BR_PERM_LOBBY_CONTROL = "BattleRoyale.Lobby.Control";
+//--- Split from Match.Control because these are the ones that touch a specific PLAYER, which is the
+//--- boundary an operator most often wants to draw: a moderator who may unstick somebody and shout
+//--- at the server, but may not skip rounds or force-start a match.
+static const string BR_PERM_PLAYER_MANAGE = "BattleRoyale.Player.Manage";
+static const string BR_PERM_ANNOUNCE = "BattleRoyale.Announce";
+static const string BR_PERM_ZONE_CONTROL = "BattleRoyale.Zone.Control";
+
+//--- ANNOUNCEMENTS. -----------------------------------------------------------------------------
+//--- Free admin text is the one payload in this module authored by a human rather than by the
+//--- server, so it is the one that needs bounding.
+//---
+//--- ⚠️ The cap is enforced SERVER-SIDE. The panel also caps it, but that is convenience: a client
+//--- that sends the RPC directly is not going through the panel at all.
+static const int BR_ANNOUNCE_MAX_CHARS = 200;
+static const float BR_ANNOUNCE_MIN_SECONDS = 3.0;
+static const float BR_ANNOUNCE_MAX_SECONDS = 30.0;
+static const float BR_ANNOUNCE_DEFAULT_SECONDS = 10.0;
+
+//--- How often the panel re-asks for the per-player table while it is on screen. Deliberately
+//--- slower than the status poll: it is the largest recurring payload here (uids and names for the
+//--- whole population), and a roster does not change at 1 Hz.
+static const int BR_ADMIN_ROSTER_INTERVAL_MS = 2000;
+
+//--- Cap on rows in one roster reply. A 60-slot server is the realistic ceiling; the constant exists
+//--- so the payload can never be unbounded if that assumption stops holding.
+static const int BR_ADMIN_ROSTER_MAX_ROWS = 80;
+
+//--- Iterations for the on-demand zone self test. Well under the 200 the boot-time gate uses:
+//--- this runs on a LIVE server with players connected, where a multi-second stall is a stutter
+//--- everybody feels, not a boot cost nobody sees.
+static const int BR_ADMIN_SELFTEST_RUNS = 25;
+
+//--- Fixed-size display pools in the panel. Both are DECLARED counts rather than grow-on-demand
+//--- lists: COT's UIActionManager creates a widget per call and nothing in the panel un-creates one,
+//--- so a pool that grew with the population would leak widgets every time somebody joined. The
+//--- scoreboard shows the leaders and says how many rows it omitted; the zone table is bounded by
+//--- num_zones anyway, which cannot sensibly exceed this.
+static const int BR_ADMIN_SCOREBOARD_ROWS = 8;
+static const int BR_ADMIN_ZONE_ROWS = 10;
+
+//--- Webhook connection suffixes, one per action group. COT builds the connection name as
+//--- GetModuleName() + type, so these are bare suffixes rather than whole names, and they are what
+//--- an operator subscribes a Discord channel to in COT's own webhook form. Split rather than one
+//--- firehose so "somebody skipped a round" and "somebody held the lobby" can go to different
+//--- places - or so one can be subscribed and the other ignored.
+static const string BR_WEBHOOK_TYPE_MATCH = "Match";
+static const string BR_WEBHOOK_TYPE_LOBBY = "Lobby";
+static const string BR_WEBHOOK_TYPE_PLAYER = "Player";
+static const string BR_WEBHOOK_TYPE_ANNOUNCE = "Announce";
 
 //--- CORPSE CARRY. The replication bubble is centred on the spectator's CORPSE, not on the camera -
 //--- UpdateSpectatorPosition does not move it (measured both directions 2026-08-10). So a target
@@ -757,6 +944,63 @@ static const float BR_ZONE_SMALL_CIRCLE_R = 200.0;
 //"centred within this of the town's CfgWorlds point", not "somewhere in the town".
 static const float BR_ZONE_POI_JITTER_M = 10.0;
 
+//--- POI RESOLUTION FROM BUILDINGS.
+//---
+//--- A CfgWorlds "Names" entry carries only name, position[] and type - no radius and no extent
+//--- (verified across ChernarusPlus and Enoch; no vanilla script reads the block at all). That
+//--- position is a MAP-LABEL anchor, placed to keep the text off the buildings, so it routinely sits
+//--- outside the settlement it names. Measured on ChernarusPlus 2026-08-19: Settlement_Chernogorsk,
+//--- the largest coastal city on the map, has TWO buildings within 100 m of its label - a news stand
+//--- and a car wreck - and the city proper does not appear until 200 m. Prigorodki has four.
+//---
+//--- The resolver replaces that label with an anchor derived from the buildings actually present.
+
+//--- Mean-shift convergence: stop re-centring once a pass moves the anchor less than this.
+static const float BR_POI_RESOLVE_CONVERGE_M = 15.0;
+
+//--- How many building positions are kept per POI. The spawn side picks one at random and offsets a
+//--- few metres from it, which is what makes an L-shaped or valley town work where a centroid alone
+//--- would drop players in the gap. Capped because this is cached to disk and 306 POIs x N vectors
+//--- is the whole file size.
+static const int BR_POI_SAMPLE_CAP = 32;
+
+//--- Spawn offset from the chosen building's ORIGIN. Far enough that IsSafeForTeleport's 2.5 m sphere
+//--- cast and 2x10x2 box clear the building itself, close enough that the player is unambiguously in
+//--- the town - the derived extent of a real town is 200-290 m, so even the far end of this range is
+//--- deep inside it.
+//---
+//--- ⚠️ THE OFFSET IS MEASURED FROM THE ORIGIN, NOT FROM THE WALL, and that is what makes the minimum
+//--- load-bearing rather than cosmetic. A building's origin sits near its centre, so anything shorter
+//--- than its half-extent is a point INSIDE the building, which IsSafeForTeleport rejects every single
+//--- time - biasing spawns towards small buildings and, for a town of large ones, rejecting every
+//--- candidate it ever draws. Vanilla residential footprints run ~8-20 m and apartment blocks
+//--- (Land_HouseBlock_3F) past 25 m, so the minimum has to clear roughly half of that.
+//---
+//--- Measured on ChernarusPlus, 77 POIs x 8 candidates, via the acceptance self test in
+//--- BattleRoyaleDebug: at 4-14 m only 33% of candidates were accepted. Do not lower these without
+//--- re-running that test.
+static const float BR_SPAWN_BUILDING_OFFSET_MIN_M = 10.0;
+static const float BR_SPAWN_BUILDING_OFFSET_MAX_M = 28.0;
+
+//--- Candidates drawn per POI by the spawn acceptance self test in BattleRoyaleDebug, and the
+//--- acceptance percentage below which it warns. Each sample costs an IsSafeForTeleport, which is a
+//--- sphere cast plus a box collide, so this is deliberately small - it is a health check, not a
+//--- survey, and it only runs when poi_resolve_selftest is on.
+static const int BR_SPAWN_SELFTEST_SAMPLES = 8;
+
+//--- Confirmation draws for a POI that scored zero on the pass above. At the measured ~42% overall
+//--- rate a zero-of-8 happens by luck for roughly one town in eighty, so the first pass alone cannot
+//--- tell an unusable town from an unlucky one - two runs named six different towns, one of them
+//--- Zelenogorsk, which has 409 buildings. 40 further draws put a false positive at about 1e-9. It
+//--- only runs for the handful of POIs that scored zero, so it costs almost nothing.
+static const int BR_SPAWN_SELFTEST_CONFIRM = 40;
+
+//--- Warn below this acceptance percentage. Derived from the retry budget rather than from a
+//--- comfortable-looking number: GetRandomSpawnPosition draws up to 50 candidates per village, so
+//--- even 15% leaves under a 1-in-3000 chance of exhausting it. 50 was the first guess and fired on a
+//--- perfectly healthy 42% server.
+static const int BR_SPAWN_SELFTEST_WARN_PERCENT = 15;
+
 //Search budgets. Every one of these bounds WORK only - none of them can cause a failure, because
 //the witness step at the end of TryPlaceLevel cannot be rejected.
 static const int   BR_ZONE_LEVEL_RETRIES = 3;   //attempts at a level before it takes the witness step
@@ -830,6 +1074,66 @@ static const float BR_ZONE_TIMER_FIGHT_SECONDS = 125.0;
 //and a zero there fires LockNewZone in the same frame.
 static const float BR_ZONE_TIMER_MIN_SECONDS = 60.0;
 static const float BR_ZONE_TIMER_MAX_SECONDS = 900.0;
+
+//--- THE OPENING ROUND IS A LOOT ROUND, NOT A FIGHT ROUND (#284 point 4).
+//
+//It is the one round with NO inbound travel to price: 4_BattleRoyalePrepare spawns everybody INSIDE
+//the circle that round is going to lock (spawns_settings.spawn_in_first_zone), so the "travel from
+//circle i+1 into circle i" model every other round uses has nothing to measure. What the round is
+//actually for is looting, plus whatever sprinting a player still owes to get from where they landed
+//to where they want to be inside that circle.
+//
+//SPREAD is the fraction of the opening radius a spawned player still owes on average - half of it,
+//since spawns are drawn across the circle rather than from its edge. LOOT is the allowance for the
+//looting itself, calibrated the same way BR_ZONE_TIMER_FIGHT_SECONDS was: on ChernarusPlus stock
+//sizes the opening circle is r = 3375, so the travel term is 3375 * 0.5 / 6 / 0.80 = 352 s, and
+//145 + 352 = 497 s against the shipped static_timers[5] = 495. Near-neutral by arithmetic.
+//
+//That LOOT (145) sits just above FIGHT (125) is the sanity signal to keep: a round spent looting an
+//untouched map should run a little longer than a round spent fighting an equipped one.
+static const float BR_ZONE_TIMER_LOOT_SECONDS  = 145.0;
+static const float BR_ZONE_TIMER_OPENING_SPREAD = 0.5;
+
+//--- DERIVED LADDER (#284 points 1-3, opt-in via zone_settings.derive_zone_ladder /
+//--- bound_match_duration).
+//
+//The derived min_players table is calibrated to REPRODUCE the shipped one, which turned out to be
+//linear in RADIUS rather than in area: 3375/33 = 2250/22 = 1125/11 = 102.3 m per player, with the
+//four smaller tiers all sitting on a floor of 10. Both figures are zone_settings fields
+//(zone_metres_per_player, zone_min_players_floor) so a server can tune them without a rebuild; these
+//are only the sanity bounds on what it may be tuned to.
+static const float BR_ZONE_LADDER_MIN_M_PER_PLAYER = 10.0;
+static const float BR_ZONE_LADDER_MAX_M_PER_PLAYER = 2000.0;
+
+//--- BUILDING CENSUS. The loot-density input, replacing the POI count that shipped first.
+//
+//POI COUNT DOES NOT MEASURE LOOT, and that is measured rather than argued. Scoring 400 random circles
+//per radius on ChernarusPlus against the Central Economy's own loot points - mapgroupproto.xml's
+//lootmax per building type times every instance placed by mapgrouppos.xml - gives:
+//    POI count            0.290 / 0.157 / 0.147   at r = 1125 / 2250 / 3375
+//    settlement POIs only 0.416 / 0.012 / 0.103   (the obvious "filter out the hills" fix; it fails)
+//    BUILDINGS INSIDE     0.993 / 0.995 / 0.995
+//The markers were never the right unit: 285 of them on Chernarus describe 150 distinct places, 94 are
+//hills and viewpoints, and a town plus the office marker beside it is one place counted twice.
+//
+//CELL_M is the square the map is tiled with; each probe asks for that square's circumcircle (x0.7072),
+//which lands at ~354 m - the radius BattleRoyalePOIResolver already runs at and reports as sound. One
+//big query instead would return every tree in tens of km2 in a single array.
+static const float BR_ZONE_CENSUS_CELL_M   = 500.0;
+//Probe budget for the WHOLE MAP: ceil(W / CELL_M)^2, which is 31^2 = 961 on a 15360 m world, so both
+//ChernarusPlus and Sakhal sit comfortably inside this. It is a guard against an absurdly large
+//community terrain, not a tuning knob - past it the census is skipped and the ladder falls back to POI
+//counts rather than spending an unbounded boot. 2500 covers a 25 km map at the shipped cell size.
+//
+//⚠️ IT WAS 900 AND DEAD, WHICH IS WHY THE VALUE WAS WRONG. The cap was written for an earlier design
+//that scanned only the largest circle; when the census became map-wide the check was not carried over,
+//so nothing ever evaluated it - and 900 is BELOW the 961 Chernarus actually needs. A limit that is
+//never reached cannot tell you it is set too low.
+static const int   BR_ZONE_CENSUS_MAX_CELLS = 2500;
+
+//How far the duration bound may walk the starting tier in one direction before giving up. The ladder
+//is at most num_zones long, so this only exists so a misconfiguration cannot spin.
+static const int   BR_MATCH_DURATION_MAX_STEPS = 16;
 
 //Self test. Generates full chains headlessly and reports the failure/backtrack/tier distribution,
 //which is what turns "relaunch the server twenty times and hope" into a number.

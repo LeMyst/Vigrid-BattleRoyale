@@ -226,6 +226,189 @@ class VigridMapAPI
     {
         return s_HotZoneSeq;
     }
+
+    //--- Where to draw "you", when that is not where the local player's body is. Zero means "no
+    //--- override in force", which is the normal case and costs one vector compare per read.
+    private static vector s_SelfOverride;
+
+    /**
+     *  Publish a position to draw the local player at, instead of their body.
+     *
+     *  ⚠ STATED AS A GENERAL CONTRACT, NOT AS ITS CALLER'S USE CASE, exactly like
+     *  VigridPartyAPI.SetMemberHidden: A HOST MOD CAN PUT THE LOCAL PLAYER SOMEWHERE THAT IS NOT
+     *  WHERE THEIR BODY IS. This addon cannot detect that and must not try - it has no concept of a
+     *  match, a camera or a spectator - so the host asserts it.
+     *
+     *  What prompted it: a spectating admin's body is parked somewhere as a network anchor while the
+     *  camera flies, so GetGame().GetPlayer().GetPosition() answers the anchor and the fullscreen
+     *  map drew the self glyph on it. The minimap was always right, because it re-centres on the
+     *  camera every tick and never asks the player at all.
+     *
+     *  ONLY THE POSITION IS OVERRIDDEN, never the heading. The heading is already read from the
+     *  camera on both maps and is therefore already correct while spectating - see the docblock on
+     *  VigridMapMinimap.DrawHeadingArrow for why it can never come from body yaw.
+     *
+     *  Safe to call every frame; the caller owns the clear. Idempotent and session-scoped.
+     */
+    static void SetSelfPositionOverride(vector pos)
+    {
+        s_SelfOverride = pos;
+    }
+
+    //! Drop the override and go back to drawing the player's own body.
+    //!
+    //! ⚠ THE CALLER OWNS THIS, and leaving it set strands the self glyph at a position the player
+    //! left long ago - with no error and nothing on screen to say why. Clear it on every path out,
+    //! including the ones that are not a clean exit. Same warning, and the same reason, as
+    //! VigridPartyAPI.SetMemberHidden's.
+    static void ClearSelfPositionOverride()
+    {
+        s_SelfOverride = vector.Zero;
+    }
+
+    static bool HasSelfPositionOverride()
+    {
+        return s_SelfOverride != vector.Zero;
+    }
+
+    static vector GetSelfPositionOverride()
+    {
+        return s_SelfOverride;
+    }
+
+    //--- An arbitrary set of named, coloured people to plot on the map. Held as copies rather than
+    //--- the caller's arrays, like the hot zones and for the same reason: they are owned by the host
+    //--- and may be cleared under us between frames.
+    private static ref array<string> s_AdminNames = new array<string>();
+    private static ref array<vector> s_AdminPositions = new array<vector>();
+    private static ref array<int> s_AdminColors = new array<int>();
+    private static int s_AdminSeq;
+
+    /**
+     *  Publish a set of players to plot on the map, with a name and a colour each.
+     *
+     *  ⚠ STATED GENERICALLY ON PURPOSE. As far as this addon is concerned these are "people the host
+     *  wants drawn": it does not know they are the living roster of a match, does not know the colours
+     *  mean teams, and must not learn - the colour arrives as a resolved ARGB precisely so that no
+     *  concept of a party crosses the seam. The host's own use is an admin spectator's overview
+     *  (#279), where positions come from the server and so cover players far outside the client's
+     *  network bubble, which is why this cannot be built from the entity list on this side.
+     *
+     *  Safe to call every frame. The three arrays are diffed element-wise and s_AdminSeq only moves
+     *  when something really changed, so a renderer can repaint on the edge.
+     *
+     *  Names may be empty; a renderer draws the glyph and skips the label. Colours are ARGB with the
+     *  alpha already baked in, since a CanvasWidget has no widget in the chain to apply one to.
+     */
+    static void SetAdminPlayers(array<string> names, array<vector> positions, array<int> colors)
+    {
+        int count = 0;
+        if (names && positions && colors)
+        {
+            count = names.Count();
+            if (positions.Count() < count)
+                count = positions.Count();
+            if (colors.Count() < count)
+                count = colors.Count();
+        }
+
+        bool changed = false;
+
+        if (s_AdminNames.Count() != count)
+            changed = true;
+
+        if (!changed)
+        {
+            for (int c = 0; c < count; c++)
+            {
+                //--- One array read per line. A read sharing an expression with a call has been
+                //--- measured in this codebase to return another array's contents entirely.
+                string incoming_name = names[c];
+                string stored_name = s_AdminNames[c];
+                if (incoming_name != stored_name)
+                {
+                    changed = true;
+                    break;
+                }
+
+                vector incoming_pos = positions[c];
+                vector stored_pos = s_AdminPositions[c];
+                if (incoming_pos != stored_pos)
+                {
+                    changed = true;
+                    break;
+                }
+
+                int incoming_color = colors[c];
+                int stored_color = s_AdminColors[c];
+                if (incoming_color != stored_color)
+                {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        if (!changed)
+            return;
+
+        s_AdminNames.Clear();
+        s_AdminPositions.Clear();
+        s_AdminColors.Clear();
+
+        for (int i = 0; i < count; i++)
+        {
+            string copy_name = names[i];
+            vector copy_pos = positions[i];
+            int copy_color = colors[i];
+
+            s_AdminNames.Insert(copy_name);
+            s_AdminPositions.Insert(copy_pos);
+            s_AdminColors.Insert(copy_color);
+        }
+
+        s_AdminSeq = s_AdminSeq + 1;
+    }
+
+    //! Stop plotting them. The caller owns this, exactly like ClearSelfPositionOverride.
+    static void ClearAdminPlayers()
+    {
+        SetAdminPlayers(NULL, NULL, NULL);
+    }
+
+    static int GetAdminPlayerCount()
+    {
+        return s_AdminNames.Count();
+    }
+
+    static string GetAdminPlayerName(int index)
+    {
+        if (index < 0 || index >= s_AdminNames.Count())
+            return "";
+
+        return s_AdminNames[index];
+    }
+
+    static vector GetAdminPlayerPos(int index)
+    {
+        if (index < 0 || index >= s_AdminPositions.Count())
+            return vector.Zero;
+
+        return s_AdminPositions[index];
+    }
+
+    static int GetAdminPlayerColor(int index)
+    {
+        if (index < 0 || index >= s_AdminColors.Count())
+            return VIGRID_MAP_COLOR_TEAM_MARKER;
+
+        return s_AdminColors[index];
+    }
+
+    static int GetAdminPlayerSeq()
+    {
+        return s_AdminSeq;
+    }
 #endif
 
 #ifdef SERVER

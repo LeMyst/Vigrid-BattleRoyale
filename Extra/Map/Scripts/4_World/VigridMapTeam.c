@@ -104,9 +104,10 @@ class VigridMapTeam
     }
 
     /**
-     *  Deliberately has no consumer yet: a CanvasWidget can draw lines and nothing else, so there is
-     *  no text on the map. Kept because a tooltip or a list view is the obvious next thing to want,
-     *  and adding it later means reopening the seam.
+     *  Deliberately has no consumer yet - but NOT because text on the map is impossible. That was the
+     *  old reasoning here and it was wrong: a canvas cannot carry text, which is not the same claim.
+     *  A TextWidget DECLARED as a child of the MapWidget renders fine, which is how the admin layer's
+     *  name labels ship (see map_menu.layout). Teammates simply have not been given labels yet.
      */
     static string GetSlotName(int index)
     {

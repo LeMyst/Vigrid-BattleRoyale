@@ -135,8 +135,13 @@ the opposite treatment: nothing to show afterwards, so it flashes "OUT" and then
   something a server can police.
 - A player whose effects volume is already 0 gets a no-op. It is logged at startup so it is not
   mistaken for a broken addon.
-- `J` is free in vanilla and across this mod's other three `Inputs.xml` files.
-  **Community-Online-Tools is the one to check** if it ever does two things at once — its own
+- `J` is free across this mod's other four `Inputs.xml` files (Battle Royale `F1`–`F6` and the
+  arrows, Party `P`/`T`/`Y`, Map `M`/`N`/`K`, AutoRun `Z`), but it is **not** strictly unbound in
+  vanilla — only `K`, `O` and `P` are. `kJ` is `UABuldSlow`, under the **BULDOZER SPECIFIC** block
+  of `P:\bin\preset_keymouseprimary.xml`: the Workbench model viewer, not the game, and its only
+  reference in `P:\scripts` is the script console's suppression list (`scriptconsole.c:531`). That
+  makes it unreachable in normal gameplay — the same standard AutoRun applied to `kZ`.
+  **Community-Online-Tools is the one to check** if a bind ever does two things at once — its own
   `Inputs.xml` is what collided with Party's `Y`.
 
 ## Logging

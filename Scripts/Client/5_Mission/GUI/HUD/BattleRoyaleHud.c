@@ -7,20 +7,20 @@ class BattleRoyaleHud
     protected Widget m_GroupCountPanel;
     protected Widget m_ZoneDistancePanel;
     protected Widget m_KillCountPanel;
+    protected Widget m_AudienceCountPanel;
     protected Widget m_CountdownPanel;
 
     protected TextWidget m_PlayerTextWidget;
     protected TextWidget m_GroupTextWidget;
     protected TextWidget m_DistanceTextWidget;
     protected TextWidget m_KillTextWidget;
+    protected TextWidget m_AudienceTextWidget;
     protected TextWidget m_CountdownTextWidget;
     
     protected ImageWidget m_DistanceZoneArrow;
     protected ImageWidget m_ImageClock;
 
     protected bool is_shown;
-
-    protected int timeRemaining;
 
     void BattleRoyaleHud( Widget root )
     {
@@ -36,12 +36,14 @@ class BattleRoyaleHud
         m_GroupCountPanel = Widget.Cast( m_Root.FindAnyWidget( "GroupsCountPanel" ) );
         m_ZoneDistancePanel = Widget.Cast( m_Root.FindAnyWidget( "ZoneDistancePanel" ) );
         m_KillCountPanel = Widget.Cast( m_Root.FindAnyWidget( "KillCountPanel" ) );
+        m_AudienceCountPanel = Widget.Cast( m_Root.FindAnyWidget( "AudienceCountPanel" ) );
         m_CountdownPanel = Widget.Cast( m_Root.FindAnyWidget( "CountdownPanel" ) );
 
         m_PlayerTextWidget = TextWidget.Cast( m_PlayerCountPanel.FindAnyWidget( "PlayerText" ) );
         m_GroupTextWidget = TextWidget.Cast( m_GroupCountPanel.FindAnyWidget( "GroupText" ) );
         m_DistanceTextWidget = TextWidget.Cast( m_ZoneDistancePanel.FindAnyWidget( "DistanceText" ) );
         m_KillTextWidget = TextWidget.Cast( m_KillCountPanel.FindAnyWidget( "KillCountText" ) );
+        m_AudienceTextWidget = TextWidget.Cast( m_AudienceCountPanel.FindAnyWidget( "AudienceText" ) );
         m_CountdownTextWidget = TextWidget.Cast( m_CountdownPanel.FindAnyWidget( "CountdownText" ) );
         
         m_DistanceZoneArrow = ImageWidget.Cast( m_Root.FindAnyWidget( "ZoneIcon" ) );
@@ -51,6 +53,7 @@ class BattleRoyaleHud
         m_GroupCountPanel.Show( false );
         m_ZoneDistancePanel.Show( false );
         m_KillCountPanel.Show( false );
+        m_AudienceCountPanel.Show( false );
         m_CountdownPanel.Show( false );
     }
 
@@ -74,11 +77,31 @@ class BattleRoyaleHud
     void ShowDistance( bool show )
     {
         m_ZoneDistancePanel.Show( show );
+
+        //--- The clock and its icon live in CountdownPanel but are coloured from SetDistance, which
+        //--- only runs while this panel is up. Without this, a clock that went red stays red for the
+        //--- rest of the session once the distance readout goes away - 7_BattleRoyaleLastRound clears
+        //--- both circles at LockFinalZone while a countdown is still running, which is exactly that.
+        //---
+        //--- Guarded, unlike the panel above: HideDistance() runs EVERY FRAME in the lobby, so an
+        //--- unresolved widget here would be a per-frame null dereference rather than a one-off.
+        if ( !show && m_CountdownTextWidget && m_ImageClock )
+        {
+            m_CountdownTextWidget.SetColor(ARGB(255, 255, 255, 255));
+            m_ImageClock.SetColor(ARGB(255, 255, 255, 255));
+        }
     }
 
     void ShowKillCount( bool show )
     {
         m_KillCountPanel.Show( show );
+    }
+
+    //! How many people are watching this player. Hidden outright at zero rather than showing a "0",
+    //! same as the kill count above - nobody watching is the normal state and does not need a row.
+    void ShowAudienceCount( bool show )
+    {
+        m_AudienceCountPanel.Show( show );
     }
 
     void ShowCountdown( bool show )
@@ -87,7 +110,16 @@ class BattleRoyaleHud
     }
 
     //value control
-    void SetDistance(bool isInsideZone, float distExt, float distInt, float angle)
+    /**
+     *  secondsToZone is the deadline for being INSIDE the circle the arrow points at, which is not
+     *  always the number printed on the clock - see BattleRoyaleClient.Update and
+     *  BattleRoyaleState.SendCountdown.
+     *
+     *  Passed in rather than read off a member the way `timeRemaining` used to be: SetCountdown only
+     *  ran on an edge, from a different call path, and ran AFTER this in the same frame - so the
+     *  colour was keyed to a stale value nobody could see was stale.
+     */
+    void SetDistance(bool isInsideZone, float distExt, float distInt, float angle, int secondsToZone)
     {
         if(!m_DistanceTextWidget)
         {
@@ -110,16 +142,21 @@ class BattleRoyaleHud
 			// Calculate speed needed to reach the zone in time (m/s)
 			float speedNeededToReachZone = 0;
 
-			if (timeRemaining > 0)
+			if (secondsToZone > 0)
 			{
-				speedNeededToReachZone = distExt / timeRemaining;
+				speedNeededToReachZone = distExt / secondsToZone;
 			}
 			else
 			{
 				speedNeededToReachZone = 99999; // Infinite speed needed if no time
 			}
 
-			BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 timeRemaining=%2 speedNeededToReachZone=%3", distExt, timeRemaining, speedNeededToReachZone));
+			//--- Gated so the string is not even BUILT at production log levels. This runs once per
+			//--- frame for as long as a player is outside the circle, which used to mean the tail end
+			//--- of a round and now means the whole pre-lock phase too - measured at ~60 lines/second
+			//--- per client, and string.Format runs before Debug() can reject it.
+			if (BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+				BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 secondsToZone=%2 speedNeededToReachZone=%3", distExt, secondsToZone, speedNeededToReachZone));
 
 			// Convert m/min thresholds to m/s for comparison (divide by 60)
 			float fastThreshold = 400.0 / 60.0;    // 6.67 m/s
@@ -191,12 +228,25 @@ class BattleRoyaleHud
 
     void SetKillCount(int count)
     {
-        if(!m_CountdownTextWidget)
+        //--- The widget this method actually writes to. It used to guard m_CountdownTextWidget and
+        //--- report "Called SetCountdown", then dereference m_KillTextWidget unguarded - a
+        //--- copy-paste that made the guard test the wrong widget in both directions.
+        if(!m_KillTextWidget)
         {
-            Error("Called SetCountdown but widget is null!");
+            Error("Called SetKillCount but widget is null!");
             return;
         }
         m_KillTextWidget.SetText( count.ToString() );
+    }
+
+    void SetAudienceCount(int count)
+    {
+        if(!m_AudienceTextWidget)
+        {
+            Error("Called SetAudienceCount but widget is null!");
+            return;
+        }
+        m_AudienceTextWidget.SetText( count.ToString() );
     }
 
     void SetCountdown(int value)
@@ -206,8 +256,6 @@ class BattleRoyaleHud
             Error("Called SetCountdown but widget is null!");
             return;
         }
-
-        timeRemaining = value;
 
         int seconds = (value % 60);
         string second_string = seconds.ToString();

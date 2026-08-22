@@ -56,13 +56,18 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateMode", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCamPos", this);
+        //--- The VPP admin panel's one button. Its only caller is MenuBattleRoyaleManager.c, which is
+        //--- itself #ifdef VPPADMINTOOLS, so registration and caller are guarded on the same define
+        //--- and match.
+        //---
+        //--- ⚠️ The COT panel does NOT use this channel and never did - BRMasterControlsModule talks
+        //--- over ScriptRPC with its own id range. A comment here used to claim JM_COT was this RPC's
+        //--- only caller and that a COT-without-VPP build therefore had a live button and nothing
+        //--- listening; neither half was true. Whether the VPP surface is kept at all is #307.
 #ifdef VPPADMINTOOLS
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "NextState", this, SingleplayerExecutionType.Server);
 #endif
 #ifdef DIAG_DEVELOPER
-        //--- Guarded on the same define as its handler, unlike NextState above, whose registration
-        //--- is VPPADMINTOOLS while its only caller is JM_COT - a COT-without-VPP build has a live
-        //--- button and nothing listening.
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "BRDiagAction", this );
 #endif
 
@@ -138,6 +143,28 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- per-round cost. Note i_NumRounds is read above and the state list below is sized from
         //--- it, so generation has to observe the same already-validated num_zones - it does, both
         //--- read it through GetZoneData().
+        //--- Resolve every POI to where its town actually is, BEFORE the circles are generated.
+        //---
+        //--- The ordering is load-bearing: a CfgWorlds "Names" position is a map-label anchor placed
+        //--- to keep the text off the buildings, and BattleRoyaleZone seeds the final circle on it
+        //--- with only BR_ZONE_POI_JITTER_M of jitter - so with end_in_villages on, an unresolved run
+        //--- centres the endgame on the field beside the town. Measured on ChernarusPlus,
+        //--- Settlement_Chernogorsk has two buildings within 100 m of its label.
+        //---
+        //--- Safe to run here: measured 2026-08-19, the object tree is fully populated at
+        //--- MissionServer.OnInit - an OnInit pass and a lobby pass returned bit-identical counts at
+        //--- every sample. Cost is first-touch per region (~12 s cold across 306 POIs), which is why
+        //--- the result is cached to the mission folder and later boots pay nothing.
+        BattleRoyalePOIResolver.Init();
+
+        //--- The building census, which the derived ladder rates circles by. GATED, because it is the
+        //--- most expensive thing the mod can do at boot: on a map with no cache yet it scans the whole
+        //--- world once (tens of seconds) and stores it in scan_cache.json beside the POI anchors; every
+        //--- later boot reads the file. A server with derive_zone_ladder off must not pay a second for
+        //--- a number nothing reads, so it is asked for here rather than lazily from the generator.
+        if (m_ZoneData.derive_zone_ladder)
+            BattleRoyaleBuildingCensus.Init();
+
         BattleRoyaleZone.PrepareGeneration();
 
         //--- initialize all states (in order from start to finish)
@@ -315,7 +342,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 					if(GetCurrentState().IsActive())
 						GetCurrentState().Deactivate(); //deactivate old state
 
-					ref array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
+					array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 					for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 					{
 						if(players[i])
@@ -544,6 +571,89 @@ class BattleRoyaleServer: BattleRoyaleBase
     }
 
     /**
+     *  Seconds left on this uid's pending late-join kick, or -1 when none is running.
+     *
+     *  For the admin console: until this existed there was no way to SEE that somebody was on a
+     *  disconnect countdown, which made "why did that player drop?" unanswerable after the fact.
+     *
+     *  ⚠️ Only an ARMED entry has a deadline. ScheduleLateJoinKick merely records the joiner; the
+     *  clock does not start until ArmLateJoiner, driven by the client's own PlayerLoadedIn - because
+     *  a countdown started at connect is mostly loading screen (measured: ClientPrepare -> ClientNew
+     *  alone took 20 s). An unarmed entry is pending but not yet counting, and answering 0 for it
+     *  would read as "about to be kicked".
+     */
+    int BR_GetLateJoinSecondsLeft(string uid)
+    {
+        if(uid == "")
+            return -1;
+        if(!a_LateJoiners)
+            return -1;
+
+        int now = GetGame().GetTime();
+
+        for(int i = 0; i < a_LateJoiners.Count(); i++)
+        {
+            BattleRoyaleLateJoiner entry = a_LateJoiners[i];
+            if(!entry)
+                continue;
+            if(entry.plain_id != uid)
+                continue;
+            if(!entry.armed)
+                return -1;
+
+            int left_ms = entry.deadline_ms - now;
+            if(left_ms < 0)
+                left_ms = 0;
+
+            return left_ms / 1000;
+        }
+
+        return -1;
+    }
+
+    /**
+     *  Cancel a pending late-join kick and stop it being re-scheduled.
+     *
+     *  ⚠️ BOTH halves are required and dropping either makes this useless. Forgetting the entry
+     *  alone leaves OnPlayerTick's not-in-state branch free to schedule a fresh kick on the very
+     *  next tick - that branch runs for anyone the current state does not hold, which is exactly the
+     *  player being rescued. Exempting alone leaves the already-armed deadline running. So: exempt
+     *  first, then forget.
+     *
+     *  Returns false when the uid names nobody connected, so the caller can say so rather than
+     *  reporting a success that did nothing.
+     */
+    bool BR_CancelLateJoinKick(string uid)
+    {
+        if(uid == "")
+            return false;
+
+        ExemptFromLateJoinKick( uid );
+
+        PlayerBase subject = NULL;
+        array<Man> population = new array<Man>();
+        GetGame().GetPlayers( population );
+
+        for(int i = 0; i < population.Count(); i++)
+        {
+            PlayerBase candidate = PlayerBase.Cast( population[i] );
+            if(!candidate)
+                continue;
+            if(candidate.player_steamid == uid)
+            {
+                subject = candidate;
+                break;
+            }
+        }
+
+        if(!subject)
+            return false;
+
+        ForgetLateJoiner( subject, subject.GetIdentity() );
+        return true;
+    }
+
+    /**
      *  True if this player is allowed to stay connected while holding no state (admins only).
      *
      *  Checks admins_steamid64 DIRECTLY as well as the a_LateJoinExempt list, and that is a fix
@@ -680,7 +790,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- another call does not evaluate reliably. Keep it flat.
         bool sender_is_admin = IsAdminIdentity( sender );
 
-        ref Param1<bool> admin_flag = new Param1<bool>( sender_is_admin );
+        Param1<bool> admin_flag = new Param1<bool>( sender_is_admin );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", admin_flag, true, sender );
 
         //--- And where the match currently is, for the same reason: this client missed every
@@ -688,7 +798,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- means an admin, everyone else being kicked - reads the shipped default and behaves as
         //--- though the lobby were still running. Flat, like the admin verdict above.
         bool in_lobby = IsLobbyPhase();
-        ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
+        Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true, sender );
 
         //--- And the hot zones, for the same reason and to the same client. Static config, so this is
@@ -1097,8 +1207,8 @@ class BattleRoyaleServer: BattleRoyaleBase
         if( configured == 0 )
             return;  //--- nothing configured
 
-        ref array<string> near_centers = new array<string>();
-        ref array<float> near_radii = new array<float>();
+        array<string> near_centers = new array<string>();
+        array<float> near_radii = new array<float>();
 
         //--- Flattened to the ground plane: these are 2D circles, and a play area's centre carries a
         //--- terrain height that would otherwise inflate every distance.
@@ -1128,7 +1238,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- would take the caller's remaining work with it.
         //--- Plain array<T>, NOT ref array<T>, matching SetLobbyNames above - the send and the read
         //--- side have to spell the type the same way, and this is the pair that is known to work.
-        ref Param2<array<string>, array<float>> payload = new Param2<array<string>, array<float>>( near_centers, near_radii );
+        Param2<array<string>, array<float>> payload = new Param2<array<string>, array<float>>( near_centers, near_radii );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHotZones", payload, true, recipient );
 
         string who = "broadcast";
@@ -1143,9 +1253,13 @@ class BattleRoyaleServer: BattleRoyaleBase
      *
      *  ONE PACKET PER RECIPIENT, and their own teammates are dropped from it here rather than
      *  filtered on arrival. Party composition therefore never goes on the wire, and neither do
-     *  SteamID64s - the client identifies each subject by NETWORK ID, which is the only handle both
-     *  sides agree on for a remote entity. GetIdentity() is not reliably populated client-side for
-     *  another player, which is what made the first attempt draw nothing at all.
+     *  SteamID64s - the client identifies each subject by NETWORK ID.
+     *
+     *  ⚠️ RETRACTED 2026-08-12. The reason once recorded here - that GetIdentity() is not reliably
+     *  populated client-side for another player - IS FALSE, and was never why the first attempt
+     *  drew nothing. Remote identities are populated; measured `noidentity=0`, sustained. Network id
+     *  is kept because it is the version that shipped and was verified. See the header of
+     *  BattleRoyaleLobbyTags.c for the measurement.
      *
      *  Names come from PlayerBase.player_name, so they carry the name service's corrections rather
      *  than the "Survivor" the client connected with.
@@ -1219,7 +1333,7 @@ class BattleRoyaleServer: BattleRoyaleBase
                 names.Insert( subject.player_name );
             }
 
-            ref Param3<array<int>, array<int>, array<string>> payload = new Param3<array<int>, array<int>, array<string>>( net_low, net_high, names );
+            Param3<array<int>, array<int>, array<string>> payload = new Param3<array<int>, array<int>, array<string>>( net_low, net_high, names );
             GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyNames", payload, true, identity );
         }
     }
@@ -1235,7 +1349,7 @@ class BattleRoyaleServer: BattleRoyaleBase
     void BroadcastLobbyPhase()
     {
         bool in_lobby = IsLobbyPhase();
-        ref Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
+        Param1<bool> lobby_flag = new Param1<bool>( in_lobby );
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", lobby_flag, true );
     }
 
@@ -1315,7 +1429,17 @@ class BattleRoyaleServer: BattleRoyaleBase
             PlayerBase senderBase = m_DebugStateObj.GetPlayerFromIdentity(sender);
             if(!senderBase)
             {
-                Error("Debug state does not contain player requesting ready up!");
+                //--- ⚠️ WARN, NOT Error(). The global Error() is Error2("", err) - it raises a VM
+                //--- exception and unwinds the script stack, which on a live server is a far worse
+                //--- outcome than a dead keypress.
+                //---
+                //--- This branch used to be unreachable in practice: GetPlayerFromIdentity searches
+                //--- the state roster, and before the admin console the only ways off that roster
+                //--- were dying or disconnecting, neither of which leaves somebody able to press F1.
+                //--- "Remove from match" made it reachable - a player who is still connected, still
+                //--- has a body, and is no longer on the roster - so a single F1 from them would
+                //--- have taken the server's script VM down.
+                BattleRoyaleUtils.Warn("[Lobby] ready-up from " + GetIdentityLogName(sender) + " ignored: they are not on the lobby roster.");
                 return;
             }
 
@@ -1505,12 +1629,12 @@ class BattleRoyaleServer: BattleRoyaleBase
     {
         BattleRoyaleLastMatchFile previous = BattleRoyaleMatchStats.GetInstance().GetPrevious();
 
-        ref array<string> names = new array<string>();
-        ref array<int> places = new array<int>();
-        ref array<int> kills = new array<int>();
-        ref array<int> damage = new array<int>();
-        ref array<int> survived = new array<int>();
-        ref array<int> groups = new array<int>();
+        array<string> names = new array<string>();
+        array<int> places = new array<int>();
+        array<int> kills = new array<int>();
+        array<int> damage = new array<int>();
+        array<int> survived = new array<int>();
+        array<int> groups = new array<int>();
 
         int self_index = -1;
         int field_size = 0;
@@ -1756,7 +1880,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                 //--- Readies everyone through the real ReadyUp path, so the countdown, the messages
                 //--- and the vote threshold all behave exactly as they would with real players.
-                ref array<PlayerBase> lobby_players = lobby.GetPlayers();
+                array<PlayerBase> lobby_players = lobby.GetPlayers();
                 for(int r = 0; r < lobby_players.Count(); r++)
                 {
                     if(lobby_players[r])
@@ -1878,6 +2002,9 @@ class BattleRoyaleServer: BattleRoyaleBase
                 float offset;
                 float derived;
                 float growth;
+                float opening;
+                int pois;
+                int derived_mp;
                 string row;
                 BattleRoyaleZone dump_zone = BattleRoyaleZone.GetZone(1);
 
@@ -1897,11 +2024,19 @@ class BattleRoyaleServer: BattleRoyaleBase
                     //--- would do.
                     derived = 0;
                     growth = 0;
+                    opening = 0;
                     if(dump_zone)
                     {
                         derived = dump_zone.GetDerivedTimer(z);
                         growth = dump_zone.GetRadiusGrowth(z);
+                        opening = dump_zone.GetOpeningTimer(z);
                     }
+
+                    //--- The loot-density inputs, on the same terms as the two above: reported whether
+                    //--- or not derive_zone_ladder is on, because what an operator wants from this dump
+                    //--- is what turning it on would do. -1 means BuildDerivedLadder never ran.
+                    pois = BattleRoyaleZone.GetPOICount(z);
+                    derived_mp = BattleRoyaleZone.GetDerivedMinPlayers(z);
 
                     row = "[Diag]   [" + z + "] center=" + area.GetCenter();
                     row = row + " radius=" + area.GetRadius();
@@ -1909,6 +2044,9 @@ class BattleRoyaleServer: BattleRoyaleBase
                         row = row + " (grew +" + growth + ")";
                     row = row + " duration_offset=" + offset;
                     row = row + " derived_timer=" + derived;
+                    row = row + " opening_timer=" + opening;
+                    row = row + " pois=" + pois;
+                    row = row + " derived_min_players=" + derived_mp;
 
                     BattleRoyaleUtils.Info(row);
                 }
@@ -1945,6 +2083,13 @@ class BattleRoyaleServer: BattleRoyaleBase
                 BattleRoyaleDiag.trace_teleport = (data.param2 != 0);
                 BattleRoyaleDiag.trace_teleport_ticks = (int)data.param3;
                 BattleRoyaleUtils.Info("[Diag] teleport trace -> " + BattleRoyaleDiag.trace_teleport + " for " + BattleRoyaleDiag.trace_teleport_ticks + " ticks");
+                break;
+            }
+
+            case BattleRoyaleDiagAction.SET_TRACE_AIM:
+            {
+                BattleRoyaleDiag.trace_aim = (data.param2 != 0);
+                BattleRoyaleUtils.Info("[Diag] aim trace -> " + BattleRoyaleDiag.trace_aim);
                 break;
             }
 

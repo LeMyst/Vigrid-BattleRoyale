@@ -21,6 +21,21 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //--- MessageWaiting, which uses "is a hold running" as its "is loading what is holding us up".
     protected int i_LoadHoldStartedMs;
 
+    /**
+     *  Admin-held lobby: while true, NOTHING starts the match by itself and it begins only when an
+     *  admin asks for it through BR_AdminStartMatch().
+     *
+     *  Seeded from lobby_settings.json `manual_start` so a server can boot into a held lobby, and
+     *  flipped at runtime from the COT panel, which is the ordinary way to use it.
+     *
+     *  ⚠️ THIS IS NOT Pause(). Pause() stops IsComplete() from answering true, but CheckReadyState()
+     *  reaches DeactivateDeferred() on its own - so a paused lobby that hits its vote or autostart
+     *  threshold still runs Deactivate(), which auto-groups the roster, locks party formation and
+     *  stops every lobby timer, and then transitions the instant somebody resumes. Pause is
+     *  arm-and-hold; this is hold. (The pause path is also fixed, see CheckReadyState.)
+     */
+    protected bool b_ManualStart;
+
     void BattleRoyaleDebug()
     {
         m_ReadyList = new array<PlayerBase>();
@@ -38,6 +53,106 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		i_MinPartySize = m_LobbySettings.min_party_size;
 		i_MinPartyRemainder = m_LobbySettings.min_party_remainder;
 		i_AutoGroupSelfTest = m_LobbySettings.auto_group_selftest;
+		b_ManualStart = m_LobbySettings.manual_start;
+    }
+
+    //--- Is an admin holding the lobby open? Read by the COT status readout and by MessageWaiting.
+    bool BR_IsManualStart()
+    {
+        return b_ManualStart;
+    }
+
+    /**
+     *  Hold the lobby open, or release it.
+     *
+     *  Releasing does not start anything by itself - it hands the decision back to the ordinary
+     *  gates, which then apply as they always did. So "release" on a lobby that is already over its
+     *  thresholds starts the match within a tick or two, and on one that is not simply resumes
+     *  waiting. That is the wanted behaviour in both cases and needs no special handling.
+     *
+     *  ResetLoadHold() on the way in for the same reason every other non-start path calls it: the
+     *  load gate's bound is a clock, and a hold that began under conditions which no longer apply
+     *  must not keep burning it.
+     */
+    void BR_SetManualStart(bool held)
+    {
+        if( b_ManualStart == held )
+            return;
+
+        b_ManualStart = held;
+        ResetLoadHold();
+
+        if( held )
+            BattleRoyaleUtils.Info("[Admin] lobby HELD - no automatic start will happen until it is released or a manual start is requested.");
+        else
+            BattleRoyaleUtils.Info("[Admin] lobby RELEASED - the ordinary start gates apply again.");
+    }
+
+    /**
+     *  Would a manual start be accepted right now?
+     *
+     *  ⚠️ EXACTLY ONE HARD REFUSAL, and it is not an automation the hold is meant to override.
+     *  BattleRoyaleState.IsOneSideLeft() is the win condition, so a match force-started with one
+     *  group standing satisfies it on the very first tick: the match would end immediately, run
+     *  through the win state and restart the server. Everything else an admin might want to
+     *  override - not enough players, the minimum wait, the not-full wait, players still loading -
+     *  is a policy they are entitled to overrule, and is surfaced in the panel as information
+     *  rather than enforced here.
+     */
+    bool BR_CanStartNow()
+    {
+        if( !IsActive() )
+            return false;
+
+        //--- Hoisted into a local: EnfusionScript has no multi-line if conditions and the guarded
+        //--- term cannot be appended to a return expression.
+        bool enough_groups = GetPlayers().Count() > 1;
+#ifdef VIGRID_PARTY
+        enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
+#endif
+
+        return enough_groups;
+    }
+
+    /**
+     *  Start the match now, on an admin's say-so, bypassing every automatic gate but the group
+     *  floor above.
+     *
+     *  DeactivateDeferred() rather than Deactivate() for uniformity with CheckReadyState - it is
+     *  safe from anywhere, and nothing observable changes either way since the driver only polls
+     *  IsComplete() at 10 Hz.
+     *
+     *  Note this deliberately does NOT clear b_ManualStart. Deactivate() is about to take the lobby
+     *  down for good (one match per process), so the flag has nothing left to gate; clearing it
+     *  would only make the status readout briefly lie about how the match was started.
+     *
+     *  Returns false when refused, so the caller can tell the admin why rather than appearing to
+     *  do nothing.
+     */
+    bool BR_AdminStartMatch()
+    {
+        if( !IsActive() )
+        {
+            BattleRoyaleUtils.Warn("[Admin] manual start refused: the lobby state is not active.");
+            return false;
+        }
+
+        if( !BR_CanStartNow() )
+        {
+            BattleRoyaleUtils.Warn("[Admin] manual start refused: fewer than two groups in the lobby. The match would end on its first tick.");
+            return false;
+        }
+
+        //--- Information, not a refusal. An admin starting a match with somebody still on a loading
+        //--- screen is making a call they are allowed to make; it is logged so the consequence is
+        //--- attributable afterwards rather than mysterious.
+        int not_loaded = GetNotLoadedCount();
+        if( not_loaded > 0 )
+            BattleRoyaleUtils.Warn("[Admin] manual start with " + not_loaded + " player(s) still loading.");
+
+        BattleRoyaleUtils.Info("[Admin] manual start accepted, closing the lobby.");
+        DeactivateDeferred();
+        return true;
     }
 
 #ifdef VIGRID_PARTY
@@ -46,6 +161,131 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     //--- It is here because the interesting cases are combinatorial and the local rig runs three
     //--- clients, which cannot produce a four-way split, a top-up that also leaves a remainder, or
     //--- the max_party_size overflow.
+    //--- How often a building-adjacent spawn candidate is actually ACCEPTED by IsSafeForTeleport.
+    //---
+    //--- This exists because the obvious failure of the building-based spawn is invisible from the
+    //--- outside. GetSpawnCandidate offsets from a building's ORIGIN, and a large structure -
+    //--- Land_HouseBlock_3F is tens of metres long - can easily still contain a point 4-14 m from its
+    //--- origin. IsSafeForTeleport then rejects that candidate every single time, so big buildings
+    //--- would be systematically under-represented as spawn anchors and the retry loop would quietly
+    //--- fall through to the disc draw, undoing the feature while every log line still looked healthy.
+    //---
+    //--- Lives here rather than in BattleRoyalePrepare because IsSafeForTeleport is a BattleRoyaleState
+    //--- method and this state is the one that is actually active with no players in the match. It
+    //--- rides poi_resolve_selftest rather than adding a setting: it is the same feature's acceptance
+    //--- gate, one step further down.
+    //---
+    //--- check_zone is false because the play area is irrelevant to the question being asked, which is
+    //--- purely "is this spot clear of geometry".
+    protected void RunSpawnAcceptanceSelfTest()
+    {
+        BattleRoyalePOIsData poi_settings = BattleRoyaleConfig.GetConfig().GetPOIsData();
+        if (!poi_settings || poi_settings.poi_resolve_selftest <= 0)
+            return;
+
+        ref array<string> names = new array<string>;
+        BattleRoyalePOIResolver.GetResolvedNames(names);
+
+        if (names.Count() == 0)
+            return;
+
+        int accepted = 0;
+        int rejected = 0;
+        int no_candidate = 0;
+        int worst_pois = 0;
+        int i;
+        int s;
+
+        float t0 = GetGame().GetTickTime();
+
+        for (i = 0; i < names.Count(); i++)
+        {
+            string poi_name = names.Get(i);
+            int poi_ok = 0;
+
+            for (s = 0; s < BR_SPAWN_SELFTEST_SAMPLES; s++)
+            {
+                vector candidate;
+                if (!BattleRoyalePOIResolver.GetSpawnCandidate(poi_name, candidate))
+                {
+                    no_candidate++;
+                    continue;
+                }
+
+                if (IsSafeForTeleport(candidate[0], candidate[1], candidate[2], false))
+                {
+                    accepted++;
+                    poi_ok++;
+                }
+                else
+                    rejected++;
+            }
+
+            //--- A town where NOTHING is acceptable is the shape that matters - an average hides it,
+            //--- and every spawn there falls silently through to the disc draw. But a zero out of
+            //--- BR_SPAWN_SELFTEST_SAMPLES is NOT evidence of that on its own, and saying so would
+            //--- make this warning worthless.
+            //---
+            //--- ⚠️ MEASURED: at a 33% overall rate, P(0 of 8) is 4%, so across 77 POIs about three
+            //--- towns come up empty by luck alone - and three did. Two runs then named six DIFFERENT
+            //--- towns, one of which was Zelenogorsk, a town with 409 buildings that obviously cannot
+            //--- be unspawnable. A warning that accuses a different innocent town every boot trains
+            //--- the reader to ignore it.
+            //---
+            //--- So a zero only triggers a SECOND, longer pass, and only a town that fails that too is
+            //--- reported. The confirm pass is why the sample count can stay small: it runs for a
+            //--- handful of POIs rather than all 77, so the common case stays fast.
+            if (poi_ok == 0 && ConfirmDeadPOI(poi_name))
+            {
+                worst_pois++;
+                BattleRoyaleUtils.Warn("[SpawnSelfTest] " + poi_name + " accepted nothing in " + BR_SPAWN_SELFTEST_CONFIRM.ToString() + " further attempts - spawns there fall back to the disc draw.");
+            }
+        }
+
+        float elapsed_ms = (GetGame().GetTickTime() - t0) * 1000.0;
+        int total = accepted + rejected;
+
+        int percent = 0;
+        if (total > 0)
+            percent = (accepted * 100) / total;
+
+        string line = "[SpawnSelfTest] ";
+        line = line + names.Count().ToString() + " POIs x " + BR_SPAWN_SELFTEST_SAMPLES.ToString();
+        line = line + " - accepted " + accepted.ToString();
+        line = line + ", rejected " + rejected.ToString();
+        line = line + " (" + percent.ToString() + "%)";
+        line = line + ", no candidate " + no_candidate.ToString();
+        line = line + ", dead POIs " + worst_pois.ToString();
+        line = line + " (" + elapsed_ms.ToString() + " ms)";
+        BattleRoyaleUtils.Info(line);
+
+        //--- The threshold is set from the RETRY BUDGET, not from what looks like a healthy number.
+        //--- GetRandomSpawnPosition draws up to 50 candidates per village and each draw picks a fresh
+        //--- building and a fresh offset, so at 42% the chance of exhausting that budget is about
+        //--- 1e-12 and at 15% it is still under 1 in 3000. Warning at "below half" would fire on a
+        //--- perfectly healthy server - which it did, at the measured 42%.
+        if (percent < BR_SPAWN_SELFTEST_WARN_PERCENT)
+            BattleRoyaleUtils.Warn("[SpawnSelfTest] acceptance is low enough to strain the 50-draw retry budget - spawns will often fall through to the disc draw. Raise BR_SPAWN_BUILDING_OFFSET_MIN_M so candidates clear the building they are measured from.");
+    }
+
+    //--- Second opinion on a POI that scored zero, with a much longer draw. Only a town that fails
+    //--- this too is worth telling anybody about - see the note at the call site.
+    protected bool ConfirmDeadPOI(string poi_name)
+    {
+        int s;
+        for (s = 0; s < BR_SPAWN_SELFTEST_CONFIRM; s++)
+        {
+            vector candidate;
+            if (!BattleRoyalePOIResolver.GetSpawnCandidate(poi_name, candidate))
+                continue;
+
+            if (IsSafeForTeleport(candidate[0], candidate[1], candidate[2], false))
+                return false;
+        }
+
+        return true;
+    }
+
     protected void RunAutoGroupSelfTest()
     {
         if ( i_AutoGroupSelfTest <= 0 )
@@ -95,7 +335,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         int not_loaded = 0;
 
-        ref array<PlayerBase> players = GetPlayers();
+        array<PlayerBase> players = GetPlayers();
         for(int i = 0; i < players.Count(); i++)
         {
             PlayerBase player = players.Get(i);
@@ -258,7 +498,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
      */
     void BR_DiagSetAllUnloaded(bool unloaded)
     {
-        ref array<PlayerBase> players = GetPlayers();
+        array<PlayerBase> players = GetPlayers();
         int marked = 0;
 
         for(int i = 0; i < players.Count(); i++)
@@ -376,7 +616,15 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             //--- and this one now carries five independent tests.
             bool enough_players = GetLoadedPlayerCount() >= i_MinPlayers;
             bool waited_long_enough = GetGame().GetTickTime() >= f_MinWaitingTime;
-            bool start_wanted = IsActive() && enough_players && waited_long_enough && enough_groups && IsNotFullWaitSatisfied();
+
+            //--- The admin hold. Split out rather than appended to the conjunction below, which
+            //--- already carries five terms - EnfusionScript caps how complex a single expression
+            //--- may be ("Formula too complex" is a hard compile error that only surfaces when the
+            //--- module loads, not when the PBO packs).
+            bool automatic_start_allowed = !b_ManualStart;
+
+            bool start_wanted = IsActive() && automatic_start_allowed && enough_players && waited_long_enough;
+            start_wanted = start_wanted && enough_groups && IsNotFullWaitSatisfied();
 
             //--- Load gate consulted LAST, once the start is otherwise green - see IsLoadGateClear.
             if( !start_wanted )
@@ -438,6 +686,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         RunAutoGroupSelfTest();
 #endif
 
+        //--- Outside the VIGRID_PARTY guard above - nothing about spawn placement involves parties.
+        RunSpawnAcceptanceSelfTest();
+
         super.Activate();
     }
 
@@ -474,10 +725,25 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			//--- on purpose: its threshold already decays from "a full lobby" to nothing across
 			//--- autostart_delay, so it is the same rule in continuous form, and it is the path that
 			//--- guarantees a match eventually happens at all.
-			bool vote_start = IsActive() && IsVoteReady() && IsNotFullWaitSatisfied();
+			//--- ⚠️ TWO INDEPENDENT SUPPRESSIONS, and each was its own bug.
+			//---
+			//--- b_ManualStart is the admin hold: while it is set, neither automatic path may fire.
+			//---
+			//--- IsPaused() is the fix for the pause path. BattleRoyaleState.IsComplete() refuses to
+			//--- complete while paused, so the SERVER does not advance - but this method reaches
+			//--- DeactivateDeferred() on its own and never consulted the flag. So a paused lobby
+			//--- that hit its threshold still ran Deactivate(): AutoGroup fired, formation was
+			//--- locked, every lobby timer stopped, b_IsActive went false - and then Resume() made
+			//--- IsComplete() true on the very next 10 Hz poll, transitioning instantly with the
+			//--- roster already grouped and frozen at a moment the admin never chose. Pause was
+			//--- arm-and-hold rather than hold.
+			bool automatic_start_allowed = !b_ManualStart && !IsPaused();
+
+			bool vote_start = IsActive() && automatic_start_allowed && IsVoteReady() && IsNotFullWaitSatisfied();
 
 			int t_MaxPlayers = GetGame().ServerConfigGetInt( "maxPlayers" );
-			bool auto_start = b_AutoStartGame && GetReadyCount() > 1 && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) );
+			bool auto_ready = b_AutoStartGame && automatic_start_allowed && GetReadyCount() > 1;
+			bool auto_start = auto_ready && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) );
 
 			//--- Merged into one exit where these used to be two independent DeactivateDeferred()
 			//--- calls, so the load gate is consulted exactly once and cannot be satisfied by one
@@ -567,7 +833,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			else
 				MessagePlayersUntranslated("STR_BR_PLAYERS_READY_UP", ready_count.ToString());
 
-			if( GetGame().GetTickTime() < f_MinWaitingTime )
+			//--- Suppressed while held: both of these describe an automatic start that is not going
+			//--- to happen, and "the game will auto start in 12" followed by nothing happening is
+			//--- worse than saying nothing at all. The held notice below covers this case instead.
+			if( GetGame().GetTickTime() < f_MinWaitingTime && !b_ManualStart )
 			{
 				int seconds_left = Math.Ceil( f_MinWaitingTime - GetGame().GetTickTime() );
 
@@ -577,6 +846,64 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 					MessagePlayersUntranslated("STR_BR_GAME_WILL_AUTO_START_IN", seconds_left.ToString());
 			}
 		}
+
+		//--- Last, and unconditional while held. Without it a held lobby is indistinguishable from a
+		//--- broken one: every countdown the player can see stops moving, nothing explains why, and
+		//--- the reasonable conclusion is that the server has hung. Said every cycle rather than once
+		//--- because a player who joins mid-hold would otherwise never be told.
+		if( b_ManualStart )
+			MessagePlayersUntranslated("STR_BR_LOBBY_HELD_BY_ADMIN");
+    }
+
+    /**
+     *  The lobby half of the COT admin readout - i.e. every term of both start gates, which is what
+     *  answers "why hasn't the match started?".
+     *
+     *  This is the same set of facts BR_DiagLogGate() prints, and the reason it exists twice is that
+     *  the diag version sits behind DIAG_DEVELOPER and is therefore unreachable on exactly the live
+     *  servers where an operator asks the question. They are kept as separate methods rather than one
+     *  because they answer to different audiences: the log dump is two prose lines built for a
+     *  developer reading an .rpt, this is structured data for a panel.
+     *
+     *  ⚠️ IsLoadGateClear() IS DELIBERATELY NOT CALLED HERE. It is not a predicate - it STARTS the
+     *  hold clock on its first refusal, and that clock is what bounds the delay. Polling it once a
+     *  second from a readout would run the bound down against nothing and leave the gate permanently
+     *  open by the time it actually mattered. The already-computed i_LoadHoldStartedMs says whether a
+     *  hold is running, which is the part worth showing anyway.
+     */
+    override void BR_FillAdminStatus(BattleRoyaleAdminStatus status)
+    {
+        super.BR_FillAdminStatus( status );
+
+        if(!status)
+            return;
+
+        status.lobby_phase = true;
+        status.lobby_held = b_ManualStart;
+        status.lobby_players = GetPlayers().Count();
+        status.lobby_loaded = GetLoadedPlayerCount();
+        status.lobby_not_loaded = GetNotLoadedCount();
+        status.lobby_minimum = i_MinPlayers;
+        status.lobby_uptime_s = GetGame().GetTickTime();
+        status.lobby_min_wait_s = f_MinWaitingTime;
+        status.lobby_full = IsLobbyFull();
+        status.lobby_notfull_ok = IsNotFullWaitSatisfied();
+        status.lobby_notfull_left_s = GetNotFullSecondsLeft();
+        status.lobby_vote_system = b_UseVoteSystem;
+        status.lobby_ready_count = GetReadyCount();
+        status.lobby_load_hold = (i_LoadHoldStartedMs != 0);
+        status.lobby_can_start_now = BR_CanStartNow();
+    }
+
+    //--- Has this player readied up? For the admin console's roster, which shows the vote per player
+    //--- rather than only the total - "6 of 8 ready" does not say WHICH two the operator should be
+    //--- chasing. m_ReadyList stays protected; this is the whole of the read side.
+    bool BR_IsReady(PlayerBase player)
+    {
+        if(!player)
+            return false;
+
+        return (m_ReadyList.Find( player ) != -1);
     }
 
     int GetReadyCount()
@@ -627,6 +954,29 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void ReadyUp(PlayerBase player)
     {
+        if(!player)
+            return;
+
+        /**
+         *  ⚠️ THE ROSTER IS THE AUTHORITY ON WHO MAY BE READY, and this guard is what enforces it.
+         *
+         *  m_ReadyList used to be appended to unconditionally, so anyone the lobby did not hold
+         *  could still be marked ready - and the vote counts readies against GetPlayers().Count().
+         *  A player removed from the match and then force-readied therefore produced "1/1 ready"
+         *  while the actual player was not ready and was not even in the match: the numerator came
+         *  from the ready list and the denominator from the roster, and the two no longer described
+         *  the same set of people.
+         *
+         *  Guarded HERE rather than at the two call sites, because it is an invariant of the ready
+         *  list rather than a rule about admins: you cannot be ready for a match you are not in.
+         *  RemovePlayer already drops them from m_ReadyList; this is the other half.
+         */
+        if(!ContainsPlayer(player))
+        {
+            BattleRoyaleUtils.Warn("[Lobby] refused ready-up for " + player.player_name + ": they are not on the lobby roster.");
+            return;
+        }
+
         if(m_ReadyList.Find(player) != -1)
         {
             MessagePlayerUntranslated(player, "STR_BR_YOU_ALREADY_READIED_UP");
@@ -649,10 +999,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         m_ReadyList.RemoveItem( player );
     }
 
-    override ref array<PlayerBase> RemoveAllPlayers()
+    override array<PlayerBase> RemoveAllPlayers()
     {
         m_ReadyList.Clear();
-        ref array<PlayerBase> players = super.RemoveAllPlayers();
+        array<PlayerBase> players = super.RemoveAllPlayers();
         return players;
     }
 }

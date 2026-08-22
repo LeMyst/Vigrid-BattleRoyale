@@ -1,4 +1,19 @@
-//#ifdef JM_COT
+/**
+ *  Admin panel wire ids. Carried by ScriptRPC and dispatched by BRMasterControlsModule.OnRPC
+ *  through the window its GetRPCMin() / GetRPCMax() declare.
+ *
+ *  Not guarded: an enum costs nothing in a retail build, and guarding it would mean guarding every
+ *  mention of it. Same reasoning as BattleRoyaleDiagAction below.
+ *
+ *  ⚠️ APPEND ONLY - the value travels on the wire, so renumbering desyncs a client that was not
+ *  rebuilt alongside the server.
+ *
+ *  The `Reserved*` slots are retired features whose senders and handlers have been deleted. They
+ *  are kept rather than removed precisely BECAUSE of the append-only rule: dropping one renumbers
+ *  every value after it. AddFakePlayer / AddFakeGroup moved to the diag menu (see PluginDiagMenu.c);
+ *  SpawnHorde / SpawnChemicals never had a button or a server case at all, and were dead in three
+ *  layers at once - enum value, module sender and form handler.
+ */
 enum BattleRoyaleCOTStateMachineRPC
 {
     INVALID = 11000, //Do not move this
@@ -6,15 +21,76 @@ enum BattleRoyaleCOTStateMachineRPC
     Next,
     Pause,
     Resume,
-    AddFakePlayer,
-    AddFakeGroup,
+    ReservedAddFakePlayer,   //!< RESERVED - do not reuse, do not remove
+    ReservedAddFakeGroup,    //!< RESERVED - do not reuse, do not remove
     SpawnAirdrop,
-    SpawnHorde,
-    SpawnChemicals,
+    ReservedSpawnHorde,      //!< RESERVED - do not reuse, do not remove
+    ReservedSpawnChemicals,  //!< RESERVED - do not reuse, do not remove
+
+    //--- One id for every state-changing admin action; which action rides in the payload as a
+    //--- BattleRoyaleAdminAction. Same shape as BRDiagAction and for the same reason: a new action
+    //--- then costs an enum value and a switch case rather than a wire change.
+    AdminAction,
+
+    StatusRequest,  //!< client -> server, no payload. Answered per identity, never broadcast.
+    StatusReply,    //!< server -> client, one serialized BattleRoyaleAdminStatus.
+
+    //--- The per-player table. Its own request/reply pair rather than riding StatusReply, because it
+    //--- is an order of magnitude larger and is only wanted while a panel is actually showing it -
+    //--- a separate id is what lets the client not ask.
+    RosterRequest,
+    RosterReply,    //!< server -> client, one serialized BattleRoyaleAdminRoster. CARRIES UIDS.
+
+    //--- The generated circle table. Static for the whole process once generation has run, so the
+    //--- client asks once and caches rather than polling.
+    ZoneRequest,
+    ZoneReply,      //!< server -> client, one serialized BattleRoyaleAdminZoneTable.
 
     COUNT //Do not move this
 }
-//#endif
+
+
+/**
+ *  What a BattleRoyaleCOTStateMachineRPC.AdminAction is asking the server to do.
+ *
+ *  Append only, for the same reason as the enum above - the value is written into the AdminAction
+ *  payload and therefore travels on the wire.
+ *
+ *  Every one of these is authorized server-side by BRMasterControlsModule.AuthorizeAdminAction
+ *  against a named COT permission plus the admins_steamid64 floor. The client-side permission check
+ *  only decides whether the control is drawn.
+ */
+enum BattleRoyaleAdminAction
+{
+    INVALID = 13000, //Do not move this
+
+    LOBBY_SET_HOLD,   //!< arg_i 0/1 - hold the lobby open, or release it
+    LOBBY_START_NOW,  //!< start the match now, bypassing every start gate but the group-count floor
+
+    //--- Player operations. arg_uid names the SUBJECT; the ACTOR is always resolved from `sender`,
+    //--- never from the payload - a client may not name who it is acting as.
+    PLAYER_READY,            //!< force one lobby player to ready up
+    PLAYER_READY_ALL,        //!< every lobby player; ignores arg_uid
+    PLAYER_REMOVE,           //!< drop them from the match roster WITHOUT disconnecting them
+    PLAYER_UNSTUCK,          //!< ignoring the cooldown and AllowsUnstuck()
+    PLAYER_TP_CIRCLE,        //!< to the circle currently in play, lobby centre before that
+    PLAYER_EXEMPT_LATEJOIN,  //!< cancel a pending late-join kick and exempt them from further ones
+
+    //--- Announcements. arg_text is the message, arg_f how long it stays on screen.
+    ANNOUNCE_ALL,            //!< ignores arg_uid
+    ANNOUNCE_PLAYER,         //!< whispered to arg_uid
+
+    //--- Zone pacing.
+    ZONE_LOCK_NOW,           //!< lock the incoming circle immediately, ending the travel window early
+    ZONE_SELFTEST,           //!< arg_i = iterations; runs the generator acceptance harness and logs it
+
+    //--- Appended rather than filed next to PLAYER_REMOVE, which is where it belongs by meaning.
+    //--- These values travel on the wire, so inserting one renumbers every value after it - and the
+    //--- append-only rule is not worth bending for tidiness.
+    PLAYER_ADD,              //!< put a removed player back on the roster - the undo for PLAYER_REMOVE
+
+    COUNT //Do not move this
+}
 
 
 /**
@@ -57,6 +133,8 @@ enum BattleRoyaleDiagAction
 
     SET_FAKE_UNLOADED, //!< arg_i 0/1 - mark every lobby player un/loaded, to hold the #8 load gate open
     LOG_LOBBY_GATE,    //!< dump every term of both lobby start gates, i.e. why it is or is not starting
+
+    SET_TRACE_AIM,     //!< arg_i 0/1 - server-side aim-angle trace. See PlayerBase.BR_LogAimState.
 
     COUNT //Do not move this
 }

@@ -36,7 +36,7 @@ class VigridPartyStore
             return result;
         }
 
-        ref VigridPartyStoreFile store = new VigridPartyStoreFile();
+        VigridPartyStoreFile store = new VigridPartyStoreFile();
         string error_message;
 
         if (!JsonFileLoader<VigridPartyStoreFile>.LoadFile(VIGRID_PARTY_STORE_FILE, store, error_message))
@@ -54,7 +54,7 @@ class VigridPartyStore
         }
 
         int now_hours = VigridPartyTime.NowHours();
-        ref set<string> claimed = new set<string>();
+        set<string> claimed = new set<string>();
 
         int party_count = store.parties.Count();
         for (int i = 0; i < party_count; i++)
@@ -73,7 +73,7 @@ class VigridPartyStore
                 continue;
             }
 
-            ref VigridParty party = new VigridParty();
+            VigridParty party = new VigridParty();
             party.id = entry.id;
             party.created_at = entry.created_at;
             party.last_seen_hours = entry.last_seen_hours;
@@ -159,11 +159,11 @@ class VigridPartyStore
      */
     static void Save(array<ref VigridParty> parties, map<string, string> name_cache)
     {
-        ref VigridPartyStoreFile store = new VigridPartyStoreFile();
+        VigridPartyStoreFile store = new VigridPartyStoreFile();
         store.saved_at = VigridPartyTime.NowSeconds();
         int now_hours = VigridPartyTime.NowHours();
 
-        ref array<string> persistent = new array<string>();
+        array<string> persistent = new array<string>();
 
         int count = parties.Count();
         for (int i = 0; i < count; i++)
@@ -176,7 +176,7 @@ class VigridPartyStore
             if (persistent.Count() < 2)
                 continue; //!< never persist a party that has decayed to a single member
 
-            ref VigridPartyStoreEntry entry = new VigridPartyStoreEntry();
+            VigridPartyStoreEntry entry = new VigridPartyStoreEntry();
             entry.id = party.id;
             entry.created_at = party.created_at;
             entry.last_seen_hours = party.last_seen_hours;
@@ -208,7 +208,7 @@ class VigridPartyStore
                 if (!name_cache.Contains(member_uid))
                     continue;
 
-                ref VigridPartyNameEntry name_entry = new VigridPartyNameEntry();
+                VigridPartyNameEntry name_entry = new VigridPartyNameEntry();
                 name_entry.uid = member_uid;
                 name_entry.name = name_cache.Get(member_uid);
                 name_entry.seen_hours = now_hours;

@@ -278,7 +278,7 @@ class VigridPartyAPI
             if (!player)
                 continue;
 
-            ref array<PlayerBase> solo = new array<PlayerBase>();
+            array<PlayerBase> solo = new array<PlayerBase>();
             solo.Insert(player);
             groups.Insert(solo);
         }
@@ -700,6 +700,118 @@ class VigridPartyAPI
     private static const string DEBUG_INVITER_UID = "debug-inviter";
     private static const string DEBUG_INVITER_NAME = "Fake Inviter";
 
+    /**
+     *  THE FABRICATED NAMES, AND WHY THEY LOOK LIKE THIS.
+     *
+     *  These were "Fake 1".."Fake N" and "Fake Player 1".."Fake Player N" - generated in index order,
+     *  therefore ALREADY SORTED BY CONSTRUCTION. A fixture in that shape cannot fail a sort test: the
+     *  menu looks identical whether the sort works, is broken, or was never written. Exactly the trap
+     *  the 40-row leaderboard fixture fell into, which was authored in rank order and had to be
+     *  beaten to its own missing sort by a real two-player match.
+     *
+     *  So each pool is built to violate the property under test. Three things are deliberate:
+     *
+     *  - THE ORDER IS JUMBLED. Nothing here is alphabetical, so an unsorted column is obvious at a
+     *    glance rather than needing to be read carefully.
+     *  - THE CASE IS MIXED, and it interleaves. `alder` before `Cassia` is the correct answer; a
+     *    case-SENSITIVE byte sort files every capitalised name ahead of every lowercase one, so it
+     *    puts `Cassia` first and every lowercase name in a block at the end. One such pair would be
+     *    enough to detect that; both pools are mixed throughout, so it is unmissable.
+     *  - THERE IS A DUPLICATE PAIR IN EACH POOL. Two players called `Survivor` is the ordinary case
+     *    on a server with enable_steam_name_lookup off, and it is the only thing that exercises the
+     *    uid tie-break - without it a merely stable sort passes.
+     *
+     *  NO TRAILING DIGITS, which is the other half of the old fixture's problem. A lexical sort of
+     *  `Fake 1 .. Fake 12` correctly yields `Fake 1, Fake 10, Fake 11, Fake 12, Fake 2` and reads as
+     *  broken, which invites a "fix" into natural-order sorting that real player names never need.
+     *  Real names rarely end in a number; the fixture should not either.
+     */
+    private static ref array<string> s_DebugMemberNames;
+    private static ref array<string> s_DebugOnlineNames;
+
+    //! Lap marker for a pool that has run out - a LETTER, for the no-trailing-digits reason above.
+    //! Index 0 is unused: lap 0 is the bare pool name, so the first suffix seen is "B".
+    private static const string DEBUG_LAP_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    private static array<string> DebugMemberNamePool()
+    {
+        if (s_DebugMemberNames)
+            return s_DebugMemberNames;
+
+        s_DebugMemberNames = new array<string>();
+        s_DebugMemberNames.Insert("Wren");
+        s_DebugMemberNames.Insert("alder");
+        s_DebugMemberNames.Insert("Survivor");
+        s_DebugMemberNames.Insert("Marlow");
+        s_DebugMemberNames.Insert("bracken");
+        s_DebugMemberNames.Insert("Yarrow");
+        s_DebugMemberNames.Insert("Survivor");
+        s_DebugMemberNames.Insert("Cassia");
+        s_DebugMemberNames.Insert("nettle");
+        s_DebugMemberNames.Insert("Fable");
+        s_DebugMemberNames.Insert("quill");
+        s_DebugMemberNames.Insert("Onyx");
+
+        return s_DebugMemberNames;
+    }
+
+    //! Separate from the member pool so a log line says which column an entry came from, and so
+    //! DebugInvite moving a name between the two is legible.
+    private static array<string> DebugOnlineNamePool()
+    {
+        if (s_DebugOnlineNames)
+            return s_DebugOnlineNames;
+
+        s_DebugOnlineNames = new array<string>();
+        s_DebugOnlineNames.Insert("Thorne");
+        s_DebugOnlineNames.Insert("ember");
+        s_DebugOnlineNames.Insert("Kestrel");
+        s_DebugOnlineNames.Insert("Survivor");
+        s_DebugOnlineNames.Insert("dusk");
+        s_DebugOnlineNames.Insert("Rowan");
+        s_DebugOnlineNames.Insert("Ivo");
+        s_DebugOnlineNames.Insert("sable");
+        s_DebugOnlineNames.Insert("Peregrine");
+        s_DebugOnlineNames.Insert("Survivor");
+        s_DebugOnlineNames.Insert("linden");
+        s_DebugOnlineNames.Insert("Garnet");
+        s_DebugOnlineNames.Insert("Hollis");
+        s_DebugOnlineNames.Insert("vesper");
+        s_DebugOnlineNames.Insert("Bram");
+        s_DebugOnlineNames.Insert("umber");
+        s_DebugOnlineNames.Insert("Juno");
+        s_DebugOnlineNames.Insert("crane");
+
+        return s_DebugOnlineNames;
+    }
+
+    /**
+     *  The `index`-th name from `pool`, wrapping with a lap letter once the pool runs out.
+     *
+     *  The lap suffix keeps names unique past the pool size - the online list goes to 60 - without
+     *  reintroducing the trailing digits. It applies uniformly, so the duplicate pair stays a
+     *  duplicate pair on every lap and the tie-break is exercised at any count.
+     */
+    private static string DebugPoolName(array<string> pool, int index)
+    {
+        int size = pool.Count();
+        if (size < 1)
+            return "";
+
+        string name = pool.Get(index % size);
+
+        int lap = index / size;
+        if (lap < 1)
+            return name;
+
+        //--- Copied to a local before it is indexed: string.Get is a plain `proto`, not `proto
+        //--- native`, so it reads `this` - and a static const is not somewhere to find out whether
+        //--- that is allowed.
+        string letters = DEBUG_LAP_LETTERS;
+        string letter = letters.Get(lap % letters.Length());
+        return name + " " + letter;
+    }
+
     //! Whether the diag menu is currently driving a fabricated party. The one thing 5_Mission asks.
     static bool IsDebugFakeSession()
     {
@@ -864,6 +976,11 @@ class VigridPartyAPI
      *
      *  Slot 0 is always you, exactly as a real roster has it, and you are the leader - which is the
      *  branch that shows Promote and Kick on every other row.
+     *
+     *  Because you are slot 0 AND the leader, the menu's leader pin and "no sort at all" agree on
+     *  where your row goes, so this fixture alone cannot tell them apart. Press Promote on a
+     *  teammate to move the pin - or take the Invite Me route, which lands you at slot 1 in somebody
+     *  else's party. Either separates the two.
      */
     static void DebugSetRoster(int member_count)
     {
@@ -876,10 +993,12 @@ class VigridPartyAPI
         rpc.roster_uids.Insert(DEBUG_SELF_UID);
         rpc.roster_names.Insert(DEBUG_SELF_NAME);
 
+        array<string> pool = DebugMemberNamePool();
+
         for (int i = 0; i < member_count; i++)
         {
             rpc.roster_uids.Insert(DEBUG_MEMBER_PREFIX + i);
-            rpc.roster_names.Insert("Fake " + (i + 1));
+            rpc.roster_names.Insert(DebugPoolName(pool, i));
         }
 
         rpc.party_id = DEBUG_PARTY_ID;
@@ -932,10 +1051,12 @@ class VigridPartyAPI
         rpc.list_names.Clear();
         rpc.list_flags.Clear();
 
+        array<string> pool = DebugOnlineNamePool();
+
         for (int i = 0; i < count; i++)
         {
             rpc.list_uids.Insert(DEBUG_ONLINE_PREFIX + i);
-            rpc.list_names.Insert("Fake Player " + (i + 1));
+            rpc.list_names.Insert(DebugPoolName(pool, i));
 
             int entry_flags = 0;
             if ((i % 3) == 2)
@@ -1024,6 +1145,27 @@ class VigridPartyAPI
         rpc.debug_fake_session = true;
 
         VigridPartyLog.Debug("DebugReceiveInvite from " + DEBUG_INVITER_NAME);
+    }
+
+    /**
+     *  Push a burst of fabricated notifications into the queue the client controller drains.
+     *
+     *  The only way to reach VigridPartyClient.DrainNotifications from a single offline client:
+     *  every other Debug* path applies itself locally and never goes near VP_Notify, which is the
+     *  one thing that fills this array. Deliberately asked for MORE than the five vanilla shows at
+     *  once, so the deferral and its LIFO release order are visible rather than theoretical - a
+     *  fixture that fits cannot reach the feature it exists to exercise.
+     */
+    static void DebugNotify(int count)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        for (int i = 0; i < count; i++)
+        {
+            rpc.pending_notifications.Insert("Fake notification " + (i + 1).ToString());
+        }
+
+        VigridPartyLog.Debug("DebugNotify queued " + count.ToString());
     }
 
     /**
@@ -1138,6 +1280,10 @@ class VigridPartyAPI
     /**
      *  Flip the last teammate between online and offline, so the grey "(Offline)" row and the HUD's
      *  inactive styling are reachable.
+     *
+     *  "Last" is the last roster SLOT, which since the menu sorts its columns by name is no longer
+     *  the bottom row of the member list. Expect the grey row somewhere in the middle; that is the
+     *  sort working, not this picking the wrong member.
      *
      *  Never your own slot: the renderers read your position from GetGame().GetPlayer() regardless,
      *  so marking yourself offline would show nothing and confuse the reading of everything else.

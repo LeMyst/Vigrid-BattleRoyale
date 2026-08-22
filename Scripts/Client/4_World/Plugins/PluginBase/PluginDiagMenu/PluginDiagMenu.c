@@ -52,6 +52,11 @@ modded class PluginDiagMenu
 	protected int m_BRDiagHudPlayersID;
 	protected int m_BRDiagHudGroupsID;
 	protected int m_BRDiagHudKillsID;
+	protected int m_BRDiagHudAudienceID;
+	protected int m_BRDiagAdminFakeID;
+	protected int m_BRDiagAdminFakePlayersID;
+	protected int m_BRDiagAdminFakeDeadID;
+	protected int m_BRDiagAdminFakeSpreadID;
 	protected int m_BRDiagHudCountdownID;
 	protected int m_BRDiagOpenSpawnMenuID;
 	protected int m_BRDiagOpenLeaderboardID;
@@ -76,6 +81,7 @@ modded class PluginDiagMenu
 	protected int m_BRDiagPartyOnlineCountID;
 	protected int m_BRDiagPartyOnlineApplyID;
 	protected int m_BRDiagPartyInviteMeID;
+	protected int m_BRDiagPartyNotifyID;
 	protected int m_BRDiagPartyOfflineID;
 	protected int m_BRDiagPartyPingID;
 	protected int m_BRDiagPartyClearID;
@@ -83,6 +89,7 @@ modded class PluginDiagMenu
 	//--- Map & Zones
 	protected int m_BRDiagZoneMenuID;
 	protected int m_BRDiagZonesFakeID;
+	protected int m_BRDiagZonesNoCurrentID;
 	protected int m_BRDiagZoneRadiusID;
 	protected int m_BRDiagZoneNextRadiusID;
 	protected int m_BRDiagLogZoneTableID;
@@ -104,6 +111,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagTraceTpClientID;
 	protected int m_BRDiagTraceTpServerID;
 	protected int m_BRDiagTraceTicksID;
+	protected int m_BRDiagTraceAimClientID;
+	protected int m_BRDiagTraceAimServerID;
 
 	//--- Logging
 	protected int m_BRDiagLogMenuID;
@@ -139,6 +148,11 @@ modded class PluginDiagMenu
 		m_BRDiagHudPlayersID = GetModdedDiagID();
 		m_BRDiagHudGroupsID = GetModdedDiagID();
 		m_BRDiagHudKillsID = GetModdedDiagID();
+		m_BRDiagHudAudienceID = GetModdedDiagID();
+		m_BRDiagAdminFakeID = GetModdedDiagID();
+		m_BRDiagAdminFakePlayersID = GetModdedDiagID();
+		m_BRDiagAdminFakeDeadID = GetModdedDiagID();
+		m_BRDiagAdminFakeSpreadID = GetModdedDiagID();
 		m_BRDiagHudCountdownID = GetModdedDiagID();
 		m_BRDiagOpenSpawnMenuID = GetModdedDiagID();
 		m_BRDiagOpenLeaderboardID = GetModdedDiagID();
@@ -161,12 +175,14 @@ modded class PluginDiagMenu
 		m_BRDiagPartyOnlineCountID = GetModdedDiagID();
 		m_BRDiagPartyOnlineApplyID = GetModdedDiagID();
 		m_BRDiagPartyInviteMeID = GetModdedDiagID();
+		m_BRDiagPartyNotifyID = GetModdedDiagID();
 		m_BRDiagPartyOfflineID = GetModdedDiagID();
 		m_BRDiagPartyPingID = GetModdedDiagID();
 		m_BRDiagPartyClearID = GetModdedDiagID();
 
 		m_BRDiagZoneMenuID = GetModdedDiagID();
 		m_BRDiagZonesFakeID = GetModdedDiagID();
+		m_BRDiagZonesNoCurrentID = GetModdedDiagID();
 		m_BRDiagZoneRadiusID = GetModdedDiagID();
 		m_BRDiagZoneNextRadiusID = GetModdedDiagID();
 		m_BRDiagLogZoneTableID = GetModdedDiagID();
@@ -186,6 +202,8 @@ modded class PluginDiagMenu
 		m_BRDiagTraceTpClientID = GetModdedDiagID();
 		m_BRDiagTraceTpServerID = GetModdedDiagID();
 		m_BRDiagTraceTicksID = GetModdedDiagID();
+		m_BRDiagTraceAimClientID = GetModdedDiagID();
+		m_BRDiagTraceAimServerID = GetModdedDiagID();
 
 		m_BRDiagLogMenuID = GetModdedDiagID();
 		m_BRDiagLogLevelID = GetModdedDiagID();
@@ -249,7 +267,31 @@ modded class PluginDiagMenu
 				//--- provoked with a real ten-player endgame and a settings edit.
 				DiagMenu.RegisterRange(m_BRDiagHudGroupsID, "", "Fake Groups", m_BRDiagHudMenuID, "-2, 40, 20, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudKillsID, "", "Fake Kills", m_BRDiagHudMenuID, "0, 20, 3, 1");
+				//--- Down to 0, which is the HIDDEN state - the audience row only appears above zero,
+				//--- like the kill count. This is the only way to exercise the element offline, where
+				//--- SERVER is undefined and no spectator can exist. The default here MUST match
+				//--- BattleRoyaleDiag.hud_audience: a range callback only fires on a CHANGE, so a
+				//--- mismatch silently uses the field's value rather than the number on screen.
+				DiagMenu.RegisterRange(m_BRDiagHudAudienceID, "", "Fake Audience", m_BRDiagHudMenuID, "0, 20, 2, 1");
 				DiagMenu.RegisterRange(m_BRDiagHudCountdownID, "", "Fake Countdown", m_BRDiagHudMenuID, "0, 300, 60, 1");
+				//--- ADMIN SPECTATE OVERLAY (#276-#279). Fabricates the two admin payloads client-side
+				//--- and claims the admin+spectating flags, so the team colours, the corpse tags, the
+				//--- tag suppression under the map and the map's own player layer are all reachable
+				//--- from LaunchOffline.bat. Every real Spectate entry is server-side and SERVER is
+				//--- undefined offline, so without this all four need a three-client MP session.
+				DiagMenu.RegisterBool(m_BRDiagAdminFakeID, "", "Fake Admin Overlay", m_BRDiagHudMenuID);
+				//--- ⚠ THE DEFAULTS HERE MUST MATCH BattleRoyaleDiag - a range callback only fires on
+				//--- a CHANGE, so a mismatch silently uses the field rather than the number on screen.
+				//---
+				//--- Reaches 20 because the point of the walk is that it does not collide, and a
+				//--- fixture that only ever shows three teams cannot show that. The fabricated party
+				//--- indices are deliberately NON-CONTIGUOUS (see BattleRoyaleClient.ApplyFakeAdmin):
+				//--- contiguous ones are the easy case, and a fixture built to pass cannot fail.
+				DiagMenu.RegisterRange(m_BRDiagAdminFakePlayersID, "", "Fake Admin Players", m_BRDiagHudMenuID, "0, 20, 12, 1");
+				//--- Bodies are placed to STRADDLE BR_SPECTATE_CORPSE_TAG_RANGE_M, so the distance
+				//--- gate is exercised in both directions rather than only the one that draws.
+				DiagMenu.RegisterRange(m_BRDiagAdminFakeDeadID, "", "Fake Admin Bodies", m_BRDiagHudMenuID, "0, 10, 6, 1");
+				DiagMenu.RegisterRange(m_BRDiagAdminFakeSpreadID, "", "Fake Admin Spread (m)", m_BRDiagHudMenuID, "20, 600, 120, 10");
 				DiagMenu.RegisterBool(m_BRDiagOpenSpawnMenuID, "", "Open Spawn Menu", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenLeaderboardID, "", "Open Leaderboard", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagFakeLeaderboardID, "", "Fake Leaderboard", m_BRDiagHudMenuID);
@@ -309,6 +351,7 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterRange(m_BRDiagPartyOnlineCountID, "", "Fake Online Players", m_BRDiagPartyMenuID, "0, 60, 20, 1");
 				DiagMenu.RegisterBool(m_BRDiagPartyOnlineApplyID, "", "Apply Fake Online", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyInviteMeID, "", "Fake Incoming Invite", m_BRDiagPartyMenuID);
+				DiagMenu.RegisterBool(m_BRDiagPartyNotifyID, "", "Fake Notifications", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyOfflineID, "", "Toggle Member Offline", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyPingID, "", "Add Fake Ping", m_BRDiagPartyMenuID);
 				DiagMenu.RegisterBool(m_BRDiagPartyClearID, "", "Clear Fakes", m_BRDiagPartyMenuID);
@@ -319,6 +362,11 @@ modded class PluginDiagMenu
 			DiagMenu.RegisterMenu(m_BRDiagZoneMenuID, "Map & Zones", m_BRDiagRootMenuID);
 			{
 				DiagMenu.RegisterBool(m_BRDiagZonesFakeID, "", "Fake Zones", m_BRDiagZoneMenuID);
+				//--- Publish the NEXT circle only, which is what a client holds from the moment the
+				//--- first circle is advertised until LockNewZone - the ~9 minutes in which the HUD
+				//--- used to show nothing at all. The plain fake rig sets both circles and so cannot
+				//--- reach that branch.
+				DiagMenu.RegisterBool(m_BRDiagZonesNoCurrentID, "", "Fake Zones: Pre-Lock", m_BRDiagZoneMenuID);
 				DiagMenu.RegisterRange(m_BRDiagZoneRadiusID, "", "Zone Radius", m_BRDiagZoneMenuID, "50, 5000, 1500, 50");
 				DiagMenu.RegisterRange(m_BRDiagZoneNextRadiusID, "", "Next Radius", m_BRDiagZoneMenuID, "25, 2500, 600, 25");
 				//--- Generation runs smallest-first, so m_PlayAreas[0] is the FINAL circle. One dump
@@ -373,6 +421,13 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagTraceTpClientID, "", "Trace TP (Client)", m_BRDiagTraceMenuID);
 				DiagMenu.RegisterBool(m_BRDiagTraceTpServerID, "", "Trace TP (Server)", m_BRDiagTraceMenuID);
 				DiagMenu.RegisterRange(m_BRDiagTraceTicksID, "", "Trace Ticks", m_BRDiagTraceMenuID, "0, 60, 20, 1");
+				//--- The aim-desync instrument: each player instance logs its own copy of the base
+				//--- aiming angles, so the owner's and the server's can be diffed. It is what
+				//--- measured the 2026-08-18 desync (SetDisabled freezing the server's copy) - and
+				//--- that remote instances run no script CommandHandler, so proxies produce no
+				//--- lines and remote rendering follows the SERVER's copy.
+				DiagMenu.RegisterBool(m_BRDiagTraceAimClientID, "", "Trace Aim (Client)", m_BRDiagTraceMenuID);
+				DiagMenu.RegisterBool(m_BRDiagTraceAimServerID, "", "Trace Aim (Server)", m_BRDiagTraceMenuID);
 			}
 
 			//--- Logging. Index 0 is "Default", i.e. resolve from the -br-* flags and serverDZ.cfg

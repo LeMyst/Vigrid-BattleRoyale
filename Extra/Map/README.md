@@ -29,16 +29,29 @@ It hooks nothing of the host mod's, so it works on **any** DayZ server — Battl
 Pan and zoom are the engine's own. **You can keep running while the map is open**, and clicking the map
 does not fire the weapon underneath it.
 
+**The map reopens at the zoom you left it at**, for the rest of the game session — the position still
+recentres on you every time, and does so before the first frame you see rather than a beat later. It is held in a static rather than written to `map_client.json`, so a
+restart opens at `VIGRID_MAP_DEF_SCALE` again; persisting it would mean a synchronous JSON write every
+time the map is shut, which in a match is often, for a preference one wheel scroll restates.
+
 Placing, moving and clearing a marker all take effect **the moment you click**, not when the server
 answers — see *Design notes*. If the server refuses a placement outright, a message says so in the strip
 above the map instead.
 
 ## What is drawn
 
-Every overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen space.
-Canvas offers only `DrawLine` and `Clear`, so there is no text anywhere **on** the map and every glyph
-is a fan of strokes. (The refusal message is the one piece of text, and it is a `TextWidget` sibling of
-the `MapWidget` sitting in the strip above it, not an overlay on it.)
+Every glyph overlay is a `CanvasWidget` declared as a child of the `MapWidget`, drawing in screen
+space. Canvas offers only `DrawLine` and `Clear`, so every glyph is a fan of strokes.
+
+**Text is possible on the map, but only from widgets DECLARED in the layout.** The name labels on the
+host player layer are 32 `TextWidget`s declared inside the `MapWidget` (`AdminName0`..`AdminName31`);
+script binds them once and thereafter only positions and fills them. A widget *created from script*
+over a `MapWidget` is positioned correctly, reports the right size, passes every clip test and is
+never drawn — and that holds whether it is parented to the map or to a declared sibling frame above
+it, both measured 2026-08-18. The trade is that a declared pool **cannot grow at runtime**, so a match
+busier than the pool loses names while keeping every glyph.
+
+(The marker refusal message is text too, but it sits in the strip *above* the map rather than over it.)
 
 | Glyph | Means |
 |---|---|
@@ -49,6 +62,7 @@ the `MapWidget` sitting in the strip above it, not an overlay on it.)
 | Hollow triangle | A teammate |
 | Lighter diamond | A party ping |
 | Notched dart | You, on both maps — carries your heading, and the largest glyph on either |
+| Hollow square | A player the host mod asked to be plotted, in the colour it supplied — in practice an admin spectator's overview of a whole match. Carries a name label above it, and **no heading**: the host push has no facing in it, and a glyph implying one it was never told would be worse than one that admits it does not know |
 
 ## The compass strip
 
@@ -239,7 +253,19 @@ without `OnHide`. A leaked exclude group would leave the player permanently unab
 ## Caveats
 
 - **Never override `OnMouseWheel`** on the map widget — native zoom dies. `ClampZoom()` holds the range
-  each frame instead, because there is no zoom event to hook.
+  each frame instead, because there is no zoom event to hook. The session-remembered zoom rides the
+  same per-frame read for the same reason: it records `GetScale()` in `Update()` rather than on close,
+  since `OnHide` is not guaranteed to pair with `OnShow` and the destructor runs after the widget tree
+  has started going away.
+- ⚠️ **The initial view is established by `SettleView()` re-issuing it every frame, and `ClampZoom()`
+  plus every canvas is held off until it has.** A `MapWidget` ignores `SetMapPos`/`SetScale` until it
+  has been laid out, so the pair issued in `Init()` is dropped and the map used to draw at the
+  engine's own default position and zoom for the ~6 frames until the 100 ms `DelayedCenter` fired —
+  visible as "the map opens off-centre, then jumps to you". **`SettleView`'s own latch test has been
+  measured never to pass** (the delayed backstop wins every open); the artefact is gone regardless,
+  so one of the other two halves is what fixes it. The header comment carries the untested one-line
+  hypothesis and the acceptance test for it — a premature latch is the one way to bring the artefact
+  back, so do not change it without re-running that test.
 - **An input exclude group resets every held input, so `{"aiming"}` is the only one used here.** Both
   `AddActiveInputExcludes` and `RemoveActiveInputExcludes` end in `GetUApi().UpdateControls()`, which
   rebuilds the control state and drops the **held** state of every input including `UATurbo` — so

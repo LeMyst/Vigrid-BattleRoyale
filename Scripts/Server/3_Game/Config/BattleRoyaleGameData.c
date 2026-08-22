@@ -9,7 +9,7 @@
 // for any future field that is a server-operator concern rather than mission content.
 class BattleRoyaleGameData: BattleRoyaleDataBase
 {
-	int version = 5;  // Config version
+	int version = 6;  // Config version
 
 	// Allowed admins - Are immune to kick and can go outside the play area
 	// Mission-locked (see class comment above) - never overridable from a mission pack.
@@ -61,6 +61,20 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
     // cannot disturb the match they just left: their placement, leaderboard entry and corpse all
     // stand.
     bool admin_spectate_enabled = true;
+
+    // Audience counter: tell a living player how many people are currently spectating THEM, as a
+    // small eye-and-number row on the HUD. A gameplay signal - a rising count says the field has
+    // thinned and you are the fight everyone is watching.
+    //
+    // Admins in ADMIN spectate are never counted, whatever this is set to. That is not a policy
+    // knob but the rule the feature is built on: an operator watching is not part of the game, and
+    // surfacing it would tell a player the exact moment they are being observed. An admin who
+    // competed, died and took ORDINARY spectate is a real audience member and does count - the
+    // filter is on the session type, not on membership of admins_steamid64.
+    //
+    // Turning this off mid-match pushes everyone a zero, so the row clears rather than freezing on
+    // the last number it was shown.
+    bool show_spectator_count = true;
 
 	// Airdrop settings
     bool airdrop_enabled = true;  // Enable airdrops
@@ -120,12 +134,38 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 		{
 			// admins_steamid64 is a server-operator concern (who is immune to kick/zone restriction),
 			// not mission content - a mission pack must never be able to grant itself admin immunity.
-			ref array<string> lockedAdmins = admins_steamid64;
+			//
+			//--- ⚠️ THIS LOCK WAS A NO-OP UNTIL 2026-08-19, AND IT FAILED IN BOTH DIRECTIONS.
+			//--- It read `array<string> lockedAdmins = admins_steamid64;`, which copies the REFERENCE:
+			//--- the deserializer clears the existing array in place, so `lockedAdmins` denoted the
+			//--- very array being emptied and refilled, and assigning it back afterwards was a no-op.
+			//--- A mission pack that set admins_steamid64 therefore kept its own list - exactly what
+			//--- the lock exists to forbid - and one that omitted the key emptied the operator's list
+			//--- instead, so nobody was exempt from the late-join kick. CopyStrings copies contents.
+			ref array<string> lockedAdmins = CopyStrings(admins_steamid64);
+
+			//--- The loadout arrays are legitimate mission content, so they are RESTORED-IF-EMPTY
+			//--- rather than locked: a mission that dresses players differently still wins, but one
+			//--- that says nothing about them no longer strips every player naked.
+			ref array<string> keptClothes = CopyStrings(player_starting_clothes);
+			ref array<string> keptItems = CopyStrings(player_starting_items);
+			ref array<int> keptShortcuts = CopyInts(player_starting_items_shortcut);
 
 			if (!JsonFileLoader<BattleRoyaleGameData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
 
+			//--- Unconditional: this one is a lock, not a restore-if-empty. A mission that specifies
+			//--- an admin list must lose, not win.
 			admins_steamid64 = lockedAdmins;
+
+			if (!player_starting_clothes || player_starting_clothes.Count() == 0)
+				player_starting_clothes = keptClothes;
+
+			if (!player_starting_items || player_starting_items.Count() == 0)
+				player_starting_items = keptItems;
+
+			if (!player_starting_items_shortcut || player_starting_items_shortcut.Count() == 0)
+				player_starting_items_shortcut = keptShortcuts;
 		}
 	}
 
@@ -193,6 +233,19 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 			// their config before an admin tool works at all, while defaulting it on grants nobody
 			// anything they could not already do with COT.
 			version = 5;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 6)
+		{
+			// show_spectator_count was INTRODUCED in v6. A scalar, so the field initialiser above
+			// survives deserialization of a file that does not carry the key and there is nothing to
+			// migrate; the bump exists so Save() writes it into existing profile JSONs.
+			//
+			// It defaults to TRUE: the counter is part of the spectating feature rather than a
+			// separate one, and spectate_enabled already gates whether anybody can spectate at all -
+			// so on a server that never offers spectating this is never reached and shows nothing.
+			version = 6;
 			Save();  // Save the upgraded config
 		}
 	}

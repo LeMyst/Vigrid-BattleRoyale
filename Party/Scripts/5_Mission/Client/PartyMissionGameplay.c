@@ -87,6 +87,17 @@ modded class MissionGameplay
         if (!m_UIManager.IsMenuOpen(MENU_VIGRID_PARTY))
             return false;
 
+        //--- The manager going off closes the menu, with no key pressed. This is not padding for the
+        //--- gate in HandlePartyOpen - it shuts a window that gate cannot reach. The client's copy of
+        //--- `enabled` DEFAULTS TRUE (VIGRID_PARTY_DEF_ENABLED, re-applied by VigridPartyRPC.Reset)
+        //--- and only turns false when the first VP_Settings lands at InvokeOnConnect, so a press in
+        //--- the moments before that opens a menu which would otherwise stay open for good.
+        if (!VigridPartyAPI.IsClientReady())
+        {
+            m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
+            return true;
+        }
+
         if (GetUApi().GetInputByID(UAUIBack).LocalPress())
         {
             m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
@@ -108,6 +119,15 @@ modded class MissionGameplay
      *
      *  Resolved by name so nothing here depends on the UAVigridPartyMenu constant, which is
      *  generated from another PBO's Inputs.xml.
+     *
+     *  Nothing opens while the party manager is switched off server-side: the menu would present a
+     *  full dialog, freeze the player with LockControls, and answer every button with
+     *  STR_PARTY_DISABLED. The gate belongs HERE rather than in the menu's own OnShow - a menu that
+     *  opens and immediately closes has already eaten the keypress and already locked the controls.
+     *
+     *  Silently: a server with no party system has nothing to say about one. And the test sits
+     *  BELOW LocalPress(), because the press has to be consumed either way and there is no reason to
+     *  read the settings bag on every frame in which nobody pressed anything.
      */
     protected void HandlePartyOpen()
     {
@@ -115,6 +135,8 @@ modded class MissionGameplay
         if (!party_input)
             return;
         if (!party_input.LocalPress())
+            return;
+        if (!VigridPartyAPI.IsClientReady())
             return;
 
         //--- NULL parent, not GetMenu(): the gate in OnUpdate proves nothing is open, and adopting

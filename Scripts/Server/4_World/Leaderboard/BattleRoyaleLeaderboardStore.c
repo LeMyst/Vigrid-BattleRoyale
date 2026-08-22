@@ -51,7 +51,7 @@ class BattleRoyaleLeaderboardStore
             return result;
         }
 
-        ref BattleRoyaleLeaderboardFile store = ParseStoreFile(BATTLEROYALE_LEADERBOARD_FILE);
+        BattleRoyaleLeaderboardFile store = ParseStoreFile(BATTLEROYALE_LEADERBOARD_FILE);
         if (!store)
         {
             BattleRoyaleUtils.Warn("[Leaderboard] leaderboard.json unreadable, trying the backup");
@@ -82,7 +82,7 @@ class BattleRoyaleLeaderboardStore
 
         int now_hours = BattleRoyaleTime.NowHours();
         int ttl_hours = settings.leaderboard_ttl_days * 24;
-        ref set<string> claimed = new set<string>();
+        set<string> claimed = new set<string>();
 
         int entry_count = store.entries.Count();
         for (int i = 0; i < entry_count; i++)
@@ -124,7 +124,7 @@ class BattleRoyaleLeaderboardStore
         if (!settings)
             return;
 
-        ref BattleRoyaleLeaderboardFile store = new BattleRoyaleLeaderboardFile();
+        BattleRoyaleLeaderboardFile store = new BattleRoyaleLeaderboardFile();
         store.version = 1;
         store.season = settings.season;
         store.saved_at = BattleRoyaleTime.NowSeconds();
@@ -256,7 +256,7 @@ class BattleRoyaleLeaderboardStore
         if (!FileExist(path))
             return NULL;
 
-        ref BattleRoyaleLeaderboardFile store = new BattleRoyaleLeaderboardFile();
+        BattleRoyaleLeaderboardFile store = new BattleRoyaleLeaderboardFile();
         string error_message;
 
         if (!JsonFileLoader<BattleRoyaleLeaderboardFile>.LoadFile(path, store, error_message))
@@ -303,7 +303,7 @@ class BattleRoyaleLeaderboardStore
         //--- -1 is neither SOLO nor GROUP, so this ranks on the combined total.
         SortByPoints(view, -1);
 
-        ref set<string> keep = new set<string>();
+        set<string> keep = new set<string>();
         for (int k = 0; k < cap; k++)
         {
             keep.Insert(view.Get(k).uid);

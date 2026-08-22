@@ -71,10 +71,10 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         if (br_instance)
         {
             int starting_zone = GetDynamicStartingZone(i_NumStartingPlayers);
-            ref BattleRoyaleZone start_zone = BattleRoyaleZone.GetZone(starting_zone);
+            BattleRoyaleZone start_zone = BattleRoyaleZone.GetZone(starting_zone);
             if (start_zone)
             {
-                ref BattleRoyalePlayArea start_area = start_zone.GetArea();
+                BattleRoyalePlayArea start_area = start_zone.GetArea();
                 if (start_area)
                     br_instance.SetHotZoneReference(start_area.GetCenter(), start_area.GetRadius());
             }
@@ -98,8 +98,42 @@ class BattleRoyaleStartMatch: BattleRoyaleState
 
         m_ZoneStartTimer = AddTimer( i_FirstRoundDelay, this, "StartZoning", NULL, false);
 
-        //timer before first zone appears
-        SendCountdown( m_ZoneStartTimer );
+        //timer before first zone appears. The extra is the gap between what this clock counts down to
+        //(the first ROUND starting) and what the player is actually racing - see below.
+        SendCountdown( m_ZoneStartTimer, GetFirstZoneLockExtraMs() );
+    }
+
+    /**
+     *  How much longer than this state's countdown the player really has to reach the first circle.
+     *
+     *  The clock here counts down to StartZoning - the first ROUND beginning - after which the circle
+     *  still does no damage until BR_ZONE_LOCK_FRACTION of that round has elapsed. At the shipped
+     *  defaults that is 150 s on screen against 546 s of real allowance, so colouring the clock
+     *  against the readout over-warns by ~3.6x: a 2000 m gap reads RED while the player is walking it
+     *  comfortably, and red means "you cannot make it", whose correct response is the wrong play.
+     *
+     *  Consumed only by the HUD colour. The countdown the player reads is untouched.
+     *
+     *  Same zone ShowFirstZone() advertises, and i_NumStartingPlayers rather than the live count for
+     *  the same reason: the rounds decide which circle to skip to from the countdown snapshot, so the
+     *  live count can name a different one. GetZoneTimer() is the accessor 6_BattleRoyaleRound.Activate
+     *  uses, so a flexed or derived round-one length is already folded in - including the loot pricing,
+     *  which is why the `true` below is not optional.
+     */
+    protected int GetFirstZoneLockExtraMs()
+    {
+        int first_zone_number = GetDynamicStartingZone(i_NumStartingPlayers);
+        BattleRoyaleZone first_zone = BattleRoyaleZone.GetZone( first_zone_number );
+        if(!first_zone)
+            return 0;
+
+        //--- `true`: this is by definition the OPENING round, so it is priced as a loot round rather
+        //--- than a fight one (#284 point 4). 6_BattleRoyaleRound.Activate passes the same flag for the
+        //--- same round, and the two must agree - this figure is what the HUD colours the clock against.
+        int round_seconds = first_zone.GetZoneTimer( true );
+        int round_ms = round_seconds * 1000;
+
+        return (int)( round_ms * BR_ZONE_LOCK_FRACTION );
     }
 
     override void Deactivate()
@@ -166,12 +200,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         //--- the countdown snapshot, so using the live count here can advertise a different circle.
         m_Zone = m_Zone.GetZone(GetDynamicStartingZone(i_NumStartingPlayers));
         m_Zone.OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
-        ref BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
+        BattleRoyalePlayArea m_ThisArea = m_Zone.GetArea();
 
         BattleRoyaleUtils.Trace(m_ThisArea.GetCenter());
         BattleRoyaleUtils.Trace(m_ThisArea.GetRadius());
 
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), false ), true);
+        SendFuturePlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), false );
     }
 
     void HandleUnlock()
@@ -214,12 +248,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     void OpenLeaderboardMatch()
     {
         int field_size = GetPlayers().Count();
-        ref map<string, int> group_sizes = new map<string, int>();
+        map<string, int> group_sizes = new map<string, int>();
 
         //--- The match summary needs two more snapshots taken at this same instant: which squad each
         //--- player belongs to, and what everyone was called while they all still had an identity.
-        ref map<string, int> group_index = new map<string, int>();
-        ref map<string, string> names = new map<string, string>();
+        map<string, int> group_index = new map<string, int>();
+        map<string, string> names = new map<string, string>();
         bool grouped = false;
 
         //--- Seeded with the SOLO partition first, then overwritten by the party block below. That

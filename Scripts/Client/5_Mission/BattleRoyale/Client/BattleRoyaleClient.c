@@ -100,6 +100,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         // previous match's circles would still be drawn after a server change.
         VigridMapAPI.ClearZones();
         VigridMapAPI.ClearHotZones();
+        VigridMapAPI.ClearSelfPositionOverride();
+        VigridMapAPI.ClearAdminPlayers();
 #endif
     }
 
@@ -137,10 +139,169 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- allocated fresh every frame.
     protected float br_diag_zone_radius = -1;
     protected float br_diag_zone_next_radius = -1;
+    protected bool br_diag_zone_no_current = false;
     protected vector br_diag_zone_origin;
+    protected int br_diag_admin_count = -1;
+    protected int br_diag_admin_dead = -1;
+    protected float br_diag_admin_spread = -1;
+    protected vector br_diag_admin_origin;
     protected int br_diag_req_spawn_menu = 0;
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
+
+    /**
+     *  Fabricate the whole admin spectate overlay payload, so #276-#279 are reachable offline.
+     *
+     *  ⚠ WITHOUT THIS, NONE OF THE FOUR CAN BE SEEN WITHOUT A THREE-CLIENT MP SESSION. Every existing
+     *  Spectate diag entry is server-side, and SERVER is undefined offline, so the half that produces
+     *  admin_uids / admin_dead_names is compiled out entirely. This writes BattleRoyaleRPC directly -
+     *  the same trick the HUD and leaderboard fixtures use - and claims the two flags the renderers
+     *  gate on, so the tags, the corpse tags, the map suppression and the map layer all light up.
+     *
+     *  ⚠ BUILT TO FAIL, WHICH IS THE PART THAT MATTERS. Two properties under test are deliberately
+     *  violated by the data:
+     *
+     *    - PARTY INDICES ARE NON-CONTIGUOUS (0,1,2,5,9,14,21,29,...) and include two solos at -1.
+     *      Contiguous indices are the easy case for a colour walk; 21 apart is precisely the pair the
+     *      six-tier table exists to separate, and a fixture that never produces one could not show
+     *      the collision that the first three-tier attempt had.
+     *    - BODIES STRADDLE BR_SPECTATE_CORPSE_TAG_RANGE_M, half inside and half outside, so the
+     *      distance gate is exercised in both directions rather than only the one that draws.
+     *
+     *  This is the leaderboard-viewport lesson and the sorted-40-row lesson: a fixture that fits
+     *  inside the feature cannot test it.
+     *
+     *  Positions are a ring pinned to the player at the moment the toggle goes on, not re-centred
+     *  afterwards - a ring that followed the player would report the same distance for ever.
+     */
+    protected void BR_DiagApplyAdminOverlay()
+    {
+        if ( !BattleRoyaleDiag.admin_fake )
+        {
+            //--- Marks "not currently faking", which is also what makes the next enable re-centre.
+            br_diag_admin_count = -1;
+            return;
+        }
+
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if ( !br_rpc )
+            return;
+
+        //--- Claimed every frame, not just on the rebuild: BattleRoyaleClient.Update mirrors
+        //--- br_rpc.is_admin into b_IsAdmin each frame, and b_Spectating is edge-latched from
+        //--- spectate_active, so a one-shot write would be undone before anything drew.
+        br_rpc.is_admin = true;
+        br_rpc.spectate_active = true;
+        b_Spectating = true;
+
+        bool rebuild = false;
+        if ( br_diag_admin_count != BattleRoyaleDiag.admin_fake_players )
+            rebuild = true;
+        if ( br_diag_admin_dead != BattleRoyaleDiag.admin_fake_dead )
+            rebuild = true;
+        if ( br_diag_admin_spread != BattleRoyaleDiag.admin_fake_spread )
+            rebuild = true;
+
+        if ( !rebuild )
+            return;
+
+        if ( br_diag_admin_count < 0 )
+            br_diag_admin_origin = GetReferencePosition();
+
+        br_diag_admin_count = BattleRoyaleDiag.admin_fake_players;
+        br_diag_admin_dead = BattleRoyaleDiag.admin_fake_dead;
+        br_diag_admin_spread = BattleRoyaleDiag.admin_fake_spread;
+
+        br_rpc.admin_uids.Clear();
+        br_rpc.admin_names.Clear();
+        br_rpc.admin_positions.Clear();
+        br_rpc.admin_prev_positions.Clear();
+        br_rpc.admin_healths.Clear();
+        br_rpc.admin_kills.Clear();
+        br_rpc.admin_parties.Clear();
+
+        int living = BattleRoyaleDiag.admin_fake_players;
+        int i = 0;
+
+        for ( i = 0; i < living; i++ )
+        {
+            float angle = (i * 360.0) / Math.Max( living, 1 );
+            float rad = angle * Math.DEG2RAD;
+
+            vector pos = br_diag_admin_origin;
+            pos[0] = pos[0] + (Math.Sin( rad ) * BattleRoyaleDiag.admin_fake_spread);
+            pos[2] = pos[2] + (Math.Cos( rad ) * BattleRoyaleDiag.admin_fake_spread);
+            pos[1] = GetGame().SurfaceY( pos[0], pos[2] );
+
+            br_rpc.admin_uids.Insert( "7656119800000" + i.ToString() );
+            br_rpc.admin_names.Insert( "Fake Player " + (i + 1).ToString() );
+            br_rpc.admin_positions.Insert( pos );
+            br_rpc.admin_healths.Insert( Math.Clamp( 1.0 - (i * 0.07), 0.05, 1.0 ) );
+            br_rpc.admin_kills.Insert( i % 4 );
+            br_rpc.admin_parties.Insert( BR_DiagFakePartyIndex( i ) );
+        }
+
+        br_rpc.admin_recv_ms = GetGame().GetTime();
+        br_rpc.admin_seq = br_rpc.admin_seq + 1;
+
+        //--- The corpse half. Placed along a line running outwards from the origin so that the first
+        //--- few land inside BR_SPECTATE_CORPSE_TAG_RANGE_M and the rest do not.
+        br_rpc.admin_dead_names.Clear();
+        br_rpc.admin_dead_positions.Clear();
+
+        int dead = BattleRoyaleDiag.admin_fake_dead;
+        for ( i = 0; i < dead; i++ )
+        {
+            //--- Steps of a third of the range, so with the default six bodies two are comfortably
+            //--- inside, one is in the fade band and three are out.
+            float step = BR_SPECTATE_CORPSE_TAG_RANGE_M / 3.0;
+            float out_m = step * (i + 1);
+
+            vector body = br_diag_admin_origin;
+            body[0] = body[0] + out_m;
+            body[1] = GetGame().SurfaceY( body[0], body[2] );
+
+            br_rpc.admin_dead_names.Insert( "Fake Body " + (i + 1).ToString() );
+            br_rpc.admin_dead_positions.Insert( body );
+        }
+
+        BattleRoyaleUtils.Debug( "[Diag] Fake admin overlay: " + living.ToString() + " living, " + dead.ToString() + " bodies" );
+    }
+
+    /**
+     *  Party index for fabricated player `i`. NON-CONTIGUOUS on purpose - see BR_DiagApplyAdminOverlay.
+     *
+     *  Two solos (-1) are included because "solo stays neutral" is a requirement of #276 in its own
+     *  right, and a fixture in which everybody has a team cannot show a solo being wrongly coloured.
+     */
+    protected int BR_DiagFakePartyIndex(int i)
+    {
+        if ( i == 3 )
+            return -1;
+        if ( i == 7 )
+            return -1;
+
+        if ( i == 0 )
+            return 0;
+        if ( i == 1 )
+            return 1;
+        if ( i == 2 )
+            return 2;
+        if ( i == 4 )
+            return 5;
+        if ( i == 5 )
+            return 9;
+        if ( i == 6 )
+            return 14;
+        if ( i == 8 )
+            return 21;
+        if ( i == 9 )
+            return 29;
+
+        //--- Past the hand-picked set, keep spreading rather than repeating: two rows sharing an
+        //--- index would look like a colour collision that the walk had not actually produced.
+        return 30 + i;
+    }
 
     /**
      *  Replace the live play areas with synthetic circles pinned near the player.
@@ -165,6 +326,10 @@ class BattleRoyaleClient: BattleRoyaleBase
             rebuild = true;
         if ( br_diag_zone_next_radius != BattleRoyaleDiag.zone_next_radius )
             rebuild = true;
+        //--- In the edge test as well as in the body below, or flipping the toggle would sit there
+        //--- doing nothing until a radius happened to move.
+        if ( br_diag_zone_no_current != BattleRoyaleDiag.zones_fake_no_current )
+            rebuild = true;
 
         if ( !rebuild )
             return;
@@ -181,11 +346,20 @@ class BattleRoyaleClient: BattleRoyaleBase
         vector diag_next_center = br_diag_zone_origin;
         diag_next_center[0] = diag_next_center[0] + (BattleRoyaleDiag.zone_radius * 0.4);
 
-        m_CurrentPlayArea = new BattleRoyalePlayArea( br_diag_zone_origin, BattleRoyaleDiag.zone_radius );
+        //--- "Pre-Lock": a next circle with no current one, which is what the client actually holds
+        //--- from the moment the first circle is advertised until LockNewZone. The next circle still
+        //--- uses the current radius for its offset, so toggling this is a pure A/B - same two
+        //--- circles in the same places, one of them simply not published.
+        if ( BattleRoyaleDiag.zones_fake_no_current )
+            m_CurrentPlayArea = NULL;
+        else
+            m_CurrentPlayArea = new BattleRoyalePlayArea( br_diag_zone_origin, BattleRoyaleDiag.zone_radius );
+
         m_FuturePlayArea = new BattleRoyalePlayArea( diag_next_center, BattleRoyaleDiag.zone_next_radius );
 
         br_diag_zone_radius = BattleRoyaleDiag.zone_radius;
         br_diag_zone_next_radius = BattleRoyaleDiag.zone_next_radius;
+        br_diag_zone_no_current = BattleRoyaleDiag.zones_fake_no_current;
     }
 
     //! Drain the diag menu's one-shot requests. Counters, so a press is never lost or double-fired.
@@ -408,6 +582,10 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- 0, or a positive second count), so the very first push is never mistaken for "unchanged".
     int br_previous_countdown = -1000;
 
+    //! Last admin payload sequence handed to the map addon, so the per-frame push can skip the work
+    //! when nothing new has arrived. -1 rather than 0 so the very first payload is always a change.
+    int br_previous_admin_map_seq = -1;
+
     /**
      *  Announce, exactly once, that this client has finished loading and is controlling its
      *  character.
@@ -455,6 +633,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 #ifdef DIAG_DEVELOPER
 		// Diag menu, drained first so a forced value cannot be overwritten later in the same frame.
 		BR_DiagApplyZones();
+		BR_DiagApplyAdminOverlay();
 		BR_DiagHandleRequests();
 #endif
 		//--- Everything zone-related describes the SUBJECT: the local player normally, the player
@@ -470,6 +649,41 @@ class BattleRoyaleClient: BattleRoyaleBase
 		if ( !gameplay )
 			return;
 
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+
+		//--- The deadline the CLOCK COLOUR is measured against, which is not always the countdown on
+		//--- screen. During 5_BattleRoyaleStartMatch that countdown runs out when the first ROUND
+		//--- starts, after which the player still gets BR_ZONE_LOCK_FRACTION of round one before the
+		//--- circle bites - 536 s of real allowance behind a 140 s readout at the shipped defaults.
+		//--- The server sends the honest figure alongside; see BattleRoyaleState.SendCountdown.
+		//---
+		//--- Falling back to the countdown is what makes that wire field purely additive: a client
+		//--- that was never told - offline, diag, the frames before the first SetCountdownMs - gets
+		//--- exactly the behaviour that shipped before it existed.
+		int zone_seconds = BR_COUNTDOWN_NONE;
+		if ( br_rpc )
+		{
+			int zone_deadline_at_ms = br_rpc.zone_deadline_ms;
+			if ( zone_deadline_at_ms <= 0 )
+				zone_deadline_at_ms = br_rpc.countdown_deadline_ms;
+
+			if ( zone_deadline_at_ms > 0 )
+			{
+				int zone_remaining_ms = zone_deadline_at_ms - GetGame().GetTime();
+				if ( zone_remaining_ms > 0 )
+					zone_seconds = (int)Math.Ceil( zone_remaining_ms / 1000.0 );
+				else
+					zone_seconds = 0;
+			}
+		}
+
+#ifdef DIAG_DEVELOPER
+		//--- The same forced number the countdown block below uses, so the diag rig colours the clock
+		//--- against the figure it is displaying rather than a deadline no server ever sent.
+		if ( BattleRoyaleDiag.hud_force )
+			zone_seconds = BattleRoyaleDiag.hud_countdown;
+#endif
+
 		// First check if player is outside current play area
 		if (m_CurrentPlayArea)
 		{
@@ -479,21 +693,35 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// If outside current play area, show distance to it
 			if (!isInsideZone)
 			{
-				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle);
+				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle, zone_seconds);
 			}
 			// Player is inside current play area, check if future play area exists
 			else if (m_FuturePlayArea)
 			{
 				isInsideZone = GetZoneDistanceFrom(m_FuturePlayArea, subject_pos, distExt, distInt, angle);
-				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle);
+				gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle, zone_seconds);
 			}
 			// Player inside current area but no future area
 			else
 			{
-				gameplay.UpdateZoneDistance(true, 0, distInt, angle);
+				gameplay.UpdateZoneDistance(true, 0, distInt, angle, zone_seconds);
 			}
 		}
-		// No current play area
+		//--- A FUTURE circle with no CURRENT one is the whole pre-lock phase, and it used to fall into
+		//--- the hide branch below: for the warm-up plus the first 80% of round one - ~9 minutes at the
+		//--- shipped defaults - the player got no arrow, no distance and, because SetDistance is the
+		//--- only thing that colours the clock, no timer colour either. The first UpdateCurrentPlayArea
+		//--- a client ever sees comes from 6_BattleRoyaleRound.LockNewZone, which is the same instant
+		//--- the damage starts.
+		//---
+		//--- Same measurement as the inside-current branch above: with no boundary yet, "am I inside
+		//--- the circle I have to be inside" is the only question there is.
+		else if (m_FuturePlayArea)
+		{
+			isInsideZone = GetZoneDistanceFrom(m_FuturePlayArea, subject_pos, distExt, distInt, angle);
+			gameplay.UpdateZoneDistance(isInsideZone, distExt, distInt, angle, zone_seconds);
+		}
+		// Neither circle: the lobby, and the frames after 7_BattleRoyaleLastRound clears both.
 		else
 		{
 			gameplay.HideDistance();
@@ -504,6 +732,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 		//--- are watching is outside the circle" - a camera that swings across the boundary behind a
 		//--- target who is safely inside must not tint, and a target who runs out must, even though
 		//--- the camera trails them.
+		//---
+		//--- CURRENT area only, deliberately, and NOT the future one the arrow above may be pointing
+		//--- at. There is no zone damage before the lock, so measuring this against the future circle
+		//--- would start the you-are-dying signal up to nine minutes early. Do not "unify" the two
+		//--- GetZoneDistanceFrom calls - they are asking different questions.
 		bool want_tint = false;
         if( m_CurrentPlayArea && has_subject )
         {
@@ -513,8 +746,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         ApplyOutOfZoneTint( want_tint, player );
 
-		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
-
+		//--- br_rpc is resolved above the zone block, which needs it for the colour deadline.
 		if( br_rpc )
 		{
 			//--- Everything the HUD shows, taken from the wire unless the diag menu is forcing it.
@@ -522,6 +754,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 			int hud_players = br_rpc.nb_players;
 			int hud_groups = br_rpc.nb_groups;
 			int hud_kills = br_rpc.player_kills;
+			int hud_audience = br_rpc.audience_count;
 
 #ifdef DIAG_DEVELOPER
 			if ( BattleRoyaleDiag.hud_force )
@@ -529,6 +762,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 				hud_players = BattleRoyaleDiag.hud_players;
 				hud_groups = BattleRoyaleDiag.hud_groups;
 				hud_kills = BattleRoyaleDiag.hud_kills;
+				hud_audience = BattleRoyaleDiag.hud_audience;
 			}
 #endif
 
@@ -554,12 +788,26 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// Input enable/disable
 			if( br_previous_input_state != br_rpc.input_state && player )
 			{
+#ifdef VIGRID_AUTORUN
+				//--- Before DisableInput, and the order matters. Auto-run re-asserts its own
+				//--- OverrideMovementSpeed every frame, which is the same override DisableInput
+				//--- writes - so without this the freeze would lose the fight. SetAllowed(false)
+				//--- also cancels a hold in progress, so there is no separate cancel to make.
+				//--- input_state is TRUE for "disable", hence the negation.
+				VigridAutoRunAPI.SetAllowed( !br_rpc.input_state );
+#endif
+
 				player.DisableInput( br_rpc.input_state );
 				br_previous_input_state = br_rpc.input_state;
 			}
 
 			// Update player kill count
 			gameplay.UpdateKillCount( hud_kills );
+
+			//--- How many people are watching this player. Deliberately here rather than in the
+			//--- spectate block further down, which early-returns for anyone who is not spectating -
+			//--- i.e. for exactly the living players this readout is for.
+			gameplay.UpdateAudienceCount( hud_audience );
 
 			// Update match start state
 			if( br_rpc.match_started && !b_MatchStarted )
@@ -641,7 +889,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 					if ( br_rpc.b_ArtillerySound )
 					{
-						ref EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
+						EffectSound m_ArtySound = SEffectManager.PlaySound("Artillery_Distant_SoundSet", m_FuturePlayArea.GetCenter(), 0.1, 0.1);
 						m_ArtySound.SetAutodestroy(true);
 					}
 				}
@@ -677,6 +925,26 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			VigridMapAPI.SetZones( map_current_center, map_current_radius, map_next_center, map_next_radius );
+
+			// Where the map should draw "you". While spectating the local PlayerBase is the corpse,
+			// or for an admin the parked anchor body - neither of which is where this client is
+			// actually looking from - so the fullscreen map drew the self glyph on the body while
+			// the camera was somewhere else entirely (#277). The minimap never had the bug: it
+			// re-centres on the camera every tick and never asks the player.
+			//
+			// Asserted rather than inferred, and the API says so at length: the map addon has no
+			// concept of a spectator and must not try to detect one. Cleared on the other branch
+			// AND in the destructor, because a stranded override pins the glyph somewhere the
+			// player left, silently.
+			if( IsSpectating() )
+				VigridMapAPI.SetSelfPositionOverride( GetGame().GetCurrentCameraPosition() );
+			else
+				VigridMapAPI.ClearSelfPositionOverride();
+
+			// Every living player, plotted on the map for an admin spectator (#279). Same push
+			// contract as the zones: the addon diffs internally, so this costs a count comparison
+			// on a normal frame.
+			UpdateAdminMapLayer( br_rpc );
 
 			// Same push, same deal: the addon diffs internally, so calling this every frame costs a
 			// count comparison on a normal frame and a walk only when the pair actually changed.
@@ -981,6 +1249,111 @@ class BattleRoyaleClient: BattleRoyaleBase
     }
 
     /**
+     *  Hand the admin overlay's player list to the map addon, so it can plot them (#279).
+     *
+     *  ⚠ THIS IS THE SAME DATA THE OVERHEAD TAGS DRAW, ON PURPOSE. The overhead tags are suppressed
+     *  while the map is open, so the map layer is not a second view competing with them - it is where
+     *  that information goes when there is no world on screen to hang it over.
+     *
+     *  Positions are the SERVER's, not the entity list's, which is the whole reason the map layer can
+     *  be complete: an admin watches from far outside the network bubble, so ClientData would show a
+     *  handful of players at most. That is also why no interpolation is applied here - a glyph 4 km
+     *  away stepping twice a second is a pixel of movement, and the map repaints at 10 Hz anyway.
+     *
+     *  Colours are resolved to ARGB HERE rather than passed as party indices, so that no concept of a
+     *  party crosses into the map addon. It may not name a BattleRoyale* symbol and it does not need
+     *  to know what the colours mean.
+     *
+     *  Cleared whenever this client is not an admin spectator, so an admin who leaves spectate does
+     *  not leave a frozen picture of the match on their map.
+     */
+    protected void UpdateAdminMapLayer(BattleRoyaleRPC br_rpc)
+    {
+#ifdef VIGRID_MAP
+        bool wanted = b_IsAdmin && IsSpectating() && br_rpc.spectate_active;
+
+        if( !wanted )
+        {
+            VigridMapAPI.ClearAdminPlayers();
+
+            //--- Reset the latch too. Without this, an admin who leaves spectate and comes back
+            //--- before the next 2 Hz push would match the stored sequence, skip the rebuild, and sit
+            //--- looking at an empty map layer until somebody moved.
+            br_previous_admin_map_seq = -1;
+            return;
+        }
+
+        //--- Nothing new since the last push, so there is nothing to rebuild. The API would diff the
+        //--- arrays and discard them anyway, but only AFTER this method had allocated three of them -
+        //--- sixty times a second, for as long as an admin is in spectate. The payload arrives at
+        //--- 2 Hz, so this skips about 97% of the frames.
+        if( br_rpc.admin_seq == br_previous_admin_map_seq )
+            return;
+
+        br_previous_admin_map_seq = br_rpc.admin_seq;
+
+        int count = br_rpc.admin_uids.Count();
+
+        //--- The three payload arrays are filled together on the server, but a short read would index
+        //--- off the end here - so the shortest wins rather than trusting them to agree.
+        int names_count = br_rpc.admin_names.Count();
+        if( names_count < count )
+            count = names_count;
+
+        int positions_count = br_rpc.admin_positions.Count();
+        if( positions_count < count )
+            count = positions_count;
+
+        int parties_count = br_rpc.admin_parties.Count();
+        if( parties_count < count )
+            count = parties_count;
+
+        array<string> map_names = new array<string>();
+        array<vector> map_positions = new array<vector>();
+        array<int> map_colors = new array<int>();
+
+        for( int i = 0; i < count; i++ )
+        {
+            //--- One array read per line, before any call consumes it.
+            string entry_name = br_rpc.admin_names.Get( i );
+            vector entry_pos = br_rpc.admin_positions.Get( i );
+            int entry_party = br_rpc.admin_parties.Get( i );
+
+            map_names.Insert( entry_name );
+            map_positions.Insert( entry_pos );
+            map_colors.Insert( BattleRoyaleTeamColour.ForParty( entry_party, 1.0 ) );
+        }
+
+        VigridMapAPI.SetAdminPlayers( map_names, map_positions, map_colors );
+#endif
+    }
+
+    /**
+     *  Is the map addon's fullscreen map currently up?
+     *
+     *  Asked by both screen-space admin overlays - the nametags and the COT skeleton canvas - because
+     *  both draw over the whole viewport and neither has any business doing so on top of a map.
+     *
+     *  MENU_VIGRID_MAP is a 3_Game static const in the map addon, so a 5_Mission file here can see it
+     *  without any new API; the #ifdef is what keeps a build WITHOUT the map addon compiling, and it
+     *  correctly answers "no map is open" in that case. Note the dependency direction is legal in
+     *  this one direction only: the host may name a map symbol, the addon may never name a
+     *  BattleRoyale* one.
+     */
+    protected bool IsFullscreenMapOpen()
+    {
+#ifdef VIGRID_MAP
+        UIManager ui = GetGame().GetUIManager();
+        if( !ui )
+            return false;
+
+        return ui.IsMenuOpen( MENU_VIGRID_MAP );
+#else
+        return false;
+#endif
+    }
+
+    /**
      *  Drive the admin overlay: a name, health bar, distance and kill count over every living player.
      *
      *  Built on first use rather than in the constructor, so an ordinary player - who will never see
@@ -994,6 +1367,14 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected void UpdateSpectatorTags(BattleRoyaleRPC br_rpc)
     {
         bool wanted = b_IsAdmin && IsSpectating() && br_rpc.spectate_active;
+
+        //--- Overhead tags are for looking at the WORLD. With the fullscreen map open there is no
+        //--- world on screen to hang them over, so they became a wall of names over the map - and the
+        //--- map now plots the same players itself (#279). Suppressed rather than reordered: no
+        //--- priority would help, since the tags are anchored to screen positions of things the map
+        //--- has replaced.
+        if( IsFullscreenMapOpen() )
+            wanted = false;
 
         if( !m_SpectatorTags )
         {
@@ -1316,7 +1697,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         b_IsReady = true; //this only runs once
 
-        ref Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
+        Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
         //--- No target: the server resolves the subject from the RPC sender identity. Sending one
         //--- would be ignored, and inviting it back is how the ready-up-anyone exploit worked.
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false );
@@ -1588,6 +1969,16 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         esp.m_ESPCanvas.Clear();
 
+        //--- Same reasoning as the nametags, and the position is deliberate: BELOW the Clear(), not
+        //--- above it. A CanvasWidget keeps its draw list until something clears it, so bailing out
+        //--- earlier would leave the last frame of skeletons burnt in over the map for as long as it
+        //--- stayed open. Clear first, then stop drawing.
+        //---
+        //--- The overlay is NOT switched off - the admin gets it straight back when the map closes,
+        //--- which is what they asked for when they pressed F6.
+        if( IsFullscreenMapOpen() )
+            return;
+
         if( !ClientData.m_PlayerBaseList )
             return;
 
@@ -1737,7 +2128,7 @@ class BattleRoyaleClient: BattleRoyaleBase
      */
     void RequestLeaderboard( int board )
     {
-        ref Param1<int> requested_board = new Param1<int>( board );
+        Param1<int> requested_board = new Param1<int>( board );
         //--- No target - see ReadyUp above.
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLeaderboard", requested_board, true );
     }

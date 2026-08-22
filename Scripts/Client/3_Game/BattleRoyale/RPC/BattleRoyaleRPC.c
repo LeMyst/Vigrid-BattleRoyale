@@ -9,6 +9,7 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetFade", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetInput", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "AddPlayerKill", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAudienceCount", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "StartMatch", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyPhase", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLobbyNames", this );
@@ -30,6 +31,10 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "EndSpectate", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminFlag", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminPlayerList", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetAdminDeadList", this );
+
+		admin_dead_names = new array<string>();
+		admin_dead_positions = new array<vector>();
 
 		admin_uids = new array<string>();
 		admin_names = new array<string>();
@@ -37,7 +42,7 @@ class BattleRoyaleRPC
 		admin_prev_positions = new array<vector>();
 		admin_healths = new array<float>();
 		admin_kills = new array<int>();
-		admin_slots = new array<int>();
+		admin_parties = new array<int>();
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetResolvedName", this );
@@ -63,6 +68,29 @@ class BattleRoyaleRPC
 	void ~BattleRoyaleRPC()
 	{
 
+	}
+
+	/**
+	 *  Every ctx.Read failure in this class lands here. ONE idiom, because there used to be two and
+	 *  they contradicted each other.
+	 *
+	 *  ⚠️ NEVER the global Error(). It is Error2("", err) - a messagebox proto native that unwinds
+	 *  the script VM - and a malformed cosmetic payload must not take the client's whole mission
+	 *  down. Fourteen handlers called it anyway, beside eight that had already been moved off it -
+	 *  two of those carrying a comment saying exactly this.
+	 *
+	 *  TWO CHANNELS ON PURPOSE, and the second is not belt-and-braces. BattleRoyaleUtils.Warn is
+	 *  gated on CheckLogLevel(WARN), and BATTLEROYALE_LOG_LEVEL is 0 on a retail client - a build
+	 *  with no DIAG, which is what players run - so Warn alone would make a version-skewed payload
+	 *  completely invisible in production. Warn carries it on the BR log level and its DIAG chat
+	 *  mirror; ErrorEx always reaches the log regardless. WARNING severity follows vanilla, which
+	 *  uses it on paths as ordinary as clientdata.c's "PlayerIdentity not synchronized".
+	 */
+	private void ReadFailed( string rpc_name )
+	{
+		string msg = "BattleRoyaleRPC: FAILED TO READ " + rpc_name;
+		BattleRoyaleUtils.Warn( msg );
+		ErrorEx( msg, ErrorExSeverity.WARNING );
 	}
 
 	/**
@@ -98,16 +126,22 @@ class BattleRoyaleRPC
 		fade_state = false;
 		input_state = false;
 		player_kills = 0;
+		audience_count = 0;
 		match_started = false;
 		lobby_phase = false;
 		lobby_net_low.Clear();
 		lobby_net_high.Clear();
 		lobby_names.Clear();
 		countdown_deadline_ms = BR_COUNTDOWN_NONE;
+		zone_deadline_ms = BR_COUNTDOWN_NONE;
 		current_play_area_center = "0 0 0";
 		current_play_area_radius = 0.0;
 		future_play_area_center = "0 0 0";
 		future_play_area_radius = 0.0;
+		//--- Reset beside the two fields it ARRIVES WITH, not filed under sound. All three come off
+		//--- one UpdateFuturePlayArea payload, and keeping them together is the only thing that makes
+		//--- a missing one visible by eye - this was the field Reset() forgot.
+		b_ArtillerySound = false;
 		top_position = 0;
 		winner_screen = false;
 		lb_solo.Clear();
@@ -144,7 +178,9 @@ class BattleRoyaleRPC
 		admin_prev_positions.Clear();
 		admin_healths.Clear();
 		admin_kills.Clear();
-		admin_slots.Clear();
+		admin_parties.Clear();
+		admin_dead_names.Clear();
+		admin_dead_positions.Clear();
 		admin_recv_ms = 0;
 		admin_prev_recv_ms = 0;
 		admin_seq = 0;
@@ -195,9 +231,7 @@ class BattleRoyaleRPC
 
 		if ( !ctx.Read( data ) )
 		{
-			//--- Warn, never Error: the global Error() raises a VM exception and would take the
-			//--- client's whole mission down over a malformed cosmetic payload.
-			BattleRoyaleUtils.Warn("SetLastMatchTable: FAILED TO READ");
+			ReadFailed("SetLastMatchTable");
 			return;
 		}
 
@@ -256,7 +290,7 @@ class BattleRoyaleRPC
 
 		if ( !ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Warn("SetLastMatchRecap: FAILED TO READ");
+			ReadFailed("SetLastMatchRecap");
 			return;
 		}
 
@@ -292,7 +326,7 @@ class BattleRoyaleRPC
 		Param2<int, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETPLAYERCOUNT RPC");
+			ReadFailed("SetPlayerCount");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -374,7 +408,10 @@ class BattleRoyaleRPC
 	ref array<vector> admin_prev_positions;
 	ref array<float> admin_healths;
 	ref array<int> admin_kills;
-	ref array<int> admin_slots;
+	//! Match-local PARTY index per player, -1 for solo. Resolved to a colour client-side by
+	//! BattleRoyaleTeamColour.ForParty. Was the party SLOT index until #276 - see the docblock on
+	//! BattleRoyaleSpectators.AdminListPartyIndexOf for why the two are not interchangeable.
+	ref array<int> admin_parties;
 	int admin_recv_ms = 0;
 	int admin_prev_recv_ms = 0;
 	int admin_seq = 0;
@@ -384,7 +421,7 @@ class BattleRoyaleRPC
 		Param1<bool> data;
 		if( !ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Warn("FAILED TO READ SETADMINFLAG RPC");
+			ReadFailed("SetAdminFlag");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -399,7 +436,7 @@ class BattleRoyaleRPC
 		Param6<array<string>, array<string>, array<vector>, array<float>, array<int>, array<int>> data;
 		if( !ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Warn("FAILED TO READ SETADMINPLAYERLIST RPC");
+			ReadFailed("SetAdminPlayerList");
 			return;
 		}
 		if ( type != CallType.Client )
@@ -412,7 +449,10 @@ class BattleRoyaleRPC
 		int previous = admin_positions.Count();
 		for( int i = 0; i < previous; i++ )
 		{
-			admin_prev_positions.Insert( admin_positions.Get(i) );
+			//--- One array read per line, never nested in a call - see UpdateHotZones for the
+			//--- measurement behind that rule.
+			vector carried = admin_positions.Get( i );
+			admin_prev_positions.Insert( carried );
 		}
 		admin_prev_recv_ms = admin_recv_ms;
 
@@ -421,7 +461,7 @@ class BattleRoyaleRPC
 		admin_positions.Copy( data.param3 );
 		admin_healths.Copy( data.param4 );
 		admin_kills.Copy( data.param5 );
-		admin_slots.Copy( data.param6 );
+		admin_parties.Copy( data.param6 );
 
 		//--- A roster that changed LENGTH cannot be interpolated against the previous one - index i
 		//--- is a different player now - so drop the old sample rather than lerping between two
@@ -433,12 +473,40 @@ class BattleRoyaleRPC
 		admin_seq = admin_seq + 1;
 	}
 
+	//! Names and death positions of every body worth tagging, for the admin overlay (#278).
+	//!
+	//! Positions are where each player FELL and never move afterwards - see the docblock on
+	//! BattleRoyaleSpectators.PushAdminDeadList for why the live corpse position would be wrong. No
+	//! uids and no party indices: a dead player's team is not actionable, and the wire carries the
+	//! minimum either way.
+	//!
+	//! Append-only and pushed on change, so unlike admin_positions there is nothing to interpolate
+	//! and no previous sample to keep.
+	ref array<string> admin_dead_names;
+	ref array<vector> admin_dead_positions;
+
+	void SetAdminDeadList(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param2<array<string>, array<vector>> dead_data;
+		if( !ctx.Read( dead_data ) )
+		{
+			ReadFailed("SetAdminDeadList");
+			return;
+		}
+
+		if( type != CallType.Client )
+			return;
+
+		admin_dead_names.Copy( dead_data.param1 );
+		admin_dead_positions.Copy( dead_data.param2 );
+	}
+
 	void SetSpectateOffer(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
 		Param1<bool> data;
 		if( !ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Warn("FAILED TO READ SETSPECTATEOFFER RPC");
+			ReadFailed("SetSpectateOffer");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -453,9 +521,7 @@ class BattleRoyaleRPC
 		Param4<string, string, vector, int> data;
 		if( !ctx.Read( data ) )
 		{
-			//--- Warn, not Error: the global Error() halts the script VM, and a malformed push must
-			//--- not take the client's whole mission down.
-			BattleRoyaleUtils.Warn("FAILED TO READ SETSPECTATETARGET RPC");
+			ReadFailed("SetSpectateTarget");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -503,7 +569,7 @@ class BattleRoyaleRPC
 		Param2<array<string>, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETSPEAKINGPLAYERS RPC");
+			ReadFailed("SetSpeakingPlayers");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -522,7 +588,7 @@ class BattleRoyaleRPC
 		Param2<bool, bool> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETVOICESETTINGS RPC");
+			ReadFailed("SetVoiceSettings");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -538,7 +604,7 @@ class BattleRoyaleRPC
 		Param3<string, string, string> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETRESOLVEDNAME RPC");
+			ReadFailed("SetResolvedName");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -582,15 +648,21 @@ class BattleRoyaleRPC
 
 		array<string> doomed = new array<string>();
 
+		//--- Every container read is hoisted onto its own line before the call that consumes it - see
+		//--- UpdateHotZones for the measurement behind that rule.
 		for ( int i = 0; i < resolved_by_name.Count(); i++ )
 		{
-			if ( resolved_by_name.GetElement( i ) == stale )
-				doomed.Insert( resolved_by_name.GetKey( i ) );
+			string held_name = resolved_by_name.GetElement( i );
+			string held_key = resolved_by_name.GetKey( i );
+
+			if ( held_name == stale )
+				doomed.Insert( held_key );
 		}
 
 		for ( int j = 0; j < doomed.Count(); j++ )
 		{
-			resolved_by_name.Remove( doomed.Get( j ) );
+			string victim = doomed.Get( j );
+			resolved_by_name.Remove( victim );
 		}
 	}
 
@@ -624,7 +696,7 @@ class BattleRoyaleRPC
 		Param1<bool> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETFADE RPC");
+			ReadFailed("SetFade");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -650,7 +722,7 @@ class BattleRoyaleRPC
 		Param1<bool> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETINPUT RPC");
+			ReadFailed("SetInput");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -669,7 +741,7 @@ class BattleRoyaleRPC
 		Param1<int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ ADDPLAYERKILL RPC");
+			ReadFailed("AddPlayerKill");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -680,6 +752,35 @@ class BattleRoyaleRPC
 			//--- was scored while this client had no entity to receive it - a spectating killer whose
 			//--- grenade landed after they died.
 			player_kills = data.param1;
+		}
+	}
+
+	// Set the number of people currently spectating this player
+
+	//--- How many people are watching ME right now (#285). Per-identity, never broadcast: it is a
+	//--- fact about one player and is only ever true for them.
+	//---
+	//--- Admins in ADMIN spectate are deliberately absent from this figure - an operator watching is
+	//--- not part of the game, and surfacing it would tell a player the moment they are observed. An
+	//--- admin who died and took ORDINARY spectate does count; the server filters on the session
+	//--- type, not on the admin roster. Nothing identifying arrives here - only the count.
+	int audience_count = 0;
+
+	void SetAudienceCount(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<int> data;
+		if( !ctx.Read( data ) )
+		{
+			ReadFailed("SetAudienceCount");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("SetAudienceCount: %1", data.param1));
+			//--- The server's authoritative total, like AddPlayerKill above and unlike an increment:
+			//--- 0 is a real value here, pushed the moment the last watcher leaves, and it is what
+			//--- takes the panel off the HUD.
+			audience_count = data.param1;
 		}
 	}
 
@@ -728,14 +829,12 @@ class BattleRoyaleRPC
 	/**
 	 *  Who to draw a lobby name tag over, as parallel arrays of network id and name.
 	 *
-	 *  ⚠️ THE NETWORK ID IS HERE BECAUSE A CLIENT CANNOT IDENTIFY ANOTHER PLAYER'S ENTITY.
-	 *  PlayerBase.GetIdentity() is not reliably populated client-side for a REMOTE player, so
-	 *  matching an entity to a name through GetPlainId() silently matches nothing. Both existing
-	 *  consumers of that idiom - VigridPartyAPI.FindLocalPlayer and BattleRoyaleSpectatorTags - hide
-	 *  it, because each falls back to a server-pushed position when the lookup fails and so still
-	 *  renders. This overlay had no such fallback and drew nothing at all, which is how the gap was
-	 *  finally noticed. Object.GetNetworkID / GetGame().GetObjectByNetworkId are the pair that do
-	 *  work on both sides, and both have real vanilla call sites.
+	 *  ⚠️ RETRACTED 2026-08-12. The reason once recorded here - that a client cannot identify another
+	 *  player's entity, because PlayerBase.GetIdentity() is not populated client-side for a REMOTE
+	 *  player - IS FALSE. Remote identities are populated; measured `noidentity=0`, sustained. This
+	 *  transport is kept because it is the version that shipped and was verified, NOT because
+	 *  identities are unavailable. See the header of BattleRoyaleLobbyTags.c for the measurement and
+	 *  for why the client-side version is the smaller one to go back to.
 	 *
 	 *  PER-IDENTITY, and teammates are dropped SERVER-SIDE before the packet is built - the client
 	 *  draws every row it receives. That keeps party composition off the wire entirely, and it is
@@ -751,7 +850,7 @@ class BattleRoyaleRPC
 		Param3<array<int>, array<int>, array<string>> data;
 		if ( !ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Warn("FAILED TO READ SETLOBBYNAMES RPC");
+			ReadFailed("SetLobbyNames");
 			return;
 		}
 
@@ -795,22 +894,43 @@ class BattleRoyaleRPC
 	 */
 	int countdown_deadline_ms = BR_COUNTDOWN_NONE;
 
+	/**
+	 *  The deadline the HUD colours the CLOCK against, on this client's own clock.
+	 *
+	 *  Minted exactly like countdown_deadline_ms above and for the same reasons, but it answers a
+	 *  different question: "by when must the player be inside the circle the arrow points at". It
+	 *  EQUALS the countdown in every phase whose countdown is itself that deadline - every round, and
+	 *  the endgame - and differs only during the warm-up, where the clock counts down to the first
+	 *  round starting and the circle then stays harmless for another BR_ZONE_LOCK_FRACTION of round
+	 *  one. See BattleRoyaleState.SendCountdown for why it rides this RPC rather than one of its own.
+	 *
+	 *  BR_COUNTDOWN_NONE means the server has not said, and BattleRoyaleClient.Update then falls back
+	 *  to the countdown - which is exactly the behaviour that shipped before this field existed, and
+	 *  is what makes the whole change additive for offline and diag sessions.
+	 */
+	int zone_deadline_ms = BR_COUNTDOWN_NONE;
+
 	void SetCountdownMs(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
-		Param1<int> data;
+		Param2<int, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETCOUNTDOWNMS RPC");
+			ReadFailed("SetCountdownMs");
 			return;
 		}
 		if ( type == CallType.Client )
 		{
-			BattleRoyaleUtils.Trace(string.Format("SetCountdownMs: %1", data.param1));
+			BattleRoyaleUtils.Trace(string.Format("SetCountdownMs: %1 zone %2", data.param1, data.param2));
 
 			if ( data.param1 > 0 )
 				countdown_deadline_ms = GetGame().GetTime() + data.param1;
 			else
 				countdown_deadline_ms = BR_COUNTDOWN_NONE;
+
+			if ( data.param2 > 0 )
+				zone_deadline_ms = GetGame().GetTime() + data.param2;
+			else
+				zone_deadline_ms = BR_COUNTDOWN_NONE;
 		}
 	}
 
@@ -824,7 +944,7 @@ class BattleRoyaleRPC
 		Param2<vector, float> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ UPDATECURRENTPLAYAREA RPC");
+			ReadFailed("UpdateCurrentPlayArea");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -846,7 +966,7 @@ class BattleRoyaleRPC
 		Param3<vector, float, bool> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ UPDATEFUTUREPLAYAREA RPC");
+			ReadFailed("UpdateFuturePlayArea");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -867,7 +987,7 @@ class BattleRoyaleRPC
 		Param1<int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETTOPPOSITION RPC");
+			ReadFailed("SetTopPosition");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -923,7 +1043,7 @@ class BattleRoyaleRPC
 		Param10<array<string>, array<int>, array<int>, array<int>, array<int>, int, int, int, int, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SETLEADERBOARD RPC");
+			ReadFailed("SetLeaderboard");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -965,7 +1085,7 @@ class BattleRoyaleRPC
 		Param2<string, string> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ CHATLOG RPC");
+			ReadFailed("ChatLog");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -981,7 +1101,7 @@ class BattleRoyaleRPC
 		Param7<string, float, string, string, string, string, string> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ NOTIFICATIONMESSAGE RPC");
+			ReadFailed("NotificationMessage");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -1025,7 +1145,7 @@ class BattleRoyaleRPC
 		Param2<array<string>, array<float>> data;
 		if ( !ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Warn("FAILED TO READ UPDATEHOTZONES RPC");
+			ReadFailed("UpdateHotZones");
 			return;
 		}
 

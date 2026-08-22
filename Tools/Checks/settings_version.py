@@ -23,7 +23,7 @@ from __future__ import annotations
 import re
 import subprocess
 
-from Checks._source import Finding, error, repo_root, warn
+from Checks._source import Finding, error, read, repo_root, strip_code, warn
 
 NAME = "settings-version"
 SUMMARY = "a new settings field bumps version; a new ref array gets an Upgrade() branch"
@@ -35,14 +35,21 @@ MEMBER = re.compile(
     r"^\+\s*(?:ref\s+)?(?P<type>array<[^>]*>|map<[^>]*>|int|float|bool|string|vector)\s+"
     r"(?P<name>[A-Za-z_]\w*)\s*(?:=|;)"
 )
+HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,\d+)? @@")
 VERSION_TOUCHED = re.compile(r"^\+.*\bversion\s*=\s*\d+")
 UPGRADE_TOUCHED = re.compile(r"^\+.*\bversion\s*<\s*\d+")
 
 
 def git(*args: str) -> tuple[int, str]:
+    # `text=True` alone decodes with the LOCALE codec, which on a Windows box is cp1252 - so the
+    # first non-ASCII byte in a diffed settings file raised UnicodeDecodeError inside subprocess's
+    # reader thread, and `run()` then returned stdout=None for the check to crash on. The repo's
+    # sources are UTF-8, so say so. errors="replace" because this output is scanned for `+` lines
+    # and version numbers: a mangled character in a comment must not take the whole check down.
     result = subprocess.run(
-        ["git", "-C", str(repo_root()), *args], capture_output=True, text=True)
-    return result.returncode, result.stdout
+        ["git", "-C", str(repo_root()), *args],
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    return result.returncode, result.stdout or ""
 
 
 def merge_base() -> str | None:
@@ -54,6 +61,27 @@ def merge_base() -> str | None:
         if code == 0 and out.strip():
             return out.strip()
     return None
+
+
+def class_body_lines(path: str) -> set[int]:
+    """1-based line numbers of `path` that sit at class-body brace depth.
+
+    A settings *field* is declared directly in the class body (depth 1); anything deeper is a local
+    inside a method. Without this the MEMBER pattern cannot tell the two apart, and any re-added
+    local in one of these files reads as a brand-new settings field.
+    """
+    try:
+        text = strip_code(read(path))
+    except OSError:
+        return set()
+
+    at_depth: set[int] = set()
+    depth = 0
+    for number, line in enumerate(text.splitlines(), start=1):
+        if depth == 1:
+            at_depth.add(number)
+        depth += line.count("{") - line.count("}")
+    return at_depth
 
 
 def run() -> list[Finding]:
@@ -92,6 +120,9 @@ def run() -> list[Finding]:
                 path,
             ))
 
+    fields: set[int] = set()
+    number = 0
+
     for line in out.splitlines():
         if line.startswith("+++ b/"):
             flush()
@@ -99,6 +130,11 @@ def run() -> list[Finding]:
             added_members = []
             bumped = False
             upgraded = False
+            fields = class_body_lines(path)
+            continue
+        hunk = HUNK.match(line)
+        if hunk:
+            number = int(hunk.group("start"))
             continue
         if path is None or not line.startswith("+") or line.startswith("+++"):
             continue
@@ -107,8 +143,10 @@ def run() -> list[Finding]:
         if UPGRADE_TOUCHED.search(line):
             upgraded = True
         match = MEMBER.match(line)
-        if match:
+        #--- Class-body depth only. A local re-added by an unrelated edit is not a settings field.
+        if match and number in fields:
             added_members.append((match.group("type"), match.group("name")))
+        number += 1
 
     flush()
     return findings

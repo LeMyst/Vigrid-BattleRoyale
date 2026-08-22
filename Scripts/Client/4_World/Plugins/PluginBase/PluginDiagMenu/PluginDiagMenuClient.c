@@ -54,6 +54,11 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagHudPlayersID, CBBRDiagHudPlayers);
 		DiagMenu.BindCallback(m_BRDiagHudGroupsID, CBBRDiagHudGroups);
 		DiagMenu.BindCallback(m_BRDiagHudKillsID, CBBRDiagHudKills);
+		DiagMenu.BindCallback(m_BRDiagHudAudienceID, CBBRDiagHudAudience);
+		DiagMenu.BindCallback(m_BRDiagAdminFakeID, CBBRDiagAdminFake);
+		DiagMenu.BindCallback(m_BRDiagAdminFakePlayersID, CBBRDiagAdminFakePlayers);
+		DiagMenu.BindCallback(m_BRDiagAdminFakeDeadID, CBBRDiagAdminFakeDead);
+		DiagMenu.BindCallback(m_BRDiagAdminFakeSpreadID, CBBRDiagAdminFakeSpread);
 		DiagMenu.BindCallback(m_BRDiagHudCountdownID, CBBRDiagHudCountdown);
 		DiagMenu.BindCallback(m_BRDiagOpenSpawnMenuID, CBBRDiagOpenSpawnMenu);
 		DiagMenu.BindCallback(m_BRDiagOpenLeaderboardID, CBBRDiagOpenLeaderboard);
@@ -77,12 +82,14 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagPartyOnlineCountID, CBBRDiagPartyOnlineCount);
 		DiagMenu.BindCallback(m_BRDiagPartyOnlineApplyID, CBBRDiagPartyOnlineApply);
 		DiagMenu.BindCallback(m_BRDiagPartyInviteMeID, CBBRDiagPartyInviteMe);
+		DiagMenu.BindCallback(m_BRDiagPartyNotifyID, CBBRDiagPartyNotify);
 		DiagMenu.BindCallback(m_BRDiagPartyOfflineID, CBBRDiagPartyOffline);
 		DiagMenu.BindCallback(m_BRDiagPartyPingID, CBBRDiagPartyPing);
 		DiagMenu.BindCallback(m_BRDiagPartyClearID, CBBRDiagPartyClear);
 #endif
 
 		DiagMenu.BindCallback(m_BRDiagZonesFakeID, CBBRDiagZonesFake);
+		DiagMenu.BindCallback(m_BRDiagZonesNoCurrentID, CBBRDiagZonesNoCurrent);
 		DiagMenu.BindCallback(m_BRDiagZoneRadiusID, CBBRDiagZoneRadius);
 		DiagMenu.BindCallback(m_BRDiagZoneNextRadiusID, CBBRDiagZoneNextRadius);
 		DiagMenu.BindCallback(m_BRDiagLogZoneTableID, CBBRDiagLogZoneTable);
@@ -101,6 +108,8 @@ modded class PluginDiagMenuClient
 
 		DiagMenu.BindCallback(m_BRDiagTraceTpClientID, CBBRDiagTraceTpClient);
 		DiagMenu.BindCallback(m_BRDiagTraceTpServerID, CBBRDiagTraceTpServer);
+		DiagMenu.BindCallback(m_BRDiagTraceAimClientID, CBBRDiagTraceAimClient);
+		DiagMenu.BindCallback(m_BRDiagTraceAimServerID, CBBRDiagTraceAimServer);
 		DiagMenu.BindCallback(m_BRDiagTraceTicksID, CBBRDiagTraceTicks);
 
 		DiagMenu.BindCallback(m_BRDiagLogLevelID, CBBRDiagLogLevel);
@@ -253,6 +262,31 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagHudKills(float value)
 	{
 		BattleRoyaleDiag.hud_kills = (int)value;
+	}
+
+	static void CBBRDiagHudAudience(float value)
+	{
+		BattleRoyaleDiag.hud_audience = (int)value;
+	}
+
+	static void CBBRDiagAdminFake(bool value)
+	{
+		BattleRoyaleDiag.admin_fake = value;
+	}
+
+	static void CBBRDiagAdminFakePlayers(float value)
+	{
+		BattleRoyaleDiag.admin_fake_players = (int)value;
+	}
+
+	static void CBBRDiagAdminFakeDead(float value)
+	{
+		BattleRoyaleDiag.admin_fake_dead = (int)value;
+	}
+
+	static void CBBRDiagAdminFakeSpread(float value)
+	{
+		BattleRoyaleDiag.admin_fake_spread = value;
 	}
 
 	static void CBBRDiagHudCountdown(float value)
@@ -575,6 +609,19 @@ modded class PluginDiagMenuClient
 		DiagMenu.SetValue(id, false);
 	}
 
+	//! Queue a burst of fabricated notifications, the only offline route to DrainNotifications.
+	//! EIGHT rather than five on purpose: vanilla shows five at once and defers the rest, releasing
+	//! them LIFO at about one per second, so a fixture of five or fewer could never reach the
+	//! behaviour it exists to exercise.
+	static void CBBRDiagPartyNotify(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		VigridPartyAPI.DebugNotify( 8 );
+		DiagMenu.SetValue(id, false);
+	}
+
 	//! Flip the last teammate between online and offline, for the grey "(Offline)" row. Resets on
 	//! the next roster change, which is a deliberate simplification rather than a bug.
 	static void CBBRDiagPartyOffline(bool enabled, int id)
@@ -631,6 +678,11 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagZonesFake(bool enabled)
 	{
 		BattleRoyaleDiag.zones_fake = enabled;
+	}
+
+	static void CBBRDiagZonesNoCurrent(bool enabled)
+	{
+		BattleRoyaleDiag.zones_fake_no_current = enabled;
 	}
 
 	static void CBBRDiagZoneRadius(float value)
@@ -788,6 +840,20 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagTraceTicks(float value)
 	{
 		BattleRoyaleDiag.trace_teleport_ticks = (int)value;
+	}
+
+	static void CBBRDiagTraceAimClient(bool enabled)
+	{
+		BattleRoyaleDiag.trace_aim = enabled;
+	}
+
+	static void CBBRDiagTraceAimServer(bool enabled)
+	{
+		int on = 0;
+		if ( enabled )
+			on = 1;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.SET_TRACE_AIM, on, 0);
 	}
 
 	//=============================================================================================

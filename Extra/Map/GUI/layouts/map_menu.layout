@@ -117,6 +117,810 @@ FrameWidgetClass MapMenuRoot {
      vexactsize 0
      priority 1002
     }
+    // Players the host mod asked to be plotted - in practice an admin spectator's overview of the
+    // whole match. Highest priority of the five, so a live player draws over every other glyph.
+    CanvasWidgetClass AdminCanvas {
+     visible 1
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     priority 1003
+    }
+    // NAME LABELS for the AdminCanvas glyphs.
+    //
+    // ⚠ DECLARED HERE, ONE PER POOL SLOT, AND THAT IS THE WHOLE POINT. Measured 2026-08-18: a
+    // TextWidget CREATED FROM SCRIPT over this map is positioned correctly, reports the right size,
+    // passes every clip test and is simply never drawn - and that holds whether it is parented to
+    // the MapWidget or to a declared sibling frame sitting above it by priority. The funnel line
+    // read `labelled=12 offscreen=0 pool=12 layer=1` with nothing on screen.
+    //
+    // The four canvases above are the counter-example that names the real rule: they are DECLARED
+    // children of the MapWidget and they render. So it is script-creation that fails here, not
+    // parentage - and a fixed pool declared in the layout is the way to have text on this map.
+    //
+    // The cost is that the pool size is fixed at 32 and cannot grow. VigridMapMenu hides the
+    // surplus and stops labelling past it; the GLYPHS are uncapped, so a busier match loses names
+    // before it loses positions.
+    //
+    // A shadow rather than a backdrop panel: half the widget count, and it sidesteps the
+    // PanelWidget-with-a-colour-and-no-style trap that paints nothing.
+    //
+    // Every number here is a Workbench placeholder - the script SetPos/SetSizes each row in real
+    // pixels, and declared geometry is viewport-scaled while SetPos is not.
+    TextWidgetClass AdminName0 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName1 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName2 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName3 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName4 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName5 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName6 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName7 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName8 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName9 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName10 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName11 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName12 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName13 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName14 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName15 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName16 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName17 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName18 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName19 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName20 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName21 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName22 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName23 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName24 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName25 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName26 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName27 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName28 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName29 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName30 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
+    TextWidgetClass AdminName31 {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 120 16
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     priority 1004
+     color 1 1 1 1
+     font "gui/fonts/metron-bold12"
+     "exact text" 1
+     "exact text size" 12
+     "size to text h" 0
+     "size to text v" 0
+     "text halign" center
+     "text valign" center
+     "shadow size" 3
+     "shadow color" 0 0 0 1
+     "shadow offset" 1 1
+     text ""
+    }
    }
   }
  }

@@ -191,7 +191,7 @@ class BattleRoyaleMatchStats
      */
     protected BattleRoyaleLastMatchFile BuildFile()
     {
-        ref BattleRoyaleLastMatchFile store = new BattleRoyaleLastMatchFile();
+        BattleRoyaleLastMatchFile store = new BattleRoyaleLastMatchFile();
         int count = 0;
         int i = 0;
 
@@ -224,7 +224,7 @@ class BattleRoyaleMatchStats
          *  for equal places. Sorting BEFORE the cap also means a truncated table keeps the BEST
          *  places rather than whoever happened to die first.
          */
-        ref array<ref BattleRoyaleLastMatchRow> sorted = new array<ref BattleRoyaleLastMatchRow>();
+        array<ref BattleRoyaleLastMatchRow> sorted = new array<ref BattleRoyaleLastMatchRow>();
         for (i = 0; i < count; i++)
         {
             BattleRoyaleLastMatchRow row = m_Rows.Get(i);

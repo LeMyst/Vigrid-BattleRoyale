@@ -249,6 +249,41 @@ class VigridMapRender
     }
 
     /**
+     *  An axis-aligned hollow square - a player plotted by the host mod (an admin's match overview).
+     *
+     *  ⚠ THE SILHOUETTE IS THE POINT, and it is the last one free. This addon has already spent the
+     *  ring-and-cross on a placed marker, the circle-and-dot on a zone, the apex-up triangle on a
+     *  teammate, the diamond on a ping and the notched dart on you. A square is the only shape left
+     *  that reads differently from all five at 12 px over satellite imagery: it is the only one with
+     *  a flat top edge, which is what the eye picks up before it can count vertices.
+     *
+     *  Deliberately CARRIES NO HEADING, unlike the dart. The host push has no yaw in it, and a glyph
+     *  that implied a facing it had not been told would be worse than one that admits it does not
+     *  know. If a yaw is ever added to that payload this is where it would land.
+     */
+    static void WorldRenderSquare(CanvasWidget canvas, MapWidget map_widget, vector world_pos, float size_px, int color, float width)
+    {
+        if (!canvas || !map_widget)
+            return;
+
+        float cx;
+        float cy;
+        WorldToCanvas(map_widget, Vector(world_pos[0], 0, world_pos[2]), cx, cy);
+
+        float r = size_px * 0.5;
+
+        float left = cx - r;
+        float right = cx + r;
+        float top = cy - r;
+        float bottom = cy + r;
+
+        canvas.DrawLine(left, top, right, top, width, color);
+        canvas.DrawLine(right, top, right, bottom, width, color);
+        canvas.DrawLine(right, bottom, left, bottom, width, color);
+        canvas.DrawLine(left, bottom, left, top, width, color);
+    }
+
+    /**
      *  A diamond - a party ping. Four strokes, one more vertex than the teammate triangle, and drawn
      *  lighter and more transparent so a transient callout never outweighs a live player.
      */

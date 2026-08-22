@@ -102,6 +102,20 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override void Activate()
     {
+        //--- RE-READ THE ROUND LENGTH HERE, do not trust the one Init() cached.
+        //---
+        //--- Init() runs from this state's constructor, inside BattleRoyaleServer.Init() at boot -
+        //--- before a single player has connected, so it cannot know which round is the opening one.
+        //--- The opening round is priced as a LOOT round (#284 point 4) and every other round is priced
+        //--- exactly as before, so this changes nothing for rounds 2..n. Init()'s value stays as the
+        //--- boot-time default the trace lines and the admin zone table read.
+        bool is_opening_round = false;
+        if(m_Zone)
+        {
+            is_opening_round = (GetDynamicStartingZone(i_NumStartingPlayers) == m_Zone.GetZoneNumber());
+            i_RoundTimeInSeconds = m_Zone.GetZoneTimer(is_opening_round);
+        }
+
         //we just activated this round (players not yet transfered from previous state)
         int time_till_end = i_RoundTimeInSeconds * 1000;
         //--- Was an inline 0.80 here (0.75 before that). Named now because zone_settings'
@@ -181,7 +195,7 @@ class BattleRoyaleRound: BattleRoyaleState
             }
 
 			//send play area to clients
-			ref BattleRoyalePlayArea m_PreviousArea = NULL;
+			BattleRoyalePlayArea m_PreviousArea = NULL;
 			if(GetPreviousZone())
 				m_PreviousArea = GetPreviousZone().GetArea();
 
@@ -189,10 +203,10 @@ class BattleRoyaleRound: BattleRoyaleState
 			//--- Nothing to re-send when no round has played yet: the clients were never given a
 			//--- current area, and the circle of a skipped round must not be advertised as one.
 			if(m_PreviousArea)
-				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() ), true);
+				SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
         }
 
-        ref BattleRoyalePlayArea m_ThisArea = NULL;
+        BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
         {
             GetZone().OnActivate( GetPlayers() ); //hand players over to the zone (for complex zone size/position calculation)
@@ -203,7 +217,7 @@ class BattleRoyaleRound: BattleRoyaleState
         //--- Guarded for the same reason the m_PreviousArea send above is: GetZone() may hand back
         //--- nothing, and this used to dereference it unconditionally.
         if(m_ThisArea)
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+            SendFuturePlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound );
 
         //end state event
         m_RoundTimeUpTimer = AddTimer( time_till_end / 1000.0, this, "OnRoundTimeUp", NULL, false);
@@ -418,11 +432,11 @@ class BattleRoyaleRound: BattleRoyaleState
         b_ZoneLocked = true;
 
         //send play area to clients
-        ref BattleRoyalePlayArea m_PreviousArea = NULL;
+        BattleRoyalePlayArea m_PreviousArea = NULL;
         if(GetPreviousZone())
             m_PreviousArea = GetPreviousZone().GetArea();
 
-        ref BattleRoyalePlayArea m_ThisArea = NULL;
+        BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
             m_ThisArea = GetZone().GetArea();
 
@@ -430,9 +444,9 @@ class BattleRoyaleRound: BattleRoyaleState
         if(m_ThisArea)
         {
             //tell the client the current area is now this area
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() ), true);
+            SendCurrentPlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius() );
             //tell the client we don't know the next play area
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound ), true);
+            SendFuturePlayArea( m_ThisArea.GetCenter(), m_ThisArea.GetRadius(), b_ArtillerySound );
         }
         //tell the client how much time until the next zone appears. Handed the timer rather than the
         //`seconds` parameter - which carries the same figure - because the countdown the HUD shows

@@ -37,6 +37,11 @@ class BattleRoyaleDiag
     //! How many CommandHandler ticks to keep logging for after a teleport juncture arrives.
     static int trace_teleport_ticks = 20;
 
+    //! Log each player instance's base aiming angles. The instrument that found the remote-ADS-
+    //! pitch desync - note it measured that REMOTE instances run no script CommandHandler, so only
+    //! the owner and the server ever produce lines. See PlayerBase.BR_LogAimState.
+    static bool trace_aim = false;
+
     //! Seconds between "[Spectate] cam=..." samples. Vanilla-ish 5 s is right for a background
     //! sanity check and far too coarse for a deliberate range test, where the interesting window is
     //! the 20-30 s after the target is flung out - 5 samples is not enough to tell a sustained
@@ -54,6 +59,11 @@ class BattleRoyaleDiag
     static int hud_players = 60;
     static int hud_groups = 20;
     static int hud_kills = 3;
+    //--- How many people are spectating this player. The offline rig is the ONLY way to reach this
+    //--- element at all: SERVER is undefined offline, so no spectator can exist and the server half
+    //--- that produces the number is compiled out. Its range reaches 0 on purpose - 0 is the hidden
+    //--- state, and a fixture that cannot reach the branch under test cannot test it.
+    static int hud_audience = 2;
     static int hud_countdown = 60;
 
     //--- Zones. Same idea: synthetic circles centred on the player, which feed the HUD distance
@@ -61,6 +71,29 @@ class BattleRoyaleDiag
     static bool zones_fake = false;
     static float zone_radius = 1500;
     static float zone_next_radius = 600;
+
+    //--- Suppress the CURRENT circle while still publishing the next one - the shape the client is in
+    //--- for the warm-up and the first 80% of round one, when the server has advertised where the
+    //--- first circle is but nothing is lethal yet. Without this the fake rig always sets BOTH areas
+    //--- and so can only ever exercise the branch that already worked: a fixture that cannot violate
+    //--- the property under test cannot test it.
+    static bool zones_fake_no_current = false;
+
+    //--- ADMIN SPECTATE OVERLAY. Fabricates the whole SetAdminPlayerList / SetAdminDeadList payload
+    //--- client-side, which is the only way any of #276-#279 can be seen without a three-client MP
+    //--- session plus an admin steamid: every existing Spectate diag entry is SERVER-side, and SERVER
+    //--- is undefined offline, so the half that produces this data is compiled out.
+    //---
+    //--- Drives four things at once - the team colours on the tags, the corpse tags, the tag
+    //--- suppression while the map is open, and the map's own player layer - because all four read
+    //--- the same two payloads.
+    static bool admin_fake = false;
+    static int admin_fake_players = 12;
+    static int admin_fake_dead = 6;
+
+    //--- Metres from the player that the fabricated ring is drawn at. Small enough that the tags are
+    //--- legible on screen, large enough that the map glyphs do not stack into one blob.
+    static float admin_fake_spread = 120.0;
 
     //--- Kill feed. Read by the "Push Fake Kill" / "Fill Feed" callbacks at the moment they fire,
     //--- rather than mirroring the entry ids, so no id has to leave the plugin class.
@@ -120,17 +153,25 @@ class BattleRoyaleDiag
         chat_mirror = true;
         trace_teleport = false;
         trace_teleport_ticks = 20;
+        trace_aim = false;
         spectate_trace_interval = 5.0;
 
         hud_force = false;
         hud_players = 60;
         hud_groups = 20;
         hud_kills = 3;
+        hud_audience = 2;
         hud_countdown = 60;
 
         zones_fake = false;
         zone_radius = 1500;
         zone_next_radius = 600;
+        zones_fake_no_current = false;
+
+        admin_fake = false;
+        admin_fake_players = 12;
+        admin_fake_dead = 6;
+        admin_fake_spread = 120.0;
 
         kf_cause = 0;
         kf_with_weapon = true;

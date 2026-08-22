@@ -72,6 +72,15 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.SetKillCount( count );
 	}
 
+	//! How many people are currently spectating this player (#285). Zero hides the row rather than
+	//! printing "0", exactly like the kill count above - and zero is a real pushed value, sent the
+	//! moment the last watcher leaves, so this is also how the row goes away again.
+	void UpdateAudienceCount(int count)
+	{
+		m_BattleRoyaleHud.ShowAudienceCount( count > 0 );
+		m_BattleRoyaleHud.SetAudienceCount( count );
+	}
+
 	void HideCountdownTimer()
 	{
 		m_BattleRoyaleHud.ShowCountdown( false );
@@ -90,11 +99,11 @@ modded class MissionGameplay
 		m_BattleRoyaleHud.SetCount( nb_players, nb_groups );
 	}
 
-	void UpdateZoneDistance(bool isInsideZone, float distExt, float distInt, float angle)
+	void UpdateZoneDistance(bool isInsideZone, float distExt, float distInt, float angle, int secondsToZone)
 	{
 		m_BattleRoyaleHud.ShowDistance(true);
 		//m_BattleRoyaleHud.ShowDistance( distance > 0 );
-		m_BattleRoyaleHud.SetDistance( isInsideZone, distExt, distInt, angle );
+		m_BattleRoyaleHud.SetDistance( isInsideZone, distExt, distInt, angle, secondsToZone );
 	}
 
 	void HideDistance()

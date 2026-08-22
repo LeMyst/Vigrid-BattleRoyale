@@ -19,8 +19,14 @@ class BattleRoyaleState: Timeable
     //--- pure waste. It was being called once per spawn candidate through IsSafeForTeleport, which
     //--- meant two config fetches and a zone scan several hundred times per player.
     //--- -1 means "nothing memoized yet"; a real player count is never negative.
-    protected int i_DynamicZoneMemoPlayers = -1;
-    protected int i_DynamicZoneMemoResult = 1;
+    //---
+    //--- STATIC, along with GetDynamicStartingZone itself. The comment above is the argument for it -
+    //--- the answer depends only on num_players plus config plus the generated circles, all fixed for
+    //--- the life of the process - so a per-state memo was recomputing the same answer once per state
+    //--- for no reason. It has to be static now anyway: BattleRoyaleZone.RunLadderSelfTest asks the
+    //--- same question at boot, before any state instance exists.
+    static int i_DynamicZoneMemoPlayers = -1;
+    static int i_DynamicZoneMemoResult = 1;
 
     //static int i_StartingZone = 1; // Default zone is the biggest one
 
@@ -34,6 +40,57 @@ class BattleRoyaleState: Timeable
     //--- Deliberately NOT a `ref`: the state that started the timer already owns one, and this is a
     //--- second handle to the same object rather than a second owner.
     protected Timer m_CountdownTimer;
+
+    //--- Milliseconds to ADD to m_CountdownTimer's remaining time to get the deadline by which a
+    //--- player has to be inside the circle the HUD arrow is pointing at. Zero for every state whose
+    //--- countdown IS that deadline - which is all of them except the warm-up, where the clock counts
+    //--- down to the first ROUND starting and the circle then stays harmless for another
+    //--- BR_ZONE_LOCK_FRACTION of round one on top.
+    //---
+    //--- Stored rather than recomputed so ResendGameInfo() can re-assert it off the live timer.
+    protected int i_CountdownZoneExtraMs;
+
+    //--- The two circles every client should currently be holding, re-asserted by ResendGameInfo().
+    //---
+    //--- STATIC, and that is load-bearing: a circle outlives the state that announced it. A round
+    //--- that is not the last one never sends UpdateCurrentPlayArea at all - it relies on the PREVIOUS
+    //--- round's LockNewZone - so a per-instance record would be empty for most of the match, and a
+    //--- resend built from it would push the clear payload and wipe the live circle off every HUD and
+    //--- every map. Same reasoning as s_PlayAreaDurationOffsets in BattleRoyaleZone.
+    //---
+    //--- Seeded to the clear payload, which is exactly what BattleRoyaleRPC already defaults to, so a
+    //--- resend before anything has been announced is a no-op the client diffs away. That also makes
+    //--- 7_BattleRoyaleLastRound's deliberate clears re-assertable for free, with no "has this been
+    //--- set yet" flag to get wrong.
+    protected static vector s_CurrentAreaCenter = "0 0 0";
+    protected static float s_CurrentAreaRadius = 0.0;
+    protected static vector s_FutureAreaCenter = "0 0 0";
+    protected static float s_FutureAreaRadius = 0.0;
+
+    //--- Read-only accessors, because the four above are `protected` and the COT admin readout is
+    //--- neither a state nor a subclass of one. Getters rather than making the fields public: the
+    //--- write side is deliberately funnelled through SendCurrentPlayArea / SendFuturePlayArea,
+    //--- which also push the RPC, and a public field would let a future caller set a circle that
+    //--- no client was ever told about.
+    static vector GetAnnouncedCurrentCenter()
+    {
+        return s_CurrentAreaCenter;
+    }
+
+    static float GetAnnouncedCurrentRadius()
+    {
+        return s_CurrentAreaRadius;
+    }
+
+    static vector GetAnnouncedFutureCenter()
+    {
+        return s_FutureAreaCenter;
+    }
+
+    static float GetAnnouncedFutureRadius()
+    {
+        return s_FutureAreaRadius;
+    }
 
     string GetName()
     {
@@ -84,6 +141,7 @@ class BattleRoyaleState: Timeable
         //--- Whatever this state was counting down to is over. Dropped rather than left dangling so
         //--- a stray resend cannot advertise a dead state's timer.
         m_CountdownTimer = NULL;
+        i_CountdownZoneExtraMs = 0;
 
         b_IsActive = false;
     }
@@ -159,6 +217,62 @@ class BattleRoyaleState: Timeable
         return !IsActive();
     }
 
+    /**
+     *  Milliseconds left on whatever this state is counting down to, or BR_COUNTDOWN_NONE.
+     *
+     *  ⚠️ The IsRunning() test is LOAD-BEARING and not defensive, for the same reason SendCountdown
+     *  documents: a one-shot Timer that has already fired sets m_time = 0 BEFORE invoking its
+     *  callback (TimerBase.Tick, P:\scripts\3_game\tools\tools.c), so GetRemaining() on a fired
+     *  timer hands back its FULL DURATION. Drop the guard and a finished countdown reads as a fresh
+     *  one - which on a readout looks like a clock that jumps back to the top rather than like a bug.
+     */
+    int GetCountdownRemainingMs()
+    {
+        if(!m_CountdownTimer)
+            return BR_COUNTDOWN_NONE;
+
+        if(!m_CountdownTimer.IsRunning())
+            return BR_COUNTDOWN_NONE;
+
+        int remaining_ms = (int)Math.Round( m_CountdownTimer.GetRemaining() * 1000 );
+        if(remaining_ms <= 0)
+            return BR_COUNTDOWN_NONE;
+
+        return remaining_ms;
+    }
+
+    /**
+     *  Fill in whatever this state knows for the COT admin readout.
+     *
+     *  A virtual rather than the panel reaching in, because the interesting fields are per-state and
+     *  most of them are `protected` where they live - BattleRoyaleDebug owns the whole lobby start
+     *  gate, and publishing a dozen accessors so an unrelated 5_Mission module could recompute it
+     *  would put the knowledge in the wrong place and let the two drift.
+     *
+     *  The base fills only what every state has. Overriders should call super and then add their own.
+     */
+    void BR_FillAdminStatus(BattleRoyaleAdminStatus status)
+    {
+        if(!status)
+            return;
+
+        status.state_name = GetName();
+        status.state_paused = IsPaused();
+        status.players_alive = GetPlayers().Count();
+        status.countdown_ms = GetCountdownRemainingMs();
+
+        //--- ⚠️ Ask whether the party manager can actually answer before believing a group count.
+        //--- #ifdef VIGRID_PARTY says the addon is COMPILED IN, not that parties are in play: with
+        //--- the manager disabled GetGroupCount() degrades to one group per player, a number always
+        //--- identical to players_alive. That is correct for the logic tests that consume it and
+        //--- wrong to put on screen under a group heading, which is #158 exactly.
+        status.groups_alive = BR_ADMIN_GROUPS_UNKNOWN;
+#ifdef VIGRID_PARTY
+        if( VigridPartyAPI.IsReady() )
+            status.groups_alive = VigridPartyAPI.GetGroupCount( GetPlayers() );
+#endif
+    }
+
     bool SkipState(BattleRoyaleState _previousState)  //if true, we will skip activating/deactivating this state entirely
     {
         return false;
@@ -199,7 +313,7 @@ class BattleRoyaleState: Timeable
         return false;
     }
 
-    ref array<PlayerBase> GetPlayers()
+    array<PlayerBase> GetPlayers()
     {
         return m_Players;
     }
@@ -239,10 +353,10 @@ class BattleRoyaleState: Timeable
         OnPlayerCountChanged();
     }
 
-    ref array<PlayerBase> RemoveAllPlayers()
+    array<PlayerBase> RemoveAllPlayers()
     {
     	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleState::RemoveAllPlayers: removed %1 players", m_Players.Count()));
-        ref array<PlayerBase> result_array = new array<PlayerBase>();
+        array<PlayerBase> result_array = new array<PlayerBase>();
         result_array.InsertAll(m_Players);
         m_Players.Clear();
         OnPlayerCountChanged();
@@ -319,10 +433,22 @@ class BattleRoyaleState: Timeable
 	 *  place. It replaced four hand-written SendRPC call sites, one of which (7_BattleRoyaleLastRound)
 	 *  had no resend at all - the same shape of drift-by-duplication that IsOneSideLeft was
 	 *  centralised to stop.
+	 *
+	 *  THE SECOND INT IS THE DEADLINE THE HUD COLOURS THE CLOCK AGAINST, which is not always the
+	 *  countdown itself. It rides this RPC rather than one of its own precisely because the two are
+	 *  halves of the same fact: sent together they can never disagree, and ResendGameInfo has one
+	 *  thing to keep in step instead of two. `zone_extra_ms` defaults to 0, so four of the five call
+	 *  sites say nothing and send exactly the countdown - the colour is unchanged everywhere except
+	 *  5_BattleRoyaleStartMatch, which is the one state where the two genuinely differ.
+	 *
+	 *  Note it is deliberately NOT "milliseconds until the circle bites": at LockNewZone the circle
+	 *  is already biting, so that reading is 0 and would pin the clock red for the rest of the match.
+	 *  "The deadline the colour is measured against" is one meaning that stays true at all five.
 	 */
-	void SendCountdown(Timer countdown_timer)
+	void SendCountdown(Timer countdown_timer, int zone_extra_ms = 0)
 	{
 		m_CountdownTimer = countdown_timer;
+		i_CountdownZoneExtraMs = zone_extra_ms;
 
 		int remaining_ms = BR_COUNTDOWN_NONE;
 
@@ -337,7 +463,42 @@ class BattleRoyaleState: Timeable
 		if(remaining_ms <= 0)
 			remaining_ms = BR_COUNTDOWN_NONE;
 
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownMs", new Param1<int>( remaining_ms ), true);
+		//--- Only meaningful while a countdown is actually running: with no timer there is nothing to
+		//--- add the extra to, and BR_COUNTDOWN_NONE + extra would be a plausible-looking wrong number.
+		int zone_ms = BR_COUNTDOWN_NONE;
+		if(remaining_ms > 0)
+			zone_ms = remaining_ms + zone_extra_ms;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetCountdownMs", new Param2<int, int>( remaining_ms, zone_ms ), true);
+	}
+
+	/**
+	 *  Announce the circle that is currently damaging, and record it for the resend.
+	 *
+	 *  Every UpdateCurrentPlayArea in the mod goes through here. Pass the clear payload
+	 *  ("0 0 0" / 0) to retire the circle, exactly as 7_BattleRoyaleLastRound does.
+	 */
+	void SendCurrentPlayArea(vector center, float radius)
+	{
+		s_CurrentAreaCenter = center;
+		s_CurrentAreaRadius = radius;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateCurrentPlayArea", new Param2<vector, float>( center, radius ), true);
+	}
+
+	/**
+	 *  Announce the circle that is coming next, and record it for the resend.
+	 *
+	 *  `artillery` is an EVENT, not state - it makes the client play a one-shot distant-artillery
+	 *  sound at the new centre. It is therefore deliberately absent from what gets re-asserted; see
+	 *  ResendGameInfo below.
+	 */
+	void SendFuturePlayArea(vector center, float radius, bool artillery)
+	{
+		s_FutureAreaCenter = center;
+		s_FutureAreaRadius = radius;
+
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateFuturePlayArea", new Param3<vector, float, bool>( center, radius, artillery ), true);
 	}
 
 	/**
@@ -355,8 +516,26 @@ class BattleRoyaleState: Timeable
 		//--- Sends SetPlayerCount and SetTopPosition.
 		OnPlayerCountChanged();
 
+		//--- The extra has to come along, or every resend would flatten the warm-up's colour deadline
+		//--- back onto the countdown five seconds after it was set.
 		if(m_CountdownTimer && m_CountdownTimer.IsRunning())
-			SendCountdown( m_CountdownTimer );
+			SendCountdown( m_CountdownTimer, i_CountdownZoneExtraMs );
+
+		//--- The circles. Until this existed, a client that missed either push - a dropped packet, a
+		//--- reconnect, an admin joining mid-match - held the wrong circles until the NEXT state
+		//--- transition, which on a long round is minutes of a HUD arrow pointing at nothing and a map
+		//--- drawing a circle that has already moved.
+		//---
+		//--- Both go out unconditionally rather than on a "has anything been announced" flag: the
+		//--- seeded values are the clear payload, which is what the client already holds, so a resend
+		//--- in the lobby raises no diff and costs the client nothing.
+		//---
+		//--- ARTILLERY IS FALSE HERE, ALWAYS. The flag fires a one-shot sound on any client whose
+		//--- future circle actually changed - which is precisely the client this resend exists to
+		//--- correct. Passing the real flag would mean anyone who reconnected mid-round heard distant
+		//--- artillery announcing a circle that appeared minutes ago.
+		SendCurrentPlayArea( s_CurrentAreaCenter, s_CurrentAreaRadius );
+		SendFuturePlayArea( s_FutureAreaCenter, s_FutureAreaRadius, false );
 	}
 
 	//player count changed event handler
@@ -515,7 +694,7 @@ class BattleRoyaleState: Timeable
 //            return false;
 
 		// Avoid namalsk ice (and others)
-        ref array<string> bad_surface_types = {
+        array<string> bad_surface_types = {
             "nam_seaice",
             "nam_lakeice_ext"
         };
@@ -792,8 +971,77 @@ class BattleRoyaleState: Timeable
     }
 #endif
 
+    /**
+     *  How long a whole match starting at zone `start_zone` would run, in seconds (#284 point 3).
+     *
+     *  Starting at zone Z plays rounds for zones Z..num_zones - i.e. settings indices num_zones-Z down
+     *  to 0 - and then 7_BattleRoyaleLastRound plays out the final circle on static_timers[0]. Ahead of
+     *  all of it sits 5_BattleRoyaleStartMatch's warm-up, round_duration_minutes / 2.
+     *
+     *  The `opening` flag is passed explicitly per candidate, which is what stops this and
+     *  BattleRoyaleZone.GetZoneTimer calling each other forever - see that method's header.
+     */
+    static int GetMatchDurationSeconds(int start_zone)
+    {
+        BattleRoyaleConfig config = BattleRoyaleConfig.GetConfig();
+        BattleRoyaleGameData game_settings;
+        BattleRoyaleZoneData zone_settings;
+        BattleRoyaleZone zone;
+        int total = 0;
+        int k;
+        int num_zones;
+        bool is_opening;
+
+        if(!config)
+            return 0;
+
+        game_settings = config.GetGameData();
+        zone_settings = config.GetZoneData();
+        if(!game_settings || !zone_settings)
+            return 0;
+
+        num_zones = zone_settings.num_zones;
+
+        //--- The warm-up, which is the same figure 5_BattleRoyaleStartMatch puts in i_FirstRoundDelay.
+        total = (60 * game_settings.round_duration_minutes) / 2;
+
+        for(k = start_zone; k <= num_zones; k++)
+        {
+            zone = BattleRoyaleZone.GetZone(k);
+            if(!zone)
+                continue;
+
+            is_opening = (k == start_zone);
+            total = total + zone.GetZoneTimer(is_opening);
+        }
+
+        //--- The endgame. 7_BattleRoyaleLastRound reads static_timers[0] directly rather than going
+        //--- through GetZoneTimer, so this reads it the same way - the two must not be able to disagree.
+        if(zone_settings.static_timers && zone_settings.static_timers.Count() > 0)
+            total = total + zone_settings.static_timers[0];
+
+        return total;
+    }
+
+    //--- How many tiers BoundMatchDuration moved the last answer by, signed. Written at its single
+    //--- exit and read by RunLadderSelfTest on the very next line - a return value in all but name,
+    //--- the same shape as BattleRoyaleSpectators.m_LastResolveTier, and to be read NOWHERE ELSE.
+    //---
+    //--- It exists because "the bound is quietly deciding every match on its own" is invisible from the
+    //--- chosen tier alone: the answer looks like a normal tier, it is just not the one the player
+    //--- count and the loot density asked for. That is the shape of failure this repo keeps shipping.
+    static int s_LastBoundMove = 0;
+
+    //--- Drop the memo. Only BattleRoyaleZone.RunLadderSelfTest needs this: it walks a range of player
+    //--- counts at boot and must not leave the match about to be played reading its last answer.
+    static void ResetDynamicZoneMemo()
+    {
+        i_DynamicZoneMemoPlayers = -1;
+        i_DynamicZoneMemoResult = 1;
+    }
+
 	// Maybe this should be moved to another class, maybe not
-    int GetDynamicStartingZone(int num_players)
+    static int GetDynamicStartingZone(int num_players)
     {
 		//--- Answer the memo before touching config. Same num_players always gives the same zone, so
 		//--- the repeated calls from the spawn search cost nothing after the first.
@@ -840,11 +1088,117 @@ class BattleRoyaleState: Timeable
 			resolved_zone = last_try_zone;
 		}
 
+		resolved_zone = BoundMatchDuration(resolved_zone, num_players);
+
 		i_DynamicZoneMemoPlayers = num_players;
 		i_DynamicZoneMemoResult = resolved_zone;
 
 		return resolved_zone;
 	}
+
+    /**
+     *  Move the starting tier until the whole match fits the configured duration window (#284 point 3).
+     *
+     *  The lever is the one the dynamic starting zone already pulls: a HIGHER zone number is a smaller
+     *  opening circle and one fewer round, so raising it shortens the match and lowering it lengthens
+     *  it. Nothing else changes - no radius, no timer, no geometry.
+     *
+     *  ⚠️ The walk is bounded on BOTH sides by things that are not the clock. It may not go below zone
+     *  1, and it may not go above `floor_zone` (num_zones - min_zone_num + 1), because min_zone_num is
+     *  an explicit "never play fewer than this many circles" and a duration target must not quietly
+     *  override it. So the window is a preference, not a guarantee: when the ladder cannot reach it,
+     *  the closest legal tier is used and the shortfall is logged rather than forced.
+     */
+    static int BoundMatchDuration(int candidate_zone, int num_players)
+    {
+        BattleRoyaleZoneData zone_settings = BattleRoyaleConfig.GetConfig().GetZoneData();
+        int chosen;
+        int floor_zone;
+        int steps;
+        int total;
+        int target;
+        int here;
+        int there;
+        string line;
+
+        s_LastBoundMove = 0;
+
+        if(!zone_settings || !zone_settings.bound_match_duration)
+            return candidate_zone;
+
+        floor_zone = Math.Max(1, zone_settings.num_zones - zone_settings.min_zone_num + 1);
+
+        target = Math.Round(zone_settings.match_seconds_per_player * num_players);
+        target = Math.Round(Math.Clamp(target, zone_settings.match_min_seconds, zone_settings.match_max_seconds));
+
+        chosen = Math.Round(Math.Clamp(candidate_zone, 1, floor_zone));
+
+        //--- ⚠️ STEP ONLY WHILE THE STEP GETS CLOSER TO THE TARGET. The obvious version - "step up
+        //--- while total > target" - has a cliff, because a ladder cannot make a small correction: the
+        //--- only move available is a WHOLE CIRCLE. Measured on a real chain at 43 players: zone 2 ran
+        //--- 32:47 against a 32:15 target, so it stepped up to zone 3 at 20:48 - giving up TWELVE
+        //--- MINUTES of match to save 32 seconds of overshoot, and landing 687 s from the target
+        //--- instead of 32.
+        //---
+        //--- Comparing the distance either side makes a modest overshoot preferable to a huge
+        //--- undershoot, which is what "bound the duration" was always supposed to mean. It also folds
+        //--- the two directions into one rule: the window is already baked into `target` by the clamp
+        //--- above, so moving toward the target IS moving toward the window, and the shorten and
+        //--- lengthen walks can no longer disagree about a tier.
+        for(steps = 0; steps < BR_MATCH_DURATION_MAX_STEPS; steps++)
+        {
+            if(chosen >= floor_zone)
+                break;
+
+            here = Math.AbsInt(GetMatchDurationSeconds(chosen) - target);
+            there = Math.AbsInt(GetMatchDurationSeconds(chosen + 1) - target);
+            if(there >= here)
+                break;
+
+            chosen++;
+        }
+
+        for(steps = 0; steps < BR_MATCH_DURATION_MAX_STEPS; steps++)
+        {
+            if(chosen <= 1)
+                break;
+
+            here = Math.AbsInt(GetMatchDurationSeconds(chosen) - target);
+            there = Math.AbsInt(GetMatchDurationSeconds(chosen - 1) - target);
+            if(there >= here)
+                break;
+
+            chosen--;
+        }
+
+        total = GetMatchDurationSeconds(chosen);
+        s_LastBoundMove = chosen - candidate_zone;
+
+        //--- Built in steps: six fields in one concatenation is past the expression complexity ceiling.
+        line = "[BattleRoyaleState] match duration bound: " + num_players + " player(s), target " + target + " s";
+        line = line + " [" + zone_settings.match_min_seconds + ".." + zone_settings.match_max_seconds + "]";
+        line = line + " - starting zone " + candidate_zone + " -> " + chosen;
+        line = line + " (" + total + " s, floor_zone " + floor_zone + ")";
+
+        //--- Info only when it actually moved the tier. On the live path this runs once per match and
+        //--- either level is fine, but BattleRoyaleZone.RunLadderSelfTest calls it once per player
+        //--- count - a hundred Info lines saying "no change" would bury the summary it prints itself.
+        if(chosen != candidate_zone)
+            BattleRoyaleUtils.Info(line);
+        else
+            BattleRoyaleUtils.Debug(line);
+
+        //--- The window is a preference, not a guarantee - see the header. Say so when the closest
+        //--- legal tier still misses it, because a silently missed target is indistinguishable from a
+        //--- bound that never ran.
+        if(total > zone_settings.match_max_seconds)
+            BattleRoyaleUtils.Warn("[BattleRoyaleState] the closest legal tier still runs " + total + " s, above match_max_seconds (" + zone_settings.match_max_seconds + "). Lower min_zone_num, or shorten static_timers.");
+
+        if(total < zone_settings.match_min_seconds)
+            BattleRoyaleUtils.Warn("[BattleRoyaleState] the closest legal tier only runs " + total + " s, below match_min_seconds (" + zone_settings.match_min_seconds + "). Raise num_zones, or lengthen static_timers.");
+
+        return chosen;
+    }
 
 	void OnPlayerDisconnected(PlayerBase player)
 	{

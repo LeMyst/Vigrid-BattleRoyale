@@ -81,7 +81,7 @@ class RandomMenuGear
 		s_Slots = new array<int>;
 		s_Pools = new array<ref array<string>>;
 
-		ref array<string> body = {
+		array<string> body = {
 			"TacticalShirt_Black",
 			"M65Jacket_Black",
 			"BomberJacket_Black",
@@ -91,7 +91,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.BODY, body);
 
-		ref array<string> legs = {
+		array<string> legs = {
 			"CargoPants_Black",
 			"GorkaPants_Summer",
 			"Jeans_Blue",
@@ -99,7 +99,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.LEGS, legs);
 
-		ref array<string> feet = {
+		array<string> feet = {
 			"CombatBoots_Black",
 			"MilitaryBoots_Black",
 			"AthleticShoes_Black",
@@ -107,7 +107,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.FEET, feet);
 
-		ref array<string> vest = {
+		array<string> vest = {
 			"PlateCarrierVest",
 			"HighCapacityVest_Black",
 			"PressVest_Blue",
@@ -116,7 +116,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.VEST, vest);
 
-		ref array<string> back = {
+		array<string> back = {
 			"AliceBag_Green",
 			"MountainBag_Blue",
 			"AssaultBag_Black",
@@ -125,7 +125,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.BACK, back);
 
-		ref array<string> headgear = {
+		array<string> headgear = {
 			"BaseballCap_Black",
 			"Mich2001Helmet",
 			"GorkaHelmet",
@@ -136,7 +136,7 @@ class RandomMenuGear
 		AddSlot(InventorySlots.HEADGEAR, headgear);
 
 		//--- Two empty entries: a mask covers the face, so it should be the exception not the rule.
-		ref array<string> mask = {
+		array<string> mask = {
 			"GasMask",
 			"BalaclavaMask_Blackskull",
 			"Balaclava3Holes_Black",
@@ -146,7 +146,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.MASK, mask);
 
-		ref array<string> eyewear = {
+		array<string> eyewear = {
 			"AviatorGlasses",
 			"TacticalGoggles",
 			"DesignerGlasses",
@@ -154,13 +154,13 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.EYEWEAR, eyewear);
 
-		ref array<string> gloves = {
+		array<string> gloves = {
 			"TacticalGloves_Black",
 			"WorkingGloves_Black"
 		};
 		AddSlot(InventorySlots.GLOVES, gloves);
 
-		ref array<string> armband = {
+		array<string> armband = {
 			"Armband_Black",
 			"Armband_Red",
 			""
@@ -168,7 +168,7 @@ class RandomMenuGear
 		AddSlot(InventorySlots.ARMBAND, armband);
 
 		//--- Slung across the back.
-		ref array<string> shoulder = {
+		array<string> shoulder = {
 			"M4A1",
 			"AKM",
 			"Mosin9130",
@@ -181,7 +181,7 @@ class RandomMenuGear
 		};
 		AddSlot(InventorySlots.SHOULDER, shoulder);
 
-		ref array<string> melee = {
+		array<string> melee = {
 			"Machete",
 			"FirefighterAxe",
 			"BaseballBat",

@@ -22,7 +22,7 @@ class CreateMatchWebhook
 		};
 
 		map<string, string> mods = new map<string, string>; // TODO: Dummy mods
-		ref array<ref ModInfo> modList = new array<ref ModInfo>();
+		array<ref ModInfo> modList = new array<ref ModInfo>();
 		GetGame().GetModInfos(modList);
 
 		for (int i = 0; i < modList.Count(); i++)

@@ -11,6 +11,14 @@
  *  to validate the invite anyway.
  *
  *  Rows are pooled and positioned manually; surplus rows are hidden rather than destroyed.
+ *
+ *  BOTH COLUMNS ARE SORTED BY DISPLAYED NAME - see BuildOnlineOrder / BuildMemberOrder. The sort is
+ *  a DISPLAY ORDER ONLY: nothing here reorders rpc.list_* or rpc.roster_*, because a roster slot
+ *  index is the member's palette colour everywhere else in the mod (nametag, HUD, map marker, ping)
+ *  and slot 0 is what "the leader is the first member" means on the server. What the sort produces
+ *  is an array of DATA indices, walked in order while the pooled rows keep their own creation
+ *  order - which is also why no row has to be relinked: the WrapSpacer's children never move, only
+ *  the content written into them does.
  */
 class VigridPartyMenu extends UIScriptedMenu
 {
@@ -237,6 +245,162 @@ class VigridPartyMenu extends UIScriptedMenu
         }
     }
 
+    /**
+     *  Byte-wise lexical comparison of two strings. <0, 0 or >0, like every other compare.
+     *
+     *  Written out rather than using an operator because EnfusionScript's `string` exposes no
+     *  comparison at all - no Compare, no relational operator worth depending on. The one native
+     *  sort there is (array<string>.Sort, "strings alphabetically") sorts the array IN PLACE, which
+     *  is exactly what must not happen here: the whole point is to leave the source arrays alone and
+     *  produce an order over them. Packing "name + index" into a throwaway array to borrow that sort
+     *  would need a separator no player name can contain, and there is no such character.
+     *
+     *  Bytes, not characters. Masked to 0..255 so a UTF-8 lead byte compares as unsigned and a
+     *  non-ASCII name sorts after an ASCII one instead of before it. That is byte order rather than
+     *  collation order - it will not put E after E for a French reader - but it is deterministic and
+     *  identical on every client, which is the property this sort is actually for.
+     */
+    private static int CompareStrings(string a, string b)
+    {
+        int len_a = a.Length();
+        int len_b = b.Length();
+
+        int shared = len_a;
+        if (len_b < shared)
+            shared = len_b;
+
+        for (int i = 0; i < shared; i++)
+        {
+            string char_a = a.Get(i);
+            string char_b = b.Get(i);
+
+            int code_a = char_a.ToAscii() & 0xFF;
+            int code_b = char_b.ToAscii() & 0xFF;
+
+            if (code_a != code_b)
+                return code_a - code_b;
+        }
+
+        return len_a - len_b;
+    }
+
+    /**
+     *  Order `order` (a list of data indices) by `keys`, tie-broken on `uids`.
+     *
+     *  The tie-break is not decoration. Two players called `Survivor` is the NORMAL case on a server
+     *  with enable_steam_name_lookup off - the engine only disambiguates the second one, and the
+     *  third onwards share the name outright. A merely stable sort would leave them in arrival
+     *  order, i.e. exactly the churn this issue exists to remove, and only for the players hardest to
+     *  tell apart. Sorting them by uid pins them.
+     *
+     *  Insertion sort: n is a party (single digits) or the connected player list (capped at the
+     *  server's slot count), and this runs once per repaint edge, not per frame.
+     *
+     *  Every array element is read into a local before it is passed anywhere, per the container
+     *  aliasing rule - an array read sharing an expression with a call has been measured to return
+     *  another array's contents.
+     */
+    private static void SortOrder(array<int> order, array<string> keys, array<string> uids)
+    {
+        int count = order.Count();
+
+        for (int i = 1; i < count; i++)
+        {
+            int moving = order.Get(i);
+            string moving_key = keys.Get(moving);
+            string moving_uid = uids.Get(moving);
+
+            int j = i - 1;
+            while (j >= 0)
+            {
+                int settled = order.Get(j);
+                string settled_key = keys.Get(settled);
+                string settled_uid = uids.Get(settled);
+
+                int cmp = CompareStrings(settled_key, moving_key);
+                if (cmp == 0)
+                    cmp = CompareStrings(settled_uid, moving_uid);
+
+                if (cmp <= 0)
+                    break;
+
+                order.Set(j + 1, settled);
+                j = j - 1;
+            }
+
+            order.Set(j + 1, moving);
+        }
+    }
+
+    /**
+     *  Display order for the left column: every connected player, by name.
+     *
+     *  Sorted on rpc.list_names, which is what the row actually shows - so a player wearing a
+     *  BattleRoyaleNameService override sorts under the name on screen rather than under the
+     *  `Survivor` they connected as. That falls out for free because the correction is applied
+     *  server-side, before this list is built; there is nothing to resolve on this side.
+     */
+    private void BuildOnlineOrder(VigridPartyRPC rpc, array<int> order)
+    {
+        order.Clear();
+
+        array<string> keys = new array<string>();
+        int count = rpc.list_uids.Count();
+
+        for (int i = 0; i < count; i++)
+        {
+            string lowered = rpc.list_names.Get(i);
+            lowered.ToLower();
+
+            keys.Insert(lowered);
+            order.Insert(i);
+        }
+
+        SortOrder(order, keys, rpc.list_uids);
+    }
+
+    /**
+     *  Display order for the right column: THE LEADER FIRST, then the rest by name.
+     *
+     *  The open question in #283 was whether to pin the leader, and this is the answer. A party is
+     *  a handful of people, so "findable" is not really what the member column needs; what it needs
+     *  is the one row that is not interchangeable with the others. The leader is who every Invite
+     *  has to come from, who Promote and Kick belong to, and the only member whose identity changes
+     *  what the buttons on YOUR row do. Pinned at the top it is answered by position; sorted into
+     *  the middle it has to be found by reading the tag on each row.
+     *
+     *  Sorted on GetMemberName, never rpc.roster_names: an offline member's name can arrive as a
+     *  stringtable key and only that accessor resolves it. Sorting the raw value would file every
+     *  such member under `#`.
+     *
+     *  Names are lowered once, into a key array parallel to the ROSTER (so it is indexed by roster
+     *  slot, including the leader's, and stays aligned with roster_uids), rather than lowered inside
+     *  the comparison - which would be O(n log n) proto calls for no reason.
+     */
+    private void BuildMemberOrder(VigridPartyRPC rpc, array<int> order)
+    {
+        order.Clear();
+
+        array<string> keys = new array<string>();
+        int count = rpc.roster_uids.Count();
+
+        for (int i = 0; i < count; i++)
+        {
+            string lowered = VigridPartyAPI.GetMemberName(i);
+            lowered.ToLower();
+
+            keys.Insert(lowered);
+
+            if (i != rpc.leader_index)
+                order.Insert(i);
+        }
+
+        SortOrder(order, keys, rpc.roster_uids);
+
+        if (rpc.leader_index >= 0 && rpc.leader_index < count)
+            order.InsertAt(rpc.leader_index, 0);
+    }
+
     private void RefreshOnline(VigridPartyRPC rpc)
     {
         m_InviteTargets.Clear();
@@ -247,11 +411,18 @@ class VigridPartyMenu extends UIScriptedMenu
         if (rpc.roster_uids.Count() >= rpc.max_party_size && rpc.roster_uids.Count() > 0)
             can_invite = false;
 
+        //--- Display order only - `index` is the data index, `shown` is the row slot it is painted
+        //--- into. Everything below reads rpc.list_* with `index` and never with the loop counter.
+        array<int> order = new array<int>();
+        BuildOnlineOrder(rpc, order);
+
         int shown = 0;
-        int count = rpc.list_uids.Count();
+        int count = order.Count();
 
         for (int i = 0; i < count; i++)
         {
+            int index = order.Get(i);
+
             Widget row = EnsureRow(m_OnlineRowPool, m_OnlineRows, "party_menu_player_row.layout", shown);
             if (!row)
                 break;
@@ -261,10 +432,11 @@ class VigridPartyMenu extends UIScriptedMenu
             Widget accent_widget = row.FindAnyWidget("PlayerRowAccent");
             ButtonWidget invite_button = ButtonWidget.Cast(row.FindAnyWidget("PlayerRowInviteButton"));
 
-            name_widget.SetText(rpc.list_names.Get(i));
+            string row_name = rpc.list_names.Get(index);
+            name_widget.SetText(row_name);
 
             //--- bit0 means the server already has them in a party.
-            bool already_in_party = (rpc.list_flags.Get(i) & 1) != 0;
+            bool already_in_party = (rpc.list_flags.Get(index) & 1) != 0;
 
             //--- The button and the status label share the right-hand cell and are mutually
             //--- exclusive. Saying WHY there is no button is the point: a row that simply lost its
@@ -288,7 +460,8 @@ class VigridPartyMenu extends UIScriptedMenu
             if (already_in_party)
                 name_widget.SetColor(COLOR_MEMBER_OFFLINE);
 
-            m_InviteTargets.Set(invite_button, rpc.list_uids.Get(i));
+            string row_uid = rpc.list_uids.Get(index);
+            m_InviteTargets.Set(invite_button, row_uid);
 
             shown = shown + 1;
         }
@@ -303,11 +476,19 @@ class VigridPartyMenu extends UIScriptedMenu
 
         bool is_leader = rpc.self_index >= 0 && rpc.self_index == rpc.leader_index;
 
+        //--- Display order only - `index` is the ROSTER SLOT, `shown` is the row it is painted into.
+        //--- Every comparison below is against the slot: rpc.leader_index and rpc.self_index are
+        //--- slots too, and testing them against the loop counter would mark the wrong row.
+        array<int> order = new array<int>();
+        BuildMemberOrder(rpc, order);
+
         int shown = 0;
-        int count = rpc.roster_uids.Count();
+        int count = order.Count();
 
         for (int i = 0; i < count; i++)
         {
+            int index = order.Get(i);
+
             Widget row = EnsureRow(m_MemberRowPool, m_MemberRows, "party_menu_member_row.layout", shown);
             if (!row)
                 break;
@@ -320,18 +501,20 @@ class VigridPartyMenu extends UIScriptedMenu
 
             //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
             //--- stringtable key and only GetMemberName resolves it.
-            name_widget.SetText(VigridPartyAPI.GetMemberName(i));
+            name_widget.SetText(VigridPartyAPI.GetMemberName(index));
 
             //--- The member's party slot colour - the same palette entry their nametag, HUD row, map
-            //--- marker and pings use, so identity is one glance in every surface.
-            accent_widget.SetColor(VigridPartyAPI.GetMemberColour(i, 1.0));
+            //--- marker and pings use, so identity is one glance in every surface. Asked for by SLOT,
+            //--- which is why the sort had to stay a display order: reordering the roster itself
+            //--- would repaint every teammate a different colour in five other surfaces at once.
+            accent_widget.SetColor(VigridPartyAPI.GetMemberColour(index, 1.0));
 
             //--- Leader and Offline now live on their own line rather than being appended to the
             //--- name. Appending had to happen after GetMemberName had already localised the name,
             //--- could not be styled apart from it, and lengthened the tightest cell in the row.
             //--- Offline wins when a member is both: it is the more actionable of the two.
-            bool online = VigridPartyAPI.IsMemberOnline(i);
-            bool is_row_leader = (i == rpc.leader_index);
+            bool online = VigridPartyAPI.IsMemberOnline(index);
+            bool is_row_leader = (index == rpc.leader_index);
 
             status_widget.Show(!online || is_row_leader);
 
@@ -348,12 +531,13 @@ class VigridPartyMenu extends UIScriptedMenu
                 name_widget.SetColor(COLOR_MEMBER_OFFLINE);
 
             //--- Never offer to promote or kick yourself; leaving is what that button is for.
-            bool actionable = is_leader && !rpc.locked && i != rpc.self_index;
+            bool actionable = is_leader && !rpc.locked && index != rpc.self_index;
             promote_button.Show(actionable);
             kick_button.Show(actionable);
 
-            m_PromoteTargets.Set(promote_button, rpc.roster_uids.Get(i));
-            m_KickTargets.Set(kick_button, rpc.roster_uids.Get(i));
+            string row_uid = rpc.roster_uids.Get(index);
+            m_PromoteTargets.Set(promote_button, row_uid);
+            m_KickTargets.Set(kick_button, row_uid);
 
             shown = shown + 1;
         }

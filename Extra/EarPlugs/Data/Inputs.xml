@@ -5,10 +5,18 @@
     Extra/Map/Data/Inputs.xml for the long version of why an exclude group is a trap when you DO
     think you want one.
 
-    J is unbound in vanilla DayZ and free across this mod's other three Inputs.xml files - Battle
-    Royale takes F1-F6 and the arrows, Party takes P/T/Y, Map takes M/N/K. Community-Online-Tools is
-    the one to check if it ever does two things at once; its own Inputs.xml is what collided with
-    Party's Y.
+    J, and it is free across this mod's other four Inputs.xml files - Battle Royale takes F1-F6 and
+    the arrows, Party takes P/T/Y, Map takes M/N/K, AutoRun takes Z.
+
+    NOT strictly unbound in vanilla, and the distinction is worth stating because only K, O and P
+    genuinely are. kJ is UABuldSlow in P:\bin\preset_keymouseprimary.xml, but it sits under the
+    BULDOZER SPECIFIC block - the Workbench model viewer, not the game - and its only reference in
+    all of P:\scripts is the script console's own suppression list (scriptconsole.c:531). So it is
+    unreachable in normal gameplay, which is exactly the standard AutoRun applied to kZ (UAMoveDown,
+    under DEBUG SPECIFIC / Freefly Camera).
+
+    Community-Online-Tools is the one to check if a bind ever does two things at once; its own
+    Inputs.xml is what collided with Party's Y.
 -->
 <modded_inputs>
     <inputs>

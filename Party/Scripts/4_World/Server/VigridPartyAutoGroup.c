@@ -100,7 +100,7 @@ class VigridPartyAutoGroup
      */
     static VigridPartyAutoGroupPlan Plan(int pool_size, array<int> existing_sizes, int min_size, int max_size, int min_groups, int remainder)
     {
-        ref VigridPartyAutoGroupPlan plan = new VigridPartyAutoGroupPlan();
+        VigridPartyAutoGroupPlan plan = new VigridPartyAutoGroupPlan();
 
         int existing_count = 0;
         if (existing_sizes)
@@ -326,7 +326,7 @@ class VigridPartyAutoGroup
         {
             for (int pool_size = 1; pool_size <= VIGRID_PARTY_AUTOGROUP_TEST_MAX_PLAYERS && ran < cases; pool_size++)
             {
-                ref array<int> shape = BuildTestShape(variant, max_size);
+                array<int> shape = BuildTestShape(variant, max_size);
 
                 int seated = pool_size;
                 int shape_count = shape.Count();
@@ -335,7 +335,7 @@ class VigridPartyAutoGroup
                     seated = seated + shape.Get(q);
                 }
 
-                ref VigridPartyAutoGroupPlan plan = Plan(pool_size, shape, min_size, max_size, min_groups, remainder);
+                VigridPartyAutoGroupPlan plan = Plan(pool_size, shape, min_size, max_size, min_groups, remainder);
                 ran = ran + 1;
 
                 if (plan.floor_hit)
@@ -397,7 +397,7 @@ class VigridPartyAutoGroup
     //! pair, and one party already at the cap.
     private static array<int> BuildTestShape(int variant, int max_size)
     {
-        ref array<int> shape = new array<int>();
+        array<int> shape = new array<int>();
 
         if (variant == 1)
         {
