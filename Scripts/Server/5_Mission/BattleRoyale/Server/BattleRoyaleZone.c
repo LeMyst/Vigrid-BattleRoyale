@@ -23,9 +23,9 @@ class BattleRoyaleZone
     protected bool b_DeriveLadder;
     protected float f_MetresPerPlayer;
     protected int i_MinPlayersFloor;
-    protected float f_POIDensityWeight;
-    protected float f_POIFactorMin;
-    protected float f_POIFactorMax;
+    protected float f_LootDensityWeight;
+    protected float f_LootFactorMin;
+    protected float f_LootFactorMax;
 
     protected bool b_EndInVillages;
 
@@ -121,9 +121,9 @@ class BattleRoyaleZone
         b_DeriveLadder = m_ZoneSettings.derive_zone_ladder;
         f_MetresPerPlayer = m_ZoneSettings.zone_metres_per_player;
         i_MinPlayersFloor = m_ZoneSettings.zone_min_players_floor;
-        f_POIDensityWeight = m_ZoneSettings.zone_poi_density_weight;
-        f_POIFactorMin = m_ZoneSettings.zone_poi_factor_min;
-        f_POIFactorMax = m_ZoneSettings.zone_poi_factor_max;
+        f_LootDensityWeight = m_ZoneSettings.zone_loot_density_weight;
+        f_LootFactorMin = m_ZoneSettings.zone_loot_factor_min;
+        f_LootFactorMax = m_ZoneSettings.zone_loot_factor_max;
 
         m_PlayArea = new BattleRoyalePlayArea(Vector(0,0,0), 0.0);
 
@@ -1992,8 +1992,8 @@ class BattleRoyaleZone
         //--- Bound them here too rather than dividing by a hand-edited zero.
         metres_per_player = Math.Clamp(f_MetresPerPlayer, BR_ZONE_LADDER_MIN_M_PER_PLAYER, BR_ZONE_LADDER_MAX_M_PER_PLAYER);
 
-        factor_min = f_POIFactorMin;
-        factor_max = f_POIFactorMax;
+        factor_min = f_LootFactorMin;
+        factor_max = f_LootFactorMax;
         if(factor_min <= 0 || factor_max < factor_min)
         {
             factor_min = 0.5;
@@ -2055,7 +2055,7 @@ class BattleRoyaleZone
             //--- players" and therefore be picked more readily has the selection walk backwards - it
             //--- takes the FIRST circle whose rating is below the population, largest first.
             //---
-            //--- A map with no POIs at all leaves the factor at 1, i.e. radius alone, rather than
+            //--- A map with no census and no POIs at all leaves the factor at 1, i.e. radius alone, rather
             //--- collapsing every circle onto the floor.
             factor = 1.0;
             area_m2 = Math.PI * radius * radius;
@@ -2064,7 +2064,7 @@ class BattleRoyaleZone
             {
                 circle_density = density_count / area_m2;
                 ratio = circle_density / map_density;
-                factor = 1.0 + ((ratio - 1.0) * f_POIDensityWeight);
+                factor = 1.0 + ((ratio - 1.0) * f_LootDensityWeight);
             }
 
             factor = Math.Clamp(factor, factor_min, factor_max);
@@ -2072,7 +2072,7 @@ class BattleRoyaleZone
             //--- Linear in RADIUS, not in area, and that is measured rather than chosen: the shipped
             //--- min_players table works out to 3375/33 = 2250/22 = 1125/11 = 102.3 m per player, with
             //--- the four smaller tiers on a floor of 10. So the RADIUS TERM ALONE - i.e.
-            //--- zone_poi_density_weight = 0 - reproduces {10, 10, 10, 11, 22, 33} exactly, and that is
+            //--- zone_loot_density_weight = 0 - reproduces {10, 10, 10, 11, 22, 33} exactly, and that is
             //--- the neutrality check to run when tuning this: set the weight to 0 and the derived
             //--- column in the boot report must match zone_settings.json entry for entry.
             //---
@@ -2113,7 +2113,7 @@ class BattleRoyaleZone
         head = head + b_DeriveLadder;
         head = head + " metres_per_player=" + f_MetresPerPlayer;
         head = head + " floor=" + i_MinPlayersFloor;
-        head = head + " density_weight=" + f_POIDensityWeight;
+        head = head + " density_weight=" + f_LootDensityWeight;
         //--- Which input the density term actually used. Without this the derived column is ambiguous
         //--- in the one direction that matters: a silent fallback to POI counts looks like a working
         //--- census, and POI counts are the thing this replaced.

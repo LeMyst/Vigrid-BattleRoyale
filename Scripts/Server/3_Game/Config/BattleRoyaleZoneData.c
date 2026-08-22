@@ -117,7 +117,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     //
     // Two things become derived:
     //   * min_players[i], from the circle's radius and from how much LOOT it actually encloses - the
-    //     count of POIs inside the placed circle, against this map's mean POI density. See
+    //     count of LOOTABLE BUILDINGS inside the placed circle, against this map's mean building
+    //     density, both from the cached BattleRoyaleBuildingCensus. POI counts are a fallback for when
+    //     the census could not run, and only that: measured against the Central Economy's own loot
+    //     points, building count correlates 0.99 and POI count 0.29. See
     //     BattleRoyaleZone.BuildDerivedLadder for the formula and for why a loot-RICH circle gets a
     //     HIGHER min_players (it reads backwards and is right).
     //   * num_zones, from zone_opening_world_fraction below.
@@ -125,16 +128,16 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
     // Metres of opening-circle RADIUS per player. The shipped min_players table is linear in radius -
     // 3375/33 = 2250/22 = 1125/11 = 102.3 - so this default reproduces it exactly WHEN
-    // zone_poi_density_weight is 0. LOWER means a bigger opening circle for the same crowd.
+    // zone_loot_density_weight is 0. LOWER means a bigger opening circle for the same crowd.
     float zone_metres_per_player = 102.3;
 
     // Nobody opens on a circle rated for fewer than this. The shipped table's four smallest tiers all
     // sit on 10, which is what this reproduces.
     int zone_min_players_floor = 10;
 
-    // How much the enclosed loot density is allowed to move the answer. 0 = ignore POIs entirely and
+    // How much the enclosed loot density is allowed to move the answer. 0 = ignore loot entirely and
     // rate every circle on its radius alone; 1 = apply the full density ratio. The result is clamped
-    // to [zone_poi_factor_min, zone_poi_factor_max] either way, because a circle over a single dense
+    // to [zone_loot_factor_min, zone_loot_factor_max] either way, because a circle over a single dense
     // town should not be rated for triple the players.
     //
     // SET IT TO 0 FIRST when tuning zone_metres_per_player: that is the setting under which the derived
@@ -142,9 +145,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // radius from a loud density term. Above 0 the derived numbers will NOT match the authored ones -
     // every circle is nested around a village seed, so every circle reads denser than the map mean. See
     // BattleRoyaleZone.BuildDerivedLadder for which half of that is signal and which half is bias.
-    float zone_poi_density_weight = 1.0;
-    float zone_poi_factor_min = 0.5;
-    float zone_poi_factor_max = 1.5;
+    float zone_loot_density_weight = 1.0;
+    float zone_loot_factor_min = 0.5;
+    float zone_loot_factor_max = 1.5;
 
     // The opening circle's radius as a fraction of the map width, used to DERIVE num_zones: tiers
     // larger than this are dropped, so a bigger opening circle keeps more shrink steps and a small one
@@ -572,11 +575,11 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 				zone_metres_per_player = Math.Clamp(zone_metres_per_player, BR_ZONE_LADDER_MIN_M_PER_PLAYER, BR_ZONE_LADDER_MAX_M_PER_PLAYER);
 			}
 
-			if (zone_poi_factor_min <= 0 || zone_poi_factor_max < zone_poi_factor_min)
+			if (zone_loot_factor_min <= 0 || zone_loot_factor_max < zone_loot_factor_min)
 			{
-				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] zone_poi_factor_min/max are " + zone_poi_factor_min + "/" + zone_poi_factor_max + ", which is not a usable range - resetting to 0.5/1.5 for this boot.");
-				zone_poi_factor_min = 0.5;
-				zone_poi_factor_max = 1.5;
+				BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] zone_loot_factor_min/max are " + zone_loot_factor_min + "/" + zone_loot_factor_max + ", which is not a usable range - resetting to 0.5/1.5 for this boot.");
+				zone_loot_factor_min = 0.5;
+				zone_loot_factor_max = 1.5;
 			}
 
 			if (zone_min_players_floor < 1)
