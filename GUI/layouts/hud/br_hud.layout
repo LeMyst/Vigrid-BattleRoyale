@@ -303,7 +303,10 @@ FrameWidgetClass BattleRoyaleHudFrame {
         ImageWidgetClass AudienceIcon {
          ignorepointer 1
          position 0 0
-         size 32 32
+         // 28 for the same reason as CountdownIcon and ZoneIcon: this row is 20.23 px tall at
+         // 1280x720 and a declared 32 renders 21.33, overflowing it. Measured with the [HudRect]
+         // dump, not assumed - the clip is only ~1 px, which is easy to read as a soft edge.
+         size 28 28
          halign right_ref
          hexactpos 0
          vexactpos 0

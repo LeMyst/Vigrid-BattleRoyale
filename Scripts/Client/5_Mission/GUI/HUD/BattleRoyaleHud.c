@@ -83,11 +83,18 @@ class BattleRoyaleHud
      */
     protected void DiagIconRects()
     {
-        DiagRect( "ZonePanel", m_Root.FindAnyWidget( "ZonePanel" ) );
+        //--- The grid every icon row sits in. Named MatchInfoIconsPanel, NOT ZonePanel - the latter
+        //--- was this dump's original subject and no longer exists, so it logged NULL forever. A
+        //--- diagnostic that silently names a deleted widget is worse than none.
+        DiagRect( "MatchInfoIconsPanel", m_Root.FindAnyWidget( "MatchInfoIconsPanel" ) );
         DiagRect( "CountdownPanel", m_CountdownPanel );
         DiagRect( "CountdownIcon", m_ImageClock );
         DiagRect( "ZoneDistancePanel", m_ZoneDistancePanel );
         DiagRect( "ZoneIcon", m_DistanceZoneArrow );
+        //--- Third icon in the same grid, so it is subject to the same row fit. Not ours, but there
+        //--- is no reason to measure two of the three.
+        DiagRect( "AudienceCountPanel", m_AudienceCountPanel );
+        DiagRect( "AudienceIcon", m_Root.FindAnyWidget( "AudienceIcon" ) );
     }
 
     protected void DiagRect( string name, Widget w )
