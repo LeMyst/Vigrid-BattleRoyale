@@ -362,17 +362,22 @@ Three things about the loot-density term are non-obvious:
 
 ⚠️ **That reported range is over LEGAL starting tiers, `1..floor_zone`, not `1..num_zones`** — `min_zone_num` means the walk can never start past `floor_zone`. Written the other way first, the gate reported a 394 s "shortest match" that the very next line of its own output contradicted with 1242 s, and advised fixing a setting that was fine. A self test that lies quietly is worse than none.
 
-**Measured 2026-08-21 with everything on, 200 placement runs plus a 1..100 ladder walk on each map:**
+**Measured 2026-08-22 with everything on, 200 placement runs plus a 1..100 ladder walk on each map:**
 
 | | ChernarusPlus | Sakhal |
 |---|---|---|
-| placement | 200/200, T1 973 / T2 25 / T3 0, growth 2, sweep 0, no backtracking | 200/200, T1 842 / T2 86 / T3 53, growth 7, sweep 25, depth2 ×3 |
-| ladder range | 1209 s (zone 3) – 2470 s (zone 1) | 1317 s – 2676 s |
-| tier boundaries | zone 3 → zone 2 at 42, → zone 1 at 55 | 45, 60 |
-| histogram | zone1 46 / zone2 13 / zone3 41 | 41 / 15 / 44 |
-| bound moved | 22 of 100 | 31 of 100 |
+| census | 961 probes, 39.9 s, **14,141** buildings, 59.9/km² | 961 probes, 24.7 s, **8,902** buildings, 37.7/km² |
+| placement | 200/200, T1 948 / T2 52 / T3 0, sweep 0, no backtracking | 200/200, T1 764 / T2 127 / T3 82, growth 5, sweep 48, depth2 ×6 |
+| ladder range | 1188–2537 s | 1217–2536 s |
+| tier boundaries | 33 → zone 2, 46 → zone 1 | 36, 50 |
+| histogram | zone1 55 / zone2 13 / zone3 32 | 51 / 14 / 35 |
+| bound moved | 20 of 100 | 1–38 of 100 |
 
 Placement is unchanged from the pre-#284 baseline on both, which is the expected result: `static_sizes` is untouched and the generator never sees any of this.
+
+⚠️ **The `bound moved` figure swings wildly between chains on the same map** — two consecutive Sakhal boots gave 38 and 1. It is a property of where the chain landed, not of the tuning: when the derived timers happen to put a tier near the target, the bound has nothing to do. Judge it over several boots, and only treat a *sustained* figure past half as the "the clock is deciding every match" warning it exists to be.
+
+**Sakhal is the loot-poor map and the census says so quantitatively** — 37.7 buildings/km² against ChernarusPlus's 59.9, from 8,902 against 14,141. That is exactly the difference the POI count could not see: Sakhal's drop circles enclose 1, 3 and 6 POI markers, numbers far too small and too noisy to rate a circle on.
 
 ⚠️ **`BattleRoyaleState.GetDynamicStartingZone` and its memo are now `static`.** The memo's own comment was always the argument for it (the answer depends only on `num_players` plus process-fixed config), and it has to be static regardless: the ladder self test asks the same question at boot, before any state instance exists. `RunLadderSelfTest` calls `ResetDynamicZoneMemo()` afterwards for the same reason `RunSelfTest` restores `s_ChainRadii` — a diagnostic must leave no trace on the match about to be played.
 

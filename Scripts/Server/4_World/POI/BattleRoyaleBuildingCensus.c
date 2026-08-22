@@ -197,6 +197,15 @@ class BattleRoyaleBuildingCensus
 
         cells = Math.Ceil(world_size / cell);
 
+        //--- The probe budget. Skipping is the right failure here rather than scanning anyway: the
+        //--- caller falls back to POI counts and says so, whereas an unbounded scan on a huge terrain
+        //--- would stall boot with no way for an operator to tell what was happening.
+        if ((cells * cells) > BR_ZONE_CENSUS_MAX_CELLS)
+        {
+            BattleRoyaleUtils.Warn("[BuildingCensus] a " + world_size + " m world needs " + (cells * cells) + " probes at " + cell + " m cells, over the " + BR_ZONE_CENSUS_MAX_CELLS + " cap - skipping the census. The ladder will fall back to POI counts. Raise BR_ZONE_CENSUS_CELL_M for this map.");
+            return;
+        }
+
         for (cell_z = 0; cell_z < cells; cell_z++)
         {
             for (cell_x = 0; cell_x < cells; cell_x++)

@@ -1120,10 +1120,16 @@ static const float BR_ZONE_LADDER_MAX_M_PER_PLAYER = 2000.0;
 //which lands at ~354 m - the radius BattleRoyalePOIResolver already runs at and reports as sound. One
 //big query instead would return every tree in tens of km2 in a single array.
 static const float BR_ZONE_CENSUS_CELL_M   = 500.0;
-//Probes for the largest circle at stock sizes: (2*3375/500 + 1)^2 = 196 before the corner cull. The cap
-//is a guard for an absurd static_sizes, not a tuning knob - past it the census is skipped and the
-//ladder falls back to POI counts rather than spending an unbounded boot.
-static const int   BR_ZONE_CENSUS_MAX_CELLS = 900;
+//Probe budget for the WHOLE MAP: ceil(W / CELL_M)^2, which is 31^2 = 961 on a 15360 m world, so both
+//ChernarusPlus and Sakhal sit comfortably inside this. It is a guard against an absurdly large
+//community terrain, not a tuning knob - past it the census is skipped and the ladder falls back to POI
+//counts rather than spending an unbounded boot. 2500 covers a 25 km map at the shipped cell size.
+//
+//⚠️ IT WAS 900 AND DEAD, WHICH IS WHY THE VALUE WAS WRONG. The cap was written for an earlier design
+//that scanned only the largest circle; when the census became map-wide the check was not carried over,
+//so nothing ever evaluated it - and 900 is BELOW the 961 Chernarus actually needs. A limit that is
+//never reached cannot tell you it is set too low.
+static const int   BR_ZONE_CENSUS_MAX_CELLS = 2500;
 
 //How far the duration bound may walk the starting tier in one direction before giving up. The ladder
 //is at most num_zones long, so this only exists so a misconfiguration cannot spin.
