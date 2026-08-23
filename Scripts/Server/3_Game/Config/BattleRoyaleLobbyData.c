@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleLobbyData: BattleRoyaleDataBase
 {
-	int version = 5;  // Config version
+	int version = 6;  // Config version
 
 	// Lobby spawn location are in the spawns settings located in the mission folder.
 
@@ -82,6 +82,33 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 	// which is not enough to produce a four-way split, a top-up that also has a remainder, or the
 	// max_party_size overflow. This answers "can this configuration strand a player" in one boot.
     int auto_group_selftest = 0;
+
+	// Lobby chickens - a couple of birds wandering the waiting area, to give players something to look
+	// at while the lobby fills. The lobby can run a long time (min_waiting_time is 300s by default,
+	// autostart_delay 750s, and a manual_start lobby has no upper bound at all), so this is purely
+	// there to make the wait less empty.
+	//
+	// A batch is considered every lobby_chicken_interval_min..max_seconds, and the FIRST one lands the
+	// instant the lobby opens rather than one interval later. A batch is skipped - and the wait simply
+	// redrawn - while more than lobby_chicken_max_alive of our own birds are still alive inside the
+	// lobby radius, so they accumulate to a couple and then stop.
+	//
+	// Only chickens THIS spawned are counted, and only while they are still inside the lobby radius
+	// (spawns_settings.json `spawn_point` / `radius`). One that wanders off is forgotten rather than
+	// removed - it keeps its ordinary economy lifetime and expires on its own - and one that is killed
+	// deletes itself, vanilla swapping the animal for a dead-chicken item a moment after death.
+	//
+	// Nothing is cleaned up when the match starts: whatever is still standing is left in the lobby
+	// clearing, which nobody returns to, and the economy lifetime takes care of it.
+	//
+	// The lobby truce (Extra/SafeZone) cancels player-on-player damage only, so these are killable -
+	// which is half the entertainment.
+	bool lobby_chickens_enabled = true;
+	int lobby_chicken_interval_min_seconds = 300;
+	int lobby_chicken_interval_max_seconds = 600;
+	int lobby_chicken_min_per_batch = 1;
+	int lobby_chicken_max_per_batch = 2;
+	int lobby_chicken_max_alive = 1;  // skip the batch while MORE than this many are still alive
 
     int debug_heal_tick_seconds = 5;  // seconds between debug (lobby) heal ticks
 
@@ -226,6 +253,18 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 			version = 5;
 			Save();
 		}
+
+		if (version < 6)
+		{
+			// v6 added the six lobby_chicken* keys. All six are SCALARS, so the v3/v4/v5 reasoning
+			// applies once more: a v5 file has no such key, deserialization leaves the field initialisers
+			// in place, and Load()'s re-save materialises them. Only a `ref array` needs an explicit
+			// branch here - which is precisely why the four chicken classnames were left as a constant in
+			// BattleRoyaleChickens rather than becoming a settings array. Shipped default is enabled, so
+			// an existing server gains the feature at its defaults on the next boot.
+			version = 6;
+			Save();
+		}
 	}
 
 	//--- Runs after the mission override, so a mission that sets these is checked too. Must not
@@ -259,6 +298,47 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 		//--- what it asks for. Two full teams need twice the team size, and below that the match
 		//--- would have to end the moment it started, so the group floor stops the pass short and
 		//--- somebody plays short-handed every single match.
+		//--- Lobby chickens. Clamped rather than warned about where the value is simply unusable, since
+		//--- none of it can make a match unplayable - the worst a bad figure does is spawn nothing, or
+		//--- spawn continuously.
+		if (lobby_chicken_interval_min_seconds < BR_LOBBY_CHICKEN_INTERVAL_FLOOR_SECONDS)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] lobby_chicken_interval_min_seconds %1 is below %2, clamping", lobby_chicken_interval_min_seconds, BR_LOBBY_CHICKEN_INTERVAL_FLOOR_SECONDS));
+			lobby_chicken_interval_min_seconds = BR_LOBBY_CHICKEN_INTERVAL_FLOOR_SECONDS;
+		}
+
+		//--- Equal is legal and means "exactly this often"; only an inverted pair is a mistake.
+		if (lobby_chicken_interval_max_seconds < lobby_chicken_interval_min_seconds)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] lobby_chicken_interval_max_seconds %1 is below the min %2, using the min", lobby_chicken_interval_max_seconds, lobby_chicken_interval_min_seconds));
+			lobby_chicken_interval_max_seconds = lobby_chicken_interval_min_seconds;
+		}
+
+		if (lobby_chicken_min_per_batch < 1)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] lobby_chicken_min_per_batch %1 is below 1, clamping", lobby_chicken_min_per_batch));
+			lobby_chicken_min_per_batch = 1;
+		}
+
+		if (lobby_chicken_max_per_batch > BR_LOBBY_CHICKEN_BATCH_CEILING)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] lobby_chicken_max_per_batch %1 exceeds %2, clamping", lobby_chicken_max_per_batch, BR_LOBBY_CHICKEN_BATCH_CEILING));
+			lobby_chicken_max_per_batch = BR_LOBBY_CHICKEN_BATCH_CEILING;
+		}
+
+		if (lobby_chicken_max_per_batch < lobby_chicken_min_per_batch)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] lobby_chicken_max_per_batch %1 is below the min %2, using the min", lobby_chicken_max_per_batch, lobby_chicken_min_per_batch));
+			lobby_chicken_max_per_batch = lobby_chicken_min_per_batch;
+		}
+
+		//--- 0 is meaningful: "only ever spawn when the clearing is empty". Negative is not.
+		if (lobby_chicken_max_alive < 0)
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Lobby] lobby_chicken_max_alive %1 is below 0, clamping", lobby_chicken_max_alive));
+			lobby_chicken_max_alive = 0;
+		}
+
 		if (min_party_size > 1 && (min_party_size * 2) > minimum_players)
 		{
 			string warning = string.Format("[Lobby] min_party_size %1 needs at least %2 players", min_party_size, min_party_size * 2);

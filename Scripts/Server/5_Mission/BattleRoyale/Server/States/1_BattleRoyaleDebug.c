@@ -16,6 +16,27 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected int i_MinPartyRemainder;
     protected int i_AutoGroupSelfTest;
 
+    /**
+     *  Lobby chickens - the birds this state has put in the clearing and still believes in.
+     *
+     *  ⚠️ `ref array<EntityAI>`, NOT `array<ref EntityAI>`. The CONTAINER is owned by this state;
+     *  the elements are weak, which is the whole point - a chicken that dies is deleted by vanilla
+     *  (AnimalBase.ReplaceOnDeath swaps it for a dead-chicken item) and the handle NULLS ITSELF.
+     *  Owning the elements would instead have this list try to destroy live world entities.
+     */
+    protected ref array<EntityAI> m_LobbyChickens;
+
+    //--- GetGame().GetTime() at which the next batch is due. 0 means "due now", which is what makes
+    //--- the first batch land as the lobby opens rather than one interval later.
+    protected int i_NextChickenSpawnMs;
+
+    protected bool b_LobbyChickensEnabled;
+    protected int i_ChickenIntervalMinSeconds;
+    protected int i_ChickenIntervalMaxSeconds;
+    protected int i_ChickenMinPerBatch;
+    protected int i_ChickenMaxPerBatch;
+    protected int i_ChickenMaxAlive;
+
     //--- GetGame().GetTime() at which the load gate first refused a start that was otherwise ready,
     //--- or 0 when no hold is running. Owned by IsLoadGateClear / ResetLoadHold and read by
     //--- MessageWaiting, which uses "is a hold running" as its "is loading what is holding us up".
@@ -39,6 +60,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     void BattleRoyaleDebug()
     {
         m_ReadyList = new array<PlayerBase>();
+        m_LobbyChickens = new array<EntityAI>();
 
         BattleRoyaleLobbyData m_LobbySettings = BattleRoyaleConfig.GetConfig().GetLobbyData();
 
@@ -54,6 +76,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		i_MinPartyRemainder = m_LobbySettings.min_party_remainder;
 		i_AutoGroupSelfTest = m_LobbySettings.auto_group_selftest;
 		b_ManualStart = m_LobbySettings.manual_start;
+
+		b_LobbyChickensEnabled = m_LobbySettings.lobby_chickens_enabled;
+		i_ChickenIntervalMinSeconds = m_LobbySettings.lobby_chicken_interval_min_seconds;
+		i_ChickenIntervalMaxSeconds = m_LobbySettings.lobby_chicken_interval_max_seconds;
+		i_ChickenMinPerBatch = m_LobbySettings.lobby_chicken_min_per_batch;
+		i_ChickenMaxPerBatch = m_LobbySettings.lobby_chicken_max_per_batch;
+		i_ChickenMaxAlive = m_LobbySettings.lobby_chicken_max_alive;
+		i_NextChickenSpawnMs = 0;
     }
 
     //--- Is an admin holding the lobby open? Read by the COT status readout and by MessageWaiting.
@@ -658,6 +688,20 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         if( b_UseVoteSystem )
         	AddTimer(2.0, this, "CheckReadyState", NULL, true);
 
+        //--- A couple of chickens wandering the clearing, so the wait is not spent staring at an
+        //--- empty field. Looping, so super.Deactivate()'s StopTimers() tears it down for free; the
+        //--- 5-10 minute jitter rides a deadline rather than the timer period, because a one-shot
+        //--- re-armed from its own callback would mean replacing a `ref Timer` inside that timer's
+        //--- own tick - the TimerQueue hazard documented in 0_BattleRoyaleState.
+        if( b_LobbyChickensEnabled )
+        {
+            AddTimer(BR_LOBBY_CHICKEN_POLL_SECONDS, this, "TickLobbyChickens", NULL, true);
+
+            //--- ...and once directly, so the first batch is there as the lobby opens rather than a
+            //--- poll later. i_NextChickenSpawnMs is 0 from the constructor, i.e. already due.
+            TickLobbyChickens();
+        }
+
 #ifdef KILLFEED
         //--- Nothing that happens in the lobby belongs in the feed, and a feed running here would
         //--- just advertise who is fighting whom before the match has started.
@@ -787,6 +831,107 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             return;
 
         MessagePlayersUntranslated("STR_BR_LASTMATCH_WINNER_ANNOUNCE", previous.winner_name, previous.winner_kills.ToString());
+    }
+
+    /**
+     *  Is a batch of lobby chickens due, and is there room for one?
+     *
+     *  Polled on a looping timer for as long as the lobby state is active. The deadline is redrawn
+     *  whether or not a batch was actually spawned, so a period skipped because the clearing is
+     *  already occupied simply waits out another interval.
+     */
+    void TickLobbyChickens()
+    {
+        vector center = "0 0 0";
+        float radius = 0;
+        float inner = 0;
+        float outer = 0;
+        int alive = 0;
+        int wanted = 0;
+        int spawned = 0;
+        int wait_seconds = 0;
+        string line = "";
+
+        PruneLobbyChickens();
+
+        if( GetGame().GetTime() < i_NextChickenSpawnMs )
+            return;
+
+        alive = m_LobbyChickens.Count();
+
+        //--- "no more than one alive" - at the cap or under it, top the clearing up.
+        //--- Every term is read into a local on its own line first: a whole call written across
+        //--- several lines is a multi-line EXPRESSION, which Enfusion rejects and then reports as a
+        //--- brace error somewhere else entirely.
+        if( alive <= i_ChickenMaxAlive )
+        {
+            center = GetCenter();
+            radius = GetRadius();
+            inner = radius * BR_LOBBY_CHICKEN_INNER_FRACTION;
+            outer = radius * BR_LOBBY_CHICKEN_OUTER_FRACTION;
+            wanted = Math.RandomIntInclusive(i_ChickenMinPerBatch, i_ChickenMaxPerBatch);
+
+            spawned = BattleRoyaleChickens.SpawnBatch(center, inner, outer, wanted, m_LobbyChickens);
+        }
+
+        wait_seconds = Math.RandomIntInclusive(i_ChickenIntervalMinSeconds, i_ChickenIntervalMaxSeconds);
+        i_NextChickenSpawnMs = GetGame().GetTime() + (wait_seconds * 1000);
+
+        //--- One funnel line per period, naming every term the decision was made on. Built in steps
+        //--- rather than as one expression: a single concatenation of this many fields is what trips
+        //--- "Formula too complex", which packs fine and only fails when the module loads.
+        line = string.Format("[Lobby] chickens alive=%1 spawned=%2", alive, spawned);
+        line = line + string.Format(" cap=%1 next=%2s", i_ChickenMaxAlive, wait_seconds);
+        BattleRoyaleUtils.Info(line);
+    }
+
+    /**
+     *  Drop every chicken this state should stop counting.
+     *
+     *  Three ways one leaves the tally, and only the first is a deletion:
+     *
+     *    - killed. Vanilla AnimalBase.ReplaceOnDeath deletes the animal and swaps in a dead-chicken
+     *      item, so the weak handle goes NULL by itself. IsAlive() covers the brief window between
+     *      the death and that swap, where the entity is still there and already dead.
+     *    - wandered out of the lobby disc. Forgotten rather than deleted: it is no longer in the
+     *      clearing, so it should not hold a slot, and its ordinary economy lifetime expires it.
+     *    - the engine has it queued for deletion.
+     *
+     *  Walked backwards so a removal cannot move an unvisited entry into a slot already passed -
+     *  the same reason BattleRoyaleWin.KickWinner does.
+     */
+    protected void PruneLobbyChickens()
+    {
+        vector center = GetCenter();
+        vector flat_center = Vector(center[0], 0, center[2]);
+        vector bird_position = "0 0 0";
+        float radius = GetRadius();
+        EntityAI chicken = NULL;
+        int i = 0;
+
+        for( i = m_LobbyChickens.Count() - 1; i >= 0; i-- )
+        {
+            chicken = m_LobbyChickens.Get(i);
+
+            if( !chicken )
+            {
+                m_LobbyChickens.Remove(i);
+                continue;
+            }
+
+            if( !chicken.IsAlive() || chicken.IsSetForDeletion() )
+            {
+                m_LobbyChickens.Remove(i);
+                continue;
+            }
+
+            //--- 2D, exactly like the lobby's own containment clamp in BattleRoyaleDebugState.
+            //--- GetCenter() reports the terrain height under the spawn point, and a bird stands on
+            //--- its own patch of ground, so a 3D distance would fold the slope into the radius.
+            bird_position = chicken.GetPosition();
+            if( vector.Distance(Vector(bird_position[0], 0, bird_position[2]), flat_center) > radius )
+                m_LobbyChickens.Remove(i);
+        }
     }
 
     void MessageWaiting()
