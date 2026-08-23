@@ -690,7 +690,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
         //--- A couple of chickens wandering the clearing, so the wait is not spent staring at an
         //--- empty field. Looping, so super.Deactivate()'s StopTimers() tears it down for free; the
-        //--- 5-10 minute jitter rides a deadline rather than the timer period, because a one-shot
+        //--- 2-4 minute jitter rides a deadline rather than the timer period, because a one-shot
         //--- re-armed from its own callback would mean replacing a `ref Timer` inside that timer's
         //--- own tick - the TimerQueue hazard documented in 0_BattleRoyaleState.
         if( b_LobbyChickensEnabled )

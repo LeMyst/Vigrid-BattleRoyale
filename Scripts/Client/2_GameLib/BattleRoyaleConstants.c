@@ -200,7 +200,7 @@ static const int BR_AUTO_GROUP_SELFTEST_MAX = 1000;
 //--- lobby chickens, lobby_settings.json `lobby_chicken*`. See BattleRoyaleChickens and
 //--- BattleRoyaleDebug.TickLobbyChickens.
 //how often the lobby asks whether a batch is due. Deliberately much finer than the interval it is
-//polling for, so the 5-10 minute jitter is expressed by a deadline rather than by the timer period,
+//polling for, so the 2-4 minute jitter is expressed by a deadline rather than by the timer period,
 //and fine enough that an admin shortening the interval to seconds for a test still gets what they
 //asked for. It is one integer comparison per tick.
 //A LOOPING timer plus a deadline, rather than a one-shot re-armed from its own callback: re-arming

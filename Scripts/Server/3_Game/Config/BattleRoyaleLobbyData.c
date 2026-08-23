@@ -104,8 +104,8 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 	// The lobby truce (Extra/SafeZone) cancels player-on-player damage only, so these are killable -
 	// which is half the entertainment.
 	bool lobby_chickens_enabled = true;
-	int lobby_chicken_interval_min_seconds = 300;
-	int lobby_chicken_interval_max_seconds = 600;
+	int lobby_chicken_interval_min_seconds = 120;
+	int lobby_chicken_interval_max_seconds = 240;
 	int lobby_chicken_min_per_batch = 1;
 	int lobby_chicken_max_per_batch = 2;
 	int lobby_chicken_max_alive = 1;  // skip the batch while MORE than this many are still alive
