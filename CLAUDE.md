@@ -317,6 +317,22 @@ Note the lobby's own "enough groups to *start*" tests in `1_BattleRoyaleDebug` a
 
 Long-running work uses script coroutines — `GetGame().GameScript.Call(this, "MethodName", NULL)` plus `Sleep()` (see `4_BattleRoyalePrepare.ProcessPlayers`), not the call queue.
 
+### Lobby chickens
+
+One or two birds wandering the lobby clearing while players wait, since the lobby can run a long time (`min_waiting_time` 300 s, `autostart_delay` 750 s, and a `manual_start` lobby has no bound at all). Six scalar keys in `lobby_settings.json` (**v6**, on by default); `BattleRoyaleDebug.TickLobbyChickens` decides, `BattleRoyaleChickens` (`Scripts/Server/4_World/`) places.
+
+**The spawn arithmetic is centralised because there were already two consumers.** `8_BattleRoyaleWin.HandleWinner` has rained chickens on the winner since 2024 and the lobby needs exactly the same ring-placement, water rejection, surface drop and random facing — so both call `BattleRoyaleChickens.SpawnBatch`, on the same reasoning as `BattleRoyaleKillAttribution`. The move also fixed a latent NULL deref: `CreateObject` answers NULL for anything it cannot resolve and the win-state copy dereferenced the result unguarded.
+
+Five things are load-bearing:
+
+- ⚠️ **`Animal_GallusGallusDomesticusF` — the hen base, no colour suffix — is `scope = 0`, and it sits one line from the three that are spawnable.** `CreateObject` resolves through config, so it would answer NULL every time, silently. The four in use (`Animal_GallusGallusDomesticus`, `..._F_Brown`, `..._F_Spotted`, `..._F_White`) are all `scope = 2`.
+- **The cap maintains itself, because chickens `ReplaceOnDeath()`.** Vanilla `AnimalBase.DeathUpdate` deletes the animal outright and swaps in a `DeadChicken_*` item a moment later, so a weak handle held by the state **nulls itself** when a player kills one. `PruneLobbyChickens` only has to cover the window between the death and the swap, which `IsAlive()` does. `m_LobbyChickens` is therefore `ref array<EntityAI>` — the CONTAINER is owned, the elements weak; `array<ref EntityAI>` would have the list try to destroy live world entities.
+- **A bird that wanders out of the disc is forgotten, not deleted** — it is no longer in the clearing so it must not hold a slot, and `CreateObject` gave it an ordinary economy lifetime that expires it. That is also what keeps the array bounded. The in-radius test is **2D**, like the lobby's own containment clamp: `GetCenter()` reports the terrain height under the spawn point and a bird stands on its own patch of ground, so a 3D distance folds the slope into the radius.
+- **A LOOPING poll timer plus a deadline, never a one-shot re-armed from its own callback.** The 2–4 min jitter has to live somewhere, and re-arming would mean replacing a `ref Timer` from inside that timer's own tick — the `NULL pointer to instance / TimerQueue / Tick` hazard written up in `0_BattleRoyaleState.c:143-169`. The timer is created once, never replaced, and stopped by the `StopTimers()` inside the existing `super.Deactivate()`. `TickLobbyChickens` is also called **once directly from `Activate()`**, which is what makes the first batch land as the lobby opens rather than one interval later.
+- **Nothing is cleaned up at match start.** Whatever is still standing stays in the lobby clearing, which nobody returns to, and the economy lifetime deals with it.
+
+The legacy `CreateObject(type, pos, create_local, init_ai)` form is used rather than vanilla `PlayerBase.SpawnAI`'s `CreateObjectEx(ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS)`. Both are vanilla-sanctioned — the Santa sleigh wreck spawns its deer exactly this way — but this is the form already proven on a dedicated server here, and `CreateObjectEx` is on record hard-crashing this mod for a character class. **If a chicken ever stands still rather than wanders, the missing piece is `ECE_UPDATEPATHGRAPH`** (inside `ECE_PLACE_ON_SURFACE`), and that is the one reason to change it.
+
 ### Teleports and stuck players
 
 **A player wedged in geometry has their inventory locked, and that is why they used to spawn naked.** Vanilla `PlayerBase.OnCommandFallStart` / `ClimbStart` / `LadderStart` / `SwimStart` each take a `LOCK_FROM_SCRIPT` lock on the character's inventory and only release it in the matching `...Finish` (`playerbase.c:3964-4085`). A player stuck mid-jump never finishes the command, so the lock is still held when `4_BattleRoyalePrepare` dresses everyone — and **a locked inventory refuses `CreateAttachment` silently, returning NULL**. `LocalDestroyEntity` is not an inventory move and ignores the lock, so the lobby clothes still went away: the symptom is "stripped and never re-dressed", not "still in lobby clothes". `ClearStuckMovementState` ends the command and drains any leaked lock count before dressing, every creation result is now checked, and `ProcessPlayers` re-dresses anyone left with zero attachments after the teleport. **A ladder is the deterministic repro** — same lock, reproducible where wedging yourself in a prop is not.
@@ -521,7 +537,7 @@ Server-side only (`Scripts/Server/3_Game/Config/`, all `#ifdef SERVER`). `Battle
 | File in `$profile:Vigrid-BattleRoyale\` | Class | Registry key | Scope |
 |---|---|---|---|
 | `general_settings.json` | `BattleRoyaleGameData` | `GameData` | general match-flow settings not owned by another file below; also `admins_steamid64` (mission-locked) and the three spectate switches |
-| `lobby_settings.json` | `BattleRoyaleLobbyData` | `LobbyData` | pre-match lobby flow: ready-up, autostart, spawn selection, forced team size |
+| `lobby_settings.json` | `BattleRoyaleLobbyData` | `LobbyData` | pre-match lobby flow: ready-up, autostart, spawn selection, forced team size, lobby chickens |
 | `zone_settings.json` | `BattleRoyaleZoneData` | `ZoneData` | zone geometry, shrink timing, zone damage, shrink-notification timing, per-match radius flex, derived round timers, the derived tier ladder and the match-duration bound |
 | `voice_settings.json` | `BattleRoyaleVoiceData` | `VoiceData` | party-only voice while frozen, speaking-list panel |
 | `spawns_settings.json` | `BattleRoyaleSpawnsData` | `SpawnsData` | lobby spawn point and match spawn placement |

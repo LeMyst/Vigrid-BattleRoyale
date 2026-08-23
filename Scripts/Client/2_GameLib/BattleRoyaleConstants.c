@@ -197,6 +197,40 @@ static const int BR_AUTO_GROUP_MIN_GROUPS = 2;
 //to stall the boot.
 static const int BR_AUTO_GROUP_SELFTEST_MAX = 1000;
 
+//--- lobby chickens, lobby_settings.json `lobby_chicken*`. See BattleRoyaleChickens and
+//--- BattleRoyaleDebug.TickLobbyChickens.
+//how often the lobby asks whether a batch is due. Deliberately much finer than the interval it is
+//polling for, so the 2-4 minute jitter is expressed by a deadline rather than by the timer period,
+//and fine enough that an admin shortening the interval to seconds for a test still gets what they
+//asked for. It is one integer comparison per tick.
+//A LOOPING timer plus a deadline, rather than a one-shot re-armed from its own callback: re-arming
+//would mean replacing a `ref Timer` from inside that timer's own tick, which is the
+//"NULL pointer to instance / TimerQueue / Tick" hazard written up in 0_BattleRoyaleState.c. This
+//way the timer is created once, never replaced, and stopped by StopTimers() outside any tick.
+static const float BR_LOBBY_CHICKEN_POLL_SECONDS = 10.0;
+//the band a lobby chicken is placed in, as a fraction of the lobby radius. Off the spawn point
+//itself so nothing lands on a player's head, and comfortably INSIDE the disc - a bird placed on the
+//rim would immediately fail the in-radius test the alive count uses and stop holding its own slot.
+static const float BR_LOBBY_CHICKEN_INNER_FRACTION = 0.2;
+static const float BR_LOBBY_CHICKEN_OUTER_FRACTION = 0.8;
+//how many times one chicken re-draws its position before being given up on. Only water is rejected
+//(SurfaceIsSea / SurfaceIsPond), which is cheap and is the one placement a coastal lobby really can
+//produce; the player-sized collision test IsSafeForTeleport uses would reject spots a chicken fits
+//in fine, quite apart from being protected on the state.
+static const int BR_LOBBY_CHICKEN_PLACE_TRIES = 8;
+//floor and ceiling on the two lobby_settings.json figures an admin can get wrong in a way that
+//costs something. The floor matches the poll above, below which the interval stops meaning
+//anything; the ceiling is only there so a stray extra digit cannot fill the clearing with birds.
+static const int BR_LOBBY_CHICKEN_INTERVAL_FLOOR_SECONDS = 10;
+static const int BR_LOBBY_CHICKEN_BATCH_CEILING = 20;
+//how many chickens rain down on the winner in 8_BattleRoyaleWin. Named rather than inline; this is
+//the figure that has always shipped.
+static const int BR_WIN_CHICKEN_COUNT = 10;
+//the ring the winner's chickens land in, in metres. Tight on purpose - they are a party trick
+//aimed at one player standing still, not scenery.
+static const float BR_WIN_CHICKEN_INNER_M = 1.0;
+static const float BR_WIN_CHICKEN_OUTER_M = 5.0;
+
 //field-size weighting curves for leaderboard_settings.json `field_weight_mode`.
 static const int BR_LEADERBOARD_WEIGHT_FLAT = 0;
 static const int BR_LEADERBOARD_WEIGHT_LOG2 = 1;
