@@ -95,7 +95,10 @@ modded class MainMenu
 	//		PopulateDlcFrame();
 
 		GetDayZGame().GetBacklit().MainMenu_OnShow();
-		GetGame().GetMission().GetOnModMenuVisibilityChanged().Insert(ShowDlcFrame);
+		//--- No GetOnModMenuVisibilityChanged subscription: it only ever re-hid the DLC frame through
+		//--- ShowDlcFrame, which 1.30 marks [Obsolete("No replacement")], and our LoadMods() deletes
+		//--- the mods list whose visibility it reports. BR_OverrideUI() hides the frame once and
+		//--- nothing shows it again.
 
 		g_Game.SetLoadState(DayZLoadState.MAIN_MENU_CONTROLLER_SELECT);
 
@@ -229,16 +232,21 @@ modded class MainMenu
 		return b_MatchMakingAvailable;
 	}
 
-	override void FilterDlcs(inout array<ref ModInfo> modArray)
-	{
-		BR_OverrideUI();
-	}
+	//--- FilterDlcs and ShowDlcFrame used to be overridden here. Both are [Obsolete("No replacement")]
+	//--- in 1.30, vanilla has not called FilterDlcs since at least 1.29 (it calls FilterDlcsEx), and
+	//--- an override of an obsolete method stops compiling the day Bohemia deletes it.
 
-	// Hide the DLC frame
-	override void ShowDlcFrame(bool show)
+#ifdef ENABLE_CAROUSEL
+	//--- 1.30 moved vanilla's news carousel into RefreshNewsCarousel() and now calls it from OnShow()
+	//--- and OnDLCChange() too, not just from Init(). This menu builds its own layout, which has no
+	//--- "carousel_Frame", so m_NewsCarouselFrame is NULL here - and NewsCarousel hands that NULL to
+	//--- CreateWidgets as the parent, which puts Bohemia's news panel at the workspace ROOT, over the
+	//--- Battle Royale menu. This menu has no carousel. The guard is vanilla's own (mainmenu.c:1-3).
+	override protected void RefreshNewsCarousel()
 	{
-		super.ShowDlcFrame(false);
+		BattleRoyaleUtils.Debug("MainMenu: vanilla news carousel suppressed");
 	}
+#endif
 
 	// Disable the play button
 	override void Play()

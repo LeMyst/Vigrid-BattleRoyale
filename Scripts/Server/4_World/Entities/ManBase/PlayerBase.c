@@ -438,6 +438,11 @@ modded class PlayerBase
         if (m_AgentPool)
             m_AgentPool.RemoveAllAgents();
 
+        //--- Vanilla's ResetPlayer clears this since 1.30. This override never calls super (vanilla's
+        //--- body is #ifdef DIAG_DEVELOPER), so it has to follow by hand: with the agents gone but the
+        //--- count left standing, HasDisease() keeps answering true for a healthy player.
+        m_DiseaseCount = 0;
+
         // Damage System
         DamageZoneMap zones = new DamageZoneMap();
         DamageSystem.GetDamageZoneMap(this, zones);
@@ -470,6 +475,11 @@ modded class PlayerBase
         //remove bloody hands
         PluginLifespan moduleLifespan = PluginLifespan.Cast(GetPlugin(PluginLifespan));
         moduleLifespan.UpdateBloodyHandsVisibilityEx(this, eBloodyHandsTypes.CLEAN);
+
+        //--- 1.30's thermal bias (ThermalBiasHandler): the stat itself is reset by ResetAllStats()
+        //--- above, the temporary resistance timer is not. Same line vanilla's ResetPlayer gained.
+        if (GetThermalBiasHandler())
+            GetThermalBiasHandler().SetTemporaryResistance(0.0);
     }
 
     void SetSpawnPos(vector pos)
