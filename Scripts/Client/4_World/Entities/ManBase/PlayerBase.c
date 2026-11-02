@@ -80,7 +80,7 @@ modded class PlayerBase
      *
      *  THIS IS THE MEASUREMENT, not a convenience. Three explanations of the "F2 unstuck on a ladder
      *  leaves the player pinned in the ladder animation" bug have been wrong, two of them refuted by
-     *  a build each, and CLAUDE.md's standing instruction is to instrument before writing a fourth.
+     *  a build each, and Docs/teleports.md's standing instruction is to instrument before writing a fourth.
      *  What it distinguishes is exactly one thing: whether the LADDER COMMAND is still running after
      *  the juncture (command stuck - HumanCommandLadder.Exit is then the lead) or whether the command
      *  is already correct and only the animation graph is wedged (in which case every command-level

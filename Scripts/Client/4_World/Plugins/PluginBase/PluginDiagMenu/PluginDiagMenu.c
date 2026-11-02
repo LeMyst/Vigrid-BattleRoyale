@@ -387,7 +387,7 @@ modded class PluginDiagMenu
 #endif
 			}
 
-			//--- Teleport Trace. The measurement CLAUDE.md asks for before any more code goes near
+			//--- Teleport Trace. The measurement Docs/teleports.md asks for before any more code goes near
 			//--- the ladder / F2-unstuck bug: command id and ladder-command state, both sides, at
 			//--- juncture receipt and for a few ticks after.
 			//--- Spectate. Server-side, and the whole point of it is Kill Me: without that, reaching

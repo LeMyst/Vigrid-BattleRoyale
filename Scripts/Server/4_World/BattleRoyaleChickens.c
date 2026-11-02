@@ -16,7 +16,7 @@
  *    - The legacy CreateObject(type, pos, create_local, init_ai) form is used rather than vanilla
  *      PlayerBase.SpawnAI's CreateObjectEx(ECE_PLACE_ON_SURFACE|ECE_INITAI|ECE_EQUIP_ATTACHMENTS).
  *      Both are vanilla-sanctioned - the Santa sleigh wreck spawns its deer exactly this way - but
- *      this is the form already proven on this mod's dedicated server, and CLAUDE.md records
+ *      this is the form already proven on this mod's dedicated server, and Docs/spectating.md records
  *      CreateObjectEx hard-crashing here for a character class. If a chicken ever turns out to stand
  *      still rather than wander, the missing piece is ECE_UPDATEPATHGRAPH (which lives inside
  *      ECE_PLACE_ON_SURFACE) - that, and nothing else, is the reason to change it.

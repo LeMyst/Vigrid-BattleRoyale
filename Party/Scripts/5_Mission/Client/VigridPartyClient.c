@@ -135,7 +135,7 @@ class VigridPartyClient
         for (int i = 0; i < count; i++)
         {
             //--- Read the element into a local before the call - the container-aliasing shape
-            //--- recorded in CLAUDE.md, and this line is being touched anyway.
+            //--- recorded in Docs/party.md, and this line is being touched anyway.
             string message = rpc.pending_notifications.Get(i);
             Notify(message, VIGRID_PARTY_NOTIFY_SECONDS);
         }
