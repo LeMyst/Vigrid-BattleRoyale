@@ -35,7 +35,7 @@
  *     throughout). So a spectator cannot see anything beyond ~1 km of where they died. MOVING the
  *     corpse would fix that and needs no entity creation, which is what killed the carrier - but it
  *     drags the victim's gear across the map with it, so the loot can never be found. That is a
- *     gameplay decision, not a bug fix. See CLAUDE.md, "Architecture -> Spectating".
+ *     gameplay decision, not a bug fix. See Docs/spectating.md.
  *
  *  There is exactly ONE driver - Tick(), called from BattleRoyaleServer.Update()'s existing 10 Hz
  *  block. No Timer, no CallLaterByName, no coroutine: a driver that only touches strings cannot fire
@@ -1282,7 +1282,7 @@ class BattleRoyaleSpectators
      *
      *  So this line is kept for what it actually does - taking the entity out of the connection's
      *  selection so the client stops treating it as its own player - and the range limit is answered
-     *  by CarryAnchorBody instead. CLAUDE.md carries the full history, including why the carrier
+     *  by CarryAnchorBody instead. Docs/spectating.md carries the full history, including why the carrier
      *  body is not the answer.
      */
     protected void AttachSpectatorCamera(PlayerIdentity identity, vector position)
@@ -1670,7 +1670,7 @@ class BattleRoyaleSpectators
      *  the mission, for two reasons: CreateCharacter writes the mission's `m_player` member as a side
      *  effect, and this mod overrides EquipCharacter to apply the LOBBY loadout, which is wrong here.
      *
-     *  CLAUDE.md records two crashes around player creation and neither applies. CreateObjectEx
+     *  Docs/spectating.md records two crashes around player creation and neither applies. CreateObjectEx
      *  faulted at 0x0, and CreatePlayer faulted at 0x9 with a NULL identity - which is out of
      *  contract, its doc being "assign player entity to client" and vanilla's only null call site
      *  being missionbenchmark.c:366, a mission with no clients. This one passes a real, connected
@@ -2432,7 +2432,7 @@ class BattleRoyaleSpectators
      *  ⚠ POSITIONS ARE WHERE THEY FELL, NOT WHERE THE BODY IS NOW, and that is the correct answer
      *  rather than a shortcut. CarryCorpse moves a spectator's own corpse hundreds of metres to drag
      *  the network bubble along - but a carried body's REPLICATED position does not follow, so no
-     *  client renders it anywhere at all (measured; see the Spectating notes in CLAUDE.md). Tagging
+     *  client renders it anywhere at all (measured; see Docs/spectating.md). Tagging
      *  the server-side position would therefore put a name in empty air, hundreds of metres from any
      *  visible body, and leave the place the fight actually happened unlabelled. death_pos is where a
      *  body appears to everyone, and it is also the thing the admin is asking about.

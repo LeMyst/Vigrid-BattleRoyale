@@ -178,7 +178,7 @@ class BattleRoyaleSpectatorCamera extends Camera
         //--- first for a refutation of it. Do not repeat that: a teleporting target and a range
         //--- cutoff produce the same entity=0, and finding one is not evidence against the other.
         //---
-        //--- The carrier body is still NOT the fix - it crashed the server outright. See CLAUDE.md.
+        //--- The carrier body is still NOT the fix - it crashed the server outright. See Docs/spectating.md.
         float trace_interval = 5.0;
 #ifdef DIAG_DEVELOPER
         //--- Turned down for a deliberate range test, where 5 s gives too few samples to separate a

@@ -835,7 +835,7 @@ static const string BR_WEBHOOK_TYPE_ANNOUNCE = "Announce";
 //--- UpdateSpectatorPosition does not move it (measured both directions 2026-08-10). So a target
 //--- beyond DayZ's default 1000 m networkRangePlayers simply is not replicated, and the spectator
 //--- gets a nametag with no character. Moving the corpse moves the bubble, and needs no entity
-//--- creation, which is what killed the carrier body. See CLAUDE.md -> Spectating.
+//--- creation, which is what killed the carrier body. See Docs/spectating.md.
 //---
 //--- Compile-time on purpose: these are engine-behaviour tuning, not server-operator policy, and a
 //--- wrong value here degrades quietly rather than visibly. Nothing reads them unless spectate_enabled
