@@ -35,6 +35,10 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 			autoLockWebhook.LockServer();
 		}
 
+		//--- Native lock through the dzhooks sentinel file - a no-op without the hook. Cleared again
+		//--- by BattleRoyaleServer.Init on the next boot, never at match end: see BattleRoyaleNativeLock.
+		BattleRoyaleNativeLock.Set( true );
+
         //--- Two whole message keys rather than one key plus the word as %2. The word used to be
         //--- built here in English and substituted into a LOCALISED sentence, so every non-English
         //--- client read "Матч начнется через 30 seconds !". A word cannot be localised in isolation
