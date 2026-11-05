@@ -21,6 +21,36 @@
  *  deleting all the loot among them inside one frame is a multi-minute freeze the engine may well
  *  decide is a hang. Update() processes ITEMS_PER_FRAME config indices per frame instead.
  *
+ *  ⚠️ A RETURNED BOX IS NOT NECESSARILY A REAL BOX, WHICH IS WHY EVERY ROW CARRIES `trusted`.
+ *  Measured 2026-08-17 with a dedicated probe, after item_heights.csv was found to report
+ *  Izh43Shotgun as 2.785 m tall (its siblings are ~0.19) and a consuming tool therefore called it
+ *  unspawnable. Three things were established, and two plausible theories were killed:
+ *
+ *    1. IT IS NOT A TIMING ARTEFACT. Subjects were created once, kept alive and re-measured on a
+ *       widening schedule - 12 samples over 480 frames / ~30 s. EVERY subject gave exactly ONE
+ *       distinct reading, suspects and controls alike. So "read it a frame later" cannot help, and
+ *       neither can "run it twice and diff": the wrong answers are perfectly reproducible.
+ *    2. IT IS NOT THE SPAWN FLAGS. Five variants - the current mask, vanilla's Script Console mask
+ *       (+ECE_TRACE), no physics at all, +ECE_SETUP, and a second instance created after the first -
+ *       were bit-identical for every class. The box cannot be recovered by creating it differently.
+ *    3. ClippingInfo IS NOT A USABLE FALLBACK. On known-good CONTROLS it over-reports by ~5x: AKM
+ *       clip_y 0.986 against a true 0.169, Izh18Shotgun 0.87 against 0.191. So the old build's
+ *       clipping rows were not "imprecise", they were wrong - including the ones that looked
+ *       plausible (Derringer 0.299, GP25 0.294). It is now recorded in its own clip_y column for
+ *       diagnostics and NEVER used as size_*.
+ *
+ *  Which rows are affected: every CfgWeapons class that fell back to clipping is a non-standard
+ *  muzzle weapon - Izh43Shotgun and SawedoffIzh43Shotgun and all three Derringers (double barrels),
+ *  GP25 and M203 (grenade launchers), RPG7, Crossbow, DartGun, Shockpistol. Those are exactly the
+ *  weapons whose InitMuzzleArray vanilla expects to be overridden, and Izh43Shotgun was caught
+ *  throwing WeaponStableState.ValidateMuzzleArray from inside Weapon_Base's constructor during
+ *  CreateObjectEx. Whether the throw is what prevents the collision geometry being attached, or the
+ *  model simply has none, was NOT established - and the fix does not depend on it, because either
+ *  way the box is unobtainable and the only honest answer is to say so.
+ *
+ *  Separately, GetCollisionBox can return TRUE and still hand back a placeholder: Groza
+ *  (2 / 2.192 / 2.001) and P1 (2.034 / 0.139 / 2.001). Hence IsSuspectAxis.
+ *
  *  RESUMABLE, BECAUSE CreateObjectEx CAN HARD-CRASH THE CLIENT AND THERE IS NO try/catch.
  *  Measured 2026-08-13: ItemOptics (scope=1, no model of its own - it inherits model="" from
  *  Inventory_Base) faults the engine with "Access violation. Illegal read ... at 0x31c" inside
@@ -46,11 +76,18 @@ class DumpItemHeights
     //--- House / HouseNoDestruct (buildings) and Man, which are not what loot point heights are for.
     private static const string KIND_FILTER = "Inventory_Base";
 
+    //--- Character heads pass the Inventory_Base test but are not loot, never appear in types.xml,
+    //--- and measure the whole character rig (~2.17 m) because that is what their model is.
+    private static const string EXCLUDE_HEADS = "Head";
+
     //--- Vanilla's own fallback for a model with no collision geometry - see hologram.c
-    //--- GetProjectionCollisionBox(). These are the authored placement bounds and are a great deal
-    //--- closer to the truth than ClippingInfo's render bounds.
+    //--- GetProjectionCollisionBox(). These are the authored placement bounds.
     private static const string MEMPOINT_MIN = "box_placing_min";
     private static const string MEMPOINT_MAX = "box_placing_max";
+
+    //--- An axis this close to 2.0 is a placeholder, not geometry. See the header note.
+    private static const float SUSPECT_AXIS   = 2.0;
+    private static const float SUSPECT_EPSILON = 0.01;
 
     private static const int   ITEMS_PER_FRAME = 25;
 
@@ -75,6 +112,11 @@ class DumpItemHeights
     private int   m_SkippedScope;
     private int   m_SkippedKind;
     private int   m_SkippedCreate;
+
+    private int   m_Trusted;
+    private int   m_NoCollision;
+    private int   m_Suspect2m;
+    private int   m_SuspectZero;
 
     void ~DumpItemHeights()
     {
@@ -144,7 +186,7 @@ class DumpItemHeights
         if (resuming)
             NoteCrashedClass(resume_tree, resume_index);
         else
-            FPrintln(m_File, "classname,tree,scope,size_x,size_y,size_z,min_y,max_y,radius,source");
+            FPrintln(m_File, "classname,tree,scope,trusted,size_x,size_y,size_z,min_y,max_y,clip_y,radius,source");
 
         if (m_TreeIndex >= m_Trees.Count())
         {
@@ -245,7 +287,22 @@ class DumpItemHeights
         if (tree != CFG_VEHICLES)
             return true;
 
-        return GetGame().IsKindOf(classname, KIND_FILTER);
+        if (!GetGame().IsKindOf(classname, KIND_FILTER))
+            return false;
+
+        if (GetGame().IsKindOf(classname, EXCLUDE_HEADS))
+            return false;
+
+        return true;
+    }
+
+    //! An axis within a hair of exactly 2.0 is an engine placeholder rather than measured geometry -
+    //! real models do not land on 2.000. Observed on Groza (2 / 2.192 / 2.001) and P1
+    //! (2.034 / 0.139 / 2.001), both of which returned TRUE from GetCollisionBox.
+    private bool IsSuspectAxis(float value)
+    {
+        float delta = value - SUSPECT_AXIS;
+        return Math.AbsFloat(delta) < SUSPECT_EPSILON;
     }
 
     private void MeasureOne(int tree_index, int index)
@@ -305,24 +362,38 @@ class DumpItemHeights
 
         vector min_max[2];
         string source = "";
+        bool trusted = false;
 
         if (obj.GetCollisionBox(min_max))
         {
             source = "collision";
+            trusted = true;
         }
         else if (obj.MemoryPointExists(MEMPOINT_MIN) && obj.MemoryPointExists(MEMPOINT_MAX))
         {
             min_max[0] = obj.GetMemoryPointPos(MEMPOINT_MIN);
             min_max[1] = obj.GetMemoryPointPos(MEMPOINT_MAX);
             source = "memorypoint";
+            trusted = true;
         }
         else
         {
-            //--- ClippingInfo is proto float and returns a radius, so it has no failure signal. It
-            //--- can never be the reason a row is skipped - it is the last resort by construction.
-            obj.ClippingInfo(min_max);
-            source = "clipping";
+            //--- NO usable box. ClippingInfo is NOT used as a fallback value any more: measured on
+            //--- known-good controls it over-reports by roughly 5x (AKM 0.986 against a true 0.169,
+            //--- Izh18Shotgun 0.87 against 0.191), so publishing it produces a number that looks
+            //--- like a height, is believed, and is wrong. Zeros plus trusted=0 cannot masquerade.
+            min_max[0] = vector.Zero;
+            min_max[1] = vector.Zero;
+            source = "nocollision";
+            trusted = false;
         }
+
+        //--- Kept for diagnostics only, never as the published size. This is what the old build was
+        //--- writing into size_* for every fallback row.
+        vector clip_min_max[2];
+        obj.ClippingInfo(clip_min_max);
+        vector clip_size = clip_min_max[1] - clip_min_max[0];
+        float clip_y = clip_size[1];
 
         float radius = obj.GetCollisionRadius();
 
@@ -332,11 +403,40 @@ class DumpItemHeights
 
         GetGame().ObjectDelete(obj);
 
-        WriteRow(classname, tree, scope, size, box_min, box_max, radius, source);
+        float size_x = size[0];
+        float size_y = size[1];
+        float size_z = size[2];
+
+        //--- A returned box still has to survive inspection. GetCollisionBox returning TRUE is not
+        //--- sufficient - see IsSuspectAxis.
+        if (trusted)
+        {
+            if (IsSuspectAxis(size_x) || IsSuspectAxis(size_y) || IsSuspectAxis(size_z))
+            {
+                trusted = false;
+                source = "suspect2m";
+                m_Suspect2m++;
+            }
+            else if (size_y <= 0)
+            {
+                trusted = false;
+                source = "zero";
+                m_SuspectZero++;
+            }
+        }
+        else
+        {
+            m_NoCollision++;
+        }
+
+        if (trusted)
+            m_Trusted++;
+
+        WriteRow(classname, tree, scope, trusted, size, box_min, box_max, clip_y, radius, source);
         m_Dumped++;
     }
 
-    private void WriteRow(string classname, string tree, int scope, vector size, vector box_min, vector box_max, float radius, string source)
+    private void WriteRow(string classname, string tree, int scope, bool trusted, vector size, vector box_min, vector box_max, float clip_y, float radius, string source)
     {
         //--- Every component pulled onto its own statement before it reaches a call - EnfusionScript
         //--- has been measured to read the wrong value when an indexed read shares an expression
@@ -347,18 +447,26 @@ class DumpItemHeights
         float min_y  = box_min[1];
         float max_y  = box_max[1];
 
-        //--- Ten fields against string.Format's %9 ceiling, so the row is built in two halves.
-        string head = string.Format("%1,%2,%3,%4,%5", classname, tree, scope, Fmt(size_x), Fmt(size_y));
-        string tail = string.Format("%1,%2,%3,%4,%5", Fmt(size_z), Fmt(min_y), Fmt(max_y), Fmt(radius), source);
+        int trusted_flag = 0;
+        if (trusted)
+            trusted_flag = 1;
 
-        FPrintln(m_File, head + "," + tail);
+        //--- Twelve fields against string.Format's %9 ceiling, so the row is built in three chunks.
+        string head = string.Format("%1,%2,%3,%4", classname, tree, scope, trusted_flag);
+        string body = string.Format("%1,%2,%3,%4", Fmt(size_x), Fmt(size_y), Fmt(size_z), Fmt(min_y));
+        string tail = string.Format("%1,%2,%3,%4", Fmt(max_y), Fmt(clip_y), Fmt(radius), source);
+
+        FPrintln(m_File, head + "," + body + "," + tail);
     }
 
     private void Finish()
     {
         string summary = string.Format("# dumped=%1 skipped_scope=%2 skipped_kind=%3 skipped_create=%4", m_Dumped, m_SkippedScope, m_SkippedKind, m_SkippedCreate);
+        string trust = string.Format("# trusted=%1 nocollision=%2 suspect2m=%3 zero=%4", m_Trusted, m_NoCollision, m_Suspect2m, m_SuspectZero);
 
         FPrintln(m_File, summary);
+        FPrintln(m_File, trust);
+        Print("[DumpItemHeights] " + trust);
         Close();
 
         //--- Removing the breadcrumb is what marks the dump complete, so the next launch skips.
