@@ -112,7 +112,7 @@ if errorlevel 1 goto ABORT
 
 echo Packaging %modName% PBOS
 
-cd /D "%workDrive%%prefixLinkRoot%\"
+cd /D "%srcRoot%\"
 
 set /a configcpps=0
 
@@ -157,11 +157,11 @@ for /F "usebackq delims=" %%D in ( "%workDrive%Temp\%modName%-configpaths-unfilt
 echo %date% %time% ...checked config paths
 
 IF !configcpps!==0 (
-	call :banner %date% %time% ERROR: Found no config.cpp files for %modName% in "%workDrive%%prefixLinkRoot%"
+	call :banner %date% %time% ERROR: Found no config.cpp files for %modName% in "%srcRoot%"
 	GOTO ABORT
 )
 
-echo %date% %time% Found !configcpps! config.cpp files for %modName% in "%workDrive%%prefixLinkRoot%"
+echo %date% %time% Found !configcpps! config.cpp files for %modName% in "%srcRoot%"
 
 GOTO BUILD
 
@@ -210,19 +210,21 @@ if not exist "%workDrive%DZ\vehicles\proxies" mkdir "%workDrive%DZ\vehicles\prox
 if not exist "%workDrive%DZ\vehicles\proxies\bus_cargo.p3d" echo.>"%workDrive%DZ\vehicles\proxies\bus_cargo.p3d"
 if not exist "%workDrive%DZ\vehicles\proxies\bus_driver.p3d" echo.>"%workDrive%DZ\vehicles\proxies\bus_driver.p3d"
 
+REM relDir is the PBO folder relative to the source checkout, e.g. Scripts\Client. It is derived
+REM by cutting srcRoot off the front of the path. It used to be derived by deleting every
+REM "\PrefixLinkRoot\" from the path, which only worked while sources were read through the
+REM P: junction: a worktree path holds that name for the primary checkout, followed by
+REM .claude\worktrees\NAME, so the result would have kept the worktree folders.
 for /F "usebackq delims=" %%D in ("%workDrive%Temp\%modName%-configpaths.list") do (
 
-	set folderToBuild=%%~pD
-	
-	set pboName=%%~pD
-	IF !pboName:~-1!==\ SET pboName=!pboName:~0,-1!
-	set pboName=!pboName:\%prefixLinkRoot%\=!
-	set pboName=!pboName:\=_!
+	set folderToBuild=%%~dpD
 
-	set prefixName=%%~pD
-	IF !prefixName:~-1!==\ SET prefixName=!prefixName:~0,-1!
-	set prefixName=!prefixName:\%prefixLinkRoot%\=!
-	set prefixName=%prefixLinkRoot%\!prefixName!
+	set "relDir=%%~dpD"
+	set "relDir=!relDir:%srcRoot%\=!"
+	IF "!relDir:~-1!"=="\" SET "relDir=!relDir:~0,-1!"
+
+	set "pboName=!relDir:\=_!"
+	set "prefixName=%prefixLinkRoot%\!relDir!"
 
 	set currentFolder=
 	for %%I in ( !folderToBuild!\config.cpp\.. ) do (
@@ -281,6 +283,10 @@ goto EXIT
 setlocal enableextensions enabledelayedexpansion
 
 set "prefixName=%~1"
+REM Where this PBO's sources live: the folder under %srcRoot% that prefixName names, minus
+REM its leading "<PrefixLinkRoot>\". Every source read below goes through it - never through
+REM the P: junction - while the mirror stays at %workDrive%Temp\%prefixName%.
+set "srcDir=%srcRoot%\!prefixName:*\=!"
 set modName=%2
 set toUpdate=0
 
@@ -293,12 +299,12 @@ IF "%prefixName%"=="%prefixLinkRoot%\languagecore\Core" (
 )
 
 set changes=0
-echo %date% %time% Mirroring "%workDrive%%prefixName%" to "%workDrive%Temp\%prefixName%"...
-robocopy "%workDrive%%prefixName%" "%workDrive%Temp\%prefixName%" /MIR /XF *.bak /XF *.png /XF *.psd /XF *.tif /XF *.log /XD source /XF *.tga /XF *.bat /XF *.cmd /XF *.pbo /XF *.bisign /XF *.blend? /NDL /NP /NJH /NJS
+echo %date% %time% Mirroring "%srcDir%" to "%workDrive%Temp\%prefixName%"...
+robocopy "%srcDir%" "%workDrive%Temp\%prefixName%" /MIR /XF *.bak /XF *.png /XF *.psd /XF *.tif /XF *.log /XD source /XF *.tga /XF *.bat /XF *.cmd /XF *.pbo /XF *.bisign /XF *.blend? /NDL /NP /NJH /NJS
 IF ERRORLEVEL 8 (
 	REM Copy error
 
-	call :banner %date% %time% RoboCopy could not mirror "%workDrive%%prefixName%" to "%workDrive%Temp\%prefixName%"
+	call :banner %date% %time% RoboCopy could not mirror "%srcDir%" to "%workDrive%Temp\%prefixName%"
 
 	endlocal
 	exit /B 2
@@ -368,7 +374,7 @@ IF "%toUpdate%" NEQ "0" (
 	)
 	REM Restore config.cpp
 	echo !date! !time! Restoring "%workDrive%Temp\%prefixName%\config.cpp"
-	copy "%workDrive%%prefixName%\config.cpp" "%workDrive%Temp\%prefixName%\config.cpp"
+	copy "%srcDir%\config.cpp" "%workDrive%Temp\%prefixName%\config.cpp"
 	endlocal
 	exit /B 1
 )
@@ -383,6 +389,10 @@ setlocal enableextensions enabledelayedexpansion
 set "currentFolder=%~1"
 set "pboName=%~2"
 set "prefixName=%~3"
+REM Where this PBO's sources live: the folder under %srcRoot% that prefixName names, minus
+REM its leading "<PrefixLinkRoot>\". Every source read below goes through it - never through
+REM the P: junction - while the mirror stays at %workDrive%Temp\%prefixName%.
+set "srcDir=%srcRoot%\!prefixName:*\=!"
 set modName=%4
 set filesChanged=%5
 
@@ -428,8 +438,8 @@ IF %binarizeCache%==1 (
 
 set "pboPrefix=!prefixName!"
 
-if exist "%workDrive%%prefixName%\PREFIX.txt" (
-	set /p pboPrefix=<"%workDrive%%prefixName%\PREFIX.txt"
+if exist "%srcDir%\PREFIX.txt" (
+	set /p pboPrefix=<"%srcDir%\PREFIX.txt"
 ) else (
 	REM Special case for PBOs that should be loaded before all other mods
 	IF "!pboName:~0,2!"=="0_" set "pboPrefix=!pboPrefix:%prefixLinkRoot%\0_=0_%prefixLinkRoot%_!"
@@ -466,14 +476,14 @@ IF EXIST "%workDrive%Temp\%prefixName%\config.bin" (
 
 if %binarizeCache%==1 (
 	REM This is necessary to make skipping binarization in case of no changes work
-	echo %date% %time% Restoring any original *.p3d and *.wrp from "%workDrive%%prefixName%" to "%workDrive%Temp\%prefixName%"...
-	robocopy "%workDrive%%prefixName%" "%workDrive%Temp\%prefixName%" *.p3d *.wrp /S /NDL /NP /NJH /NJS
+	echo %date% %time% Restoring any original *.p3d and *.wrp from "%srcDir%" to "%workDrive%Temp\%prefixName%"...
+	robocopy "%srcDir%" "%workDrive%Temp\%prefixName%" *.p3d *.wrp /S /NDL /NP /NJH /NJS
 )
 
-IF EXIST "%workDrive%%prefixName%\stringtable.csv" (
+IF EXIST "%srcDir%\stringtable.csv" (
 	REM This is necessary to make skipping packing in case of no changes work
-	echo %date% %time% Restoring original stringtable.csv from "%workDrive%%prefixName%" to "%workDrive%Temp\%prefixName%"...
-	copy /Y "%workDrive%%prefixName%\stringtable.csv" "%workDrive%Temp\%prefixName%\stringtable.csv"
+	echo %date% %time% Restoring original stringtable.csv from "%srcDir%" to "%workDrive%Temp\%prefixName%"...
+	copy /Y "%srcDir%\stringtable.csv" "%workDrive%Temp\%prefixName%\stringtable.csv"
 )
 
 IF %failed%==1 (
