@@ -223,6 +223,7 @@ The tree was swept clean in #76 / #309 — **120 removals across 29 files** (110
 | [`Docs/autorun.md`](Docs/autorun.md) | `Extra/AutoRun/` |
 | [`Docs/map.md`](Docs/map.md) | `Extra/Map/`, `Extra/MapSatellite/`, and every `VigridMapAPI` call |
 | [`Docs/earplugs.md`](Docs/earplugs.md) | `Extra/EarPlugs/` |
+| [`Docs/native-hooks.md`](Docs/native-hooks.md) | the optional dzhooks native hook library, `BattleRoyaleNativeLock`, `server_lock.txt`, `write_lock_file` |
 
 What stays in this file is what nearly every change needs: build and test, the EnfusionScript rules, the script-module split, the match state machine, networking, settings, localization and the key map. When a new subsystem note outgrows a few paragraphs here, give it a file in `Docs/` and a row above.
 

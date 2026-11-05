@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
-	int version = 4;  // Config version
+	int version = 5;  // Config version
 
 	// Enable Vigrid API support
 	bool enable_vigrid_api = false;
@@ -31,6 +31,13 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	string autolock_ip = "";  // Server RCon IP (mandatory if use_autolock is true)
 	int autolock_port = 2305;  // Server RCon Port (mandatory if use_autolock is true)
 	string autolock_rcon_password = "";  // Server RCon Password (mandatory if use_autolock is true)
+
+	// Write $profile:Vigrid-BattleRoyale\server_lock.txt: "1" when the match countdown starts, "0" at boot.
+	// Nothing reads it unless the server runs the dzhooks native hook library with its scriptlock or
+	// adminbypass module pointed at that file (DZHOOK_LOCKFILE / DZHOOK_ADMINBYPASS_FILE), in which case
+	// the server locks itself natively - no RCon, no remote API. Harmless without the hook.
+	// See Docs/native-hooks.md.
+	bool write_lock_file = true;
 
 	// Look the Steam persona name up for players who never set a name in the launcher.
 	// PlayerIdentity cannot be renamed, so this only changes what the mod itself displays
@@ -122,6 +129,14 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 			// there is nothing to refill here. The bump exists only so the Save() below writes the
 			// new key into server_settings.json, where an admin can find it.
 			version = 4;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 5)
+		{
+			// write_lock_file was introduced in v5. A scalar, so its initialiser survives deserialization;
+			// the bump only makes the Save() below write the new key where an admin can find it.
+			version = 5;
 			Save();  // Save the upgraded config
 		}
 	}

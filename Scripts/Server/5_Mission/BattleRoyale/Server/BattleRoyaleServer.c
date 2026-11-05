@@ -104,6 +104,11 @@ class BattleRoyaleServer: BattleRoyaleBase
 			serverWebhook.UnlockServer();
 		}
 
+		//--- The previous match left '1' in the dzhooks sentinel file (it locks at the countdown and
+		//--- exits locked), so this is not optional once the hook is watching it: skip it and the
+		//--- server stays locked forever. A no-op without the hook. See BattleRoyaleNativeLock.
+		BattleRoyaleNativeLock.Set( false );
+
 		if ( m_ServerData.enable_vigrid_api )
 		{
 			BattleRoyaleUtils.Trace("Server password: " + m_ServerData.server_password);
