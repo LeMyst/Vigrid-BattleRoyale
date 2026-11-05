@@ -39,10 +39,16 @@ class BattleRoyaleNativeLock
 		//--- assumption worth one no-op call not to depend on.
 		MakeDirectory(BATTLEROYALE_SETTINGS_FOLDER);
 
+		//--- Both lines below go through Print, not BattleRoyaleUtils. A retail server runs at
+		//--- BATTLEROYALE_LOG_LEVEL 0, which filters Warn and Info alike, and the only level it
+		//--- keeps is Error, which is fatal (Error2 unwinds). So the hook's whole state change
+		//--- would be invisible on exactly the servers it runs on - measured 2026-11-05: no
+		//--- [NativeLock] line in a retail script_*.log while the hook logged every transition.
+		//--- Two lines per match; the open failure is the one an operator most needs to see.
 		FileHandle file = OpenFile(GetPath(), FileMode.WRITE);
 		if ( file == 0 )
 		{
-			BattleRoyaleUtils.Warn("[NativeLock] cannot open " + GetPath() + " for writing");
+			Print("[DayZ-BattleRoyale][NativeLock] cannot open " + GetPath() + " for writing");
 			return;
 		}
 
@@ -53,7 +59,7 @@ class BattleRoyaleNativeLock
 		FPrint(file, value);
 		CloseFile(file);
 
-		BattleRoyaleUtils.Info("[NativeLock] wrote " + value + " to " + GetPath());
+		Print("[DayZ-BattleRoyale][NativeLock] wrote " + value + " to " + GetPath());
 	}
 }
 #endif
