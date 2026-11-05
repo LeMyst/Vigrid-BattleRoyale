@@ -18,12 +18,24 @@ rename "%pboNamesFoldername%\Addons" "addons"
 
 if /i not "%CopyExtraPBOs%"=="1" goto :skip
 
-for %%F in ("%~dp0..\ExtraPBOs\*.pbo" "%~dp0..\ExtraPBOs\*.bisign") do (
+REM ExtraPBOs\ is gitignored apart from its README, so a git worktree's copy holds no PBO at all.
+REM Read the primary checkout's then (brPrimaryWorkbench, from _Config.bat) - otherwise a worktree
+REM build silently ships a different mod from a primary build, the very thing CopyExtraPBOs=1 is
+REM meant to rule out.
+set "extraDir=%~dp0..\ExtraPBOs"
+if exist "%extraDir%\*.pbo" goto EXTRADIR_FOUND
+if not defined brPrimaryWorkbench goto EXTRADIR_FOUND
+if not exist "%brPrimaryWorkbench%\ExtraPBOs\*.pbo" goto EXTRADIR_FOUND
+set "extraDir=%brPrimaryWorkbench%\ExtraPBOs"
+echo %date% %time% Using the primary checkout's "%extraDir%" - this checkout has no extra PBOs.
+:EXTRADIR_FOUND
+
+for %%F in ("%extraDir%\*.pbo" "%extraDir%\*.bisign") do (
 	echo !date! !time! Copying extra "%%~nxF"
 	copy "%%~F" "%pboNamesFoldername%\addons\"
 )
 
-for %%F in ("%~dp0..\ExtraPBOs\*.bikey") do (
+for %%F in ("%extraDir%\*.bikey") do (
 	echo !date! !time! Copying extra "%%~nxF"
 	copy "%%~F" "%pboNamesFoldername%\keys\"
 )

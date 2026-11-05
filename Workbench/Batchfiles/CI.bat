@@ -46,7 +46,7 @@ if not exist "P:\" (
 call "%~dp0_Config.bat" CI
 if errorlevel 1 exit /b 1
 
-pushd "%workDrive%%prefixLinkRoot%\"
+pushd "%srcRoot%\"
 
 echo %date% %time% Getting config paths...
 call "%~dp0_EnumPaths.bat" config.cpp "%workDrive%Temp\%PrefixLinkRoot%-ALL-configpaths-unfiltered.list"
@@ -68,7 +68,7 @@ if exist "%~dp0..\Logs\*.success" del "%~dp0..\Logs\*.success"
 
 REM Build + pack mod
 if not exist CI_Build.bat (
-	echo ERROR: %cd%\CI_Build.bat does not exist.>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
+	echo ERROR: %cd%\CI_Build.bat does not exist.>>"%~dp0..\Logs\Build.log"
 	goto end
 )
 echo !date! !time! CI_Build.bat is starting
@@ -92,18 +92,18 @@ if exist "%~dp0..\Logs\Build.failure" (
 )
 if exist "%~dp0..\Logs\Build.failure" (
     echo %success%
-	echo /////////////////////////////////////////////////////////////>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
-	echo %date% %time% Something went wrong, check logs. Failed builds:>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
-	if exist Build.failure echo %%a>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
-	echo /////////////////////////////////////////////////////////////>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
+	echo /////////////////////////////////////////////////////////////>>"%~dp0..\Logs\Build.log"
+	echo %date% %time% Something went wrong, check logs. Failed builds:>>"%~dp0..\Logs\Build.log"
+	if exist Build.failure echo %%a>>"%~dp0..\Logs\Build.log"
+	echo /////////////////////////////////////////////////////////////>>"%~dp0..\Logs\Build.log"
 ) else (
 	if not exist "%~dp0..\Logs\Build.success" (
 		set success=0
-		echo %date% %time% ERROR: Building Mod did not finish successfully.>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
+		echo %date% %time% ERROR: Building Mod did not finish successfully.>>"%~dp0..\Logs\Build.log"
 	)
 )
-if "!success!"=="1" echo %date% %time% Successfully packaged all mods.>>"%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
-type "%workDrive%%prefixLinkRoot%\Workbench\Logs\Build.log"
+if "!success!"=="1" echo %date% %time% Successfully packaged all mods.>>"%~dp0..\Logs\Build.log"
+type "%~dp0..\Logs\Build.log"
 if "!success!" NEQ "1" goto abort
 
 endlocal
