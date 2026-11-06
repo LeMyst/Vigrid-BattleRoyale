@@ -2,18 +2,19 @@
 
 > Split out of the root [`CLAUDE.md`](../CLAUDE.md), which carries the build, test and EnfusionScript rules every change needs - read that first. A correction made here must also reach the memories and skills that repeat the rule (see *Workflow* in `CLAUDE.md`).
 
-[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it, and nothing here is `#ifdef`-guarded, because nothing here names a symbol the hook provides.
+[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. The one symbol it names from the hook, the `serverlock` natives, is behind `#ifdef DZHOOK_SERVERLOCK`, a define the hook injects itself (see *The `serverlock` natives* below).
 
 ## Which modules the mod uses
 
-Of the composer's ten modules, **one integration is the mod's job** and the rest are purely operator-side:
+Of the composer's eleven modules, **the lock is the mod's job** and the rest are purely operator-side:
 
 | Module | Mod involvement |
 |---|---|
 | `scriptlock` | **Driven by the mod** through the sentinel file below. Locks like `#lock`, so it refuses everyone, admins included. |
 | `adminbypass` (opt-in) | **Driven by the mod** through the same file. While it is locked only `whitelist.txt` IDs can connect, and nobody already in game is kicked. |
-| `lockdrain` | None. It changes what `#lock` / `LockSession` does; the sentinel-file modules set the lock bit directly and do not drain. |
-| `serverlock` (opt-in) | Not used yet. It needs the `DZHook_API` companion mod and a `proto native`, see *Not done* below. |
+| `serverlock` (opt-in) | **Driven by the mod** through `ServerLock()` / `ServerUnlock()`, at the same two moments as the file. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
+| `scriptdefine` | Needed by `serverlock`: it is what makes `DZHOOK_SERVERLOCK` visible to the mod's scripts. |
+| `lockdrain` | None. It changes what `#lock` / `LockSession` does. `scriptlock` and `serverlock` set the lock bit directly and `adminbypass` uses the whitelist, so none of them drains. |
 | `highpriority`, `reservedslots`, `userlistreload`, `maxplayers`, `reconnectpriority` | None. These are queue and slot policy driven by the operator's own `.txt` files. |
 | `ce_reset` (opt-in) | Not used, see *Not done* below. |
 
@@ -74,7 +75,7 @@ The late-join kick stays in place regardless. With a lock it is only the backsto
 
 ### Versions and the local rig
 
-The hook's signatures and offsets are pinned to one `DayZServer` build (**1.30.164289** at the time of writing). Run the package's `check_version.py` after every DayZ update; a stale offset crashes the server. **They target the retail exe, not `DayZDiag_x64.exe`**, so only `Release.bat LaunchServer.bat` can exercise them locally. On the diag rig the file is still written, which is enough to test the mod's half: check `[NativeLock] wrote 0` / `wrote 1` in the server `script_*.log` and the file contents. Those two lines go through a plain `Print`, so they show on retail too. Through `BattleRoyaleUtils` they did not: the retail log level is 0, which filters `Warn` and `Info` alike, and the only level it keeps, `Error`, is fatal.
+The hook's signatures and offsets are pinned to one `DayZServer` build (**1.30.164289** at the time of writing). Run the package's `check_version.py` after every DayZ update; a stale offset crashes the server. **They were written against the retail exe.** Since serverkit `9c40081`, `serverlock`, `scriptdefine` and `ce_reset` resolve on `DayZDiag_x64.exe` as server too (measured 2026-11-06). `scriptlock` and `adminbypass` were only ever tested on retail, so `Release.bat LaunchServer.bat` stays the way to exercise those. On the diag rig the file is still written, which is enough to test the mod's half: check `[NativeLock] wrote 0` / `wrote 1` in the server `script_*.log`, and the file contents. Those lines, and `[NativeLock] ServerLock() called` / `ServerUnlock() called`, go through a plain `Print`, so they show on retail too. Through `BattleRoyaleUtils` they did not: the retail log level is 0, which filters `Warn` and `Info` alike, and the only level it keeps, `Error`, is fatal.
 
 **Testing a hook needs a person at the client, and three things about the retail client trip a test:**
 
@@ -82,7 +83,34 @@ The hook's signatures and offsets are pinned to one `DayZServer` build (**1.30.1
 - **Start the client through `DayZ_BE.exe`, not `DayZ_x64.exe`.** The local `serverDZ.cfg` runs server-side BattlEye, so a client without it is kicked with `0x000400F0` 10-20 s after joining. `BattlEye = 0;` appended at the end of the file, after `class Missions`, was ignored: the server still advertised the `battleye` tag.
 - **Test the hook by writing the byte by hand**, not through a match. The countdown's write is one line, and a full match needs several retail clients, none of which can autoconnect.
 
+## The `serverlock` natives
+
+`BattleRoyaleNativeLock.SetNative` calls **`ServerLock()` when the countdown starts and `ServerUnlock()` at boot**, the same two moments as the file. It is the file's alternative to `scriptlock`, with the same effect (lock bit `0x04` of the server params, refusing everyone) and three differences:
+
+- **No file and no path to configure.** The operator sets `DZHOOK_SERVERLOCK=1` and nothing else.
+- **The bit dies with the process.** A crash mid-match cannot leave the next boot locked, whatever `write_lock_file` says.
+- **It is synchronous.** It locks inside the countdown's `Activate`, not on the next 0.5 s poll.
+
+```bat
+REM Windows - a DLL built with serverlock AND scriptdefine, then before launching:
+set DZHOOK_SERVERLOCK=1
+```
+
+**How the guard works.** The natives are declared at file scope in `BattleRoyaleNativeLock.c`, under `#ifdef DZHOOK_SERVERLOCK`, and called only under the same guard. An unbound `proto native` is a compile failure, so the two must never drift apart. The define comes from the hook: `serverlock` registers it when it installs, and `scriptdefine` injects it into every script module through `enf::CParser::AddStaticDef`, whatever the `-mod=` order. No companion mod is involved; there used to be one, `DZHook_API`, and it is gone. Without the DLL, or with `DZHOOK_SERVERLOCK` unset, the define is absent and both the declarations and the calls compile out.
+
+⚠️ **Do not combine it with `adminbypass`.** `adminbypass` locks by switching the whitelist on and leaves bit `0x04` clear. `ServerLock()` sets that bit, and the engine tests it in `ctrlReceive` *before* the whitelist, so the admins `adminbypass` exists to let in are refused. For a server whose admins join mid-match, use `adminbypass` with the file and leave `DZHOOK_SERVERLOCK` unset. With `scriptlock` it is merely redundant: both set the same bit.
+
+`write_lock_file` does not gate the natives. That switch is about the file, and the natives already require the operator's explicit `DZHOOK_SERVERLOCK=1`.
+
+**Verified** on retail `DayZServer_x64.exe` 1.30.164.289 and on `DayZDiag_x64.exe` as server, with serverkit `9c40081`:
+- **2026-11-06, from a probe build:** `DZHOOK_SERVERLOCK` reached both `4_World` and `5_Mission`, the file-scope declarations compiled and bound, and the hook logged `[serverlock] ServerLock() -> locked` / `ServerUnlock() -> open`.
+- **This integration's own boot path:** see the PR that added it.
+
 ## Not done, and why
 
-- **`serverlock`'s `ServerLock()` native.** On top of the lock it drains the login queue, if `lockdrain` is also loaded. It needs the `DZHook_API` companion mod, and a `proto native` that nothing binds is a compile failure. So it has to be guarded, and that companion's own `#define DZHOOK_SERVERLOCK` is a *script* define, whose visibility across script modules and mod load order is unproven. `#ifdef DZHook_API` (the auto-defined CfgMods class name) is visible everywhere but does not prove `serverlock` itself was compiled in. The queue drain also matters little here: the lock lands while the lobby is full, and anyone queued at that point is refused on their next attempt anyway.
-- **`ce_reset`'s `CE_ResetLoot()` / `CE_Cleanup*()`.** These would let a match restart in-process instead of through `RequestExit`. That means resetting every server singleton (states, zones, ledger, parties, spectators, chickens, name service) to save a restart that [`boot-time.md`](boot-time.md) already measures as cheap once warm. The module is also flagged experimental and must run on an empty server.
+- **`ce_reset`'s `CE_ResetLoot()` / `CE_Cleanup*()`.** The idea was to restart a match in-process instead of through `RequestExit`, and it is **dead**, not deferred. Five instrumented builds of the hook (serverkit issue #16, retail and DayZDiag, November 2026) established three things:
+  - **There is no instant wipe.** `TimeShift` expires every lifetime, but CE's own throttled loop does the deleting, which would take about an hour for the whole map. No budget or forced drain changes that.
+  - **There is no reachable loot respawn.** No "Loot" event list exists, and the loot spawner is not reachable from the CE root object.
+  - **The natives add nothing** over vanilla script's `GetCEApi().TimeShift`: `CE_Cleanup*` measured as no-ops.
+
+  serverkit PR #19 scopes the module down accordingly. The process restart between matches stays; [`boot-time.md`](boot-time.md) measures it as cheap once warm.

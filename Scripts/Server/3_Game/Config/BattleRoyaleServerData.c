@@ -36,6 +36,7 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	// Nothing reads it unless the server runs the dzhooks native hook library with its scriptlock or
 	// adminbypass module pointed at that file (DZHOOK_LOCKFILE / DZHOOK_ADMINBYPASS_FILE), in which case
 	// the server locks itself natively - no RCon, no remote API. Harmless without the hook.
+	// Only the FILE: the hook's serverlock natives (DZHOOK_SERVERLOCK=1) are called regardless.
 	// See Docs/native-hooks.md.
 	bool write_lock_file = true;
 
