@@ -13,7 +13,8 @@ proto native void ServerUnlock();
 //--- It drives the native lock at two moments: the countdown starts (lock) and the server boots
 //--- (unlock). It picks ONE of two backends at compile time, and either is a no-op without the hook.
 //---
-//--- 1. THE `serverlock` NATIVES - preferred, used whenever the hook provides them (the operator sets
+//--- 1. THE `serverlock` NATIVES - preferred, used whenever the hook provides them (on by default
+//---    since serverkit 8921f20, DZHOOK_SERVERLOCK=0 turns them off; older DLLs needed
 //---    DZHOOK_SERVERLOCK=1). They set engine lock bit 0x04, the same one `scriptlock` sets, but
 //---    synchronously, with no file and no path to configure, and the bit dies with the process - so
 //---    a crash cannot leave the next boot locked. The file is then NOT written on lock, so
@@ -69,7 +70,7 @@ class BattleRoyaleNativeLock
 
 #ifdef DZHOOK_SERVERLOCK
 	//--- `write_lock_file` deliberately does NOT gate this: that switch is about the file, and the
-	//--- natives only exist when the operator opted in with DZHOOK_SERVERLOCK=1.
+	//--- hook-side off switch for the natives is DZHOOK_SERVERLOCK=0.
 	static void SetNative(bool locked)
 	{
 		if ( locked )
