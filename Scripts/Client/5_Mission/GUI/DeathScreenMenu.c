@@ -365,7 +365,10 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- admin reading the screen for fifteen seconds got quit to the main menu out from under
         //--- a button they were about to press. Seen live 2026-08-11 with spectate_enabled off,
         //--- which is the configuration where the quit countdown is the only one running.
-        bool pending_action = offered || (admin_state == 1);
+        //--- And a third: the next match. With the in-place reset keeping dead players
+        //--- (in_place_reset_keep_dead_players) the server hands this player a lobby body when the
+        //--- match ends, so the screen waits for it rather than quitting. Quit stays available.
+        bool pending_action = offered || (admin_state == 1) || br_rpc.wait_next_match;
 
         if( pending_action && m_QuitArmed )
         {
@@ -411,7 +414,13 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- that state and would render a frozen or negative "Returning to menu in N...".
         if( !offered && !m_QuitArmed )
         {
-            m_StatusText.SetText( "" );
+            //--- Held off for the next match (in-place reset) rather than for an admin button: say so.
+            BattleRoyaleRPC wait_rpc = BattleRoyaleRPC.GetInstance();
+            if( wait_rpc && wait_rpc.wait_next_match )
+                m_StatusText.SetText( "#STR_BR_DEAD_WAIT_NEXT_MATCH" );
+            else
+                m_StatusText.SetText( "" );
+
             m_LastSecondShown = -1;
             return;
         }

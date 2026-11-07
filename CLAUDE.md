@@ -227,7 +227,8 @@ The tree was swept clean in #76 / #309 — **120 removals across 29 files** (110
 | [`Docs/autorun.md`](Docs/autorun.md) | `Extra/AutoRun/` |
 | [`Docs/map.md`](Docs/map.md) | `Extra/Map/`, `Extra/MapSatellite/`, and every `VigridMapAPI` call |
 | [`Docs/earplugs.md`](Docs/earplugs.md) | `Extra/EarPlugs/` |
-| [`Docs/native-hooks.md`](Docs/native-hooks.md) | the optional dzhooks native hook library, `BattleRoyaleNativeLock`, `server_lock.txt`, `write_lock_file`, `BattleRoyaleNativeBubble`, `BattleRoyaleNativeAnnounce` and the server-browser name |
+| [`Docs/native-hooks.md`](Docs/native-hooks.md) | the optional dzhooks native hook library, `BattleRoyaleNativeLock`, `server_lock.txt`, `write_lock_file`, `BattleRoyaleNativeBubble`, `BattleRoyaleNativeAnnounce`, `BattleRoyaleNativeRefill` and the server-browser name |
+| [`Docs/in-place-reset.md`](Docs/in-place-reset.md) | `BattleRoyaleInPlaceReset`, the `in_place_reset*` settings, `9_BattleRoyaleRestart`, `BattleRoyaleCorpses`, any `ResetForNewMatch`, and any new static that holds match state |
 
 What stays in this file is what nearly every change needs: build and test, the EnfusionScript rules, the script-module split, the match state machine, networking, settings, localization and the key map. When a new subsystem note outgrows a few paragraphs here, give it a file in `Docs/` and a row above.
 
@@ -261,7 +262,7 @@ Compile-time feature flags live in `Scripts/Client/config.cpp:36-43` (`defines[]
 
 States are an **ordered `array<ref BattleRoyaleState>`** built in `BattleRoyaleServer.Init()` (`BattleRoyaleServer.c:88-133`). There is no state enum — the numeric filename prefix in `Scripts/Server/5_Mission/BattleRoyale/Server/States/` encodes the order:
 
-`1_BattleRoyaleDebug` (lobby / ready-up) → `2_BattleRoyaleCountReached` (countdown, lock server) → `3_BattleRoyaleSpawnSelection` (only if `enable_spawn_selection_menu`) → `4_BattleRoyalePrepare` (loadout + teleport) → `5_BattleRoyaleStartMatch` (warmup) → `6_BattleRoyaleRound` × `num_zones` → `7_BattleRoyaleLastRound` → `8_BattleRoyaleWin` → `9_BattleRoyaleRestart` (`RequestExit`). A match is one-shot; the server process restarts between matches.
+`1_BattleRoyaleDebug` (lobby / ready-up) → `2_BattleRoyaleCountReached` (countdown, lock server) → `3_BattleRoyaleSpawnSelection` (only if `enable_spawn_selection_menu`) → `4_BattleRoyalePrepare` (loadout + teleport) → `5_BattleRoyaleStartMatch` (warmup) → `6_BattleRoyaleRound` × `num_zones` → `7_BattleRoyaleLastRound` → `8_BattleRoyaleWin` → `9_BattleRoyaleRestart` (`RequestExit`). By default a match is one-shot and the server process restarts between matches. **With `in_place_reset` on (and the dzhooks `ce_refill` module present), `9_BattleRoyaleRestart` hands over to `BattleRoyaleInPlaceReset` instead**, which refills the loot, replaces `BattleRoyaleServer` and reopens the lobby in the same process - see [`Docs/in-place-reset.md`](Docs/in-place-reset.md). So "one match per process" is no longer a safe assumption: any new static or singleton that holds match state needs a reset there.
 
 **The completion protocol is inverted.** `BattleRoyaleState.IsComplete()` returns `!IsActive()` (`0_BattleRoyaleState.c:85-92`), so a state signals "done" by calling **`Deactivate()`** on itself — typically from a timer callback, or from an overridden `IsComplete()` that tests its condition, calls `Deactivate()`, then `return super.IsComplete()`.
 

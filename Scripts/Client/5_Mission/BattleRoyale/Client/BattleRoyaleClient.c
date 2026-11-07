@@ -67,6 +67,21 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int m_PPESignature;
     protected int m_PPENextLogMs;
 
+    //--- In-place reset (BattleRoyaleRPC.MatchReset): the server started the next match on this
+    //--- connection. m_SeenMatchResetSeq is the last sequence handled. Until the new lobby body is
+    //--- ours, b_AwaitingResetBody holds back the PlayerLoadedIn report - it must describe the new
+    //--- body, not the corpse or the winner's old one. The new body is recognised by the network id
+    //--- the server sent (BattleRoyaleRPC.match_reset_body_*), never as "not the body we had": the
+    //--- body can be selected here BEFORE the RPC arrives (measured, 1.3 s earlier), and then the
+    //--- body we had at reset time already IS the new one.
+    protected int m_SeenMatchResetSeq;
+    protected bool b_AwaitingResetBody;
+
+    //--- A player still on the death screen when the match reset holds the focus lock SimulateDeath
+    //--- took; a spectator already gave it back in EnterSpectate. Released once, when the new body
+    //--- arrives. See ResetForNewMatch.
+    protected bool b_ReleaseDeathLockOnBody;
+
     void BattleRoyaleClient()
     {
         BattleRoyaleUtils.Trace("BattleRoyaleClient::BattleRoyaleClient");
@@ -668,6 +683,10 @@ class BattleRoyaleClient: BattleRoyaleBase
         if(b_SentLoadedIn)
             return;
 
+        //--- After an in-place reset, only once the new lobby body is ours. See ResetForNewMatch.
+        if(b_AwaitingResetBody)
+            return;
+
         if(!player || !player.IsPlayerSelected())
             return;
 
@@ -680,6 +699,18 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+
+        //--- In-place reset: the server started the next match on this connection. Above the
+        //--- loaded-in report below, which this holds back until the new body is ours.
+        BattleRoyaleRPC reset_rpc = BattleRoyaleRPC.GetInstance();
+        if( reset_rpc && reset_rpc.match_reset_seq != m_SeenMatchResetSeq )
+        {
+            m_SeenMatchResetSeq = reset_rpc.match_reset_seq;
+            ResetForNewMatch();
+        }
+
+        if( b_AwaitingResetBody )
+            CheckResetBodyArrived( player );
 
         //--- Tell the server we are actually in the world. Two things consume it - the late-join kick
         //--- grace period, and the lobby's refusal to start the match while anyone is still loading
@@ -1640,10 +1671,10 @@ class BattleRoyaleClient: BattleRoyaleBase
     }
 
     /**
-     *  Put back what EnterSpectate changed, for an admin who has been handed a living body.
-     *
-     *  Only ever runs on that path - an ordinary spectator's session ends with the match and keeps
-     *  its camera, so there is nothing to restore and nowhere to restore it to.
+     *  Put back what EnterSpectate changed, for a spectator who has been handed a living body:
+     *  an admin leaving the camera, or any spectator kept connected by the in-place reset, which
+     *  gives them a lobby body for the next match. Without the in-place reset an ordinary
+     *  spectator's session ends with the match and keeps its camera until the process restarts.
      *
      *  DELIBERATELY NOT A MIRROR IMAGE OF EnterSpectate, and each omission is a decision:
      *
@@ -1692,6 +1723,15 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- so an admin who never pressed F6 does not pay for a COT lookup on every exit.
         if( b_SkeletonOverlay )
             SetSkeletonOverlay( false );
+
+        //--- The party HUD and nametags measured distances from the spectated player. Since the
+        //--- in-place reset every spectator, not only an admin, comes back to a body this way.
+#ifdef VIGRID_PARTY
+        VigridPartyClientAPI.ClearHudViewpoint();
+#endif
+
+        //--- Park the camera: it would otherwise keep pushing its position from behind a living body.
+        BattleRoyaleSpectatorCamera.Retire();
 
         if( GetGame().GetUIManager() )
             GetGame().GetUIManager().ShowUICursor( false );
@@ -1757,6 +1797,136 @@ class BattleRoyaleClient: BattleRoyaleBase
         VONManager.GetInstance().SetMaxVolume( VoiceLevelShout );
         //VONManager.GetInstance().EnableVoice( true );
         b_MatchStarted = true;
+    }
+
+    /**
+     *  In-place reset: the server started the next match on this connection, so nothing was cleared
+     *  by a disconnect. BattleRoyaleRPC.ResetForNewMatch has already cleared the wire fields; this
+     *  clears what this object derived from them, so every edge below fires again for the new match.
+     *
+     *  The new lobby body may arrive before or after this frame. Everything that needs the body is
+     *  left to CheckResetBodyArrived, which waits for the network id the server sent.
+     */
+    protected void ResetForNewMatch()
+    {
+        BattleRoyaleUtils.Info("[InPlace] client reset for the next match");
+
+        b_AwaitingResetBody = true;
+        b_SentLoadedIn = false;
+
+        //--- Only a player still on the death screen holds SimulateDeath's lock. A spectator already
+        //--- gave it back in EnterSpectate, and a winner never took it.
+        b_ReleaseDeathLockOnBody = b_DeathLocked && !b_Spectating;
+
+        //--- "YOU SURVIVED", parented to the workspace, so nothing else would ever take it down.
+        if ( m_WinScreen )
+        {
+            m_WinScreen.Unlink();
+            m_WinScreen = NULL;
+        }
+        br_previous_win_screen = false;
+
+        //--- OnMatchStarted is a one-way latch, and it raised the voice cap to Shout. The lobby is
+        //--- whisper-only, as on a fresh connection (VONManagerImplementation.max_voice_level).
+        b_MatchStarted = false;
+        VONManager.GetInstance().SetMaxVolume( VoiceLevelWhisper );
+
+        b_IsReady = false;
+        i_Kills = 0;
+
+        //--- The edge trackers, back to their initial values so the next push is always a change.
+        m_CurrentPlayArea = NULL;
+        m_FuturePlayArea = NULL;
+        br_previous_current_play_area_center = "0 0 0";
+        br_previous_current_play_area_radius = 0;
+        br_previous_future_play_area_center = "0 0 0";
+        br_previous_future_play_area_radius = 0;
+        br_previous_countdown = -1000;
+        br_previous_admin_map_seq = -1;
+        br_previous_fade_state = false;
+        br_previous_input_state = false;
+
+        //--- The pre-teleport burlap fade, in case the match ended inside it.
+        PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Stop();
+
+#ifdef VIGRID_AUTORUN
+        //--- Off and back on: SetAllowed(false) cancels a hold that would otherwise carry over to
+        //--- the new body, which VigridAutoRunClient drives through GetGame().GetPlayer().
+        VigridAutoRunAPI.SetAllowed( false );
+        VigridAutoRunAPI.SetAllowed( true );
+#endif
+
+#ifdef VIGRID_MAP
+        VigridMapAPI.ClearZones();
+        VigridMapAPI.ClearSelfPositionOverride();
+        VigridMapAPI.ClearAdminPlayers();
+#endif
+    }
+
+    /**
+     *  The new lobby body is ours once GetPlayer() is the entity whose network id the server sent
+     *  with MatchReset. Then put back what death took, for a player who never went through
+     *  EnterSpectate (a spectator is handled by LeaveSpectate, on the same "alive again" edge in
+     *  UpdateSpectate).
+     */
+    protected void CheckResetBodyArrived(PlayerBase player)
+    {
+        if ( !player || !player.IsAlive() )
+            return;
+
+        BattleRoyaleRPC reset_rpc = BattleRoyaleRPC.GetInstance();
+        if ( !reset_rpc )
+            return;
+
+        int body_low;
+        int body_high;
+        player.GetNetworkID( body_low, body_high );
+
+        if ( body_low != reset_rpc.match_reset_body_low || body_high != reset_rpc.match_reset_body_high )
+            return;
+
+        b_AwaitingResetBody = false;
+
+        BattleRoyaleUtils.Info("[InPlace] the new lobby body is ours, death lock to release: " + b_ReleaseDeathLockOnBody);
+
+        if ( b_ReleaseDeathLockOnBody )
+        {
+            b_ReleaseDeathLockOnBody = false;
+
+            //--- The same three releases as EnterSpectate, under the same b_DeathLocked gate: the
+            //--- focus counter is additive, and releasing a lock that is not held breaks input.
+            //--- Measured 2026-11-07 on the diag rig: neither the new body's selection nor its
+            //--- OnPlayerLoaded gives this lock back, and with this release a player reset from the
+            //--- death screen reads the same focus state as one who never died, 2 s later as well.
+            if ( b_DeathLocked && GetGame().GetInput() )
+            {
+                GetGame().GetInput().ChangeGameFocus( -1, INPUT_DEVICE_MOUSE );
+                GetGame().GetInput().ChangeGameFocus( -1, INPUT_DEVICE_KEYBOARD );
+                GetGame().GetInput().ChangeGameFocus( -1, INPUT_DEVICE_GAMEPAD );
+                b_DeathLocked = false;
+            }
+
+            //--- The five sound buses SimulateDeath zeroed, as EnterSpectate restores them.
+            if ( g_Game && g_Game.GetSoundScene() )
+            {
+                g_Game.GetSoundScene().SetSoundVolume( g_Game.m_volume_sound, 1 );
+                g_Game.GetSoundScene().SetSpeechExVolume( g_Game.m_volume_speechEX, 1 );
+                g_Game.GetSoundScene().SetMusicVolume( g_Game.m_volume_music, 1 );
+                g_Game.GetSoundScene().SetVOIPVolume( g_Game.m_volume_VOIP, 1 );
+                g_Game.GetSoundScene().SetRadioVolume( g_Game.m_volume_radio, 1 );
+            }
+
+            if ( PPEManagerStatic.GetPPEManager() )
+                PPEManagerStatic.GetPPEManager().StopAllEffects( PPERequesterCategory.GAMEPLAY_EFFECTS );
+
+            b_TintActive = false;
+
+            if ( GetGame().GetUIManager() )
+            {
+                GetGame().GetUIManager().ScreenFadeOut( 0 );
+                GetGame().GetUIManager().ShowUICursor( false );
+            }
+        }
     }
 
     void ReadyUp()

@@ -17,6 +17,57 @@ modded class MissionServer
 	{
 		super.OnUpdate(timeslice);
 		BattleRoyaleServer.Cast( m_BattleRoyale ).Update(timeslice);
+
+		//--- After the match server's own Update, never inside it: the in-place reset replaces that
+		//--- object, which must not happen from one of its own frames. Two integer tests when idle.
+		BattleRoyaleInPlaceReset.Tick( this );
+	}
+
+	/**
+	 *  In-place reset: replace the match server with a fresh one, whose Init does everything a boot
+	 *  does (new match id, new circles, unlock, lobby). Called only from BattleRoyaleInPlaceReset,
+	 *  i.e. from OnUpdate above and never from inside the old server's Update.
+	 *
+	 *  One assignment, so m_BattleRoyale is never NULL: every method in this class dereferences it
+	 *  without a check. Assigning the field releases the old server, its states and their timers.
+	 */
+	BattleRoyaleServer BR_ReplaceServer()
+	{
+		BattleRoyaleServer fresh = new BattleRoyaleServer;
+		m_BattleRoyale = fresh;
+		return fresh;
+	}
+
+	/**
+	 *  In-place reset: give a still-connected player a fresh body in the lobby, exactly as a new
+	 *  connection gets one - the two lines of vanilla CreateCharacter, then EquipCharacter and
+	 *  InvokeOnConnect, which places them in the lobby, adds them to it and lets Party and Map
+	 *  greet them. The same CreatePlayer + SelectPlayer pair BattleRoyaleSpectators.AdminRespawn
+	 *  uses on a dead identity. The caller deletes the old body afterwards.
+	 */
+	PlayerBase BR_SpawnLobbyBody(PlayerIdentity identity, string character_type)
+	{
+		if ( !identity )
+			return NULL;
+
+		if ( character_type == "" )
+			character_type = g_Game.CreateRandomPlayer();
+
+		BattleRoyaleServer server = BattleRoyaleServer.Cast( m_BattleRoyale );
+		vector position = "0 0 0";
+		server.GetAdminSpawnPosition( position );
+
+		PlayerBase body = PlayerBase.Cast( GetGame().CreatePlayer( identity, character_type, position, 0, "NONE" ) );
+		if ( !body )
+			return NULL;
+
+		GetGame().SelectPlayer( identity, body );
+
+		m_player = body;
+		EquipCharacter( NULL );
+
+		InvokeOnConnect( body, identity );
+		return body;
 	}
 
 	override void InvokeOnConnect( PlayerBase player, PlayerIdentity identity )

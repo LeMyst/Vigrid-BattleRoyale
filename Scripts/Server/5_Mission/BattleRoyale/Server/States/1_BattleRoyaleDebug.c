@@ -9,6 +9,11 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     protected float f_VoteThreshold;
     protected float f_MinWaitingTime;
     protected float f_MinWaitingTimeNotFull;
+
+    //--- GetTickTime() when this lobby opened. min_waiting_time is measured from here. It used to be
+    //--- compared against GetTickTime() alone, i.e. process uptime, which was the same thing while
+    //--- every match had its own process; after an in-place reset the uptime has long passed it.
+    protected float f_LobbyOpenedTick;
     protected float f_AutoStartDelay;
     protected bool b_AutoStartGame;
     protected int i_FirstPlayerTick;
@@ -152,9 +157,10 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
      *  safe from anywhere, and nothing observable changes either way since the driver only polls
      *  IsComplete() at 10 Hz.
      *
-     *  Note this deliberately does NOT clear b_ManualStart. Deactivate() is about to take the lobby
-     *  down for good (one match per process), so the flag has nothing left to gate; clearing it
-     *  would only make the status readout briefly lie about how the match was started.
+     *  Note this deliberately does NOT clear b_ManualStart. Deactivate() is about to take this lobby
+     *  down for good - the next match, after a restart or an in-place reset, gets a new state object
+     *  - so the flag has nothing left to gate; clearing it would only make the status readout
+     *  briefly lie about how the match was started.
      *
      *  Returns false when refused, so the caller can tell the admin why rather than appearing to
      *  do nothing.
@@ -583,7 +589,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
     {
         int total = GetPlayers().Count();
         int loaded = GetLoadedPlayerCount();
-        int tick_now = GetGame().GetTickTime();
+        int tick_now = GetLobbyElapsed();
         int min_wait = f_MinWaitingTime;
 
         int groups = total;
@@ -645,7 +651,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             //--- complex a single expression may be ("Formula too complex" is a hard compile error),
             //--- and this one now carries five independent tests.
             bool enough_players = GetLoadedPlayerCount() >= i_MinPlayers;
-            bool waited_long_enough = GetGame().GetTickTime() >= f_MinWaitingTime;
+            bool waited_long_enough = GetLobbyElapsed() >= f_MinWaitingTime;
 
             //--- The admin hold. Split out rather than appended to the conjunction below, which
             //--- already carries five terms - EnfusionScript caps how complex a single expression
@@ -675,8 +681,16 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         	i_FirstPlayerTick = GetGame().GetTickTime();
     }
 
+    //--- Seconds since this lobby opened. See f_LobbyOpenedTick.
+    float GetLobbyElapsed()
+    {
+        return GetGame().GetTickTime() - f_LobbyOpenedTick;
+    }
+
     override void Activate()
     {
+        f_LobbyOpenedTick = GetGame().GetTickTime();
+
         //these loop & will be automatically cleaned up on Deactivation
         AddTimer(i_TimeBetweenMessages, this, "MessageWaiting", NULL, true);
 
@@ -726,7 +740,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         //--- Here rather than in BattleRoyaleServer.Init(): the party manager is created from its
         //--- own modded MissionServer.OnInit, and nothing pins the order of the two overrides, so
         //--- Init() may well run before it exists. By the time the lobby opens it certainly does.
-        //--- One match per process, so this runs at most once.
+        //--- Once per lobby: once per process, or once per match with the in-place reset. The
+        //--- self-test is opt-in (auto_group_selftest) and read-only.
         RunAutoGroupSelfTest();
 #endif
 
@@ -763,7 +778,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
     void CheckReadyState()
     {
-		if( GetGame().GetTickTime() >= f_MinWaitingTime && GetPlayers().Count() > 1 )
+		if( GetLobbyElapsed() >= f_MinWaitingTime && GetPlayers().Count() > 1 )
 		{
 			//--- The not-full wait (#9) gates the VOTE only. The autostart term below is left alone
 			//--- on purpose: its threshold already decays from "a full lobby" to nothing across
@@ -934,6 +949,27 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         }
     }
 
+    //--- In-place reset (BattleRoyaleInPlaceReset): delete every bird this lobby still tracks, so the
+    //--- next lobby does not spawn its own on top of them. A process restart did this for free.
+    //--- Returns how many were deleted.
+    int DeleteLobbyChickens()
+    {
+        int deleted = 0;
+
+        for( int i = m_LobbyChickens.Count() - 1; i >= 0; i-- )
+        {
+            EntityAI chicken = m_LobbyChickens.Get(i);
+            if( chicken && !chicken.IsSetForDeletion() )
+            {
+                GetGame().ObjectDelete( chicken );
+                deleted++;
+            }
+        }
+
+        m_LobbyChickens.Clear();
+        return deleted;
+    }
+
     void MessageWaiting()
     {
 		//--- Over loaded players, so this agrees with the minimum_players test that actually gates the
@@ -981,9 +1017,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			//--- Suppressed while held: both of these describe an automatic start that is not going
 			//--- to happen, and "the game will auto start in 12" followed by nothing happening is
 			//--- worse than saying nothing at all. The held notice below covers this case instead.
-			if( GetGame().GetTickTime() < f_MinWaitingTime && !b_ManualStart )
+			if( GetLobbyElapsed() < f_MinWaitingTime && !b_ManualStart )
 			{
-				int seconds_left = Math.Ceil( f_MinWaitingTime - GetGame().GetTickTime() );
+				int seconds_left = Math.Ceil( f_MinWaitingTime - GetLobbyElapsed() );
 
 				if( !IsVoteReady() )
 					MessagePlayersUntranslated("STR_BR_CANNOT_START_BEFORE_SECOND", seconds_left.ToString());
@@ -1029,7 +1065,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         status.lobby_loaded = GetLoadedPlayerCount();
         status.lobby_not_loaded = GetNotLoadedCount();
         status.lobby_minimum = i_MinPlayers;
-        status.lobby_uptime_s = GetGame().GetTickTime();
+        status.lobby_uptime_s = GetLobbyElapsed();
         status.lobby_min_wait_s = f_MinWaitingTime;
         status.lobby_full = IsLobbyFull();
         status.lobby_notfull_ok = IsNotFullWaitSatisfied();

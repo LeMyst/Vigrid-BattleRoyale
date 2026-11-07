@@ -109,7 +109,37 @@ class BattleRoyaleWin: BattleRoyaleState
         //--- Spawn chickens. Winner winner. The ring, the water rejection, the surface drop and
         //--- the missing NULL check all live in BattleRoyaleChickens now - the lobby drips birds
         //--- into the waiting area with the same helper, and two copies of this would drift.
-        BattleRoyaleChickens.SpawnBatch(player_winner.GetPosition(), BR_WIN_CHICKEN_INNER_M, BR_WIN_CHICKEN_OUTER_M, BR_WIN_CHICKEN_COUNT, NULL);
+        //--- Tracked so an in-place reset can delete them; a process restart used to do that for free.
+        if( !s_WinChickens )
+            s_WinChickens = new array<EntityAI>();
+
+        BattleRoyaleChickens.SpawnBatch(player_winner.GetPosition(), BR_WIN_CHICKEN_INNER_M, BR_WIN_CHICKEN_OUTER_M, BR_WIN_CHICKEN_COUNT, s_WinChickens);
+    }
+
+    //--- Every win-screen chicken spawned in this process. Static, so the in-place reset can reach it
+    //--- after the state that spawned them is gone.
+    protected static ref array<EntityAI> s_WinChickens;
+
+    //--- In-place reset (BattleRoyaleInPlaceReset): delete the win-screen birds still standing.
+    static int DeleteWinChickens()
+    {
+        if( !s_WinChickens )
+            return 0;
+
+        int deleted = 0;
+
+        for( int i = s_WinChickens.Count() - 1; i >= 0; i-- )
+        {
+            EntityAI chicken = s_WinChickens.Get(i);
+            if( chicken && !chicken.IsSetForDeletion() )
+            {
+                GetGame().ObjectDelete( chicken );
+                deleted++;
+            }
+        }
+
+        s_WinChickens.Clear();
+        return deleted;
     }
 
     void KickWinner()
@@ -123,6 +153,11 @@ class BattleRoyaleWin: BattleRoyaleState
 		//---
 		//--- This was near-unreachable while only a solo player could win. Parties ship with the mod
 		//--- now, so every team victory goes through it.
+		//---
+		//--- With the in-place reset keeping players connected, the winners stay: RemovePlayer still
+		//--- records their result, and BattleRoyaleInPlaceReset hands them a lobby body next.
+		bool keep_winners = BattleRoyaleInPlaceReset.KeepsPlayersConnected();
+
 		for ( int k = GetPlayers().Count() - 1; k >= 0; k-- )
 		{
 			PlayerBase winner = GetPlayers()[k];
@@ -132,7 +167,9 @@ class BattleRoyaleWin: BattleRoyaleState
 				continue;
 
 			RemovePlayer(winner); //disconnect does not trigger RemovePlayer !
-			GetGame().DisconnectPlayer( winner.GetIdentity() );
+
+			if( !keep_winners )
+				GetGame().DisconnectPlayer( winner.GetIdentity() );
 		}
 
 		//--- The RemovePlayer calls above are what actually record the winners, so this is the first

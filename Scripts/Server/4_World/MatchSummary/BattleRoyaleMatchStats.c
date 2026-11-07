@@ -68,8 +68,9 @@ class BattleRoyaleMatchStats
      *  The PREVIOUS match, read from disk once at construction and never re-read.
      *
      *  This is the only thing ever served to a client. Because the file is written exactly once, at
-     *  match end, this reference is immutable for the whole process lifetime - which is what makes
-     *  serving it safe with no sequence number and no invalidation. NULL means no previous match.
+     *  match end, this reference is immutable for the whole match - which is what makes serving it
+     *  safe with no sequence number and no invalidation. NULL means no previous match. The in-place
+     *  reset drops this instance (ResetForNewMatch), so the next match reloads the file it just wrote.
      */
     protected ref BattleRoyaleLastMatchFile m_Previous;
 
@@ -100,6 +101,14 @@ class BattleRoyaleMatchStats
             m_Instance = new BattleRoyaleMatchStats();
 
         return m_Instance;
+    }
+
+    //! In-place reset (BattleRoyaleInPlaceReset): drop the instance so the next GetInstance() builds
+    //! a fresh one, which reloads the last_match.json 9_BattleRoyaleRestart has just written as the
+    //! new "previous match". Nothing in the call queue targets this object.
+    static void ResetForNewMatch()
+    {
+        m_Instance = NULL;
     }
 
     //------------------------------------------------------------------------------------------

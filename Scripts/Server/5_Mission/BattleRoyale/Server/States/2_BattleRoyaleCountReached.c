@@ -20,6 +20,10 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
     	BattleRoyaleUtils.Debug(string.Format("BattleRoyaleCountReached: Activating with time to start: %1 seconds", i_TimeToStart));
         super.Activate();
 
+        //--- After an in-place reset: refill the map now if the drain has not finished, or top it up
+        //--- once if it has. A no-op after a process restart, whose boot pass already filled it.
+        BattleRoyaleInPlaceReset.OnCountdownStarted();
+
     	BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
 		if ( m_ServerData.enable_vigrid_api )

@@ -2,7 +2,7 @@
 
 > Split out of the root [`CLAUDE.md`](../CLAUDE.md), which carries the build, test and EnfusionScript rules every change needs - read that first. A correction made here must also reach the memories and skills that repeat the rule (see *Workflow* in `CLAUDE.md`).
 
-[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. Everything it takes from the hook sits behind a define the hook injects itself: the `serverlock` natives behind `#ifdef DZHOOK_SERVERLOCK` (see *The `serverlock` natives* below), the spectator-bubble switch behind `DZHOOK_SPECTATORBUBBLE` (see *The `spectatorbubble` hook* below), and the server-browser name natives behind `DZHOOK_ANNOUNCE` (see *The `announce` natives* below).
+[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. Everything it takes from the hook sits behind a define the hook injects itself: the `serverlock` natives behind `#ifdef DZHOOK_SERVERLOCK` (see *The `serverlock` natives* below), the spectator-bubble switch behind `DZHOOK_SPECTATORBUBBLE` (see *The `spectatorbubble` hook* below), the server-browser name natives behind `DZHOOK_ANNOUNCE` (see *The `announce` natives* below), and the loot refill natives behind `DZHOOK_CE_REFILL` (see *The `ce_refill` natives* below).
 
 ## Which modules the mod uses
 
@@ -15,7 +15,8 @@ Of the composer's modules, **the lock, the spectator bubble and the server-brows
 | `serverlock` (on by default) | **Preferred. Driven by the mod** through `ServerLock()` / `ServerUnlock()` whenever the hook provides them, and the file is then not used to lock. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
 | `spectatorbubble` (on by default; serverkit PR #24, merged 2026-11-07) | **Read by the mod** through `DZHOOK_SPECTATORBUBBLE`. While it is set, a spectator's bubble follows their camera, and the mod stops carrying corpses. Tested working on the diag rig (see below). |
 | `announce` (serverkit PR #26, merged 2026-11-07) | **Driven by the mod** through `SetServerNameSuffix()`, which puts the match phase after the hostname that Steam advertises: `[LOBBY 3]`, `[STARTING 0:10]`, `[IN GAME 2 left]`, `[ENDING]`. |
-| `scriptdefine` | Needed by `serverlock`, `spectatorbubble` and `announce`: it is what makes `DZHOOK_SERVERLOCK`, `DZHOOK_SPECTATORBUBBLE` and `DZHOOK_ANNOUNCE` visible to the mod's scripts. |
+| `ce_refill` (opt-in, `DZHOOK_CE_REFILL=1`; serverkit PR #30, merged 2026-11-07 as `7c13ada`) | **Driven by the mod** through `CE_RefillLootTo()` / `CE_RefillLoot()`, for the in-place reset between matches (`in_place_reset`). See *The `ce_refill` natives* below and [`in-place-reset.md`](in-place-reset.md). |
+| `scriptdefine` | Needed by `serverlock`, `spectatorbubble`, `announce` and `ce_refill`: it is what makes `DZHOOK_SERVERLOCK`, `DZHOOK_SPECTATORBUBBLE`, `DZHOOK_ANNOUNCE` and `DZHOOK_CE_REFILL` visible to the mod's scripts. |
 | `lockdrain` | None. It changes what `#lock` / `LockSession` does. `scriptlock` and `serverlock` set the lock bit directly and `adminbypass` uses the whitelist, so none of them drains. |
 | `highpriority`, `reservedslots`, `userlistreload`, `maxplayers`, `reconnectpriority` | None. These are queue and slot policy driven by the operator's own `.txt` files. |
 
@@ -173,6 +174,18 @@ These are the first natives this mod calls **with an argument**. A `proto native
 - **Without the module** (`DZHOOK_ANNOUNCE=0`, retail): the hook logged `announce disabled`, the mod logged no `[NativeAnnounce]` line, and the script log had no errors. So the guarded code compiles out cleanly.
 - **Not covered:** how fast Steam's master list catches up, which the DayZ Launcher's internet tab depends on, and the in-game browser, which reads the same name.
 
+## The `ce_refill` natives
+
+`BattleRoyaleNativeRefill` (`Scripts/Server/4_World/NativeHooks/`) wraps `CE_RefillLootTo(int percent)` and `CE_RefillLoot()` behind `#ifdef DZHOOK_CE_REFILL`, the same shape as the lock and announce bridges; without the define both return -1 and `BattleRoyaleInPlaceReset` falls back to the process restart. The module re-runs the CE's boot-time loot pass (`WRSpawnerLoot::OnInitial`, captured from the engine's own boot call) on demand, topping each type up from what is already on the map. Its only caller is the in-place reset; the whole sequence is in [`in-place-reset.md`](in-place-reset.md).
+
+Tested before the merge (serverkit #29, comments 6711277331 and 6711745459), on DayZDiag and on retail `DayZServer_x64` 1.30.164.289:
+
+- **Capture and layout:** the spawner was captured at CE init on both executables, with no `unexpected layout` refusal.
+- **Refill:** after `TimeShift` and ~200 s of drain, four steps of 25 / 50 / 75 / 100 % placed ~19,300 items in 8.4 s on DayZDiag and ~14,600 in 4.3 s on retail. That brought the sampled area back to 94-98 % of its starting loot, evenly over 16 points.
+- **No overfill:** a repeat call on a full map creates nothing, in ~10 ms.
+- **Avoidance:** it places nothing within `LootSpawnAvoidance` of a player.
+- **Idle mode:** it works while CE is idle (the drain does not).
+
 ## Not done, and why
 
 - **`ce_reset`'s `CE_ResetLoot()` / `CE_Cleanup*()`.** The idea was to restart a match in-process instead of through `RequestExit`. Five instrumented builds of the hook (serverkit issue #16, retail and DayZDiag, November 2026) established three things:
@@ -183,3 +196,5 @@ These are the first natives this mod calls **with an argument**. A `proto native
   serverkit PR #19 retired the module (`8445556`, 2026-11-07); it is no longer in the composer. The process restart between matches stays; [`boot-time.md`](boot-time.md) measures it as cheap once warm.
 
   ⚠️ **Correction, 2026-11-07: the drain IS configurable.** #16 concluded that "no budget or forced drain" beats the ~8 items/s ceiling. That ceiling is `globals.xml` `CleanupLifetimeLimit=50`. A probe tracked baseline items by network id, so expiry is separate from respawn. With the limit at 5000, `TimeShift(999999)` cleared **93% of the map's loot in 191 s** (stock: 11% in 221 s). Each ~50 s batch halves what is left, and 100000 gives the same curve as 5000. **The refill is what remains:** in the sampled area, 20 new items in 120 s on stock respawn, and 15 with `RespawnLimit`/`RespawnTypes` raised 50×. That fits serverkit's reverse engineering: `RespawnLimit` belongs to the infected spawner, and nothing reads `RespawnTypes`. The boot pass, by contrast, places ~20.8k items in 15 s. Re-running it on demand is requested in serverkit [#29](https://github.com/LeMyst/dayz-serverkit/issues/29). Loot must never refill during a match, so that would be called at reset only, with respawn left at stock. The README carries the recommended `globals.xml` values.
+
+  ✅ **Done, 2026-11-07:** #29 became the `ce_refill` module (above), and the in-place restart this section gave up on is now [`in-place-reset.md`](in-place-reset.md). The process restart stays the default and the fallback.

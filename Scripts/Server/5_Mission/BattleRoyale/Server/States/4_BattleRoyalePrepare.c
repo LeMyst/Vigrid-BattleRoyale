@@ -46,6 +46,10 @@ class BattleRoyalePrepare: BattleRoyaleState
     {
         super.Activate();
 
+        //--- Players leave the lobby below. Any refill step the countdown did not get to runs now,
+        //--- because a refill after this point would put loot back in houses being looted.
+        BattleRoyaleInPlaceReset.OnPrepareStarted();
+
 		if ( m_ServerData.enable_vigrid_api )
 		{
 			StartMatchWebhook matchWebhook = new StartMatchWebhook( m_ServerData.webhook_jwt_token );

@@ -91,6 +91,20 @@ class BattleRoyaleSpectatorCamera extends Camera
     }
 
     /**
+     *  Stop the current camera from ticking, for a client that has been handed a living body.
+     *
+     *  Nothing destroys an engine-made camera, and EOnFrame only runs for s_Instance - so clearing
+     *  it parks every camera at once. Before the in-place reset only an admin ever came back from
+     *  spectating, and their camera kept pushing UpdateSpectatorPosition and AdminSpectateCamPos
+     *  behind a living body. Now every spectator comes back at each match end. The next
+     *  SelectSpectator makes a new camera, whose constructor sets s_Instance again.
+     */
+    static void Retire()
+    {
+        s_Instance = NULL;
+    }
+
+    /**
      *  Tolerant of being called every frame with unchanged values - BattleRoyaleClient does exactly
      *  that, so the camera keeps following even if a push is lost.
      */
