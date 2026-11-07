@@ -41,6 +41,9 @@ class BattleRoyaleServer: BattleRoyaleBase
     //--- existing 10 Hz block without a second timer.
     protected int m_NextLobbyNamesMs;
 
+    //--- Next time UpdateAnnounce recomputes the server-browser suffix. Same self-throttling idea.
+    protected int m_NextAnnounceMs;
+
     void BattleRoyaleServer()
     {
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);
@@ -109,6 +112,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 		//--- server stays locked forever. A no-op without the hook. See BattleRoyaleNativeLock.
 		BattleRoyaleNativeLock.Set( false );
 		BattleRoyaleNativeBubble.LogMode();
+		BattleRoyaleNativeAnnounce.LogMode();
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
@@ -309,6 +313,10 @@ class BattleRoyaleServer: BattleRoyaleBase
 			//--- Tell each lobby player who to draw a name over. Self-throttled to 1 Hz and returns
 			//--- on one bool outside the lobby, so it costs nothing for the rest of the match.
 			PushLobbyNames();
+
+			//--- The match phase in the server-browser name, through the dzhooks `announce` module.
+			//--- Self-throttled to 1 Hz and compiled out entirely without the hook.
+			UpdateAnnounce();
 
 #ifdef VIGRID_PARTY
 			//--- A resolved name is not a party composition change, so Party has no reason to re-send
@@ -1252,6 +1260,85 @@ class BattleRoyaleServer: BattleRoyaleBase
             who = "to " + recipient.GetName();
 
         BattleRoyaleUtils.Trace( "SendHotZones " + near_centers.Count() + " of " + configured + " zone(s) near the starting circle, " + who );
+    }
+
+    /**
+     *  Recompute the server-browser suffix once a second and hand it to the dzhooks `announce`
+     *  module, which only forwards a CHANGE (BattleRoyaleNativeAnnounce.SetSuffix dedups).
+     *
+     *  Polled from the existing 10 Hz block rather than set from each state's Activate, for the same
+     *  reason BroadcastLobbyPhase is called once per transition: a state added later cannot forget to
+     *  announce itself, and the counts inside a phase (lobby size, players left) need a poll anyway.
+     *  Compiled out without the hook, so it costs a vanilla server nothing.
+     */
+    protected void UpdateAnnounce()
+    {
+#ifdef DZHOOK_ANNOUNCE
+        int now = GetGame().GetTime();
+        if ( now < m_NextAnnounceMs )
+            return;
+
+        m_NextAnnounceMs = now + 1000;
+        BattleRoyaleNativeAnnounce.SetSuffix( BuildAnnounceSuffix() );
+#endif
+    }
+
+    /**
+     *  The suffix for the current phase. The hook adds the space between hostname and suffix.
+     *
+     *      lobby                         [LOBBY 6]         players connected
+     *      countdown (CountReached)      [STARTING 0:30]   rounded UP to 10 s, so the name changes at
+     *                                                       most every 10 s rather than every second
+     *      spawn selection, prepare      [STARTING]
+     *      start match, rounds           [IN GAME 14 left] players still in the state, i.e. alive
+     *      win, restart                  [ENDING]
+     *
+     *  Every one stays well under the 48 bytes the hook keeps for prefix + suffix.
+     */
+    protected string BuildAnnounceSuffix()
+    {
+        BattleRoyaleState state = GetCurrentState();
+        if ( !state )
+            return "";
+
+        int count = state.GetPlayers().Count();
+
+        //--- Before the lobby test: CountReached is a sibling of BattleRoyaleDebug, not a child, but
+        //--- checking it first keeps that from mattering if the hierarchy ever changes.
+        BattleRoyaleCountReached count_reached;
+        if ( Class.CastTo( count_reached, state ) )
+        {
+            int seconds = count_reached.GetSecondsToStart();
+            if ( seconds < 0 )
+                return "[STARTING]";
+
+            int shown = ( ( seconds + 9 ) / 10 ) * 10;
+            int minutes = shown / 60;
+            int rest = shown % 60;
+            string rest_text = rest.ToString();
+            if ( rest < 10 )
+                rest_text = "0" + rest_text;
+
+            return "[STARTING " + minutes.ToString() + ":" + rest_text + "]";
+        }
+
+        //--- No "/max": the browser already shows players/max beside the name, and the two would
+        //--- disagree. serverDZ.cfg maxPlayers is 60 on the test rig, but the hook's `reservedslots`
+        //--- module holds 2 back, so Steam advertises 58 - measured over A2S 2026-11-07 as
+        //--- "EXAMPLE NAME [LOBBY 0/60]" beside players=0/58. Script cannot see the reserved count.
+        if ( state.IsInherited( BattleRoyaleDebug ) )
+            return "[LOBBY " + count.ToString() + "]";
+
+        if ( state.IsInherited( BattleRoyaleSpawnSelection ) || state.IsInherited( BattleRoyalePrepare ) )
+            return "[STARTING]";
+
+        if ( state.IsInherited( BattleRoyaleStartMatch ) || state.IsInherited( BattleRoyaleRound ) || state.IsInherited( BattleRoyaleLastRound ) )
+            return "[IN GAME " + count.ToString() + " left]";
+
+        if ( state.IsInherited( BattleRoyaleWin ) || state.IsInherited( BattleRoyaleRestart ) )
+            return "[ENDING]";
+
+        return "";
     }
 
     /**

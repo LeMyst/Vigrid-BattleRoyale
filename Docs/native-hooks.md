@@ -2,11 +2,11 @@
 
 > Split out of the root [`CLAUDE.md`](../CLAUDE.md), which carries the build, test and EnfusionScript rules every change needs - read that first. A correction made here must also reach the memories and skills that repeat the rule (see *Workflow* in `CLAUDE.md`).
 
-[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. Everything it takes from the hook sits behind a define the hook injects itself: the `serverlock` natives behind `#ifdef DZHOOK_SERVERLOCK` (see *The `serverlock` natives* below), and the spectator-bubble switch behind `DZHOOK_SPECTATORBUBBLE` (see *The `spectatorbubble` hook* below).
+[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. Everything it takes from the hook sits behind a define the hook injects itself: the `serverlock` natives behind `#ifdef DZHOOK_SERVERLOCK` (see *The `serverlock` natives* below), the spectator-bubble switch behind `DZHOOK_SPECTATORBUBBLE` (see *The `spectatorbubble` hook* below), and the server-browser name natives behind `DZHOOK_ANNOUNCE` (see *The `announce` natives* below).
 
 ## Which modules the mod uses
 
-Of the composer's modules, **the lock and the spectator bubble are the mod's job**. The rest are purely operator-side:
+Of the composer's modules, **the lock, the spectator bubble and the server-browser name are the mod's job**. The rest are purely operator-side:
 
 | Module | Mod involvement |
 |---|---|
@@ -14,7 +14,8 @@ Of the composer's modules, **the lock and the spectator bubble are the mod's job
 | `adminbypass` (opt-in) | **Driven by the mod** through the same file, so also only without `serverlock`. While it is locked only `whitelist.txt` IDs can connect, and nobody already in game is kicked. |
 | `serverlock` (on by default) | **Preferred. Driven by the mod** through `ServerLock()` / `ServerUnlock()` whenever the hook provides them, and the file is then not used to lock. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
 | `spectatorbubble` (on by default; serverkit PR #24, merged 2026-11-07) | **Read by the mod** through `DZHOOK_SPECTATORBUBBLE`. While it is set, a spectator's bubble follows their camera, and the mod stops carrying corpses. Tested working on the diag rig (see below). |
-| `scriptdefine` | Needed by `serverlock` and `spectatorbubble`: it is what makes `DZHOOK_SERVERLOCK` and `DZHOOK_SPECTATORBUBBLE` visible to the mod's scripts. |
+| `announce` (serverkit PR #26, merged 2026-11-07) | **Driven by the mod** through `SetServerNameSuffix()`, which puts the match phase after the hostname that Steam advertises: `[LOBBY 3]`, `[STARTING 0:10]`, `[IN GAME 2 left]`, `[ENDING]`. |
+| `scriptdefine` | Needed by `serverlock`, `spectatorbubble` and `announce`: it is what makes `DZHOOK_SERVERLOCK`, `DZHOOK_SPECTATORBUBBLE` and `DZHOOK_ANNOUNCE` visible to the mod's scripts. |
 | `lockdrain` | None. It changes what `#lock` / `LockSession` does. `scriptlock` and `serverlock` set the lock bit directly and `adminbypass` uses the whitelist, so none of them drains. |
 | `highpriority`, `reservedslots`, `userlistreload`, `maxplayers`, `reconnectpriority` | None. These are queue and slot policy driven by the operator's own `.txt` files. |
 
@@ -144,6 +145,33 @@ Three things about testing it locally, all hit that day:
 - **The retail server cannot take local clients.** It loads `BEServer_x64.dll` even with `BattlEye = 0;` in `serverDZ.cfg`, and kicks every client without BattlEye after about 10 s with `240 (Game restart required)`. It also refuses diag clients with `0x00020017`. So the client test runs on the diag rig, which needed DayZDiag signatures (`b0879b3`).
 - **Builds before `19caa78` crash any client that loads the DLL**, even though no hook installs in a client. The proxy's `CreateFX` was a stub that never wrote its out-pointer, and a client calls it for audio. Older DLLs must stay out of a folder clients start from.
 - **The define arrives from the hook, not from `DZHOOK_DEFINES`.** Faking it through `DZHOOK_DEFINES=DZHOOK_SPECTATORBUBBLE` tests the mod's compile path only: it makes the mod stop carrying corpses with nothing making the bubble follow the camera.
+
+## The `announce` natives
+
+**Requested in serverkit [#23](https://github.com/LeMyst/dayz-serverkit/issues/23), implemented in serverkit PR [#26](https://github.com/LeMyst/dayz-serverkit/pull/26), merged 2026-11-07 (`82d5b97`).** The description field is not part of it. It would need a separate native that swaps an engine `RString`, and it shows only in the in-game browser's details pane, which skips it when the rules carry an overflow flag; see serverkit PR #26. The module wraps two slots of Steam's `ISteamGameServer`, `SetServerName` and `SetGameTags`, and decorates the name the engine hands it on every refresh. It also forces a refresh, at most once a second, when the decoration changes. **Only Steam's copy of the name changes**: what A2S, the master list and the launchers see. The `hostname` in `serverDZ.cfg`, the hive's name and the in-game name stay as configured. The browser shows `<prefix> <hostname> <suffix>`, with the hook adding the spaces. Steam keeps 63 bytes; the hook cuts a long hostname on a UTF-8 boundary so that prefix and suffix, which share 48 bytes, stay whole. This applies to community servers only, since an official server signs its name.
+
+These are the first natives this mod calls **with an argument**. A `proto native` is called as a plain C function, and a `string` arrives as a `const char*` (serverkit `PROTO_NATIVE.md` §4). `BattleRoyaleNativeAnnounce` (`Scripts/Server/4_World/NativeHooks/`) declares `SetServerNamePrefix` / `SetServerNameSuffix` at file scope under `#ifdef DZHOOK_ANNOUNCE`, exactly like the `serverlock` pair, and its `SetSuffix` only forwards a change. The prefix is declared but unused.
+
+**The suffix is computed in one place.** `BattleRoyaleServer.UpdateAnnounce` runs from the 10 Hz block, throttled to 1 Hz, and is compiled out without the hook. `BuildAnnounceSuffix` derives the text from the current state:
+
+| Phase | Suffix |
+|---|---|
+| lobby (`BattleRoyaleDebug`) | `[LOBBY 6]`, players connected |
+| countdown (`BattleRoyaleCountReached`) | `[STARTING 0:30]`, rounded **up** to 10 s, so the name changes every 10 s at most |
+| spawn selection, prepare | `[STARTING]` |
+| start match, rounds, last round | `[IN GAME 14 left]`, players still in the state |
+| win, restart | `[ENDING]` |
+
+**The lobby shows no maximum, deliberately.** The browser already shows players/max next to the name, and the two disagreed: the first build showed `[LOBBY 0/60]` from `serverDZ.cfg`'s `maxPlayers`, while A2S reported `players=0/58` because the hook's `reservedslots` module holds 2 slots back. Script cannot see that count. Polling instead of announcing from each state's `Activate` follows the same reasoning as `BroadcastLobbyPhase`: a state added later cannot forget to announce itself, and the counts inside a phase need a poll anyway.
+
+**Verified 2026-11-07, with PR #26 at `1781f0f`.** These were the module's first runs on Windows; it had only run on Linux before.
+- **Retail `DayZServer_x64.exe` 1.30, with real Steam:**
+  - **Hook:** it logged `SteamGameServer015 hooked`, then `advertised name: 'EXAMPLE NAME [LOBBY 0/60]'`, one second after the mod's call.
+  - **A2S on 27016:** `name='EXAMPLE NAME [LOBBY 0/60]'`, with the keywords untouched (`DZHOOK_ANNOUNCE_TAG` is off by default).
+  - **The DayZ Launcher:** Myst saw the suffix there. DZSALauncher cannot see a local server, so it stays untested.
+- **Diag rig (`DayZDiag -server` plus three clients, under Goldberg), one full match.** The hook advertised `[LOBBY 0]` → `[LOBBY 2]` → `[LOBBY 3]` → `[STARTING 0:10]` → `[STARTING]` → `[IN GAME 3 left]` → `[IN GAME 2 left]` → `[ENDING]`, each within a second of the state change. There was no `[IN GAME 1 left]`: the last death ended the match in the same one-second window, which is correct. A Goldberg server answers no A2S and never reaches the master list, so on this rig the hook's `advertised name` lines are the evidence; the retail run showed that those lines match what A2S returns.
+- **Without the module** (`DZHOOK_ANNOUNCE=0`, retail): the hook logged `announce disabled`, the mod logged no `[NativeAnnounce]` line, and the script log had no errors. So the guarded code compiles out cleanly.
+- **Not covered:** how fast Steam's master list catches up, which the DayZ Launcher's internet tab depends on, and the in-game browser, which reads the same name.
 
 ## Not done, and why
 
