@@ -2,18 +2,19 @@
 
 > Split out of the root [`CLAUDE.md`](../CLAUDE.md), which carries the build, test and EnfusionScript rules every change needs - read that first. A correction made here must also reach the memories and skills that repeat the rule (see *Workflow* in `CLAUDE.md`).
 
-[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. The one symbol it names from the hook, the `serverlock` natives, is behind `#ifdef DZHOOK_SERVERLOCK`, a define the hook injects itself (see *The `serverlock` natives* below).
+[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. Everything it takes from the hook sits behind a define the hook injects itself: the `serverlock` natives behind `#ifdef DZHOOK_SERVERLOCK` (see *The `serverlock` natives* below), and the spectator-bubble switch behind `DZHOOK_SPECTATORBUBBLE` (see *The `spectatorbubble` hook* below).
 
 ## Which modules the mod uses
 
-Of the composer's ten modules, **the lock is the mod's job** and the rest are purely operator-side:
+Of the composer's modules, **the lock is the mod's job**, and so will be the spectator bubble once that module is released. The rest are purely operator-side:
 
 | Module | Mod involvement |
 |---|---|
 | `scriptlock` | **Driven by the mod** through the sentinel file below, when `serverlock` is absent or off (`DZHOOK_SERVERLOCK=0`). Locks like `#lock`, so it refuses everyone, admins included. |
 | `adminbypass` (opt-in) | **Driven by the mod** through the same file, so also only without `serverlock`. While it is locked only `whitelist.txt` IDs can connect, and nobody already in game is kicked. |
 | `serverlock` (on by default) | **Preferred. Driven by the mod** through `ServerLock()` / `ServerUnlock()` whenever the hook provides them, and the file is then not used to lock. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
-| `scriptdefine` | Needed by `serverlock`: it is what makes `DZHOOK_SERVERLOCK` visible to the mod's scripts. |
+| `spectatorbubble` (**not released yet**, serverkit #22) | **Read by the mod** through `DZHOOK_SPECTATORBUBBLE`. While it is set, a spectator's bubble follows their camera, and the mod stops carrying corpses. |
+| `scriptdefine` | Needed by `serverlock` and `spectatorbubble`: it is what makes `DZHOOK_SERVERLOCK` visible to the mod's scripts. |
 | `lockdrain` | None. It changes what `#lock` / `LockSession` does. `scriptlock` and `serverlock` set the lock bit directly and `adminbypass` uses the whitelist, so none of them drains. |
 | `highpriority`, `reservedslots`, `userlistreload`, `maxplayers`, `reconnectpriority` | None. These are queue and slot policy driven by the operator's own `.txt` files. |
 
@@ -121,6 +122,12 @@ set DZHOOK_SERVERLOCK=1
 **Verified** on retail `DayZServer_x64.exe` 1.30.164.289 and on `DayZDiag_x64.exe` as server, with serverkit `9c40081`:
 - **2026-11-06, from a probe build:** `DZHOOK_SERVERLOCK` reached both `4_World` and `5_Mission`, the file-scope declarations compiled and bound, and the hook logged `[serverlock] ServerLock() -> locked` / `ServerUnlock() -> open`.
 - **This integration, on retail:** the boot logged `[NativeLock] ServerUnlock() called` with the hook's `ServerUnlock() -> open`, and the countdown (reached with COT's *Next state*) logged `[NativeLock] ServerLock() called` with `[serverlock] ServerLock() -> locked` in the same millisecond. Without `DZHOOK_SERVERLOCK` the natives compile out and the script log is clean.
+
+## The `spectatorbubble` hook
+
+**Requested in serverkit [#22](https://github.com/LeMyst/dayz-serverkit/issues/22) and not released yet**, so the mod half below is untested with the hook present. The server overwrites a spectator's bubble centre every tick with the position of their person entity, which for a dead player is their corpse. That is the ~1 km spectate limit; [`spectating.md`](spectating.md) has the measurements and the decoded mechanism. The hook skips the overwrite while the connection is spectating.
+
+The mod side is one compile-time switch with no native. `BattleRoyaleNativeBubble.FollowsCamera()` (`Scripts/Server/4_World/NativeHooks/`) returns whether `DZHOOK_SPECTATORBUBBLE` is defined. When it is, `BattleRoyaleSpectators.CarryCorpse` does nothing, so the body stays lootable where it fell. `CarryAnchorBody` still runs for admins. Since nothing is bound, a hook built without the module simply leaves the define absent, and the carry works as before. `BattleRoyaleServer.Init` prints one `[NativeBubble]` line naming the mode, through `Print` like `[NativeLock]`, so it shows on retail.
 
 ## Not done, and why
 
