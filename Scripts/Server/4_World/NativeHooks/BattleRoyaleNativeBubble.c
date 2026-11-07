@@ -1,6 +1,6 @@
 #ifdef SERVER
-//--- Optional bridge to the dzhooks `spectatorbubble` module (serverkit issue #22, PR #24 - not merged
-//--- yet). Tested working on the diag rig 2026-11-07: a target stayed replicated out to 2590 m from the
+//--- Optional bridge to the dzhooks `spectatorbubble` module (serverkit issue #22, PR #24 - merged
+//--- 2026-11-07). Tested working on the diag rig 2026-11-07: a target stayed replicated out to 2590 m from the
 //--- corpse. Docs/native-hooks.md has the run.
 //---
 //--- WHY A SPECTATOR'S BUBBLE STAYS ON THEIR CORPSE without it (decoded on the 1.29 and 1.30 Linux
