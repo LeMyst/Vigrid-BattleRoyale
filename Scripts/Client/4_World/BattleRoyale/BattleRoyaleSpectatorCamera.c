@@ -140,6 +140,17 @@ class BattleRoyaleSpectatorCamera extends Camera
         if (!GetGame().IsClient())
             return;
 
+        //--- ONLY THE NEWEST CAMERA RUNS. Every SelectSpectator makes the engine create a new instance
+        //--- of this class, and nothing ever destroys the previous one, so a client that has spectated
+        //--- three times (death, then F3 twice) has three of them ticking. Each used to push its own
+        //--- position below. Harmless while the server ignored the push, but with the dzhooks
+        //--- spectatorbubble hook the bubble centre IS the last push, so the two stale cameras parked
+        //--- at an old target pulled the bubble back there: the admin saw that target and lost the one
+        //--- they had cycled to, 4.4 km away. Measured 2026-11-07 - three interleaved [Spectate] cam=
+        //--- traces with independent push counters. s_Instance is set by the ctor, so it is the newest.
+        if (s_Instance != this)
+            return;
+
         //--- Move the client's network bubble to the camera. Vanilla's exact cadence
         //--- (dayzspectator.c:52-58). This is the ONLY network traffic the camera generates: there
         //--- is no position RPC, and no server-side teleport of anything.

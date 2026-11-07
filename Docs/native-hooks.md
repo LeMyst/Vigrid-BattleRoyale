@@ -2,18 +2,19 @@
 
 > Split out of the root [`CLAUDE.md`](../CLAUDE.md), which carries the build, test and EnfusionScript rules every change needs - read that first. A correction made here must also reach the memories and skills that repeat the rule (see *Workflow* in `CLAUDE.md`).
 
-[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. The one symbol it names from the hook, the `serverlock` natives, is behind `#ifdef DZHOOK_SERVERLOCK`, a define the hook injects itself (see *The `serverlock` natives* below).
+[dzhooks](https://lemyst.github.io/dayz-serverkit/composer/) is a native hook library for the dedicated server: `dzhooks.so` via `LD_PRELOAD` on Linux, `XAPOFX1_5.dll` dropped next to `DayZServer_x64.exe` on Windows. You build it yourself from the composer's source package. **It is not a dependency.** The mod builds, loads and plays identically without it. Everything it takes from the hook sits behind a define the hook injects itself: the `serverlock` natives behind `#ifdef DZHOOK_SERVERLOCK` (see *The `serverlock` natives* below), and the spectator-bubble switch behind `DZHOOK_SPECTATORBUBBLE` (see *The `spectatorbubble` hook* below).
 
 ## Which modules the mod uses
 
-Of the composer's ten modules, **the lock is the mod's job** and the rest are purely operator-side:
+Of the composer's modules, **the lock and the spectator bubble are the mod's job**. The rest are purely operator-side:
 
 | Module | Mod involvement |
 |---|---|
 | `scriptlock` | **Driven by the mod** through the sentinel file below, when `serverlock` is absent or off (`DZHOOK_SERVERLOCK=0`). Locks like `#lock`, so it refuses everyone, admins included. |
 | `adminbypass` (opt-in) | **Driven by the mod** through the same file, so also only without `serverlock`. While it is locked only `whitelist.txt` IDs can connect, and nobody already in game is kicked. |
 | `serverlock` (on by default) | **Preferred. Driven by the mod** through `ServerLock()` / `ServerUnlock()` whenever the hook provides them, and the file is then not used to lock. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
-| `scriptdefine` | Needed by `serverlock`: it is what makes `DZHOOK_SERVERLOCK` visible to the mod's scripts. |
+| `spectatorbubble` (on by default; serverkit PR #24, merged 2026-11-07) | **Read by the mod** through `DZHOOK_SPECTATORBUBBLE`. While it is set, a spectator's bubble follows their camera, and the mod stops carrying corpses. Tested working on the diag rig (see below). |
+| `scriptdefine` | Needed by `serverlock` and `spectatorbubble`: it is what makes `DZHOOK_SERVERLOCK` and `DZHOOK_SPECTATORBUBBLE` visible to the mod's scripts. |
 | `lockdrain` | None. It changes what `#lock` / `LockSession` does. `scriptlock` and `serverlock` set the lock bit directly and `adminbypass` uses the whitelist, so none of them drains. |
 | `highpriority`, `reservedslots`, `userlistreload`, `maxplayers`, `reconnectpriority` | None. These are queue and slot policy driven by the operator's own `.txt` files. |
 
@@ -121,6 +122,28 @@ set DZHOOK_SERVERLOCK=1
 **Verified** on retail `DayZServer_x64.exe` 1.30.164.289 and on `DayZDiag_x64.exe` as server, with serverkit `9c40081`:
 - **2026-11-06, from a probe build:** `DZHOOK_SERVERLOCK` reached both `4_World` and `5_Mission`, the file-scope declarations compiled and bound, and the hook logged `[serverlock] ServerLock() -> locked` / `ServerUnlock() -> open`.
 - **This integration, on retail:** the boot logged `[NativeLock] ServerUnlock() called` with the hook's `ServerUnlock() -> open`, and the countdown (reached with COT's *Next state*) logged `[NativeLock] ServerLock() called` with `[serverlock] ServerLock() -> locked` in the same millisecond. Without `DZHOOK_SERVERLOCK` the natives compile out and the script log is clean.
+
+## The `spectatorbubble` hook
+
+**Requested in serverkit [#22](https://github.com/LeMyst/dayz-serverkit/issues/22), implemented in serverkit PR [#24](https://github.com/LeMyst/dayz-serverkit/pull/24), merged 2026-11-07 (`0362036`).** Build a DLL from the composer at or after that commit. #22 stays open for the two items still open: coming back from inside 1 km, and retail with clients. The module docs now warn about the stacked-camera trap described in [`spectating.md`](spectating.md). It is on by default; `DZHOOK_SPECTATORBUBBLE=0` turns it off. The server overwrites a spectator's bubble centre every tick with the position of their person entity, which for a dead player is their corpse. That is the ~1 km spectate limit; [`spectating.md`](spectating.md) has the measurements and the decoded mechanism. The hook skips the overwrite while the connection is spectating.
+
+The mod side is one compile-time switch with no native. `BattleRoyaleNativeBubble.FollowsCamera()` (`Scripts/Server/4_World/NativeHooks/`) returns whether `DZHOOK_SPECTATORBUBBLE` is defined. When it is, `BattleRoyaleSpectators.CarryCorpse` does nothing, so the body stays lootable where it fell. `CarryAnchorBody` does nothing either, so an admin's own body stays where they respawned. It was kept at first and dropped after the 2026-11-07 test, in which it never actually moved the body. Since nothing is bound, a hook built without the module simply leaves the define absent, and the carry works as before. `BattleRoyaleServer.Init` prints one `[NativeBubble]` line naming the mode, through `Print` like `[NativeLock]`, so it shows on retail.
+
+The hook registers the define only once all three of its trampolines are installed (`CreateObjectsList`, `UpdateBubble`, `SelectPlayer`). So a half-installed hook leaves the define absent, and the corpse is still carried. It logs `[spectatorbubble] dpid N: spectating, bubble follows the camera` when a connection starts spectating, and `bubble back on its person` when `SelectPlayer` hands it a real body again. Engine-side, only a new login clears the spectator flag, so `SelectPlayer` is where the hook clears it for `AdminRespawn` and `FinishAdminExit`.
+
+**Verified 2026-11-07** ([results on PR #24](https://github.com/LeMyst/dayz-serverkit/pull/24#issuecomment-6705954405)):
+- **Retail `DayZServer_x64.exe` 1.30, boot only:** with PR #24's `42af665` the hook logged `spectatorbubble: active`, and the mod logged `[NativeBubble] DZHOOK_SPECTATORBUBBLE set…` from the real define. (The line now ends "no body is carried", since the admin carry is skipped too.)
+- **Diag rig, three clients:** PR #24 at `19caa78`, with `DayZDiag_x64 -server` plus three diag clients. A dead player's watched target stayed replicated (`entity=1`) in every sample, out to 2590 m from the corpse and right after diag teleports to 1200, 1350 and 1400 m. Myst saw the character, not just the nametag. The body stayed at the death spot, and the spectator client logged no script error with its own body 2.6 km outside its bubble.
+- **Second run, same rig:**
+  - **Looting:** C took the dead B's items into its own inventory from the body.
+  - **F3 round-trip:** the hook logged `bubble back on its person` on `FinishAdminExit` and `spectating…` on the next entry.
+  - **A mod bug, now fixed:** stale spectator cameras kept pushing an old position and held the bubble there. Fixed and retested: with one camera alive, cycling between targets 1.8 km apart kept both at `entity=1`. [`spectating.md`](spectating.md) has the details.
+- **Not covered:** coming back from inside 1 km.
+
+Three things about testing it locally, all hit that day:
+- **The retail server cannot take local clients.** It loads `BEServer_x64.dll` even with `BattlEye = 0;` in `serverDZ.cfg`, and kicks every client without BattlEye after about 10 s with `240 (Game restart required)`. It also refuses diag clients with `0x00020017`. So the client test runs on the diag rig, which needed DayZDiag signatures (`b0879b3`).
+- **Builds before `19caa78` crash any client that loads the DLL**, even though no hook installs in a client. The proxy's `CreateFX` was a stub that never wrote its out-pointer, and a client calls it for audio. Older DLLs must stay out of a folder clients start from.
+- **The define arrives from the hook, not from `DZHOOK_DEFINES`.** Faking it through `DZHOOK_DEFINES=DZHOOK_SPECTATORBUBBLE` tests the mod's compile path only: it makes the mod stop carrying corpses with nothing making the bubble follow the camera.
 
 ## Not done, and why
 

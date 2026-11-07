@@ -1027,6 +1027,10 @@ class BattleRoyaleSpectators
     {
         if (!BR_SPECTATE_CARRY_CORPSE)
             return;
+        //--- With the dzhooks spectatorbubble module the bubble follows the camera, so moving the
+        //--- corpse buys nothing and costs the victim's lootable body. See BattleRoyaleNativeBubble.
+        if (BattleRoyaleNativeBubble.FollowsCamera())
+            return;
         if (!entry)
             return;
         if (entry.target_uid == "")
@@ -1278,7 +1282,9 @@ class BattleRoyaleSpectators
      *  died (sustained 90 s, no recovery walking back to 1122 m) and is replicated again at 700 m,
      *  with the camera's UpdateSpectatorPosition running throughout - 507 pushes, camera always
      *  within ~4 m of the pushed position. That call is documented as "position of network bubble"
-     *  and has no effect on player replication.
+     *  and has no effect on player replication. The server does store the push, then overwrites it
+     *  with the person entity's position every tick (serverkit #22); BattleRoyaleNativeBubble has
+     *  the detail and the hook that removes the overwrite.
      *
      *  So this line is kept for what it actually does - taking the entity out of the connection's
      *  selection so the client stops treating it as its own player - and the range limit is answered
@@ -2110,6 +2116,15 @@ class BattleRoyaleSpectators
     protected void CarryAnchorBody(BattleRoyaleSpectatorEntry entry)
     {
         if (!entry)
+            return;
+
+        //--- With the dzhooks spectatorbubble module the bubble follows the camera, so the anchor
+        //--- buys nothing. It was kept at first as the conservative half; the 2026-11-07 diag test
+        //--- dropped it. There the body never moved at all - every "Anchor admin" line for minutes
+        //--- started from the same respawn position - so with the hook it had only been adding a
+        //--- failing juncture per second, while the admin ran 13.8 km from their own body with no
+        //--- client error. See BattleRoyaleNativeBubble.
+        if (BattleRoyaleNativeBubble.FollowsCamera())
             return;
         if (entry.cam_pos == "0 0 0")
             return;  //--- no camera report yet

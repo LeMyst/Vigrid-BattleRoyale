@@ -108,6 +108,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 		//--- exits locked), so this is not optional once the hook is watching it: skip it and the
 		//--- server stays locked forever. A no-op without the hook. See BattleRoyaleNativeLock.
 		BattleRoyaleNativeLock.Set( false );
+		BattleRoyaleNativeBubble.LogMode();
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
