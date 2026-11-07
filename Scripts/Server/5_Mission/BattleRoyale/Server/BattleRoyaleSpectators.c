@@ -2117,6 +2117,15 @@ class BattleRoyaleSpectators
     {
         if (!entry)
             return;
+
+        //--- With the dzhooks spectatorbubble module the bubble follows the camera, so the anchor
+        //--- buys nothing. It was kept at first as the conservative half; the 2026-11-07 diag test
+        //--- dropped it. There the body never moved at all - every "Anchor admin" line for minutes
+        //--- started from the same respawn position - so with the hook it had only been adding a
+        //--- failing juncture per second, while the admin ran 13.8 km from their own body with no
+        //--- client error. See BattleRoyaleNativeBubble.
+        if (BattleRoyaleNativeBubble.FollowsCamera())
+            return;
         if (entry.cam_pos == "0 0 0")
             return;  //--- no camera report yet
 

@@ -20,11 +20,11 @@
 //--- What the mod changes when it is set:
 //---   - CarryCorpse does nothing. The corpse stays where the player fell, with its gear on it, and
 //---     stays lootable like any other body - which is the whole point.
-//---   - CarryAnchorBody is KEPT. An admin's live body is still their person entity, and the hook no
-//---     longer re-centres the bubble on it. Carrying it under the camera keeps it at the bubble's
-//---     centre, so the server never tries to drop the admin's own controlled entity out of their
-//---     bubble. The admin path is not tested with the hook yet; keeping the carry is the
-//---     conservative half.
+//---   - CarryAnchorBody does nothing either. It was kept at first, as the conservative half, and
+//---     dropped after the 2026-11-07 diag test. In admin spectate the body never moved under it -
+//---     every "Anchor admin" line started from the same respawn position - while the admin ran
+//---     13.8 km from their own body with no client error, and the hook logged "bubble back on its
+//---     person" on FinishAdminExit as designed.
 //---
 //--- Without the hook the define is absent and both carries run exactly as before.
 class BattleRoyaleNativeBubble
@@ -44,7 +44,7 @@ class BattleRoyaleNativeBubble
 	static void LogMode()
 	{
 		if ( FollowsCamera() )
-			Print("[DayZ-BattleRoyale][NativeBubble] DZHOOK_SPECTATORBUBBLE set: the bubble follows the spectator camera, corpses are not carried");
+			Print("[DayZ-BattleRoyale][NativeBubble] DZHOOK_SPECTATORBUBBLE set: the bubble follows the spectator camera, no body is carried");
 		else
 			Print("[DayZ-BattleRoyale][NativeBubble] no spectatorbubble hook: corpses are carried to keep the bubble in range");
 	}

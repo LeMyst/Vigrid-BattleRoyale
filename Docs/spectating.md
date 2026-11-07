@@ -107,7 +107,7 @@ values while `pushes` keeps climbing (`EndSpectate` deliberately leaves the came
 
 **Why the push has no effect, decoded engine-side (serverkit [#22](https://github.com/LeMyst/dayz-serverkit/issues/22), 2026-11-07).** The server keeps one record per connection, and its bubble centre is what replication is computed around. `UpdateSpectatorPosition` **does** reach the server, and once `SelectSpectator` has flagged the connection as a spectator it **is** stored as that centre. Then, every tick and just before the bubble is recomputed, the server overwrites the centre with the position of the connection's **person entity**. `SelectPlayer(identity, NULL)` never detaches that entity: with NULL, `CGame::SelectPlayer` turns off the local camera and makes no network call at all, which is also why `GetPlayer()` keeps returning the corpse. A dead `PlayerBase` is still a `Person`, so the corpse always wins, and moving it moves the bubble. The bubble also re-centres only after 10 m of movement or 3 s, which is part of the ~7 s recovery after a carry. This was analysed on the 1.29 and 1.30 Linux servers, then on Windows 1.30 for serverkit PR #24: same mechanism, with MSVC laying the record out at different offsets.
 
-**With the dzhooks `spectatorbubble` hook, the corpse is not carried at all.** The hook skips that overwrite while the connection is spectating, so the bubble follows the camera. It also injects `DZHOOK_SPECTATORBUBBLE`, and `BattleRoyaleNativeBubble.FollowsCamera()` (`Scripts/Server/4_World/NativeHooks/`) tests that define. When it is set, `CarryCorpse` returns at once, so the body stays where the player fell, gear included, and lootable. `CarryAnchorBody` still runs for admins: their live body is still their person entity, and carrying it under the camera keeps it at the bubble's centre, so the server never drops the admin's own controlled entity out of their bubble. Boot logs one `[NativeBubble]` line naming the mode.
+**With the dzhooks `spectatorbubble` hook, the corpse is not carried at all.** The hook skips that overwrite while the connection is spectating, so the bubble follows the camera. It also injects `DZHOOK_SPECTATORBUBBLE`, and `BattleRoyaleNativeBubble.FollowsCamera()` (`Scripts/Server/4_World/NativeHooks/`) tests that define. When it is set, `CarryCorpse` returns at once, so the body stays where the player fell, gear included, and lootable. `CarryAnchorBody` is skipped as well. It was kept at first, to hold the admin's live body at the bubble's centre, and dropped after the 2026-11-07 test: under it the body never moved, and the admin ran 13.8 km from their own body with no client error. Boot logs one `[NativeBubble]` line naming the mode.
 
 **Tested 2026-11-07 on the diag rig, and it works.** The hook is serverkit PR #24 at `19caa78`, not merged yet. The rig was `DayZDiag_x64 -server` plus three diag clients, each player their own side:
 - Client_B died, and the hook logged `spectating, bubble follows the camera` in the same second as `BeginSpectate`.
@@ -116,7 +116,13 @@ values while `pushes` keeps climbing (`EndSpectate` deliberately leaves the came
 - When the target died, B was retargeted to the last player and kept seeing them.
 - B logged no script error in 6.5 minutes of spectating with its own body 2.6 km outside its bubble. That was the risk PR #24 named.
 
-Still untested: looting the body, coming back from inside 1 km, and the F3 admin round-trip, which should log `bubble back on its person`. The test needed the diag rig because a retail server keeps BattlEye even with `BattlEye = 0;` and kicks local clients; [`native-hooks.md`](native-hooks.md) has the details.
+A second run the same day (12:30–12:37) covered two more things:
+- **Looting.** B died at `<2768.4, 217.9, 12341.0>`, and C took B's items into its own inventory from the body there. B's trace: 36 of 36 samples at `entity=1`, out to 3038 m.
+- **The F3 admin round-trip.** The dead B pressed F3 (`AdminRespawn`), left, and pressed it again. The hook logged `bubble back on its person` on `FinishAdminExit`, then `spectating, bubble follows the camera` on the second entry.
+
+That run also turned up a mod bug the hook exposes. ⚠️ **Spectator cameras leaked, and each pushed the bubble.** Every `SelectSpectator` makes the engine create a new `BattleRoyaleSpectatorCamera`, and nothing destroys the previous one. B ended up with three of them ticking, each calling `UpdateSpectatorPosition`; you could tell them apart in B's trace by their independent `pushes` counters. With the hook the bubble centre is simply the last push, so the two stale cameras, parked at Client_A, held the bubble there. The admin kept seeing A and lost C, 4.4 km away, after cycling to them. **Fixed:** `EOnFrame` now returns at once unless the camera is `s_Instance`, the newest one. Before the hook the server ignored those pushes, which is why the leak never showed.
+
+Still untested: coming back from inside 1 km, and the camera fix itself. The test needed the diag rig because a retail server keeps BattlEye even with `BattlEye = 0;` and kicks local clients; [`native-hooks.md`](native-hooks.md) has the details.
 
 **Do not "fix" this by creating a body to carry the bubble.** The diagnosis above is right; the
 carrier is still wrong, and every part of *it* failed:
@@ -269,6 +275,11 @@ Five things worth knowing:
   following admin never updated `cam_pos`, the carry measured zero drift from the respawn point and
   never fired, and the bubble stayed where they respawned — the symptom being that the admin opens
   the camera and sees *no players at all*.
+  ⚠️ **Seen not moving at all on 2026-11-07** (diag rig, with the hook). Every `Anchor admin` line for
+  minutes started from the same respawn position, so `MoveCorpse` on the live admin body was never
+  applied. A guess, not yet verified: the juncture needs the client's ack, and a client in spectator
+  mode no longer controls that body. **Under the dzhooks `spectatorbubble` hook the carry is now
+  skipped**, like `CarryCorpse`. Without the hook it still runs, and still needs looking into.
 - ⚠️ **A carried LIVE body is visible and its teleports replicate — AND THIS IS STILL UNSOLVED.**
   The "a carried body's replicated position does not move" measurement in the section above was
   taken on a **corpse** and does **not** carry over: a live body is still simulated, so other
