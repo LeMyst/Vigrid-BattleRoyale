@@ -137,7 +137,7 @@ The hook registers the define only once all three of its trampolines are install
 - **Second run, same rig:**
   - **Looting:** C took the dead B's items into its own inventory from the body.
   - **F3 round-trip:** the hook logged `bubble back on its person` on `FinishAdminExit` and `spectating…` on the next entry.
-  - **A mod bug, now fixed:** stale spectator cameras kept pushing an old position and held the bubble there. [`spectating.md`](spectating.md) has the details.
+  - **A mod bug, now fixed:** stale spectator cameras kept pushing an old position and held the bubble there. Fixed and retested: with one camera alive, cycling between targets 1.8 km apart kept both at `entity=1`. [`spectating.md`](spectating.md) has the details.
 - **Not covered:** coming back from inside 1 km.
 
 Three things about testing it locally, all hit that day:

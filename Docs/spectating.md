@@ -122,7 +122,9 @@ A second run the same day (12:30–12:37) covered two more things:
 
 That run also turned up a mod bug the hook exposes. ⚠️ **Spectator cameras leaked, and each pushed the bubble.** Every `SelectSpectator` makes the engine create a new `BattleRoyaleSpectatorCamera`, and nothing destroys the previous one. B ended up with three of them ticking, each calling `UpdateSpectatorPosition`; you could tell them apart in B's trace by their independent `pushes` counters. With the hook the bubble centre is simply the last push, so the two stale cameras, parked at Client_A, held the bubble there. The admin kept seeing A and lost C, 4.4 km away, after cycling to them. **Fixed:** `EOnFrame` now returns at once unless the camera is `s_Instance`, the newest one. Before the hook the server ignored those pushes, which is why the leak never showed.
 
-Still untested: coming back from inside 1 km, and the camera fix itself. The test needed the diag rig because a retail server keeps BattlEye even with `BattlEye = 0;` and kicks local clients; [`native-hooks.md`](native-hooks.md) has the details.
+**The fix was retested the same day (12:56–12:59).** B died, pressed F3, F3 again to leave, and F3 a third time to re-enter, then cycled between A and C, who were about 1.8 km apart. B's trace showed a single camera, its `pushes` counter climbing 10 → 172 with nothing interleaved, and `entity=1` in every sample, including the first sample after each cycle. Myst saw both targets.
+
+Still untested: coming back from inside 1 km. The test needed the diag rig because a retail server keeps BattlEye even with `BattlEye = 0;` and kicks local clients; [`native-hooks.md`](native-hooks.md) has the details.
 
 **Do not "fix" this by creating a body to carry the bubble.** The diagnosis above is right; the
 carrier is still wrong, and every part of *it* failed:
