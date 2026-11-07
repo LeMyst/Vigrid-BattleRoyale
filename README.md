@@ -4,15 +4,71 @@ Original work by Kegan: https://gitlab.desolationredux.com/DayZ/DayZBR-Mod/Battl
 
 ## Dependencies
 
-This mod requires the following mods. Their source code is available on GitHub — useful when
+This mod requires the first three mods below. Their source code is available on GitHub — useful when
 checking a dependency's API:
 
-| Mod                      | Source                                                    |
-|--------------------------|-----------------------------------------------------------|
-| CF (Community Framework) | https://github.com/Arkensor/DayZ-CommunityFramework        |
-| Dabs Framework           | https://github.com/InclementDab/DayZ-Dabs-Framework        |
-| Community Online Tools   | https://github.com/Jacob-Mango/DayZ-CommunityOnlineTools   |
-| DayZ Expansion           | https://github.com/salutesh/DayZ-Expansion-Scripts         |
+| Mod                      | Required | Source                                                    |
+|--------------------------|----------|-----------------------------------------------------------|
+| CF (Community Framework) | yes      | https://github.com/Arkensor/DayZ-CommunityFramework        |
+| Dabs Framework           | yes      | https://github.com/InclementDab/DayZ-Dabs-Framework        |
+| Community Online Tools   | yes      | https://github.com/Jacob-Mango/DayZ-CommunityOnlineTools   |
+| DayZ Expansion           | no       | https://github.com/salutesh/DayZ-Expansion-Scripts         |
+
+Without DayZ Expansion the mod gives up only the Expansion-specific touches: hiding Expansion's news
+feed in the Esc menu, its version in the version line, airdrops (`ExpansionMissionModule`), and
+suppressing Expansion's own kill feed. **When Expansion is loaded, list `@Vigrid-BattleRoyale` after
+it in `-mod=`**: the load order is what lets this mod's classes override Expansion's.
+
+## Running a server
+
+### Native hooks (dayz-serverkit)
+
+[dayz-serverkit](https://github.com/LeMyst/dayz-serverkit)'s `dzhooks` is an optional native hook
+library for the dedicated server: `XAPOFX1_5.dll` next to `DayZServer_x64.exe` on Windows,
+`dzhooks.so` through `LD_PRELOAD` on Linux. Build it from the
+[composer](https://lemyst.github.io/dayz-serverkit/composer/). **The mod runs without it**; each
+feature below simply switches off when its module is absent.
+
+Pick these modules in the composer:
+
+| Module | Status | What the mod does with it |
+|---|---|---|
+| `scriptdefine` | **required** by the three below | Makes the hook's defines visible to the mod's scripts |
+| `serverlock` | **recommended** | Locks the server when the match countdown starts, so nobody joins a running match |
+| `spectatorbubble` | **recommended** if `spectate_enabled` is on | A spectator's network bubble follows their camera, which lifts the ~1 km spectate limit |
+| `announce` | **recommended** | Shows the match phase in the server-browser name: `[LOBBY 3]`, `[STARTING 0:10]`, `[IN GAME 2 left]`, `[ENDING]` |
+| `adminbypass` | alternative to `serverlock` | Lets the admins in `whitelist.txt` join a locked match. **Never together with `serverlock`**: set `DZHOOK_SERVERLOCK=0` |
+
+Build at serverkit `377ca1c` (2026-11-07) or later. It is the first commit on `main` that has all
+four of the modules above. The other modules (`highpriority`, `reservedslots`, `maxplayers`, …) are
+operator policy and the mod does not use them. **Run the package's `check_version.py` after every DayZ update**: the hook is pinned to
+one server build, and a stale offset crashes the server. Setup, the lock file and the measurements
+are in [`Docs/native-hooks.md`](Docs/native-hooks.md).
+
+### Central Economy (`db/globals.xml`)
+
+Today the server restarts between matches, and that restart is what re-rolls the loot. Stock values
+work for that. The table is for a server that expires loot in place with `GetCEApi().TimeShift`, the
+groundwork for a reset without a restart (serverkit
+[#29](https://github.com/LeMyst/dayz-serverkit/issues/29)). Setting it now does no harm. Measured on
+DayZ 1.30, ChernarusPlus, November 2026:
+
+| Variable | Stock | Recommended | Why |
+|---|---|---|---|
+| `CleanupLifetimeLimit` | 50 | **5000** | It caps how many **expired** items CE deletes per cleanup cycle (about every 50 s). At 50, expiring the whole map with `GetCEApi().TimeShift` takes over an hour; at 5000, 93% is gone in about 3 minutes. It does not make anything expire sooner. During a match it only affects items whose lifetime has already run out (ruined items, dead infected), which then go without queueing. |
+| `RespawnLimit`, `RespawnTypes` | 20, 12 | leave stock | Do not tune them for loot. Raised 50× together, they made the loot refill no faster. According to [serverkit's reverse engineering](https://github.com/LeMyst/dayz-serverkit/issues/29), `RespawnLimit` belongs to the infected spawner and nothing reads `RespawnTypes`. |
+
+Loot must not refill during a match: if it does, it piles up and players can no longer tell a
+building has already been looted. Respawn settings apply for the whole session, since a script can
+read them but not change them. So never raise them to speed up a refill.
+
+### `serverDZ.cfg`
+
+| Key | Notes |
+|---|---|
+| `maxPlayers` | Read by the lobby: a full lobby stops waiting for more players, and the autostart threshold is derived from it |
+| `BRLogLevel` | Log verbosity, 1-4; negative disables logging. Same as the `-br-*` launch parameters below |
+| `enableWhitelist` | Keep `0` when you use `adminbypass`: the module switches the whitelist on itself while locked |
 
 ## LICENSE
 
