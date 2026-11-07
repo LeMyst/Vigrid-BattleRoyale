@@ -1,8 +1,9 @@
 #ifdef SERVER
 //--- The dzhooks `announce` module (serverkit #23, PR #26) binds these two natives, and its
 //--- `scriptdefine` sibling injects DZHOOK_ANNOUNCE when it does - so the guard is true exactly when
-//--- the natives exist. Same shape as DZHOOK_SERVERLOCK in BattleRoyaleNativeLock: an unbound
-//--- `proto native` is a compile failure, so the declarations and every call sit behind the guard.
+//--- the natives exist. Same shape as DZHOOK_SERVERLOCK in BattleRoyaleNativeLock: the declarations
+//--- and every call sit behind the guard. Calling an unbound `proto native` raises a VM exception
+//--- ("not linked") rather than failing the build; BattleRoyaleNativeLock's header has the details.
 //---
 //--- Unlike the serverlock natives these TAKE AN ARGUMENT. A `proto native` is called as a plain C
 //--- function and a `string` arrives as a `const char*` (serverkit PROTO_NATIVE.md section 4).

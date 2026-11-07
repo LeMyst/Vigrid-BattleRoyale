@@ -1,9 +1,16 @@
 #ifdef SERVER
 //--- The dzhooks `serverlock` module binds these two natives, and its `scriptdefine` module injects
 //--- DZHOOK_SERVERLOCK into every script module when it does - so the guard is true exactly when the
-//--- natives exist. An unbound `proto native` is a compile failure, which is why the declarations
-//--- and the calls sit behind the same guard and nothing names them anywhere else. Without the hook
-//--- (or with DZHOOK_SERVERLOCK unset on the hook side) both compile out.
+//--- natives exist. The declarations and the calls sit behind that guard and nothing names them
+//--- anywhere else. Without the hook (or with DZHOOK_SERVERLOCK unset on the hook side) both
+//--- compile out.
+//---
+//--- What the guard protects against is NOT a compile failure. An unbound `proto native` compiles,
+//--- and CALLING it raises a VM exception, "Function 'X' not linked", after which the script carries
+//--- on. Vanilla's own unbound natives log "(W) Method not linked" at load. Measured 2026-11-07 on
+//--- retail 1.30 with a native the loaded DLL did not bind. This file used to say "compile failure",
+//--- which was assumed and never measured. So a guard is only as safe as the promise behind it: every
+//--- DLL that injects the define must bind every native declared under it.
 #ifdef DZHOOK_SERVERLOCK
 proto native void ServerLock();
 proto native void ServerUnlock();
