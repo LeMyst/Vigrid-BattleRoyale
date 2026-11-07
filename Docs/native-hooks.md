@@ -10,9 +10,9 @@ Of the composer's eleven modules, **the lock is the mod's job** and the rest are
 
 | Module | Mod involvement |
 |---|---|
-| `scriptlock` | **Driven by the mod** through the sentinel file below. Locks like `#lock`, so it refuses everyone, admins included. |
-| `adminbypass` (opt-in) | **Driven by the mod** through the same file. While it is locked only `whitelist.txt` IDs can connect, and nobody already in game is kicked. |
-| `serverlock` (opt-in) | **Driven by the mod** through `ServerLock()` / `ServerUnlock()`, at the same two moments as the file. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
+| `scriptlock` | **Driven by the mod** through the sentinel file below, when the hook has no `serverlock`. Locks like `#lock`, so it refuses everyone, admins included. |
+| `adminbypass` (opt-in) | **Driven by the mod** through the same file, so also only without `serverlock`. While it is locked only `whitelist.txt` IDs can connect, and nobody already in game is kicked. |
+| `serverlock` (opt-in) | **Preferred. Driven by the mod** through `ServerLock()` / `ServerUnlock()` whenever the hook provides them, and the file is then not used to lock. Same lock bit as `scriptlock`, so it refuses admins too. **Never with `adminbypass`.** |
 | `scriptdefine` | Needed by `serverlock`: it is what makes `DZHOOK_SERVERLOCK` visible to the mod's scripts. |
 | `lockdrain` | None. It changes what `#lock` / `LockSession` does. `scriptlock` and `serverlock` set the lock bit directly and `adminbypass` uses the whitelist, so none of them drains. |
 | `highpriority`, `reservedslots`, `userlistreload`, `maxplayers`, `reconnectpriority` | None. These are queue and slot policy driven by the operator's own `.txt` files. |
@@ -20,7 +20,9 @@ Of the composer's eleven modules, **the lock is the mod's job** and the rest are
 
 ## The lock file
 
-`BattleRoyaleNativeLock` (`Scripts/Server/4_World/NativeHooks/`) writes **`$profile:Vigrid-BattleRoyale\server_lock.txt`**:
+**The file is the fallback.** When the hook provides `serverlock`, the mod locks through its natives instead (see *The `serverlock` natives* below) and only ever writes `0` here.
+
+Without `serverlock`, `BattleRoyaleNativeLock` (`Scripts/Server/4_World/NativeHooks/`) writes **`$profile:Vigrid-BattleRoyale\server_lock.txt`**:
 
 - **`1` in `2_BattleRoyaleCountReached.Activate`**, beside the Vigrid API and autolock webhooks, i.e. the moment the match countdown starts and the roster freezes.
 - **`0` in `BattleRoyaleServer.Init`**, on every boot.
@@ -85,7 +87,7 @@ The hook's signatures and offsets are pinned to one `DayZServer` build (**1.30.1
 
 ## The `serverlock` natives
 
-`BattleRoyaleNativeLock.SetNative` calls **`ServerLock()` when the countdown starts and `ServerUnlock()` at boot**, the same two moments as the file. It is the file's alternative to `scriptlock`, with the same effect (lock bit `0x04` of the server params, refusing everyone) and three differences:
+**The mod's preferred lock.** When `DZHOOK_SERVERLOCK` is defined, `BattleRoyaleNativeLock.Set` calls **`ServerLock()` when the countdown starts and `ServerUnlock()` at boot**, and does not lock through the file. It has the same effect as `scriptlock` (lock bit `0x04` of the server params, refusing everyone) and three advantages:
 
 - **No file and no path to configure.** The operator sets `DZHOOK_SERVERLOCK=1` and nothing else.
 - **The bit dies with the process.** A crash mid-match cannot leave the next boot locked, whatever `write_lock_file` says.
@@ -98,13 +100,23 @@ set DZHOOK_SERVERLOCK=1
 
 **How the guard works.** The natives are declared at file scope in `BattleRoyaleNativeLock.c`, under `#ifdef DZHOOK_SERVERLOCK`, and called only under the same guard. An unbound `proto native` is a compile failure, so the two must never drift apart. The define comes from the hook: `serverlock` registers it when it installs, and `scriptdefine` injects it into every script module through `enf::CParser::AddStaticDef`, whatever the `-mod=` order. No companion mod is involved; there used to be one, `DZHook_API`, and it is gone. Without the DLL, or with `DZHOOK_SERVERLOCK` unset, the define is absent and both the declarations and the calls compile out.
 
-⚠️ **Do not combine it with `adminbypass`.** `adminbypass` locks by switching the whitelist on and leaves bit `0x04` clear. `ServerLock()` sets that bit, and the engine tests it in `ctrlReceive` *before* the whitelist, so the admins `adminbypass` exists to let in are refused. For a server whose admins join mid-match, use `adminbypass` with the file and leave `DZHOOK_SERVERLOCK` unset. With `scriptlock` it is merely redundant: both set the same bit.
+**Which to choose:**
+
+| The server needs | Use |
+|---|---|
+| a plain lock at the countdown (the default) | `serverlock`: `DZHOOK_SERVERLOCK=1`, no `DZHOOK_LOCKFILE` |
+| admins able to join mid-match | `adminbypass` with the file, and `DZHOOK_SERVERLOCK` **unset** |
+| something outside the mod (an operator script, a panel) driving the lock too | `scriptlock` with the file, and `DZHOOK_SERVERLOCK` unset |
+
+⚠️ **Do not combine it with `adminbypass`.** `adminbypass` locks by switching the whitelist on and leaves bit `0x04` clear. `ServerLock()` sets that bit, and the engine tests it in `ctrlReceive` *before* the whitelist, so the admins `adminbypass` exists to let in are refused. And with `serverlock` present the mod never writes `1` to the file, so `adminbypass` would not even switch its whitelist on.
+
+**The boot `0` is still written when the file exists.** A server moved from the file to `serverlock` may keep `DZHOOK_LOCKFILE` set, with a `1` left by its last file-driven match. Nothing else would ever clear it, and `scriptlock` would hold that server locked. When the file does not exist, nothing is created.
 
 `write_lock_file` does not gate the natives. That switch is about the file, and the natives already require the operator's explicit `DZHOOK_SERVERLOCK=1`.
 
 **Verified** on retail `DayZServer_x64.exe` 1.30.164.289 and on `DayZDiag_x64.exe` as server, with serverkit `9c40081`:
 - **2026-11-06, from a probe build:** `DZHOOK_SERVERLOCK` reached both `4_World` and `5_Mission`, the file-scope declarations compiled and bound, and the hook logged `[serverlock] ServerLock() -> locked` / `ServerUnlock() -> open`.
-- **This integration's own boot path:** see the PR that added it.
+- **This integration, on retail:** the boot logged `[NativeLock] ServerUnlock() called` with the hook's `ServerUnlock() -> open`, and the countdown (reached with COT's *Next state*) logged `[NativeLock] ServerLock() called` with `[serverlock] ServerLock() -> locked` in the same millisecond. Without `DZHOOK_SERVERLOCK` the natives compile out and the script log is clean.
 
 ## Not done, and why
 
