@@ -71,6 +71,17 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
         super.Deactivate();
     }
 
+    //! Whole seconds until the match starts, rounded up, or -1 when no countdown is running.
+    //! The IsRunning test is not defensive: a one-shot Timer that has fired reports its FULL
+    //! duration from GetRemaining (TimerBase.Tick zeroes m_time before the callback).
+    int GetSecondsToStart()
+    {
+        if ( !m_StartTimer || !m_StartTimer.IsRunning() )
+            return -1;
+
+        return Math.Ceil( m_StartTimer.GetRemaining() );
+    }
+
     void DoStart()
     {
         //--- Deferred: this is a timer callback, i.e. inside TimerQueue.Tick. See
