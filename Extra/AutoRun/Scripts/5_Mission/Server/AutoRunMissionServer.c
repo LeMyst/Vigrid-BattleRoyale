@@ -65,11 +65,14 @@ modded class MissionServer
         //--- Re-checked here even though the client checks too, for the same reason every other
         //--- server handler in this repo does: a modified client is not bound by our UI. A dead or
         //--- unconscious player is released rather than refused, so a stale hold cannot survive.
+        //--- While the host refuses holds, OFF is a no-op for a frozen player: CancelFor forgot them.
         if (speed != VIGRID_AUTORUN_SPEED_OFF)
         {
             if (!player.IsAlive())
                 speed = VIGRID_AUTORUN_SPEED_OFF;
             else if (player.IsUnconscious())
+                speed = VIGRID_AUTORUN_SPEED_OFF;
+            else if (!VigridAutoRunState.IsAllowed())
                 speed = VIGRID_AUTORUN_SPEED_OFF;
         }
 

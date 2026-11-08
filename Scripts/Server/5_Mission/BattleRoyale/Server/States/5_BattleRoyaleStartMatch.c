@@ -225,6 +225,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
             player.DisableInput(false); //This will re-enable input
 			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );
         }
+#ifdef VIGRID_AUTORUN
+        VigridAutoRunAPI.SetAllowedForAll( true ); // after the loop: the unlock itself writes DISABLED
+#endif
 
         MessagePlayersUntranslated( "STR_BR_MATCH_STARTED" );
         MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", i_FirstRoundDelay );
