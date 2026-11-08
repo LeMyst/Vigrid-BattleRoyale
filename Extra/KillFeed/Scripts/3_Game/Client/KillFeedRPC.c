@@ -43,7 +43,8 @@ class KillFeedRPC
         Param6<string, string, string, string, int, int> data;
         if (!ctx.Read(data))
         {
-            Error("FAILED TO READ KF_ENTRY RPC");
+            //--- The addon logger, like the rest of this addon, not the global Error() message box.
+            KillFeedLog.Error("FAILED TO READ KF_ENTRY RPC");
             return;
         }
 

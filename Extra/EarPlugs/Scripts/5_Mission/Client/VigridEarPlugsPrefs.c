@@ -62,8 +62,8 @@ class VigridEarPlugsPrefs
         string error_message;
         if (!JsonFileLoader<VigridEarPlugsPrefsData>.LoadFile(VIGRID_EARPLUGS_PREFS_FILE, m_Data, error_message))
         {
-            //--- Warn, not ErrorEx: a fatal here would take the client down over a comfort setting.
-            //--- A corrupt file just means Off for the session.
+            //--- Warn: a corrupt prefs file is the player's own and just means Off for the session,
+            //--- so it is not an error-severity event.
             VigridEarPlugsLog.Warn("Could not read client prefs: " + error_message);
             m_Data = new VigridEarPlugsPrefsData();
             return;

@@ -211,10 +211,22 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     void HandleUnlock()
     {
         BattleRoyaleUtils.Trace("HandleUnlock");
+        //--- EVERY dereference in this loop is guarded, and that is load-bearing rather than tidy.
+        //--- a_PlayerList is a copy of the live roster, and a player whose client dropped stays on that
+        //--- roster until the logout timer runs out (RemovePlayer only runs from PlayerDisconnected) -
+        //--- with an identity that may already be gone. A throw here aborts the coroutine before
+        //--- anything below the loop runs: every later player stays frozen, b_IsGameplay stays false,
+        //--- the SafeZone truce is never lifted (nobody can damage anybody for the whole match) and
+        //--- the leaderboard match never opens. The Trace argument is evaluated whatever the log
+        //--- level, so an inline GetIdentity().GetName() threw from a disabled log call.
         for(int i = 0; i < a_PlayerList.Count(); i++)
         {
             PlayerBase player = a_PlayerList[i];
-            BattleRoyaleUtils.Trace("Unlock " + player.GetIdentity().GetName());
+            if ( !player )
+                continue;
+
+            string player_name = GetPlayerLogName( player );
+            BattleRoyaleUtils.Trace("Unlock " + player_name);
 
             player.DisableInput(false); //This will re-enable input
 			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );

@@ -121,7 +121,9 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
-			BattleRoyaleUtils.Trace("Server password: " + m_ServerData.server_password);
+			//--- Never log server_password, at any level. Trace reaches the .rpt, and on a DIAG server
+			//--- BattleRoyaleUtils mirrors every Trace line to all clients over the untargeted ChatLog
+			//--- RPC - and since the in-place reset this Init() re-runs with players connected.
 			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token, m_ServerData.server_password );
 			match_uuid = createMatchWebhook.getMatchUUID();
 
@@ -993,10 +995,20 @@ class BattleRoyaleServer: BattleRoyaleBase
 		{
 		    if ( player.IsUnconscious() )
             {
+                //--- Resolved once, guarded: the four log lines below used to inline
+                //--- player.GetIdentity().GetName(), which throws once the body has outlived its
+                //--- identity - and a throw here skips the kill credit and the health zeroing.
+                string player_name = "<null identity>";
+                PlayerIdentity player_identity = player.GetIdentity();
+                if ( player_identity )
+                    player_name = player_identity.GetName();
+                else if ( identity )
+                    player_name = identity.GetName();
+
                 // We add a kill to the last damage source
                 if ( player.last_unconscious_source )
                 {
-                    BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, adding kill to last damage source.");
+                    BattleRoyaleUtils.Info("Player " + player_name + " disconnected while unconscious, adding kill to last damage source.");
 
                     PlayerBase killer = player.last_unconscious_source;
 
@@ -1020,17 +1032,17 @@ class BattleRoyaleServer: BattleRoyaleBase
                     //--- removes itself a quarter-second after detonating). Removal and the leaderboard
                     //--- still happen, via the SetHealth(0) below firing EEKilled. The one thing lost is
                     //--- that the player.kill webhook records this rare case as environmental.
-                    BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, crediting the recorded device owner.");
+                    BattleRoyaleUtils.Info("Player " + player_name + " disconnected while unconscious, crediting the recorded device owner.");
 
                     BattleRoyaleSpectators.GetInstance().RecordDeathWithKillerUid( player, player.last_unconscious_source_uid );
 
                     BattleRoyaleKillLedger.GetInstance().CreditKill( player.last_unconscious_source_uid );
                 } else {
-                    BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, but there is no last damage source.");
+                    BattleRoyaleUtils.Info("Player " + player_name + " disconnected while unconscious, but there is no last damage source.");
                 }
 
                 // If the player is alive, we kill him
-                BattleRoyaleUtils.Info("Player " + player.GetIdentity().GetName() + " disconnected while unconscious, killing him.");
+                BattleRoyaleUtils.Info("Player " + player_name + " disconnected while unconscious, killing him.");
                 player.SetHealth("GlobalHealth", "Health", 0);
                 player.SetHealth("GlobalHealth", "Blood", 0);
             }

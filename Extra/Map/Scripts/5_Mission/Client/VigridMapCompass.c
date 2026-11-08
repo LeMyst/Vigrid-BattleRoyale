@@ -133,9 +133,8 @@ class VigridMapCompass
             return false;
         }
 
-        //--- None of these is fatal: the ticks are the compass, and each of the three is furniture
-        //--- around them. VigridMapLog.Error would be, in any case - it routes through Error2, which
-        //--- raises a VM exception rather than printing a line.
+        //--- Warn rather than Error: the ticks are the compass, and each of the three is furniture
+        //--- around them, so a missing one degrades the strip without breaking it.
         m_Backdrop = m_Root.FindAnyWidget("CompassBackdrop");
         if (!m_Backdrop)
             VigridMapLog.Warn("compass.layout has no CompassBackdrop - strip will have no backing");

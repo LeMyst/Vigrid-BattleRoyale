@@ -219,6 +219,16 @@ class BattleRoyaleRPC
 		//--- drains it every frame, so it is almost always already empty and clearing it is cheap.
 		pending_toasts.Clear();
 		wait_next_match = false;
+		//--- The in-place reset handshake is per CONNECTION, and this singleton outlives a disconnect.
+		//--- A fresh BattleRoyaleClient starts with m_SeenMatchResetSeq = 0; leave a previous
+		//--- session's sequence here and its first Update() sees a "change", runs a spurious
+		//--- ResetForNewMatch() and then waits - with no timeout - for the previous session's body
+		//--- network id. PlayerLoadedIn is held back behind that wait, so the server never counts the
+		//--- player as loaded: after an in_place_reset_max_matches restart most of the lobby rejoined
+		//--- in exactly that state and the lobby could never autostart.
+		match_reset_seq = 0;
+		match_reset_body_low = 0;
+		match_reset_body_high = 0;
 	}
 
 	/**
