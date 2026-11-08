@@ -64,7 +64,7 @@ class BattleRoyaleLastMatchRow
 class BattleRoyaleLastMatchFile
 {
     int version = BR_LASTMATCH_FILE_VERSION;
-    int saved_at;      //!< BattleRoyaleTime.NowHours(), for an operator reading the file by hand
+    int saved_at;      //!< BattleRoyaleTime.NowSeconds(), for an operator reading the file by hand
     int field_size;    //!< groups when `grouped`, players otherwise
     bool grouped;      //!< were parties actually in play - see BR_LASTMATCH_FLAG_GROUPED
     string winner_name;

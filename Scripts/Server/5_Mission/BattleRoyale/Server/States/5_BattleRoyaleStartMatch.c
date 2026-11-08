@@ -157,7 +157,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     override bool IsComplete()
     {
         //--- Groups, not players. This state runs for the whole first-zone countdown -
-        //--- round_duration_minutes / 2, 90 s at the shipped defaults - which is long enough for a
+        //--- round_duration_minutes / 2, 150 s at the shipped defaults - which is long enough for a
         //--- party to clear the field, and the raw player test this used to carry could never see
         //--- that: the winning party still holds two or more live players. The match then sat here
         //--- until StartZoning fired on its own timer, and the win screen only appeared at the end of

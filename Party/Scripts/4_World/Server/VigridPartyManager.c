@@ -2119,7 +2119,7 @@ class VigridPartyManager
         if (m_Settings.ping_ttl_seconds > 0)
             expires_at_ms = now_ms + m_Settings.ping_ttl_seconds * 1000;
 
-        //--- Held in a ref local before being handed over, exactly as an invite is: AddPing evicts
+        //--- Held in a local before being handed over, exactly as an invite is: AddPing evicts
         //--- before it inserts, so the new marker has to survive a few statements first.
         VigridPartyPing ping = new VigridPartyPing(uid, position, now_ms, expires_at_ms);
         party.AddPing(ping, m_Settings.ping_max_per_player);

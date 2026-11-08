@@ -121,7 +121,7 @@ class VigridMapMarkerStore
 
         string clean_label = Sanitise(label);
 
-        //--- Held in a ref local before being handed over: Set() releases whatever was there first,
+        //--- Held in a local before being handed over: Set() releases whatever was there first,
         //--- so the replacement has to already exist.
         VigridMapMarker marker = new VigridMapMarker(uid, slot, clean_pos, clean_label, now_ms);
         m_Markers.Set(uid, marker);
