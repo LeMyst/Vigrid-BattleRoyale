@@ -599,7 +599,8 @@ class BattleRoyaleSpectators
         //--- spectator's whole party is dead, so it cannot leak a teammate's position to anyone.
         for (i = m_DeathOrder.Count() - 1; i >= 0; i--)
         {
-            BattleRoyaleDeathRecord recent = m_Deaths.Get(m_DeathOrder.Get(i));
+            string recent_uid = m_DeathOrder.Get(i);
+            BattleRoyaleDeathRecord recent = m_Deaths.Get(recent_uid);
             if (!recent)
                 continue;
             if (recent.killer_uid == "")
@@ -832,12 +833,14 @@ class BattleRoyaleSpectators
         int i = 0;
         for (i = 0; i < count; i++)
         {
-            uids.Insert(m_Spectators.GetKey(i));
+            string key_uid = m_Spectators.GetKey(i);
+            uids.Insert(key_uid);
         }
 
         for (i = 0; i < uids.Count(); i++)
         {
-            BattleRoyaleSpectatorEntry entry = m_Spectators.Get(uids.Get(i));
+            string entry_uid = uids.Get(i);
+            BattleRoyaleSpectatorEntry entry = m_Spectators.Get(entry_uid);
             if (!entry)
                 continue;
             if (entry.target_uid != lost_uid && entry.target_uid != "")
@@ -923,7 +926,8 @@ class BattleRoyaleSpectators
         int count = m_Spectators.Count();
         for (i = 0; i < count; i++)
         {
-            uids.Insert(m_Spectators.GetKey(i));
+            string key_uid = m_Spectators.GetKey(i);
+            uids.Insert(key_uid);
         }
 
         bool do_push = false;
@@ -1445,7 +1449,8 @@ class BattleRoyaleSpectators
 
         for (i = 0; i < admin_uids.Count(); i++)
         {
-            PlayerIdentity admin_identity = IdentityOfUid(admin_uids.Get(i));
+            string admin_uid = admin_uids.Get(i);
+            PlayerIdentity admin_identity = IdentityOfUid(admin_uid);
             if (admin_identity)
                 EndAdminSpectate(admin_identity);
         }
@@ -2219,10 +2224,11 @@ class BattleRoyaleSpectators
         int i = 0;
         for (i = 0; i < positions.Count(); i++)
         {
-            if (vector.Distance(positions.Get(i), camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
+            vector near_pos = positions.Get(i);
+            if (vector.Distance(near_pos, camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
                 continue;
 
-            sum = sum + positions.Get(i);
+            sum = sum + near_pos;
             near_count = near_count + 1;
         }
 
@@ -2263,7 +2269,8 @@ class BattleRoyaleSpectators
                 int p = 0;
                 for (p = 0; p < positions.Count(); p++)
                 {
-                    float distance = vector.Distance(positions.Get(p), candidate);
+                    vector player_pos = positions.Get(p);
+                    float distance = vector.Distance(player_pos, candidate);
                     if (distance <= BR_ADMIN_ANCHOR_COVER_M)
                         score = score + 1;
                     if (distance < clearance)
@@ -2833,7 +2840,8 @@ class BattleRoyaleSpectators
 
         for (i = 0; i < deaths; i++)
         {
-            BattleRoyaleDeathRecord record = m_Deaths.Get(m_DeathOrder.Get(i));
+            string death_uid = m_DeathOrder.Get(i);
+            BattleRoyaleDeathRecord record = m_Deaths.Get(death_uid);
             if (!record)
                 continue;
 
