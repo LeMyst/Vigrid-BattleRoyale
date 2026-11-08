@@ -231,8 +231,8 @@ class BattleRoyaleRPC
 	 *  on this same connection (MatchReset below), so nothing was cleared by a disconnect.
 	 *
 	 *  What it KEEPS is the point, and every kept field is something the server only sends at
-	 *  connect: resolved names and the speaking-list settings (OnPlayerConnected), the hot zones and
-	 *  is_admin (PlayerLoadedIn), and wait_next_match. pending_toasts is kept too - the "next match"
+	 *  connect: resolved names and the speaking-list settings (OnPlayerConnected), is_admin
+	 *  (PlayerLoadedIn), and wait_next_match. pending_toasts is kept too - the "next match"
 	 *  notice arrives just before this and must still be shown. death_locked is left to
 	 *  BattleRoyaleClient, which owns that handshake.
 	 *
@@ -290,6 +290,11 @@ class BattleRoyaleRPC
 		admin_recv_ms = 0;
 		admin_prev_recv_ms = 0;
 		admin_seq++;
+		//--- Per match: filtered against the starting circle. The server re-sends when the next
+		//--- match opens its hot-zone gate, so until then the lobby shows none.
+		hot_zone_centers.Clear();
+		hot_zone_radii.Clear();
+		hot_zone_seq++;
 		last_match.Clear();
 		last_match_seq++;
 		recap_killer_name = "";
