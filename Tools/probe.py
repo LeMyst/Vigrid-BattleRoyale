@@ -175,6 +175,14 @@ PROBES = [
     ("data: malformed JSON", "data",
      "Data/credits.json", lambda b: b.rstrip()[:-1] + b","),
 
+    #  The first #endif is an inner block's; losing it moves that block's end to EOF.
+    ("preprocessor: an #endif lost mid-file", "preprocessor",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     lambda b: b.replace(b"#endif", b"", 1)),
+
+    ("preprocessor: stray #endif", "preprocessor",
+     "Scripts/Server/3_Game/BattleRoyale/Webhook/EventWebhook.c", append("\n#endif\n")),
+
     ("extra-index: addon dropped from the index", "extra-index",
      "Extra/README.md", replace("](SpawnCarFull/README.md)", "](SpawnCarFullX/README.md)")),
 

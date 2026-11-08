@@ -40,8 +40,7 @@ FORBIDDEN = re.compile(r"\bBattleRoyale\w*")
 def guard_stack(lines: list[str]) -> list[list[tuple[str, bool]]]:
     """For each line, the stack of enclosing preprocessor conditions as (name, negated).
 
-    Deliberately tolerant of an unclosed `#ifdef` at end of file: that is this repo's convention
-    for the file-level SERVER guard, not an error, and a strict reader would reject 58 files.
+    Tolerant of an unclosed `#ifdef` at end of file; the `preprocessor` check reports those.
     """
     stack: list[tuple[str, bool]] = []
     per_line: list[list[tuple[str, bool]]] = []

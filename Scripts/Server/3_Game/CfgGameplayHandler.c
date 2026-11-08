@@ -6,3 +6,4 @@ modded class CfgGameplayHandler
 		return 0.5;
 	}
 }
+#endif

@@ -100,3 +100,4 @@ class BattleRoyaleDataBase
 		return copy;
 	}
 };
+#endif

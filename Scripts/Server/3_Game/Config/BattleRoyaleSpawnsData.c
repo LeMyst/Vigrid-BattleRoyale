@@ -71,3 +71,4 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 			ErrorEx(errorMessage);
 	}
 };
+#endif

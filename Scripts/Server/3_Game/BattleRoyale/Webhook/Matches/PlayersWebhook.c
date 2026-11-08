@@ -91,3 +91,4 @@ class PlayersCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

@@ -12,3 +12,4 @@ modded class WorldData
 		return super.CalcBaseEnvironmentTemperature( monthday, daytime );
 	}
 }
+#endif

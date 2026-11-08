@@ -8,3 +8,4 @@ class JSONAuthToken
 		jwt_token = token;
 	};
 };
+#endif

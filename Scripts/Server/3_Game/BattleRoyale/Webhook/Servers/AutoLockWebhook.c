@@ -90,3 +90,4 @@ class AutoLockCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

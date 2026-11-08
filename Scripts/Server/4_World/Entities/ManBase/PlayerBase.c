@@ -496,3 +496,4 @@ modded class PlayerBase
 		return spawn_pos;
 	}
 };
+#endif
