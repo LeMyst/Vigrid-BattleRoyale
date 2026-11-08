@@ -804,6 +804,10 @@ static const float BR_ANNOUNCE_DEFAULT_SECONDS = 10.0;
 //--- whole population), and a roster does not change at 1 Hz.
 static const int BR_ADMIN_ROSTER_INTERVAL_MS = 2000;
 
+//--- At most one refusal line per uid and action in this window. Any client can send the COT ids,
+//--- so an unthrottled Warn per refused request is a log flood on demand.
+static const int BR_ADMIN_REFUSAL_LOG_INTERVAL_MS = 30000;
+
 //--- Cap on rows in one roster reply. A 60-slot server is the realistic ceiling; the constant exists
 //--- so the payload can never be unbounded if that assumption stops holding.
 static const int BR_ADMIN_ROSTER_MAX_ROWS = 80;
