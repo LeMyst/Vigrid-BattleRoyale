@@ -10,7 +10,6 @@ REM DO NOT CHANGE THESE!
 set skipUnchanged=1
 set skipPboCleanup=0
 set noIgnore=0
-set skipEnumSpecialPaths=0
 
 :OPTIONS
 REM parse command line options
@@ -36,7 +35,7 @@ if exist "%~dp0..\Logs\Build.success" del "%~dp0..\Logs\Build.success"
 
 cd /D "%~dp0"
 
-echo %time% > %~dp0..\Logs\Build.tmp
+echo %time% > "%~dp0..\Logs\Build.tmp"
 
 set /a failed=0
 
@@ -66,7 +65,7 @@ if not defined _DAYZTOOLSPATH (
 )
 if not defined _DAYZTOOLSPATH (
 	echo DayZ Tools was not set in the registry path, trying default.
-	set "_DAYZTOOLSPATH=C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools"
+	set "_DAYZTOOLSPATH=C:\Program Files (x86)\Steam\steamapps\common\DayZ Tools\Bin"
 ) else (
 	echo Found. "%_DAYZTOOLSPATH%"
 )
@@ -133,11 +132,7 @@ IF EXIST "%workDrive%Temp\%modName%-configpaths-unfiltered-previous.list" (
 			move /Y "%workDrive%Temp\%modName%-specialpaths.list" "%workDrive%Temp\%modName%-specialpaths-previous.list"
 		)
 
-		if !skipEnumSpecialPaths!==0 (
-			call "%~dp0CI0_EnumSpecialPaths.bat" "%modName%"
-		) else (
-			copy /Y "%workDrive%Temp\%PrefixLinkRoot%-ALL-specialpaths.list" "%workDrive%Temp\%modName%-specialpaths.list"
-		)
+		call "%~dp0CI0_EnumSpecialPaths.bat" "%modName%"
 
 		fc "%workDrive%Temp\%modName%-specialpaths.list" "%workDrive%Temp\%modName%-specialpaths-previous.list" > NUL && (
 			IF EXIST "%workDrive%Temp\%modName%-configpaths.list" (
@@ -240,25 +235,16 @@ for /F "usebackq delims=" %%D in ("%workDrive%Temp\%modName%-configpaths.list") 
 	IF ERRORLEVEL 1 GOTO ABORT
 
 	REM Check if other build process failed
-	IF EXIST "%~dp0*.failure" (
+	IF EXIST "%~dp0..\Logs\*.failure" (
 		echo !date! !time! Aborting because other build^(s^) failed before:
-		dir /B "%~dp0*.failure"
-		goto EXIT
-	)
-
-	REM Check if other build process failed
-	IF EXIST "%~dp0*.failure" (
-		echo !date! !time! Aborting because other build^(s^) failed before:
-		dir /B "%~dp0*.failure"
+		dir /B "%~dp0..\Logs\*.failure"
 		goto EXIT
 	)
 
 	REM Create dummy file so we can later remove orphaned PBOs that are no longer part of the build (if any)
 	echo.>"%workDrive%Temp\PboNames\%modName%\!pboName!.pbo"
 
-	if exist "%%~dpD..\CHANGES" copy /Y "%%~dpD..\CHANGES" "%modBuildDirectory%%modName%\CHANGES"
 	if exist "%%~dpD..\LICENSE" copy /Y "%%~dpD..\LICENSE" "%modBuildDirectory%%modName%\LICENSE"
-	if exist "%%~dpD..\NOTICE.txt" copy /Y "%%~dpD..\NOTICE.txt" "%modBuildDirectory%%modName%\NOTICE.txt"
 	if exist "%%~dpD..\mod.cpp" copy /Y "%%~dpD..\mod.cpp" "%modBuildDirectory%%modName%\mod.cpp"
 
 )
