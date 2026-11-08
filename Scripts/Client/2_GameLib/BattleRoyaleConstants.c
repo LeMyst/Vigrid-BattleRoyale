@@ -244,7 +244,6 @@ static const string RPC_DAYZBRSERVER_NAMESPACE = "RPC-DayZBR-Server"; //BattleRo
 
 
 //--- constant strings
-static const string BATTLEROYALE_FADE_MESSAGE = "DayZ Battle Royale";
 //Shown by LoadingScreen in place of vanilla's "#str_modded_version_warning0". A stringtable key
 //rather than literal English, so it is translated like everything else the player reads.
 static const string BATTLEROYALE_LOADING_MODDED_MESSAGE = "#STR_BR_LOADING_MODDED_WARNING";
@@ -1000,7 +999,7 @@ static const float BR_ZONE_REACH_PERCENT = 0.95;
 static const float DAYZBR_ZS_MIN_DISTANCE_PERCENT = 0.25; //min next zone distance as a percent of maximum distance (1 => 100%)
 static const float DAYZBR_ZS_MAX_DISTANCE_PERCENT = 0.85; //max next zone distance as a percent of maximum distance (1 => 100%)
 static const float BR_ZONE_T1_ARC_DEG  = 45.0;  //half-width of the cone pointed at the map centre
-static const float BR_ZONE_T1_LAND_MIN = 0.60;  //overridden per-map by zone_settings.zone_min_land_fraction
+//Tier 1's land bar is zone_settings.zone_min_land_fraction (default 0.60); it has no constant.
 static const int   BR_ZONE_T1_ROLLS    = 24;
 
 //Tier 2 unlocks only when tier 1 found nothing at all, so a normal match never sees it.
@@ -1249,8 +1248,6 @@ static const int   BR_ZONE_SELFTEST_WORK_CAP     = 20000;
 //out in "Update 1.21"; backgrounds came back in #201 with the mod's own LoadingScreenBackground,
 //and none of this is Expansion's any more.
 static const string DAYZBR_LOADING_SCREENS_PATH     = "Vigrid-BattleRoyale/Data/LoadingScreens.json";
-static const string DAYZBR_LOADING_MESSAGES_PATH    = "Vigrid-BattleRoyale/Data/LoadingMessages.json";
-static const int DAYZBR_LOADING_BAR_COLOR           = ARGB( 255, 0, 0, 0 );     //! A = Alpha (opacity) / R = Red / G = Green / B = Blue
 
 //---- Hint pages shown on the loading screen and in the in-game Esc menu, replacing vanilla's.
 //Split three ways so a hint never advertises a key that does not exist: the map and party files are
