@@ -68,8 +68,11 @@ class LeaderboardMenu extends UIScriptedMenu
     private int m_LastSeq;
     private int m_RequestDueMs;
 
+    private ref BattleRoyaleMenuInputLock m_InputLock;
+
     void LeaderboardMenu()
     {
+        m_InputLock = new BattleRoyaleMenuInputLock();
         m_RowPool = new array<Widget>();
         m_Board = BR_LEADERBOARD_BOARD_SOLO;
         m_LastSeq = -1;
@@ -129,6 +132,10 @@ class LeaderboardMenu extends UIScriptedMenu
         //--- only in debug tools. Same fix as VigridPartyMenu, measured there with a per-frame trace.
         SetFocus(layoutRoot);
 
+        //--- Focus alone leaves mouse look and movement live; this freezes both and keeps
+        //--- push-to-talk. See BattleRoyaleMenuInputLock.
+        m_InputLock.Take();
+
         //--- Repaint from whatever is cached, immediately. -1 forces it even though the sequence
         //--- number has not moved while the menu was closed.
         m_LastSeq = -1;
@@ -153,6 +160,7 @@ class LeaderboardMenu extends UIScriptedMenu
         //--- across all devices (input.c:22-27). That was once reachable in three keypresses - die
         //--- (SimulateDeath +1, death screen +1), press F4 twice - and dropped the counter to 0 with
         //--- the death screen still up; the Spectate button's releases then drove it NEGATIVE.
+        m_InputLock.Release();
     }
 
     private BattleRoyaleClient GetClient()

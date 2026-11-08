@@ -68,9 +68,12 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	// Countdown text only changes once a second; avoid rebuilding it per frame.
 	protected int i_PreviousDisplayedSecond = -1;
 
+	protected ref BattleRoyaleMenuInputLock m_InputLock;
+
 	void SpawnSelectionMenu()
 	{
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SpawnSelectionMenu");
+		m_InputLock = new BattleRoyaleMenuInputLock();
 		g_Game.SetKeyboardHandle(this);
 	}
 
@@ -99,6 +102,11 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		//--- from 3_BattleRoyaleSpawnSelection.DisableInput, plus LockControls itself.
 		SetFocus(layoutRoot);
 
+		//--- Neither of those stops the CAMERA: mouse look kept turning the player behind the map.
+		//--- This freezes it, and keeps push-to-talk so a party can still coordinate its drop. See
+		//--- BattleRoyaleMenuInputLock.
+		m_InputLock.Take();
+
 		// Nothing on the canvases survives a hide/show cycle -- force a redraw.
 		b_RenderDirty = true;
 		i_PreviousDisplayedSecond = -1;
@@ -113,6 +121,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		//--- super.OnHide -> UnlockControls releases exactly what LockControls took. NEVER add a
 		//--- ResetGameFocus() here: it SETS the shared additive counter to zero on every device
 		//--- (input.c:22-27), releasing every other holder's acquire rather than our own.
+		m_InputLock.Release();
 	}
 
 	override Widget Init()

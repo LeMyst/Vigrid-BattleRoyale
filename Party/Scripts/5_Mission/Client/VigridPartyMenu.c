@@ -63,8 +63,11 @@ class VigridPartyMenu extends UIScriptedMenu
     private int m_LastInviteSeq;
     private int m_RefreshDueMs;
 
+    private ref VigridPartyMenuInputLock m_InputLock;
+
     void VigridPartyMenu()
     {
+        m_InputLock = new VigridPartyMenuInputLock();
         m_OnlineRowPool = new array<Widget>();
         m_MemberRowPool = new array<Widget>();
         m_InviteTargets = new map<Widget, string>();
@@ -110,6 +113,11 @@ class VigridPartyMenu extends UIScriptedMenu
         //--- uses the all-device form only in debug tools. Measured with a per-frame trace.
         SetFocus(layoutRoot);
 
+        //--- Focus alone leaves mouse look and movement live; this freezes both and keeps
+        //--- push-to-talk, so a party can still talk while one of them manages it. See
+        //--- VigridPartyMenuInputLock.
+        m_InputLock.Take();
+
         //--- Force a full repaint: sequence numbers may not have moved while the menu was closed.
         m_LastListSeq = -1;
         m_LastRosterSeq = -1;
@@ -122,7 +130,8 @@ class VigridPartyMenu extends UIScriptedMenu
         super.OnHide();
 
         //--- super.OnHide -> UnlockControls releases exactly what LockControls took and hides the
-        //--- cursor. Nothing else to undo: see OnShow.
+        //--- cursor; the exclude groups are ours to give back.
+        m_InputLock.Release();
     }
 
     private VigridPartyClient GetClient()
