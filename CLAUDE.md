@@ -69,7 +69,10 @@ renamed or removed key now hands operators a dead key. A new settings field mean
 `version` bump on that page.
 
 It was first written against `78a5850` (2026-11-08), and `Home` names the commit it describes; move that
-reference when you resync. Two other details:
+reference when you resync. **`README.md` deliberately carries no operator reference any more**: its
+*Running a server* section is a table of links into the wiki. Its old copies of the config table, the
+zone tuning notes and the `-br-*` flags had all drifted from the code, so add new operator detail to
+the wiki, not back into the README. Two other details:
 - The wiki deliberately documents current behaviour, defects included. The defects themselves are filed
   under *Wiki pass (2026-11-08)* in the local `TODO.md`, and each one names the page to update once it is
   fixed.
