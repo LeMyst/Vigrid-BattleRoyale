@@ -32,11 +32,7 @@ class VigridAutoRunLog
 
         if (level == NONE)
         {
-            //--- ErrorEx, the way vanilla JsonFileLoader logs a recoverable error - every call site of
-            //--- this logger carries on afterwards ("... disabled", "ignoring it"). It used to be
-            //--- Error2, the message-box API, on the belief that Error2 halts the caller. Measured
-            //--- 2026-11-08 on DayZ 1.30 (diag and retail): neither halts. Both log a "Virtual Machine
-            //--- Exception" plus a stack trace and return, so that heading alone proves nothing.
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
             ErrorEx(stamp + " [AutoRun] " + message);
             return;
         }

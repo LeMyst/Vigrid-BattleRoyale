@@ -121,9 +121,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
-			//--- Never log server_password, at any level. Trace reaches the .rpt, and on a DIAG server
-			//--- BattleRoyaleUtils mirrors every Trace line to all clients over the untargeted ChatLog
-			//--- RPC - and since the in-place reset this Init() re-runs with players connected.
+			//--- Never log server_password: on DIAG, Trace is mirrored to every client.
 			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token, m_ServerData.server_password );
 			match_uuid = createMatchWebhook.getMatchUUID();
 
@@ -995,9 +993,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 		{
 		    if ( player.IsUnconscious() )
             {
-                //--- Resolved once, guarded: the four log lines below used to inline
-                //--- player.GetIdentity().GetName(), which throws once the body has outlived its
-                //--- identity - and a throw here skips the kill credit and the health zeroing.
+                //--- The body can outlive its identity; a NULL deref here would skip the kill credit.
                 string player_name = "<null identity>";
                 PlayerIdentity player_identity = player.GetIdentity();
                 if ( player_identity )

@@ -1575,20 +1575,11 @@ class BattleRoyaleZone
 
     //--- Backtracking search over the whole chain.
     //---
-    //--- TERMINATION. TryPlaceLevel returns false in exactly one case: the level has been tried fewer
-    //--- than BR_ZONE_LEVEL_RETRIES times against its CURRENT parent. Everything else - every tier,
-    //--- the sweep, the witness step - is accepted. That per-parent counter does NOT bound the loop on
-    //--- its own, and this header used to claim it did ("a proof, not a budget"): a failing level
-    //--- backtracks, its parent is re-placed, and re-entering the level resets its counter. So a level
-    //--- >= 2 whose every parent leaves no land-safe candidate (a seed on an islet or a spit, a coastal
-    //--- final_zone_polygon) fails at desperation 1 forever - only circle 1, which cannot unwind any
-    //--- further, ever climbs to its witness step - and the last seed has the abandon rule switched off.
-    //---
-    //--- What bounds it is seed_work. Every seed but the last is abandoned after BR_ZONE_SEED_WORK
-    //--- placements; on the LAST seed, past that same budget, every level is sent straight to its
-    //--- witness step (see below), so from then on every placement succeeds and the chain completes
-    //--- in at most n-1 more. Total placements <= BR_ZONE_MAX_SEEDS * (BR_ZONE_SEED_WORK + 1) + n.
-    //--- A chain that completes inside the budget - every healthy match - is unchanged by this.
+    //--- TERMINATION is bounded by seed_work, not by the per-level retry counter: re-entering a level
+    //--- resets it, so a level >= 2 with no land-safe candidate under any parent never reaches its
+    //--- witness step. Every seed but the last is abandoned after BR_ZONE_SEED_WORK placements; past
+    //--- that budget the last seed forces every level to its witness step (always accepted), so total
+    //--- placements <= BR_ZONE_MAX_SEEDS * (BR_ZONE_SEED_WORK + 1) + n.
     protected bool BuildChain(notnull array<vector> chain)
     {
         int n = i_NumRounds;
@@ -1660,10 +1651,7 @@ class BattleRoyaleZone
                 desperation = s_LevelRetries.Get(level) + 1;
                 s_LevelRetries.Set(level, desperation);
 
-                //--- THE TERMINATION GUARANTEE - see the header. Only the last seed ever gets here with
-                //--- seed_work over budget (every other seed broke out just above), and that seed may
-                //--- never be abandoned. So stop letting a level hand the problem back to its parent:
-                //--- go straight to the witness step, which is accepted unconditionally.
+                //--- Termination guarantee (see header): only the last seed gets here over budget.
                 if(seed_work > BR_ZONE_SEED_WORK && desperation < BR_ZONE_LEVEL_RETRIES)
                     desperation = BR_ZONE_LEVEL_RETRIES;
 
@@ -1682,9 +1670,7 @@ class BattleRoyaleZone
                 }
 
                 //--- Failed on LAND grounds - geometry can no longer fail, the oracle saw to that.
-                //--- Re-roll the parent: its own counter climbs and at BR_ZONE_LEVEL_RETRIES it takes its
-                //--- witness step. That alone does NOT bound this loop - the child's counter restarts on
-                //--- every re-entry - which is why the last seed has the escape hatch above.
+                //--- Re-roll the parent. This alone does not bound the loop - see the header.
                 s_Backtracks++;
                 level--;
 
