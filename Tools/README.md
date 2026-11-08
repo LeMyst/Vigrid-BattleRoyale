@@ -54,6 +54,7 @@ they cost.
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` type |
 | `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method |
+| `profanity` | no profanity or slurs in any tracked text file - comments, log strings and docs included |
 
 ## Two rules for anyone adding a check
 

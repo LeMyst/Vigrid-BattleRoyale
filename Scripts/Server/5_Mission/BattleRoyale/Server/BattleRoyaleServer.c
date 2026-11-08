@@ -1128,7 +1128,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             //--- check if they have entered an invalid position
             vector pos = player.GetPosition();
             float bigNum = 1000000;
-            //when invalid, height gets fucked, lets check that (others are NaN & may cause errors)
+            //when invalid, height gets corrupted, lets check that (others are NaN & may cause errors)
             if(pos[1] > bigNum || pos[1] < (-1 * bigNum))
             {
                 if(temp_disconnecting.Find(player) == -1 && player.GetIdentity())

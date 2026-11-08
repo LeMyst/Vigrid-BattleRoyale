@@ -165,6 +165,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `rpc` | every `AddRPC` name has a matching CF handler method |
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
 | `stringtable` | every `STR_*` key referenced is defined, in its own addon's table |
+| `profanity` | no profanity or slurs in any tracked text file - comments, log strings and docs included |
 | `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |
 
 **What it does NOT do is compile anything**, so a green run says nothing about whether the mod loads. Every check decides from source text alone, and what they cover is precisely the class of defect that fails **silently at runtime with a clean `.rpt`** — a dead RPC registration, a colliding menu id, an unguarded server file, a settings field that loads back empty. `-W` is affordable because the tree is clean, so a new warning must never be left to pass silently.

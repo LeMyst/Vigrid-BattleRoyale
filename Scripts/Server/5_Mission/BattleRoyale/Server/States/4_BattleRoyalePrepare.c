@@ -586,7 +586,7 @@ class BattleRoyalePrepare: BattleRoyaleState
                     if(HasNoUsableVillages())
                         break;
 
-                    BattleRoyaleUtils.Trace("Another fucked up village!");
+                    BattleRoyaleUtils.Trace("Village rejected");
                 }
             }
         }
@@ -819,7 +819,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 
         BattleRoyaleUtils.Trace("Spawn player " + GetPlayerLogName(player) + " at " + position);
 
-        //TODO: make sure the retarded game engine doesn't keep the player in a swimming state ????
+        //TODO: make sure the game engine doesn't keep the player in a swimming state ????
         //TODO: force stand up
 
 		vector direction = "0 0 0";

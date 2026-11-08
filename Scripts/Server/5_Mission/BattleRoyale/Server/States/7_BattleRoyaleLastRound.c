@@ -238,7 +238,6 @@ class BattleRoyaleLastRound: BattleRoyaleState
 
     void LockFinalZone()
     {
-        //TODO: this doesn't fucking work | if zone is null, no damage occurs
         SendCurrentPlayArea( "0 0 0", 0.0 );
         SendFuturePlayArea( "0 0 0", 0.0, false );
         b_IsZoneLocked = true;
