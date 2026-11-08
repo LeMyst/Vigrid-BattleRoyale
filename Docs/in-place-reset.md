@@ -86,18 +86,25 @@ screen, the match-started latch and the voice cap, the edge trackers, the circle
 last-match card, the loaded-in report (re-sent for the new body), the death-screen focus lock and
 sound buses, the spectator camera (`BattleRoyaleSpectatorCamera.Retire`) and the party viewpoint.
 
-## Tested (2026-11-07, diag rig, `LaunchLocalMP.bat 2`, `DZHOOK_CE_REFILL=1`)
+## Tested (2026-11-07/08, diag rig, `LaunchLocalMP.bat 2` and `3`)
 
 The rig cannot press F1, so the lobby ran with `use_ready_up 0` and `min_waiting_time 60`, and the
-drain with `drain_seconds 30`. A throwaway diag-only driver (not committed) killed the second player
-40 s into each match. With two players that death ends the match, so the dead player is still on the
-death screen at the reset. Every configuration was run:
+drain with `drain_seconds 30`. A throwaway diag-only driver (not committed) killed players during each
+match. With two clients it killed the second player 40 s in, which ends the match with the dead player
+still on the death screen. With three clients, auto-grouped by `min_party_size 2` into a pair and a
+solo, it killed a player who still had a teammate at 15 s (they auto-enter spectate 20 s later), then
+everyone outside the first player's group at 50 s. So the reset met a winner, a spectator and a
+death-screen player at once. Every configuration was run:
 
 | Configuration | Result |
 |---|---|
-| stay connected, keep dead players | 5 resets over 3 runs. Winner and dead player both get a lobby body in the reset's frame; the dead player's death screen closes and their input focus matches a living player's. Match 3 played normally |
+| stay connected, keep dead players | 6 resets over 4 runs. Winners, the spectator and the death-screen player all get a lobby body in the reset's frame. The death screen closes and that player's input focus matches a living player's. The spectator runs `LeaveSpectate`, and its camera stops pushing its position. Match 3 played normally |
+| parties | The reset removed the one auto-placed member (dissolving that pair) and unlocked formation; the next lobby auto-grouped again |
 | `kick_all` | Winner kicked by the win state, the dead player by the reset; empty lobby reopened; refill ran on an empty server (10,040 items) |
 | stay connected, dead players not kept | Winner kept, dead player disconnected |
+| `max_matches 1` | The second match end logged `restarting the process: in_place_reset_max_matches (1) reached` and restarted |
+| refill failure (forced -1, test-only switch) | `FAILED ... Restarting the process`, the notice reached the clients, and the server exited 10 s later |
+| no `DZHOOK_CE_REFILL` | The guarded code compiled out with no script error; boot logged `requested but OFF: the dzhooks ce_refill module is not loaded` |
 
 Two bugs found and fixed on the way:
 - **RPC and body arrive in either order.** The client used to wait for "a body other than the one I
@@ -107,8 +114,9 @@ Two bugs found and fixed on the way:
   remaining expired items were deleted. The countdown's second pass refilled them (10,157 items in
   one test).
 
-Not covered: what a 1-3 s refill step feels like on a connected client, and the retail exe for the
-whole sequence. The natives themselves were tested on retail; see `native-hooks.md`.
+Not covered: what a 1-3 s refill step feels like on a connected client, the retail exe for the whole
+sequence (the natives themselves were tested on retail; see `native-hooks.md`), and more than three
+players.
 
 ## Known limits
 
