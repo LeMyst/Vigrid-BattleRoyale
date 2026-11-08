@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 7;  // Config version
+	int version = 8;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -30,13 +30,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     bool use_dynamic_zones = true;  // Use dynamic zones based on player count
     int min_zone_num = 4;  // Minimum number of zones to have
 
-    int shrink_type = 3;  // 1 = Exp, 2 = Lin, 3 = Static, 4 = Const
-    // TODO: I think Exp, Lin and Const are not used anymore
-    // TODO: That is because the logic changed at one point and now the zone is always static
-
-    // Exponential (NOT USED ANYMORE)
-    float shrink_base = 2.718281828459; // ~ e
-    float shrink_exponent = 3.0;
+    // Switches round TIMING only: 3 = static_timers (and derive_timers_from_geometry), anything else =
+    // round_duration_minutes for every round. Circle sizes always come from static_sizes.
+    int shrink_type = 3;
 
 	// Static
 	// SMALLEST ZONE FIRST: index 0 describes the tight final circle, the last index the widest
@@ -47,9 +43,6 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     ref array<float> static_sizes = { 35, 140, 562, 1125, 2250, 3375, 4500 };
     ref array<int> static_timers = { 155, 260, 307, 495, 495, 495, 495 };
     ref array<int> min_players = { 10, 10, 10, 11, 22, 33, 44 };
-
-    // Constant (NOT USED ANYMORE)
-    float constant_scale = 0.65;
 
     // --- Generation tuning (v4) ---
 
@@ -79,7 +72,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // Generate this many throwaway chains at boot, report the failure/backtrack/tier distribution,
     // then play normally. 0 = off. This is the acceptance gate for a new map or a new static_sizes:
     // 200 runs inside one boot answers "can this configuration ever dead-end here", which relaunching
-    // the server twenty times never could. Costs a few hundred ms.
+    // the server twenty times never could. Costs about 2 s per 200 runs, on the main thread at boot.
     int zone_selftest_runs = 0;
 
     // --- Placement and timing derivation (v6) ---
@@ -90,9 +83,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // the growth lives only in the generated chain - and it is bounded by the BR_ZONE_GROW_* constants,
     // reported per chain in the boot log, and counted as its own column by zone_selftest_runs above.
     //
-    // It only fires after tier 3 has failed AND the chain still owes centre-ward travel, so a healthy
-    // map barely sees it: at stock sizes ChernarusPlus leaves tier 1 on ~5% of placements and Sakhal on
-    // ~20%. Turn it OFF to compare a self-test run against a baseline recorded before v6.
+    // It is spliced in at tier 1, with no pressure gate: when tier 1's window fails it is retried at a
+    // larger radius with the same window and land bar, before tier 2 loosens either. A healthy map
+    // barely sees it: at stock sizes it fires on ~0.1% of placements on ChernarusPlus and ~0.5-0.9% on
+    // Sakhal. Turn it OFF to compare a self-test run against a baseline recorded before v6.
     bool allow_zone_size_flex = true;
 
     // Derive each round's length from the geometry instead of reading static_timers: how far a player
@@ -101,11 +95,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // mathematics values: zone size factor, maximum sprinting speed, etc."
     //
     // OFF by default because it changes pacing on every existing server, even though the constants are
-    // tuned to be near-neutral against the stock static_timers (see BR_ZONE_TIMER_FIGHT_SECONDS). Two
-    // rounds keep their hand-authored value even when this is on, because neither has any travel to
-    // derive from: the OPENING round, which has no predecessor circle, and the endgame in
-    // 7_BattleRoyaleLastRound, which plays out an already-locked circle. Ignored unless shrink_type is
-    // 3 (static), the only mode static_timers applies to.
+    // tuned to be near-neutral against the stock static_timers (see BR_ZONE_TIMER_FIGHT_SECONDS). The
+    // OPENING round has no inbound travel, so it is priced as a loot round instead (#284). The endgame
+    // in 7_BattleRoyaleLastRound keeps static_timers[0]: it plays out an already-locked circle. Ignored
+    // unless shrink_type is 3 (static), the only mode static_timers applies to.
     bool derive_timers_from_geometry = false;
 
     // --- Derived ladder (v7) ---
@@ -431,6 +424,14 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			// derive_zone_ladder OFF and bound_match_duration OFF from the declarations above, which
 			// is what those defaults are chosen for - nothing about an existing server moves.
 			version = 7;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 8)
+		{
+			// v8 REMOVED shrink_base, shrink_exponent and constant_scale, which nothing read. Nothing to
+			// migrate: the re-save drops them from the profile, and a mission file's copies are ignored.
+			version = 8;
 			Save();  // Save the upgraded config
 		}
 	}

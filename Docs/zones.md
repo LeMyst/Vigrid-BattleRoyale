@@ -2,7 +2,7 @@
 
 > Split out of the root [`CLAUDE.md`](../CLAUDE.md), which carries the build, test and EnfusionScript rules every change needs - read that first. A correction made here must also reach the memories and skills that repeat the rule (see *Workflow* in `CLAUDE.md`).
 
-`BattleRoyaleZone` (server, `BattleRoyaleZone.c`) is a static registry; all play areas are generated **once per process** into `static ref array<ref BattleRoyalePlayArea> m_PlayAreas`. **Zone 1 is the largest** and the last zone is the smallest — `GetZoneSettingsIndex()` indexes with `i_NumRounds - GetZoneNumber()`. Radii **start** at `zone_settings.json` `static_sizes`; the other `shrink_type` values are declared but marked unused.
+`BattleRoyaleZone` (server, `BattleRoyaleZone.c`) is a static registry; all play areas are generated **once per process** into `static ref array<ref BattleRoyalePlayArea> m_PlayAreas`. **Zone 1 is the largest** and the last zone is the smallest — `GetZoneSettingsIndex()` indexes with `i_NumRounds - GetZoneNumber()`. Radii **start** at `zone_settings.json` `static_sizes`; `shrink_type` switches only the round timing (3 = `static_timers`, anything else = `round_duration_minutes`).
 
 ⚠️ **Radii are no longer simply `static_sizes` (2026-08-15, #241).** `allow_zone_size_flex` — **on by default** — lets a squeezed circle grow for one match, so the authority on "how big is circle *i* this match" is **`s_ChainRadii` during generation and `m_PlayAreas[i].GetRadius()` afterwards**, never `static_sizes[i]`. Three things make that cheap:
 
