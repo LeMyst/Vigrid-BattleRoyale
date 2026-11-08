@@ -40,7 +40,11 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 		if (FileExist(GetProfilePath()))
 		{
 			if (!JsonFileLoader<BattleRoyaleSpawnsData>.LoadFile(GetProfilePath(), this, errorMessage))
+			{
 				ErrorEx(errorMessage);
+				m_ProfileLoadFailed = true;
+				return;  // a half-parsed old version would make Upgrade() Save() over the file
+			}
 		}
 
 		// Run the upgrade function here to avoid overrides from mission folder
