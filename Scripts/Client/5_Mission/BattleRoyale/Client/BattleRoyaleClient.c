@@ -345,6 +345,14 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         if ( !BattleRoyaleDiag.zones_fake )
         {
+            //--- Falling edge: a radius the wire never sends, so Update rebuilds both circles from
+            //--- br_rpc this frame instead of keeping the fake ones until the server moves a circle.
+            if ( br_diag_zone_radius >= 0 )
+            {
+                br_previous_current_play_area_radius = -1;
+                br_previous_future_play_area_radius = -1;
+            }
+
             //--- Marks "not currently faking", which is also what makes the next enable re-centre.
             br_diag_zone_radius = -1;
             return;
