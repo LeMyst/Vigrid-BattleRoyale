@@ -42,7 +42,7 @@ they cost.
 |---|---|
 | `stringtable` | every `STR_*` referenced is defined, **in its own addon's** table |
 | `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file |
-| `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
+| `guards` | every `Scripts/Server` file, and every `Server/` folder file under `Party/` and `Extra/`, opens with `#ifdef SERVER` |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls into them are `#ifdef`-guarded |
 | `menu-ids` | no two `MENU_*` constants share an id |
 | `rpc` | every `AddRPC` name has a matching CF handler method |

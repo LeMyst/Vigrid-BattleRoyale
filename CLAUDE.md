@@ -159,7 +159,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls are `#ifdef`-guarded |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
-| `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
+| `guards` | every `Scripts/Server` file, and every `Server/` folder file under `Party/` and `Extra/`, opens with `#ifdef SERVER` |
 | `inputs` | every `Inputs.xml` parses, and its three sections agree |
 | `menu-ids` | no two `MENU_*` constants share an id across the PBOs |
 | `rpc` | every `AddRPC` name has a matching CF handler method |
