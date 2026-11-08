@@ -152,7 +152,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | Check | Catches |
 |---|---|
 | `asset-paths` | every `Vigrid-BattleRoyale/...` asset reference resolves |
-| `configs` | `CfgPatches` names unique, `requiredAddons` resolve **and name no optional mod's addon**, no stripped vanilla parents |
+| `configs` | `CfgPatches` names unique, `requiredAddons` resolve to a built addon (never a `config.cpp.disabled` one) **and name no optional mod's addon**, no stripped vanilla parents |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` class — a bug an offline client cannot see |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
 | `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method — the defect no local launch can see |
