@@ -39,6 +39,9 @@ class BattleRoyaleWin: BattleRoyaleState
 			for ( int k = 0; k < GetPlayers().Count(); k++ )
 			{
 				PlayerBase winner = GetPlayers()[k];
+				if(!winner)
+					continue;
+
 				PlayerIdentity identity = winner.GetIdentity();
 				if(identity)
 				{
@@ -90,21 +93,26 @@ class BattleRoyaleWin: BattleRoyaleState
         // Send notification
         MessagePlayerUntranslated(player_winner, "STR_BR_ANNOUNCEMENT_WINNER");
 
-        // Show win screen
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, player_winner.GetIdentity() );
+        //--- A NULL identity here would make SendRPC broadcast the win screen to every client.
+        PlayerIdentity winner_identity = player_winner.GetIdentity();
+        if ( winner_identity )
+        {
+            // Show win screen
+            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, winner_identity );
 
-		if ( m_ServerData.enable_vigrid_api )
-		{
-			// Send win webhook
-			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-			WinWebhook winWebhook = new WinWebhook( m_ServerData.webhook_jwt_token );
-			winWebhook.Send( br_instance.match_uuid, player_winner.GetIdentity().GetPlainId() );
+            if ( m_ServerData.enable_vigrid_api )
+            {
+                // Send win webhook
+                BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+                WinWebhook winWebhook = new WinWebhook( m_ServerData.webhook_jwt_token );
+                winWebhook.Send( br_instance.match_uuid, winner_identity.GetPlainId() );
 
-			// Send score webhook
-			BattleRoyaleUtils.Trace("ScoreWebhook: Sending winner score");
-			ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-			scoreWebhook.Send( br_instance.match_uuid, player_winner.GetIdentity().GetPlainId(), player_winner.GetBRPosition() );
-		}
+                // Send score webhook
+                BattleRoyaleUtils.Trace("ScoreWebhook: Sending winner score");
+                ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
+                scoreWebhook.Send( br_instance.match_uuid, winner_identity.GetPlainId(), player_winner.GetBRPosition() );
+            }
+        }
 
         //--- Spawn chickens. Winner winner. The ring, the water rejection, the surface drop and
         //--- the missing NULL check all live in BattleRoyaleChickens now - the lobby drips birds
