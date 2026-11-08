@@ -360,6 +360,11 @@ class BattleRoyaleZone
                     return Math.Round(derived);   //--- a travel budget: never truncate it downward
             }
 
+            //--- The offset at index j prices the trip in from circle j+1, which the opening round
+            //--- never makes: players spawn inside circle j, and circle j+1 was skipped or never existed.
+            if(is_opening_round)
+                return a_StaticTimers[timer_index];
+
             return a_StaticTimers[timer_index] + GetDurationOffset(timer_index);
         }
 
