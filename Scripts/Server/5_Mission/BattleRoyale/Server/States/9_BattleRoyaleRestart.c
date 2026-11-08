@@ -47,6 +47,12 @@ class BattleRoyaleRestart: BattleRoyaleState
         return "Restart State";
     }
 
+    //--- Deactivate() stops the shutdown timer and IsComplete() is always false: the server would never exit.
+    override bool AllowsAdminSkip()
+    {
+        return false;
+    }
+
     override void Deactivate()
     {
         //--- Warn, not Error(): Error() unwinds the stack (memory: BattleRoyaleUtils.Error() is fatal),
