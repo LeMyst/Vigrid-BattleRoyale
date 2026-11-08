@@ -22,9 +22,10 @@
  *  every device rather than decrementing it, so it releases every other holder's acquire and not
  *  just the caller's. LeaderboardMenu used to call it and that was reachable from this screen -
  *  F4 over the death screen, twice, zeroed the counter while this menu was still up, and the
- *  Spectate button then drove it negative. All three menus that pair with ChangeGameFocus(1) now
- *  release with ChangeGameFocus(-1); VigridMapMenu takes the stricter line this class does and adds
- *  no focus call at all.
+ *  Spectate button then drove it negative. Every menu in the mod now takes the line this class
+ *  does and adds no focus call at all: LeaderboardMenu, VigridPartyMenu and SpawnSelectionMenu
+ *  used to add an extra ALL-DEVICE ChangeGameFocus(1), which froze the whole input layer while
+ *  they were up - Esc and their own toggle keys included.
  */
 class DeathScreenMenu extends UIScriptedMenu
 {
