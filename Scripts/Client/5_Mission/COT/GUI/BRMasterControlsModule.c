@@ -31,9 +31,22 @@ class BRMasterControlsModule: JMRenderableModuleBase
         //--- have already granted it to a role do not silently lose the panel. The old
         //--- "BattleRoyale.StateMachine.Update" is gone: it was registered and never read anywhere,
         //--- so nothing can depend on it.
+        //---
+        //--- ⚠️ EVERY PERMISSION AuthorizeAdminAction CHECKS MUST BE REGISTERED HERE, and only three of
+        //--- the six used to be. COT loads a role file with JMRole.Load -> AddPermission( line,
+        //--- requireRegistered = true ), which walks the permission tree and silently DROPS any name
+        //--- that is not already in it (JMPermission.VerifyAddPermission). So "BattleRoyale.Announce 2"
+        //--- in a role file did nothing, no error anywhere, and Player.Manage, Announce and Zone.Control
+        //--- were in practice admins_steamid64-only - which also kept the roster (RosterRequest needs
+        //--- Player.Manage) out of reach of any moderator role. Registering is also what makes a
+        //--- permission appear in COT's own role editor. It must happen before the mission loads
+        //--- (RegisterPermission refuses afterwards), which the module constructor does.
         GetPermissionsManager().RegisterPermission( BR_PERM_VIEW );
         GetPermissionsManager().RegisterPermission( BR_PERM_MATCH_CONTROL );
         GetPermissionsManager().RegisterPermission( BR_PERM_LOBBY_CONTROL );
+        GetPermissionsManager().RegisterPermission( BR_PERM_PLAYER_MANAGE );
+        GetPermissionsManager().RegisterPermission( BR_PERM_ANNOUNCE );
+        GetPermissionsManager().RegisterPermission( BR_PERM_ZONE_CONTROL );
     }
 
     override bool HasAccess()
