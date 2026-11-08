@@ -271,6 +271,25 @@ modded class BRMasterControlsModule
         return subject;
     }
 
+    //--- Add, Unstuck and TP act on a living competitor only: a spectator's body is their corpse (or
+    //--- an admin's hidden anchor), and rostering or moving it breaks spectating and the round end.
+    protected bool IsLiveCompetitor( PlayerBase subject, string uid, string action_name )
+    {
+        if ( !subject.IsAlive() )
+        {
+            BattleRoyaleUtils.Warn("[Admin] " + action_name + ": " + SubjectName( subject ) + " is dead.");
+            return false;
+        }
+
+        if ( BattleRoyaleSpectators.GetInstance().IsSpectator( uid ) )
+        {
+            BattleRoyaleUtils.Warn("[Admin] " + action_name + ": " + SubjectName( subject ) + " is spectating.");
+            return false;
+        }
+
+        return true;
+    }
+
     //--- Name for a log line or a webhook. Prefers the mod's corrected name over whatever the player
     //--- connected as - BattleRoyaleNameService exists precisely because a placeholder `Survivor`
     //--- identifies nobody.
@@ -409,6 +428,8 @@ modded class BRMasterControlsModule
         PlayerBase subject = ResolveSubject( senderRPC, uid, "PlayerAdd" );
         if ( !subject )
             return;
+        if ( !IsLiveCompetitor( subject, uid, "PlayerAdd" ) )
+            return;
 
         if ( state.ContainsPlayer( subject ) )
         {
@@ -448,6 +469,8 @@ modded class BRMasterControlsModule
         PlayerBase subject = ResolveSubject( senderRPC, uid, "PlayerUnstuck" );
         if ( !subject )
             return;
+        if ( !IsLiveCompetitor( subject, uid, "PlayerUnstuck" ) )
+            return;
 
         //--- Deliberately bypasses both the per-player cooldown and AllowsUnstuck(). A player who has
         //--- just burned their own F2 on a bad spot is exactly who needs an admin to do it for them,
@@ -477,6 +500,8 @@ modded class BRMasterControlsModule
 
         PlayerBase subject = ResolveSubject( senderRPC, uid, "PlayerTeleportCircle" );
         if ( !subject )
+            return;
+        if ( !IsLiveCompetitor( subject, uid, "PlayerTeleportCircle" ) )
             return;
 
         //--- Resolves the circle actually in play - not the shrink target - and falls back to the
