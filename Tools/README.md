@@ -41,7 +41,7 @@ they cost.
 | Check | What it asserts |
 |---|---|
 | `stringtable` | every `STR_*` referenced is defined, **in its own addon's** table |
-| `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file |
+| `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file, in scripts, layouts, imagesets, JSON, `config.cpp` (including `files[]` folders and `samples[]`) and `mod.cpp` |
 | `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls into them are `#ifdef`-guarded |
 | `menu-ids` | no two `MENU_*` constants share an id |
