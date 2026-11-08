@@ -114,12 +114,30 @@ Two bugs found and fixed on the way:
   remaining expired items were deleted. The countdown's second pass refilled them (10,157 items in
   one test).
 
-Not covered: what a 1-3 s refill step feels like on a connected client, the retail exe for the whole
-sequence (the natives themselves were tested on retail; see `native-hooks.md`), and more than three
-players.
+### Retail (2026-11-08)
+
+Run on retail `DayZServer_x64` 1.30.164.289, with the full serverkit catalog built from `7c13ada`
+(12 modules active, `ce_refill` included). Myst played on a retail BattlEye client. One player cannot
+start a match normally (the lobby needs two groups), so each match was started with COT's
+match-control **Next**: alone, the player wins the moment the match starts. Two matches, two resets:
+
+- **Resets:** each took 0.12-0.16 s from the match end to the lobby reopening with the player kept.
+  The server unlocked at each reset and locked again at each countdown (the `serverlock` natives).
+- **Server-browser name:** `[LOBBY 1]` → `[STARTING 0:10]` → `[STARTING]` → `[ENDING]` →
+  `[LOBBY 1]`, through both matches.
+- **Refill:** ~10,100 items per lobby pass, in steps of 0.6-1.2 s on retail (DayZDiag: 1.5-2.9 s).
+- **On the client** Myst saw nothing wrong: the body, the HUD, the win screen going away, the notices
+  and the refill freezes all looked fine.
+- **No script errors** on the server.
+
+To launch a test build, start `DayZ_BE.exe` with `@Vigrid-BattleRoyale` in `-mod`. The DayZ Launcher
+picks the Workshop release `@DayZ-BattleRoyale`, which is an older build: it fails to compile without
+Expansion (`expansionclientsettings.c: Unknown type 'ExpansionClientSettings'`).
+
+Not covered: more than three players, and the death-screen and spectator paths on retail (one player
+cannot die in a match that ends as it starts); both were run on the diag rig above.
 
 ## Known limits
 
 - **`zone_generation_seed`** replays the same layout every match, as it replays it every boot.
 - **Uptime grows** across in-place matches; `in_place_reset_max_matches` keeps it bounded.
-- **What a 1-3 s refill step feels like** on a connected client has not been judged by eye.
