@@ -127,15 +127,17 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 			if ( match_uuid.Length() != 36 )
 			{
+				//--- Warn, not Trace: an operator needs to see why the server exits or runs unregistered.
 				if( m_ServerData.force_match_uuid )
 				{
-					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+					BattleRoyaleUtils.Warn("Error getting match uuid (force_match_uuid is on), restarting. Got: " + match_uuid);
 					GetGame().RequestExit(0);
 				}
 				else
 				{
+					//--- Logged before it is cleared, or the line can only ever print an empty response.
+					BattleRoyaleUtils.Warn("Error getting match uuid, continuing unregistered. Got: " + match_uuid);
 					match_uuid = "";
-					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
 				}
 			}
 			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
