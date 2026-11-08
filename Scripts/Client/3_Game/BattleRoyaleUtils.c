@@ -107,12 +107,12 @@ class BattleRoyaleUtils: Managed
 		}
 #endif
 
-		// Check command line params
+		// Check command line params. -br-none first, so it wins over any other -br-* flag.
+		if (IsCLIParam("br-none")) return false;  // Disable all logging
 		if (IsCLIParam("br-trace")) return (TRACE >= level);
 		if (IsCLIParam("br-debug")) return (DEBUG >= level);
 		if (IsCLIParam("br-info")) return (INFO >= level);
 		if (IsCLIParam("br-warn")) return (WARN >= level);
-		if (IsCLIParam("br-none")) return false;  // Disable all logging
 
 #ifdef SERVER
 		// Check server config
