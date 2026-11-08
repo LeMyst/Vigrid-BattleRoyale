@@ -1112,40 +1112,22 @@ class BattleRoyaleSpectators
     }
 
     /**
-     *  Find a player's own CORPSE by uid.
+     *  Find a player's own body - corpse or admin anchor - by uid.
      *
      *  LivingPlayerByUid cannot do this: it walks the current state's roster, and a dead player was
      *  removed from it at death. So this walks every Man in the world instead and matches on the
-     *  cached PlayerBase.player_steamid rather than on PlayerIdentity - the same reason
+     *  cached PlayerBase.player_steamid as well as on PlayerIdentity - the same reason
      *  IsLateJoinExempt does, namely that the identity may be gone while the body is still there.
      *
      *  Returns a reference rather than storing one, so invariant 1 stands: the result is used within
      *  the call that asked for it and never kept.
      *
-     *  Deliberately does NOT filter on "is dead". A uid that somehow resolves to a living body is
-     *  something the caller should be able to see rather than silently get NULL for.
+     *  After AdminRespawn the corpse and the anchor body share the uid; a living body wins, so the
+     *  admin paths get the anchor and an ordinary spectator (who has only the corpse) gets that.
      */
     PlayerBase FindBodyByUid(string uid)
     {
-        if (uid == "")
-            return NULL;
-
-        array<Man> everyone = new array<Man>();
-        GetGame().GetPlayers(everyone);
-
-        int count = everyone.Count();
-        for (int i = 0; i < count; i++)
-        {
-            PlayerBase candidate = PlayerBase.Cast(everyone.Get(i));
-            if (!candidate)
-                continue;
-            if (candidate.player_steamid != uid)
-                continue;
-
-            return candidate;
-        }
-
-        return NULL;
+        return BattleRoyaleKillAttribution.FindPlayerByUid(uid);
     }
 
     /**
@@ -1737,8 +1719,8 @@ class BattleRoyaleSpectators
         GetGame().SelectPlayer(identity, body);
 
         //--- Set by hand because nothing else does outside OnPlayerConnected, and FindBodyByUid
-        //--- matches on player_steamid - without this the body this method just made is invisible to
-        //--- every uid->body lookup in the file, including AdminEligibility's.
+        //--- matches on player_steamid once the identity is gone - without this the body this method
+        //--- just made would vanish from every uid->body lookup on a disconnect.
         body.player_steamid = uid;
         body.player_name = BattleRoyaleNameService.ResolveIdentity(identity);
 
