@@ -143,6 +143,6 @@ skipped every path containing `.claude`, and a worktree lives under `.claude\wor
 ## Allowlists
 
 `Tools/allowlists/*.txt`, one entry per line as `entry  # reason`. They are documentation as much
-as configuration — `unguarded_server.txt` is currently the only place the two deliberately
-unguarded server files have their reason written down. `guards` reports a stale entry as an error,
+as configuration — `unguarded_server.txt` is currently the only place the one deliberately
+unguarded server file has its reason written down. `guards` reports a stale entry as an error,
 because an exemption that outlives its subject is how a rule quietly stops applying.

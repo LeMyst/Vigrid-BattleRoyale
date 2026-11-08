@@ -7,9 +7,4 @@ class BattleRoyaleBase
     void OnPlayerKilled(PlayerBase killed, Object killer) {}
 
     void Update(float delta) {}
-
-    bool IsDebug()
-    {
-        return true;
-    }
 }

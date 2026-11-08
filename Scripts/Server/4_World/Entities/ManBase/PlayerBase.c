@@ -17,8 +17,6 @@ modded class PlayerBase
     //--- fast-travel now that the lobby answers it too. See BattleRoyaleState.DeferredUnstuck.
     float next_unstuck_time = 0;
 
-    string owner_id = "";
-
 	//--- Their client has sent PlayerLoadedIn, i.e. it has finished loading the world and is
 	//--- controlling its character. Until then the player is in the lobby roster and counts towards
 	//--- minimum_players while still staring at a loading screen: vanilla reaches InvokeOnConnect

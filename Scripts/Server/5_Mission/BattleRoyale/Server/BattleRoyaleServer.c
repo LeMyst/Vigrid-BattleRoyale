@@ -276,27 +276,6 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
     }
 
-    override bool IsDebug()
-    {
-        BattleRoyaleState m_CurrentState = GetCurrentState();
-        BattleRoyaleDebug m_Debug;
-
-        if(Class.CastTo(m_Debug, m_CurrentState))
-        {
-            return true;
-        }
-
-        //not debug state, check if match is actually running!
-        BattleRoyalePrepare m_Prep;
-
-        if(Class.CastTo(m_Prep, m_CurrentState))
-        {
-            //we are in prep state! - consider this a debug state!
-            return true;
-        }
-        return false;
-    }
-
 	const float CHECK_IS_COMPLETE = 0.1;  //seconds
 	float m_TimeSinceLastTick = CHECK_IS_COMPLETE + 1;
 
@@ -538,9 +517,6 @@ class BattleRoyaleServer: BattleRoyaleBase
         }
 
         // only add player if they connect during debug
-        if( player.GetIdentity() )
-            player.owner_id = player.GetIdentity().GetPlainId(); //cache their id (for connection loss)
-
         GetCurrentState().AddPlayer(player);
 
         if( m_ServerData.enable_vigrid_api && m_ServerData.warning_no_uuid && match_uuid == "" )
