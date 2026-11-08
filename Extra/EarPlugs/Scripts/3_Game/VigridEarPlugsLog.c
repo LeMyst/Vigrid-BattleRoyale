@@ -36,7 +36,8 @@ class VigridEarPlugsLog
 
         if (level == NONE)
         {
-            Error2("", stamp + " [EarPlugs] " + message);
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
+            ErrorEx(stamp + " [EarPlugs] " + message);
             return;
         }
 

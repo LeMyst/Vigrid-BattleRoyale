@@ -32,7 +32,8 @@ class VigridMapLog
 
         if (level == NONE)
         {
-            Error2("", stamp + " [VigridMap] " + message);
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
+            ErrorEx(stamp + " [VigridMap] " + message);
             return;
         }
 

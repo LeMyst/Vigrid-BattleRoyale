@@ -32,7 +32,8 @@ class VigridAutoRunLog
 
         if (level == NONE)
         {
-            Error2("", stamp + " [AutoRun] " + message);
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
+            ErrorEx(stamp + " [AutoRun] " + message);
             return;
         }
 

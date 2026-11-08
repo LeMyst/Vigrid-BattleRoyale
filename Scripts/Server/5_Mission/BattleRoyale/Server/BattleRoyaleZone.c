@@ -1575,12 +1575,11 @@ class BattleRoyaleZone
 
     //--- Backtracking search over the whole chain.
     //---
-    //--- TERMINATION. Each level's retry counter rises monotonically while its parent is unchanged,
-    //--- and at BR_ZONE_LEVEL_RETRIES the level takes the witness step, which is accepted
-    //--- unconditionally. So each of the n-1 levels can fail at most BR_ZONE_LEVEL_RETRIES times per
-    //--- parent, and re-rolling a parent resets only the levels ABOVE it. Total placements are
-    //--- bounded by n * BR_ZONE_LEVEL_RETRIES * BR_ZONE_MAX_SEEDS. This is a proof, not a budget -
-    //--- none of those constants is load-bearing for correctness, only for quality.
+    //--- TERMINATION is bounded by seed_work, not by the per-level retry counter: re-entering a level
+    //--- resets it, so a level >= 2 with no land-safe candidate under any parent never reaches its
+    //--- witness step. Every seed but the last is abandoned after BR_ZONE_SEED_WORK placements; past
+    //--- that budget the last seed forces every level to its witness step (always accepted), so total
+    //--- placements <= BR_ZONE_MAX_SEEDS * (BR_ZONE_SEED_WORK + 1) + n.
     protected bool BuildChain(notnull array<vector> chain)
     {
         int n = i_NumRounds;
@@ -1652,6 +1651,10 @@ class BattleRoyaleZone
                 desperation = s_LevelRetries.Get(level) + 1;
                 s_LevelRetries.Set(level, desperation);
 
+                //--- Termination guarantee (see header): only the last seed gets here over budget.
+                if(seed_work > BR_ZONE_SEED_WORK && desperation < BR_ZONE_LEVEL_RETRIES)
+                    desperation = BR_ZONE_LEVEL_RETRIES;
+
                 parent_center = chain.Get(level - 1);
 
                 ok = TryPlaceLevel(level, parent_center, desperation, placed_center);
@@ -1667,8 +1670,7 @@ class BattleRoyaleZone
                 }
 
                 //--- Failed on LAND grounds - geometry can no longer fail, the oracle saw to that.
-                //--- Re-roll the parent: its own counter climbs, so it escalates tiers too and at
-                //--- BR_ZONE_LEVEL_RETRIES takes its witness step. That is what bounds this loop.
+                //--- Re-roll the parent. This alone does not bound the loop - see the header.
                 s_Backtracks++;
                 level--;
 

@@ -32,7 +32,8 @@ class KillFeedLog
 
         if (level == NONE)
         {
-            Error2("", stamp + " [KillFeed] " + message);
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
+            ErrorEx(stamp + " [KillFeed] " + message);
             return;
         }
 

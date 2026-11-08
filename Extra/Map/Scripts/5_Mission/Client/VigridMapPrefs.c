@@ -80,8 +80,8 @@ class VigridMapPrefs
         string error_message;
         if (!JsonFileLoader<VigridMapPrefsData>.LoadFile(VIGRID_MAP_PREFS_FILE, m_Data, error_message))
         {
-            //--- Warn, not ErrorEx: on this codebase a fatal here would take the client down over a
-            //--- preference. A corrupt file just means defaults for the session.
+            //--- Warn: a corrupt prefs file is the player's own and costs nothing but defaults for the
+            //--- session, so it is not an error-severity event.
             VigridMapLog.Warn("Could not read client prefs: " + error_message);
             m_Data = new VigridMapPrefsData();
             return;

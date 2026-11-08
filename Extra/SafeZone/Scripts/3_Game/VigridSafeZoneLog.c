@@ -32,7 +32,8 @@ class VigridSafeZoneLog
 
         if (level == NONE)
         {
-            Error2("", stamp + " [SafeZone] " + message);
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
+            ErrorEx(stamp + " [SafeZone] " + message);
             return;
         }
 

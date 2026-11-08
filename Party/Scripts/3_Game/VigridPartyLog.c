@@ -32,7 +32,8 @@ class VigridPartyLog
 
         if (level == NONE)
         {
-            Error2("", stamp + " [Vigrid-Party] " + message);
+            //--- ErrorEx, as vanilla logs recoverable errors: every caller carries on afterwards.
+            ErrorEx(stamp + " [Vigrid-Party] " + message);
             return;
         }
 

@@ -219,6 +219,11 @@ class BattleRoyaleRPC
 		//--- drains it every frame, so it is almost always already empty and clearing it is cheap.
 		pending_toasts.Clear();
 		wait_next_match = false;
+		//--- Per connection: a stale sequence makes a rejoining client wait forever for its old body,
+		//--- and it never sends PlayerLoadedIn.
+		match_reset_seq = 0;
+		match_reset_body_low = 0;
+		match_reset_body_high = 0;
 	}
 
 	/**

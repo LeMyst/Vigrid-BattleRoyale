@@ -2102,8 +2102,7 @@ class VigridPartyManager
         if (position == vector.Zero)
             return;
 
-        //--- Warn, never Error: Error routes to Error2() and raises a VM exception, which would
-        //--- turn one malformed packet into a dead server.
+        //--- Warn: how often this fires is up to the client, so it is not an error-severity event.
         if (vector.Distance(player.GetPosition(), position) > VIGRID_PARTY_PING_MAX_PLACE_DIST)
         {
             VigridPartyLog.Warn("Rejected out-of-range ping from " + uid);

@@ -211,10 +211,16 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     void HandleUnlock()
     {
         BattleRoyaleUtils.Trace("HandleUnlock");
+        //--- A dropped player stays on the roster until logout, possibly without an identity. A throw
+        //--- here would skip everything below: players stay frozen and the SafeZone is never lifted.
         for(int i = 0; i < a_PlayerList.Count(); i++)
         {
             PlayerBase player = a_PlayerList[i];
-            BattleRoyaleUtils.Trace("Unlock " + player.GetIdentity().GetName());
+            if ( !player )
+                continue;
+
+            string player_name = GetPlayerLogName( player );
+            BattleRoyaleUtils.Trace("Unlock " + player_name);
 
             player.DisableInput(false); //This will re-enable input
 			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );
