@@ -69,6 +69,12 @@ class BattleRoyaleWin: BattleRoyaleState
         return "Win State";
     }
 
+    //--- KickWinner is the winners' only RecordExit; skipping it records the runner-up as winner.
+    override bool AllowsAdminSkip()
+    {
+        return false;
+    }
+
     override void Deactivate()
     {
         if ( m_KickTimer && m_KickTimer.IsRunning() )

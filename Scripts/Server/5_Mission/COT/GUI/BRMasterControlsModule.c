@@ -116,8 +116,8 @@ modded class BRMasterControlsModule
         if ( Class.CastTo( br_server, GetBR() ) && br_server.GetCurrentState() )
             state_name = br_server.GetCurrentState().GetName();
 
-        Server_Next();
-        ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Skipped state: " + state_name );
+        if ( Server_Next() )
+            ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Skipped state: " + state_name );
     }
 
     protected void RPC_Pause( ParamsReadContext ctx, PlayerIdentity senderRPC, Object target )
@@ -1159,18 +1159,14 @@ modded class BRMasterControlsModule
         }
     }
 
-    protected void Server_Next()
+    protected bool Server_Next()
     {
         BattleRoyaleServer m_BrServer;
         if(Class.CastTo( m_BrServer, GetBR()))
-        {
-            BattleRoyaleUtils.Trace("[DayZBR COT] State Machine Skipping!");
-            m_BrServer.GetCurrentState().Deactivate();// super.IsComplete() will return TRUE when this is run
-        }
-        else
-        {
-            Error("Failed to cast GetBR() to BattleRoyaleServer");
-        }
+            return m_BrServer.AdminSkipState();
+
+        BattleRoyaleUtils.Warn("Failed to cast GetBR() to BattleRoyaleServer");
+        return false;
     }
 }
 #endif // JM_COT

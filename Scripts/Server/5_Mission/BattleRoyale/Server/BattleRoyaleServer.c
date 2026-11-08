@@ -2381,6 +2381,24 @@ class BattleRoyaleServer: BattleRoyaleBase
     }
 #endif
 
+    //--- The one place an admin "Next" (COT or VPP) ends the current state. False when refused.
+    bool AdminSkipState()
+    {
+        BattleRoyaleState state = GetCurrentState();
+        if ( !state )
+            return false;
+
+        if ( !state.AllowsAdminSkip() )
+        {
+            BattleRoyaleUtils.Warn("[Admin] Next refused: '" + state.GetName() + "' cannot be skipped.");
+            return false;
+        }
+
+        BattleRoyaleUtils.Trace("[Admin] State Machine Skipping!");
+        state.Deactivate(); // super.IsComplete() will return TRUE when this is run
+        return true;
+    }
+
     void NextState(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         BattleRoyaleUtils.Trace("BattleRoyaleManager NextState");
@@ -2396,16 +2414,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             return;
         }
 
-        BattleRoyaleServer m_BrServer;
-        if(Class.CastTo( m_BrServer, GetBR()))
-        {
-            BattleRoyaleUtils.Trace("[DayZBR COT] State Machine Skipping!");
-            m_BrServer.GetCurrentState().Deactivate();// super.IsComplete() will return TRUE when this is run
-        }
-        else
-        {
-            Error("Failed to cast GetBR() to BattleRoyaleServer");
-        }
+        AdminSkipState();
 #endif
     }
 }

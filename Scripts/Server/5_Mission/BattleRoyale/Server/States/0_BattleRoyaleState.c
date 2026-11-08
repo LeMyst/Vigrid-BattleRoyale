@@ -414,6 +414,12 @@ class BattleRoyaleState: Timeable
         return false;
     }
 
+    //--- May an admin "Next" end this state early? Win and Restart override this to refuse.
+    bool AllowsAdminSkip()
+    {
+        return true;
+    }
+
     //--- Resolve the engine-supplied RPC `sender` to a player tracked by THIS state.
     //--- Server RPC handlers must use this instead of the `Object target` they receive:
     //--- `target` is chosen by the client and can name any other player, `sender` cannot be spoofed.
