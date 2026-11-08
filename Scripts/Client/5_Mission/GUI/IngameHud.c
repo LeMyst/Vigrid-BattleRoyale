@@ -1,21 +1,6 @@
 #ifndef SERVER
 modded class IngameHud
 {
-	protected bool b_BrVisibilityOverride;
-
-	void IngameHud()
-	{
-		b_BrVisibilityOverride = false;
-	}
-
-	override void Show( bool show )
-	{
-		if(b_BrVisibilityOverride)
-			return;
-
-		super.Show( show );
-	}
-
 	//--- The one hook that covers both paths: vanilla Init() calls this once at startup, and
 	//--- RespawnDialogue calls it again after a respawn. Everything below is idempotent, so running
 	//--- twice is harmless.
