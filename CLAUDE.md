@@ -49,6 +49,38 @@ correction in a file nobody re-read. So when a memory-consolidation pass runs, o
 re-diagnosed, **grep `C:\Users\Myst\.claude\skills\`, this file and `Docs/` too**, not just the memory
 directory.
 
+**The GitHub wiki is a fourth copy, written for server operators rather than developers.** It lives at
+<https://github.com/LeMyst/Vigrid-BattleRoyale/wiki>. That is a separate git repo,
+`LeMyst/Vigrid-BattleRoyale.wiki.git`, cloned beside this one as `..\Vigrid-BattleRoyale.wiki\`. It is
+plain Markdown pushed straight to `master`, with no PR. It restates, page by page, behaviour that is
+otherwise only in code:
+- every settings field, with its default, unit and real effect;
+- the lobby start conditions;
+- the match phases;
+- the `-mod=` order;
+- the dzhooks modules and their log lines;
+- the COT permissions;
+- every keybind.
+
+It also carries four example setups whose JSON is copy-paste ready. **So a change to any of these is not
+done until the matching wiki page says so too.** Each settings file has its own page (`General-Settings`,
+`Lobby-Settings`, `Zone-Settings`, …, `Party-Settings`, `Addon-Settings`), and an example that sets a
+renamed or removed key now hands operators a dead key. A new settings field means a new table row, plus a
+`version` bump on that page.
+
+It was first written against `78a5850` (2026-11-08), and `Home` names the commit it describes; move that
+reference when you resync. Two other details:
+- The wiki deliberately documents current behaviour, defects included. The defects themselves are filed
+  under *Wiki pass (2026-11-08)* in the local `TODO.md`, and each one names the page to update once it is
+  fixed.
+- **Before pushing a wiki edit, re-run the same three checks the first version passed:**
+  - every internal link and anchor resolves;
+  - every fenced ```json block parses as strict JSON;
+  - every key in those blocks exists as a member of the matching settings class on `main` — and every
+    member of each class appears on its page.
+
+  Prove the checker in both directions with a deliberately wrong key, as with any check here.
+
 ## Build & run
 
 Windows-only. Requires DayZ Tools (Steam) and a mounted `P:\` work drive.
