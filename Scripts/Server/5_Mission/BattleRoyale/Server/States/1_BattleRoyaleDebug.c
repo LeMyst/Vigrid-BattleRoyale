@@ -139,14 +139,29 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         if( !IsActive() )
             return false;
 
-        //--- Hoisted into a local: EnfusionScript has no multi-line if conditions and the guarded
-        //--- term cannot be appended to a return expression.
-        bool enough_groups = GetPlayers().Count() > 1;
-#ifdef VIGRID_PARTY
-        enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
-#endif
+        return HasEnoughGroups();
+    }
 
-        return enough_groups;
+    /**
+     *  The group floor: more than one group in the lobby. EVERY start path asks this one method.
+     *
+     *  It is the inverse of BattleRoyaleState.IsOneSideLeft(), and the reason it is a floor rather
+     *  than a policy: a match started with one group standing has already been won, ends on its first
+     *  tick, and runs the win state and the restart for nothing. One party of two readied up was
+     *  enough to do that through the autostart path, which was the one start path that never asked -
+     *  the vote, the no-vote path and the manual start each carried their own copy of the test, and
+     *  the fourth was simply missing. Centralised for the same reason IsOneSideLeft() was.
+     *
+     *  Without the party addon, or with its manager switched off, GetGroupCount() degrades to one
+     *  group per player, so this is "more than one player" there.
+     */
+    protected bool HasEnoughGroups()
+    {
+#ifdef VIGRID_PARTY
+        return VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
+#else
+        return GetPlayers().Count() > 1;
+#endif
     }
 
     /**
@@ -640,12 +655,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         //--- a ResetLoadHold() called at this method's 10 Hz would wipe the clock it is running.
         if( !b_UseVoteSystem )
         {
-            //--- Hoisted into a local because EnfusionScript has no multi-line if conditions, so the
-            //--- guarded term cannot simply be appended to the condition below.
-            bool enough_groups = true;
-#ifdef VIGRID_PARTY
-            enough_groups = VigridPartyAPI.GetGroupCount( GetPlayers() ) > 1;
-#endif
+            bool enough_groups = HasEnoughGroups();
 
             //--- Split into named locals rather than one long condition: EnfusionScript caps how
             //--- complex a single expression may be ("Formula too complex" is a hard compile error),
@@ -800,8 +810,14 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 
 			bool vote_start = IsActive() && automatic_start_allowed && IsVoteReady() && IsNotFullWaitSatisfied();
 
+			//--- The autostart path applies the group floor (HasEnoughGroups) but NOT minimum_players.
+			//--- The floor is not negotiable: one group standing is a match already won. minimum_players
+			//--- is left out on purpose, like the not-full wait above: this path is what guarantees a
+			//--- match eventually runs, and with the minimum applied a lobby that never reaches it
+			//--- would never start at all - the vote path already refuses it.
 			int t_MaxPlayers = GetGame().ServerConfigGetInt( "maxPlayers" );
 			bool auto_ready = b_AutoStartGame && automatic_start_allowed && GetReadyCount() > 1;
+			auto_ready = auto_ready && HasEnoughGroups();
 			bool auto_start = auto_ready && GetReadyCount() >= ( t_MaxPlayers - ( ( t_MaxPlayers * ( GetGame().GetTickTime() - i_FirstPlayerTick ) ) / f_AutoStartDelay ) );
 
 			//--- Merged into one exit where these used to be two independent DeactivateDeferred()
@@ -1121,10 +1137,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 		if( GetLoadedPlayerCount() < i_MinPlayers )
 			return false;
 
-#ifdef VIGRID_PARTY
-		if( VigridPartyAPI.GetGroupCount( GetPlayers() ) <= 1 ) // need more than one group
+		if( !HasEnoughGroups() )
 			return false;
-#endif
 
         //--- Cast before dividing. Both operands are int, so this truncated to 0 for any partial
         //--- readiness and to 1 only at 100% - which made ready_up_percent dead config, the vote
