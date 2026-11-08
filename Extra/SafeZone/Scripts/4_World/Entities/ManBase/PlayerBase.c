@@ -110,6 +110,14 @@ modded class PlayerBase
         if (!attacker)
             attacker = PlayerBase.Cast(source.GetHierarchyRootPlayer());
 
+        //--- Run over: RegisterTransportHit names the vehicle itself as the source, so blame the driver.
+        if (!attacker)
+        {
+            Transport transport = Transport.Cast(source);
+            if (transport)
+                attacker = PlayerBase.Cast(transport.CrewDriver());
+        }
+
         if (attacker)
             return attacker != this;
 

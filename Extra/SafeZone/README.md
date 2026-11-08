@@ -32,7 +32,8 @@ all behave normally — players can still aim and still punch each other in the 
 
 Falls, drowning, infected, animals and the mod's own scripted zone damage all still land, because the
 predicate resolves the damage source to a player (directly, via `GetHierarchyRootPlayer()` for a held
-weapon, or by explosive type) and returns false for anything else — **including the victim as their own
+weapon, via `Transport.CrewDriver()` for a vehicle that ran them over, or by explosive type) and returns
+false for anything else — **including the victim as their own
 source**, which is exactly how the mod's `DecreaseHealthCoef` zone damage surfaces.
 
 ## Why not Expansion's safezone
@@ -85,6 +86,10 @@ never end up armed because a sync was missed.
   does not flinch. `TotalDamageResult` is getter-only, so scaling damage to zero is not available —
   cancelling is the only clean route.
 - Expansion's safezone stacking, above. This is the one that bites in practice.
+- **Not covered, because none of them is a hit from another player:** a *driverless* vehicle; a
+  flashbang's blinding and ringing, a client-side effect rather than damage (its explosion damage is
+  discarded like any explosive's); and chemical gas, which works through agents from a contaminated
+  area, the same way the environmental gas zones do.
 - `VIGRID_SAFEZONE_VERSION` is declared but never read — unlike KillFeed, this addon has no
   `MissionServer` boot line to log it.
 
