@@ -1587,16 +1587,19 @@ class BattleRoyaleSpectators
         if (!body)
             return;
 
-        //--- Vanilla, and independent of the above: a parked body nobody can see must not be
-        //--- killable by whatever it is dropped on top of.
+        //--- A parked body nobody can see must not be killable by whatever it is dropped on top of.
+#ifdef JM_COT
+        //--- preference = false, as COT's own spectator does: this hide is temporary and must not
+        //--- overwrite the admin's COT invisibility, collision, AI-target and god-mode preferences.
+        //--- COTSetGodMode rather than SetAllowDamage, so COT's god-mode flag stays truthful.
+        body.COTSetGodMode(hidden, false);
+        if (hidden)
+            body.COTSetInvisibility(JMInvisibilityType.Interactive, false);
+        else
+            body.COTSetInvisibility(JMInvisibilityType.None, false);
+#else
         body.SetAllowDamage(!hidden);
 
-#ifdef JM_COT
-        if (hidden)
-            body.COTSetInvisibility(JMInvisibilityType.Interactive);
-        else
-            body.COTSetInvisibility(JMInvisibilityType.None);
-#else
         //--- No COT: say so once rather than leaving "the admin is visible" as a silent mystery.
         if (hidden)
             BattleRoyaleUtils.Warn("[Spectate] No JM_COT - the admin's body will be VISIBLE to other players while spectating");
