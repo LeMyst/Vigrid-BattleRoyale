@@ -32,12 +32,19 @@ class AutoLockWebhook
 			new HttpArgument("tick", GetGame().GetTickTime().ToString())
 		};
 
+		//--- Serialised rather than concatenated: a " or \ in the password broke the hand-built JSON.
+		JSONAutoLockBody body = new JSONAutoLockBody( s_ServerRconPassword );
+
+		string bodyString;
+		string bodyError;
+		JsonFileLoader<JSONAutoLockBody>.MakeData(body, bodyString, bodyError);
+
 		i_TryLeft = i_TryLeft - 1;
 
 		RestApi restApi = GetRestApi();
 		RestContext ctx = restApi.GetRestContext(s_ServerURL);
 		ctx.SetHeader("application/json");
-		ctx.POST(new AutoLockCallback( s_ServerURL, s_ServerIP, i_ServerPort, s_ServerRconPassword, i_TryLeft ), arguments.ToQuery(string.Format("autolock/%1/%2", s_ServerIP, i_ServerPort)), "{\"rcon_password\":\"" + s_ServerRconPassword + "\"}");
+		ctx.POST(new AutoLockCallback( s_ServerURL, s_ServerIP, i_ServerPort, s_ServerRconPassword, i_TryLeft ), arguments.ToQuery(string.Format("autolock/%1/%2", s_ServerIP, i_ServerPort)), bodyString);
 	};
 
 	void SetTryLeft(int try_left)
@@ -88,5 +95,15 @@ class AutoLockCallback: RestCallback
 		BattleRoyaleUtils.Trace(" !!! OnSuccess() size=" + dataSize );
 		if( dataSize > 0 )
 			BattleRoyaleUtils.Trace(data);
+	};
+};
+
+class JSONAutoLockBody
+{
+	string rcon_password;
+
+	void JSONAutoLockBody( string password )
+	{
+		rcon_password = password;
 	};
 };
