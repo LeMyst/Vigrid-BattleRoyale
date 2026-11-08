@@ -130,6 +130,17 @@ PROBES = [
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",
      replace("#ifdef SERVER", "//probe")),
 
+    #  The #else of an unrelated #ifdef compiles everywhere; it used to read as guarded.
+    ("client-only-types: client-only type in the #else of #ifdef VIGRID_PARTY", "client-only-types",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\n#ifdef VIGRID_PARTY\n#else\n"
+            "class BRProbe6 { void F() { BattleRoyaleRPC.GetInstance(); } }\n#endif\n")),
+
+    ("diag-guards: diag type in the #else of #ifdef VIGRID_PARTY", "diag-guards",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\n#ifdef VIGRID_PARTY\n#else\n"
+            "class BRProbe7 { void F() { BattleRoyaleDiag.Run(); } }\n#endif\n")),
+
     ("discipline: BattleRoyale symbol inside Party/", "discipline",
      "Party/Scripts/3_Game/VigridPartyLog.c",
      append('\nclass VPProbe { void F() { BattleRoyaleUtils.Info("x"); } }\n')),
