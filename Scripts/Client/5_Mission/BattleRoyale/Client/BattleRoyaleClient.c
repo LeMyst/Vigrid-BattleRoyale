@@ -123,6 +123,13 @@ class BattleRoyaleClient: BattleRoyaleBase
         VigridMapAPI.ClearSelfPositionOverride();
         VigridMapAPI.ClearAdminPlayers();
 #endif
+
+#ifdef VIGRID_PARTY
+        // Same for the party HUD: both are statics set while spectating and cleared only from the
+        // spectate path, so a session that ended mid-spectate left them set for the next one.
+        VigridPartyClientAPI.ClearHudViewpoint();
+        VigridPartyClientAPI.SetHudSuppressed( false );
+#endif
     }
 
     void Init()
