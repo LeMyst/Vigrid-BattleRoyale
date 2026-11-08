@@ -544,6 +544,51 @@ class VigridPartyManager
         BroadcastLocked();
     }
 
+    /**
+     *  Get ready for another match in the same process (the host's in-place reset).
+     *
+     *  Members the auto-grouper placed for the last match are removed, as a process restart would
+     *  have done: they never reach disk, so a restarted server reloaded parties.json without them.
+     *  Parties players formed themselves stay. Then formation is unlocked for the new lobby.
+     *  Returns how many auto-placed members were removed.
+     */
+    int ResetForNewMatch()
+    {
+        int removed = 0;
+
+        //--- Backwards over both lists: RemoveMemberInternal can delete a party from m_Parties and
+        //--- removes the uid from member_uids.
+        for (int p = m_Parties.Count() - 1; p >= 0; p--)
+        {
+            VigridParty party = m_Parties.Get(p);
+            if (!party)
+                continue;
+
+            for (int m = party.member_uids.Count() - 1; m >= 0; m--)
+            {
+                if (m >= party.member_uids.Count())
+                    continue;
+
+                string uid = party.member_uids.Get(m);
+                if (!party.IsAuto(uid))
+                    continue;
+
+                RemoveMemberInternal(party, uid, "");
+                removed++;
+
+                //--- The party may have dissolved under us.
+                if (m_Parties.Find(party) == -1)
+                    break;
+            }
+        }
+
+        CancelAllInvites();
+        SetFormationLocked(false);
+
+        VigridPartyLog.Info("Reset for a new match: " + removed + " auto-placed member(s) removed");
+        return removed;
+    }
+
     private void MarkDirty(bool flush_now)
     {
         m_Dirty = true;

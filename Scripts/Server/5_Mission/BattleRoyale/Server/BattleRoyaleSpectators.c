@@ -24,10 +24,12 @@
  *     and VigridPartyAPI.GetGroupCount(), which stalls every IsComplete() and makes UpdateTopPosition
  *     rewrite every survivor's br_position against an inflated field.
  *
- *  3. THE CORPSE IS NEVER DELETED, AND NEVER MOVED. The corpse IS the PlayerBase, and vanilla
- *     HandleBody only deletes a body when the player was alive, so a dead player's gear is meant to
- *     persist and be lootable where they fell. The removed implementation called ObjectDelete(player)
- *     "for network bubble fix", which destroys the victim's loot.
+ *  3. THE CORPSE IS NEVER DELETED DURING A MATCH, AND NEVER MOVED. The corpse IS the PlayerBase, and
+ *     vanilla HandleBody only deletes a body when the player was alive, so a dead player's gear is
+ *     meant to persist and be lootable where they fell. The removed implementation called
+ *     ObjectDelete(player) "for network bubble fix", which destroys the victim's loot. The one
+ *     deletion is after the match: the in-place reset (BattleRoyaleInPlaceReset) clears every corpse
+ *     with its gear, as the process restart used to, once each spectator has a lobby body.
  *
  *     Note what that costs, because it is a deliberate trade and not an oversight. The replication
  *     bubble stays centred on this corpse - UpdateSpectatorPosition does NOT move it, established
@@ -155,9 +157,9 @@ class BattleRoyaleSpectators
     //! Party id -> the team colour index that party holds for this match, assigned first-seen.
     //!
     //! Never cleared mid-match, and that IS the feature: a colour must not move under an admin who
-    //! is using it to read a fight. The process restarts between matches (9_BattleRoyaleRestart),
-    //! so there is nothing to reset - the map dies with the object. Bounded by the number of parties,
-    //! which is bounded by half the player cap.
+    //! is using it to read a fight. Cleared between matches by ResetForNewMatch (in-place reset), or
+    //! by the process restart. Bounded by the number of parties, which is bounded by half the
+    //! player cap.
     protected ref map<string, int> m_PartyColourIndex;
 
     //! Which tier the LAST ResolveTarget call returned from. Written at every one of its five exits
@@ -167,6 +169,18 @@ class BattleRoyaleSpectators
     protected int m_LastResolveTier;
 
     void BattleRoyaleSpectators()
+    {
+        ResetForNewMatch();
+    }
+
+    /**
+     *  Back to the state of a fresh instance: no deaths, no spectators, not ended.
+     *
+     *  The constructor's body, so a fresh object and an in-place reset (BattleRoyaleInPlaceReset)
+     *  can never disagree. Reset in place rather than by dropping the singleton, because a pending
+     *  FinishAdminExit call in the call queue still targets this object.
+     */
+    void ResetForNewMatch()
     {
         m_Deaths = new map<string, ref BattleRoyaleDeathRecord>();
         m_DeathOrder = new array<string>();

@@ -104,6 +104,9 @@ modded class PlayerBase
     {
         super.EEKilled( killer );
 
+        //--- Remembered so an in-place reset can delete the body, and its gear, before the next match.
+        BattleRoyaleCorpses.Track( this );
+
         BattleRoyaleBase m_BR = GetBR();
         if(m_BR)
             m_BR.OnPlayerKilled(this, killer);

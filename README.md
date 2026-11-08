@@ -33,25 +33,26 @@ Pick these modules in the composer:
 
 | Module | Status | What the mod does with it |
 |---|---|---|
-| `scriptdefine` | **required** by the three below | Makes the hook's defines visible to the mod's scripts |
+| `scriptdefine` | **required** by the modules below | Makes the hook's defines visible to the mod's scripts |
 | `serverlock` | **recommended** | Locks the server when the match countdown starts, so nobody joins a running match |
 | `spectatorbubble` | **recommended** if `spectate_enabled` is on | A spectator's network bubble follows their camera, which lifts the ~1 km spectate limit |
 | `announce` | **recommended** | Shows the match phase in the server-browser name: `[LOBBY 3]`, `[STARTING 0:10]`, `[IN GAME 2 left]`, `[ENDING]` |
 | `adminbypass` | alternative to `serverlock` | Lets the admins in `whitelist.txt` join a locked match. **Never together with `serverlock`**: set `DZHOOK_SERVERLOCK=0` |
+| `ce_refill` | **required** for `in_place_reset` | Refills the map loot between matches, so the next match starts without a server restart. Opt-in on the hook side too: set `DZHOOK_CE_REFILL=1`. See [`Docs/in-place-reset.md`](Docs/in-place-reset.md) |
 
-Build at serverkit `377ca1c` (2026-11-07) or later. It is the first commit on `main` that has all
-four of the modules above. The other modules (`highpriority`, `reservedslots`, `maxplayers`, …) are
+Build at serverkit `377ca1c` (2026-11-07) or later; it is the first commit on `main` that has
+`serverlock`, `spectatorbubble`, `announce` and `adminbypass`. `ce_refill` needs `7c13ada` or later. The other modules (`highpriority`, `reservedslots`, `maxplayers`, …) are
 operator policy and the mod does not use them. **Run the package's `check_version.py` after every DayZ update**: the hook is pinned to
 one server build, and a stale offset crashes the server. Setup, the lock file and the measurements
 are in [`Docs/native-hooks.md`](Docs/native-hooks.md).
 
 ### Central Economy (`db/globals.xml`)
 
-Today the server restarts between matches, and that restart is what re-rolls the loot. Stock values
-work for that. The table is for a server that expires loot in place with `GetCEApi().TimeShift`, the
-groundwork for a reset without a restart (serverkit
-[#29](https://github.com/LeMyst/dayz-serverkit/issues/29)). Setting it now does no harm. Measured on
-DayZ 1.30, ChernarusPlus, November 2026:
+By default the server restarts between matches, and that restart is what re-rolls the loot. Stock
+values work for that. With the in-place reset (`in_place_reset` in `server_settings.json`, see
+[`Docs/in-place-reset.md`](Docs/in-place-reset.md)) the loot is instead expired with
+`GetCEApi().TimeShift` and refilled by the `ce_refill` hook, and `CleanupLifetimeLimit` must be raised.
+Setting it on a restarting server does no harm. Measured on DayZ 1.30, ChernarusPlus, November 2026:
 
 | Variable | Stock | Recommended | Why |
 |---|---|---|---|

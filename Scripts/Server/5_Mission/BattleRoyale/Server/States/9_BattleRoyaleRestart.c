@@ -30,6 +30,13 @@ class BattleRoyaleRestart: BattleRoyaleState
         //--- 10 s timer below holds no spectator state.
         BattleRoyaleSpectators.GetInstance().EndAll();
 
+        //--- The in-place reset (server_settings.json in_place_reset), when it can run: the next
+        //--- match starts in this process and this state is simply dropped with the old server.
+        //--- Begin() only arms it - the work runs from MissionServer.OnUpdate, outside this frame.
+        //--- Any reason it cannot run is logged there, and the restart below stays the fallback.
+        if ( BattleRoyaleInPlaceReset.Begin() )
+            return;
+
         BattleRoyaleUtils.Trace("[Restart State] Restarting!");
 
         m_ShutdownTimer = AddTimer(10.0, this, "Shutdown", NULL, false);
@@ -42,7 +49,9 @@ class BattleRoyaleRestart: BattleRoyaleState
 
     override void Deactivate()
     {
-        Error("RESTART STATE WAS DEACTIVATED!");
+        //--- Warn, not Error(): Error() unwinds the stack (memory: BattleRoyaleUtils.Error() is fatal),
+        //--- which would take the rest of the caller down with it for a message.
+        BattleRoyaleUtils.Warn("RESTART STATE WAS DEACTIVATED!");
         if ( m_ShutdownTimer && m_ShutdownTimer.IsRunning() )
         {
             m_ShutdownTimer.Stop();

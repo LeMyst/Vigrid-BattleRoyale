@@ -15,7 +15,8 @@ class BattleRoyaleState: Timeable
     static int i_NumStartingPlayers = 0;
 
     //--- Memo for GetDynamicStartingZone(). Its answer depends only on num_players plus config and
-    //--- the generated circles, and both are fixed for the life of the process, so recomputing it is
+    //--- the generated circles, and both are fixed for the match (ResetForNewMatch clears it for an
+    //--- in-place reset, which generates new circles), so recomputing it is
     //--- pure waste. It was being called once per spawn candidate through IsSafeForTeleport, which
     //--- meant two config fetches and a zone scan several hundred times per player.
     //--- -1 means "nothing memoized yet"; a real player count is never negative.
@@ -90,6 +91,24 @@ class BattleRoyaleState: Timeable
     static float GetAnnouncedFutureRadius()
     {
         return s_FutureAreaRadius;
+    }
+
+    /**
+     *  Forget every match-wide static above, for the in-place reset (BattleRoyaleInPlaceReset).
+     *
+     *  The announced circles matter most: the next lobby's ResendGameInfo re-asserts them every 5 s,
+     *  so without this every client would keep drawing the previous match's circles in the lobby.
+     *  The memo is tied to the generated chain, which the reset throws away too.
+     */
+    static void ResetForNewMatch()
+    {
+        i_NumStartingPlayers = 0;
+        ResetDynamicZoneMemo();
+        s_LastBoundMove = 0;
+        s_CurrentAreaCenter = "0 0 0";
+        s_CurrentAreaRadius = 0.0;
+        s_FutureAreaCenter = "0 0 0";
+        s_FutureAreaRadius = 0.0;
     }
 
     string GetName()

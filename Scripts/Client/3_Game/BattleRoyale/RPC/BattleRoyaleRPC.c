@@ -65,6 +65,10 @@ class BattleRoyaleRPC
 
 		last_match = new BattleRoyaleLastMatch();
 
+		//--- In-place reset (server_settings.json in_place_reset): the next match on this connection.
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetWaitNextMatch", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "MatchReset", this );
+
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
 	}
 
@@ -214,6 +218,134 @@ class BattleRoyaleRPC
 		//--- match this client is no longer in. Note this is a QUEUE, not a latched value: the HUD
 		//--- drains it every frame, so it is almost always already empty and clearing it is cheap.
 		pending_toasts.Clear();
+		wait_next_match = false;
+	}
+
+	/**
+	 *  The match-scoped subset of Reset(), for an in-place reset: the server started the next match
+	 *  on this same connection (MatchReset below), so nothing was cleared by a disconnect.
+	 *
+	 *  What it KEEPS is the point, and every kept field is something the server only sends at
+	 *  connect: resolved names and the speaking-list settings (OnPlayerConnected), the hot zones and
+	 *  is_admin (PlayerLoadedIn), and wait_next_match. pending_toasts is kept too - the "next match"
+	 *  notice arrives just before this and must still be shown. death_locked is left to
+	 *  BattleRoyaleClient, which owns that handshake.
+	 *
+	 *  The two boards and the last-match card are cleared with their sequences BUMPED, not zeroed, so
+	 *  an open leaderboard sees a change and asks the server again: the previous match is now the one
+	 *  that just ended.
+	 */
+	void ResetForNewMatch()
+	{
+		nb_players = 0;
+		nb_groups = 0;
+		fade_state = false;
+		input_state = false;
+		player_kills = 0;
+		audience_count = 0;
+		match_started = false;
+		lobby_phase = true;
+		lobby_net_low.Clear();
+		lobby_net_high.Clear();
+		lobby_names.Clear();
+		countdown_deadline_ms = BR_COUNTDOWN_NONE;
+		zone_deadline_ms = BR_COUNTDOWN_NONE;
+		current_play_area_center = "0 0 0";
+		current_play_area_radius = 0.0;
+		future_play_area_center = "0 0 0";
+		future_play_area_radius = 0.0;
+		b_ArtillerySound = false;
+		top_position = 0;
+		winner_screen = false;
+		lb_solo.Clear();
+		lb_group.Clear();
+		leaderboard_seq++;
+		speaking_names.Clear();
+		speaking_self_index = -1;
+		speaking_seq++;
+		dead_placement = "";
+		dead_flavour = "";
+		spectate_offered = false;
+		spectate_active = false;
+		spectate_seq++;
+		spectate_target_uid = "";
+		spectate_target_name = "";
+		spectate_target_pos = "0 0 0";
+		spectate_mode = 0;
+		spectate_target_obj = NULL;
+		admin_uids.Clear();
+		admin_names.Clear();
+		admin_positions.Clear();
+		admin_prev_positions.Clear();
+		admin_healths.Clear();
+		admin_kills.Clear();
+		admin_parties.Clear();
+		admin_dead_names.Clear();
+		admin_dead_positions.Clear();
+		admin_recv_ms = 0;
+		admin_prev_recv_ms = 0;
+		admin_seq++;
+		last_match.Clear();
+		last_match_seq++;
+		recap_killer_name = "";
+		recap_weapon_type = "";
+		recap_cause = BattleRoyaleKillCause.UNKNOWN;
+		recap_distance_m = -1;
+		recap_killer_health_pct = -1;
+		recap_damage_to_killer = 0;
+		recap_self_group = -1;
+		recap_hits = 0;
+		recap_valid = false;
+		recap_seq++;
+	}
+
+	//------------------------------------------------------------------------------------------
+	//--- In-place reset.
+	//------------------------------------------------------------------------------------------
+
+	//! Should the death screen wait for the next match instead of quitting to the main menu?
+	//! Sent by the server at load-in (PlayerLoadedIn): true only with in_place_reset and
+	//! in_place_reset_keep_dead_players. Read by DeathScreenMenu.
+	bool wait_next_match = false;
+
+	//! Bumped by MatchReset. BattleRoyaleClient resets its own per-match state on the change, which
+	//! keeps the work on the client's frame rather than inside this RPC handler.
+	int match_reset_seq = 0;
+
+	//! Network id of the lobby body the server created for this client in the reset. The client
+	//! waits for GetPlayer() to be that entity: the body and this RPC arrive in either order.
+	int match_reset_body_low = 0;
+	int match_reset_body_high = 0;
+
+	void SetWaitNextMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			ReadFailed("SetWaitNextMatch");
+			return;
+		}
+		if ( type == CallType.Client )
+			wait_next_match = data.param1;
+	}
+
+	void MatchReset(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param3<bool, int, int> data;
+		if( !ctx.Read( data ) )
+		{
+			ReadFailed("MatchReset");
+			return;
+		}
+		if ( type != CallType.Client )
+			return;
+
+		BattleRoyaleUtils.Info("[InPlace] the server started the next match on this connection");
+		ResetForNewMatch();
+		wait_next_match = data.param1;
+		match_reset_body_low = data.param2;
+		match_reset_body_high = data.param3;
+		match_reset_seq++;
 	}
 
 	//------------------------------------------------------------------------------------------
@@ -287,9 +419,9 @@ class BattleRoyaleRPC
 	//--- Death recap. ONE handler, TWO send points: pushed live at the moment of death so the death
 	//--- screen can paint it, and sent again with the table when the lobby asks.
 	//---
-	//--- The two can never be confused within a session, and the reason is structural rather than
-	//--- lucky: the server restarts between matches and this instance is per-session, so a session
-	//--- spans exactly one process and therefore exactly one match. The one exception is an admin,
+	//--- The two can never be confused within a match, and the reason is structural rather than
+	//--- lucky: these fields last one match - a process restart starts a new session, and the
+	//--- in-place reset's MatchReset clears them (ResetForNewMatch). The one exception is an admin,
 	//--- who is exempt from the late-join kick: they can read the previous match in the lobby, then
 	//--- play and die, and the fields are overwritten under the old header. Documented rather than
 	//--- engineered around - it affects admins only, and both fixes cost more than the bug.

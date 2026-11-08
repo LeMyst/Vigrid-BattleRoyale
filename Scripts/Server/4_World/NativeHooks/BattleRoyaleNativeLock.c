@@ -53,7 +53,9 @@ proto native void ServerUnlock();
 //---     server switched from the file to `serverlock` may keep DZHOOK_LOCKFILE set and a '1' left
 //---     by its last file-driven match, and nothing else would ever clear it.
 //---   - Nothing unlocks at the end of a match on purpose: the server is about to exit, and
-//---     unlocking would let players connect into the restart.
+//---     unlocking would let players connect into the restart. With the in-place reset
+//---     (BattleRoyaleInPlaceReset) the unlock comes from the same BattleRoyaleServer.Init, run for
+//---     the rebuilt server once the old match is cleaned up - so it still means "the lobby is ready".
 class BattleRoyaleNativeLock
 {
 	static string GetPath()

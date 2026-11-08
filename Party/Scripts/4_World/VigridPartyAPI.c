@@ -197,6 +197,21 @@ class VigridPartyAPI
     }
 
     /**
+     *  Another match is about to start in the same process. Removes the members the auto-grouper
+     *  placed for the last match (players' own parties stay), cancels pending invites and unlocks
+     *  formation. A host that restarts its process between matches never needs this. Returns how
+     *  many auto-placed members were removed.
+     */
+    static int ResetForNewMatch()
+    {
+        VigridPartyManager manager = VigridPartyManager.GetInstance();
+        if (!manager)
+            return 0;
+
+        return manager.ResetForNewMatch();
+    }
+
+    /**
      *  Tell Party that a member's display name changed, so the rosters go out again.
      *
      *  Party reads names off the player at broadcast time and only broadcasts on composition

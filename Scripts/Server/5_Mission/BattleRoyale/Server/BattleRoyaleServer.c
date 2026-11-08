@@ -97,8 +97,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleConfig config_data = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = config_data.GetServerData();
 
-		//--- Reads steam_names.json back in. The process restarts between matches, so without this
-		//--- every match would re-query every returning player.
+		//--- Reads steam_names.json back in. The process usually restarts between matches, so without
+		//--- this every match would re-query every returning player. Idempotent, so the second Init of
+		//--- an in-place reset (BattleRoyaleInPlaceReset) costs nothing.
 		BattleRoyaleNameService.Init();
 
 		if ( m_ServerData.enable_vigrid_api )
@@ -110,9 +111,13 @@ class BattleRoyaleServer: BattleRoyaleBase
 		//--- The previous match left '1' in the dzhooks sentinel file (it locks at the countdown and
 		//--- exits locked), so this is not optional once the hook is watching it: skip it and the
 		//--- server stays locked forever. A no-op without the hook. See BattleRoyaleNativeLock.
+		//--- It is also what reopens the server after an in-place reset, which builds a new
+		//--- BattleRoyaleServer rather than restarting the process.
 		BattleRoyaleNativeLock.Set( false );
 		BattleRoyaleNativeBubble.LogMode();
 		BattleRoyaleNativeAnnounce.LogMode();
+		BattleRoyaleNativeRefill.LogMode();
+		BattleRoyaleInPlaceReset.LogMode();
 
 		if ( m_ServerData.enable_vigrid_api )
 		{
@@ -244,6 +249,30 @@ class BattleRoyaleServer: BattleRoyaleBase
 	{
 		return m_Instance;
 	}
+
+    /**
+     *  Drop every call-queue entry that targets one of this server's states, before an in-place
+     *  reset (BattleRoyaleInPlaceReset) releases it. What the engine does with a queued call whose
+     *  target has been freed is undocumented, so none is left behind. The names are every
+     *  CallLaterByName in States/; a new one there belongs in this list too.
+     */
+    void CancelQueuedCalls()
+    {
+        ScriptCallQueue queue = GetGame().GetCallQueue( CALL_CATEGORY_SYSTEM );
+
+        for ( int i = 0; i < m_States.Count(); i++ )
+        {
+            BattleRoyaleState state = m_States.Get( i );
+            if ( !state )
+                continue;
+
+            queue.RemoveByName( state, "Deactivate" );
+            queue.RemoveByName( state, "Unstuck" );
+            queue.RemoveByName( state, "DisableInput" );
+            queue.RemoveByName( state, "GatherPartiesOnLeader" );
+            queue.RemoveByName( state, "SpawnAirdropMessage" );
+        }
+    }
 
     override bool IsDebug()
     {
@@ -718,7 +747,8 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- and DisconnectPlayer back to back, so between them a winner legitimately holds no state
         //--- and OnPlayerTick's not-in-state branch can see them - scheduling a kick there would flash
         //--- "a match is already in progress" at the player who just won it. Nothing is lost by
-        //--- skipping the window: 9_BattleRoyaleRestart calls RequestExit a few seconds later anyway.
+        //--- skipping the window: 9_BattleRoyaleRestart either calls RequestExit a few seconds later,
+        //--- or the in-place reset replaces this server and gives every connected player a lobby body.
         //--- Same bound the scoring guards in OnPlayerDisconnected/OnPlayerKilled use.
         if(i_CurrentStateIndex >= m_States.Count() - 2)
             return;
@@ -818,6 +848,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- And the hot zones, for the same reason and to the same client. Static config, so this is
         //--- the only send that is strictly required - everything else is a re-assert.
         SendHotZones( sender );
+
+        //--- Whether this client's death screen should wait for the next match instead of quitting to
+        //--- the main menu (in-place reset with in_place_reset_keep_dead_players). Flat, like the two
+        //--- flags above.
+        bool wait_next_match = BattleRoyaleInPlaceReset.KeepsDeadPlayers();
+        Param1<bool> wait_flag = new Param1<bool>( wait_next_match );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetWaitNextMatch", wait_flag, true, sender );
 
         //--- Record it on the player themselves, which is what BattleRoyaleDebug's load gate reads.
         //--- Resolved through GetPlayerFromIdentity rather than by scanning GetPlayers() for a uid:
@@ -1810,8 +1847,8 @@ class BattleRoyaleServer: BattleRoyaleBase
      *  Push a freshly-dead player their own recap, so the death screen can paint it.
      *
      *  Same RPC and same client handler as the lobby answer above. The two provenances cannot be
-     *  confused within a session: the server restarts between matches and a client's RPC state is
-     *  per-session, so a session spans exactly one process and therefore exactly one match.
+     *  confused within a match: a client's recap fields last one match, cleared either by the
+     *  process restart (a new session) or by the in-place reset's MatchReset (BattleRoyaleRPC).
      */
     protected void SendDeathRecap(PlayerBase victim)
     {

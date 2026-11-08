@@ -11,9 +11,15 @@ modded class BRMasterControlsModule
     //--- one would let whichever poll landed first silently starve the other.
     protected ref map<string, int> m_RosterCooldown = new map<string, int>();
 
-    //--- Party id -> match-local index, assigned first-seen and kept for the process. See
-    //--- ResolvePartyIndex for why it is not derived per reply.
-    protected ref map<string, int> m_PartyIndex = new map<string, int>();
+    //--- Party id -> match-local index, assigned first-seen and kept for the match. See
+    //--- ResolvePartyIndex for why it is not derived per reply. Static so the in-place reset
+    //--- (BattleRoyaleInPlaceReset) can clear it without reaching into COT's module list.
+    protected static ref map<string, int> s_PartyIndex;
+
+    static void ResetPartyIndex()
+    {
+        s_PartyIndex = NULL;
+    }
 
 #ifdef CF_BUGFIX_REF
     override void OnRPC( PlayerIdentity sender, Object target, int rpc_type, ParamsReadContext ctx )
@@ -930,12 +936,15 @@ modded class BRMasterControlsModule
         if ( party_id == "" )
             return BR_ADMIN_GROUPS_UNKNOWN;
 
+        if ( !s_PartyIndex )
+            s_PartyIndex = new map<string, int>();
+
         int existing;
-        if ( m_PartyIndex.Find( party_id, existing ) )
+        if ( s_PartyIndex.Find( party_id, existing ) )
             return existing;
 
-        int assigned = m_PartyIndex.Count();
-        m_PartyIndex.Set( party_id, assigned );
+        int assigned = s_PartyIndex.Count();
+        s_PartyIndex.Set( party_id, assigned );
         return assigned;
 #else
         return BR_ADMIN_GROUPS_UNKNOWN;

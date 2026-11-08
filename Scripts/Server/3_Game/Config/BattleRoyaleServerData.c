@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
-	int version = 5;  // Config version
+	int version = 6;  // Config version
 
 	// Enable Vigrid API support
 	bool enable_vigrid_api = false;
@@ -64,6 +64,36 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 	// This only ever costs a lookup on a connect that was going to use the cache anyway: a player
 	// who set a name of their own in the launcher never triggers one.
 	int steam_name_cache_max_age_hours = 168;  // 7 days
+
+	// Start the next match in the same server process instead of restarting it. Needs the dzhooks
+	// native hook library with its ce_refill module (DZHOOK_CE_REFILL=1, serverkit 7c13ada or later):
+	// the map loot is expired with GetCEApi().TimeShift and refilled by the hook while players wait in
+	// the lobby. Without the module, or when anything goes wrong, the server restarts as before.
+	// Also raise CleanupLifetimeLimit to 5000 in the mission's db/globals.xml, or the old loot takes
+	// over an hour to drain. See Docs/in-place-reset.md.
+	bool in_place_reset = false;
+
+	// What happens to the players still connected when a match ends (in-place reset only).
+	// false: they stay connected and get a fresh body in the lobby for the next match.
+	// true:  everyone is disconnected and the server reopens the lobby; a full server lets players
+	//        waiting for a slot try again.
+	bool in_place_reset_kick_all = false;
+
+	// What happens to a player who dies (in-place reset only; ignored with in_place_reset_kick_all).
+	// false: as before, the death screen sends them back to the main menu, which keeps the player
+	//        count, and the server's load, down while the match runs.
+	// true:  the death screen (or the spectator camera) waits for the next match instead, and the
+	//        player gets a fresh lobby body when the match ends.
+	bool in_place_reset_keep_dead_players = false;
+
+	// Restart the server process anyway after this many in-place matches. A full restart reloads the
+	// settings files and clears anything an in-place reset cannot. 0 = never.
+	int in_place_reset_max_matches = 10;
+
+	// Seconds between expiring the old loot and refilling the map. The drain halves what is left
+	// about every 50 s (~93% gone after ~190 s with CleanupLifetimeLimit 5000). The refill also runs,
+	// at the latest, when the start countdown begins.
+	int in_place_reset_drain_seconds = 200;
 
     override string GetProfilePath()
     {
@@ -139,6 +169,15 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 			// write_lock_file was introduced in v5. A scalar, so its initialiser survives deserialization;
 			// the bump only makes the Save() below write the new key where an admin can find it.
 			version = 5;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 6)
+		{
+			// The five in_place_reset* keys were introduced in v6. All scalars, so their initialisers
+			// survive deserialization; the bump only makes the Save() below write them where an admin
+			// can find them. in_place_reset defaults to false, so nothing changes until it is set.
+			version = 6;
 			Save();  // Save the upgraded config
 		}
 	}

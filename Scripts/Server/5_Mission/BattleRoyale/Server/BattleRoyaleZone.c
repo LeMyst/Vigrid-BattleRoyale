@@ -2561,7 +2561,8 @@ class BattleRoyaleZone
             BattleRoyaleUtils.Warn("[BattleRoyaleZone][LadderTest] match_min_seconds (" + settings.match_min_seconds + ") is above the shortest match this ladder can play (" + shortest + " s), so the lengthening walk can never be satisfied. Lower it, or raise min_zone_num.");
     }
 
-    //--- Build every circle. Runs once per process; every later call is a lookup.
+    //--- Build every circle. Runs once per match (per process, unless the in-place reset calls
+    //--- ResetForNewMatch); every later call is a lookup.
     protected void GenerateAll()
     {
         array<vector> chain = new array<vector>();
@@ -2595,6 +2596,26 @@ class BattleRoyaleZone
     //--- is optional: GetBattleRoyalePlayAreas still generates on demand if nothing called this.
     static int s_GenerationSeed;
     static bool s_Prepared;
+
+    //--- Forget the match's circles so the next PrepareGeneration builds a new chain. Called by the
+    //--- in-place reset (BattleRoyaleInPlaceReset) before it builds the next BattleRoyaleServer; a
+    //--- process restart got this for free.
+    //---
+    //--- Only the per-match chain goes. The world caches (s_POI, s_FeasiblePOI, s_ChainRadii and the
+    //--- census) describe the map, not the match, and are expensive to rebuild. A non-zero
+    //--- zone_generation_seed replays the same layout every match, exactly as it replays it every boot.
+    static void ResetForNewMatch()
+    {
+        m_Zones = NULL;
+        m_PlayAreas = NULL;
+        s_PlayAreaDurationOffsets = NULL;
+        s_PlayAreaDerivedTimers = NULL;
+        s_PlayAreaOpeningTimers = NULL;
+        s_PlayAreaPOICount = NULL;
+        s_PlayAreaMinPlayers = NULL;
+        s_PlayAreaBuildings = NULL;
+        s_Prepared = false;
+    }
 
     static void PrepareGeneration()
     {
