@@ -500,7 +500,9 @@ class BRMasterControlsForm: JMFormBase
         //--- is up to a poll old, so it can be wrong for a moment and must not be the only guard.
         m_btn_CancelKick.SetEnabled( row.late_join_seconds >= 0 );
         m_btn_Remove.SetEnabled( row.in_state );
-        m_btn_Add.SetEnabled( !row.in_state );
+        m_btn_Add.SetEnabled( !row.in_state && !row.spectating );
+        m_btn_Unstuck.SetEnabled( !row.spectating );
+        m_btn_TpCircle.SetEnabled( !row.spectating );
 
         //--- ⚠️ Only a player the lobby actually holds may be readied. Marking somebody off the
         //--- roster ready produced "1/1 ready" with the real player not ready: the ready count and
