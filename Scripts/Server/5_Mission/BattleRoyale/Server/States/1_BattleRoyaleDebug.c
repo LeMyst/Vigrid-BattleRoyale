@@ -667,7 +667,8 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             //--- already carries five terms - EnfusionScript caps how complex a single expression
             //--- may be ("Formula too complex" is a hard compile error that only surfaces when the
             //--- module loads, not when the PBO packs).
-            bool automatic_start_allowed = !b_ManualStart;
+            //--- !IsPaused(): Deactivate() below bypasses IsComplete(), so it must honour the pause itself.
+            bool automatic_start_allowed = !b_ManualStart && !IsPaused();
 
             bool start_wanted = IsActive() && automatic_start_allowed && enough_players && waited_long_enough;
             start_wanted = start_wanted && enough_groups && IsNotFullWaitSatisfied();
