@@ -312,7 +312,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             if(state)
                 state.Update(timeslice);
             else
-                Error("BAD STATE IN m_States!");
+                BattleRoyaleUtils.Warn("BAD STATE IN m_States!");
         }
 
 		m_TimeSinceLastTick += delta;
@@ -388,13 +388,15 @@ class BattleRoyaleServer: BattleRoyaleBase
 					array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 					for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 					{
-						if(players[i])
+						PlayerBase migrating = players[i];
+						if(migrating)
 						{
-							next_state.AddPlayer(players[i]); //add players to new state
+							next_state.AddPlayer(migrating); //add players to new state
 						}
 						else
 						{
-							Error("null player in RemoveAllPlayers result!");
+							//--- Warn, not Error(): the rest of the transition must still run.
+							BattleRoyaleUtils.Warn("null player in RemoveAllPlayers result!");
 						}
 					}
 					i_CurrentStateIndex = next_index;//move us to the next state
@@ -407,7 +409,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 				}
 				else
 				{
-					Error("NEXT STATE IS NULL!");
+					BattleRoyaleUtils.Warn("NEXT STATE IS NULL!");
 				}
 			}
         }
