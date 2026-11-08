@@ -225,6 +225,11 @@ modded class MissionGameplay
 				} else if (!m_UIManager.GetMenu()) {
 					GetUIManager().EnterScriptedMenu(MENU_BR_LEADERBOARD, NULL);
 				}
+			} else if (m_UIManager.IsMenuOpen(MENU_BR_LEADERBOARD) && GetUApi().GetInputByID(UAUIBack).LocalPress()) {
+				//--- Esc has to be polled by hand: while ANY scripted menu is open, vanilla
+				//--- MissionGameplay.OnUpdate never reaches its UAUIMenu -> Pause() branch, and nothing
+				//--- else answers UAUIBack for a mod menu. Same as PartyMissionGameplay.HandlePartyClose.
+				m_UIManager.CloseMenu(MENU_BR_LEADERBOARD);
 			}
 		}
 	}
