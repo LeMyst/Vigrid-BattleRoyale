@@ -100,6 +100,11 @@ class BattleRoyaleRound: BattleRoyaleState
         return true;
     }
 
+    override bool CountsEliminations()
+    {
+        return true;
+    }
+
     override void Activate()
     {
         //--- RE-READ THE ROUND LENGTH HERE, do not trust the one Init() cached.

@@ -51,6 +51,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         return b_IsGameplay;
     }
 
+    //--- The whole state, warm-up included: OnPlayerKilled below already declines to score before it.
+    override bool CountsEliminations()
+    {
+        return true;
+    }
+
     override void Activate()
     {
         super.Activate();
