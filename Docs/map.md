@@ -73,7 +73,7 @@ The Battle Royale mod talks to it **only** through `VigridMapAPI` (`Scripts/4_Wo
 
 Party is reached **only** through `VigridMapTeam` (`Scripts/4_World/VigridMapTeam.c`) — the addon's only `#ifdef VIGRID_PARTY` code, verified by grep. It is in 4_World rather than 5_Mission precisely so its server half can serve `VigridMapMarkerStore` too; every body has an `#else` returning an empty answer, so `Party/config.cpp` renamed to `.disabled` leaves a working map with teammates and pings simply absent.
 
-Markers are server-authoritative: owner is always `sender.GetPlainId()`, the whole visible set is pushed as a **snapshot** (not deltas — tiny, and idempotent under packet loss), with a 5 s resync so joining a party mid-match works. A marker records its placer's **party slot at placement time**, and colour is resolved from that through `GetColorForSlot` — never through the live roster, which would turn the marker off-white the moment its owner disconnected.
+Markers are server-authoritative: owner is always `sender.GetPlainId()`, the whole visible set is pushed as a **snapshot** (not deltas — tiny, and idempotent under packet loss), with a 5 s resync so joining a party mid-match works. A marker records its placer's **party slot at placement time**, and colour is resolved from that through `GetColorForSlot` — never through the live roster, which would turn the marker off-white the moment its owner disconnected. The marker itself outlives a disconnect unless `clear_markers_on_disconnect` (`map_settings.json`, default `false`) is set.
 
 ## Satellite vs topographic (`Extra/MapSatellite/`)
 
