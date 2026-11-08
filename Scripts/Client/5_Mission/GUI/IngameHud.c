@@ -143,9 +143,9 @@ modded class IngameHud
 		m_PlayerTag.Show( !BR_ModDrawsItsOwnNames() );
 	}
 
-	//! The mission cast is done here rather than through GetBR(), whose failure path calls the global
-	//! Error() - and that halts the script VM. This runs every frame, including the teardown frames
-	//! where the cast legitimately comes back NULL.
+	//! The mission cast is done here rather than through GetBR(), whose failure path logs a warning.
+	//! This runs every frame, including the teardown frames where the cast legitimately comes back
+	//! NULL.
 	protected bool BR_ModDrawsItsOwnNames()
 	{
 		MissionBaseWorld world = MissionBaseWorld.Cast( GetGame().GetMission() );

@@ -107,7 +107,7 @@ modded class MainMenu
 
 		m_Logo = ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
-			Error("Failed to load imageset image");
+			BattleRoyaleUtils.Warn("MainMenu: failed to load the logo image");
 
 		//m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
 
@@ -156,7 +156,7 @@ modded class MainMenu
 		}
 		else
 		{
-			Error("Something Went Wrong! BR Failed To Start?!");
+			BattleRoyaleUtils.Warn("MainMenu: OnStart failed");
 		}
 
 		//ensure popup message is initialized
@@ -266,14 +266,14 @@ modded class MainMenu
 		BiosUserManager p_UserManager = GetGame().GetUserManager();
 		if(!p_UserManager)
 		{
-			Error("DBR ERROR: p_UserManager = NULL");
+			BattleRoyaleUtils.Warn("MainMenu.OnStart: no BiosUserManager");
 			return false;
 		}
 
 		BiosUser p_User = p_UserManager.GetTitleInitiator();
 		if(!p_User)
 		{
-			Error("DBR ERROR: p_User = NULL");
+			BattleRoyaleUtils.Warn("MainMenu.OnStart: no title-initiator BiosUser");
 			return false;
 		}
 

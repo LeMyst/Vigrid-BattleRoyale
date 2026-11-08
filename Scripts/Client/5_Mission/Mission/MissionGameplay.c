@@ -264,7 +264,7 @@ modded class MissionGameplay
 		Param4<int, float, vector, float> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SHOWSPAWNSELECTION RPC");
+			BattleRoyaleRPC.ReadFailed("ShowSpawnSelection");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -313,7 +313,7 @@ modded class MissionGameplay
 		Param3<PlayerBase, vector, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SHOWSPAWNPOINT RPC");
+			BattleRoyaleRPC.ReadFailed("ShowSpawnPoint");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -332,7 +332,7 @@ modded class MissionGameplay
 		Param1<array<vector>> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ UPDATEHEATMAP RPC");
+			BattleRoyaleRPC.ReadFailed("UpdateHeatMap");
 			return;
 		}
 		if ( type == CallType.Client )
