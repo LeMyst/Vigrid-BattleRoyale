@@ -58,10 +58,13 @@ modded class ItemBase
 		}
 		else  // No compatible magazines, try to spawn chamberable ammo piles instead
 		{
-			for( int j = 0; j < Math.RandomIntInclusive(min_spawn, max_spawn); j++ )
+			//  Both read once: a bound re-rolled per iteration biased the pile count toward min_spawn.
+			int pileCount = Math.RandomIntInclusive(min_spawn, max_spawn);
+			array<string> ammoTypes = new array<string>;
+			ConfigGetTextArray("chamberableFrom", ammoTypes);
+
+			for( int j = 0; j < pileCount; j++ )
 			{
-				array<string> ammoTypes = new array<string>;
-				ConfigGetTextArray("chamberableFrom", ammoTypes);
 				if( ammoTypes.Count() > 0 )
 				{
 					string ammoType = ammoTypes.GetRandomElement();
