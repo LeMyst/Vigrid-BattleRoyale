@@ -63,8 +63,11 @@ class VigridPartyMenu extends UIScriptedMenu
     private int m_LastInviteSeq;
     private int m_RefreshDueMs;
 
+    private ref VigridPartyMenuInputLock m_InputLock;
+
     void VigridPartyMenu()
     {
+        m_InputLock = new VigridPartyMenuInputLock();
         m_OnlineRowPool = new array<Widget>();
         m_MemberRowPool = new array<Widget>();
         m_InviteTargets = new map<Widget, string>();
@@ -101,9 +104,19 @@ class VigridPartyMenu extends UIScriptedMenu
     {
         super.OnShow();
 
+        //--- No ChangeGameFocus(1) here, and none of the matching -1 in OnHide. super.OnShow ->
+        //--- LockControls already takes focus PER DEVICE (mouse, keyboard, gamepad) and shows the
+        //--- cursor, exactly as every vanilla menu does. The extra ALL-DEVICE call that used to sit
+        //--- here froze the whole input layer while the menu was up - not just gameplay binds but
+        //--- UAUIBack too: a release of P during the open went unseen, so the action stayed "held",
+        //--- the second press raised no edge, and neither P nor Esc could close the menu. Vanilla
+        //--- uses the all-device form only in debug tools. Measured with a per-frame trace.
         SetFocus(layoutRoot);
-        GetGame().GetInput().ChangeGameFocus(1);
-        GetGame().GetUIManager().ShowUICursor(true);
+
+        //--- Focus alone leaves mouse look and movement live; this freezes both and keeps
+        //--- push-to-talk, so a party can still talk while one of them manages it. See
+        //--- VigridPartyMenuInputLock.
+        m_InputLock.Take();
 
         //--- Force a full repaint: sequence numbers may not have moved while the menu was closed.
         m_LastListSeq = -1;
@@ -116,13 +129,9 @@ class VigridPartyMenu extends UIScriptedMenu
     {
         super.OnHide();
 
-        //--- ChangeGameFocus(-1), not ResetGameFocus(): the reset SETS the shared additive input
-        //--- focus counter to zero across all devices (vanilla input.c:22-27), which releases every
-        //--- other holder's acquire and not just ours. Latent here - this menu only opens when no
-        //--- other menu is up - but it is the same shape that was live elsewhere, and the pair is
-        //--- balanced against the ChangeGameFocus(1) in OnShow either way.
-        GetGame().GetInput().ChangeGameFocus(-1);
-        GetGame().GetUIManager().ShowUICursor(false);
+        //--- super.OnHide -> UnlockControls releases exactly what LockControls took and hides the
+        //--- cursor; the exclude groups are ours to give back.
+        m_InputLock.Release();
     }
 
     private VigridPartyClient GetClient()

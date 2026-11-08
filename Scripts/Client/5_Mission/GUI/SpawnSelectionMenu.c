@@ -68,9 +68,12 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	// Countdown text only changes once a second; avoid rebuilding it per frame.
 	protected int i_PreviousDisplayedSecond = -1;
 
+	protected ref BattleRoyaleMenuInputLock m_InputLock;
+
 	void SpawnSelectionMenu()
 	{
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SpawnSelectionMenu");
+		m_InputLock = new BattleRoyaleMenuInputLock();
 		g_Game.SetKeyboardHandle(this);
 	}
 
@@ -91,8 +94,18 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		super.OnShow();
 
 		PPEffects.SetBlurMenu(1);
-		GetGame().GetInput().ChangeGameFocus(1);
+		//--- No ChangeGameFocus(1) here, and none of the matching -1 in OnHide. super.OnShow ->
+		//--- LockControls already takes focus PER DEVICE, as every vanilla menu does; the extra
+		//--- ALL-DEVICE call froze the whole input layer (see VigridPartyMenu.OnShow, where it broke
+		//--- P and Esc). Removing it does not make this menu dismissable - nothing here polls
+		//--- UAUIBack - and does not free the player: the movement lock is the server's SetInput(true)
+		//--- from 3_BattleRoyaleSpawnSelection.DisableInput, plus LockControls itself.
 		SetFocus(layoutRoot);
+
+		//--- Neither of those stops the CAMERA: mouse look kept turning the player behind the map.
+		//--- This freezes it, and keeps push-to-talk so a party can still coordinate its drop. See
+		//--- BattleRoyaleMenuInputLock.
+		m_InputLock.Take();
 
 		// Nothing on the canvases survives a hide/show cycle -- force a redraw.
 		b_RenderDirty = true;
@@ -105,12 +118,10 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		super.OnHide();
 
 		PPEffects.SetBlurMenu(0);
-		//--- ChangeGameFocus(-1), not ResetGameFocus(): the reset SETS the shared additive counter
-		//--- to zero on every device (input.c:22-27), releasing every other holder's acquire rather
-		//--- than our own. Latent here rather than live - spawn selection runs with no other menu
-		//--- up - but it is the same defect that was reachable through the leaderboard, and one
-		//--- copy left behind is how it comes back.
-		GetGame().GetInput().ChangeGameFocus(-1);
+		//--- super.OnHide -> UnlockControls releases exactly what LockControls took. NEVER add a
+		//--- ResetGameFocus() here: it SETS the shared additive counter to zero on every device
+		//--- (input.c:22-27), releasing every other holder's acquire rather than our own.
+		m_InputLock.Release();
 	}
 
 	override Widget Init()
