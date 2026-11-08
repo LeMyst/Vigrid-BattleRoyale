@@ -524,9 +524,11 @@ class BattleRoyaleClient: BattleRoyaleBase
      *
      *  Two paths:
      *
-     *  ALIVE - the vanilla glasses queue, unchanged and called every frame. That queue is shared
-     *  with real glasses and NVG effects and drains itself each tick, so it self-corrects; edge
-     *  tracking it would fight those other effects.
+     *  ALIVE - the vanilla glasses queue, fed only when the verdict differs from the requester's
+     *  own IsRequesterRunning(). Queued every frame, each drain ran Start() or Stop() and its
+     *  SetDefaultValuesAll(). Diffing against the requester rather than a flag of ours keeps it
+     *  self-correcting: a vanilla StopAllEffects (respawn, death, loading screen) is re-queued on the
+     *  next frame.
      *
      *  SPECTATING - the requester directly. This is exactly what the queue does when it drains
      *  (P:/scripts/4_world/entities/manbase/playerbase.c:9594-9601 calls
@@ -553,6 +555,10 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         if( !IsSpectating() && local_player )
         {
+            PPERequesterBase requester = PPERequesterBank.GetRequester( PPERequesterBank.REQ_BATTLEROYALE );
+            if( requester && requester.IsRequesterRunning() == active )
+                return;
+
             if( active )
                 local_player.QueueAddGlassesEffect( PPERequesterBank.REQ_BATTLEROYALE );
             else
@@ -669,6 +675,13 @@ class BattleRoyaleClient: BattleRoyaleBase
     //! Last admin payload sequence handed to the map addon, so the per-frame push can skip the work
     //! when nothing new has arrived. -1 rather than 0 so the very first payload is always a change.
     int br_previous_admin_map_seq = -1;
+
+    //--- The HUD counters as last painted, diffed after the diag overrides so a forced value paints
+    //--- too. -1000 is outside every value they carry (counts, and the -1/-2 group sentinels).
+    int br_previous_hud_players = -1000;
+    int br_previous_hud_groups = -1000;
+    int br_previous_hud_kills = -1000;
+    int br_previous_hud_audience = -1000;
 
     /**
      *  Announce, exactly once, that this client has finished loading and is controlling its
@@ -874,7 +887,12 @@ class BattleRoyaleClient: BattleRoyaleBase
 #endif
 
 			// Update player and group remaining count
-			PlayerCountChanged( hud_players, hud_groups );
+			if( hud_players != br_previous_hud_players || hud_groups != br_previous_hud_groups )
+			{
+				PlayerCountChanged( hud_players, hud_groups );
+				br_previous_hud_players = hud_players;
+				br_previous_hud_groups = hud_groups;
+			}
 
 			// Fade in/out effect. Both halves touch the player, so the edge is held rather than
 			// consumed while there isn't one - advancing br_previous_* on a playerless frame would
@@ -909,12 +927,20 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			// Update player kill count
-			gameplay.UpdateKillCount( hud_kills );
+			if( hud_kills != br_previous_hud_kills )
+			{
+				gameplay.UpdateKillCount( hud_kills );
+				br_previous_hud_kills = hud_kills;
+			}
 
 			//--- How many people are watching this player. Deliberately here rather than in the
 			//--- spectate block further down, which early-returns for anyone who is not spectating -
 			//--- i.e. for exactly the living players this readout is for.
-			gameplay.UpdateAudienceCount( hud_audience );
+			if( hud_audience != br_previous_hud_audience )
+			{
+				gameplay.UpdateAudienceCount( hud_audience );
+				br_previous_hud_audience = hud_audience;
+			}
 
 			// Update match start state
 			if( br_rpc.match_started && !b_MatchStarted )
