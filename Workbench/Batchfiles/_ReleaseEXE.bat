@@ -88,13 +88,10 @@ for %%p in (!brIn!) do (
 		set "brProbe=!brTok:%%d=!"
 		if not "!brProbe!"=="!brTok!" set "brKeep=0"
 	)
+	REM Keep the token as written, quotes included: LaunchSteamClient.bat re-splits a bare one on
+	REM "=" and ";", so "-cpuCount=4" used to reach the retail exe as -cpuCount 4.
 	if "!brKeep!"=="1" (
-		set "brSpace=!brTok: =!"
-		if "!brSpace!"=="!brTok!" (
-			set "brOut=!brOut! !brTok!"
-		) else (
-			set "brOut=!brOut! "!brTok!""
-		)
+		set "brOut=!brOut! %%p"
 	) else (
 		echo   dropping diag-only launch parameter: !brTok!
 	)
