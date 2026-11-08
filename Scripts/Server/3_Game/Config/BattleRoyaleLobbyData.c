@@ -33,6 +33,8 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 	// If there is 75 players ready, the match will start at 25% of the autostart delay
 	// If there is 100 players ready, the match will start immediately
 	// The autostart system will not start the match if the minimum waiting time (min_waiting_time) is not reached
+	// It needs at least two ready players and more than one group (a lone party cannot autostart a match it has already won)
+	// It does NOT apply minimum_players: it is the path that guarantees a match eventually runs, however few players come
     bool autostart_enabled = true;  // Enable autostart
     float autostart_delay = 750.0;  // Delay before autostart
 
