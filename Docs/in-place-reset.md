@@ -140,4 +140,5 @@ cannot die in a match that ends as it starts); both were run on the diag rig abo
 ## Known limits
 
 - **`zone_generation_seed`** replays the same layout every match, as it replays it every boot.
+- **`zone_selftest_runs` and `zone_ladder_selftest_players`** run once per process, at boot, and not again after a reset.
 - **Uptime grows** across in-place matches; `in_place_reset_max_matches` keeps it bounded.
