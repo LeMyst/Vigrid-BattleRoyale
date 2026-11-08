@@ -58,8 +58,8 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- Whether the out-of-zone tint is currently running via the requester directly, which is the
     //--- spectator path. Edge-tracked because PPERequesterBase.Stop() walks the whole request
     //--- structure and queues a manager pass - it must not be called every frame. The LIVING player
-    //--- path does not use this: it goes through the vanilla glasses queue, which self-corrects each
-    //--- tick and is shared with real glasses and NVG effects.
+    //--- path does not use this: it goes through the vanilla glasses queue, edged against the
+    //--- requester's own IsRequesterRunning() - see ApplyOutOfZoneTint.
     protected bool b_TintActive;
 
     //--- Cheap signature of the set of post-process requesters currently running, so
