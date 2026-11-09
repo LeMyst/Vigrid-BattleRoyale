@@ -165,8 +165,8 @@ Both circles are also drawn on the terrain, client-side only, coloured as on the
 The **current** circle only also gets small blue lights rising slowly off the line. They come from `BattleRoyaleZoneMotes` and our own `Data/particles/zone_edge_motes.ptc`, registered as `ParticleList.BR_ZONE_EDGE_MOTES`. A `.ptc` is plain text: the effect is tuned by editing that file and rebuilding, and its tint lives there too, since `EmitorParam` has no colour. The effect is built as follows:
 
 - each emitter is a 10 m strip turned along the tangent, one per 10 m;
-- there are two emitters per strip: `sparks1.emat` motes, plus a few faint `glow1.emat` halos;
+- there are two emitters per strip: `flare_light.emat` motes (a soft round light), plus a few faint `glow1.emat` halos;
 - the motes drift up 3 to 4 m and fade out.
 
 A vanilla contaminated-area gas was tried first. Myst rejected it on 2026-11-09 because the smoke did not render well. The motes use about 50 emitters out of the shared 10 000-particle pool; if the pool runs dry, the rest of the arc waits for the next re-cut. They share the `show_ground_rings` switch with the quads. Live sliders: **Map & Zones → Zone Motes Density** (birth rate) and **Zone Motes Size**.
-- ⚠️ **Spark colours near 1.0 render WHITE.** `sparks1.emat` overexposed (0.45, 0.75, 1) to plain white (Myst, 2026-11-09). Vanilla's blue flare tints `sparks_05.emat` with dim values, blue ≈ 0.66 and the rest below 0.45, and the motes now do the same.
+- ⚠️ **The spark materials cannot be tinted.** `sparks1.emat` rendered white, and `sparks_05.emat` at vanilla's blue-flare values still rendered as orange fire sparks (Myst, 2026-11-09): their colour is baked into the texture. The way to tell is a material vanilla reuses with *different* colours. `glow/flare_light.emat` is the one: the red, green, blue and yellow flares each tint it their own colour, because it is a white sprite with `Emissive 1 1 1 1`. The motes use it now, with no stretch.

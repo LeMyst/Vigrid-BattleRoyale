@@ -7,10 +7,10 @@ EffectDef {
    MaxNum 80
    BirthRate 10
    BirthRateRND 3
-   Material "{FF2A8A73FB791A62}Graphics/Particles/materials/fire/sparks_05.emat"
-   SizeMultiplier 0.12
-   SizeRND 0.05
-   StretchMultiplier 0.5
+   Material "{57B8EA908CA750E1}Graphics/Particles/materials/glow/flare_light.emat"
+   SizeMultiplier 0.3
+   SizeRND 0.1
+   StretchMultiplier 0
    Velocity 0.4
    VelocityRND 0.3
    AirResistance 0.3
@@ -21,7 +21,7 @@ EffectDef {
    LifeTime 5
    LifeTimeRND 2
    Color {
-    0 0.12 0.28 1 1 0.03 0.1 0.7
+    0 0.2 0.35 1 1 0.05 0.2 1
    }
    Alpha {
     0 0 0.15 1 0.7 0.8 1 0
