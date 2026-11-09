@@ -262,7 +262,8 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		if (!m_CountdownText)
 			return;
 
-		float time_left = Math.Ceil((i_CountdownEnd - GetGame().GetTime()) / 1000);  // calculate time left in seconds
+		//--- 1000.0, not 1000: int division truncates before Ceil sees it, losing up to 999 ms.
+		float time_left = Math.Ceil((i_CountdownEnd - GetGame().GetTime()) / 1000.0);
 
 		// Clamp below zero so the expired "time to deploy" branch settles on one
 		// value instead of re-firing as the countdown keeps running negative.
