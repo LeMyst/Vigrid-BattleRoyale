@@ -1902,6 +1902,12 @@ class BattleRoyaleClient: BattleRoyaleBase
         m_GroundRingNext.SetTexture( "#(argb,8,8,3)color(1,1,1," + BattleRoyaleDiag.zone_ring_next_alpha + ",ca)" );
         m_ZoneMotes.SetDensity( BattleRoyaleDiag.zone_motes_density );
         m_ZoneMotes.SetSize( BattleRoyaleDiag.zone_motes_size );
+        int motes_id = ParticleList.BR_ZONE_EDGE_MOTES_MID;
+        if ( BattleRoyaleDiag.zone_motes_variant == 0 )
+            motes_id = ParticleList.BR_ZONE_EDGE_MOTES_BRIGHT;
+        else if ( BattleRoyaleDiag.zone_motes_variant == 2 )
+            motes_id = ParticleList.BR_ZONE_EDGE_MOTES_DIM;
+        m_ZoneMotes.SetParticleId( motes_id );
 #endif
 
         if ( m_CurrentPlayArea )

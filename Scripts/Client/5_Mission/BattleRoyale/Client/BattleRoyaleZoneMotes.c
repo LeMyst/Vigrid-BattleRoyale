@@ -1,9 +1,9 @@
 #ifndef SERVER
-//--- Birth rate as a fraction of zone_edge_motes.ptc's own; tune the look in the .ptc, this is a live knob.
+//--- Birth rate as a fraction of the .ptc's own; tune the look in the .ptc files, this is a live knob.
 static const float BR_ZONE_MOTES_DENSITY = 1.0;
 
 /**
- *  Blue motes rising slowly off the current zone edge: Data/particles/zone_edge_motes.ptc,
+ *  Blue motes rising slowly off the current zone edge: Data/particles/zone_edge_motes_*.ptc,
  *  client-side particles only. Each emitter is a 10 m strip turned along the circle.
  */
 class BattleRoyaleZoneMotes: BattleRoyaleRingArc
@@ -12,6 +12,7 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
 
     protected float m_Density;
     protected float m_Size = 1.0;
+    protected int m_ParticleId = ParticleList.BR_ZONE_EDGE_MOTES_MID;
     protected ref map<int, ParticleSource> m_Emitters = new map<int, ParticleSource>();
 
     void BattleRoyaleZoneMotes(float density)
@@ -39,6 +40,17 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
             if ( p )
                 ApplyParams( p );
         }
+    }
+
+    //! Which .ptc to play. A change respawns the arc on the next Update.
+    void SetParticleId(int particle_id)
+    {
+        if ( particle_id == m_ParticleId )
+            return;
+
+        m_ParticleId = particle_id;
+        DropAll();
+        m_HasAnchor = false;
     }
 
     //! Size as a fraction of the .ptc's own. Applied to the emitters already playing too.
@@ -106,7 +118,7 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
         vector tangent = Vector( -Math.Sin( angle ), 0, Math.Cos( angle ) );
         vector ori = tangent.VectorToAngles();
 
-        ParticleSource p = ParticleManager.GetInstance().CreateParticle( ParticleList.BR_ZONE_EDGE_MOTES, pos, true, NULL, ori );
+        ParticleSource p = ParticleManager.GetInstance().CreateParticle( m_ParticleId, pos, true, NULL, ori );
         if ( !p )
             return false;
 

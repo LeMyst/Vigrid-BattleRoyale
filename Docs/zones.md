@@ -162,7 +162,7 @@ Both circles are also drawn on the terrain, client-side only, coloured as on the
 
 ### The motes on the current edge
 
-The **current** circle only also gets small blue lights rising slowly off the line. They come from `BattleRoyaleZoneMotes` and our own `Data/particles/zone_edge_motes.ptc`, registered as `ParticleList.BR_ZONE_EDGE_MOTES`. A `.ptc` is plain text: the effect is tuned by editing that file and rebuilding, and its tint lives there too, since `EmitorParam` has no colour. The effect is built as follows:
+The **current** circle only also gets small blue lights rising slowly off the line. They come from `BattleRoyaleZoneMotes` and our own `Data/particles/zone_edge_motes_{bright,mid,dim}.ptc`, registered as `ParticleList.BR_ZONE_EDGE_MOTES_*`. The three files are identical but for the motes' alpha peak (1, 0.35, 0.12), switchable live under **Map & Zones → Zone Motes Variant**; Mid is the default. A `.ptc` is plain text: the effect is tuned by editing those files and rebuilding, and its tint lives there too, since `EmitorParam` has no colour. The effect is built as follows:
 
 - each emitter is a 10 m strip turned along the tangent, one per 10 m;
 - there are two emitters per strip: `flare_light.emat` motes (a soft round light), plus a few faint `glow1.emat` halos;
