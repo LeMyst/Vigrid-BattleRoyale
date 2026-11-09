@@ -80,6 +80,7 @@ second one's death ends the match, so they are on the death screen at the reset 
 | Lobby and win chickens | `BattleRoyaleDebug.DeleteLobbyChickens`, `BattleRoyaleWin.DeleteWinChickens` |
 | Player corpses and their gear | `BattleRoyaleCorpses` (fed from `PlayerBase.EEKilled`) |
 | Lobby minimum wait (was process uptime) | `BattleRoyaleDebug.GetLobbyElapsed` |
+| PAS panel batteries (refitted or recharged at each lobby opening) | `Land_Radio_PanelPAS.BR_RefillAll` |
 | Queued state calls | `BattleRoyaleServer.CancelQueuedCalls` |
 
 Client side (`BattleRoyaleClient.ResetForNewMatch`, `BattleRoyaleRPC.ResetForNewMatch`): the win
