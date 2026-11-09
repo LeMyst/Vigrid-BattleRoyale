@@ -633,7 +633,7 @@ modded class BRMasterControlsModule
         if ( !state )
             return;
 
-        //--- ⚠️ Two casts, because IsLocked/LockNewZone are not on the base and the two states that
+        //--- ⚠️ Two casts, because IsLocked/LockNow are not on the base and the two states that
         //--- have them are SIBLINGS - BattleRoyaleLastRound extends BattleRoyaleState directly, not
         //--- BattleRoyaleRound.
         BattleRoyaleRound round;
@@ -645,8 +645,8 @@ modded class BRMasterControlsModule
                 return;
             }
 
-            //--- 0 seconds of remaining travel window: lock it as of now.
-            round.LockNewZone( 0 );
+            //--- LockNow, not LockNewZone: it also disarms the scheduled lock and its toasts.
+            round.LockNow();
             BattleRoyaleUtils.Info("[Admin] locked the incoming circle early.");
             ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Locked the incoming circle early." );
             return;
@@ -661,7 +661,7 @@ modded class BRMasterControlsModule
                 return;
             }
 
-            last_round.LockFinalZone();
+            last_round.LockNow();
             BattleRoyaleUtils.Info("[Admin] locked the final circle early.");
             ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Locked the final circle early." );
             return;
