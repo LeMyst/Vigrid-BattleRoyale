@@ -3,9 +3,8 @@ setlocal enabledelayedexpansion
 
 REM Usage: CI0_EnumSpecialPaths <tag>
 REM Records the "special" (IGNORE?) file paths so the next build can diff them.
-REM <tag> is the leading part of the list filename, not a mod name - each caller
-REM picks the tag that matches the name it reads back later (CI.bat uses
-REM "<PrefixLinkRoot>-ALL", CI1.bat uses "<modName>").
+REM <tag> is the leading part of the list filename, not a mod name - the caller
+REM picks the tag that matches the name it reads back later (CI1.bat uses "<modName>").
 
 set /a failed=0
 

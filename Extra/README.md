@@ -16,7 +16,7 @@ parked.
 - **PBO names are lowercase**, derived from the folder path: `Extra/KillFeed` →
   `extra_killfeed.pbo`.
 - **Discipline rule: no `Extra/` addon may reference a `BattleRoyale*` symbol.** That is what keeps
-  each one extractable into a standalone mod as a build-plumbing job rather than a rewrite. Two addons
+  each one extractable into a standalone mod as a build-plumbing job rather than a rewrite. Three addons
   currently break this rule and are marked below.
 - **Side is set by the `#ifdef` on line 1 of each `.c` file**, not by the folder it lives in. An
   unguarded file compiles and runs on both client and server.
@@ -44,7 +44,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [SafeZone](SafeZone/README.md) | `extra_safezone.pbo` | both | Lobby truce — no firing, no player-inflicted damage |
 | [SpawnCarFull](SpawnCarFull/README.md) | `extra_spawncarfull.pbo` | server | Vehicles spawn with 30–100 % fuel, plus full coolant and oil |
 | [SpawnWeaponChambered](SpawnWeaponChambered/README.md) | `extra_spawnweaponchambered.pbo` | server | Weapons spawn with a round chambered and a magazine where possible |
-| [SpawnWithAmmoAndMagazine](SpawnWithAmmoAndMagazine/README.md) | `extra_spawnwithammoandmagazine.pbo` | server | Loot firearms spawn with magazines on the ground beside them |
+| [SpawnWithAmmoAndMagazine](SpawnWithAmmoAndMagazine/README.md) | `extra_spawnwithammoandmagazine.pbo` | server | Loot firearms spawn with magazines on the ground beside them. **Not standalone** |
 | [SpawnWithBattery](SpawnWithBattery/README.md) | `extra_spawnwithbattery.pbo` | server | Battery-powered loot spawns with a battery fitted |
 | [Vehicle3PPDefaultFix](Vehicle3PPDefaultFix/README.md) | `extra_vehicle3ppdefaultfix.pbo` | both | Forces common vehicles into the third-party Vehicle3PP whitelist |
 
@@ -71,7 +71,7 @@ Only seven addons declare a `defines[]`, which is what lets the mod guard its ca
 
 | Define | Addon | Used by the mod? |
 |---|---|---|
-| `VIGRID_AUTORUN` | AutoRun | yes — 2 call sites |
+| `VIGRID_AUTORUN` | AutoRun | yes — 5 call sites |
 | `DUMP_ITEM_HEIGHTS` | DumpItemHeights | no — declared for consistency only, and **not defined in a normal build** since the addon is parked |
 | `VIGRID_EARPLUGS` | EarPlugs | no — declared for consistency only; the addon exposes no API to call |
 | `KILLFEED` | KillFeed | yes — 5 call sites |
@@ -88,7 +88,7 @@ handler leave the PBO, while the fullscreen map is untouched.
 
 The other twelve declare none, so nothing can `#ifdef`-guard against them.
 
-`VIGRID_AUTORUN` guards two call sites and both are about one thing: the host mod freezes players by
+`VIGRID_AUTORUN` guards five call sites and all are about one thing: the host mod freezes players by
 writing `HumanInputController.OverrideMovementSpeed`, which is the very override auto-run holds. See
 [AutoRun/README.md](AutoRun/README.md) for why the server's cancel deliberately does not release it.
 

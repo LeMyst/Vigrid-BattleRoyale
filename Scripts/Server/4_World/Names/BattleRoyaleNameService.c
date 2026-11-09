@@ -48,7 +48,8 @@ class BattleRoyaleNameService
 	static ref array<string> s_Pending;
 
 	//--- Every uid ever asked about this process, resolved or not. Stops a player whose profile is
-	//--- private from re-queuing a doomed lookup on every reconnect.
+	//--- private from re-queuing a doomed lookup on every reconnect. A request that got no usable
+	//--- answer at all is taken back out - see ForgetRequests().
 	static ref array<string> s_Requested;
 
 	static float s_FlushAt = 0;
@@ -248,6 +249,27 @@ class BattleRoyaleNameService
 			s_FlushAt = GetGame().GetTickTime() + BR_NAME_BATCH_DELAY_SECONDS;
 
 		BattleRoyaleUtils.Debug("BattleRoyaleNameService: queued a name lookup, " + s_Pending.Count() + " pending.");
+	}
+
+	/**
+	 *  Let these uids be asked about again: their lookup failed outright, which unlike a private
+	 *  profile says nothing about the player. One process can host many matches (in-place reset), so
+	 *  keeping them in s_Requested would leave each one "Survivor" until the next restart.
+	 */
+	static void ForgetRequests(array<string> uids)
+	{
+		if (!uids)
+			return;
+		if (!s_Requested)
+			return;
+
+		for (int i = 0; i < uids.Count(); i++)
+		{
+			string uid = uids.Get(i);
+			int index = s_Requested.Find(uid);
+			if (index != -1)
+				s_Requested.Remove(index);
+		}
 	}
 
 	/**

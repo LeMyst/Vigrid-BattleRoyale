@@ -171,9 +171,10 @@ class BattleRoyaleHud
      */
     void SetDistance(bool isInsideZone, float distExt, float distInt, float angle, int secondsToZone)
     {
-        if(!m_DistanceTextWidget)
+        //--- All four widgets written below, not just the first.
+        if(!m_DistanceTextWidget || !m_DistanceZoneArrow || !m_CountdownTextWidget || !m_ImageClock)
         {
-            Error("Called SetDistance but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetDistance but widget is null!");
             return;
         }
 
@@ -245,7 +246,7 @@ class BattleRoyaleHud
         //--- below, so a layout that failed to resolve it reached a null call rather than this guard.
         if(!m_PlayerTextWidget || !m_GroupTextWidget)
         {
-            Error("Called SetCount but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetCount but widget is null!");
             return;
         }
 
@@ -283,7 +284,7 @@ class BattleRoyaleHud
         //--- copy-paste that made the guard test the wrong widget in both directions.
         if(!m_KillTextWidget)
         {
-            Error("Called SetKillCount but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetKillCount but widget is null!");
             return;
         }
         m_KillTextWidget.SetText( count.ToString() );
@@ -293,7 +294,7 @@ class BattleRoyaleHud
     {
         if(!m_AudienceTextWidget)
         {
-            Error("Called SetAudienceCount but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetAudienceCount but widget is null!");
             return;
         }
         m_AudienceTextWidget.SetText( count.ToString() );
@@ -303,7 +304,7 @@ class BattleRoyaleHud
     {
         if(!m_CountdownTextWidget)
         {
-            Error("Called SetCountdown but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetCountdown but widget is null!");
             return;
         }
 

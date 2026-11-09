@@ -104,7 +104,10 @@ class BattleRoyaleLastMatchStore
         //--- JsonFileLoader.SaveFile is not atomic, so the previous file is copied aside first. Here
         //--- that copy is also the one-deep history described in the class header.
         if (FileExist(BATTLEROYALE_LASTMATCH_FILE))
-            CopyFile(BATTLEROYALE_LASTMATCH_FILE, BATTLEROYALE_LASTMATCH_BACKUP);
+        {
+            if (!CopyFile(BATTLEROYALE_LASTMATCH_FILE, BATTLEROYALE_LASTMATCH_BACKUP))
+                BattleRoyaleUtils.Warn("[LastMatch] Failed to back up last_match.json to " + BATTLEROYALE_LASTMATCH_BACKUP);
+        }
 
         if (!JsonFileLoader<BattleRoyaleLastMatchFile>.SaveFile(BATTLEROYALE_LASTMATCH_FILE, store, error_message))
         {
@@ -216,10 +219,26 @@ class BattleRoyaleLastMatchStore
         if (!JsonFileLoader<BattleRoyaleLastMatchFile>.LoadFile(path, store, error_message))
         {
             BattleRoyaleUtils.Warn("[LastMatch] " + path + " could not be read: " + error_message);
+            SetAside(path);
             return NULL;
         }
 
         return store;
+    }
+
+    //--- Save() copies the primary over the backup and then rewrites it, so without this an
+    //--- unreadable file is gone for good.
+    private static void SetAside(string path)
+    {
+        string aside = path + "." + BattleRoyaleTime.NowSeconds() + ".corrupt";
+
+        if (!CopyFile(path, aside))
+        {
+            BattleRoyaleUtils.Warn("[LastMatch] Failed to copy unreadable " + path + " aside to " + aside);
+            return;
+        }
+
+        BattleRoyaleUtils.Warn("[LastMatch] Copied unreadable " + path + " aside to " + aside);
     }
 }
 #endif

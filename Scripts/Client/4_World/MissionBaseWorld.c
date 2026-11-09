@@ -14,7 +14,8 @@ BattleRoyaleBase GetBR()
 
     if (!world)
     {
-        Error("GetBR() => FAILED TO GET MISSION");
+        BattleRoyaleUtils.Warn("GetBR() => FAILED TO GET MISSION");
+        return NULL;
     }
 
     return world.GetBattleRoyale();

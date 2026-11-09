@@ -92,8 +92,10 @@ class BattleRoyaleRPC
 	 *  completely invisible in production. Warn carries it on the BR log level and its DIAG chat
 	 *  mirror; ErrorEx always reaches the log regardless. WARNING severity follows vanilla, which
 	 *  uses it on paths as ordinary as clientdata.c's "PlayerIdentity not synchronized".
+	 *
+	 *  Static and public so the RPC handlers on MissionGameplay use the same idiom.
 	 */
-	private void ReadFailed( string rpc_name )
+	static void ReadFailed( string rpc_name )
 	{
 		string msg = "BattleRoyaleRPC: FAILED TO READ " + rpc_name;
 		BattleRoyaleUtils.Warn( msg );
@@ -129,7 +131,8 @@ class BattleRoyaleRPC
 	void Reset()
 	{
 		nb_players = 0;
-		nb_groups = 0;
+		//--- The hidden-panel sentinel, not 0: until the server's first push there is no group figure.
+		nb_groups = BR_HUD_GROUPS_NONE;
 		fade_state = false;
 		input_state = false;
 		player_kills = 0;
@@ -239,11 +242,12 @@ class BattleRoyaleRPC
 	 *  The two boards and the last-match card are cleared with their sequences BUMPED, not zeroed, so
 	 *  an open leaderboard sees a change and asks the server again: the previous match is now the one
 	 *  that just ended.
+	 *
+	 *  nb_players / nb_groups are kept: the lobby's SetPlayerCount for this client's new body is sent
+	 *  BEFORE MatchReset, so clearing them here would wipe the fresh count, not the old one.
 	 */
 	void ResetForNewMatch()
 	{
-		nb_players = 0;
-		nb_groups = 0;
 		fade_state = false;
 		input_state = false;
 		player_kills = 0;
@@ -483,7 +487,7 @@ class BattleRoyaleRPC
 	// Set the number of players and groups
 
 	int nb_players = 0;
-	int nb_groups = 0;
+	int nb_groups = BR_HUD_GROUPS_NONE;
 
 	void SetPlayerCount(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
@@ -981,7 +985,10 @@ class BattleRoyaleRPC
 	{
 		Param1<bool> data;
 		if ( !ctx.Read( data ) )
+		{
+			ReadFailed("SetLobbyPhase");
 			return;
+		}
 
 		if ( type == CallType.Client )
 		{

@@ -155,7 +155,11 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 		if (FileExist(GetProfilePath()))
 		{
 			if (!JsonFileLoader<BattleRoyaleLobbyData>.LoadFile(GetProfilePath(), this, errorMessage))
+			{
 				ErrorEx(errorMessage);
+				m_ProfileLoadFailed = true;
+				return;  // a half-parsed old version would make Upgrade() Save() over the file
+			}
 		}
 
 		// Run the upgrade function here to avoid overrides from mission folder
@@ -349,3 +353,4 @@ class BattleRoyaleLobbyData: BattleRoyaleDataBase
 		}
 	}
 };
+#endif

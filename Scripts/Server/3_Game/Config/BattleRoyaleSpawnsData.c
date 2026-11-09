@@ -40,7 +40,11 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 		if (FileExist(GetProfilePath()))
 		{
 			if (!JsonFileLoader<BattleRoyaleSpawnsData>.LoadFile(GetProfilePath(), this, errorMessage))
+			{
 				ErrorEx(errorMessage);
+				m_ProfileLoadFailed = true;
+				return;  // a half-parsed old version would make Upgrade() Save() over the file
+			}
 		}
 
 		// Run the upgrade function here to avoid overrides from mission folder
@@ -70,4 +74,28 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 		if (!JsonFileLoader<BattleRoyaleSpawnsData>.SaveFile(GetProfilePath(), this, errorMessage))
 			ErrorEx(errorMessage);
 	}
+
+	//--- The default spawn_point is a ChernarusPlus coordinate, used as-is on every other map. Warned,
+	//--- never moved: the lobby is the admin's choice. Must not Save() - see BattleRoyaleDataBase.Validate().
+	override void Validate()
+	{
+		if (!GetGame() || !GetGame().GetWorld())
+			return;
+
+		int world_size = GetGame().GetWorld().GetWorldSize();
+		float x = spawn_point[0];
+		float z = spawn_point[2];
+
+		if (world_size > 0 && (x < 0 || z < 0 || x > world_size || z > world_size))
+		{
+			BattleRoyaleUtils.Warn(string.Format("[Spawns] lobby spawn_point %1 is outside this %2 m world - set spawn_point in spawns_settings.json for this map", spawn_point, world_size));
+			return;
+		}
+
+		if (GetGame().SurfaceIsSea(x, z))
+			BattleRoyaleUtils.Warn(string.Format("[Spawns] lobby spawn_point %1 is in the sea - set spawn_point in spawns_settings.json for this map", spawn_point));
+		else if (GetGame().SurfaceIsPond(x, z))
+			BattleRoyaleUtils.Warn(string.Format("[Spawns] lobby spawn_point %1 is in a pond - set spawn_point in spawns_settings.json for this map", spawn_point));
+	}
 };
+#endif

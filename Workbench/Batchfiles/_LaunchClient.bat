@@ -33,6 +33,6 @@ REM an empty "" argument would end LaunchSteamClient.bat's argument loop early.
 set "brPasswordArg="
 if defined ServerPassword set brPasswordArg="-password=%ServerPassword%"
 
-call "%~dp0LaunchSteamClient.bat" %brSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%brProfileDir%" "-name=%brPlayerName%" "-mod=%modList%" %brPasswordArg%
+call "%~dp0LaunchSteamClient.bat" %brSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" "-port=%port%" "-profiles=%brProfileDir%" "-name=%brPlayerName%" "-mod=%modList%" %brPasswordArg%
 
 exit /b 0

@@ -599,7 +599,8 @@ class BattleRoyaleSpectators
         //--- spectator's whole party is dead, so it cannot leak a teammate's position to anyone.
         for (i = m_DeathOrder.Count() - 1; i >= 0; i--)
         {
-            BattleRoyaleDeathRecord recent = m_Deaths.Get(m_DeathOrder.Get(i));
+            string recent_uid = m_DeathOrder.Get(i);
+            BattleRoyaleDeathRecord recent = m_Deaths.Get(recent_uid);
             if (!recent)
                 continue;
             if (recent.killer_uid == "")
@@ -832,12 +833,14 @@ class BattleRoyaleSpectators
         int i = 0;
         for (i = 0; i < count; i++)
         {
-            uids.Insert(m_Spectators.GetKey(i));
+            string key_uid = m_Spectators.GetKey(i);
+            uids.Insert(key_uid);
         }
 
         for (i = 0; i < uids.Count(); i++)
         {
-            BattleRoyaleSpectatorEntry entry = m_Spectators.Get(uids.Get(i));
+            string entry_uid = uids.Get(i);
+            BattleRoyaleSpectatorEntry entry = m_Spectators.Get(entry_uid);
             if (!entry)
                 continue;
             if (entry.target_uid != lost_uid && entry.target_uid != "")
@@ -923,7 +926,8 @@ class BattleRoyaleSpectators
         int count = m_Spectators.Count();
         for (i = 0; i < count; i++)
         {
-            uids.Insert(m_Spectators.GetKey(i));
+            string key_uid = m_Spectators.GetKey(i);
+            uids.Insert(key_uid);
         }
 
         bool do_push = false;
@@ -1112,40 +1116,22 @@ class BattleRoyaleSpectators
     }
 
     /**
-     *  Find a player's own CORPSE by uid.
+     *  Find a player's own body - corpse or admin anchor - by uid.
      *
      *  LivingPlayerByUid cannot do this: it walks the current state's roster, and a dead player was
      *  removed from it at death. So this walks every Man in the world instead and matches on the
-     *  cached PlayerBase.player_steamid rather than on PlayerIdentity - the same reason
+     *  cached PlayerBase.player_steamid as well as on PlayerIdentity - the same reason
      *  IsLateJoinExempt does, namely that the identity may be gone while the body is still there.
      *
      *  Returns a reference rather than storing one, so invariant 1 stands: the result is used within
      *  the call that asked for it and never kept.
      *
-     *  Deliberately does NOT filter on "is dead". A uid that somehow resolves to a living body is
-     *  something the caller should be able to see rather than silently get NULL for.
+     *  After AdminRespawn the corpse and the anchor body share the uid; a living body wins, so the
+     *  admin paths get the anchor and an ordinary spectator (who has only the corpse) gets that.
      */
     PlayerBase FindBodyByUid(string uid)
     {
-        if (uid == "")
-            return NULL;
-
-        array<Man> everyone = new array<Man>();
-        GetGame().GetPlayers(everyone);
-
-        int count = everyone.Count();
-        for (int i = 0; i < count; i++)
-        {
-            PlayerBase candidate = PlayerBase.Cast(everyone.Get(i));
-            if (!candidate)
-                continue;
-            if (candidate.player_steamid != uid)
-                continue;
-
-            return candidate;
-        }
-
-        return NULL;
+        return BattleRoyaleKillAttribution.FindPlayerByUid(uid);
     }
 
     /**
@@ -1445,7 +1431,8 @@ class BattleRoyaleSpectators
 
         for (i = 0; i < admin_uids.Count(); i++)
         {
-            PlayerIdentity admin_identity = IdentityOfUid(admin_uids.Get(i));
+            string admin_uid = admin_uids.Get(i);
+            PlayerIdentity admin_identity = IdentityOfUid(admin_uid);
             if (admin_identity)
                 EndAdminSpectate(admin_identity);
         }
@@ -1737,8 +1724,8 @@ class BattleRoyaleSpectators
         GetGame().SelectPlayer(identity, body);
 
         //--- Set by hand because nothing else does outside OnPlayerConnected, and FindBodyByUid
-        //--- matches on player_steamid - without this the body this method just made is invisible to
-        //--- every uid->body lookup in the file, including AdminEligibility's.
+        //--- matches on player_steamid once the identity is gone - without this the body this method
+        //--- just made would vanish from every uid->body lookup on a disconnect.
         body.player_steamid = uid;
         body.player_name = BattleRoyaleNameService.ResolveIdentity(identity);
 
@@ -2219,10 +2206,11 @@ class BattleRoyaleSpectators
         int i = 0;
         for (i = 0; i < positions.Count(); i++)
         {
-            if (vector.Distance(positions.Get(i), camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
+            vector near_pos = positions.Get(i);
+            if (vector.Distance(near_pos, camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
                 continue;
 
-            sum = sum + positions.Get(i);
+            sum = sum + near_pos;
             near_count = near_count + 1;
         }
 
@@ -2263,7 +2251,8 @@ class BattleRoyaleSpectators
                 int p = 0;
                 for (p = 0; p < positions.Count(); p++)
                 {
-                    float distance = vector.Distance(positions.Get(p), candidate);
+                    vector player_pos = positions.Get(p);
+                    float distance = vector.Distance(player_pos, candidate);
                     if (distance <= BR_ADMIN_ANCHOR_COVER_M)
                         score = score + 1;
                     if (distance < clearance)
@@ -2833,7 +2822,8 @@ class BattleRoyaleSpectators
 
         for (i = 0; i < deaths; i++)
         {
-            BattleRoyaleDeathRecord record = m_Deaths.Get(m_DeathOrder.Get(i));
+            string death_uid = m_DeathOrder.Get(i);
+            BattleRoyaleDeathRecord record = m_Deaths.Get(death_uid);
             if (!record)
                 continue;
 

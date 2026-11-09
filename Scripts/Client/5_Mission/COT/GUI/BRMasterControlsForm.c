@@ -572,7 +572,8 @@ class BRMasterControlsForm: JMFormBase
                 continue;
             }
 
-            BattleRoyaleAdminRosterRow row = roster.rows.Get( order.Get( slot ) );
+            int order_index = order.Get( slot );
+            BattleRoyaleAdminRosterRow row = roster.rows.Get( order_index );
             if ( !row )
                 continue;
 

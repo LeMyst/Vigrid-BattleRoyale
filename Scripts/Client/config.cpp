@@ -46,9 +46,6 @@ class CfgMods
 		{
 			"DAYZ_BATTLEROYALE",
 			//"BR_TRACE_ENABLED",
-			//--- Note the missing trailing comma below: uncommenting MOVING_ZONE and the line after
-			//--- it together is a rapify syntax error, not just a dead define.
-			//"MOVING_ZONE"
 			//"BLUE_ZONE"
 		};
 
@@ -103,6 +100,8 @@ class CfgVehicles
     class BREffectArea: EffectArea {};
     class BlueZone: BREffectArea
     {
-        scope=2;
+        //--- 1, not 2, while BLUE_ZONE is off: no script class backs it, so admin spawners must not
+        //--- offer it (COT lists scope=2 only). Restore 2 with the define - it is spawned by CreateObjectEx.
+        scope=1;
     };
-}
+};
