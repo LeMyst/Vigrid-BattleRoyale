@@ -7,12 +7,9 @@ class BattleRoyaleZone
     protected BattleRoyaleConfig m_Config;
     protected BattleRoyaleZoneData m_ZoneSettings;
 
-    protected float f_ConstantShrink;
     protected int i_ShrinkType;
     protected int i_NumRounds;
 
-    protected float f_Eulers;
-    protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
     protected ref array<int> a_MinPlayers;
@@ -106,10 +103,7 @@ class BattleRoyaleZone
 
         m_ZoneSettings = m_Config.GetZoneData();
         i_NumRounds = m_ZoneSettings.num_zones;
-        f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
-        f_Eulers = m_ZoneSettings.shrink_base;
-        f_Exponent = m_ZoneSettings.shrink_exponent;
         a_StaticSizes = m_ZoneSettings.static_sizes;
         a_StaticTimers = m_ZoneSettings.static_timers;
         a_MinPlayers = m_ZoneSettings.min_players;
