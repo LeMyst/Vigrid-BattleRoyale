@@ -103,7 +103,7 @@ class BattleRoyaleConfig
 
 		if( !FileExist(BATTLEROYALE_SETTINGS_MISSION_FOLDER) )
 		{
-			Print("Creating BattleRoyale Mission Settings Folder");
+			BattleRoyaleUtils.Trace("Creating BattleRoyale Mission Settings Folder");
 			MakeDirectory(BATTLEROYALE_SETTINGS_MISSION_FOLDER);
 		}
 
@@ -132,7 +132,15 @@ class BattleRoyaleConfig
 					{
 						BattleRoyaleUtils.Trace("Loading Config: " + path);
 						config.Load();
-						config.Save(); //re-save (if there are new config values that need added to the json file)
+						if (config.m_ProfileLoadFailed)
+						{
+							//--- Re-saving now would write the defaults over the admin's broken-but-fixable file.
+							BattleRoyaleUtils.Warn("COULD NOT PARSE " + path + " - built-in defaults are in use for this boot and the file was left untouched. Fix it and restart.");
+						}
+						else
+						{
+							config.Save(); //re-save (if there are new config values that need added to the json file)
+						}
 					}
 					else
 					{
@@ -244,3 +252,4 @@ class BattleRoyaleConfig
 		return BattleRoyaleVoiceData.Cast( GetConfig("VoiceData") );
 	}
 };
+#endif

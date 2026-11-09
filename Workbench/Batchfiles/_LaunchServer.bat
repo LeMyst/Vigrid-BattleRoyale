@@ -32,6 +32,6 @@ echo KeepStorage=1 - leaving "storage_*" in place, skipping the cold CE loot spa
 
 :launch
 
-call "%~dp0LaunchSteamClient.bat" %brSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" -port=%port% "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
+call "%~dp0LaunchSteamClient.bat" %brSteamID% "%serverDirectory%" %serverEXE% %serverLaunchParams% "-config=%serverConfig%" "-port=%port%" "-profiles=%serverProfileDirectory%" "-mission=%MPMission%" "-mod=%modList%"
 
 exit /b 0

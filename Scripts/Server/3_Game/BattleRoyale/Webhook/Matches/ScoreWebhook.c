@@ -89,3 +89,4 @@ class ScoreCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

@@ -1,9 +1,10 @@
 """
  *  Settings-class migration discipline. Diff-scoped: this one asks about the CHANGE, not the tree.
  *
- *  Every BattleRoyale*Data class carries `int version` plus an `Upgrade()` migration, and Load()
- *  re-saves after reading so new fields appear in existing profile JSONs on the next boot. Adding
- *  a field without bumping the version skips that migration.
+ *  Every settings data class (BattleRoyale*Data, and the KillFeed, Map and Party ones in WATCHED)
+ *  carries `int version` plus an `Upgrade()` migration, and Load() re-saves after reading so new
+ *  fields appear in existing profile JSONs on the next boot. Adding a field without bumping the
+ *  version skips that migration.
  *
  *  For a `ref array` field the Upgrade() branch is NOT OPTIONAL, and this is the silent one: a
  *  field initialiser survives deserialization for scalars but not for arrays. On every server that
@@ -16,10 +17,15 @@
  *  Compares against the merge base with origin/main. With no origin/main available - a fresh
  *  clone, a detached checkout - the check reports nothing rather than guessing; it is advisory by
  *  construction, and the tree-wide checks are the ones that must always run.
+ *
+ *  On a GitHub push the merge base is HEAD itself, so the diff would be empty: there it compares
+ *  against the tip before the push (`before` in the event payload), or HEAD^.
 """
 
 from __future__ import annotations
 
+import json
+import os
 import re
 import subprocess
 
@@ -28,7 +34,12 @@ from Checks._source import Finding, error, read, repo_root, strip_code, warn
 NAME = "settings-version"
 SUMMARY = "a new settings field bumps version; a new ref array gets an Upgrade() branch"
 
-CONFIG_DIR = "Scripts/Server/3_Game/Config/"
+WATCHED = (
+    "Scripts/Server/3_Game/Config/BattleRoyale*Data.c",
+    "Extra/KillFeed/Scripts/3_Game/Server/KillFeedData.c",
+    "Extra/Map/Scripts/3_Game/Server/VigridMapData.c",
+    "Party/Scripts/3_Game/Server/VigridPartyData.c",
+)
 BASE_CANDIDATES = ("origin/main", "main")
 
 MEMBER = re.compile(
@@ -63,6 +74,26 @@ def merge_base() -> str | None:
     return None
 
 
+def push_base() -> str | None:
+    """The tip before a GitHub push, else HEAD^. None outside a push event."""
+    if os.environ.get("GITHUB_EVENT_NAME") != "push":
+        return None
+    before = ""
+    try:
+        with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as handle:
+            before = json.load(handle).get("before") or ""
+    except (KeyError, OSError, ValueError):
+        pass
+    #  `before` is all zeros for a newly created branch, and unreachable after a force-push.
+    for candidate in (before, "HEAD^"):
+        if not candidate.strip("0"):
+            continue
+        code, out = git("rev-parse", "--verify", "--quiet", candidate + "^{commit}")
+        if code == 0 and out.strip():
+            return out.strip()
+    return None
+
+
 def class_body_lines(path: str) -> set[int]:
     """1-based line numbers of `path` that sit at class-body brace depth.
 
@@ -85,11 +116,11 @@ def class_body_lines(path: str) -> set[int]:
 
 
 def run() -> list[Finding]:
-    base = merge_base()
+    base = push_base() or merge_base()
     if base is None:
         return []
 
-    code, out = git("diff", "--unified=0", base, "--", f"{CONFIG_DIR}BattleRoyale*Data.c")
+    code, out = git("diff", "--unified=0", base, "--", *WATCHED)
     if code != 0 or not out.strip():
         return []
 

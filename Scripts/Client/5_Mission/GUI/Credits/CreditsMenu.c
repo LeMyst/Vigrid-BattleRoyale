@@ -6,7 +6,7 @@ modded class CreditsMenu
         layoutRoot = super.Init();
 
         if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
-            Error("Failed to load imageset image");
+            BattleRoyaleUtils.Warn("CreditsMenu: failed to load the logo image");
 
         return layoutRoot;
     }

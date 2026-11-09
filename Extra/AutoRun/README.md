@@ -102,13 +102,21 @@ freeze loses.
 
 ```c
 #ifdef VIGRID_AUTORUN
-    VigridAutoRunAPI.SetAllowed(false);   // client, before disabling input
-    VigridAutoRunAPI.CancelFor(player);   // server, ON THE LINE ABOVE the freeze
+    VigridAutoRunAPI.SetAllowed(false);         // client, before disabling input
+    VigridAutoRunAPI.SetAllowedForAll(false);   // server, with CancelFor, at the freeze
+    VigridAutoRunAPI.CancelFor(player);         // server, ON THE LINE ABOVE the freeze
+    VigridAutoRunAPI.SetAllowedForAll(true);    // server, once every freeze is lifted
 #endif
 ```
 
-Two call sites in the Battle Royale mod: `BattleRoyaleClient` where it applies the `SetInput` RPC, and
-`4_BattleRoyalePrepare.DisablePlayerInput`.
+Used by the Battle Royale mod in `BattleRoyaleClient` where it applies the `SetInput` RPC,
+`4_BattleRoyalePrepare.DisablePlayerInput`, `5_BattleRoyaleStartMatch.HandleUnlock` and the in-place
+reset.
+
+**`SetAllowedForAll(false)` is what makes the freeze hold against a modified client.** `CancelFor`
+only forgets the hold in progress; without the gate, a new speed sent after the freeze would be
+applied over it. While refused, the server answers every request as an *off*, which is a no-op for a
+player `CancelFor` has forgotten.
 
 ⚠️ **`CancelFor` deliberately does not touch the controller**, and the server keeps a record of whose
 override it owns. That record exists to stop one race: if a client's *"auto-run off"* message lands

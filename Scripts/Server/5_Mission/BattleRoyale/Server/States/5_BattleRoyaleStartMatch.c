@@ -142,6 +142,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         if ( m_UnlockTimer && m_UnlockTimer.IsRunning() )
             m_UnlockTimer.Stop();
 
+        if ( m_ShowFirstZone && m_ShowFirstZone.IsRunning() )
+            m_ShowFirstZone.Stop();
+
         if ( m_ZoneStartTimer && m_ZoneStartTimer.IsRunning() )
             m_ZoneStartTimer.Stop();
 
@@ -225,6 +228,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
             player.DisableInput(false); //This will re-enable input
 			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );
         }
+#ifdef VIGRID_AUTORUN
+        VigridAutoRunAPI.SetAllowedForAll( true ); // after the loop: the unlock itself writes DISABLED
+#endif
 
         MessagePlayersUntranslated( "STR_BR_MATCH_STARTED" );
         MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", i_FirstRoundDelay );

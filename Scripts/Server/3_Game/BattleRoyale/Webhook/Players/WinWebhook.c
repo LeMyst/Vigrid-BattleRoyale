@@ -87,3 +87,4 @@ class WinCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 7;  // Config version
+	int version = 8;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -21,7 +21,8 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     bool restrict_final_zone = false;  // Whether to restrict the final zone to a polygon
     ref array<string> final_zone_polygon = {}; // Array of vectors defining polygon for the final zone
 
-    // Deprecated, kept so a version 1 config still deserializes and can be migrated by Upgrade().
+    // Deprecated, kept so a version 1 config still deserializes and can be migrated: by Upgrade() for
+    // the profile, by MigrateMissionDeprecatedKeys() for the mission file.
     // These always restricted the FINAL zone despite the name; do not read them, use the pair above.
     bool restrict_first_zone = false;
     ref array<string> first_zone_polygon = {};
@@ -30,13 +31,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     bool use_dynamic_zones = true;  // Use dynamic zones based on player count
     int min_zone_num = 4;  // Minimum number of zones to have
 
-    int shrink_type = 3;  // 1 = Exp, 2 = Lin, 3 = Static, 4 = Const
-    // TODO: I think Exp, Lin and Const are not used anymore
-    // TODO: That is because the logic changed at one point and now the zone is always static
-
-    // Exponential (NOT USED ANYMORE)
-    float shrink_base = 2.718281828459; // ~ e
-    float shrink_exponent = 3.0;
+    // Switches round TIMING only: 3 = static_timers (and derive_timers_from_geometry), anything else =
+    // round_duration_minutes for every round. Circle sizes always come from static_sizes.
+    int shrink_type = 3;
 
 	// Static
 	// SMALLEST ZONE FIRST: index 0 describes the tight final circle, the last index the widest
@@ -47,9 +44,6 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     ref array<float> static_sizes = { 35, 140, 562, 1125, 2250, 3375, 4500 };
     ref array<int> static_timers = { 155, 260, 307, 495, 495, 495, 495 };
     ref array<int> min_players = { 10, 10, 10, 11, 22, 33, 44 };
-
-    // Constant (NOT USED ANYMORE)
-    float constant_scale = 0.65;
 
     // --- Generation tuning (v4) ---
 
@@ -79,7 +73,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // Generate this many throwaway chains at boot, report the failure/backtrack/tier distribution,
     // then play normally. 0 = off. This is the acceptance gate for a new map or a new static_sizes:
     // 200 runs inside one boot answers "can this configuration ever dead-end here", which relaunching
-    // the server twenty times never could. Costs a few hundred ms.
+    // the server twenty times never could. Costs about 2 s per 200 runs, on the main thread at boot.
     int zone_selftest_runs = 0;
 
     // --- Placement and timing derivation (v6) ---
@@ -90,9 +84,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // the growth lives only in the generated chain - and it is bounded by the BR_ZONE_GROW_* constants,
     // reported per chain in the boot log, and counted as its own column by zone_selftest_runs above.
     //
-    // It only fires after tier 3 has failed AND the chain still owes centre-ward travel, so a healthy
-    // map barely sees it: at stock sizes ChernarusPlus leaves tier 1 on ~5% of placements and Sakhal on
-    // ~20%. Turn it OFF to compare a self-test run against a baseline recorded before v6.
+    // It is spliced in at tier 1, with no pressure gate: when tier 1's window fails it is retried at a
+    // larger radius with the same window and land bar, before tier 2 loosens either. A healthy map
+    // barely sees it: at stock sizes it fires on ~0.1% of placements on ChernarusPlus and ~0.5-0.9% on
+    // Sakhal. Turn it OFF to compare a self-test run against a baseline recorded before v6.
     bool allow_zone_size_flex = true;
 
     // Derive each round's length from the geometry instead of reading static_timers: how far a player
@@ -101,11 +96,10 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // mathematics values: zone size factor, maximum sprinting speed, etc."
     //
     // OFF by default because it changes pacing on every existing server, even though the constants are
-    // tuned to be near-neutral against the stock static_timers (see BR_ZONE_TIMER_FIGHT_SECONDS). Two
-    // rounds keep their hand-authored value even when this is on, because neither has any travel to
-    // derive from: the OPENING round, which has no predecessor circle, and the endgame in
-    // 7_BattleRoyaleLastRound, which plays out an already-locked circle. Ignored unless shrink_type is
-    // 3 (static), the only mode static_timers applies to.
+    // tuned to be near-neutral against the stock static_timers (see BR_ZONE_TIMER_FIGHT_SECONDS). The
+    // OPENING round has no inbound travel, so it is priced as a loot round instead (#284). The endgame
+    // in 7_BattleRoyaleLastRound keeps static_timers[0]: it plays out an already-locked circle. Ignored
+    // unless shrink_type is 3 (static), the only mode static_timers applies to.
     bool derive_timers_from_geometry = false;
 
     // --- Derived ladder (v7) ---
@@ -269,7 +263,6 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			ref array<string> keptAvoidType = CopyStrings(end_avoid_type);
 			ref array<string> keptAvoidCity = CopyStrings(end_avoid_city);
 			ref array<string> keptFinalPolygon = CopyStrings(final_zone_polygon);
-			ref array<string> keptFirstPolygon = CopyStrings(first_zone_polygon);
 			ref array<float> keptStaticSizes = CopyFloats(static_sizes);
 			ref array<int> keptStaticTimers = CopyInts(static_timers);
 			ref array<int> keptMinPlayers = CopyInts(min_players);
@@ -277,8 +270,24 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			ref array<string> keptHotCenters = CopyStrings(hot_zone_centers);
 			ref array<float> keptHotRadii = CopyFloats(hot_zone_radii);
 
+			//--- Upgrade() already settled the profile's schema, so the mission's "version" only says
+			//--- what the mission file was written for; 0 after the read means it has no version key.
+			int keptVersion = version;
+			int missionVersion;
+			version = 0;
+
+			//--- Cleared so a deprecated value seen after the read can only have come from the mission.
+			restrict_first_zone = false;
+			first_zone_polygon = new array<string>();
+
 			if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
+
+			missionVersion = version;
+			version = keptVersion;
+
+			//--- Before the restores below, so it can tell whether the mission set final_zone_polygon itself.
+			MigrateMissionDeprecatedKeys(missionVersion);
 
 			if (!zone_notification_minutes || zone_notification_minutes.Count() == 0)
 				zone_notification_minutes = keptNotifyMinutes;
@@ -294,9 +303,6 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
 			if (!final_zone_polygon || final_zone_polygon.Count() == 0)
 				final_zone_polygon = keptFinalPolygon;
-
-			if (!first_zone_polygon || first_zone_polygon.Count() == 0)
-				first_zone_polygon = keptFirstPolygon;
 
 			if (!static_sizes || static_sizes.Count() == 0)
 				static_sizes = keptStaticSizes;
@@ -320,6 +326,43 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			if (!hot_zone_radii || hot_zone_radii.Count() == 0)
 				hot_zone_radii = keptHotRadii;
 		}
+	}
+
+	//--- Upgrade()'s v1 -> v2 rename, applied to the mission file: Upgrade() runs inside Load(), before
+	//--- the mission pass, so a v1 mission's keys would otherwise land in fields nothing reads.
+	protected void MigrateMissionDeprecatedKeys(int mission_version)
+	{
+		bool has_polygon = (first_zone_polygon && first_zone_polygon.Count() > 0);
+		string line;
+
+		if (!restrict_first_zone && !has_polygon)
+			return;
+
+		line = "[BattleRoyaleZoneData] the mission zone_settings.json sets restrict_first_zone/first_zone_polygon";
+
+		//--- From version 2 on these keys are inert in the profile too, so a mission gets the same rule.
+		if (mission_version >= 2)
+		{
+			line = line + ", deprecated since version 2 - IGNORED. Use restrict_final_zone/final_zone_polygon.";
+			BattleRoyaleUtils.Warn(line);
+		}
+		else
+		{
+			//--- Only a true or a non-empty value can be told apart from an absent key.
+			if (restrict_first_zone)
+				restrict_final_zone = true;
+
+			//--- A final_zone_polygon the mission sets itself wins over the deprecated one.
+			if (has_polygon && (!final_zone_polygon || final_zone_polygon.Count() == 0))
+				final_zone_polygon = CopyStrings(first_zone_polygon);
+
+			line = line + ", renamed restrict_final_zone/final_zone_polygon in version 2 - migrated for this boot.";
+			line = line + " Rename the keys in the mission file.";
+			BattleRoyaleUtils.Warn(line);
+		}
+
+		restrict_first_zone = false;
+		first_zone_polygon = new array<string>();
 	}
 
 	override void Save()
@@ -433,6 +476,14 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			version = 7;
 			Save();  // Save the upgraded config
 		}
+
+		if (version < 8)
+		{
+			// v8 REMOVED shrink_base, shrink_exponent and constant_scale, which nothing read. Nothing to
+			// migrate: the re-save drops them from the profile, and a mission file's copies are ignored.
+			version = 8;
+			Save();  // Save the upgraded config
+		}
 	}
 
 	//--- Clamp anything internally inconsistent so a misconfiguration degrades into a shorter but
@@ -489,6 +540,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		float world_size = 0;
 		float factor;
 		float smallest;
+		float final_radius;
+		float next_radius;
+		float configured_final;
 
 		//--- Derived ladder locals (v7). Same reason as above: one declaration per name per method
 		//--- scope, so they are here rather than at first use.
@@ -524,6 +578,27 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			}
 
 			BattleRoyaleUtils.Info("[BattleRoyaleZoneData] scale_sizes_to_world: world " + world_size + " / reference " + reference_world_size + " = x" + factor + " on the span above the final circle. Largest circle is now " + static_sizes[static_sizes.Count() - 1] + ".");
+		}
+
+		//--- (0a) The final circle needs a real radius: at <= 0 the round states' zone_is_real guard
+		//--- switches zone damage off for the whole endgame. The shipped 35 m, or half the next circle.
+		configured_final = 1;
+		if (static_sizes && static_sizes.Count() > 0)
+			configured_final = static_sizes[0];
+
+		if (configured_final <= 0)
+		{
+			final_radius = 35;
+
+			if (static_sizes.Count() > 1)
+			{
+				next_radius = static_sizes[1];
+				if (next_radius > 0 && next_radius <= final_radius)
+					final_radius = next_radius / 2;
+			}
+
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] static_sizes[0], the final circle, is " + configured_final + " m - using " + final_radius + " m for this boot. A radius must be greater than zero.");
+			static_sizes[0] = final_radius;
 		}
 
 		//--- (0b) DERIVE num_zones from the map (#284 point 2), after any scaling above so it sees the
@@ -667,6 +742,14 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			min_zone_num = num_zones;
 		}
 
+		//--- At <= 0 the starting-zone floor (num_zones - min_zone_num + 1) lies past the last zone,
+		//--- so the duration bound can open a match on a zone that does not exist and skip every round.
+		if (min_zone_num < 1)
+		{
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] min_zone_num (" + min_zone_num + ") is below 1 - clamping it to 1. A match always plays at least one circle.");
+			min_zone_num = 1;
+		}
+
 		//--- (5) Hot zones. Two parallel arrays edited by hand, so the failure mode is a half-finished
 		//--- edit: three centres and two radii, or a centre with a typo in it. Both are silent
 		//--- otherwise - the mismatch reads past the end of the shorter array, and ToVector() answers
@@ -735,3 +818,4 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] all " + hz_dropped + " configured hot zone(s) were unusable - none will be drawn.");
 	}
 };
+#endif

@@ -294,6 +294,10 @@ class BattleRoyaleInPlaceReset
 #ifdef VIGRID_PARTY
 		VigridPartyAPI.ResetForNewMatch();
 #endif
+#ifdef VIGRID_AUTORUN
+		//--- A match that ended before HandleUnlock never re-allowed auto-run.
+		VigridAutoRunAPI.SetAllowedForAll( true );
+#endif
 #ifdef JM_COT
 		BRMasterControlsModule.ResetPartyIndex();
 #endif

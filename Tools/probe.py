@@ -142,6 +142,17 @@ PROBES = [
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",
      replace("#ifdef SERVER", "//probe")),
 
+    #  The #else of an unrelated #ifdef compiles everywhere; it used to read as guarded.
+    ("client-only-types: client-only type in the #else of #ifdef VIGRID_PARTY", "client-only-types",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\n#ifdef VIGRID_PARTY\n#else\n"
+            "class BRProbe6 { void F() { BattleRoyaleRPC.GetInstance(); } }\n#endif\n")),
+
+    ("diag-guards: diag type in the #else of #ifdef VIGRID_PARTY", "diag-guards",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\n#ifdef VIGRID_PARTY\n#else\n"
+            "class BRProbe7 { void F() { BattleRoyaleDiag.Run(); } }\n#endif\n")),
+
     ("discipline: BattleRoyale symbol inside Party/", "discipline",
      "Party/Scripts/3_Game/VigridPartyLog.c",
      append('\nclass VPProbe { void F() { BattleRoyaleUtils.Info("x"); } }\n')),
@@ -162,6 +173,18 @@ PROBES = [
              'AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "ProbeHandlerThatDoesNotExist", this);'),
      True),
 
+    #  Registered through a `const string`, which the check used to skip entirely.
+    ("rpc: constant-named registration loses its handler", "rpc",
+     "Party/Scripts/3_Game/VigridPartyConstants.c",
+     replace('VP_RPC_SETTINGS = "VP_Settings"', 'VP_RPC_SETTINGS = "VP_Setting"'),
+     True),
+
+    ("rpc: SendRPC on the wrong namespace", "rpc",
+     "Scripts/Client/5_Mission/BattleRoyale/Client/BattleRoyaleClient.c",
+     replace('SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp"',
+             'SendRPC( RPC_DAYZBR_NAMESPACE, "PlayerReadyUp"'),
+     True),
+
     ("version: mod.cpp drifts from the constant", "version",
      "mod.cpp", replace('version = "0.2.1-Vigrid"', 'version = "9.9.9-probe"')),
 
@@ -172,6 +195,11 @@ PROBES = [
     ("configs: requiredAddons names something undeclared", "configs",
      "Extra/SpawnCarFull/config.cpp", replace('"DZ_Scripts"', '"DZ_Scriptz"')),
 
+    #  Declared only in a config.cpp.disabled, so never built: the game refuses to start.
+    ("configs: requiredAddons names a parked addon", "configs",
+     "Extra/SpawnCarFull/config.cpp",
+     replace('"DZ_Scripts"', '"DZ_Scripts", "Dump_Item_Heights"')),
+
     ("configs: missing comma between array entries", "configs",
      "Extra/MapSatellite/config.cpp",
      replace('"DZ_Data",\n            "DZ_Gear_Navigation"',
@@ -181,14 +209,50 @@ PROBES = [
      "Extra/MapSatellite/config.cpp",
      append("\nclass RscMapControl\n{\n    maxSatelliteAlpha = 1;\n};\n")),
 
+    #  The 2026-08-22 outage, re-allowlisted the way it was first let in. The second lock
+    #  (optional_addons.txt) must still fire.
+    ("configs: optional mod's addon required, even when re-allowlisted", "configs",
+     [("Scripts/Client/config.cpp",
+       replace('"DZ_Scripts"', '"DZ_Scripts",\n            "DayZExpansion_Scripts"')),
+      ("Tools/allowlists/external_addons.txt",
+       append("DayZExpansion_Scripts   # probe\n"))],
+     None),
+
     ("data: UTF-8 BOM on a JSON file", "data",
      "Data/hints.json", lambda b: b"\xef\xbb\xbf" + b),
 
     ("data: malformed JSON", "data",
      "Data/credits.json", lambda b: b.rstrip()[:-1] + b","),
 
+    #  The first #endif is an inner block's; losing it moves that block's end to EOF.
+    ("preprocessor: an #endif lost mid-file", "preprocessor",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     lambda b: b.replace(b"#endif", b"", 1)),
+
+    ("preprocessor: stray #endif", "preprocessor",
+     "Scripts/Server/3_Game/BattleRoyale/Webhook/EventWebhook.c", append("\n#endif\n")),
+
     ("extra-index: addon dropped from the index", "extra-index",
      "Extra/README.md", replace("](SpawnCarFull/README.md)", "](SpawnCarFullX/README.md)")),
+
+    ("client-only-types: server file names a #ifndef SERVER class", "client-only-types",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\nclass BRProbeCOT { void F() { BattleRoyaleRPC.GetInstance(); } }\n")),
+
+    #  The BR_DiagTeleport outage: a shipping caller of a method declared under DIAG_DEVELOPER.
+    ("diag-guards: unguarded call to a diag-only method", "diag-guards",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\nclass BRProbeDiag { void F(BattleRoyaleState s) "
+            "{ s.BR_DiagTeleportRing(null, \"0 0 0\", 1); } }\n")),
+
+    ("inputs: declared keybind missing from <preset>", "inputs",
+     "Data/Inputs.xml",
+     replace('        <input name="UADayZBRLeaderboard">\n            <btn name="kF4" />\n'
+             '        </input>\n', '')),
+
+    ("inputs: loc= with a leading '#'", "inputs",
+     "Extra/AutoRun/Data/Inputs.xml",
+     replace('loc="STR_AUTORUN_KEYBIND_TOGGLE"', 'loc="#STR_AUTORUN_KEYBIND_TOGGLE"')),
 
     ("enfusion: ternary operator", "enfusion",
      "Scripts/Client/3_Game/BattleRoyaleUtils.c",
@@ -197,6 +261,10 @@ PROBES = [
     ("enfusion: multi-line if condition", "enfusion",
      "Scripts/Client/3_Game/BattleRoyaleUtils.c",
      append("\nclass BRProbe5 { void F(bool a, bool b) { if (a\n && b) { } } }\n")),
+
+    ("settings-version: new field in Party's VigridPartyData, no version bump", "settings-version",
+     "Party/Scripts/3_Game/Server/VigridPartyData.c",
+     replace("    int version = 2;", "    bool probe_flag = true;\n    int version = 2;")),
 
     ("settings-version: new ref array, no version bump, no Upgrade branch", "settings-version",
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",

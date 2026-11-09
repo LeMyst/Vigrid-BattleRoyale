@@ -21,6 +21,24 @@ class VigridAutoRunState
     //! uid -> the speed currently forced on that player. Absent means this addon holds nothing.
     private static ref map<string, int> s_Held;
 
+    //! False while a host mod has players frozen: a late hold would overwrite the freeze.
+    private static bool s_Allowed = true;
+
+    static void SetAllowed(bool allowed)
+    {
+        if (s_Allowed == allowed)
+            return;
+
+        s_Allowed = allowed;
+
+        VigridAutoRunLog.Debug("Holds allowed: " + allowed);
+    }
+
+    static bool IsAllowed()
+    {
+        return s_Allowed;
+    }
+
     private static map<string, int> Held()
     {
         if (!s_Held)

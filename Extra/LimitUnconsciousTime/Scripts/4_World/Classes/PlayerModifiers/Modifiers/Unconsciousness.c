@@ -52,3 +52,4 @@ modded class UnconsciousnessMdfr
 		}
 	}
 }
+#endif

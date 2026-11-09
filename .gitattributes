@@ -1,0 +1,3 @@
+# Batch files must be CRLF on disk whatever core.autocrlf says: cmd mis-parses goto and
+# call :label in an LF batch file. The index keeps LF, as it already does for all of them.
+*.bat text eol=crlf
