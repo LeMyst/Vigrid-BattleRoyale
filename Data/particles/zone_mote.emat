@@ -1,6 +1,6 @@
 material "Vigrid-BattleRoyale/Data/particles/zone_mote.emat": Particle
 {
-	AlbedoMap "Vigrid-BattleRoyale/Data/particles/zone_mote.edds","{69E030A5603F544C}alpha"
+	AlbedoMap "Vigrid-BattleRoyale/Data/particles/zone_mote.edds"
 	Color "0 0 0 1"
 	Ambient "0 0 0 1"
 	Emissive "1 1 1 0"

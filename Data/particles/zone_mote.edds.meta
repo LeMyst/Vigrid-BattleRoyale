@@ -1,8 +1,0 @@
-MetaFileClass {
- Name "{C0E72B9FE8F7829A}Vigrid-BattleRoyale/Data/particles/zone_mote.edds"
- Configurations {
-  TGAResourceClass PC {
-   SourceFile "zone_mote.tga"
-  }
- }
-}
