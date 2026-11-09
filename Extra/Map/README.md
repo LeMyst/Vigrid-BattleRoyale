@@ -116,7 +116,7 @@ wrong shape here.
 
 | Where | Keys |
 |---|---|
-| `$profile:Vigrid-Map\map_settings.json` (server) | `enabled`, `minimap_allowed`, `compass_allowed`, `label_max_length` |
+| `$profile:Vigrid-Map\map_settings.json` (server) | `enabled`, `minimap_allowed`, `compass_allowed`, `label_max_length`, `clear_markers_on_disconnect` (default `false`: a disconnecting player's marker stays) |
 | `$profile:Vigrid-Map\map_client.json` (client) | `minimap_enabled` (**N**) and `compass_enabled` (**K**) — the player's own toggles |
 
 The minimap and the compass are each gated by three independent switches, each able only to opt further
