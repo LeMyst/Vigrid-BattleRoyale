@@ -1904,6 +1904,14 @@ class BattleRoyaleClient: BattleRoyaleBase
     //! so a spectator sees the arc around what they are watching.
     protected void UpdateGroundRings()
     {
+        //--- zone_settings.json show_ground_rings. Clear() is a no-op once the rings are empty.
+        if ( !BattleRoyaleRPC.GetInstance().ground_rings_enabled )
+        {
+            m_GroundRingCurrent.Clear();
+            m_GroundRingNext.Clear();
+            return;
+        }
+
         vector anchor = GetGame().GetCurrentCameraPosition();
 
 #ifdef DIAG_DEVELOPER
