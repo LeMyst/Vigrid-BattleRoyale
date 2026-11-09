@@ -97,6 +97,14 @@ modded class PluginDiagMenuClient
 #ifdef VIGRID_MAP
 		DiagMenu.BindCallback(m_BRDiagClearMarkersID, CBBRDiagClearMarkers);
 #endif
+		DiagMenu.BindCallback(m_BRDiagGroundRingRadiusID, CBBRDiagGroundRingRadius);
+		DiagMenu.BindCallback(m_BRDiagGroundRingModelID, CBBRDiagGroundRingModel);
+		DiagMenu.BindCallback(m_BRDiagGroundRingScaleID, CBBRDiagGroundRingScale);
+		DiagMenu.BindCallback(m_BRDiagGroundRingColorID, CBBRDiagGroundRingColor);
+		DiagMenu.BindCallback(m_BRDiagGroundRingAlphaID, CBBRDiagGroundRingAlpha);
+		DiagMenu.BindCallback(m_BRDiagGroundRingFlipID, CBBRDiagGroundRingFlip);
+		DiagMenu.BindCallback(m_BRDiagGroundRingSpawnID, CBBRDiagGroundRingSpawn);
+		DiagMenu.BindCallback(m_BRDiagGroundRingClearID, CBBRDiagGroundRingClear);
 
 		DiagMenu.BindCallback(m_BRDiagSpectateEnabledID, CBBRDiagSpectateEnabled);
 		DiagMenu.BindCallback(m_BRDiagAdminSpectateID, CBBRDiagAdminSpectate);
@@ -698,6 +706,54 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagZoneRadius(float value)
 	{
 		BattleRoyaleDiag.zone_radius = value;
+	}
+
+	static void CBBRDiagGroundRingRadius(float value)
+	{
+		BattleRoyaleDiag.ground_ring_radius = value;
+	}
+
+	static void CBBRDiagGroundRingModel(int value)
+	{
+		BattleRoyaleDiag.ground_ring_model = value;
+	}
+
+	static void CBBRDiagGroundRingScale(float value)
+	{
+		BattleRoyaleDiag.ground_ring_scale = value;
+	}
+
+	static void CBBRDiagGroundRingColor(int value)
+	{
+		BattleRoyaleDiag.ground_ring_color = value;
+	}
+
+	static void CBBRDiagGroundRingAlpha(float value)
+	{
+		BattleRoyaleDiag.ground_ring_alpha = value;
+	}
+
+	static void CBBRDiagGroundRingFlip(bool enabled)
+	{
+		BattleRoyaleDiag.ground_ring_flip = enabled;
+	}
+
+	static void CBBRDiagGroundRingSpawn(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.req_ground_ring_spawn = BattleRoyaleDiag.req_ground_ring_spawn + 1;
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagGroundRingClear(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.req_ground_ring_clear = BattleRoyaleDiag.req_ground_ring_clear + 1;
+		DiagMenu.SetValue(id, false);
 	}
 
 	static void CBBRDiagZoneNextRadius(float value)

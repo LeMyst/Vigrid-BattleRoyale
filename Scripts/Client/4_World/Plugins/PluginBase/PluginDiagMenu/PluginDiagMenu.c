@@ -95,6 +95,14 @@ modded class PluginDiagMenu
 	protected int m_BRDiagZoneNextRadiusID;
 	protected int m_BRDiagLogZoneTableID;
 	protected int m_BRDiagClearMarkersID;
+	protected int m_BRDiagGroundRingRadiusID;
+	protected int m_BRDiagGroundRingModelID;
+	protected int m_BRDiagGroundRingScaleID;
+	protected int m_BRDiagGroundRingColorID;
+	protected int m_BRDiagGroundRingAlphaID;
+	protected int m_BRDiagGroundRingFlipID;
+	protected int m_BRDiagGroundRingSpawnID;
+	protected int m_BRDiagGroundRingClearID;
 
 	//--- Spectate
 	protected int m_BRDiagSpectateMenuID;
@@ -189,6 +197,14 @@ modded class PluginDiagMenu
 		m_BRDiagZoneNextRadiusID = GetModdedDiagID();
 		m_BRDiagLogZoneTableID = GetModdedDiagID();
 		m_BRDiagClearMarkersID = GetModdedDiagID();
+		m_BRDiagGroundRingRadiusID = GetModdedDiagID();
+		m_BRDiagGroundRingModelID = GetModdedDiagID();
+		m_BRDiagGroundRingScaleID = GetModdedDiagID();
+		m_BRDiagGroundRingColorID = GetModdedDiagID();
+		m_BRDiagGroundRingAlphaID = GetModdedDiagID();
+		m_BRDiagGroundRingFlipID = GetModdedDiagID();
+		m_BRDiagGroundRingSpawnID = GetModdedDiagID();
+		m_BRDiagGroundRingClearID = GetModdedDiagID();
 
 		m_BRDiagSpectateMenuID = GetModdedDiagID();
 		m_BRDiagSpectateEnabledID = GetModdedDiagID();
@@ -385,6 +401,18 @@ modded class PluginDiagMenu
 #ifdef VIGRID_MAP
 				DiagMenu.RegisterBool(m_BRDiagClearMarkersID, "", "Clear Map Markers", m_BRDiagZoneMenuID);
 #endif
+				//--- Ground ring probe: flat vanilla quads laid round the player. Defaults match BattleRoyaleDiag.
+				DiagMenu.RegisterRange(m_BRDiagGroundRingRadiusID, "", "Ground Ring Radius", m_BRDiagZoneMenuID, "10, 200, 30, 5");
+				DiagMenu.RegisterItem(m_BRDiagGroundRingModelID, "", "Ground Ring Model", m_BRDiagZoneMenuID, "SnowSpot,Blood,Band");
+				DiagMenu.SetValue(m_BRDiagGroundRingModelID, 2);
+				//--- Band only, both applied live to the ring already on the ground. Order = GetColorTexture().
+				DiagMenu.RegisterItem(m_BRDiagGroundRingColorID, "", "Ground Ring Color", m_BRDiagZoneMenuID, "Red,Orange,Yellow,White,Blue,Light Blue,Cyan,Purple,Black");
+				DiagMenu.SetValue(m_BRDiagGroundRingColorID, 4);
+				DiagMenu.RegisterRange(m_BRDiagGroundRingAlphaID, "", "Ground Ring Opacity", m_BRDiagZoneMenuID, "0.1, 1, 0.55, 0.05");
+				DiagMenu.RegisterRange(m_BRDiagGroundRingScaleID, "", "Ground Ring Scale", m_BRDiagZoneMenuID, "0.1, 5, 0.25, 0.05");
+				DiagMenu.RegisterBool(m_BRDiagGroundRingFlipID, "", "Ground Ring: Flip", m_BRDiagZoneMenuID);
+				DiagMenu.RegisterBool(m_BRDiagGroundRingSpawnID, "", "Ground Ring: Spawn", m_BRDiagZoneMenuID);
+				DiagMenu.RegisterBool(m_BRDiagGroundRingClearID, "", "Ground Ring: Clear", m_BRDiagZoneMenuID);
 			}
 
 			//--- Teleport Trace. The measurement Docs/teleports.md asks for before any more code goes near

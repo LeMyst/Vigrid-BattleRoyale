@@ -177,6 +177,11 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
     protected int br_diag_req_toasts = 0;
+    protected int br_diag_req_ground_spawn = 0;
+    protected int br_diag_req_ground_clear = 0;
+    protected int br_diag_ground_color = 4;
+    protected float br_diag_ground_alpha = 0.55;
+    protected ref BattleRoyaleGroundRingTest br_diag_ground_ring;
 
     /**
      *  Fabricate the whole admin spectate overlay payload, so #276-#279 are reachable offline.
@@ -435,6 +440,42 @@ class BattleRoyaleClient: BattleRoyaleBase
         {
             br_diag_req_toasts = BattleRoyaleDiag.req_push_toasts;
             BR_DiagPushToasts();
+        }
+
+        if ( br_diag_req_ground_clear != BattleRoyaleDiag.req_ground_ring_clear )
+        {
+            br_diag_req_ground_clear = BattleRoyaleDiag.req_ground_ring_clear;
+            if ( br_diag_ground_ring )
+                br_diag_ground_ring.Clear();
+        }
+
+        if ( br_diag_req_ground_spawn != BattleRoyaleDiag.req_ground_ring_spawn )
+        {
+            br_diag_req_ground_spawn = BattleRoyaleDiag.req_ground_ring_spawn;
+            PlayerBase ring_player = PlayerBase.Cast( GetGame().GetPlayer() );
+            if ( ring_player )
+            {
+                if ( !br_diag_ground_ring )
+                    br_diag_ground_ring = new BattleRoyaleGroundRingTest();
+                br_diag_ground_ring.Spawn( ring_player.GetPosition(), BattleRoyaleDiag.ground_ring_radius, BattleRoyaleDiag.ground_ring_model, BattleRoyaleDiag.ground_ring_scale, BattleRoyaleDiag.ground_ring_color, BattleRoyaleDiag.ground_ring_alpha, BattleRoyaleDiag.ground_ring_flip );
+                br_diag_ground_color = BattleRoyaleDiag.ground_ring_color;
+                br_diag_ground_alpha = BattleRoyaleDiag.ground_ring_alpha;
+            }
+        }
+
+        //--- Live recolour of the ring already on the ground.
+        bool recolour = false;
+        if ( br_diag_ground_color != BattleRoyaleDiag.ground_ring_color )
+            recolour = true;
+        if ( br_diag_ground_alpha != BattleRoyaleDiag.ground_ring_alpha )
+            recolour = true;
+
+        if ( recolour )
+        {
+            br_diag_ground_color = BattleRoyaleDiag.ground_ring_color;
+            br_diag_ground_alpha = BattleRoyaleDiag.ground_ring_alpha;
+            if ( br_diag_ground_ring )
+                br_diag_ground_ring.ApplyColor( br_diag_ground_color, br_diag_ground_alpha );
         }
     }
 
