@@ -92,8 +92,10 @@ class BattleRoyaleRPC
 	 *  completely invisible in production. Warn carries it on the BR log level and its DIAG chat
 	 *  mirror; ErrorEx always reaches the log regardless. WARNING severity follows vanilla, which
 	 *  uses it on paths as ordinary as clientdata.c's "PlayerIdentity not synchronized".
+	 *
+	 *  Static and public so the RPC handlers on MissionGameplay use the same idiom.
 	 */
-	private void ReadFailed( string rpc_name )
+	static void ReadFailed( string rpc_name )
 	{
 		string msg = "BattleRoyaleRPC: FAILED TO READ " + rpc_name;
 		BattleRoyaleUtils.Warn( msg );
@@ -983,7 +985,10 @@ class BattleRoyaleRPC
 	{
 		Param1<bool> data;
 		if ( !ctx.Read( data ) )
+		{
+			ReadFailed("SetLobbyPhase");
 			return;
+		}
 
 		if ( type == CallType.Client )
 		{

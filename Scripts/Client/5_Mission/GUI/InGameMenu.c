@@ -18,7 +18,7 @@ modded class InGameMenu
         if ( logo )
         {
             if(!logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
-                Error("Failed to load imageset image");
+                BattleRoyaleUtils.Warn("InGameMenu: failed to load the logo image");
         }
 
         SetServerInfoVisibility( false ); //Don't ever show what server you're on for DayZBR
