@@ -41,3 +41,4 @@ class ServerData
         return false;
     }
 }
+#endif

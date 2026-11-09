@@ -10,3 +10,4 @@ class JATParties
 		parties = in_parties;
 	};
 };
+#endif

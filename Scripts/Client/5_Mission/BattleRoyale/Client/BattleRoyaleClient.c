@@ -4,11 +4,11 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected ref BattleRoyalePlayArea m_CurrentPlayArea;
     protected ref BattleRoyalePlayArea m_FuturePlayArea;
 
-    protected int i_Kills; //TODO: this needs to be done differently (most likely)
-    protected bool b_MatchStarted;
-    protected int i_SecondsRemaining;
+    //--- The two circles drawn on the ground, coloured as on the map: blue current, white next.
+    protected ref BattleRoyaleGroundRing m_GroundRingCurrent;
+    protected ref BattleRoyaleGroundRing m_GroundRingNext;
 
-    protected bool b_IsReady;
+    protected bool b_MatchStarted;
 
     //--- One-shot: we have told the server we finished loading. See SendLoadedInOnce().
     protected bool b_SentLoadedIn;
@@ -58,8 +58,8 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- Whether the out-of-zone tint is currently running via the requester directly, which is the
     //--- spectator path. Edge-tracked because PPERequesterBase.Stop() walks the whole request
     //--- structure and queues a manager pass - it must not be called every frame. The LIVING player
-    //--- path does not use this: it goes through the vanilla glasses queue, which self-corrects each
-    //--- tick and is shared with real glasses and NVG effects.
+    //--- path does not use this: it goes through the vanilla glasses queue, edged against the
+    //--- requester's own IsRequesterRunning() - see ApplyOutOfZoneTint.
     protected bool b_TintActive;
 
     //--- Cheap signature of the set of post-process requesters currently running, so
@@ -86,7 +86,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         BattleRoyaleUtils.Trace("BattleRoyaleClient::BattleRoyaleClient");
 
-        b_IsReady = false;
         b_SentLoadedIn = false;
         b_MatchStarted = false;
         b_Spectating = false;
@@ -95,8 +94,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         b_TintActive = false;
         m_PPESignature = -1;
         m_PPENextLogMs = 0;
-        i_Kills = 0;
-        i_SecondsRemaining = 0;
 
         Init();
     }
@@ -146,6 +143,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 		m_SpeakingList = new BattleRoyaleSpeakingList();
 		m_Toasts = new BattleRoyaleToasts();
+		m_GroundRingCurrent = new BattleRoyaleGroundRing( BR_GROUND_RING_TEXTURE_CURRENT );
+		m_GroundRingNext = new BattleRoyaleGroundRing( BR_GROUND_RING_TEXTURE_NEXT );
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -177,6 +176,11 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
     protected int br_diag_req_toasts = 0;
+    protected int br_diag_req_ground_spawn = 0;
+    protected int br_diag_req_ground_clear = 0;
+    protected int br_diag_ground_color = 4;
+    protected float br_diag_ground_alpha = 0.5;
+    protected ref BattleRoyaleGroundRingTest br_diag_ground_ring;
 
     /**
      *  Fabricate the whole admin spectate overlay payload, so #276-#279 are reachable offline.
@@ -345,6 +349,14 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         if ( !BattleRoyaleDiag.zones_fake )
         {
+            //--- Falling edge: a radius the wire never sends, so Update rebuilds both circles from
+            //--- br_rpc this frame instead of keeping the fake ones until the server moves a circle.
+            if ( br_diag_zone_radius >= 0 )
+            {
+                br_previous_current_play_area_radius = -1;
+                br_previous_future_play_area_radius = -1;
+            }
+
             //--- Marks "not currently faking", which is also what makes the next enable re-centre.
             br_diag_zone_radius = -1;
             return;
@@ -427,6 +439,42 @@ class BattleRoyaleClient: BattleRoyaleBase
         {
             br_diag_req_toasts = BattleRoyaleDiag.req_push_toasts;
             BR_DiagPushToasts();
+        }
+
+        if ( br_diag_req_ground_clear != BattleRoyaleDiag.req_ground_ring_clear )
+        {
+            br_diag_req_ground_clear = BattleRoyaleDiag.req_ground_ring_clear;
+            if ( br_diag_ground_ring )
+                br_diag_ground_ring.Clear();
+        }
+
+        if ( br_diag_req_ground_spawn != BattleRoyaleDiag.req_ground_ring_spawn )
+        {
+            br_diag_req_ground_spawn = BattleRoyaleDiag.req_ground_ring_spawn;
+            PlayerBase ring_player = PlayerBase.Cast( GetGame().GetPlayer() );
+            if ( ring_player )
+            {
+                if ( !br_diag_ground_ring )
+                    br_diag_ground_ring = new BattleRoyaleGroundRingTest();
+                br_diag_ground_ring.Spawn( ring_player.GetPosition(), BattleRoyaleDiag.ground_ring_radius, BattleRoyaleDiag.ground_ring_model, BattleRoyaleDiag.ground_ring_scale, BattleRoyaleDiag.ground_ring_color, BattleRoyaleDiag.ground_ring_alpha, BattleRoyaleDiag.ground_ring_flip );
+                br_diag_ground_color = BattleRoyaleDiag.ground_ring_color;
+                br_diag_ground_alpha = BattleRoyaleDiag.ground_ring_alpha;
+            }
+        }
+
+        //--- Live recolour of the ring already on the ground.
+        bool recolour = false;
+        if ( br_diag_ground_color != BattleRoyaleDiag.ground_ring_color )
+            recolour = true;
+        if ( br_diag_ground_alpha != BattleRoyaleDiag.ground_ring_alpha )
+            recolour = true;
+
+        if ( recolour )
+        {
+            br_diag_ground_color = BattleRoyaleDiag.ground_ring_color;
+            br_diag_ground_alpha = BattleRoyaleDiag.ground_ring_alpha;
+            if ( br_diag_ground_ring )
+                br_diag_ground_ring.ApplyColor( br_diag_ground_color, br_diag_ground_alpha );
         }
     }
 
@@ -524,9 +572,11 @@ class BattleRoyaleClient: BattleRoyaleBase
      *
      *  Two paths:
      *
-     *  ALIVE - the vanilla glasses queue, unchanged and called every frame. That queue is shared
-     *  with real glasses and NVG effects and drains itself each tick, so it self-corrects; edge
-     *  tracking it would fight those other effects.
+     *  ALIVE - the vanilla glasses queue, fed only when the verdict differs from the requester's
+     *  own IsRequesterRunning(). Queued every frame, each drain ran Start() or Stop() and its
+     *  SetDefaultValuesAll(). Diffing against the requester rather than a flag of ours keeps it
+     *  self-correcting: a vanilla StopAllEffects (respawn, death, loading screen) is re-queued on the
+     *  next frame.
      *
      *  SPECTATING - the requester directly. This is exactly what the queue does when it drains
      *  (P:/scripts/4_world/entities/manbase/playerbase.c:9594-9601 calls
@@ -553,6 +603,10 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         if( !IsSpectating() && local_player )
         {
+            PPERequesterBase requester = PPERequesterBank.GetRequester( PPERequesterBank.REQ_BATTLEROYALE );
+            if( requester && requester.IsRequesterRunning() == active )
+                return;
+
             if( active )
                 local_player.QueueAddGlassesEffect( PPERequesterBank.REQ_BATTLEROYALE );
             else
@@ -669,6 +723,13 @@ class BattleRoyaleClient: BattleRoyaleBase
     //! Last admin payload sequence handed to the map addon, so the per-frame push can skip the work
     //! when nothing new has arrived. -1 rather than 0 so the very first payload is always a change.
     int br_previous_admin_map_seq = -1;
+
+    //--- The HUD counters as last painted, diffed after the diag overrides so a forced value paints
+    //--- too. -1000 is outside every value they carry (counts, and the -1/-2 group sentinels).
+    int br_previous_hud_players = -1000;
+    int br_previous_hud_groups = -1000;
+    int br_previous_hud_kills = -1000;
+    int br_previous_hud_audience = -1000;
 
     /**
      *  Announce, exactly once, that this client has finished loading and is controlling its
@@ -874,7 +935,12 @@ class BattleRoyaleClient: BattleRoyaleBase
 #endif
 
 			// Update player and group remaining count
-			PlayerCountChanged( hud_players, hud_groups );
+			if( hud_players != br_previous_hud_players || hud_groups != br_previous_hud_groups )
+			{
+				PlayerCountChanged( hud_players, hud_groups );
+				br_previous_hud_players = hud_players;
+				br_previous_hud_groups = hud_groups;
+			}
 
 			// Fade in/out effect. Both halves touch the player, so the edge is held rather than
 			// consumed while there isn't one - advancing br_previous_* on a playerless frame would
@@ -909,12 +975,20 @@ class BattleRoyaleClient: BattleRoyaleBase
 			}
 
 			// Update player kill count
-			gameplay.UpdateKillCount( hud_kills );
+			if( hud_kills != br_previous_hud_kills )
+			{
+				gameplay.UpdateKillCount( hud_kills );
+				br_previous_hud_kills = hud_kills;
+			}
 
 			//--- How many people are watching this player. Deliberately here rather than in the
 			//--- spectate block further down, which early-returns for anyone who is not spectating -
 			//--- i.e. for exactly the living players this readout is for.
-			gameplay.UpdateAudienceCount( hud_audience );
+			if( hud_audience != br_previous_hud_audience )
+			{
+				gameplay.UpdateAudienceCount( hud_audience );
+				br_previous_hud_audience = hud_audience;
+			}
 
 			// Update match start state
 			if( br_rpc.match_started && !b_MatchStarted )
@@ -952,7 +1026,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 			if ( countdown_display != br_previous_countdown )
 			{
 				br_previous_countdown = countdown_display;
-				i_SecondsRemaining = countdown_display;
 
 				if ( countdown_display > 0 )
 					gameplay.UpdateCountdownTimer( countdown_display );
@@ -1057,6 +1130,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// count comparison on a normal frame and a walk only when the pair actually changed.
 			VigridMapAPI.SetHotZones( br_rpc.hot_zone_centers, br_rpc.hot_zone_radii );
 #endif
+
+			// Both circles drawn on the ground. Cheap per frame: each ring diffs its circle and only
+			// re-cuts when the camera moved, so spectators get it too.
+			UpdateGroundRings();
 
 			// Set top position
 			if ( player )
@@ -1759,9 +1836,10 @@ class BattleRoyaleClient: BattleRoyaleBase
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         BattleRoyaleUtils.Trace("BattleRoyale: FADE IN!");
 
-        //--- The post-process is player-free and always runs; the two inventory/audio calls need a
-        //--- character. A spectator has none, and EnterSpectate() restores the audio buses and stops
-        //--- this requester by class anyway, so an unpaired FadeIn is not left hanging.
+        //--- The post-process is player-free and always runs. GetPlayer() is the corpse while
+        //--- spectating, so the two calls below would land on it: harmless only because SetFade is
+        //--- sent solely from Prepare, before anyone has died. EnterSpectate() also restores the audio
+        //--- buses and stops this requester, so an unpaired FadeIn is not left hanging.
         PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Start();
 
         if( player )
@@ -1785,22 +1863,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         }
     }
 
-    protected void AddPlayerKilled(int increase)
-    {
-        i_Kills += increase;
-        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-        if ( !gameplay )
-            return;
-
-        gameplay.UpdateKillCount(i_Kills);
-    }
-
     protected void OnMatchStarted()
     {
-        if(b_MatchStarted)
-        {
-            Error("Match started already but received another RPC?");
-        }
         VONManager.GetInstance().SetMaxVolume( VoiceLevelShout );
         //VONManager.GetInstance().EnableVoice( true );
         b_MatchStarted = true;
@@ -1814,6 +1878,49 @@ class BattleRoyaleClient: BattleRoyaleBase
      *  The new lobby body may arrive before or after this frame. Everything that needs the body is
      *  left to CheckResetBodyArrived, which waits for the network id the server sent.
      */
+    //! Feed both ground rings the circles this client holds. Anchored on the camera, not the body,
+    //! so a spectator sees the arc around what they are watching.
+    protected void UpdateGroundRings()
+    {
+        //--- zone_settings.json show_ground_rings. Clear() is a no-op once the rings are empty.
+        if ( !BattleRoyaleRPC.GetInstance().ground_rings_enabled )
+        {
+            m_GroundRingCurrent.Clear();
+            m_GroundRingNext.Clear();
+            return;
+        }
+
+        vector anchor = GetGame().GetCurrentCameraPosition();
+
+#ifdef DIAG_DEVELOPER
+        //--- Live per-circle opacity from Map & Zones; a no-op unless a slider moved.
+        m_GroundRingCurrent.SetTexture( "#(argb,8,8,3)color(0.05,0.25,1," + BattleRoyaleDiag.zone_ring_current_alpha + ",ca)" );
+        m_GroundRingNext.SetTexture( "#(argb,8,8,3)color(1,1,1," + BattleRoyaleDiag.zone_ring_next_alpha + ",ca)" );
+#endif
+
+        if ( m_CurrentPlayArea )
+            m_GroundRingCurrent.SetCircle( m_CurrentPlayArea.GetCenter(), m_CurrentPlayArea.GetRadius() );
+        else
+            m_GroundRingCurrent.Clear();
+
+        //--- After LockNewZone the server sends the SAME circle as current and next; drawing both would
+        //--- stack white on blue. Until the next round advertises a new circle, only the blue one shows.
+        bool next_is_current = false;
+        if ( m_CurrentPlayArea && m_FuturePlayArea )
+        {
+            if ( m_CurrentPlayArea.GetCenter() == m_FuturePlayArea.GetCenter() && m_CurrentPlayArea.GetRadius() == m_FuturePlayArea.GetRadius() )
+                next_is_current = true;
+        }
+
+        if ( m_FuturePlayArea && !next_is_current )
+            m_GroundRingNext.SetCircle( m_FuturePlayArea.GetCenter(), m_FuturePlayArea.GetRadius() );
+        else
+            m_GroundRingNext.Clear();
+
+        m_GroundRingCurrent.Update( anchor );
+        m_GroundRingNext.Update( anchor );
+    }
+
     protected void ResetForNewMatch()
     {
         BattleRoyaleUtils.Info("[InPlace] client reset for the next match");
@@ -1838,12 +1945,14 @@ class BattleRoyaleClient: BattleRoyaleBase
         b_MatchStarted = false;
         VONManager.GetInstance().SetMaxVolume( VoiceLevelWhisper );
 
-        b_IsReady = false;
-        i_Kills = 0;
-
         //--- The edge trackers, back to their initial values so the next push is always a change.
         m_CurrentPlayArea = NULL;
         m_FuturePlayArea = NULL;
+        //--- Local objects in a world that survives the reset: nothing else would delete them.
+        if ( m_GroundRingCurrent )
+            m_GroundRingCurrent.Clear();
+        if ( m_GroundRingNext )
+            m_GroundRingNext.Clear();
         br_previous_current_play_area_center = "0 0 0";
         br_previous_current_play_area_radius = 0;
         br_previous_future_play_area_center = "0 0 0";
@@ -1938,15 +2047,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void ReadyUp()
     {
-        //if(b_IsReady)
-        //    return; //already ready!
-
-        b_IsReady = true; //this only runs once
-
         Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
         //--- No target: the server resolves the subject from the RPC sender identity. Sending one
         //--- would be ignored, and inviting it back is how the ready-up-anyone exploit worked.
-        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false );
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, true );
 
     }
 
@@ -2385,14 +2489,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     void RequestLastMatch()
     {
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLastMatch", NULL, true );
-    }
-
-    void StartMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-    {
-        if ( type == CallType.Client )
-        {
-            OnMatchStarted();
-        }
     }
 
     override void OnPlayerTick(PlayerBase player, float timeslice)

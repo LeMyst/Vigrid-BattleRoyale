@@ -14,7 +14,9 @@
  *
  *      #ifdef VIGRID_AUTORUN
  *          VigridAutoRunAPI.SetAllowed(false);       // client, before disabling input
+ *          VigridAutoRunAPI.SetAllowedForAll(false); // server, with CancelFor, at the freeze
  *          VigridAutoRunAPI.CancelFor(player);       // server, ON THE LINE ABOVE the freeze
+ *          VigridAutoRunAPI.SetAllowedForAll(true);  // server, once every freeze is lifted
  *      #endif
  *
  *  The two halves are deliberately named APART rather than overloaded on their argument. The guards
@@ -45,6 +47,18 @@ class VigridAutoRunAPI
             return;
 
         VigridAutoRunState.Forget(identity.GetPlainId());
+    }
+
+    /**
+     *  Allow or refuse new holds from every client. While refused, a client's request is answered
+     *  as an "off", which CancelFor has already made a no-op for a frozen player.
+     *
+     *  CancelFor alone only covers the hold in progress: without this, a modified client could send
+     *  a fresh speed after the freeze and overwrite it. Idempotent; a fresh server starts allowed.
+     */
+    static void SetAllowedForAll(bool allowed)
+    {
+        VigridAutoRunState.SetAllowed(allowed);
     }
 
     //! Whether the server is currently forcing a movement speed on this player on auto-run's behalf.

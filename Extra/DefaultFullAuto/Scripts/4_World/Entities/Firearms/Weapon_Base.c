@@ -23,3 +23,4 @@ modded class Weapon_Base
 		}
 	}
 }
+#endif
