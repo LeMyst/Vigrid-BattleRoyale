@@ -17,7 +17,7 @@ static const string VIGRID_AUTORUN_PREFIX = "Vigrid-BattleRoyale/Extra/AutoRun/"
 #ifdef VIGRID_AUTORUN_TRACE_ENABLED
     static const int VIGRID_AUTORUN_LOG_LEVEL = 4; // Trace
 #else
-    static const int VIGRID_AUTORUN_LOG_LEVEL = 0; // Error only
+    static const int VIGRID_AUTORUN_LOG_LEVEL = 1; // Warn
 #endif
 
 //--- Inputs. Resolved by name with GetUApi().GetInputByName rather than through the generated

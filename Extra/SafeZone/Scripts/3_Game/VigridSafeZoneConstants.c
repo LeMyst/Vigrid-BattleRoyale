@@ -16,5 +16,5 @@ static const string VIGRID_SAFEZONE_VERSION = "0.1.0";
 #ifdef VIGRID_SAFEZONE_TRACE_ENABLED
     static const int VIGRID_SAFEZONE_LOG_LEVEL = 4; // Trace
 #else
-    static const int VIGRID_SAFEZONE_LOG_LEVEL = 0; // Error only
+    static const int VIGRID_SAFEZONE_LOG_LEVEL = 1; // Warn
 #endif

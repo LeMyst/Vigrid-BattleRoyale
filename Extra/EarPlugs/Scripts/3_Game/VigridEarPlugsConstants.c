@@ -18,7 +18,7 @@ static const string VIGRID_EARPLUGS_PREFIX = "Vigrid-BattleRoyale/Extra/EarPlugs
 #ifdef VIGRID_EARPLUGS_TRACE_ENABLED
     static const int VIGRID_EARPLUGS_LOG_LEVEL = 4; // Trace
 #else
-    static const int VIGRID_EARPLUGS_LOG_LEVEL = 0; // Error only
+    static const int VIGRID_EARPLUGS_LOG_LEVEL = 1; // Warn
 #endif
 
 //--- Preferences. The addon's own profile folder, deliberately not the host mod's, so that

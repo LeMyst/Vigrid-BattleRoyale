@@ -20,7 +20,7 @@ static const string VIGRID_PARTY_PREFIX = "Vigrid-BattleRoyale/Party/";
 #ifdef VIGRID_PARTY_TRACE_ENABLED
     static const int VIGRID_PARTY_LOG_LEVEL = 4; // Trace
 #else
-    static const int VIGRID_PARTY_LOG_LEVEL = 0; // Error only
+    static const int VIGRID_PARTY_LOG_LEVEL = 1; // Warn
 #endif
 
 //--- Settings + persistence. Party's own profile folder, deliberately NOT the Battle Royale one,

@@ -23,7 +23,7 @@ static const int MENU_VIGRID_MAP = 178;
 #ifdef VIGRID_MAP_TRACE_ENABLED
     static const int VIGRID_MAP_LOG_LEVEL = 4; // Trace
 #else
-    static const int VIGRID_MAP_LOG_LEVEL = 0; // Error only
+    static const int VIGRID_MAP_LOG_LEVEL = 1; // Warn
 #endif
 
 //--- Settings. The addon's own profile folders, deliberately not the host mod's, so that

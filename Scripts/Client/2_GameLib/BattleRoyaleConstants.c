@@ -16,7 +16,7 @@ static const string BATTLEROYALE_VERSION = "0.2.1-Vigrid";
 #ifdef BR_TRACE_ENABLED
 	static const int BATTLEROYALE_LOG_LEVEL = 4; // Trace
 #else
-	static const int BATTLEROYALE_LOG_LEVEL = 0; // Error
+	static const int BATTLEROYALE_LOG_LEVEL = 1; // Warn
 #endif
 
 
