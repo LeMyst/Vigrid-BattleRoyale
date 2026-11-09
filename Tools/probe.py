@@ -126,6 +126,18 @@ PROBES = [
      append('\nclass BRProbe2 { void F() { string p = '
             '"Vigrid-BattleRoyale\\\\GUI\\\\layouts\\\\death_screen.layout"; } }\n')),
 
+    ("asset-paths: config.cpp inputs= names a renamed Inputs.xml", "asset-paths",
+     "Scripts/Client/config.cpp",
+     replace('"Vigrid-BattleRoyale/Data/Inputs.xml"', '"Vigrid-BattleRoyale/Data/Input.xml"')),
+
+    ("asset-paths: script module folder that does not exist", "asset-paths",
+     "Scripts/Client/config.cpp",
+     replace('"Vigrid-BattleRoyale/Scripts/Client/2_GameLib"',
+             '"Vigrid-BattleRoyale/Scripts/Client/2_GameLibX"')),
+
+    ("asset-paths: loading screen missing from Data/LoadingScreens.json", "asset-paths",
+     "Data/LoadingScreens.json", replace("br_loading_12.edds", "br_loading_13.edds")),
+
     ("guards: server file loses #ifdef SERVER", "guards",
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",
      replace("#ifdef SERVER", "//probe")),
@@ -159,6 +171,18 @@ PROBES = [
      "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleServer.c",
      replace('AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", this);',
              'AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "ProbeHandlerThatDoesNotExist", this);'),
+     True),
+
+    #  Registered through a `const string`, which the check used to skip entirely.
+    ("rpc: constant-named registration loses its handler", "rpc",
+     "Party/Scripts/3_Game/VigridPartyConstants.c",
+     replace('VP_RPC_SETTINGS = "VP_Settings"', 'VP_RPC_SETTINGS = "VP_Setting"'),
+     True),
+
+    ("rpc: SendRPC on the wrong namespace", "rpc",
+     "Scripts/Client/5_Mission/BattleRoyale/Client/BattleRoyaleClient.c",
+     replace('SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp"',
+             'SendRPC( RPC_DAYZBR_NAMESPACE, "PlayerReadyUp"'),
      True),
 
     ("version: mod.cpp drifts from the constant", "version",

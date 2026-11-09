@@ -552,6 +552,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		float world_size = 0;
 		float factor;
 		float smallest;
+		float final_radius;
+		float next_radius;
+		float configured_final;
 
 		//--- Derived ladder locals (v7). Same reason as above: one declaration per name per method
 		//--- scope, so they are here rather than at first use.
@@ -587,6 +590,27 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			}
 
 			BattleRoyaleUtils.Info("[BattleRoyaleZoneData] scale_sizes_to_world: world " + world_size + " / reference " + reference_world_size + " = x" + factor + " on the span above the final circle. Largest circle is now " + static_sizes[static_sizes.Count() - 1] + ".");
+		}
+
+		//--- (0a) The final circle needs a real radius: at <= 0 the round states' zone_is_real guard
+		//--- switches zone damage off for the whole endgame. The shipped 35 m, or half the next circle.
+		configured_final = 1;
+		if (static_sizes && static_sizes.Count() > 0)
+			configured_final = static_sizes[0];
+
+		if (configured_final <= 0)
+		{
+			final_radius = 35;
+
+			if (static_sizes.Count() > 1)
+			{
+				next_radius = static_sizes[1];
+				if (next_radius > 0 && next_radius <= final_radius)
+					final_radius = next_radius / 2;
+			}
+
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] static_sizes[0], the final circle, is " + configured_final + " m - using " + final_radius + " m for this boot. A radius must be greater than zero.");
+			static_sizes[0] = final_radius;
 		}
 
 		//--- (0b) DERIVE num_zones from the map (#284 point 2), after any scaling above so it sees the
@@ -728,6 +752,14 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		{
 			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] min_zone_num (" + min_zone_num + ") exceeds num_zones (" + num_zones + ") - clamping it.");
 			min_zone_num = num_zones;
+		}
+
+		//--- At <= 0 the starting-zone floor (num_zones - min_zone_num + 1) lies past the last zone,
+		//--- so the duration bound can open a match on a zone that does not exist and skip every round.
+		if (min_zone_num < 1)
+		{
+			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] min_zone_num (" + min_zone_num + ") is below 1 - clamping it to 1. A match always plays at least one circle.");
+			min_zone_num = 1;
 		}
 
 		//--- (5) Hot zones. Two parallel arrays edited by hand, so the failure mode is a half-finished

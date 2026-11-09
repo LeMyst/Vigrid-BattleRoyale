@@ -41,11 +41,11 @@ they cost.
 | Check | What it asserts |
 |---|---|
 | `stringtable` | every `STR_*` referenced is defined, **in its own addon's** table |
-| `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file |
+| `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file, in scripts, layouts, imagesets, JSON, `config.cpp` (including `files[]` folders and `samples[]`) and `mod.cpp` |
 | `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls into them are `#ifdef`-guarded |
 | `menu-ids` | no two `MENU_*` constants share an id |
-| `rpc` | every `AddRPC` name has a matching CF handler method |
+| `rpc` | every `AddRPC` name, literal or `const string`, has a CF handler method; every `SendRPC` has an `AddRPC` on the same namespace |
 | `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |
 | `configs` | `CfgPatches` names unique, `requiredAddons` resolve to a built addon (never a `config.cpp.disabled` one), no stripped vanilla parents, no missing array commas |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |

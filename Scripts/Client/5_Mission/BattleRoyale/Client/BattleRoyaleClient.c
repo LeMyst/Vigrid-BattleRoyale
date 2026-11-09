@@ -8,11 +8,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected ref BattleRoyaleGroundRing m_GroundRingCurrent;
     protected ref BattleRoyaleGroundRing m_GroundRingNext;
 
-    protected int i_Kills; //TODO: this needs to be done differently (most likely)
     protected bool b_MatchStarted;
-    protected int i_SecondsRemaining;
-
-    protected bool b_IsReady;
 
     //--- One-shot: we have told the server we finished loading. See SendLoadedInOnce().
     protected bool b_SentLoadedIn;
@@ -90,7 +86,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         BattleRoyaleUtils.Trace("BattleRoyaleClient::BattleRoyaleClient");
 
-        b_IsReady = false;
         b_SentLoadedIn = false;
         b_MatchStarted = false;
         b_Spectating = false;
@@ -99,8 +94,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         b_TintActive = false;
         m_PPESignature = -1;
         m_PPENextLogMs = 0;
-        i_Kills = 0;
-        i_SecondsRemaining = 0;
 
         Init();
     }
@@ -1033,7 +1026,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 			if ( countdown_display != br_previous_countdown )
 			{
 				br_previous_countdown = countdown_display;
-				i_SecondsRemaining = countdown_display;
 
 				if ( countdown_display > 0 )
 					gameplay.UpdateCountdownTimer( countdown_display );
@@ -1871,22 +1863,8 @@ class BattleRoyaleClient: BattleRoyaleBase
         }
     }
 
-    protected void AddPlayerKilled(int increase)
-    {
-        i_Kills += increase;
-        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
-        if ( !gameplay )
-            return;
-
-        gameplay.UpdateKillCount(i_Kills);
-    }
-
     protected void OnMatchStarted()
     {
-        if(b_MatchStarted)
-        {
-            Error("Match started already but received another RPC?");
-        }
         VONManager.GetInstance().SetMaxVolume( VoiceLevelShout );
         //VONManager.GetInstance().EnableVoice( true );
         b_MatchStarted = true;
@@ -1966,9 +1944,6 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- whisper-only, as on a fresh connection (VONManagerImplementation.max_voice_level).
         b_MatchStarted = false;
         VONManager.GetInstance().SetMaxVolume( VoiceLevelWhisper );
-
-        b_IsReady = false;
-        i_Kills = 0;
 
         //--- The edge trackers, back to their initial values so the next push is always a change.
         m_CurrentPlayArea = NULL;
@@ -2072,11 +2047,6 @@ class BattleRoyaleClient: BattleRoyaleBase
 
     void ReadyUp()
     {
-        //if(b_IsReady)
-        //    return; //already ready!
-
-        b_IsReady = true; //this only runs once
-
         Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
         //--- No target: the server resolves the subject from the RPC sender identity. Sending one
         //--- would be ignored, and inviting it back is how the ready-up-anyone exploit worked.
@@ -2519,14 +2489,6 @@ class BattleRoyaleClient: BattleRoyaleBase
     void RequestLastMatch()
     {
         GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLastMatch", NULL, true );
-    }
-
-    void StartMatch(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-    {
-        if ( type == CallType.Client )
-        {
-            OnMatchStarted();
-        }
     }
 
     override void OnPlayerTick(PlayerBase player, float timeslice)

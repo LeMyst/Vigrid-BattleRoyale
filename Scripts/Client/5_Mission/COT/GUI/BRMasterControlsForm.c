@@ -175,6 +175,7 @@ class BRMasterControlsForm: JMFormBase
         wrapper = UIActionManager.CreateGridSpacer( m_ActionsWrapper, 1, 4 );
             UIActionManager.CreateText( wrapper, "#STR_BR_COT_EVENTMANAGER" );
 #ifdef EXPANSIONMODMISSIONS
+            UIActionManager.CreateButton( wrapper, "#STR_BR_COT_AIRDROP_CIRCLE", this, "AirdropInCircle_Clicked" );
             UIActionManager.CreateButton( wrapper, "#STR_BR_COT_SPAWNAIRDROP", this, "SpawnAirdrop" );
 #endif
 
@@ -230,7 +231,8 @@ class BRMasterControlsForm: JMFormBase
         if ( now >= m_NextRosterPollMs )
         {
             m_NextRosterPollMs = now + BR_ADMIN_ROSTER_INTERVAL_MS;
-            m_Module.RequestRoster();
+            if ( m_Module.CanRequestRoster() )
+                m_Module.RequestRoster();
         }
 
         if ( !m_ZoneRequested )
@@ -835,6 +837,14 @@ class BRMasterControlsForm: JMFormBase
             return;
 
         m_Module.SendAdminAction( BattleRoyaleAdminAction.ANNOUNCE_PLAYER, 0, AnnounceSeconds(), SelectedUid(), m_edit_Announce.GetText() );
+    }
+
+    void AirdropInCircle_Clicked(UIEvent eid, UIActionBase action)
+    {
+        if ( eid != UIEvent.CLICK )
+            return;
+
+        m_Module.SendAdminAction( BattleRoyaleAdminAction.AIRDROP_IN_CIRCLE );
     }
 
     void ZoneLockNow_Clicked(UIEvent eid, UIActionBase action)

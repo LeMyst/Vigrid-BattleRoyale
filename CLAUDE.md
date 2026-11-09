@@ -151,7 +151,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 
 | Check | Catches |
 |---|---|
-| `asset-paths` | every `Vigrid-BattleRoyale/...` asset reference resolves |
+| `asset-paths` | every `Vigrid-BattleRoyale/...` asset reference resolves, in scripts, layouts, imagesets, JSON, `config.cpp` (including `files[]` folders and `samples[]`) and `mod.cpp` |
 | `configs` | `CfgPatches` names unique, `requiredAddons` resolve to a built addon (never a `config.cpp.disabled` one) **and name no optional mod's addon**, no stripped vanilla parents |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` class — a bug an offline client cannot see |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
@@ -163,7 +163,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
 | `inputs` | every `Inputs.xml` parses, and its three sections agree |
 | `menu-ids` | no two `MENU_*` constants share an id across the PBOs |
-| `rpc` | every `AddRPC` name has a matching CF handler method |
+| `rpc` | every `AddRPC` name, literal or `const string`, has a CF handler method; every `SendRPC` has an `AddRPC` on the same namespace |
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
 | `stringtable` | every `STR_*` key referenced is defined, in its own addon's table |
 | `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |

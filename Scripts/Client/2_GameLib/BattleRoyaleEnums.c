@@ -88,6 +88,7 @@ enum BattleRoyaleAdminAction
     //--- These values travel on the wire, so inserting one renumbers every value after it - and the
     //--- append-only rule is not worth bending for tidiness.
     PLAYER_ADD,              //!< put a removed player back on the roster - the undo for PLAYER_REMOVE
+    AIRDROP_IN_CIRCLE,       //!< the round's own SpawnAirdrop; "at me" stays on the legacy SpawnAirdrop id
 
     COUNT //Do not move this
 }

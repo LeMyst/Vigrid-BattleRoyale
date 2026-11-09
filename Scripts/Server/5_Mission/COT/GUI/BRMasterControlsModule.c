@@ -11,6 +11,10 @@ modded class BRMasterControlsModule
     //--- one would let whichever poll landed first silently starve the other.
     protected ref map<string, int> m_RosterCooldown = new map<string, int>();
 
+    //--- uid|action -> earliest time its next refusal may be logged, and how many were dropped since.
+    protected ref map<string, int> m_RefusalLogNextMs = new map<string, int>();
+    protected ref map<string, int> m_RefusalLogDropped = new map<string, int>();
+
     //--- Party id -> match-local index, assigned first-seen and kept for the match. See
     //--- ResolvePartyIndex for why it is not derived per reply. Static so the in-place reset
     //--- (BattleRoyaleInPlaceReset) can clear it without reaching into COT's module list.
@@ -93,8 +97,38 @@ modded class BRMasterControlsModule
         if ( has_permission )
             return true;
 
-        BattleRoyaleUtils.Warn("[DayZBR COT] Rejected unauthorized " + action_name + " request from " + BattleRoyaleServer.GetIdentityLogName(sender) + " (needs " + permission + " or admins_steamid64)");
+        WarnRefusal( sender, action_name, "[DayZBR COT] Rejected unauthorized " + action_name + " request from " + BattleRoyaleServer.GetIdentityLogName(sender) + " (needs " + permission + " or admins_steamid64)" );
         return false;
+    }
+
+    //--- Rate-limited Warn for a refused request: one line per uid and action per
+    //--- BR_ADMIN_REFUSAL_LOG_INTERVAL_MS, carrying how many were dropped since the last one.
+    protected void WarnRefusal( PlayerIdentity sender, string action_name, string message )
+    {
+        string key = action_name;
+        if ( sender )
+            key = sender.GetPlainId() + "|" + action_name;
+
+        int now = GetGame().GetTime();
+        int next_ms;
+        int dropped = 0;
+        if ( m_RefusalLogNextMs.Find( key, next_ms ) && now < next_ms )
+        {
+            m_RefusalLogDropped.Find( key, dropped );
+            m_RefusalLogDropped.Set( key, dropped + 1 );
+            return;
+        }
+
+        m_RefusalLogNextMs.Set( key, now + BR_ADMIN_REFUSAL_LOG_INTERVAL_MS );
+
+        string line = message;
+        if ( m_RefusalLogDropped.Find( key, dropped ) )
+        {
+            m_RefusalLogDropped.Remove( key );
+            line = line + " (" + dropped + " more since the last line)";
+        }
+
+        BattleRoyaleUtils.Warn( line );
     }
 
     //--- Attribute an action to the admin who took it. A no-op when no webhook connection is
@@ -158,17 +192,19 @@ modded class BRMasterControlsModule
         }
 
 #ifdef EXPANSIONMODMISSIONS
-		//--- Broadcast the announcement on the mod's OWN wire, not Expansion's. The payload is the
-		//--- bare stringtable key with no leading '#'; BattleRoyaleRPC.NotificationMessage localises
-		//--- it on arrival, so each client reads it in its own language.
-		//---
-		//--- This is the same Param7 shape BattleRoyaleState.MessagePlayersUntranslatedTimed sends,
-		//--- written out here because this class is a COT module rather than a state and so has no
-		//--- access to those helpers. The five trailing strings are the %1..%5 substitutions; this
-		//--- message takes none.
-		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( "STR_BR_COT_AIRDROP_SENT", DAYZBR_MSG_TIME, "", "", "", "", "" ), true );
+		if ( !ExpansionMissionModule.s_Instance )
+		{
+			BattleRoyaleUtils.Warn("[DayZBR COT] SpawnAirdrop ignored: Expansion's mission module is not running.");
+			return;
+		}
+
 		ExpansionMissionModule.s_Instance.CallAirdrop(sender_man.GetPosition());
-		ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Called an airdrop." );
+
+		//--- To the admin only and after the call: this drop lands on them, not in the match's circle.
+		//--- Mod's own wire, bare key; BattleRoyaleRPC.NotificationMessage localises it on arrival. Same
+		//--- Param7 shape as BattleRoyaleState.MessagePlayersUntranslatedTimed, which a COT module cannot reach.
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "NotificationMessage", new Param7<string, float, string, string, string, string, string>( "STR_BR_COT_AIRDROP_SENT", DAYZBR_MSG_TIME, "", "", "", "", "" ), true, senderRPC );
+		ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Called an airdrop on their own position." );
 #endif
     }
 
@@ -242,8 +278,12 @@ modded class BRMasterControlsModule
             case BattleRoyaleAdminAction.ZONE_SELFTEST:
                 Action_ZoneSelfTest( senderRPC, arg_i );
             break;
+            case BattleRoyaleAdminAction.AIRDROP_IN_CIRCLE:
+                Action_AirdropInCircle( senderRPC );
+            break;
             default:
-                BattleRoyaleUtils.Warn("[DayZBR COT] Unknown admin action " + action + " from " + BattleRoyaleServer.GetIdentityLogName(senderRPC));
+                //--- Keyed on a fixed name, not the action value: a client choosing the value must not grow the map.
+                WarnRefusal( senderRPC, "UnknownAdminAction", "[DayZBR COT] Unknown admin action " + action + " from " + BattleRoyaleServer.GetIdentityLogName(senderRPC) );
             break;
         }
     }
@@ -617,6 +657,48 @@ modded class BRMasterControlsModule
             cleaned = cleaned.SubstringUtf8( 0, BR_ANNOUNCE_MAX_CHARS );
 
         return cleaned;
+    }
+
+    //--- The round's own SpawnAirdrop, the path the automatic drops take: a safe spot inside the
+    //--- incoming circle, announced to everyone by the round. Only a round has such a circle.
+    protected void Action_AirdropInCircle( PlayerIdentity senderRPC )
+    {
+        JMPlayerInstance instance;
+        if ( !AuthorizeAdminAction( senderRPC, BR_PERM_MATCH_CONTROL, "AirdropInCircle", instance ) )
+            return;
+
+#ifdef EXPANSIONMODMISSIONS
+        if ( !ExpansionMissionModule.s_Instance )
+        {
+            BattleRoyaleUtils.Warn("[Admin] airdrop-in-circle ignored: Expansion's mission module is not running.");
+            return;
+        }
+
+        BattleRoyaleServer br_server;
+        if ( !Class.CastTo( br_server, GetBR() ) )
+            return;
+
+        BattleRoyaleRound round;
+        if ( !Class.CastTo( round, br_server.GetCurrentState() ) )
+        {
+            BattleRoyaleUtils.Warn("[Admin] airdrop-in-circle ignored: no round with a circle is in play (lobby, warm-up or final round).");
+            return;
+        }
+
+        //--- SpawnAirdrop dereferences both unguarded.
+        BattleRoyaleZone zone = round.GetZone();
+        if ( !zone || !zone.GetArea() )
+        {
+            BattleRoyaleUtils.Warn("[Admin] airdrop-in-circle ignored: this round has no circle.");
+            return;
+        }
+
+        round.SpawnAirdrop();
+        BattleRoyaleUtils.Info("[Admin] called an airdrop inside the circle.");
+        ReportAdminAction( instance, BR_WEBHOOK_TYPE_MATCH, "Called an airdrop inside the circle." );
+#else
+        BattleRoyaleUtils.Warn("[Admin] airdrop-in-circle ignored: airdrops need Expansion's missions module.");
+#endif
     }
 
     protected void Action_ZoneLockNow( PlayerIdentity senderRPC )

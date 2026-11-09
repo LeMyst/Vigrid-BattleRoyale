@@ -178,6 +178,19 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 			ref array<string> keptTypes = CopyStrings(poi_resolve_types);
 			ref array<string> keptExclude = CopyStrings(poi_scan_exclude);
 
+			//--- The elements go into an OWNING array of their own, so the in-place clear cannot free them.
+			array<ref BattleRoyaleOverridePOIPosition> keptOverrides = new array<ref BattleRoyaleOverridePOIPosition>();
+			BattleRoyaleOverridePOIPosition keptOverride;
+			int i;
+			if (override_poi_positions)
+			{
+				for (i = 0; i < override_poi_positions.Count(); i++)
+				{
+					keptOverride = override_poi_positions.Get(i);
+					keptOverrides.Insert(keptOverride);
+				}
+			}
+
 			if (!JsonFileLoader<BattleRoyalePOIsData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
 
@@ -186,6 +199,9 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 
 			if (!poi_scan_exclude || poi_scan_exclude.Count() == 0)
 				poi_scan_exclude = keptExclude;
+
+			if (!override_poi_positions || override_poi_positions.Count() == 0)
+				override_poi_positions = keptOverrides;
 		}
 	}
 
