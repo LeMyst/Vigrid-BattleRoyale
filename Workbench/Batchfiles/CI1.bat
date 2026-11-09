@@ -210,6 +210,10 @@ if not exist "%workDrive%DZ\vehicles\proxies" mkdir "%workDrive%DZ\vehicles\prox
 if not exist "%workDrive%DZ\vehicles\proxies\bus_cargo.p3d" echo.>"%workDrive%DZ\vehicles\proxies\bus_cargo.p3d"
 if not exist "%workDrive%DZ\vehicles\proxies\bus_driver.p3d" echo.>"%workDrive%DZ\vehicles\proxies\bus_driver.p3d"
 
+REM The loop below writes one marker per PBO of THIS build. Nothing else ever empties the folder, so
+REM without this every PBO the mod had ever built kept its marker and was never deleted as an orphan.
+if defined modName del /Q "%workDrive%Temp\PboNames\%modName%\*.pbo" 2>nul
+
 REM relDir is the PBO folder relative to the source checkout, e.g. Scripts\Client. It is derived
 REM by cutting srcRoot off the front of the path. It used to be derived by deleting every
 REM "\PrefixLinkRoot\" from the path, which only worked while sources were read through the

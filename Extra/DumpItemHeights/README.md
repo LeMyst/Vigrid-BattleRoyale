@@ -177,11 +177,11 @@ Rename `config.cpp.disabled` → `config.cpp` and rebuild; the folder becomes it
 delete `<ClientProfileDirectory>\item_heights.csv` (a run with the CSV already present skips) and
 launch `LaunchOffline.bat`.
 
-To park it again, rename back and rebuild — then ⚠️ **delete the orphaned PBO by hand.** A rebuild
-after the rename does **not** remove it: measured 2026-08-13, `Deploy.bat` reported success and
+To park it again, rename back and rebuild. Since 2026-11-08 the rebuild deletes the orphaned PBO
+itself. Before that it did **not**: measured 2026-08-13, `Deploy.bat` reported success and
 `extra_dumpitemheights.pbo` was still sitting in `%ModBuildDirectory%@Vigrid-BattleRoyale\Addons\`
 with its pre-rename timestamp, so the addon would have carried on loading despite being "disabled".
-Both files have to go:
+Building from an older checkout, check that both files are gone:
 
 ```
 extra_dumpitemheights.pbo
