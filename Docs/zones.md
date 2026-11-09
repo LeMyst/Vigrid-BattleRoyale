@@ -158,14 +158,14 @@ Both circles are also drawn on the terrain, client-side only, coloured as on the
 - ⚠️ **`model.cfg` is load-bearing.** Without `CfgModels.ground_segment.sections[] = {"camo"}` binarize drops the selection and `SetObjectTexture` runs and changes nothing.
 - **Engine decals were tried and are a dead end:** no terrain entity is reachable from script, `CreateDecal(NULL, ...)` is an access violation, and on a real object it rejects rvmats. The quads also do not climb rocks: a flat segment cannot follow a rock's curve.
 - Tuning is in the diag menu, **Map & Zones → Ground Ring**, which lays a test ring around the player with live colour and opacity. Offline, set `Zone Radius` to ~150 **before** `Fake Zones`, since the default 1500 m circle is beyond the 250 m draw radius.
-- The near-camera arc is shared code, `BattleRoyaleRingArc`. `BattleRoyaleGroundRing` (quads) and `BattleRoyaleZoneHaze` (particles) each subclass it.
+- The near-camera arc is shared code, `BattleRoyaleRingArc`. `BattleRoyaleGroundRing` (quads) and `BattleRoyaleZoneMotes` (particles) each subclass it.
 
-### The haze on the current edge
+### The motes on the current edge
 
-The **current** circle only also gets a thin gas haze, which uses vanilla's contaminated-area edge gas (`ParticleList.CONTAMINATED_AREA_GAS_AROUND`, a 20 m emitter box). It is laid out as follows:
+The **current** circle only also gets small blue lights rising slowly off the line. They come from `BattleRoyaleZoneMotes` and our own `Data/particles/zone_edge_motes.ptc`, registered as `ParticleList.BR_ZONE_EDGE_MOTES`. A `.ptc` is plain text: the effect is tuned by editing that file and rebuilding, and its tint lives there too, since `EmitorParam` has no colour. The effect is built as follows:
 
-- one emitter every 20 m, as on vanilla's outer ring;
-- each emitter set 10 m **outside** the edge, so the gas sits on the lethal side;
-- the birth rate scaled to `BR_ZONE_HAZE_DENSITY` (0.5).
+- each emitter is a 10 m strip turned along the tangent, one per 10 m;
+- there are two emitters per strip: `sparks1.emat` motes, plus a few faint `glow1.emat` halos;
+- the motes drift up 3 to 4 m and fade out.
 
-It is thinned on purpose: a wall dense enough to read from afar would also be cover to hide in. The ring uses about 25 particles out of the shared 10 000-particle pool. If the pool runs dry, the rest of the arc waits for the next re-cut. The haze uses the same `show_ground_rings` switch as the quads. `EmitorParam` has no colour, so the tint is vanilla's own; another colour needs a custom `.ptc`. Live slider: **Map & Zones → Zone Haze Density**.
+A vanilla contaminated-area gas was tried first. Myst rejected it on 2026-11-09 because the smoke did not render well. The motes use about 50 emitters out of the shared 10 000-particle pool; if the pool runs dry, the rest of the arc waits for the next re-cut. They share the `show_ground_rings` switch with the quads. Live slider: **Map & Zones → Zone Motes Density**, which scales the birth rate.

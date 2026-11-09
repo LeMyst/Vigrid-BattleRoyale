@@ -1,0 +1,58 @@
+EffectDef {
+ Emitors {
+  EmitorDef motes {
+   ShapeType Box
+   ShapeSize 0.3 0 10
+   ConeAngle 20 0 20
+   MaxNum 80
+   BirthRate 10
+   BirthRateRND 3
+   Material "{009C2EBAACD2D72A}Graphics/Particles/materials/fire/sparks1.emat"
+   SizeMultiplier 0.06
+   SizeRND 0.03
+   StretchMultiplier 0.5
+   Velocity 0.4
+   VelocityRND 0.3
+   AirResistance 0.3
+   AirResistanceRND 0.1
+   GravityMultiply -0.02
+   GravityMultiplyRND 0.01
+   Wind 0.2
+   LifeTime 5
+   LifeTimeRND 2
+   Color {
+    0 0.45 0.75 1 1 0.1 0.3 1
+   }
+   Alpha {
+    0 0 0.15 1 0.7 0.8 1 0
+   }
+   Size {
+    0 0.5 0.4 1 1 0.3
+   }
+  }
+  EmitorDef glows {
+   ShapeType Box
+   ShapeSize 0.3 0 10
+   ConeAngle 20 0 20
+   MaxNum 10
+   BirthRate 1
+   BirthRateRND 0.5
+   Material "{021B8936F746F88B}Graphics/Particles/materials/glow/glow1.emat"
+   SizeMultiplier 0.4
+   SizeRND 0.15
+   Velocity 0.3
+   VelocityRND 0.2
+   AirResistance 0.3
+   GravityMultiply -0.02
+   Wind 0.2
+   LifeTime 4
+   LifeTimeRND 1
+   Color {
+    0 0.2 0.45 1 1 0.05 0.25 1
+   }
+   Alpha {
+    0 0 0.2 0.3 1 0
+   }
+  }
+ }
+}
