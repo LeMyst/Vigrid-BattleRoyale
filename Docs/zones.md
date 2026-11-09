@@ -158,3 +158,14 @@ Both circles are also drawn on the terrain, client-side only, coloured as on the
 - ⚠️ **`model.cfg` is load-bearing.** Without `CfgModels.ground_segment.sections[] = {"camo"}` binarize drops the selection and `SetObjectTexture` runs and changes nothing.
 - **Engine decals were tried and are a dead end:** no terrain entity is reachable from script, `CreateDecal(NULL, ...)` is an access violation, and on a real object it rejects rvmats. The quads also do not climb rocks: a flat segment cannot follow a rock's curve.
 - Tuning is in the diag menu, **Map & Zones → Ground Ring**, which lays a test ring around the player with live colour and opacity. Offline, set `Zone Radius` to ~150 **before** `Fake Zones`, since the default 1500 m circle is beyond the 250 m draw radius.
+- The near-camera arc is shared code, `BattleRoyaleRingArc`. `BattleRoyaleGroundRing` (quads) and `BattleRoyaleZoneHaze` (particles) each subclass it.
+
+### The haze on the current edge
+
+The **current** circle only also gets a thin gas haze, which uses vanilla's contaminated-area edge gas (`ParticleList.CONTAMINATED_AREA_GAS_AROUND`, a 20 m emitter box). It is laid out as follows:
+
+- one emitter every 20 m, as on vanilla's outer ring;
+- each emitter set 10 m **outside** the edge, so the gas sits on the lethal side;
+- the birth rate scaled to `BR_ZONE_HAZE_DENSITY` (0.5).
+
+It is thinned on purpose: a wall dense enough to read from afar would also be cover to hide in. The ring uses about 25 particles out of the shared 10 000-particle pool. If the pool runs dry, the rest of the arc waits for the next re-cut. The haze uses the same `show_ground_rings` switch as the quads. `EmitorParam` has no colour, so the tint is vanilla's own; another colour needs a custom `.ptc`. Live slider: **Map & Zones → Zone Haze Density**.
