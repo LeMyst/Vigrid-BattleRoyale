@@ -11,6 +11,10 @@ modded class BRMasterControlsModule
     //--- one would let whichever poll landed first silently starve the other.
     protected ref map<string, int> m_RosterCooldown = new map<string, int>();
 
+    //--- uid|action -> earliest time its next refusal may be logged, and how many were dropped since.
+    protected ref map<string, int> m_RefusalLogNextMs = new map<string, int>();
+    protected ref map<string, int> m_RefusalLogDropped = new map<string, int>();
+
     //--- Party id -> match-local index, assigned first-seen and kept for the match. See
     //--- ResolvePartyIndex for why it is not derived per reply. Static so the in-place reset
     //--- (BattleRoyaleInPlaceReset) can clear it without reaching into COT's module list.
@@ -93,8 +97,38 @@ modded class BRMasterControlsModule
         if ( has_permission )
             return true;
 
-        BattleRoyaleUtils.Warn("[DayZBR COT] Rejected unauthorized " + action_name + " request from " + BattleRoyaleServer.GetIdentityLogName(sender) + " (needs " + permission + " or admins_steamid64)");
+        WarnRefusal( sender, action_name, "[DayZBR COT] Rejected unauthorized " + action_name + " request from " + BattleRoyaleServer.GetIdentityLogName(sender) + " (needs " + permission + " or admins_steamid64)" );
         return false;
+    }
+
+    //--- Rate-limited Warn for a refused request: one line per uid and action per
+    //--- BR_ADMIN_REFUSAL_LOG_INTERVAL_MS, carrying how many were dropped since the last one.
+    protected void WarnRefusal( PlayerIdentity sender, string action_name, string message )
+    {
+        string key = action_name;
+        if ( sender )
+            key = sender.GetPlainId() + "|" + action_name;
+
+        int now = GetGame().GetTime();
+        int next_ms;
+        int dropped = 0;
+        if ( m_RefusalLogNextMs.Find( key, next_ms ) && now < next_ms )
+        {
+            m_RefusalLogDropped.Find( key, dropped );
+            m_RefusalLogDropped.Set( key, dropped + 1 );
+            return;
+        }
+
+        m_RefusalLogNextMs.Set( key, now + BR_ADMIN_REFUSAL_LOG_INTERVAL_MS );
+
+        string line = message;
+        if ( m_RefusalLogDropped.Find( key, dropped ) )
+        {
+            m_RefusalLogDropped.Remove( key );
+            line = line + " (" + dropped + " more since the last line)";
+        }
+
+        BattleRoyaleUtils.Warn( line );
     }
 
     //--- Attribute an action to the admin who took it. A no-op when no webhook connection is
@@ -243,7 +277,8 @@ modded class BRMasterControlsModule
                 Action_ZoneSelfTest( senderRPC, arg_i );
             break;
             default:
-                BattleRoyaleUtils.Warn("[DayZBR COT] Unknown admin action " + action + " from " + BattleRoyaleServer.GetIdentityLogName(senderRPC));
+                //--- Keyed on a fixed name, not the action value: a client choosing the value must not grow the map.
+                WarnRefusal( senderRPC, "UnknownAdminAction", "[DayZBR COT] Unknown admin action " + action + " from " + BattleRoyaleServer.GetIdentityLogName(senderRPC) );
             break;
         }
     }

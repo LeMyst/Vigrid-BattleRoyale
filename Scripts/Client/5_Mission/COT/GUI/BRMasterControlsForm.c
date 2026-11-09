@@ -230,7 +230,8 @@ class BRMasterControlsForm: JMFormBase
         if ( now >= m_NextRosterPollMs )
         {
             m_NextRosterPollMs = now + BR_ADMIN_ROSTER_INTERVAL_MS;
-            m_Module.RequestRoster();
+            if ( m_Module.CanRequestRoster() )
+                m_Module.RequestRoster();
         }
 
         if ( !m_ZoneRequested )

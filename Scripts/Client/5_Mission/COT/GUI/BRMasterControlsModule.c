@@ -190,6 +190,20 @@ class BRMasterControlsModule: JMRenderableModuleBase
         rpc.Send( NULL, BattleRoyaleCOTStateMachineRPC.RosterRequest, true, NULL );
     }
 
+    //--- Mirrors the server's gate on RosterRequest (Player.Manage, or admins_steamid64 via is_admin),
+    //--- so a View-only moderator's panel does not poll for a refusal every 2 s.
+    bool CanRequestRoster()
+    {
+        if ( GetPermissionsManager().HasPermission( BR_PERM_PLAYER_MANAGE ) )
+            return true;
+
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if ( br_rpc && br_rpc.is_admin )
+            return true;
+
+        return false;
+    }
+
     //--- Asked once when the zone section is first shown, not polled: the chain is generated once per
     //--- process and never changes afterwards. Only `current` moves, and the status readout already
     //--- carries the live radius.
