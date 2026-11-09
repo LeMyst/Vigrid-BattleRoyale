@@ -6,7 +6,7 @@ modded class MissionGameplay
 
 	void MissionGameplay()
 	{
-		Print("MissionGameplay::MissionGameplay");
+		BattleRoyaleUtils.Trace("MissionGameplay::MissionGameplay");
 		m_BattleRoyaleHudRootWidget = null;
 		m_BattleRoyale = null;
 

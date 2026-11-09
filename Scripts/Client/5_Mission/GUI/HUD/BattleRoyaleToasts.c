@@ -100,15 +100,6 @@ class BattleRoyaleToasts
             Refresh();
     }
 
-    //! Drop every live toast. Used on mission teardown and when the match hands over.
-    void Clear()
-    {
-        m_Model.Clear();
-
-        if ( m_Root )
-            Refresh();
-    }
-
     /**
      *  Widgets are created on the first Update rather than in the constructor.
      *

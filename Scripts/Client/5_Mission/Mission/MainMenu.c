@@ -6,13 +6,6 @@ modded class MainMenu
 	protected TextWidget m_PlayButtonLabel;
 	protected bool b_MatchMakingAvailable;
 
-	protected Widget m_PopupMessage;
-	protected RichTextWidget m_PopupText;
-	protected ButtonWidget m_PopupButton;
-	protected ButtonWidget m_PopupButton_2;
-	protected ref PopupButtonCallback popup_onClick;
-	protected ref PopupButtonCallback popup_onClick2;
-
 	protected BattleRoyaleMatchMakingState m_MatchMakingState;
 
 	protected int m_MatchMakingTryCount;
@@ -156,22 +149,12 @@ modded class MainMenu
 
 		if(OnStart())
 		{
-			Print("You are running a developer build of DayZBR");
+			BattleRoyaleUtils.Trace("MainMenu: OnStart ok");
 		}
 		else
 		{
 			BattleRoyaleUtils.Warn("MainMenu: OnStart failed");
 		}
-
-		//ensure popup message is initialized
-		if(!m_PopupMessage)
-		{
-			m_PopupMessage = GetGame().GetWorkspace().CreateWidgets( "Vigrid-BattleRoyale/GUI/widgets/popup_message.layout", layoutRoot );
-			m_PopupText = RichTextWidget.Cast( m_PopupMessage.FindAnyWidget( "MessageText" ) );
-			m_PopupButton = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton" ) );
-			m_PopupButton_2 = ButtonWidget.Cast( m_PopupMessage.FindAnyWidget( "PopupButton_2" ) ); //TODO: update this for new layout (with new button)
-		}
-		ClosePopup(); //if init is called twice, close any popup that exists
 
 		BR_OverrideUI();
 
@@ -266,7 +249,7 @@ modded class MainMenu
 
 	bool OnStart(bool force_restart = false)
 	{
-		Print("DAYZ BATTLE ROYALE INIT");
+		BattleRoyaleUtils.Trace("MainMenu.OnStart");
 		BiosUserManager p_UserManager = GetGame().GetUserManager();
 		if(!p_UserManager)
 		{
@@ -281,7 +264,7 @@ modded class MainMenu
 			return false;
 		}
 
-		Print("DBR: User: " + p_User.GetUid() + " | " + p_User.GetName());
+		BattleRoyaleUtils.Trace("MainMenu.OnStart: user " + p_User.GetName());
 
 		return true;
 	}
@@ -298,64 +281,6 @@ modded class MainMenu
 			delete m_ModsDetailed;
 	}
 
-	void CreatePopup(string message, string button_text = "", PopupButtonCallback onClickCallback = NULL, string button_text_2 = "", PopupButtonCallback onClickCallback_2 = NULL )
-	{
-		m_PopupText.SetText(message);
-		popup_onClick = onClickCallback;
-		popup_onClick2 = onClickCallback_2;
-		if(button_text != "")
-		{
-			//Show button
-			m_PopupButton.SetText(button_text);
-			m_PopupButton.Show(true);
-		}
-		else
-		{
-			//hide button
-			m_PopupButton.Show(false);
-		}
-		if(button_text_2 != "")
-		{
-			//Show button #2
-			m_PopupButton_2.SetText(button_text_2);
-			m_PopupButton_2.Show(true);
-		}
-		else
-		{
-			//hide button
-			m_PopupButton_2.Show(false);
-		}
-
-		m_PopupMessage.Show(true);
-	}
-
-	void ClosePopup()
-	{
-		m_PopupMessage.Show(false);
-	}
-
-	void PopupActionClicked(int button_num)
-	{
-		if(button_num == 1)
-		{
-			if(!popup_onClick)
-			{
-				Error("POPUP BUTTON CALLBACK NULL!");
-				return;
-			}
-			popup_onClick.OnButtonClick();
-		}
-		else
-		{
-			if(!popup_onClick2)
-			{
-				Error("POPUP BUTTON 2 CALLBACK NULL!");
-				return;
-			}
-			popup_onClick2.OnButtonClick();
-		}
-	}
-
 	override bool OnClick(Widget w, int x, int y, int button)
 	{
 		if (button == MouseState.LEFT)
@@ -365,8 +290,6 @@ modded class MainMenu
 				if ( b_MatchMakingAvailable )
 				{
 					m_LastFocusedButton = m_Play;
-//					ref ClosePopupButtonCallback closecallback = new ClosePopupButtonCallback( this );
-//					CreatePopup("Currently match making", "Close", closecallback, "", NULL);
 					//--- A press is a FRESH search, so the attempt budget restarts here rather than
 					//--- inside StartMatchMaking - which is also the automatic re-queue's entry
 					//--- point, and must keep counting.
@@ -379,18 +302,6 @@ modded class MainMenu
 
 					return true;
 				}
-			}
-			if(w == m_PopupButton)
-			{
-				Print("POPUP BUTTON CLICKED");
-				PopupActionClicked(1);
-				return true;
-			}
-			if(w == m_PopupButton_2)
-			{
-				Print("POPUP BUTTON 2 CLICKED");
-				PopupActionClicked(2);
-				return true;
 			}
 		}
 
