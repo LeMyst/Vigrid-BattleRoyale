@@ -757,14 +757,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(IsLateJoinExempt( player ))
             return;
 
-        //--- The last two states are Win and Restart. 8_BattleRoyaleWin.KickWinner calls RemovePlayer
+        //--- Match over (Win, Restart). 8_BattleRoyaleWin.KickWinner calls RemovePlayer
         //--- and DisconnectPlayer back to back, so between them a winner legitimately holds no state
         //--- and OnPlayerTick's not-in-state branch can see them - scheduling a kick there would flash
         //--- "a match is already in progress" at the player who just won it. Nothing is lost by
         //--- skipping the window: 9_BattleRoyaleRestart either calls RequestExit a few seconds later,
         //--- or the in-place reset replaces this server and gives every connected player a lobby body.
-        //--- Same bound the scoring guards in OnPlayerDisconnected/OnPlayerKilled use.
-        if(i_CurrentStateIndex >= m_States.Count() - 2)
+        if(GetCurrentState().IsMatchOver())
             return;
 
         int configured = BattleRoyaleConfig.GetConfig().GetGameData().late_join_kick_seconds;
@@ -1015,6 +1014,10 @@ class BattleRoyaleServer: BattleRoyaleBase
                 else if ( identity )
                     player_name = identity.GetName();
 
+                //--- Outside the scoring states (a knocked-out winner leaving the win screen) nothing
+                //--- is credited; the death below still runs and is recorded like any other.
+                bool scores = GetCurrentState().CountsEliminations();
+
                 // We add a kill to the last damage source
                 if ( player.last_unconscious_source )
                 {
@@ -1028,7 +1031,8 @@ class BattleRoyaleServer: BattleRoyaleBase
                     //--- overwrite this with "environment" and break other players' chains.
                     BattleRoyaleSpectators.GetInstance().RecordDeathWithKiller( player, killer );
 
-                    GetCurrentState().OnPlayerKilled( player, killer );
+                    if ( scores )
+                        GetCurrentState().OnPlayerKilled( player, killer );
                 }
                 else if ( player.last_unconscious_source_uid != "" )
                 {
@@ -1046,7 +1050,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                     BattleRoyaleSpectators.GetInstance().RecordDeathWithKillerUid( player, player.last_unconscious_source_uid );
 
-                    BattleRoyaleKillLedger.GetInstance().CreditKill( player.last_unconscious_source_uid );
+                    if ( scores )
+                        BattleRoyaleKillLedger.GetInstance().CreditKill( player.last_unconscious_source_uid );
                 } else {
                     BattleRoyaleUtils.Info("Player " + player_name + " disconnected while unconscious, but there is no last damage source.");
                 }
@@ -1074,7 +1079,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(GetCurrentState().ContainsPlayer(player))
         {
             //if we are in a round, then we need to call OnPlayerDisconnected (since it's not a state based function we must cast)
-            if(i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2 )
+            if(GetCurrentState().CountsEliminations())
                 GetCurrentState().OnPlayerDisconnected(player);
 
             GetCurrentState().RemovePlayer(player);
@@ -1106,7 +1111,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(GetCurrentState().ContainsPlayer(killed))
         {
             //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
-            if(i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2 )
+            if(GetCurrentState().CountsEliminations())
                 GetCurrentState().OnPlayerKilled(killed, killer);
 
             //remove player from the state (this would take place in on-disconnect, but some players would choose not to disconnect)

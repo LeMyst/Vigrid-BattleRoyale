@@ -405,9 +405,8 @@ class BattleRoyaleState: Timeable
      *  and the win/restart states are past the point where a new spectator makes sense - a death in
      *  any of them keeps the pre-existing behaviour exactly.
      *
-     *  A dedicated predicate rather than reusing BattleRoyaleServer's
-     *  `i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2` range test, which
-     *  shifts by one depending on whether enable_spawn_selection_menu inserted state 3.
+     *  A dedicated predicate rather than a state-index range, which shifts by one depending on
+     *  whether enable_spawn_selection_menu inserted state 3.
      */
     bool AllowsSpectate()
     {
@@ -418,6 +417,19 @@ class BattleRoyaleState: Timeable
     bool AllowsAdminSkip()
     {
         return true;
+    }
+
+    //--- Does a death or disconnect in this state score (score webhook, kill credit)? StartMatch and
+    //--- the rounds override this. A predicate, not an index range: spawn selection shifts the indices.
+    bool CountsEliminations()
+    {
+        return false;
+    }
+
+    //--- Is the match over? Win and Restart override this.
+    bool IsMatchOver()
+    {
+        return false;
     }
 
     //--- Resolve the engine-supplied RPC `sender` to a player tracked by THIS state.

@@ -75,6 +75,11 @@ class BattleRoyaleWin: BattleRoyaleState
         return false;
     }
 
+    override bool IsMatchOver()
+    {
+        return true;
+    }
+
     override void Deactivate()
     {
         if ( m_KickTimer && m_KickTimer.IsRunning() )

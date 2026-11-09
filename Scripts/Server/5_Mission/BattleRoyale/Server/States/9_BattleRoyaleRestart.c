@@ -53,6 +53,11 @@ class BattleRoyaleRestart: BattleRoyaleState
         return false;
     }
 
+    override bool IsMatchOver()
+    {
+        return true;
+    }
+
     override void Deactivate()
     {
         //--- Warn, not Error(): Error() unwinds the stack (memory: BattleRoyaleUtils.Error() is fatal),

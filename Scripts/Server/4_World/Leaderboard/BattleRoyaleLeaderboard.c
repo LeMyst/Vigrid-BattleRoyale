@@ -13,15 +13,14 @@
  *  disconnecting while unconscious, force-logged out by the tick, or kicked as the winner. The
  *  existing ScoreWebhook calls are scattered across three of those and miss at least one outright -
  *  a winner who quits during the 15s win screen is rejected by the
- *  `i_CurrentStateIndex > 2 && < Count()-2` guard in BattleRoyaleServer.
+ *  `CountsEliminations()` guard in BattleRoyaleServer.
  *
  *  BattleRoyaleState.RemovePlayer() is the one function every route passes through, and all three
  *  subclass overrides chain to it. Crucially RemoveAllPlayers() does NOT - it clears the array
  *  directly - so the state-migration path, which must never score, is excluded for free.
  *
- *  This also means the leaderboard deliberately does not reuse that state-index window, so it is
- *  immune to the window's enable_spawn_selection_menu sensitivity and to the unguarded
- *  unconscious-disconnect path. Instead it gates on its own m_Ranking latch, opened the instant
+ *  This also means the leaderboard deliberately does not reuse that guard. Instead it gates on its
+ *  own m_Ranking latch, opened the instant
  *  gameplay actually begins.
  *
  *  Two consequences to keep in mind when touching RecordExit:

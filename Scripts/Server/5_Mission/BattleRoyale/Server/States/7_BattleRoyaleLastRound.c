@@ -148,6 +148,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
 		return true;
 	}
 
+	override bool CountsEliminations()
+	{
+		return true;
+	}
+
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 		if(IsActive())
