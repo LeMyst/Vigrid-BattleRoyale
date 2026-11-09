@@ -277,6 +277,12 @@ PROBES = [
     ("settings-version: new ref array, no version bump, no Upgrade branch", "settings-version",
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",
      replace("\tint version =", "\tref array<string> probe_field = {\"a\"};\n\tint version =")),
+
+    #  Assembled, so this file stays clean for the check it probes. Warning level, hence -W.
+    ("profanity: a profane log string", "profanity",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/States/4_BattleRoyalePrepare.c",
+     replace('Trace("Village rejected")', 'Trace("Another ' + "fu" + 'cked up village!")'),
+     True),
 ]
 
 

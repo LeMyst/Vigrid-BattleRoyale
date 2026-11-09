@@ -34,7 +34,7 @@ class ServerData
 
     bool IsMatchingVersion()
     {
-        // Avoid a potential dayz backend fuckery
+        // Avoid a potential DayZ backend glitch
         if ( version == BATTLEROYALE_VERSION )
             return true;
 

@@ -1,0 +1,6 @@
+# Legitimate uses the `profanity` check should not report, as `<repo-relative path>:<word>`, the
+# word lowercased exactly as matched (a third-party name, a quoted upstream log line).
+#
+# The default is to rephrase. An entry that no longer matches anything is reported as stale.
+#
+#   <repo-relative path>:<word>   # why it has to stay
