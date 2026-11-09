@@ -168,4 +168,5 @@ The **current** circle only also gets small blue lights rising slowly off the li
 - there are two emitters per strip: `sparks1.emat` motes, plus a few faint `glow1.emat` halos;
 - the motes drift up 3 to 4 m and fade out.
 
-A vanilla contaminated-area gas was tried first. Myst rejected it on 2026-11-09 because the smoke did not render well. The motes use about 50 emitters out of the shared 10 000-particle pool; if the pool runs dry, the rest of the arc waits for the next re-cut. They share the `show_ground_rings` switch with the quads. Live slider: **Map & Zones → Zone Motes Density**, which scales the birth rate.
+A vanilla contaminated-area gas was tried first. Myst rejected it on 2026-11-09 because the smoke did not render well. The motes use about 50 emitters out of the shared 10 000-particle pool; if the pool runs dry, the rest of the arc waits for the next re-cut. They share the `show_ground_rings` switch with the quads. Live sliders: **Map & Zones → Zone Motes Density** (birth rate) and **Zone Motes Size**.
+- ⚠️ **Spark colours near 1.0 render WHITE.** `sparks1.emat` overexposed (0.45, 0.75, 1) to plain white (Myst, 2026-11-09). Vanilla's blue flare tints `sparks_05.emat` with dim values, blue ≈ 0.66 and the rest below 0.45, and the motes now do the same.

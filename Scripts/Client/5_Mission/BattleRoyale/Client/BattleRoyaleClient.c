@@ -1901,6 +1901,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         m_GroundRingCurrent.SetTexture( "#(argb,8,8,3)color(0.05,0.25,1," + BattleRoyaleDiag.zone_ring_current_alpha + ",ca)" );
         m_GroundRingNext.SetTexture( "#(argb,8,8,3)color(1,1,1," + BattleRoyaleDiag.zone_ring_next_alpha + ",ca)" );
         m_ZoneMotes.SetDensity( BattleRoyaleDiag.zone_motes_density );
+        m_ZoneMotes.SetSize( BattleRoyaleDiag.zone_motes_size );
 #endif
 
         if ( m_CurrentPlayArea )

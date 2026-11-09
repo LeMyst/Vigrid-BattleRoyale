@@ -11,6 +11,7 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
     static const float EMITTER_SPACING = 10.0;  // the .ptc's box is 10 m long, so strips abut
 
     protected float m_Density;
+    protected float m_Size = 1.0;
     protected ref map<int, ParticleSource> m_Emitters = new map<int, ParticleSource>();
 
     void BattleRoyaleZoneMotes(float density)
@@ -36,14 +37,29 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
         foreach ( int idx, ParticleSource p : m_Emitters )
         {
             if ( p )
-                ApplyDensity( p );
+                ApplyParams( p );
         }
     }
 
-    protected void ApplyDensity(ParticleSource p)
+    //! Size as a fraction of the .ptc's own. Applied to the emitters already playing too.
+    void SetSize(float size)
+    {
+        if ( size == m_Size )
+            return;
+
+        m_Size = size;
+        foreach ( int idx, ParticleSource p : m_Emitters )
+        {
+            if ( p )
+                ApplyParams( p );
+        }
+    }
+
+    protected void ApplyParams(ParticleSource p)
     {
         p.ScaleParticleParamFromOriginal( EmitorParam.BIRTH_RATE, m_Density );
         p.ScaleParticleParamFromOriginal( EmitorParam.BIRTH_RATE_RND, m_Density );
+        p.ScaleParticleParamFromOriginal( EmitorParam.SIZE, m_Size );
     }
 
     override protected bool HasAt(int idx)
@@ -94,7 +110,7 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
         if ( !p )
             return false;
 
-        ApplyDensity( p );
+        ApplyParams( p );
         m_Emitters.Set( idx, p );
         return true;
     }
