@@ -163,7 +163,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
 | `inputs` | every `Inputs.xml` parses, and its three sections agree |
 | `menu-ids` | no two `MENU_*` constants share an id across the PBOs |
-| `rpc` | every `AddRPC` name has a matching CF handler method |
+| `rpc` | every `AddRPC` name, literal or `const string`, has a CF handler method; every `SendRPC` has an `AddRPC` on the same namespace |
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
 | `stringtable` | every `STR_*` key referenced is defined, in its own addon's table |
 | `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |

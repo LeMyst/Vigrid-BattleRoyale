@@ -161,6 +161,18 @@ PROBES = [
              'AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "ProbeHandlerThatDoesNotExist", this);'),
      True),
 
+    #  Registered through a `const string`, which the check used to skip entirely.
+    ("rpc: constant-named registration loses its handler", "rpc",
+     "Party/Scripts/3_Game/VigridPartyConstants.c",
+     replace('VP_RPC_SETTINGS = "VP_Settings"', 'VP_RPC_SETTINGS = "VP_Setting"'),
+     True),
+
+    ("rpc: SendRPC on the wrong namespace", "rpc",
+     "Scripts/Client/5_Mission/BattleRoyale/Client/BattleRoyaleClient.c",
+     replace('SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp"',
+             'SendRPC( RPC_DAYZBR_NAMESPACE, "PlayerReadyUp"'),
+     True),
+
     ("version: mod.cpp drifts from the constant", "version",
      "mod.cpp", replace('version = "0.2.1-Vigrid"', 'version = "9.9.9-probe"')),
 
