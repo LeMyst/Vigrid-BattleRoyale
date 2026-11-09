@@ -2122,13 +2122,11 @@ class BattleRoyaleClient: BattleRoyaleBase
      *  owns; this one changes what this client renders and nothing else, so there is no state to
      *  replicate and nothing to authorise on the wire.
      *
-     *  IT IS COT'S RENDERER, CALLED, NOT COPIED. Community-Online-Tools is already a hard dependency
-     *  and JMESPModule.SetDrawPlayerSkeletonsEnabled is a public method on it; its OnUpdate runs on
-     *  every client all the time and returns immediately unless the flag is set, and the canvas it
-     *  needs is created unconditionally from COT's own MissionGameplay.OnInit. So the whole feature
-     *  is this call. That also settles the licence question that made porting the code a non-starter:
-     *  COT is CC BY-SA 4.0 and this repo is DSPL-SA, which adds restrictions BY-SA forbids adding to
-     *  adapted material - but calling a published API is interoperation, not adaptation.
+     *  IT IS COT'S RENDERER, CALLED, NOT COPIED, FROM OUR OWN LOOP: UpdateSkeletonOverlay calls
+     *  JMESPSkeleton.Draw every frame onto COT's canvas. COT's own loop and its ESP.View-gated setter
+     *  are not used (setting that flag drew nothing), so the gate is ours: b_IsAdmin and a spectate
+     *  session. Calling a published API is interoperation, not adaptation, which is what keeps this
+     *  clear of COT's CC BY-SA against this repo's DSPL-SA.
      *
      *  COT's ESPRadius is deliberately left alone. It is the admin's own COT setting, it survives
      *  this session, and quietly rewriting another mod's configuration to suit ours is not ours to do.
@@ -2144,12 +2142,8 @@ class BattleRoyaleClient: BattleRoyaleBase
     }
 
     /**
-     *  Apply the skeleton flag and say what actually happened.
-     *
-     *  THE READ-BACK IS THE POINT. COT's setter opens with `if (!HasAccess()) return;` - a silent
-     *  refusal for anyone without its ESP.View permission - so asking for skeletons without that
-     *  permission would look exactly like a dead key. Reading the flag back turns that into a
-     *  message. This mod has been bitten by silent no-ops often enough to be worth the extra call.
+     *  Apply the skeleton flag and say so. No COT setter is involved, so nothing can refuse it
+     *  silently; the one failure left, COT's ESP module missing, is reported as denied.
      */
     protected void SetSkeletonOverlay( bool enabled )
     {

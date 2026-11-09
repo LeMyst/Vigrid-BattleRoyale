@@ -24,20 +24,18 @@
  *     and VigridPartyAPI.GetGroupCount(), which stalls every IsComplete() and makes UpdateTopPosition
  *     rewrite every survivor's br_position against an inflated field.
  *
- *  3. THE CORPSE IS NEVER DELETED DURING A MATCH, AND NEVER MOVED. The corpse IS the PlayerBase, and
- *     vanilla HandleBody only deletes a body when the player was alive, so a dead player's gear is
- *     meant to persist and be lootable where they fell. The removed implementation called
- *     ObjectDelete(player) "for network bubble fix", which destroys the victim's loot. The one
- *     deletion is after the match: the in-place reset (BattleRoyaleInPlaceReset) clears every corpse
- *     with its gear, as the process restart used to, once each spectator has a lobby body.
+ *  3. THE CORPSE IS NEVER DELETED DURING A MATCH. The corpse IS the PlayerBase, and vanilla
+ *     HandleBody only deletes a body when the player was alive, so a dead player's gear is meant to
+ *     persist and be lootable. The removed implementation called ObjectDelete(player) "for network
+ *     bubble fix", which destroys the victim's loot. The one deletion is after the match: the
+ *     in-place reset (BattleRoyaleInPlaceReset) clears every corpse with its gear, as the process
+ *     restart used to, once each spectator has a lobby body.
  *
- *     Note what that costs, because it is a deliberate trade and not an oversight. The replication
- *     bubble stays centred on this corpse - UpdateSpectatorPosition does NOT move it, established
- *     both directions 2026-08-10 (dead at 1200 m for 90 s, alive again at 700 m, 507 pushes
- *     throughout). So a spectator cannot see anything beyond ~1 km of where they died. MOVING the
- *     corpse would fix that and needs no entity creation, which is what killed the carrier - but it
- *     drags the victim's gear across the map with it, so the loot can never be found. That is a
- *     gameplay decision, not a bug fix. See Docs/spectating.md.
+ *     It IS moved. The replication bubble stays centred on the corpse - UpdateSpectatorPosition does
+ *     NOT move it (measured both directions 2026-08-10) - so without help a spectator sees nothing
+ *     beyond ~1 km of where they died. CarryCorpse drops the gear at the death spot, then carries
+ *     the body after the target. With the dzhooks spectatorbubble hook the bubble follows the camera
+ *     and the corpse stays where it fell. See Docs/spectating.md.
  *
  *  There is exactly ONE driver - Tick(), called from BattleRoyaleServer.Update()'s existing 10 Hz
  *  block. No Timer, no CallLaterByName, no coroutine: a driver that only touches strings cannot fire
@@ -46,16 +44,17 @@
  *  CLIENT -> SERVER RPCs. For an ordinary spectator there is exactly one, RequestSpectate, and it
  *  carries no payload: the actor is the engine-supplied `sender` and the only thing it can do is
  *  start spectating for a uid the server itself already registered. The four admin RPCs
- *  (AdminSpectateToggle / Cycle / Mode / CamPos) all resolve their actor the same way and all open
- *  with AdminEligibility, so nothing a client sends chooses who it acts on.
+ *  (AdminSpectateToggle / Cycle / Mode / CamPos) all resolve their actor the same way, so nothing a
+ *  client sends chooses who it acts on. Toggle consults AdminEligibility before entering; Cycle,
+ *  Mode and CamPos act only on an existing is_admin entry, which only that entry path creates.
  *
  *  ADMIN SPECTATE, in one rule: it requires a NON-PARTICIPANT - alive, holding a body, and absent
  *  from m_Players. An admin who is competing is refused, because a competitor who can freecam the
  *  map is indistinguishable from a cheat. Two ways to be a non-participant: connect mid-match (which
  *  BattleRoyaleServer.OnPlayerConnected already handles, placing them at the live circle and
  *  exempting them from the late-join kick), or die and take AdminRespawn, which is the bridge
- *  between the two halves of the lifecycle. AdminEligibility is that rule, and every admin RPC
- *  consults it rather than re-deriving it.
+ *  between the two halves of the lifecycle. AdminEligibility is that rule, and nothing re-derives
+ *  it: entry consults it, and the other admin RPCs need the session it admitted.
  *
  *  Note that AdminRespawn is the one thing here that creates an entity, which invariant 2 otherwise
  *  forbids. It does not violate it: the new body is never added to m_Players, so the roster count,

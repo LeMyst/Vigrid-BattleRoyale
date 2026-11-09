@@ -52,9 +52,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLastMatch", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestSpectate", this);
-        //--- Admin spectate. All four resolve their actor from the engine-supplied `sender` and all
-        //--- four gate on BattleRoyaleSpectators.AdminEligibility, which is the single definition of
-        //--- who may do this - see the header of BattleRoyaleSpectators.c.
+        //--- Admin spectate. All four resolve their actor from the engine-supplied `sender`. Toggle
+        //--- gates entry on BattleRoyaleSpectators.AdminEligibility; the other three act only on an
+        //--- existing is_admin session - see the header of BattleRoyaleSpectators.c.
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateToggle", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateMode", this);
