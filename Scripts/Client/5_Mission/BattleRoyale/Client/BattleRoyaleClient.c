@@ -345,6 +345,14 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         if ( !BattleRoyaleDiag.zones_fake )
         {
+            //--- Falling edge: a radius the wire never sends, so Update rebuilds both circles from
+            //--- br_rpc this frame instead of keeping the fake ones until the server moves a circle.
+            if ( br_diag_zone_radius >= 0 )
+            {
+                br_previous_current_play_area_radius = -1;
+                br_previous_future_play_area_radius = -1;
+            }
+
             //--- Marks "not currently faking", which is also what makes the next enable re-centre.
             br_diag_zone_radius = -1;
             return;
@@ -1759,9 +1767,10 @@ class BattleRoyaleClient: BattleRoyaleBase
         PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
         BattleRoyaleUtils.Trace("BattleRoyale: FADE IN!");
 
-        //--- The post-process is player-free and always runs; the two inventory/audio calls need a
-        //--- character. A spectator has none, and EnterSpectate() restores the audio buses and stops
-        //--- this requester by class anyway, so an unpaired FadeIn is not left hanging.
+        //--- The post-process is player-free and always runs. GetPlayer() is the corpse while
+        //--- spectating, so the two calls below would land on it: harmless only because SetFade is
+        //--- sent solely from Prepare, before anyone has died. EnterSpectate() also restores the audio
+        //--- buses and stops this requester, so an unpaired FadeIn is not left hanging.
         PPERequesterBank.GetRequester(PPERequester_BurlapSackEffects).Start();
 
         if( player )
@@ -1946,7 +1955,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         Param1<bool> ready_state = new Param1<bool>( true );  //perhaps this can be made togglable?
         //--- No target: the server resolves the subject from the RPC sender identity. Sending one
         //--- would be ignored, and inviting it back is how the ready-up-anyone exploit worked.
-        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, false );
+        GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerReadyUp", ready_state, true );
 
     }
 

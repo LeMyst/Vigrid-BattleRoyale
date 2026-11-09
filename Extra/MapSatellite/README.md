@@ -120,6 +120,5 @@ raster layers are interchangeable as far as the map addon is concerned. The choi
 ## Disabling
 
 Rename `config.cpp` → `config.cpp.disabled` and rebuild, and the map goes back to the vanilla
-topographic layer. **Check the output folder afterwards** — an incremental `Deploy.bat` does not
-reliably delete the PBO of an addon you just disabled, so delete `extra_mapsatellite.pbo` and its
-`.bisign` by hand if they are still there.
+topographic layer. The rebuild deletes `extra_mapsatellite.pbo` and its `.bisign`; a build from
+before 2026-11-08 did not, so check the output folder if building from an older checkout.

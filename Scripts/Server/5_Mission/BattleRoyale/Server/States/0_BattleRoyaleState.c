@@ -630,8 +630,15 @@ class BattleRoyaleState: Timeable
 		for(int i = 0; i < GetPlayers().Count(); i++)
 		{
 			PlayerBase player = GetPlayers()[i];
+			if ( !player )
+				continue;
+
 			player.SetBRPosition( position );
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", new Param1<int>( position ), true, player.GetIdentity() );
+
+			//--- A NULL identity would make SendRPC broadcast this placement to every client.
+			PlayerIdentity identity = player.GetIdentity();
+			if ( identity )
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", new Param1<int>( position ), true, identity );
 		}
     }
 
@@ -1236,7 +1243,7 @@ class BattleRoyaleState: Timeable
 		}
 		else
 		{
-			Error("Unknown player disconnected! Not in current state?");
+			BattleRoyaleUtils.Warn("Unknown player disconnected! Not in current state?");
 		}
 
 		BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
@@ -1258,7 +1265,7 @@ class BattleRoyaleState: Timeable
 		}
 		else
 		{
-			Error("Unknown player killed! Not in current state?");
+			BattleRoyaleUtils.Warn("Unknown player killed! Not in current state?");
 		}
 
 		if (!player || !source)
@@ -1371,7 +1378,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         }
         else
         {
-            Error("DEBUG SETTINGS IS NULL!");
+            BattleRoyaleUtils.Warn("DEBUG SETTINGS IS NULL!");
             GetGame().RequestExit(0);  // Exit the game
         }
 
@@ -1381,7 +1388,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         }
         else
         {
-            Error("LOBBY SETTINGS IS NULL");
+            BattleRoyaleUtils.Warn("LOBBY SETTINGS IS NULL");
             i_HealTickTime = DAYZBR_DEBUG_HEAL_TICK;
         }
     }
@@ -1476,7 +1483,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
     {
         if(!player)
         {
-            Error("Null player in CanGoOutsideLobby");
+            BattleRoyaleUtils.Warn("Null player in CanGoOutsideLobby");
             return false;
         }
         PlayerIdentity identity = player.GetIdentity();
@@ -1487,7 +1494,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         string steamid = identity.GetPlainId();
         if(steamid == "")
         {
-            Error("Blank SteamId from identity!");
+            BattleRoyaleUtils.Warn("Blank SteamId from identity!");
             return false;
         }
 

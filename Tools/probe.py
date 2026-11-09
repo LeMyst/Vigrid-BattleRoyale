@@ -130,6 +130,17 @@ PROBES = [
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",
      replace("#ifdef SERVER", "//probe")),
 
+    #  The #else of an unrelated #ifdef compiles everywhere; it used to read as guarded.
+    ("client-only-types: client-only type in the #else of #ifdef VIGRID_PARTY", "client-only-types",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\n#ifdef VIGRID_PARTY\n#else\n"
+            "class BRProbe6 { void F() { BattleRoyaleRPC.GetInstance(); } }\n#endif\n")),
+
+    ("diag-guards: diag type in the #else of #ifdef VIGRID_PARTY", "diag-guards",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\n#ifdef VIGRID_PARTY\n#else\n"
+            "class BRProbe7 { void F() { BattleRoyaleDiag.Run(); } }\n#endif\n")),
+
     ("discipline: BattleRoyale symbol inside Party/", "discipline",
      "Party/Scripts/3_Game/VigridPartyLog.c",
      append('\nclass VPProbe { void F() { BattleRoyaleUtils.Info("x"); } }\n')),
@@ -159,6 +170,11 @@ PROBES = [
 
     ("configs: requiredAddons names something undeclared", "configs",
      "Extra/SpawnCarFull/config.cpp", replace('"DZ_Scripts"', '"DZ_Scriptz"')),
+
+    #  Declared only in a config.cpp.disabled, so never built: the game refuses to start.
+    ("configs: requiredAddons names a parked addon", "configs",
+     "Extra/SpawnCarFull/config.cpp",
+     replace('"DZ_Scripts"', '"DZ_Scripts", "Dump_Item_Heights"')),
 
     ("configs: missing comma between array entries", "configs",
      "Extra/MapSatellite/config.cpp",
@@ -193,6 +209,10 @@ PROBES = [
     ("enfusion: multi-line if condition", "enfusion",
      "Scripts/Client/3_Game/BattleRoyaleUtils.c",
      append("\nclass BRProbe5 { void F(bool a, bool b) { if (a\n && b) { } } }\n")),
+
+    ("settings-version: new field in Party's VigridPartyData, no version bump", "settings-version",
+     "Party/Scripts/3_Game/Server/VigridPartyData.c",
+     replace("    int version = 2;", "    bool probe_flag = true;\n    int version = 2;")),
 
     ("settings-version: new ref array, no version bump, no Upgrade branch", "settings-version",
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",

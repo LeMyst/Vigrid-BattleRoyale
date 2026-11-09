@@ -10,8 +10,8 @@ REM concurrent callers (CI.bat spawns CI_Build.bat in its own window) never writ
 REM the same file. Artifacts are gitignored via /Workbench/*.cfg.*.bat.
 REM
 REM Lines starting with ";" are skipped by the for /f eol option; lines starting
-REM with "#" are skipped by the findstr test. Values are emitted as set "K=V" so
-REM that characters like ( ) & survive - several real config values contain them.
+REM with "#" are dropped by findstr /v, which reads each file directly. Values are emitted
+REM as set "K=V" so that characters like ( ) & survive - several real config values contain them.
 
 set "cfgRoot=%~dp0.."
 set "cfgOut=%cfgRoot%\combined.cfg.%~1.bat"
@@ -57,11 +57,10 @@ exit /b 1
 :USERCFG_FOUND
 if exist "%cfgOut%" del "%cfgOut%"
 
+REM No "echo %%a| findstr" per line: each side of a pipe is re-parsed by a child cmd, so a
+REM value holding > & | ran as a command there - "D=a>b.txt" created b.txt.
 for %%f in ("%cfgRoot%\project.cfg" "%brUserCfg%") do (
-	for /f "usebackq eol=; delims=" %%a in ("%%~f") do (
-		echo %%a| findstr /b /c:"#" >nul
-		if errorlevel 1 echo set "%%a">>"%cfgOut%"
-	)
+	for /f "eol=; delims=" %%a in ('findstr /v /b /c:"#" "%%~f"') do echo set "%%a">>"%cfgOut%"
 )
 
 if not exist "%cfgOut%" (

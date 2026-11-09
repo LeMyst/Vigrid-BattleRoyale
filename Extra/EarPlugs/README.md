@@ -161,9 +161,8 @@ and threw everything away"; one that logs unconditionally at 4 Hz buries the cha
 ## Disabling
 
 Rename `config.cpp` → `config.cpp.disabled` and rebuild. Nothing in the mod references this addon, so
-there is no call site to guard and nothing else to do — **except deleting the stale
-`extra_earplugs.pbo` and its `.bisign` by hand**, since an incremental `Deploy.bat` does not reliably
-clean orphans.
+there is no call site to guard and nothing else to do. The rebuild deletes the stale
+`extra_earplugs.pbo` and its `.bisign`; a build from before 2026-11-08 did not, and left them loading.
 
 To keep the addon but ship it without the muffle, return `""` from
 `VigridEarPlugsLevels.Attenuation` — the volume half is untouched by that.

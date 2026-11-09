@@ -75,6 +75,7 @@ second one's death ends the match, so they are on the death screen at the reset 
 | Deaths, spectators, audience, team colours, `m_Ended` | `BattleRoyaleSpectators.ResetForNewMatch` |
 | Previous match (re-read from the fresh `last_match.json`) | `BattleRoyaleMatchStats.ResetForNewMatch` |
 | Auto-grouped party members, invites, formation lock | `VigridPartyAPI.ResetForNewMatch` |
+| Auto-run refused since the freeze (a match that ended before the unlock) | `VigridAutoRunAPI.SetAllowedForAll` |
 | Admin overlay party colours | `BRMasterControlsModule.ResetPartyIndex` |
 | Lobby and win chickens | `BattleRoyaleDebug.DeleteLobbyChickens`, `BattleRoyaleWin.DeleteWinChickens` |
 | Player corpses and their gear | `BattleRoyaleCorpses` (fed from `PlayerBase.EEKilled`) |
@@ -140,4 +141,5 @@ cannot die in a match that ends as it starts); both were run on the diag rig abo
 ## Known limits
 
 - **`zone_generation_seed`** replays the same layout every match, as it replays it every boot.
+- **`zone_selftest_runs` and `zone_ladder_selftest_players`** run once per process, at boot, and not again after a reset.
 - **Uptime grows** across in-place matches; `in_place_reset_max_matches` keeps it bounded.
