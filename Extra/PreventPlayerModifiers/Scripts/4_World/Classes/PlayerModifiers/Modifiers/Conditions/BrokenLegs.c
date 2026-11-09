@@ -5,3 +5,4 @@ modded class BrokenLegsMdfr
     override void OnReconnect(PlayerBase player) {}
     override void Activate() {}
 }
+#endif

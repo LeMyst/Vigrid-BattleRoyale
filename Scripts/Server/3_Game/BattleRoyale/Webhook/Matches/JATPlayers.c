@@ -10,3 +10,4 @@ class JATPlayers
 		players = in_players;
 	};
 };
+#endif

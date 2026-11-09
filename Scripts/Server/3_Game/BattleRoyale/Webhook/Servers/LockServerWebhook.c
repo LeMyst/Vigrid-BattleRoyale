@@ -101,3 +101,4 @@ class LockServerCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

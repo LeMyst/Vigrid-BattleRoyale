@@ -29,3 +29,4 @@ modded class ItemBase
 		}
 	}
 }
+#endif

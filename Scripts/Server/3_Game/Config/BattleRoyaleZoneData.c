@@ -785,3 +785,4 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			BattleRoyaleUtils.Warn("[BattleRoyaleZoneData] all " + hz_dropped + " configured hot zone(s) were unusable - none will be drawn.");
 	}
 };
+#endif

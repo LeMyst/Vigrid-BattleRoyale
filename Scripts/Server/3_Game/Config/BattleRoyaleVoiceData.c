@@ -79,3 +79,4 @@ class BattleRoyaleVoiceData: BattleRoyaleDataBase
 		// key an older file doesn't have). Only a changed meaning for an existing value needs one.
 	}
 };
+#endif

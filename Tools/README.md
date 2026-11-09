@@ -51,6 +51,7 @@ they cost.
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
+| `preprocessor` | every `#if*` has its `#endif` in the same file; no stray `#else` / `#endif` |
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` type |
 | `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method |

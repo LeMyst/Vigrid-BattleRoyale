@@ -98,3 +98,4 @@ class BattleRoyaleSpawnsData: BattleRoyaleDataBase
 			BattleRoyaleUtils.Warn(string.Format("[Spawns] lobby spawn_point %1 is in a pond - set spawn_point in spawns_settings.json for this map", spawn_point));
 	}
 };
+#endif

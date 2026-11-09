@@ -382,3 +382,4 @@ class BattleRoyaleOverridePOIPosition
 		this.new_position = in_new_position;
 	}
 };
+#endif

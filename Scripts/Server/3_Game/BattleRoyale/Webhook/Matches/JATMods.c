@@ -12,3 +12,4 @@ class JATMods
 		mods = in_mods;
 	};
 };
+#endif

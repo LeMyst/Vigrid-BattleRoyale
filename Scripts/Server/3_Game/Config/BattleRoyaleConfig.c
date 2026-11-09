@@ -252,3 +252,4 @@ class BattleRoyaleConfig
 		return BattleRoyaleVoiceData.Cast( GetConfig("VoiceData") );
 	}
 };
+#endif

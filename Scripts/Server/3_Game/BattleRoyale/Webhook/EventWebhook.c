@@ -91,3 +91,4 @@ class EventCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

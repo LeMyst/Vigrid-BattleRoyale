@@ -254,3 +254,4 @@ class BattleRoyaleGameData: BattleRoyaleDataBase
 		}
 	}
 };
+#endif

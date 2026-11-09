@@ -107,3 +107,4 @@ class JSONAutoLockBody
 		rcon_password = password;
 	};
 };
+#endif

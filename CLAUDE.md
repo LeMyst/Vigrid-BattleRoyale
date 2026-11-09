@@ -140,7 +140,7 @@ Each `config.cpp` with no ancestor `config.cpp` becomes one PBO — currently 8 
 
 ## Testing
 
-**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~5 s) holds 15 checks over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
+**There are no unit tests and nothing compiles EnfusionScript outside the game — but there IS a static check suite, and it runs in CI.** `Tools/check.py` (stdlib only, ~5 s) holds the checks tabled below, over the tracked sources; `.github/workflows/checks.yml` runs `python Tools/check.py -W` on every push to `main`, every PR and on demand. Run it locally the same way, or via `Workbench/Batchfiles/Check.bat`, which is the one batch file needing neither `user.cfg` nor a mounted `P:` because it only reads sources.
 
 ```bash
 python Tools/check.py            # everything
@@ -158,6 +158,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method — the defect no local launch can see |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls are `#ifdef`-guarded |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
+| `preprocessor` | every `#if*` has its `#endif` in the same file; no stray `#else` / `#endif` |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
 | `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
 | `inputs` | every `Inputs.xml` parses, and its three sections agree |
