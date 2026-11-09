@@ -17,6 +17,10 @@ modded class MainMenu
 
 	protected int m_MatchMakingTryCount;
 
+	//--- What Update() last painted on the Play label, so it writes only on a change.
+	protected BattleRoyaleMatchMakingState m_PlayLabelState = BattleRoyaleMatchMakingState.INVALID;
+	protected int m_PlayLabelTry;
+
 #ifdef DIAG
 	//--- one-shot for the whole client process, not per menu instance - see TryAutoConnect.
 	protected static bool s_AutoConnectDone;
@@ -574,11 +578,24 @@ modded class MainMenu
 	{
 		super.Update(timeslice);
 
+		//--- Any other state hands the label to whoever set it, so the next search must repaint.
+		if (m_MatchMakingState != BattleRoyaleMatchMakingState.Searching && m_MatchMakingState != BattleRoyaleMatchMakingState.Connecting)
+		{
+			m_PlayLabelState = BattleRoyaleMatchMakingState.INVALID;
+			return;
+		}
+
+		if (m_MatchMakingState == m_PlayLabelState && m_MatchMakingTryCount == m_PlayLabelTry)
+			return;
+
+		m_PlayLabelState = m_MatchMakingState;
+		m_PlayLabelTry = m_MatchMakingTryCount;
+
 		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
 		{
 			m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING " + m_MatchMakingTryCount);
 		}
-		else if (m_MatchMakingState == BattleRoyaleMatchMakingState.Connecting)
+		else
 		{
 			m_PlayButtonLabel.SetText("#STR_BR_MM_CONNECTING");
 		}
