@@ -71,6 +71,14 @@ class BattleRoyaleLeaderboardStore
             return result;
         }
 
+        //--- An unparsable leaderboard_settings.json leaves `season` at its default, which is not the admin
+        //--- bumping it: keep the ladder's own season, so it is neither archived nor re-stamped on flush.
+        if (store.season != settings.season && settings.m_ProfileLoadFailed)
+        {
+            BattleRoyaleUtils.Warn(string.Format("[Leaderboard] leaderboard_settings.json did not load - keeping season %1 instead of retiring it", store.season));
+            settings.season = store.season;
+        }
+
         //--- Season rollover. The admin bumps `season` in leaderboard_settings.json and the next
         //--- boot retires the old ladder; the per-match restart makes that near-instant.
         if (store.season != settings.season)

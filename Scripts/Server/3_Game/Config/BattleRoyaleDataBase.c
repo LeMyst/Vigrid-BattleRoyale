@@ -1,6 +1,11 @@
 #ifdef SERVER
 class BattleRoyaleDataBase
 {
+	//--- Set by Load() when the profile JSON exists but did not parse. BattleRoyaleConfig.Load() then
+	//--- skips the re-save, so a typo cannot replace the admin's file with defaults.
+	[NonSerialized()]
+	bool m_ProfileLoadFailed;
+
 	// Path to the config file from profile folder
 	string GetProfilePath()
 	{
