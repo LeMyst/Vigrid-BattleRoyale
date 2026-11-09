@@ -25,6 +25,7 @@ class BattleRoyaleRPC
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "ChatLog", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLeaderboard", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetGroundRings", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpeakingPlayers", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpectateOffer", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetSpectateTarget", this );
@@ -164,6 +165,7 @@ class BattleRoyaleRPC
 		//--- than a silently dead feature. The server corrects both on connect.
 		speaking_list_enabled = true;
 		speaking_list_during_match = true;
+		ground_rings_enabled = true;
 		speaking_names.Clear();
 		speaking_self_index = -1;
 		speaking_seq = 0;
@@ -510,6 +512,9 @@ class BattleRoyaleRPC
 	bool speaking_list_enabled = true;
 	bool speaking_list_during_match = true;
 
+	//--- zone_settings.json show_ground_rings, pushed on connect. Default matches the setting.
+	bool ground_rings_enabled = true;
+
 	// Who this player can currently hear. Pushed by the server only when the set changes - the
 	// client cannot work this out for itself, because IsPlayerSpeaking() returns the local mic
 	// level for every entity client-side (see BattleRoyaleConstants.c).
@@ -764,6 +769,21 @@ class BattleRoyaleRPC
 			BattleRoyaleUtils.Trace(string.Format("SetVoiceSettings: %1 %2", data.param1, data.param2));
 			speaking_list_enabled = data.param1;
 			speaking_list_during_match = data.param2;
+		}
+	}
+
+	void SetGroundRings(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param1<bool> data;
+		if( !ctx.Read( data ) )
+		{
+			ReadFailed("SetGroundRings");
+			return;
+		}
+		if ( type == CallType.Client )
+		{
+			BattleRoyaleUtils.Trace(string.Format("SetGroundRings: %1", data.param1));
+			ground_rings_enabled = data.param1;
 		}
 	}
 

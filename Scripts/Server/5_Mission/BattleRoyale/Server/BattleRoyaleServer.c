@@ -452,6 +452,16 @@ class BattleRoyaleServer: BattleRoyaleBase
         BattleRoyaleVoiceData voice_settings = config_data.GetVoiceData();
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", new Param2<bool, bool>( voice_settings.show_speaking_players, voice_settings.speaking_list_during_match ), true, player.GetIdentity() );
 
+        //--- Same deal for the zone circles drawn on the ground (BattleRoyaleGroundRing). In steps: the
+        //--- one-line form threw "NULL pointer to instance" here and aborted the rest of this function.
+        BattleRoyaleZoneData ring_settings = config_data.GetZoneData();
+        bool show_ground_rings = true;
+        if ( ring_settings )
+            show_ground_rings = ring_settings.show_ground_rings;
+        else
+            BattleRoyaleUtils.Warn( "OnPlayerConnected: no zone settings, ground rings left on" );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetGroundRings", new Param1<bool>( show_ground_rings ), true, player.GetIdentity() );
+
         BattleRoyaleDebugState m_DebugStateObj;
 
         //--- Note this tests BattleRoyaleDebugState, not BattleRoyaleDebug: BattleRoyaleCountReached

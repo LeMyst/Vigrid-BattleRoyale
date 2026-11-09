@@ -4,6 +4,10 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected ref BattleRoyalePlayArea m_CurrentPlayArea;
     protected ref BattleRoyalePlayArea m_FuturePlayArea;
 
+    //--- The two circles drawn on the ground, coloured as on the map: blue current, white next.
+    protected ref BattleRoyaleGroundRing m_GroundRingCurrent;
+    protected ref BattleRoyaleGroundRing m_GroundRingNext;
+
     protected bool b_MatchStarted;
 
     //--- One-shot: we have told the server we finished loading. See SendLoadedInOnce().
@@ -139,6 +143,8 @@ class BattleRoyaleClient: BattleRoyaleBase
 
 		m_SpeakingList = new BattleRoyaleSpeakingList();
 		m_Toasts = new BattleRoyaleToasts();
+		m_GroundRingCurrent = new BattleRoyaleGroundRing( BR_GROUND_RING_TEXTURE_CURRENT );
+		m_GroundRingNext = new BattleRoyaleGroundRing( BR_GROUND_RING_TEXTURE_NEXT );
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -170,6 +176,11 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
     protected int br_diag_req_toasts = 0;
+    protected int br_diag_req_ground_spawn = 0;
+    protected int br_diag_req_ground_clear = 0;
+    protected int br_diag_ground_color = 4;
+    protected float br_diag_ground_alpha = 0.5;
+    protected ref BattleRoyaleGroundRingTest br_diag_ground_ring;
 
     /**
      *  Fabricate the whole admin spectate overlay payload, so #276-#279 are reachable offline.
@@ -428,6 +439,42 @@ class BattleRoyaleClient: BattleRoyaleBase
         {
             br_diag_req_toasts = BattleRoyaleDiag.req_push_toasts;
             BR_DiagPushToasts();
+        }
+
+        if ( br_diag_req_ground_clear != BattleRoyaleDiag.req_ground_ring_clear )
+        {
+            br_diag_req_ground_clear = BattleRoyaleDiag.req_ground_ring_clear;
+            if ( br_diag_ground_ring )
+                br_diag_ground_ring.Clear();
+        }
+
+        if ( br_diag_req_ground_spawn != BattleRoyaleDiag.req_ground_ring_spawn )
+        {
+            br_diag_req_ground_spawn = BattleRoyaleDiag.req_ground_ring_spawn;
+            PlayerBase ring_player = PlayerBase.Cast( GetGame().GetPlayer() );
+            if ( ring_player )
+            {
+                if ( !br_diag_ground_ring )
+                    br_diag_ground_ring = new BattleRoyaleGroundRingTest();
+                br_diag_ground_ring.Spawn( ring_player.GetPosition(), BattleRoyaleDiag.ground_ring_radius, BattleRoyaleDiag.ground_ring_model, BattleRoyaleDiag.ground_ring_scale, BattleRoyaleDiag.ground_ring_color, BattleRoyaleDiag.ground_ring_alpha, BattleRoyaleDiag.ground_ring_flip );
+                br_diag_ground_color = BattleRoyaleDiag.ground_ring_color;
+                br_diag_ground_alpha = BattleRoyaleDiag.ground_ring_alpha;
+            }
+        }
+
+        //--- Live recolour of the ring already on the ground.
+        bool recolour = false;
+        if ( br_diag_ground_color != BattleRoyaleDiag.ground_ring_color )
+            recolour = true;
+        if ( br_diag_ground_alpha != BattleRoyaleDiag.ground_ring_alpha )
+            recolour = true;
+
+        if ( recolour )
+        {
+            br_diag_ground_color = BattleRoyaleDiag.ground_ring_color;
+            br_diag_ground_alpha = BattleRoyaleDiag.ground_ring_alpha;
+            if ( br_diag_ground_ring )
+                br_diag_ground_ring.ApplyColor( br_diag_ground_color, br_diag_ground_alpha );
         }
     }
 
@@ -1083,6 +1130,10 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// count comparison on a normal frame and a walk only when the pair actually changed.
 			VigridMapAPI.SetHotZones( br_rpc.hot_zone_centers, br_rpc.hot_zone_radii );
 #endif
+
+			// Both circles drawn on the ground. Cheap per frame: each ring diffs its circle and only
+			// re-cuts when the camera moved, so spectators get it too.
+			UpdateGroundRings();
 
 			// Set top position
 			if ( player )
@@ -1827,6 +1878,49 @@ class BattleRoyaleClient: BattleRoyaleBase
      *  The new lobby body may arrive before or after this frame. Everything that needs the body is
      *  left to CheckResetBodyArrived, which waits for the network id the server sent.
      */
+    //! Feed both ground rings the circles this client holds. Anchored on the camera, not the body,
+    //! so a spectator sees the arc around what they are watching.
+    protected void UpdateGroundRings()
+    {
+        //--- zone_settings.json show_ground_rings. Clear() is a no-op once the rings are empty.
+        if ( !BattleRoyaleRPC.GetInstance().ground_rings_enabled )
+        {
+            m_GroundRingCurrent.Clear();
+            m_GroundRingNext.Clear();
+            return;
+        }
+
+        vector anchor = GetGame().GetCurrentCameraPosition();
+
+#ifdef DIAG_DEVELOPER
+        //--- Live per-circle opacity from Map & Zones; a no-op unless a slider moved.
+        m_GroundRingCurrent.SetTexture( "#(argb,8,8,3)color(0.05,0.25,1," + BattleRoyaleDiag.zone_ring_current_alpha + ",ca)" );
+        m_GroundRingNext.SetTexture( "#(argb,8,8,3)color(1,1,1," + BattleRoyaleDiag.zone_ring_next_alpha + ",ca)" );
+#endif
+
+        if ( m_CurrentPlayArea )
+            m_GroundRingCurrent.SetCircle( m_CurrentPlayArea.GetCenter(), m_CurrentPlayArea.GetRadius() );
+        else
+            m_GroundRingCurrent.Clear();
+
+        //--- After LockNewZone the server sends the SAME circle as current and next; drawing both would
+        //--- stack white on blue. Until the next round advertises a new circle, only the blue one shows.
+        bool next_is_current = false;
+        if ( m_CurrentPlayArea && m_FuturePlayArea )
+        {
+            if ( m_CurrentPlayArea.GetCenter() == m_FuturePlayArea.GetCenter() && m_CurrentPlayArea.GetRadius() == m_FuturePlayArea.GetRadius() )
+                next_is_current = true;
+        }
+
+        if ( m_FuturePlayArea && !next_is_current )
+            m_GroundRingNext.SetCircle( m_FuturePlayArea.GetCenter(), m_FuturePlayArea.GetRadius() );
+        else
+            m_GroundRingNext.Clear();
+
+        m_GroundRingCurrent.Update( anchor );
+        m_GroundRingNext.Update( anchor );
+    }
+
     protected void ResetForNewMatch()
     {
         BattleRoyaleUtils.Info("[InPlace] client reset for the next match");
@@ -1854,6 +1948,11 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- The edge trackers, back to their initial values so the next push is always a change.
         m_CurrentPlayArea = NULL;
         m_FuturePlayArea = NULL;
+        //--- Local objects in a world that survives the reset: nothing else would delete them.
+        if ( m_GroundRingCurrent )
+            m_GroundRingCurrent.Clear();
+        if ( m_GroundRingNext )
+            m_GroundRingNext.Clear();
         br_previous_current_play_area_center = "0 0 0";
         br_previous_current_play_area_radius = 0;
         br_previous_future_play_area_center = "0 0 0";

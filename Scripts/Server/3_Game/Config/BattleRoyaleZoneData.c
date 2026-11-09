@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 8;  // Config version
+	int version = 9;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -213,6 +213,11 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     // Filtering happens at send time, not here: the starting circle depends on the player count at
     // the countdown, so it is not known when this file is read.
     float hot_zone_margin_m = 0;
+
+    // Draw both circles on the terrain on every client: a blue band for the circle in play, a white
+    // one for the next. Client-side only (local objects, pushed once on connect); off leaves the map
+    // and HUD as the only cue.
+    bool show_ground_rings = true;
 
     override string GetProfilePath()
     {
@@ -482,6 +487,13 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			// v8 REMOVED shrink_base, shrink_exponent and constant_scale, which nothing read. Nothing to
 			// migrate: the re-save drops them from the profile, and a mission file's copies are ignored.
 			version = 8;
+			Save();  // Save the upgraded config
+		}
+
+		if (version < 9)
+		{
+			// v9 added show_ground_rings, a scalar: its initialiser (on) survives a missing key.
+			version = 9;
 			Save();  // Save the upgraded config
 		}
 	}

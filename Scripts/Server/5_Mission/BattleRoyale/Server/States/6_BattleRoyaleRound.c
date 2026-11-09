@@ -195,18 +195,18 @@ class BattleRoyaleRound: BattleRoyaleState
                 if(val > 0)
                     m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNoZoneSeconds", new Param1<int>( sec ), false) );
             }
-
-			//send play area to clients
-			BattleRoyalePlayArea m_PreviousArea = NULL;
-			if(GetPreviousZone())
-				m_PreviousArea = GetPreviousZone().GetArea();
-
-			//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-			//--- Nothing to re-send when no round has played yet: the clients were never given a
-			//--- current area, and the circle of a skipped round must not be advertised as one.
-			if(m_PreviousArea)
-				SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
         }
+
+		//--- Every round, not only the last: a round ended before its lock (Skip State) otherwise left the
+		//--- client with no current circle while GetActiveZone() was already damaging with it.
+		BattleRoyalePlayArea m_PreviousArea = NULL;
+		if(GetPreviousZone())
+			m_PreviousArea = GetPreviousZone().GetArea();
+
+		//--- Nothing to re-send when no round has played yet: the clients were never given a
+		//--- current area, and the circle of a skipped round must not be advertised as one.
+		if(m_PreviousArea)
+			SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
 
         BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
