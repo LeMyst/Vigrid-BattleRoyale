@@ -116,6 +116,8 @@ enum BattleRoyaleDiagAction
     TP_ZONE_CENTER,    //!< teleport the sender to the live circle's centre
     TP_NEXT_ZONE,      //!< ... to the incoming circle's centre
     TP_LOBBY,          //!< ... to the lobby centre
+    TP_PAS_PANEL,      //!< ... to the nearest PAS panel
+    PAS_TOGGLE,        //!< switch the nearest PAS panel on or off, as the player action does
     FORCE_UNSTUCK,     //!< unstuck ignoring AllowsUnstuck() and the cooldown
 
     LOG_ZONE_TABLE,    //!< dump every generated play area, in generation order

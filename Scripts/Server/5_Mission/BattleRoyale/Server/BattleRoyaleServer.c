@@ -2128,6 +2128,49 @@ class BattleRoyaleServer: BattleRoyaleBase
                 break;
             }
 
+            case BattleRoyaleDiagAction.TP_PAS_PANEL:
+            {
+                if(!state || !sender_player)
+                    break;
+
+                Land_Radio_PanelPAS pas_panel = Land_Radio_PanelPAS.BR_FindNearest(sender_player.GetPosition());
+                if(!pas_panel)
+                {
+                    BattleRoyaleUtils.Warn("[Diag] TP: PAS Panel - no panel registered on this map");
+                    break;
+                }
+
+                //--- BR_DiagTeleport lands on the terrain; the panel may be on an upper floor.
+                vector pas_pos = pas_panel.GetPosition();
+                float pas_height = pas_pos[1] - GetGame().SurfaceY(pas_pos[0], pas_pos[2]);
+                BattleRoyaleUtils.Info("[Diag] PAS panel at " + pas_pos + ", " + pas_height + " m above the terrain");
+                state.BR_DiagTeleport(sender_player, pas_pos);
+                break;
+            }
+
+            case BattleRoyaleDiagAction.PAS_TOGGLE:
+            {
+                if(!sender_player)
+                    break;
+
+                Land_Radio_PanelPAS toggle_panel = Land_Radio_PanelPAS.BR_FindNearest(sender_player.GetPosition());
+                if(!toggle_panel || !toggle_panel.GetCompEM())
+                {
+                    BattleRoyaleUtils.Warn("[Diag] PAS: Toggle - no panel registered on this map");
+                    break;
+                }
+
+                //--- The same calls ActionTurnOn/OffTransmitterOnGround.OnExecuteServer make.
+                if(toggle_panel.GetCompEM().IsSwitchedOn())
+                    toggle_panel.TurnOffTransmitter();
+                else
+                    toggle_panel.TurnOnTransmitter();
+
+                float toggle_dist = vector.Distance(sender_player.GetPosition(), toggle_panel.GetPosition());
+                BattleRoyaleUtils.Info("[Diag] PAS panel " + toggle_dist + " m away, switched on=" + toggle_panel.GetCompEM().IsSwitchedOn() + " working=" + toggle_panel.GetCompEM().IsWorking());
+                break;
+            }
+
             case BattleRoyaleDiagAction.FORCE_UNSTUCK:
             {
                 if(!state || !sender_player)

@@ -710,6 +710,9 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         //--- rather than only the ones who think to press F4.
         AnnouncePreviousWinner();
 
+        //--- Each lobby, so an in-place reset also restores batteries taken or drained last match.
+        Land_Radio_PanelPAS.BR_RefillAll();
+
         if( b_UseVoteSystem )
         	AddTimer(2.0, this, "CheckReadyState", NULL, true);
 

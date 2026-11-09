@@ -44,6 +44,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagTpZoneID;
 	protected int m_BRDiagTpNextZoneID;
 	protected int m_BRDiagTpLobbyID;
+	protected int m_BRDiagTpPasPanelID;
+	protected int m_BRDiagPasToggleID;
 	protected int m_BRDiagForceUnstuckID;
 
 	//--- HUD & Menus
@@ -152,6 +154,8 @@ modded class PluginDiagMenu
 		m_BRDiagTpZoneID = GetModdedDiagID();
 		m_BRDiagTpNextZoneID = GetModdedDiagID();
 		m_BRDiagTpLobbyID = GetModdedDiagID();
+		m_BRDiagTpPasPanelID = GetModdedDiagID();
+		m_BRDiagPasToggleID = GetModdedDiagID();
 		m_BRDiagForceUnstuckID = GetModdedDiagID();
 
 		m_BRDiagHudMenuID = GetModdedDiagID();
@@ -273,6 +277,8 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagTpZoneID, "", "TP: Zone Centre", m_BRDiagTeleportMenuID);
 				DiagMenu.RegisterBool(m_BRDiagTpNextZoneID, "", "TP: Next Zone", m_BRDiagTeleportMenuID);
 				DiagMenu.RegisterBool(m_BRDiagTpLobbyID, "", "TP: Lobby", m_BRDiagTeleportMenuID);
+				DiagMenu.RegisterBool(m_BRDiagTpPasPanelID, "", "TP: PAS Panel", m_BRDiagTeleportMenuID);
+				DiagMenu.RegisterBool(m_BRDiagPasToggleID, "", "PAS: Toggle Nearest", m_BRDiagTeleportMenuID);
 				//--- Ignores the 30 s cooldown, which is what makes the ladder repro iterable.
 				DiagMenu.RegisterBool(m_BRDiagForceUnstuckID, "", "Force Unstuck", m_BRDiagTeleportMenuID);
 			}

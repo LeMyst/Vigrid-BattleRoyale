@@ -48,6 +48,8 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagTpZoneID, CBBRDiagTpZone);
 		DiagMenu.BindCallback(m_BRDiagTpNextZoneID, CBBRDiagTpNextZone);
 		DiagMenu.BindCallback(m_BRDiagTpLobbyID, CBBRDiagTpLobby);
+		DiagMenu.BindCallback(m_BRDiagTpPasPanelID, CBBRDiagTpPasPanel);
+		DiagMenu.BindCallback(m_BRDiagPasToggleID, CBBRDiagPasToggle);
 		DiagMenu.BindCallback(m_BRDiagForceUnstuckID, CBBRDiagForceUnstuck);
 
 		DiagMenu.BindCallback(m_BRDiagHudForceID, CBBRDiagHudForce);
@@ -239,6 +241,24 @@ modded class PluginDiagMenuClient
 			return;
 
 		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.TP_LOBBY, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagTpPasPanel(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.TP_PAS_PANEL, 0, 0);
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagPasToggle(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.SendServerAction(BattleRoyaleDiagAction.PAS_TOGGLE, 0, 0);
 		DiagMenu.SetValue(id, false);
 	}
 
