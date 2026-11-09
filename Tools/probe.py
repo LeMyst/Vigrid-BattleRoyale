@@ -202,6 +202,10 @@ PROBES = [
      "Scripts/Client/3_Game/BattleRoyaleUtils.c",
      append("\nclass BRProbe5 { void F(bool a, bool b) { if (a\n && b) { } } }\n")),
 
+    ("settings-version: new field in Party's VigridPartyData, no version bump", "settings-version",
+     "Party/Scripts/3_Game/Server/VigridPartyData.c",
+     replace("    int version = 2;", "    bool probe_flag = true;\n    int version = 2;")),
+
     ("settings-version: new ref array, no version bump, no Upgrade branch", "settings-version",
      "Scripts/Server/3_Game/Config/BattleRoyaleGameData.c",
      replace("\tint version =", "\tref array<string> probe_field = {\"a\"};\n\tint version =")),
