@@ -119,6 +119,26 @@ produce. A codec verified only against its own output proves nothing — that is
 
 `bc1` is the one command that needs numpy, imported lazily; everything else is stdlib.
 
+## `wiki_check.py` — the wiki against the code
+
+The GitHub wiki is a separate repo, cloned beside the primary checkout as `..\Vigrid-BattleRoyale.wiki`,
+and it restates every settings field by hand. `check.py` and CI never see it, so this runs the three
+checks `CLAUDE.md` asks for before a wiki push:
+
+```bash
+python Tools/wiki_check.py --self-test   # finds the clone itself; --wiki PATH for another
+```
+
+- **links**: every internal link names a page that exists, and its `#anchor` a heading on it.
+- **json**: every ```` ```json ```` block is strict JSON, and every key in it is a field of a settings class.
+  `Tools/allowlists/wiki_json_keys.txt` is for keys from files that are not ours (COT's `Roles`).
+- **coverage**: every serialized field of each settings class is backquoted on its page (`PAGES` in
+  the script). `[NonSerialized()]` members are skipped.
+
+`--self-test` breaks each check on purpose and requires a new finding, as `probe.py` does. Its first
+version passed a wiki where nothing was checked at all: it walked the disk instead of `git ls-files`,
+skipped every path containing `.claude`, and a worktree lives under `.claude\worktrees\`.
+
 ## Allowlists
 
 `Tools/allowlists/*.txt`, one entry per line as `entry  # reason`. They are documentation as much

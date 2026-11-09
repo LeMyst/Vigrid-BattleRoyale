@@ -82,7 +82,9 @@ the wiki, not back into the README. Two other details:
   - every key in those blocks exists as a member of the matching settings class on `main` — and every
     member of each class appears on its page.
 
-  Prove the checker in both directions with a deliberately wrong key, as with any check here.
+  **`python Tools/wiki_check.py --self-test` runs all three** against the clone beside the primary
+  checkout, and its self-test proves each one still fires. A new settings page or class goes in its
+  `PAGES` table; see `Tools/README.md`.
 
 ## Build & run
 
