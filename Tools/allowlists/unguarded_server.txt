@@ -8,4 +8,3 @@
 
 Scripts/Server/3_Game/CfgGameplayHandler.c   # modded class CfgGameplayHandler - the hold-breath stamina modifier feeds the owning client's stamina prediction as well as the server simulation, so both sides must return the same value
 Scripts/Server/3_Game/Constants.c   # modded class GameConstants - zeroes the sprint stamina drain, which is predicted client-side as well as simulated server-side, so both sides must agree on the constant
-Scripts/Server/3_Game/ExpansionAirdropSettings.c   # entire body is commented out; nothing compiles either way

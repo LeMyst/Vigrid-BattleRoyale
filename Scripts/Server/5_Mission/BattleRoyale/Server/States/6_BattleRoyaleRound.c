@@ -56,7 +56,6 @@ class BattleRoyaleRound: BattleRoyaleState
     {
         BattleRoyaleUtils.Trace(GetName() + " Init!");
         b_ZoneLocked = false;
-        m_Zone = new BattleRoyaleZone;
 
         //--- Chaining, NOT the played order: use the round we were constructed against even if it
         //--- later gets skipped, or every round after a skip would collapse onto zone 1.
@@ -64,10 +63,10 @@ class BattleRoyaleRound: BattleRoyaleState
         if(chained_round && chained_round.GetZone())
         {
             int previous_zone_number = Math.Floor(chained_round.GetZone().GetZoneNumber());
-            m_Zone = m_Zone.GetZone(previous_zone_number + 1);
+            m_Zone = BattleRoyaleZone.GetZone(previous_zone_number + 1);
         } else {
             BattleRoyaleUtils.Trace("No previous zone, default to 1");
-            m_Zone = m_Zone.GetZone(1); // Can't add dynamic num zone stuff here
+            m_Zone = BattleRoyaleZone.GetZone(1); // Can't add dynamic num zone stuff here
         }
 
         // Update zone timer

@@ -14,7 +14,6 @@ class PartiesWebhook
 	void postParties(string match_uuid, array<ref map<string, string>> parties)
 	{
 		BattleRoyaleUtils.Trace("PartiesWebhook().postParties()");
-		Print( parties );
 
 		if( i_TryLeft <= 0 )
 		{

@@ -33,7 +33,6 @@ class BattleRoyaleWin: BattleRoyaleState
 		//--- a deadline, and only a push clears it.
 		SendCountdown( NULL );
 
-		string winner_name = "<NO:WINNER>";
 		if(GetPlayers().Count() > 0)
 		{
 			for ( int k = 0; k < GetPlayers().Count(); k++ )
@@ -45,7 +44,6 @@ class BattleRoyaleWin: BattleRoyaleState
 				PlayerIdentity identity = winner.GetIdentity();
 				if(identity)
 				{
-					winner_name = BattleRoyaleNameService.ResolveIdentity(identity);
 					BattleRoyaleUtils.Trace("[Win State] Winner!");
 					BattleRoyaleUtils.Trace(identity.GetName());
 					BattleRoyaleUtils.Trace(identity.GetFullName());
