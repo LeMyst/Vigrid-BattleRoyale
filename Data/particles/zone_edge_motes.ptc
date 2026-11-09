@@ -8,7 +8,7 @@ EffectDef {
    BirthRate 10
    BirthRateRND 3
    Material "Vigrid-BattleRoyale/Data/particles/zone_mote.emat"
-   SizeMultiplier 0.3
+   SizeMultiplier 0.075
    SizeRND 0.1
    StretchMultiplier 0
    Velocity 0.4
@@ -38,7 +38,7 @@ EffectDef {
    BirthRate 1
    BirthRateRND 0.5
    Material "Vigrid-BattleRoyale/Data/particles/zone_mote.emat"
-   SizeMultiplier 0.6
+   SizeMultiplier 0.15
    SizeRND 0.2
    Velocity 0.3
    VelocityRND 0.2

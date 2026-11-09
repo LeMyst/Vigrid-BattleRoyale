@@ -167,6 +167,7 @@ The **current** circle only also gets small blue lights rising slowly off the li
 - each emitter is a 10 m strip turned along the tangent, one per 10 m;
 - there are two emitters per strip: blue `zone_mote.emat` motes, plus a few faint halos in the same material;
 - the motes drift up 3 to 4 m and fade out.
+- size and density are Myst's picks (2026-11-09): size 0.25 on the slider, baked into `SizeMultiplier`; `SizeRND` left alone, since `EmitorParam` has no `SIZE_RND` (unlike `VELOCITY_RND` / `BIRTH_RATE_RND`), so the slider never touched it.
 
 A vanilla contaminated-area gas was tried first. Myst rejected it on 2026-11-09 because the smoke did not render well. The motes use about 50 emitters out of the shared 10 000-particle pool; if the pool runs dry, the rest of the arc waits for the next re-cut. They share the `show_ground_rings` switch with the quads. Live sliders: **Map & Zones → Zone Motes Density** (birth rate) and **Zone Motes Size**.
 - ⚠️ **No vanilla particle material we tried takes a blue tint, so the colour is baked into the texture.** The particle `Color` did not turn any of these blue (Myst, 2026-11-09):
