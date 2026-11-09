@@ -41,16 +41,17 @@ they cost.
 | Check | What it asserts |
 |---|---|
 | `stringtable` | every `STR_*` referenced is defined, **in its own addon's** table |
-| `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file |
+| `asset-paths` | every `Vigrid-BattleRoyale/…` reference resolves to a tracked file, in scripts, layouts, imagesets, JSON, `config.cpp` (including `files[]` folders and `samples[]`) and `mod.cpp` |
 | `guards` | every `Scripts/Server` file, and every `Server/` folder file under `Party/` and `Extra/`, opens with `#ifdef SERVER` |
 | `discipline` | standalone addons name no `BattleRoyale*` symbol; host calls into them are `#ifdef`-guarded |
 | `menu-ids` | no two `MENU_*` constants share an id |
-| `rpc` | every `AddRPC` name has a matching CF handler method |
+| `rpc` | every `AddRPC` name, literal or `const string`, has a CF handler method; every `SendRPC` has an `AddRPC` on the same namespace |
 | `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |
-| `configs` | `CfgPatches` names unique, `requiredAddons` resolve, no stripped vanilla parents, no missing array commas |
+| `configs` | `CfgPatches` names unique, `requiredAddons` resolve to a built addon (never a `config.cpp.disabled` one), no stripped vanilla parents, no missing array commas |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
+| `preprocessor` | every `#if*` has its `#endif` in the same file; no stray `#else` / `#endif` |
 | `settings-version` | a new settings field bumps `version`; a new `ref array` gets an `Upgrade()` branch |
 | `client-only-types` | no server-compiled file names a `#ifndef SERVER` type |
 | `diag-guards` | no retail-compiled file names a `#ifdef DIAG_DEVELOPER` class or method |
@@ -117,6 +118,26 @@ produce. A codec verified only against its own output proves nothing — that is
 `strip_code` note above describes.
 
 `bc1` is the one command that needs numpy, imported lazily; everything else is stdlib.
+
+## `wiki_check.py` — the wiki against the code
+
+The GitHub wiki is a separate repo, cloned beside the primary checkout as `..\Vigrid-BattleRoyale.wiki`,
+and it restates every settings field by hand. `check.py` and CI never see it, so this runs the three
+checks `CLAUDE.md` asks for before a wiki push:
+
+```bash
+python Tools/wiki_check.py --self-test   # finds the clone itself; --wiki PATH for another
+```
+
+- **links**: every internal link names a page that exists, and its `#anchor` a heading on it.
+- **json**: every ```` ```json ```` block is strict JSON, and every key in it is a field of a settings class.
+  `Tools/allowlists/wiki_json_keys.txt` is for keys from files that are not ours (COT's `Roles`).
+- **coverage**: every serialized field of each settings class is backquoted on its page (`PAGES` in
+  the script). `[NonSerialized()]` members are skipped.
+
+`--self-test` breaks each check on purpose and requires a new finding, as `probe.py` does. Its first
+version passed a wiki where nothing was checked at all: it walked the disk instead of `git ls-files`,
+skipped every path containing `.claude`, and a worktree lives under `.claude\worktrees\`.
 
 ## Allowlists
 

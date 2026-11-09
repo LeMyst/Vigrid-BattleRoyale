@@ -127,15 +127,17 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 			if ( match_uuid.Length() != 36 )
 			{
+				//--- Warn, not Trace: an operator needs to see why the server exits or runs unregistered.
 				if( m_ServerData.force_match_uuid )
 				{
-					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+					BattleRoyaleUtils.Warn("Error getting match uuid (force_match_uuid is on), restarting. Got: " + match_uuid);
 					GetGame().RequestExit(0);
 				}
 				else
 				{
+					//--- Logged before it is cleared, or the line can only ever print an empty response.
+					BattleRoyaleUtils.Warn("Error getting match uuid, continuing unregistered. Got: " + match_uuid);
 					match_uuid = "";
-					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
 				}
 			}
 			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
@@ -312,7 +314,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             if(state)
                 state.Update(timeslice);
             else
-                Error("BAD STATE IN m_States!");
+                BattleRoyaleUtils.Warn("BAD STATE IN m_States!");
         }
 
 		m_TimeSinceLastTick += delta;
@@ -388,13 +390,15 @@ class BattleRoyaleServer: BattleRoyaleBase
 					array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 					for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 					{
-						if(players[i])
+						PlayerBase migrating = players[i];
+						if(migrating)
 						{
-							next_state.AddPlayer(players[i]); //add players to new state
+							next_state.AddPlayer(migrating); //add players to new state
 						}
 						else
 						{
-							Error("null player in RemoveAllPlayers result!");
+							//--- Warn, not Error(): the rest of the transition must still run.
+							BattleRoyaleUtils.Warn("null player in RemoveAllPlayers result!");
 						}
 					}
 					i_CurrentStateIndex = next_index;//move us to the next state
@@ -407,7 +411,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 				}
 				else
 				{
-					Error("NEXT STATE IS NULL!");
+					BattleRoyaleUtils.Warn("NEXT STATE IS NULL!");
 				}
 			}
         }
@@ -447,6 +451,16 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- joining player needs them before their first frame of gameplay.
         BattleRoyaleVoiceData voice_settings = config_data.GetVoiceData();
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", new Param2<bool, bool>( voice_settings.show_speaking_players, voice_settings.speaking_list_during_match ), true, player.GetIdentity() );
+
+        //--- Same deal for the zone circles drawn on the ground (BattleRoyaleGroundRing). In steps: the
+        //--- one-line form threw "NULL pointer to instance" here and aborted the rest of this function.
+        BattleRoyaleZoneData ring_settings = config_data.GetZoneData();
+        bool show_ground_rings = true;
+        if ( ring_settings )
+            show_ground_rings = ring_settings.show_ground_rings;
+        else
+            BattleRoyaleUtils.Warn( "OnPlayerConnected: no zone settings, ground rings left on" );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetGroundRings", new Param1<bool>( show_ground_rings ), true, player.GetIdentity() );
 
         BattleRoyaleDebugState m_DebugStateObj;
 

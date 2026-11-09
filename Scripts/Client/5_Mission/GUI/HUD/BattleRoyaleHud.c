@@ -3,6 +3,9 @@ class BattleRoyaleHud
 {
     protected Widget m_Root;
 
+    //--- Throttle for the per-frame SetDistance debug line.
+    protected int m_NextDistanceLogMs;
+
     protected Widget m_PlayerCountPanel;
     protected Widget m_GroupCountPanel;
     protected Widget m_ZoneDistancePanel;
@@ -171,9 +174,10 @@ class BattleRoyaleHud
      */
     void SetDistance(bool isInsideZone, float distExt, float distInt, float angle, int secondsToZone)
     {
-        if(!m_DistanceTextWidget)
+        //--- All four widgets written below, not just the first.
+        if(!m_DistanceTextWidget || !m_DistanceZoneArrow || !m_CountdownTextWidget || !m_ImageClock)
         {
-            Error("Called SetDistance but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetDistance but widget is null!");
             return;
         }
 
@@ -204,9 +208,14 @@ class BattleRoyaleHud
 			//--- Gated so the string is not even BUILT at production log levels. This runs once per
 			//--- frame for as long as a player is outside the circle, which used to mean the tail end
 			//--- of a round and now means the whole pre-lock phase too - measured at ~60 lines/second
-			//--- per client, and string.Format runs before Debug() can reject it.
-			if (BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+			//--- per client, and string.Format runs before Debug() can reject it. Also capped at one
+			//--- line per second: at 60/s it buried every other line of a diag log.
+			int distance_log_now = GetGame().GetTime();
+			if (distance_log_now >= m_NextDistanceLogMs && BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+			{
+				m_NextDistanceLogMs = distance_log_now + 1000;
 				BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 secondsToZone=%2 speedNeededToReachZone=%3", distExt, secondsToZone, speedNeededToReachZone));
+			}
 
 			// Convert m/min thresholds to m/s for comparison (divide by 60)
 			float fastThreshold = 400.0 / 60.0;    // 6.67 m/s
@@ -245,7 +254,7 @@ class BattleRoyaleHud
         //--- below, so a layout that failed to resolve it reached a null call rather than this guard.
         if(!m_PlayerTextWidget || !m_GroupTextWidget)
         {
-            Error("Called SetCount but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetCount but widget is null!");
             return;
         }
 
@@ -283,7 +292,7 @@ class BattleRoyaleHud
         //--- copy-paste that made the guard test the wrong widget in both directions.
         if(!m_KillTextWidget)
         {
-            Error("Called SetKillCount but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetKillCount but widget is null!");
             return;
         }
         m_KillTextWidget.SetText( count.ToString() );
@@ -293,7 +302,7 @@ class BattleRoyaleHud
     {
         if(!m_AudienceTextWidget)
         {
-            Error("Called SetAudienceCount but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetAudienceCount but widget is null!");
             return;
         }
         m_AudienceTextWidget.SetText( count.ToString() );
@@ -303,7 +312,7 @@ class BattleRoyaleHud
     {
         if(!m_CountdownTextWidget)
         {
-            Error("Called SetCountdown but widget is null!");
+            BattleRoyaleUtils.Warn("Called SetCountdown but widget is null!");
             return;
         }
 

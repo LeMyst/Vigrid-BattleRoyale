@@ -441,6 +441,14 @@ class VigridPartyMenu extends UIScriptedMenu
             Widget accent_widget = row.FindAnyWidget("PlayerRowAccent");
             ButtonWidget invite_button = ButtonWidget.Cast(row.FindAnyWidget("PlayerRowInviteButton"));
 
+            //--- A broken layout skips the row rather than throwing out of the whole refresh; the
+            //--- slot is reused by the next index and trimmed at the end.
+            if (!name_widget || !status_widget || !accent_widget || !invite_button)
+            {
+                VigridPartyLog.Warn("Party menu: player row is missing a widget, skipped");
+                continue;
+            }
+
             string row_name = rpc.list_names.Get(index);
             name_widget.SetText(row_name);
 
@@ -507,6 +515,12 @@ class VigridPartyMenu extends UIScriptedMenu
             Widget accent_widget = row.FindAnyWidget("MemberRowAccent");
             ButtonWidget promote_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowPromoteButton"));
             ButtonWidget kick_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowKickButton"));
+
+            if (!name_widget || !status_widget || !accent_widget || !promote_button || !kick_button)
+            {
+                VigridPartyLog.Warn("Party menu: member row is missing a widget, skipped");
+                continue;
+            }
 
             //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
             //--- stringtable key and only GetMemberName resolves it.

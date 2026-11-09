@@ -7,12 +7,9 @@ class BattleRoyaleZone
     protected BattleRoyaleConfig m_Config;
     protected BattleRoyaleZoneData m_ZoneSettings;
 
-    protected float f_ConstantShrink;
     protected int i_ShrinkType;
     protected int i_NumRounds;
 
-    protected float f_Eulers;
-    protected float f_Exponent;
     protected ref array<float> a_StaticSizes;
     protected ref array<int> a_StaticTimers;
     protected ref array<int> a_MinPlayers;
@@ -106,10 +103,7 @@ class BattleRoyaleZone
 
         m_ZoneSettings = m_Config.GetZoneData();
         i_NumRounds = m_ZoneSettings.num_zones;
-        f_ConstantShrink = m_ZoneSettings.constant_scale;
         i_ShrinkType = m_ZoneSettings.shrink_type;
-        f_Eulers = m_ZoneSettings.shrink_base;
-        f_Exponent = m_ZoneSettings.shrink_exponent;
         a_StaticSizes = m_ZoneSettings.static_sizes;
         a_StaticTimers = m_ZoneSettings.static_timers;
         a_MinPlayers = m_ZoneSettings.min_players;
@@ -360,6 +354,11 @@ class BattleRoyaleZone
                     return Math.Round(derived);   //--- a travel budget: never truncate it downward
             }
 
+            //--- The offset at index j prices the trip in from circle j+1, which the opening round
+            //--- never makes: players spawn inside circle j, and circle j+1 was skipped or never existed.
+            if(is_opening_round)
+                return a_StaticTimers[timer_index];
+
             return a_StaticTimers[timer_index] + GetDurationOffset(timer_index);
         }
 
@@ -496,9 +495,6 @@ class BattleRoyaleZone
 
         float d = (Math.Pow(x - center[0], 2) + Math.Pow(z - center[2], 2));
         float radius_pow = Math.Pow(GetArea().GetRadius(), 2);
-
-        BattleRoyaleUtils.Trace(d);
-        BattleRoyaleUtils.Trace(radius_pow);
 
         return (d < radius_pow);
     }
@@ -2569,6 +2565,8 @@ class BattleRoyaleZone
     {
         array<vector> chain = new array<vector>();
 
+        //--- Here and not in ResetGenerationStats: RunSelfTest calls that per run and diffs this counter.
+        s_SurfaceCalls = 0;
         ResetGenerationStats();
         BuildFeasiblePOIList();
 
@@ -2598,6 +2596,8 @@ class BattleRoyaleZone
     //--- is optional: GetBattleRoyalePlayAreas still generates on demand if nothing called this.
     static int s_GenerationSeed;
     static bool s_Prepared;
+    //--- Deliberately survives ResetForNewMatch; see PrepareGeneration.
+    static bool s_SelfTestsRan;
 
     //--- Forget the match's circles so the next PrepareGeneration builds a new chain. Called by the
     //--- in-place reset (BattleRoyaleInPlaceReset) before it builds the next BattleRoyaleServer; a
@@ -2661,6 +2661,12 @@ class BattleRoyaleZone
 
         //--- Force the circles to be built here rather than lazily inside round 0's constructor.
         BattleRoyaleZone zone = BattleRoyaleZone.GetZone(1);
+
+        //--- Once per process, so an in-place reset does not re-run them with the lobby connected.
+        if(s_SelfTestsRan)
+            return;
+
+        s_SelfTestsRan = true;
 
         //--- Opt-in diagnostic, after the real chain is committed so it cannot disturb it.
         runs = config.GetZoneData().zone_selftest_runs;

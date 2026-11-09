@@ -12,3 +12,4 @@ class JATEvent
 		json_data = in_json_data;
 	};
 };
+#endif
