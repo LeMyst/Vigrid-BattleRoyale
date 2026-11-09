@@ -71,7 +71,7 @@ Only seven addons declare a `defines[]`, which is what lets the mod guard its ca
 
 | Define | Addon | Used by the mod? |
 |---|---|---|
-| `VIGRID_AUTORUN` | AutoRun | yes — 2 call sites |
+| `VIGRID_AUTORUN` | AutoRun | yes — 5 call sites |
 | `DUMP_ITEM_HEIGHTS` | DumpItemHeights | no — declared for consistency only, and **not defined in a normal build** since the addon is parked |
 | `VIGRID_EARPLUGS` | EarPlugs | no — declared for consistency only; the addon exposes no API to call |
 | `KILLFEED` | KillFeed | yes — 5 call sites |
@@ -88,7 +88,7 @@ handler leave the PBO, while the fullscreen map is untouched.
 
 The other twelve declare none, so nothing can `#ifdef`-guard against them.
 
-`VIGRID_AUTORUN` guards two call sites and both are about one thing: the host mod freezes players by
+`VIGRID_AUTORUN` guards five call sites and all are about one thing: the host mod freezes players by
 writing `HumanInputController.OverrideMovementSpeed`, which is the very override auto-run holds. See
 [AutoRun/README.md](AutoRun/README.md) for why the server's cancel deliberately does not release it.
 

@@ -296,6 +296,8 @@ class BattleRoyalePrepare: BattleRoyaleState
         //--- to stop tracking this player BEFORE we write our own override. CancelFor deliberately
         //--- does not touch the controller - see VigridAutoRunState for why releasing here would
         //--- undo the freeze we are one line away from applying.
+        //--- Refusing new holds until HandleUnlock stops a late request overwriting the freeze.
+        VigridAutoRunAPI.SetAllowedForAll(false);
         VigridAutoRunAPI.CancelFor(process_player);
 #endif
 

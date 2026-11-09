@@ -75,6 +75,7 @@ second one's death ends the match, so they are on the death screen at the reset 
 | Deaths, spectators, audience, team colours, `m_Ended` | `BattleRoyaleSpectators.ResetForNewMatch` |
 | Previous match (re-read from the fresh `last_match.json`) | `BattleRoyaleMatchStats.ResetForNewMatch` |
 | Auto-grouped party members, invites, formation lock | `VigridPartyAPI.ResetForNewMatch` |
+| Auto-run refused since the freeze (a match that ended before the unlock) | `VigridAutoRunAPI.SetAllowedForAll` |
 | Admin overlay party colours | `BRMasterControlsModule.ResetPartyIndex` |
 | Lobby and win chickens | `BattleRoyaleDebug.DeleteLobbyChickens`, `BattleRoyaleWin.DeleteWinChickens` |
 | Player corpses and their gear | `BattleRoyaleCorpses` (fed from `PlayerBase.EEKilled`) |
