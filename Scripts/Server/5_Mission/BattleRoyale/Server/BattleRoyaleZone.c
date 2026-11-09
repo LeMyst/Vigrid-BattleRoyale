@@ -2574,6 +2574,8 @@ class BattleRoyaleZone
     {
         array<vector> chain = new array<vector>();
 
+        //--- Here and not in ResetGenerationStats: RunSelfTest calls that per run and diffs this counter.
+        s_SurfaceCalls = 0;
         ResetGenerationStats();
         BuildFeasiblePOIList();
 
@@ -2603,6 +2605,8 @@ class BattleRoyaleZone
     //--- is optional: GetBattleRoyalePlayAreas still generates on demand if nothing called this.
     static int s_GenerationSeed;
     static bool s_Prepared;
+    //--- Deliberately survives ResetForNewMatch; see PrepareGeneration.
+    static bool s_SelfTestsRan;
 
     //--- Forget the match's circles so the next PrepareGeneration builds a new chain. Called by the
     //--- in-place reset (BattleRoyaleInPlaceReset) before it builds the next BattleRoyaleServer; a
@@ -2666,6 +2670,12 @@ class BattleRoyaleZone
 
         //--- Force the circles to be built here rather than lazily inside round 0's constructor.
         BattleRoyaleZone zone = BattleRoyaleZone.GetZone(1);
+
+        //--- Once per process, so an in-place reset does not re-run them with the lobby connected.
+        if(s_SelfTestsRan)
+            return;
+
+        s_SelfTestsRan = true;
 
         //--- Opt-in diagnostic, after the real chain is committed so it cannot disturb it.
         runs = config.GetZoneData().zone_selftest_runs;
