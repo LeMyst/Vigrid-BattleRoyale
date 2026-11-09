@@ -150,6 +150,7 @@ class SteamNameCallback: RestCallback
 		if (dataSize <= 0)
 		{
 			BattleRoyaleUtils.Warn("SteamNameCallback: empty response from Steam.");
+			GiveUp();
 			return;
 		}
 
@@ -159,18 +160,21 @@ class SteamNameCallback: RestCallback
 		if (!JsonFileLoader<SteamSummariesEnvelope>.LoadData(data, envelope, error_message))
 		{
 			BattleRoyaleUtils.Warn("SteamNameCallback: cannot parse Steam response: " + error_message);
+			GiveUp();
 			return;
 		}
 
 		if (!envelope.response)
 		{
 			BattleRoyaleUtils.Warn("SteamNameCallback: Steam response carried no 'response' object.");
+			GiveUp();
 			return;
 		}
 
 		if (!envelope.response.players)
 		{
 			BattleRoyaleUtils.Warn("SteamNameCallback: Steam response carried no 'players' array.");
+			GiveUp();
 			return;
 		}
 
@@ -192,11 +196,21 @@ class SteamNameCallback: RestCallback
 	protected void Retry()
 	{
 		if (i_TryLeft <= 0)
+		{
+			GiveUp();
 			return;
+		}
 
 		SteamNameWebhook webhook = new SteamNameWebhook(s_ApiKey);
 		webhook.SetTryLeft(i_TryLeft);
 		webhook.Send(a_Uids);
+	}
+
+	//--- No usable answer for this batch, so a later connect is allowed to ask again.
+	protected void GiveUp()
+	{
+		BattleRoyaleUtils.Info("SteamNameCallback: giving up on " + a_Uids.Count() + " name(s) until they reconnect.");
+		BattleRoyaleNameService.ForgetRequests(a_Uids);
 	}
 };
 
