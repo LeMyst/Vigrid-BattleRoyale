@@ -18,15 +18,12 @@ class BRHeatCell
 
 class SpawnSelectionMenu extends UIScriptedMenu
 {
-	protected ref IngameHud m_Hud;
+	//--- Not ref: the mission owns its HUD, and this menu must not keep it alive past the mission.
+	protected IngameHud m_Hud;
 	protected ref BRMapHandler m_MapMenuHandler;
-	protected ref MapWidget m_MapWidgetInstance;
 
 	protected MapWidget m_MapWidget;
 	protected TextWidget m_CountdownText;
-	protected ButtonWidget m_ConfirmButton;
-
-	protected vector m_SelectedSpawnPoint;
 
 	protected CanvasWidget m_SpawnCanvas;
 
@@ -74,13 +71,10 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	{
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SpawnSelectionMenu");
 		m_InputLock = new BattleRoyaleMenuInputLock();
-		g_Game.SetKeyboardHandle(this);
 	}
 
 	void ~SpawnSelectionMenu()
 	{
-		g_Game.SetKeyboardHandle(NULL);
-
 		if (m_Hud)
 		{
 			m_Hud.ShowHudUI(true);
@@ -134,20 +128,9 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 		m_CountdownText = TextWidget.Cast(layoutRoot.FindAnyWidget("CountdownText"));
 
-		m_ConfirmButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("ConfirmButton"));
-
 		if (m_MapWidget)
 		{
-			vector tempPosition = GetGame().ConfigGetVector(string.Format("CfgWorlds %1 centerPosition", GetGame().GetWorldName()));
-			float scale = 0.33;
-			vector mapPosition = Vector(tempPosition[0], tempPosition[1], tempPosition[2]);
-
-			if (v_FirstZoneCenter != "0 0 0")
-			{
-				m_MapWidget.SetMapPos(v_FirstZoneCenter);
-				m_MapWidget.SetScale(0.10);
-			}
-
+			//--- No map centring here: Init runs inside EnterScriptedMenu, before SetFirstZone.
 			m_MapMenuHandler = new BRMapHandler(m_MapWidget);
 
 			if (m_Hud)
@@ -922,11 +905,6 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		BattleRoyaleUtils.Trace("SpawnSelectionMenu::UpdateHeatMap");
 		m_HeatMapSpawnPoints = spawnPoints;
 		b_HeatMapCacheDirty = true;
-	}
-
-	vector GetSelectedSpawnPoint()
-	{
-		return m_SelectedSpawnPoint;
 	}
 
 	void SetTeammateSpawnPoint(PlayerBase player, vector pos, int color)
