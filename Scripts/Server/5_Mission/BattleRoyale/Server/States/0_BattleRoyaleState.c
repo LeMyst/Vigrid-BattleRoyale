@@ -1010,8 +1010,9 @@ class BattleRoyaleState: Timeable
      *  How long a whole match starting at zone `start_zone` would run, in seconds (#284 point 3).
      *
      *  Starting at zone Z plays rounds for zones Z..num_zones - i.e. settings indices num_zones-Z down
-     *  to 0 - and then 7_BattleRoyaleLastRound plays out the final circle on static_timers[0]. Ahead of
-     *  all of it sits 5_BattleRoyaleStartMatch's warm-up, round_duration_minutes / 2.
+     *  to 0 - and then 7_BattleRoyaleLastRound plays out the final circle on static_timers[0], or on
+     *  round_duration_minutes when shrink_type is not 3. Ahead of all of it sits
+     *  5_BattleRoyaleStartMatch's warm-up, round_duration_minutes / 2.
      *
      *  The `opening` flag is passed explicitly per candidate, which is what stops this and
      *  BattleRoyaleZone.GetZoneTimer calling each other forever - see that method's header.
@@ -1025,6 +1026,7 @@ class BattleRoyaleState: Timeable
         int total = 0;
         int k;
         int num_zones;
+        int endgame;
         bool is_opening;
 
         if(!config)
@@ -1050,10 +1052,13 @@ class BattleRoyaleState: Timeable
             total = total + zone.GetZoneTimer(is_opening);
         }
 
-        //--- The endgame. 7_BattleRoyaleLastRound reads static_timers[0] directly rather than going
-        //--- through GetZoneTimer, so this reads it the same way - the two must not be able to disagree.
-        if(zone_settings.static_timers && zone_settings.static_timers.Count() > 0)
-            total = total + zone_settings.static_timers[0];
+        //--- The endgame, chosen exactly as 7_BattleRoyaleLastRound's constructor chooses it rather than
+        //--- through GetZoneTimer - the two must not be able to disagree.
+        endgame = 60 * game_settings.round_duration_minutes;
+        if(zone_settings.shrink_type == 3 && zone_settings.static_timers && zone_settings.static_timers.Count() > 0)
+            endgame = zone_settings.static_timers[0];
+
+        total = total + endgame;
 
         return total;
     }
