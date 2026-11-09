@@ -161,6 +161,14 @@ PROBES = [
      "Scripts/Client/5_Mission/BattleRoyale/Client/BattleRoyaleClient.c",
      append("\nclass BRProbe3 { void F() { VigridMapAPI.ClearZones(); } }\n")),
 
+    ("discipline: BattleRoyale symbol inside Extra/AutoRun/", "discipline",
+     "Extra/AutoRun/Scripts/3_Game/VigridAutoRunLog.c",
+     append('\nclass VAProbe { void F() { BattleRoyaleUtils.Info("x"); } }\n')),
+
+    ("guards: Party Server-folder file loses #ifdef SERVER", "guards",
+     "Party/Scripts/4_World/Server/VigridPartyManager.c",
+     replace("#ifdef SERVER", "//probe")),
+
     ("menu-ids: two constants share an id", "menu-ids",
      "Scripts/Client/3_Game/Constants.c", append("\nconst int MENU_BR_PROBE = 178;\n")),
 

@@ -11,6 +11,9 @@
  *  and friends). An allowlist of 27 entries would record the status quo without asserting
  *  anything about it. What IS checked on the client side is misfiling - a `#ifdef SERVER` file
  *  sitting in the client tree, which is always a file in the wrong folder.
+ *
+ *  The in-repo addons (`Party/`, `Extra/*`) follow the same layout one level down, as `Server/` and
+ *  `Client/` folders inside each script stage, and get the same two rules.
 """
 
 from __future__ import annotations
@@ -18,7 +21,10 @@ from __future__ import annotations
 from Checks._source import Finding, allowlist, error, read, tracked
 
 NAME = "guards"
-SUMMARY = "every Scripts/Server file opens with #ifdef SERVER"
+SUMMARY = "every Server-folder file opens with #ifdef SERVER"
+
+SERVER_FILES = ("Scripts/Server/*.c", "Party/*/Server/*.c", "Extra/*/Server/*.c")
+CLIENT_FILES = ("Scripts/Client/*.c", "Party/*/Client/*.c", "Extra/*/Client/*.c")
 
 
 def first_code_line(text: str) -> str:
@@ -33,7 +39,7 @@ def run() -> list[Finding]:
     findings: list[Finding] = []
     exempt = allowlist("unguarded_server")
 
-    for path in tracked("Scripts/Server/*.c"):
+    for path in tracked(*SERVER_FILES):
         first = first_code_line(read(path))
         if first.startswith("#ifdef SERVER"):
             continue
@@ -45,21 +51,21 @@ def run() -> list[Finding]:
             path, 1,
         ))
 
-    for path in tracked("Scripts/Client/*.c"):
+    for path in tracked(*CLIENT_FILES):
         first = first_code_line(read(path))
         if first.startswith("#ifdef SERVER"):
             findings.append(error(
-                "is guarded #ifdef SERVER but lives in the client tree - move it under "
-                "Scripts/Server/ so the folder matches what the file actually is",
+                "is guarded #ifdef SERVER but lives in a Client folder - move it to the matching "
+                "Server folder so the folder matches what the file actually is",
                 path, 1,
             ))
 
     #  An allowlist entry for a file that has since been guarded (or deleted) is stale, and a
     #  stale exemption is how a rule quietly stops applying.
     for path, reason in sorted(exempt.items()):
-        if path not in tracked("Scripts/Server/*.c"):
+        if path not in tracked(*SERVER_FILES):
             findings.append(error(
-                f"allowlisted as unguarded but is not a tracked Scripts/Server file - remove the "
+                f"allowlisted as unguarded but is not a tracked Server-folder file - remove the "
                 f"entry ({reason or 'no reason recorded'})",
                 "Tools/allowlists/unguarded_server.txt",
             ))

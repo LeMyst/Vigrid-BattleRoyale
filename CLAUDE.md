@@ -162,7 +162,7 @@ python Tools/check.py -W         # warnings fail too - what CI runs
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |
 | `preprocessor` | every `#if*` has its `#endif` in the same file; no stray `#else` / `#endif` |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
-| `guards` | every `Scripts/Server` file opens with `#ifdef SERVER` |
+| `guards` | every `Scripts/Server` file, and every `Server/` folder file under `Party/` and `Extra/`, opens with `#ifdef SERVER` |
 | `inputs` | every `Inputs.xml` parses, and its three sections agree |
 | `menu-ids` | no two `MENU_*` constants share an id across the PBOs |
 | `rpc` | every `AddRPC` name, literal or `const string`, has a CF handler method; every `SendRPC` has an `AddRPC` on the same namespace |
