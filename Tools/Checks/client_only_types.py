@@ -42,21 +42,31 @@ def _guard_regions(text: str) -> list[bool]:
     A small directive stack rather than a first-line test, because the real code guards *blocks*
     as often as whole files - BattleRoyaleSpectatorCamera has no top-level guard and wraps the one
     risky call instead, and treating that as unguarded would report a fixed bug forever.
+
+    Each frame is tri-state: True client-only, False server-only, None unrelated. Only a SERVER
+    frame flips at `#else` - the `#else` of `#ifdef VIGRID_PARTY` compiles on the server too.
     """
     out: list[bool] = []
-    stack: list[bool] = []          # per open #if: does it mean "client only"?
+    stack: list[bool | None] = []
     for line in text.splitlines():
         s = line.strip()
         if s.startswith("#ifndef"):
-            stack.append(s[len("#ifndef"):].strip().startswith("SERVER"))
+            stack.append(True if _symbol(s, "#ifndef") == "SERVER" else None)
         elif s.startswith("#ifdef"):
-            stack.append(False)
+            stack.append(False if _symbol(s, "#ifdef") == "SERVER" else None)
+        elif s.startswith("#if"):
+            stack.append(None)
         elif s.startswith("#else") and stack:
-            stack[-1] = not stack[-1]
+            if stack[-1] is not None:
+                stack[-1] = not stack[-1]
         elif s.startswith("#endif") and stack:
             stack.pop()
-        out.append(any(stack))
+        out.append(True in stack)
     return out
+
+
+def _symbol(directive: str, keyword: str) -> str:
+    return (directive[len(keyword):].split() or [""])[0]
 
 
 def run() -> list[Finding]:

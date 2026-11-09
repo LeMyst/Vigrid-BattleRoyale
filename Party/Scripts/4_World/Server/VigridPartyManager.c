@@ -170,7 +170,8 @@ class VigridPartyManager
             int member_count = party.member_uids.Count();
             for (int j = 0; j < member_count; j++)
             {
-                m_MemberIndex.Set(party.member_uids.Get(j), party.id);
+                string member_uid = party.member_uids.Get(j);
+                m_MemberIndex.Set(member_uid, party.id);
             }
         }
     }
@@ -438,7 +439,9 @@ class VigridPartyManager
 
             if (group_of_party.Contains(party_id))
             {
-                groups.Get(group_of_party.Get(party_id)).Insert(player);
+                int group_index = group_of_party.Get(party_id);
+                array<PlayerBase> party_group = groups.Get(group_index);
+                party_group.Insert(player);
                 continue;
             }
 
@@ -630,7 +633,8 @@ class VigridPartyManager
         int members = party.member_uids.Count();
         for (int i = 0; i < members; i++)
         {
-            DropMemberIndex(party.member_uids.Get(i));
+            string member_uid = party.member_uids.Get(i);
+            DropMemberIndex(member_uid);
         }
 
         int index = m_Parties.Find(party);
@@ -669,7 +673,8 @@ class VigridPartyManager
             //--- A one-member party is just a player. Tell the survivor and drop it.
             if (party.Count() == 1)
             {
-                PlayerBase last = GetPlayerByUid(party.member_uids.Get(0));
+                string last_uid = party.member_uids.Get(0);
+                PlayerBase last = GetPlayerByUid(last_uid);
                 if (last && last.GetIdentity())
                 {
                     SendEmptyRoster(last.GetIdentity());
@@ -752,7 +757,8 @@ class VigridPartyManager
                 continue;
             }
 
-            existing_sizes.Set(known, existing_sizes.Get(known) + 1);
+            int known_size = existing_sizes.Get(known);
+            existing_sizes.Set(known, known_size + 1);
         }
 
         //--- Fisher-Yates. This shuffle IS the "random leader" rule: VigridParty.Add makes the first
@@ -762,7 +768,8 @@ class VigridPartyManager
         {
             int j = Math.RandomInt(0, s + 1);
             PlayerBase swap = pool.Get(s);
-            pool.Set(s, pool.Get(j));
+            PlayerBase picked = pool.Get(j);
+            pool.Set(s, picked);
             pool.Set(j, swap);
         }
 
@@ -788,9 +795,14 @@ class VigridPartyManager
         for (int a = 0; a < slot_count; a++)
         {
             if (a < plan.existing_count)
-                slot_party.Insert(existing.Get(a));
+            {
+                VigridParty existing_party = existing.Get(a);
+                slot_party.Insert(existing_party);
+            }
             else
+            {
                 slot_party.Insert(NULL);
+            }
         }
 
         array<VigridParty> touched = new array<VigridParty>();
@@ -802,7 +814,8 @@ class VigridPartyManager
             if (slot == -1)
                 continue;
 
-            string member_uid = UidOf(pool.Get(b));
+            PlayerBase pooled = pool.Get(b);
+            string member_uid = UidOf(pooled);
             if (member_uid == "")
                 continue;
 
@@ -865,7 +878,8 @@ class VigridPartyManager
         int count = party.member_uids.Count();
         for (int i = 0; i < count; i++)
         {
-            PlayerBase member = GetPlayerByUid(party.member_uids.Get(i));
+            string member_uid = party.member_uids.Get(i);
+            PlayerBase member = GetPlayerByUid(member_uid);
             if (!member)
                 continue;
             if (!member.GetIdentity())
@@ -1121,7 +1135,8 @@ class VigridPartyManager
 
         for (int j = 0; j < member_count; j++)
         {
-            PlayerBase member = GetPlayerByUid(party.member_uids.Get(j));
+            string member_uid = party.member_uids.Get(j);
+            PlayerBase member = GetPlayerByUid(member_uid);
             if (!member)
                 continue;
             if (!member.GetIdentity())
@@ -1220,7 +1235,8 @@ class VigridPartyManager
         int member_count = party.member_uids.Count();
         for (int i = 0; i < member_count; i++)
         {
-            PlayerBase member = GetPlayerByUid(party.member_uids.Get(i));
+            string member_uid = party.member_uids.Get(i);
+            PlayerBase member = GetPlayerByUid(member_uid);
             if (!member)
                 continue;
             if (!member.GetIdentity())
@@ -1337,7 +1353,8 @@ class VigridPartyManager
         int count = party.member_uids.Count();
         for (int i = 0; i < count; i++)
         {
-            PlayerBase member = GetPlayerByUid(party.member_uids.Get(i));
+            string member_uid = party.member_uids.Get(i);
+            PlayerBase member = GetPlayerByUid(member_uid);
             if (!member)
                 continue;
             if (!member.GetIdentity())
@@ -1476,7 +1493,8 @@ class VigridPartyManager
 
             for (int k = 0; k < member_count; k++)
             {
-                PlayerBase recipient = GetPlayerByUid(party.member_uids.Get(k));
+                string recipient_uid = party.member_uids.Get(k);
+                PlayerBase recipient = GetPlayerByUid(recipient_uid);
                 if (!recipient)
                     continue;
                 if (!recipient.GetIdentity())
@@ -1714,8 +1732,9 @@ class VigridPartyManager
             return;
         }
 
+        //--- No identity counts as offline: the invitation's SendRPC would broadcast to everyone.
         PlayerBase invitee = GetPlayerByUid(invitee_uid);
-        if (!invitee)
+        if (!invitee || !invitee.GetIdentity())
         {
             SendNotify(sender, "STR_PARTY_PLAYER_OFFLINE", invitee_uid, "");
             return;
@@ -1917,7 +1936,8 @@ class VigridPartyManager
         int member_count = party.member_uids.Count();
         for (int i = 0; i < member_count; i++)
         {
-            PlayerBase member = GetPlayerByUid(party.member_uids.Get(i));
+            string member_uid = party.member_uids.Get(i);
+            PlayerBase member = GetPlayerByUid(member_uid);
             if (!member)
                 continue;
             if (!member.GetIdentity())
@@ -2119,7 +2139,7 @@ class VigridPartyManager
         if (m_Settings.ping_ttl_seconds > 0)
             expires_at_ms = now_ms + m_Settings.ping_ttl_seconds * 1000;
 
-        //--- Held in a ref local before being handed over, exactly as an invite is: AddPing evicts
+        //--- Held in a local before being handed over, exactly as an invite is: AddPing evicts
         //--- before it inserts, so the new marker has to survive a few statements first.
         VigridPartyPing ping = new VigridPartyPing(uid, position, now_ms, expires_at_ms);
         party.AddPing(ping, m_Settings.ping_max_per_player);

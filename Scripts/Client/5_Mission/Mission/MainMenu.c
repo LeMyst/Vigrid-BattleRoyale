@@ -10,6 +10,10 @@ modded class MainMenu
 
 	protected int m_MatchMakingTryCount;
 
+	//--- What Update() last painted on the Play label, so it writes only on a change.
+	protected BattleRoyaleMatchMakingState m_PlayLabelState = BattleRoyaleMatchMakingState.INVALID;
+	protected int m_PlayLabelTry;
+
 #ifdef DIAG
 	//--- one-shot for the whole client process, not per menu instance - see TryAutoConnect.
 	protected static bool s_AutoConnectDone;
@@ -100,7 +104,7 @@ modded class MainMenu
 
 		m_Logo = ImageWidget.Cast( layoutRoot.FindAnyWidget( "dayz_logo" ) );
 		if(!m_Logo.LoadImageFile( 0, BATTLEROYALE_LOGO_IMAGE ))
-			Error("Failed to load imageset image");
+			BattleRoyaleUtils.Warn("MainMenu: failed to load the logo image");
 
 		//m_NewsfeedPanel.Show( false ); //--- don't show dayz expansion news feed
 
@@ -149,7 +153,7 @@ modded class MainMenu
 		}
 		else
 		{
-			Error("Something Went Wrong! BR Failed To Start?!");
+			BattleRoyaleUtils.Warn("MainMenu: OnStart failed");
 		}
 
 		BR_OverrideUI();
@@ -249,14 +253,14 @@ modded class MainMenu
 		BiosUserManager p_UserManager = GetGame().GetUserManager();
 		if(!p_UserManager)
 		{
-			Error("DBR ERROR: p_UserManager = NULL");
+			BattleRoyaleUtils.Warn("MainMenu.OnStart: no BiosUserManager");
 			return false;
 		}
 
 		BiosUser p_User = p_UserManager.GetTitleInitiator();
 		if(!p_User)
 		{
-			Error("DBR ERROR: p_User = NULL");
+			BattleRoyaleUtils.Warn("MainMenu.OnStart: no title-initiator BiosUser");
 			return false;
 		}
 
@@ -485,11 +489,24 @@ modded class MainMenu
 	{
 		super.Update(timeslice);
 
+		//--- Any other state hands the label to whoever set it, so the next search must repaint.
+		if (m_MatchMakingState != BattleRoyaleMatchMakingState.Searching && m_MatchMakingState != BattleRoyaleMatchMakingState.Connecting)
+		{
+			m_PlayLabelState = BattleRoyaleMatchMakingState.INVALID;
+			return;
+		}
+
+		if (m_MatchMakingState == m_PlayLabelState && m_MatchMakingTryCount == m_PlayLabelTry)
+			return;
+
+		m_PlayLabelState = m_MatchMakingState;
+		m_PlayLabelTry = m_MatchMakingTryCount;
+
 		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
 		{
 			m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING " + m_MatchMakingTryCount);
 		}
-		else if (m_MatchMakingState == BattleRoyaleMatchMakingState.Connecting)
+		else
 		{
 			m_PlayButtonLabel.SetText("#STR_BR_MM_CONNECTING");
 		}

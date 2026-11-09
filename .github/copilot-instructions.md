@@ -23,5 +23,7 @@ Always add the correct guard.
 ## Build
 
 Windows only, requires DayZ Tools and a mounted `P:\` drive.
-Run `Deploy.bat` from `Workbench/Batchfiles/` (cwd matters). There is no CI and there
-are no tests; validate by launching with `DayZDiag_x64.exe` and reading the `.rpt` log.
+Run `Deploy.bat` from `Workbench/Batchfiles/` (cwd matters). There are no unit tests,
+but `python Tools/check.py -W` runs 15 static source checks, and CI
+(`.github/workflows/checks.yml`) runs it on every push to `main` and every PR. It compiles
+nothing, so also validate by launching with `DayZDiag_x64.exe` and reading the `.rpt` log.

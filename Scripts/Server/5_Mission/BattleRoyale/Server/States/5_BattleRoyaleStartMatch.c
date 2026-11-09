@@ -51,6 +51,12 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         return b_IsGameplay;
     }
 
+    //--- The whole state, warm-up included: OnPlayerKilled below already declines to score before it.
+    override bool CountsEliminations()
+    {
+        return true;
+    }
+
     override void Activate()
     {
         super.Activate();
@@ -142,6 +148,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
         if ( m_UnlockTimer && m_UnlockTimer.IsRunning() )
             m_UnlockTimer.Stop();
 
+        if ( m_ShowFirstZone && m_ShowFirstZone.IsRunning() )
+            m_ShowFirstZone.Stop();
+
         if ( m_ZoneStartTimer && m_ZoneStartTimer.IsRunning() )
             m_ZoneStartTimer.Stop();
 
@@ -157,7 +166,7 @@ class BattleRoyaleStartMatch: BattleRoyaleState
     override bool IsComplete()
     {
         //--- Groups, not players. This state runs for the whole first-zone countdown -
-        //--- round_duration_minutes / 2, 90 s at the shipped defaults - which is long enough for a
+        //--- round_duration_minutes / 2, 150 s at the shipped defaults - which is long enough for a
         //--- party to clear the field, and the raw player test this used to carry could never see
         //--- that: the winning party still holds two or more live players. The match then sat here
         //--- until StartZoning fired on its own timer, and the win screen only appeared at the end of
@@ -225,6 +234,9 @@ class BattleRoyaleStartMatch: BattleRoyaleState
             player.DisableInput(false); //This will re-enable input
 			//DayZPlayerSyncJunctures.SendPlayerUnconsciousness( player , false );
         }
+#ifdef VIGRID_AUTORUN
+        VigridAutoRunAPI.SetAllowedForAll( true ); // after the loop: the unlock itself writes DISABLED
+#endif
 
         MessagePlayersUntranslated( "STR_BR_MATCH_STARTED" );
         MessagePlayersUntranslatedTimed( "STR_BR_UNSTUCK_INFORMATION", i_FirstRoundDelay );

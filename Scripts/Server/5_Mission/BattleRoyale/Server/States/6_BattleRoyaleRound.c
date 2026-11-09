@@ -17,6 +17,7 @@ class BattleRoyaleRound: BattleRoyaleState
     int i_AirdropIgnoreLastZones;
 
     protected ref array<ref Timer> m_MessageTimers;
+    protected ref array<ref Timer> m_LockMessageTimers;  //--- "locks in N" toasts; kept apart so LockNow can stop only these
     protected ref Timer m_NewZoneLockTimer;
     protected ref Timer m_RoundTimeUpTimer;
 
@@ -43,6 +44,7 @@ class BattleRoyaleRound: BattleRoyaleState
         b_DoZoneDamage = m_ZoneSettings.enable_zone_damage;
 
         m_MessageTimers = new array<ref Timer>;
+        m_LockMessageTimers = new array<ref Timer>;
 
         b_AirdropEnabled = m_GameSettings.airdrop_enabled;
         i_AirdropIgnoreLastZones = m_GameSettings.airdrop_ignore_last_zones;
@@ -100,6 +102,11 @@ class BattleRoyaleRound: BattleRoyaleState
         return true;
     }
 
+    override bool CountsEliminations()
+    {
+        return true;
+    }
+
     override void Activate()
     {
         //--- RE-READ THE ROUND LENGTH HERE, do not trust the one Init() cached.
@@ -139,7 +146,7 @@ class BattleRoyaleRound: BattleRoyaleState
 				min = lock_notif_min[i];
 				val = time_till_lock - (min*60*1000);
 				if(val > 0)
-					m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockMinutes", new Param1<int>( min ), false) );
+					m_LockMessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockMinutes", new Param1<int>( min ), false) );
 			}
 
 			for(i = 0; i < lock_notif_sec.Count();i++)
@@ -147,7 +154,7 @@ class BattleRoyaleRound: BattleRoyaleState
 				sec = lock_notif_sec[i];
 				val = time_till_lock - (sec*1000);
 				if(val > 0)
-					m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockSeconds", new Param1<int>( sec ), false) );
+					m_LockMessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillLockSeconds", new Param1<int>( sec ), false) );
 			}
         }
 
@@ -193,18 +200,18 @@ class BattleRoyaleRound: BattleRoyaleState
                 if(val > 0)
                     m_MessageTimers.Insert( AddTimer(val / 1000.0, this, "NotifyTimeTillNoZoneSeconds", new Param1<int>( sec ), false) );
             }
-
-			//send play area to clients
-			BattleRoyalePlayArea m_PreviousArea = NULL;
-			if(GetPreviousZone())
-				m_PreviousArea = GetPreviousZone().GetArea();
-
-			//tell client the current play has not changed (note that if this is the first round, then the current area will be NULL )
-			//--- Nothing to re-send when no round has played yet: the clients were never given a
-			//--- current area, and the circle of a skipped round must not be advertised as one.
-			if(m_PreviousArea)
-				SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
         }
+
+		//--- Every round, not only the last: a round ended before its lock (Skip State) otherwise left the
+		//--- client with no current circle while GetActiveZone() was already damaging with it.
+		BattleRoyalePlayArea m_PreviousArea = NULL;
+		if(GetPreviousZone())
+			m_PreviousArea = GetPreviousZone().GetArea();
+
+		//--- Nothing to re-send when no round has played yet: the clients were never given a
+		//--- current area, and the circle of a skipped round must not be advertised as one.
+		if(m_PreviousArea)
+			SendCurrentPlayArea( m_PreviousArea.GetCenter(), m_PreviousArea.GetRadius() );
 
         BattleRoyalePlayArea m_ThisArea = NULL;
         if(GetZone())
@@ -253,8 +260,7 @@ class BattleRoyaleRound: BattleRoyaleState
 
     override void Deactivate()
     {
-        if ( m_NewZoneLockTimer && m_NewZoneLockTimer.IsRunning() )
-            m_NewZoneLockTimer.Stop();
+        StopLockTimers();
 
         if ( m_RoundTimeUpTimer && m_RoundTimeUpTimer.IsRunning() )
             m_RoundTimeUpTimer.Stop();
@@ -425,6 +431,28 @@ class BattleRoyaleRound: BattleRoyaleState
     bool IsLocked()
     {
         return b_ZoneLocked;
+    }
+
+    //--- Admin lock-now. The scheduled lock and its countdown toasts are stopped first, or players
+    //--- are told the locked circle "locks in N s" and LockNewZone runs again when the timer fires.
+    void LockNow()
+    {
+        StopLockTimers();
+        LockNewZone( 0 );
+    }
+
+    protected void StopLockTimers()
+    {
+        if ( m_NewZoneLockTimer && m_NewZoneLockTimer.IsRunning() )
+            m_NewZoneLockTimer.Stop();
+
+        Timer lock_message_timer;
+        for ( int i = 0; i < m_LockMessageTimers.Count(); i++ )
+        {
+            lock_message_timer = m_LockMessageTimers.Get( i );
+            if ( lock_message_timer && lock_message_timer.IsRunning() )
+                lock_message_timer.Stop();
+        }
     }
 
     void LockNewZone(int seconds)

@@ -8,7 +8,8 @@ REM        REM %brSafeDir% now holds the normalised path
 REM
 REM Exit codes:
 REM   0  safe. brSafeDir = the normalised absolute path, no trailing backslash.
-REM   1  unsafe: empty, not drive-letter absolute, a drive root, or a system directory.
+REM   1  unsafe: empty, not drive-letter absolute, a drive root, or a system directory
+REM      or an ancestor of one.
 REM      An error is echoed - the caller should abort.
 REM   2  safe in shape but the directory does not exist. Silent: profile directories
 REM      legitimately do not exist before the first launch, so this must not fail one.
@@ -53,9 +54,10 @@ REM A drive root is now two characters ("C:\" stripped down to "C:"), so anythin
 REM from the fourth character on has to be non-empty.
 if "%_sdPath:~3%"=="" goto :unsafe
 
-REM Exact matches only - "%LOCALAPPDATA%\DayZ" is a legitimate target and stays
-REM allowed. One call per entry, at top level: %ProgramFiles(x86)% contains
-REM parentheses that would terminate an enclosing ( ) block early.
+REM Each entry and every ANCESTOR of it is denied; descendants such as
+REM "%LOCALAPPDATA%\DayZ" are legitimate targets and stay allowed. One call per entry,
+REM at top level: %ProgramFiles(x86)% contains parentheses that would terminate an
+REM enclosing ( ) block early.
 call :deny "%SystemDrive%\"
 call :deny "%SystemRoot%"
 call :deny "%windir%"
@@ -87,10 +89,21 @@ set "_sdPath="
 set "_sdDenied="
 exit /b 1
 
+REM Walks up from the protected dir to the drive root. An exact match alone let C:\Users\
+REM through, and a recursive delete from there reaches every profile on the machine.
 :deny
 set "_sdD=%~1"
-if not defined _sdD exit /b 0
+:denyUp
+if not defined _sdD goto :denyDone
 if "%_sdD:~-1%"=="\" set "_sdD=%_sdD:~0,-1%"
 if /i "%_sdD%"=="%_sdPath%" set "_sdDenied=1"
+for %%u in ("%_sdD%\..") do set "_sdUp=%%~fu"
+if "%_sdUp:~-1%"=="\" set "_sdUp=%_sdUp:~0,-1%"
+if /i "%_sdUp%"=="%_sdD%" goto :denyDone
+set "_sdD=%_sdUp%"
+goto :denyUp
+
+:denyDone
 set "_sdD="
+set "_sdUp="
 exit /b 0

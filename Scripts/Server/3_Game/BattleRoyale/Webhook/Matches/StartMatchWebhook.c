@@ -85,3 +85,4 @@ class StartMatchCallback: RestCallback
 			BattleRoyaleUtils.Trace(data);
 	};
 };
+#endif

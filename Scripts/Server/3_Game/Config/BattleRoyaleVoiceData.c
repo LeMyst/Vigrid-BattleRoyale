@@ -43,7 +43,11 @@ class BattleRoyaleVoiceData: BattleRoyaleDataBase
 		if (FileExist(GetProfilePath()))
 		{
 			if (!JsonFileLoader<BattleRoyaleVoiceData>.LoadFile(GetProfilePath(), this, errorMessage))
+			{
 				ErrorEx(errorMessage);
+				m_ProfileLoadFailed = true;
+				return;  // a half-parsed old version would make Upgrade() Save() over the file
+			}
 		}
 
 		// Run the upgrade function here to avoid overrides from mission folder
@@ -71,7 +75,9 @@ class BattleRoyaleVoiceData: BattleRoyaleDataBase
 	override void Upgrade()
 	{
 		// Nothing to migrate yet - this class started at v1 with the fields above already present.
-		// Simply ADDING a field needs no bump (JsonFileLoader leaves the initialiser in place for a
-		// key an older file doesn't have). Only a changed meaning for an existing value needs one.
+		// A new field still bumps `version` (the settings-version check enforces it). A scalar needs
+		// no branch here, since JsonFileLoader keeps its initialiser for a key an older file lacks;
+		// a `ref array` does, since it loads back empty.
 	}
 };
+#endif

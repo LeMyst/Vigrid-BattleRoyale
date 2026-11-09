@@ -52,9 +52,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestLastMatch", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "PlayerLoadedIn", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "RequestSpectate", this);
-        //--- Admin spectate. All four resolve their actor from the engine-supplied `sender` and all
-        //--- four gate on BattleRoyaleSpectators.AdminEligibility, which is the single definition of
-        //--- who may do this - see the header of BattleRoyaleSpectators.c.
+        //--- Admin spectate. All four resolve their actor from the engine-supplied `sender`. Toggle
+        //--- gates entry on BattleRoyaleSpectators.AdminEligibility; the other three act only on an
+        //--- existing is_admin session - see the header of BattleRoyaleSpectators.c.
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateToggle", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateCycle", this);
         GetRPCManager().AddRPC( RPC_DAYZBRSERVER_NAMESPACE, "AdminSpectateMode", this);
@@ -127,15 +127,17 @@ class BattleRoyaleServer: BattleRoyaleBase
 
 			if ( match_uuid.Length() != 36 )
 			{
+				//--- Warn, not Trace: an operator needs to see why the server exits or runs unregistered.
 				if( m_ServerData.force_match_uuid )
 				{
-					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Restarting. Got: " + match_uuid);
+					BattleRoyaleUtils.Warn("Error getting match uuid (force_match_uuid is on), restarting. Got: " + match_uuid);
 					GetGame().RequestExit(0);
 				}
 				else
 				{
+					//--- Logged before it is cleared, or the line can only ever print an empty response.
+					BattleRoyaleUtils.Warn("Error getting match uuid, continuing unregistered. Got: " + match_uuid);
 					match_uuid = "";
-					BattleRoyaleUtils.LogMessage("Erreur getting match uuid. Got: " + match_uuid);
 				}
 			}
 			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
@@ -312,7 +314,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             if(state)
                 state.Update(timeslice);
             else
-                Error("BAD STATE IN m_States!");
+                BattleRoyaleUtils.Warn("BAD STATE IN m_States!");
         }
 
 		m_TimeSinceLastTick += delta;
@@ -388,13 +390,15 @@ class BattleRoyaleServer: BattleRoyaleBase
 					array<PlayerBase> players = GetCurrentState().RemoveAllPlayers(); //remove players from old state
 					for(int i = 0; i < players.Count(); i++) //can't use foreach because it doesn't play nice with null entries
 					{
-						if(players[i])
+						PlayerBase migrating = players[i];
+						if(migrating)
 						{
-							next_state.AddPlayer(players[i]); //add players to new state
+							next_state.AddPlayer(migrating); //add players to new state
 						}
 						else
 						{
-							Error("null player in RemoveAllPlayers result!");
+							//--- Warn, not Error(): the rest of the transition must still run.
+							BattleRoyaleUtils.Warn("null player in RemoveAllPlayers result!");
 						}
 					}
 					i_CurrentStateIndex = next_index;//move us to the next state
@@ -407,7 +411,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 				}
 				else
 				{
-					Error("NEXT STATE IS NULL!");
+					BattleRoyaleUtils.Warn("NEXT STATE IS NULL!");
 				}
 			}
         }
@@ -447,6 +451,16 @@ class BattleRoyaleServer: BattleRoyaleBase
         //--- joining player needs them before their first frame of gameplay.
         BattleRoyaleVoiceData voice_settings = config_data.GetVoiceData();
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetVoiceSettings", new Param2<bool, bool>( voice_settings.show_speaking_players, voice_settings.speaking_list_during_match ), true, player.GetIdentity() );
+
+        //--- Same deal for the zone circles drawn on the ground (BattleRoyaleGroundRing). In steps: the
+        //--- one-line form threw "NULL pointer to instance" here and aborted the rest of this function.
+        BattleRoyaleZoneData ring_settings = config_data.GetZoneData();
+        bool show_ground_rings = true;
+        if ( ring_settings )
+            show_ground_rings = ring_settings.show_ground_rings;
+        else
+            BattleRoyaleUtils.Warn( "OnPlayerConnected: no zone settings, ground rings left on" );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetGroundRings", new Param1<bool>( show_ground_rings ), true, player.GetIdentity() );
 
         BattleRoyaleDebugState m_DebugStateObj;
 
@@ -743,14 +757,13 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(IsLateJoinExempt( player ))
             return;
 
-        //--- The last two states are Win and Restart. 8_BattleRoyaleWin.KickWinner calls RemovePlayer
+        //--- Match over (Win, Restart). 8_BattleRoyaleWin.KickWinner calls RemovePlayer
         //--- and DisconnectPlayer back to back, so between them a winner legitimately holds no state
         //--- and OnPlayerTick's not-in-state branch can see them - scheduling a kick there would flash
         //--- "a match is already in progress" at the player who just won it. Nothing is lost by
         //--- skipping the window: 9_BattleRoyaleRestart either calls RequestExit a few seconds later,
         //--- or the in-place reset replaces this server and gives every connected player a lobby body.
-        //--- Same bound the scoring guards in OnPlayerDisconnected/OnPlayerKilled use.
-        if(i_CurrentStateIndex >= m_States.Count() - 2)
+        if(GetCurrentState().IsMatchOver())
             return;
 
         int configured = BattleRoyaleConfig.GetConfig().GetGameData().late_join_kick_seconds;
@@ -1001,6 +1014,10 @@ class BattleRoyaleServer: BattleRoyaleBase
                 else if ( identity )
                     player_name = identity.GetName();
 
+                //--- Outside the scoring states (a knocked-out winner leaving the win screen) nothing
+                //--- is credited; the death below still runs and is recorded like any other.
+                bool scores = GetCurrentState().CountsEliminations();
+
                 // We add a kill to the last damage source
                 if ( player.last_unconscious_source )
                 {
@@ -1014,7 +1031,8 @@ class BattleRoyaleServer: BattleRoyaleBase
                     //--- overwrite this with "environment" and break other players' chains.
                     BattleRoyaleSpectators.GetInstance().RecordDeathWithKiller( player, killer );
 
-                    GetCurrentState().OnPlayerKilled( player, killer );
+                    if ( scores )
+                        GetCurrentState().OnPlayerKilled( player, killer );
                 }
                 else if ( player.last_unconscious_source_uid != "" )
                 {
@@ -1032,7 +1050,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 
                     BattleRoyaleSpectators.GetInstance().RecordDeathWithKillerUid( player, player.last_unconscious_source_uid );
 
-                    BattleRoyaleKillLedger.GetInstance().CreditKill( player.last_unconscious_source_uid );
+                    if ( scores )
+                        BattleRoyaleKillLedger.GetInstance().CreditKill( player.last_unconscious_source_uid );
                 } else {
                     BattleRoyaleUtils.Info("Player " + player_name + " disconnected while unconscious, but there is no last damage source.");
                 }
@@ -1060,7 +1079,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(GetCurrentState().ContainsPlayer(player))
         {
             //if we are in a round, then we need to call OnPlayerDisconnected (since it's not a state based function we must cast)
-            if(i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2 )
+            if(GetCurrentState().CountsEliminations())
                 GetCurrentState().OnPlayerDisconnected(player);
 
             GetCurrentState().RemovePlayer(player);
@@ -1092,7 +1111,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         if(GetCurrentState().ContainsPlayer(killed))
         {
             //if we are in a round, then we need to call onplayerkilled (since it's not a state based function we must cast)
-            if(i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2 )
+            if(GetCurrentState().CountsEliminations())
                 GetCurrentState().OnPlayerKilled(killed, killer);
 
             //remove player from the state (this would take place in on-disconnect, but some players would choose not to disconnect)

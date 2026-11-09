@@ -48,6 +48,10 @@ class BattleRoyaleLobbyTags
     protected Widget m_Root;
     protected bool m_RootFailed;
 
+    //--- Set when the overlay is shown, cleared by HideAll: outside the lobby HideAll runs every
+    //--- frame, and this makes it one test instead of a sweep of the whole pool.
+    protected bool m_AnyShown;
+
     protected ref array<Widget> m_Tags;
     protected ref array<TextWidget> m_TagNames;
 
@@ -114,6 +118,11 @@ class BattleRoyaleLobbyTags
 
     protected void HideAll()
     {
+        if (!m_AnyShown)
+            return;
+
+        m_AnyShown = false;
+
         int count = m_Tags.Count();
         for (int i = 0; i < count; i++)
         {
@@ -157,6 +166,7 @@ class BattleRoyaleLobbyTags
         }
 
         m_Root.Show(true);
+        m_AnyShown = true;
 
         float parent_w;
         float parent_h;

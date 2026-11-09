@@ -405,9 +405,8 @@ class BattleRoyaleState: Timeable
      *  and the win/restart states are past the point where a new spectator makes sense - a death in
      *  any of them keeps the pre-existing behaviour exactly.
      *
-     *  A dedicated predicate rather than reusing BattleRoyaleServer's
-     *  `i_CurrentStateIndex > 2 && i_CurrentStateIndex < m_States.Count() - 2` range test, which
-     *  shifts by one depending on whether enable_spawn_selection_menu inserted state 3.
+     *  A dedicated predicate rather than a state-index range, which shifts by one depending on
+     *  whether enable_spawn_selection_menu inserted state 3.
      */
     bool AllowsSpectate()
     {
@@ -418,6 +417,19 @@ class BattleRoyaleState: Timeable
     bool AllowsAdminSkip()
     {
         return true;
+    }
+
+    //--- Does a death or disconnect in this state score (score webhook, kill credit)? StartMatch and
+    //--- the rounds override this. A predicate, not an index range: spawn selection shifts the indices.
+    bool CountsEliminations()
+    {
+        return false;
+    }
+
+    //--- Is the match over? Win and Restart override this.
+    bool IsMatchOver()
+    {
+        return false;
     }
 
     //--- Resolve the engine-supplied RPC `sender` to a player tracked by THIS state.
@@ -630,8 +642,15 @@ class BattleRoyaleState: Timeable
 		for(int i = 0; i < GetPlayers().Count(); i++)
 		{
 			PlayerBase player = GetPlayers()[i];
+			if ( !player )
+				continue;
+
 			player.SetBRPosition( position );
-			GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", new Param1<int>( position ), true, player.GetIdentity() );
+
+			//--- A NULL identity would make SendRPC broadcast this placement to every client.
+			PlayerIdentity identity = player.GetIdentity();
+			if ( identity )
+				GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetTopPosition", new Param1<int>( position ), true, identity );
 		}
     }
 
@@ -1003,8 +1022,9 @@ class BattleRoyaleState: Timeable
      *  How long a whole match starting at zone `start_zone` would run, in seconds (#284 point 3).
      *
      *  Starting at zone Z plays rounds for zones Z..num_zones - i.e. settings indices num_zones-Z down
-     *  to 0 - and then 7_BattleRoyaleLastRound plays out the final circle on static_timers[0]. Ahead of
-     *  all of it sits 5_BattleRoyaleStartMatch's warm-up, round_duration_minutes / 2.
+     *  to 0 - and then 7_BattleRoyaleLastRound plays out the final circle on static_timers[0], or on
+     *  round_duration_minutes when shrink_type is not 3. Ahead of all of it sits
+     *  5_BattleRoyaleStartMatch's warm-up, round_duration_minutes / 2.
      *
      *  The `opening` flag is passed explicitly per candidate, which is what stops this and
      *  BattleRoyaleZone.GetZoneTimer calling each other forever - see that method's header.
@@ -1018,6 +1038,7 @@ class BattleRoyaleState: Timeable
         int total = 0;
         int k;
         int num_zones;
+        int endgame;
         bool is_opening;
 
         if(!config)
@@ -1043,10 +1064,13 @@ class BattleRoyaleState: Timeable
             total = total + zone.GetZoneTimer(is_opening);
         }
 
-        //--- The endgame. 7_BattleRoyaleLastRound reads static_timers[0] directly rather than going
-        //--- through GetZoneTimer, so this reads it the same way - the two must not be able to disagree.
-        if(zone_settings.static_timers && zone_settings.static_timers.Count() > 0)
-            total = total + zone_settings.static_timers[0];
+        //--- The endgame, chosen exactly as 7_BattleRoyaleLastRound's constructor chooses it rather than
+        //--- through GetZoneTimer - the two must not be able to disagree.
+        endgame = 60 * game_settings.round_duration_minutes;
+        if(zone_settings.shrink_type == 3 && zone_settings.static_timers && zone_settings.static_timers.Count() > 0)
+            endgame = zone_settings.static_timers[0];
+
+        total = total + endgame;
 
         return total;
     }
@@ -1236,7 +1260,7 @@ class BattleRoyaleState: Timeable
 		}
 		else
 		{
-			Error("Unknown player disconnected! Not in current state?");
+			BattleRoyaleUtils.Warn("Unknown player disconnected! Not in current state?");
 		}
 
 		BattleRoyaleServerData m_ServerData = BattleRoyaleConfig.GetConfig().GetServerData();
@@ -1258,7 +1282,7 @@ class BattleRoyaleState: Timeable
 		}
 		else
 		{
-			Error("Unknown player killed! Not in current state?");
+			BattleRoyaleUtils.Warn("Unknown player killed! Not in current state?");
 		}
 
 		if (!player || !source)
@@ -1371,7 +1395,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         }
         else
         {
-            Error("DEBUG SETTINGS IS NULL!");
+            BattleRoyaleUtils.Warn("DEBUG SETTINGS IS NULL!");
             GetGame().RequestExit(0);  // Exit the game
         }
 
@@ -1381,7 +1405,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         }
         else
         {
-            Error("LOBBY SETTINGS IS NULL");
+            BattleRoyaleUtils.Warn("LOBBY SETTINGS IS NULL");
             i_HealTickTime = DAYZBR_DEBUG_HEAL_TICK;
         }
     }
@@ -1476,7 +1500,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
     {
         if(!player)
         {
-            Error("Null player in CanGoOutsideLobby");
+            BattleRoyaleUtils.Warn("Null player in CanGoOutsideLobby");
             return false;
         }
         PlayerIdentity identity = player.GetIdentity();
@@ -1487,7 +1511,7 @@ class BattleRoyaleDebugState: BattleRoyaleState
         string steamid = identity.GetPlainId();
         if(steamid == "")
         {
-            Error("Blank SteamId from identity!");
+            BattleRoyaleUtils.Warn("Blank SteamId from identity!");
             return false;
         }
 

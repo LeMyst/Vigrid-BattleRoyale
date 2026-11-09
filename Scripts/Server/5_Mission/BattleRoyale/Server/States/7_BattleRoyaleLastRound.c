@@ -148,6 +148,11 @@ class BattleRoyaleLastRound: BattleRoyaleState
 		return true;
 	}
 
+	override bool CountsEliminations()
+	{
+		return true;
+	}
+
 	override bool IsComplete() //return true when this state is complete & ready to transfer to the next state
 	{
 		if(IsActive())
@@ -234,6 +239,29 @@ class BattleRoyaleLastRound: BattleRoyaleState
     bool IsLocked()
     {
         return b_IsZoneLocked;
+    }
+
+    //--- Admin lock-now. The scheduled lock and its countdown toasts are stopped first, or players
+    //--- are told the locked circle "disappears in N s" and LockFinalZone runs again when the timer fires.
+    void LockNow()
+    {
+        StopLockTimers();
+        LockFinalZone();
+    }
+
+    //--- Every message timer here counts down to the lock, so all of them go with it.
+    protected void StopLockTimers()
+    {
+        if ( m_FinalZoneLockTimer && m_FinalZoneLockTimer.IsRunning() )
+            m_FinalZoneLockTimer.Stop();
+
+        Timer message_timer;
+        for ( int i = 0; i < m_MessageTimers.Count(); i++ )
+        {
+            message_timer = m_MessageTimers.Get( i );
+            if ( message_timer && message_timer.IsRunning() )
+                message_timer.Stop();
+        }
     }
 
     void LockFinalZone()

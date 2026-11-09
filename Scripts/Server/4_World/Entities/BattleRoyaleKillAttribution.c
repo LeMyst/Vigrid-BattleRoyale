@@ -334,15 +334,41 @@ class BattleRoyaleKillAttribution
 
     //! Resolve a SteamID64 back to a PlayerBase if one still exists. A CORPSE counts - the mod never
     //! deletes a body - which is what lets a dead killer's own HUD counter still tick.
+    //! After an admin respawn one uid owns a corpse AND a live body, so the order is: the identity's
+    //! own body if alive, any living match, the identity's body, then any match.
     static PlayerBase FindPlayerByUid(string uid)
     {
+        array<PlayerIdentity> identities = NULL;
+        PlayerIdentity identity = NULL;
+        PlayerBase identity_body = NULL;
         array<Man> players = NULL;
+        Man person = NULL;
         PlayerBase candidate = NULL;
+        PlayerBase first_match = NULL;
         int count = 0;
         int i = 0;
 
         if (uid == "")
             return NULL;
+
+        identities = new array<PlayerIdentity>();
+        GetGame().GetPlayerIndentities(identities);
+
+        count = identities.Count();
+        for (i = 0; i < count; i++)
+        {
+            identity = identities.Get(i);
+            if (!identity)
+                continue;
+            if (identity.GetPlainId() != uid)
+                continue;
+
+            identity_body = PlayerBase.Cast(identity.GetPlayer());
+            break;
+        }
+
+        if (identity_body && identity_body.IsAlive())
+            return identity_body;
 
         players = new array<Man>();
         GetGame().GetPlayers(players);
@@ -350,23 +376,32 @@ class BattleRoyaleKillAttribution
         count = players.Count();
         for (i = 0; i < count; i++)
         {
-            candidate = PlayerBase.Cast(players.Get(i));
+            person = players.Get(i);
+            candidate = PlayerBase.Cast(person);
             if (!candidate)
                 continue;
 
             //--- player_steamid first: it is cached on the mod's PlayerBase and survives the identity
             //--- going NULL, which is exactly the corpse case this exists for.
-            if (candidate.player_steamid == uid)
+            if (candidate.player_steamid != uid)
+            {
+                if (!candidate.GetIdentity())
+                    continue;
+                if (candidate.GetIdentity().GetPlainId() != uid)
+                    continue;
+            }
+
+            if (candidate.IsAlive())
                 return candidate;
 
-            if (!candidate.GetIdentity())
-                continue;
-
-            if (candidate.GetIdentity().GetPlainId() == uid)
-                return candidate;
+            if (!first_match)
+                first_match = candidate;
         }
 
-        return NULL;
+        if (identity_body)
+            return identity_body;
+
+        return first_match;
     }
 }
 #endif

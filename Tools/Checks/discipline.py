@@ -1,8 +1,8 @@
 """
  *  Standalone-addon discipline, both directions.
  *
- *  `Party/`, `Extra/KillFeed/`, `Extra/SafeZone/` and `Extra/Map/` are self-contained addons that
- *  happen to ship in this repo. Each carries its own logger, settings, stringtable and RPC
+ *  `Party/` and the `Extra/` addons listed in ADDONS are self-contained addons that happen to ship
+ *  in this repo. Each carries its own logger, settings, stringtable and RPC
  *  namespace so that extracting it into its own mod stays a build-plumbing job rather than a
  *  rewrite - and so that renaming its `config.cpp` to `.disabled` remains a one-rename kill
  *  switch. Both properties rest on the same rule, and it erodes one convenient reference at a
@@ -32,6 +32,10 @@ ADDONS = {
     "Extra/KillFeed/": ("KILLFEED", ("KillFeedAPI",)),
     "Extra/SafeZone/": ("VIGRID_SAFEZONE", ("VigridSafeZoneAPI",)),
     "Extra/Map/": ("VIGRID_MAP", ("VigridMapAPI",)),
+    "Extra/AutoRun/": ("VIGRID_AUTORUN", ("VigridAutoRunAPI",)),
+    #  No API: the host mod has nothing to call, so only the outbound rule applies.
+    "Extra/EarPlugs/": ("VIGRID_EARPLUGS", ()),
+    "Extra/RandomMenuGear/": ("RANDOM_MENU_GEAR", ()),
 }
 
 FORBIDDEN = re.compile(r"\bBattleRoyale\w*")
@@ -40,8 +44,7 @@ FORBIDDEN = re.compile(r"\bBattleRoyale\w*")
 def guard_stack(lines: list[str]) -> list[list[tuple[str, bool]]]:
     """For each line, the stack of enclosing preprocessor conditions as (name, negated).
 
-    Deliberately tolerant of an unclosed `#ifdef` at end of file: that is this repo's convention
-    for the file-level SERVER guard, not an error, and a strict reader would reject 58 files.
+    Tolerant of an unclosed `#ifdef` at end of file; the `preprocessor` check reports those.
     """
     stack: list[tuple[str, bool]] = []
     per_line: list[list[tuple[str, bool]]] = []

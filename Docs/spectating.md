@@ -245,7 +245,8 @@ Admin who connected mid-match       already lands here (OnPlayerConnected)
 ```
 
 `BattleRoyaleSpectators.AdminEligibility()` **is** that rule, returning one of four
-`BR_ADMIN_*` verdicts, and every admin RPC consults it rather than re-deriving it. Keys are F3
+`BR_ADMIN_*` verdicts. Entering a session (F3) consults it; cycle, mode and the camera-position
+push act only on an existing `is_admin` entry, which only that entry path creates. Keys are F3
 (toggle), F5 (mode), ←/→ (cycle), all in `Data/Inputs.xml`.
 
 Five things worth knowing:
@@ -291,14 +292,16 @@ Five things worth knowing:
   **`SetInvisibleRecursive(true)` called server-side does NOT fix it** — tried, shipped, and
   measured still visible on 2026-08-11. The likely reason is that `SetInvisible` is a local render
   flag rather than replicated state: COT only ever calls it **client-side**, on the local player's
-  own model (`JM/COT/.../Player/DayZPlayerImplement.c:208`). It is left in the code because it is
-  harmless, not because it works.
+  own model (`JM/COT/.../Player/DayZPlayerImplement.c:208`). It has since been removed.
 
-  **The known-good route is COT's `PlayerBase.COTSetInvisibility()`**, whose `JMInvisibilityType`
-  includes `DisableSimulation` as well as `Interactive` (`JMPlayerModule.c:1572-1628`) — i.e. real
-  invisibility needs the simulation disabled, not just a render flag. COT is a hard dependency and
-  this is a plain API call behind `#ifdef JM_COT`, so it carries no licence obligation (COT is
-  CC BY-SA 4.0; *calling* it is not adaptation). Untried as of this writing.
+  **`HideAnchorBody` calls COT's `PlayerBase.COTSetInvisibility()` instead**, which does
+  replicate: it writes `m_JMIsInvisibleRemoteSynch` and calls `SetSynchDirty()`. It passes
+  `Interactive`, not `DisableSimulation` (`JMPlayerModule.c:1572-1628`), because the body is
+  teleported under the camera and handed back on exit; the comment on `HideAnchorBody` says why.
+  COT is a hard dependency and this is a plain API call behind `#ifdef JM_COT`, so it carries no
+  licence obligation (COT is CC BY-SA 4.0; *calling* it is not adaptation). It has been in the
+  code since #239, but no measurement of whether other players still see the body has been
+  recorded.
 
 - **A spectating admin is hidden from their own party's state feed**, via
   `VigridPartyAPI.SetMemberHidden(uid, bool)` — the fix for a leak where a respawned admin showed to

@@ -28,6 +28,11 @@ REM Refuses to run if the configured profile dir is an unsafe delete target.
 call "%~dp0ClearLogs.bat" "%brProfileDir%"
 if errorlevel 1 exit /b 1
 
-call "%~dp0LaunchSteamClient.bat" %brSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" -port=%port% "-profiles=%brProfileDir%" "-name=%brPlayerName%" "-mod=%modList%"
+REM ConnectFromCLI (vanilla and MainMenu.c) reads -password. Left out entirely when unset:
+REM an empty "" argument would end LaunchSteamClient.bat's argument loop early.
+set "brPasswordArg="
+if defined ServerPassword set brPasswordArg="-password=%ServerPassword%"
+
+call "%~dp0LaunchSteamClient.bat" %brSteamID% "%gameDirectory%" %clientEXE% %clientLaunchParams% "-connect=127.0.0.1" "-port=%port%" "-profiles=%brProfileDir%" "-name=%brPlayerName%" "-mod=%modList%" %brPasswordArg%
 
 exit /b 0

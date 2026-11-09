@@ -91,22 +91,28 @@ def _guard_regions(text: str) -> list[bool]:
     A directive stack rather than a first-line test, because the real code guards *blocks* far
     more often than whole files - 0_BattleRoyaleState.c carries four separate diag blocks in one
     otherwise-shipping class.
+
+    Each frame is tri-state: True diag-only, False retail-only (`#ifndef DIAG_DEVELOPER`), None
+    unrelated. Only a diag frame flips at `#else` - the `#else` of `#ifdef SERVER` ships.
     """
     out: list[bool] = []
-    stack: list[bool] = []          # per open #if: does it mean "diag build only"?
+    stack: list[bool | None] = []
     for line in text.splitlines():
         s = line.strip()
         if s.startswith("#ifdef"):
-            symbol = (s[len("#ifdef"):].strip().split() or [""])[0]
-            stack.append(symbol in _DIAG_DEFINES)
-        elif s.startswith("#ifndef") or s.startswith("#if"):
-            #  `#ifndef DIAG_DEVELOPER` is the RETAIL side of the fence, so it is never diag-only.
-            stack.append(False)
+            symbol = (s[len("#ifdef"):].split() or [""])[0]
+            stack.append(True if symbol in _DIAG_DEFINES else None)
+        elif s.startswith("#ifndef"):
+            symbol = (s[len("#ifndef"):].split() or [""])[0]
+            stack.append(False if symbol in _DIAG_DEFINES else None)
+        elif s.startswith("#if"):
+            stack.append(None)
         elif s.startswith("#else") and stack:
-            stack[-1] = not stack[-1]
+            if stack[-1] is not None:
+                stack[-1] = not stack[-1]
         elif s.startswith("#endif") and stack:
             stack.pop()
-        out.append(any(stack))
+        out.append(True in stack)
     return out
 
 

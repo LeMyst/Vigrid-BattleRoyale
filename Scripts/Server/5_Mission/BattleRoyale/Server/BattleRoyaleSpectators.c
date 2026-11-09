@@ -24,20 +24,18 @@
  *     and VigridPartyAPI.GetGroupCount(), which stalls every IsComplete() and makes UpdateTopPosition
  *     rewrite every survivor's br_position against an inflated field.
  *
- *  3. THE CORPSE IS NEVER DELETED DURING A MATCH, AND NEVER MOVED. The corpse IS the PlayerBase, and
- *     vanilla HandleBody only deletes a body when the player was alive, so a dead player's gear is
- *     meant to persist and be lootable where they fell. The removed implementation called
- *     ObjectDelete(player) "for network bubble fix", which destroys the victim's loot. The one
- *     deletion is after the match: the in-place reset (BattleRoyaleInPlaceReset) clears every corpse
- *     with its gear, as the process restart used to, once each spectator has a lobby body.
+ *  3. THE CORPSE IS NEVER DELETED DURING A MATCH. The corpse IS the PlayerBase, and vanilla
+ *     HandleBody only deletes a body when the player was alive, so a dead player's gear is meant to
+ *     persist and be lootable. The removed implementation called ObjectDelete(player) "for network
+ *     bubble fix", which destroys the victim's loot. The one deletion is after the match: the
+ *     in-place reset (BattleRoyaleInPlaceReset) clears every corpse with its gear, as the process
+ *     restart used to, once each spectator has a lobby body.
  *
- *     Note what that costs, because it is a deliberate trade and not an oversight. The replication
- *     bubble stays centred on this corpse - UpdateSpectatorPosition does NOT move it, established
- *     both directions 2026-08-10 (dead at 1200 m for 90 s, alive again at 700 m, 507 pushes
- *     throughout). So a spectator cannot see anything beyond ~1 km of where they died. MOVING the
- *     corpse would fix that and needs no entity creation, which is what killed the carrier - but it
- *     drags the victim's gear across the map with it, so the loot can never be found. That is a
- *     gameplay decision, not a bug fix. See Docs/spectating.md.
+ *     It IS moved. The replication bubble stays centred on the corpse - UpdateSpectatorPosition does
+ *     NOT move it (measured both directions 2026-08-10) - so without help a spectator sees nothing
+ *     beyond ~1 km of where they died. CarryCorpse drops the gear at the death spot, then carries
+ *     the body after the target. With the dzhooks spectatorbubble hook the bubble follows the camera
+ *     and the corpse stays where it fell. See Docs/spectating.md.
  *
  *  There is exactly ONE driver - Tick(), called from BattleRoyaleServer.Update()'s existing 10 Hz
  *  block. No Timer, no CallLaterByName, no coroutine: a driver that only touches strings cannot fire
@@ -46,16 +44,17 @@
  *  CLIENT -> SERVER RPCs. For an ordinary spectator there is exactly one, RequestSpectate, and it
  *  carries no payload: the actor is the engine-supplied `sender` and the only thing it can do is
  *  start spectating for a uid the server itself already registered. The four admin RPCs
- *  (AdminSpectateToggle / Cycle / Mode / CamPos) all resolve their actor the same way and all open
- *  with AdminEligibility, so nothing a client sends chooses who it acts on.
+ *  (AdminSpectateToggle / Cycle / Mode / CamPos) all resolve their actor the same way, so nothing a
+ *  client sends chooses who it acts on. Toggle consults AdminEligibility before entering; Cycle,
+ *  Mode and CamPos act only on an existing is_admin entry, which only that entry path creates.
  *
  *  ADMIN SPECTATE, in one rule: it requires a NON-PARTICIPANT - alive, holding a body, and absent
  *  from m_Players. An admin who is competing is refused, because a competitor who can freecam the
  *  map is indistinguishable from a cheat. Two ways to be a non-participant: connect mid-match (which
  *  BattleRoyaleServer.OnPlayerConnected already handles, placing them at the live circle and
  *  exempting them from the late-join kick), or die and take AdminRespawn, which is the bridge
- *  between the two halves of the lifecycle. AdminEligibility is that rule, and every admin RPC
- *  consults it rather than re-deriving it.
+ *  between the two halves of the lifecycle. AdminEligibility is that rule, and nothing re-derives
+ *  it: entry consults it, and the other admin RPCs need the session it admitted.
  *
  *  Note that AdminRespawn is the one thing here that creates an entity, which invariant 2 otherwise
  *  forbids. It does not violate it: the new body is never added to m_Players, so the roster count,
@@ -599,7 +598,8 @@ class BattleRoyaleSpectators
         //--- spectator's whole party is dead, so it cannot leak a teammate's position to anyone.
         for (i = m_DeathOrder.Count() - 1; i >= 0; i--)
         {
-            BattleRoyaleDeathRecord recent = m_Deaths.Get(m_DeathOrder.Get(i));
+            string recent_uid = m_DeathOrder.Get(i);
+            BattleRoyaleDeathRecord recent = m_Deaths.Get(recent_uid);
             if (!recent)
                 continue;
             if (recent.killer_uid == "")
@@ -832,12 +832,14 @@ class BattleRoyaleSpectators
         int i = 0;
         for (i = 0; i < count; i++)
         {
-            uids.Insert(m_Spectators.GetKey(i));
+            string key_uid = m_Spectators.GetKey(i);
+            uids.Insert(key_uid);
         }
 
         for (i = 0; i < uids.Count(); i++)
         {
-            BattleRoyaleSpectatorEntry entry = m_Spectators.Get(uids.Get(i));
+            string entry_uid = uids.Get(i);
+            BattleRoyaleSpectatorEntry entry = m_Spectators.Get(entry_uid);
             if (!entry)
                 continue;
             if (entry.target_uid != lost_uid && entry.target_uid != "")
@@ -923,7 +925,8 @@ class BattleRoyaleSpectators
         int count = m_Spectators.Count();
         for (i = 0; i < count; i++)
         {
-            uids.Insert(m_Spectators.GetKey(i));
+            string key_uid = m_Spectators.GetKey(i);
+            uids.Insert(key_uid);
         }
 
         bool do_push = false;
@@ -1112,40 +1115,22 @@ class BattleRoyaleSpectators
     }
 
     /**
-     *  Find a player's own CORPSE by uid.
+     *  Find a player's own body - corpse or admin anchor - by uid.
      *
      *  LivingPlayerByUid cannot do this: it walks the current state's roster, and a dead player was
      *  removed from it at death. So this walks every Man in the world instead and matches on the
-     *  cached PlayerBase.player_steamid rather than on PlayerIdentity - the same reason
+     *  cached PlayerBase.player_steamid as well as on PlayerIdentity - the same reason
      *  IsLateJoinExempt does, namely that the identity may be gone while the body is still there.
      *
      *  Returns a reference rather than storing one, so invariant 1 stands: the result is used within
      *  the call that asked for it and never kept.
      *
-     *  Deliberately does NOT filter on "is dead". A uid that somehow resolves to a living body is
-     *  something the caller should be able to see rather than silently get NULL for.
+     *  After AdminRespawn the corpse and the anchor body share the uid; a living body wins, so the
+     *  admin paths get the anchor and an ordinary spectator (who has only the corpse) gets that.
      */
     PlayerBase FindBodyByUid(string uid)
     {
-        if (uid == "")
-            return NULL;
-
-        array<Man> everyone = new array<Man>();
-        GetGame().GetPlayers(everyone);
-
-        int count = everyone.Count();
-        for (int i = 0; i < count; i++)
-        {
-            PlayerBase candidate = PlayerBase.Cast(everyone.Get(i));
-            if (!candidate)
-                continue;
-            if (candidate.player_steamid != uid)
-                continue;
-
-            return candidate;
-        }
-
-        return NULL;
+        return BattleRoyaleKillAttribution.FindPlayerByUid(uid);
     }
 
     /**
@@ -1445,7 +1430,8 @@ class BattleRoyaleSpectators
 
         for (i = 0; i < admin_uids.Count(); i++)
         {
-            PlayerIdentity admin_identity = IdentityOfUid(admin_uids.Get(i));
+            string admin_uid = admin_uids.Get(i);
+            PlayerIdentity admin_identity = IdentityOfUid(admin_uid);
             if (admin_identity)
                 EndAdminSpectate(admin_identity);
         }
@@ -1737,8 +1723,8 @@ class BattleRoyaleSpectators
         GetGame().SelectPlayer(identity, body);
 
         //--- Set by hand because nothing else does outside OnPlayerConnected, and FindBodyByUid
-        //--- matches on player_steamid - without this the body this method just made is invisible to
-        //--- every uid->body lookup in the file, including AdminEligibility's.
+        //--- matches on player_steamid once the identity is gone - without this the body this method
+        //--- just made would vanish from every uid->body lookup on a disconnect.
         body.player_steamid = uid;
         body.player_name = BattleRoyaleNameService.ResolveIdentity(identity);
 
@@ -2219,10 +2205,11 @@ class BattleRoyaleSpectators
         int i = 0;
         for (i = 0; i < positions.Count(); i++)
         {
-            if (vector.Distance(positions.Get(i), camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
+            vector near_pos = positions.Get(i);
+            if (vector.Distance(near_pos, camera_pos) > BR_ADMIN_ANCHOR_COVER_M)
                 continue;
 
-            sum = sum + positions.Get(i);
+            sum = sum + near_pos;
             near_count = near_count + 1;
         }
 
@@ -2263,7 +2250,8 @@ class BattleRoyaleSpectators
                 int p = 0;
                 for (p = 0; p < positions.Count(); p++)
                 {
-                    float distance = vector.Distance(positions.Get(p), candidate);
+                    vector player_pos = positions.Get(p);
+                    float distance = vector.Distance(player_pos, candidate);
                     if (distance <= BR_ADMIN_ANCHOR_COVER_M)
                         score = score + 1;
                     if (distance < clearance)
@@ -2833,7 +2821,8 @@ class BattleRoyaleSpectators
 
         for (i = 0; i < deaths; i++)
         {
-            BattleRoyaleDeathRecord record = m_Deaths.Get(m_DeathOrder.Get(i));
+            string death_uid = m_DeathOrder.Get(i);
+            BattleRoyaleDeathRecord record = m_Deaths.Get(death_uid);
             if (!record)
                 continue;
 

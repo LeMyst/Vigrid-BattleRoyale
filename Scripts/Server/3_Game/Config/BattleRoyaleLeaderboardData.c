@@ -62,6 +62,7 @@ class BattleRoyaleLeaderboardData: BattleRoyaleDataBase
     //   sqrt   N=2 -> 25, N=15 -> 93, N=60 -> 192   (3.8x)
     //   linear N=2 -> 25, N=15 -> 350, N=60 -> 1475 (14.8x - one lucky full lobby becomes
     //                                                unassailable, which is why log2 is the default)
+    //   Figures are before the field_weight_max clamp: at its default 200, linear saturates from N=9.
     int field_weight_mode = 1;
 
     // Multiplier on the curve. At the log2 default this is "points added per doubling of the field",
@@ -107,7 +108,11 @@ class BattleRoyaleLeaderboardData: BattleRoyaleDataBase
         if (FileExist(GetProfilePath()))
         {
             if (!JsonFileLoader<BattleRoyaleLeaderboardData>.LoadFile(GetProfilePath(), this, errorMessage))
+            {
                 ErrorEx(errorMessage);
+                m_ProfileLoadFailed = true;
+                return;  // a half-parsed old version would make Upgrade() Save() over the file
+            }
         }
 
         // Run the upgrade function here to avoid overrides from mission folder
@@ -125,13 +130,12 @@ class BattleRoyaleLeaderboardData: BattleRoyaleDataBase
 
     override void Upgrade()
     {
-        //--- Nothing to migrate yet. Note that simply ADDING a field needs no bump: Config.Load()
-        //--- re-saves after reading, so new members appear in existing profile JSONs on next boot.
-        //--- Only a changed meaning for an existing value needs a version here.
+        //--- Nothing to migrate yet. A new field still bumps `version` (the settings-version check
+        //--- enforces it); Config.Load() re-saves after reading, so it then appears in existing
+        //--- profile JSONs on next boot.
         //---
-        //--- When that day comes: any array migration must be guarded on Count() == 0. Both
-        //--- BattleRoyaleGameData and BattleRoyaleLobbyData Insert() onto a field initialiser in
-        //--- their Upgrade(), so their arrays double every boot. Do not copy that.
+        //--- When that day comes: any array migration must be guarded on Count() == 0, as the
+        //--- BattleRoyaleGameData and BattleRoyaleLobbyData ones are.
     }
 };
 #endif

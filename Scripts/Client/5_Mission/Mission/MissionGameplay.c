@@ -201,9 +201,9 @@ modded class MissionGameplay
 			if (GetUApi().GetInputByID(UADayZBRSpectatePrev).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateCycle( -1 );
 			}
-			//--- The one admin key with no server half at all: the skeleton overlay is COT's own
-			//--- client-side renderer, so there is nothing to authorise on the wire. COT applies its
-			//--- own ESP.View permission check inside the call.
+			//--- The one admin key with no server half at all: the skeleton overlay is drawn client-side
+			//--- with COT's renderer, so there is nothing to authorise on the wire. COT's ESP.View is not
+			//--- consulted; AdminSpectateToggleSkeleton gates on the admin flag and a spectate session.
 			if (GetUApi().GetInputByID(UADayZBRSpectateSkeleton).LocalPress()) {
 				BattleRoyaleClient.Cast( m_BattleRoyale ).AdminSpectateToggleSkeleton();
 			}
@@ -264,7 +264,7 @@ modded class MissionGameplay
 		Param4<int, float, vector, float> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SHOWSPAWNSELECTION RPC");
+			BattleRoyaleRPC.ReadFailed("ShowSpawnSelection");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -313,7 +313,7 @@ modded class MissionGameplay
 		Param3<PlayerBase, vector, int> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ SHOWSPAWNPOINT RPC");
+			BattleRoyaleRPC.ReadFailed("ShowSpawnPoint");
 			return;
 		}
 		if ( type == CallType.Client )
@@ -332,7 +332,7 @@ modded class MissionGameplay
 		Param1<array<vector>> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ UPDATEHEATMAP RPC");
+			BattleRoyaleRPC.ReadFailed("UpdateHeatMap");
 			return;
 		}
 		if ( type == CallType.Client )

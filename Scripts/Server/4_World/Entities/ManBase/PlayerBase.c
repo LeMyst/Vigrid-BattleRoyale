@@ -126,6 +126,11 @@ modded class PlayerBase
 
 		PlayerBase playerSource = BattleRoyaleKillAttribution.ResolvePlayerSource( source );
 
+		//--- Self-inflicted (vanilla fall damage passes the player as source): keep whoever really hit
+		//--- them. Returning before BR_NoteDamageDealt also keeps that attacker from being scored for it.
+		if ( playerSource == this )
+			return;
+
 		//--- The uid is the one that survives an explosive. A free-standing grenade has NO hierarchy
 		//--- parent, so playerSource is NULL for it and the object reference could never credit
 		//--- anybody - which is why being downed by a grenade and then disconnecting scored nothing.
@@ -496,3 +501,4 @@ modded class PlayerBase
 		return spawn_pos;
 	}
 };
+#endif

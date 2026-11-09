@@ -18,6 +18,14 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 	//--- selections against exactly the circle it told players about.
 	private int i_SpawnZoneNumber;
 
+	//--- Picks are client-sent and the heatmap goes to every client, so a modified client could
+	//--- amplify a flood: picks are bounded per sender, and the heatmap broadcast is coalesced.
+	protected const int PICK_MIN_INTERVAL_MS = 250;
+	protected const int HEATMAP_MIN_INTERVAL_MS = 500;
+	protected ref map<string, int> m_LastPickMs;
+	protected bool b_HeatMapDirty;
+	protected int i_NextHeatMapMs;
+
     void BattleRoyaleSpawnSelection()
     {
     	m_Config = BattleRoyaleConfig.GetConfig();
@@ -51,6 +59,7 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 //		spawn_colors.Insert(ARGB(255, 0, 127, 255));  // Light Blue
 
 		spawnpoints = new map<string, vector>();
+		m_LastPickMs = new map<string, int>();
     }
 
     override void Activate()
@@ -400,10 +409,24 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 	//--- player. The subject is resolved from the engine-supplied `sender` instead.
 	void OnPlayerSpawnSelected(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
+		if ( type != CallType.Server || !sender )
+			return;
+
+		//--- Throttled before anything is read or logged, so a flood cannot become log spam either.
+		string sender_id = sender.GetPlainId();
+		int now = GetGame().GetTime();
+		int last_pick_ms;
+		if ( m_LastPickMs.Find( sender_id, last_pick_ms ) )
+		{
+			if ( now - last_pick_ms < PICK_MIN_INTERVAL_MS )
+				return;
+		}
+		m_LastPickMs.Set( sender_id, now );
+
 		Param1<vector> data;
 		if( !ctx.Read( data ) )
 		{
-			Error("FAILED TO READ PLAYER SPAWN SELECTION RPC");
+			BattleRoyaleUtils.Warn("Failed to read a spawn selection RPC from " + BattleRoyaleServer.GetIdentityLogName(sender));
 			return;
 		}
 		if ( type == CallType.Server )
@@ -428,13 +451,8 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 					// Add the spawn point to the player's spawnpoints map
 					spawnpoints.Set(sender.GetId(), data.param1);
 
-					// Update the heatmap for the players
-					array<vector> heatmap_points = new array<vector>;
-					foreach (string id, vector point : spawnpoints)
-					{
-						heatmap_points.Insert(point);
-					}
-					GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHeatMap", new Param1<array<vector>>(heatmap_points), true );
+					b_HeatMapDirty = true;
+					FlushHeatMap();
 				}
 
 				pbTarget.SetSpawnPos(data.param1); // Set the spawn position for the player
@@ -463,6 +481,36 @@ class BattleRoyaleSpawnSelection: BattleRoyaleState
 				BattleRoyaleUtils.Warn("Rejected spawn selection from an identity not tracked by the spawn selection state: " + BattleRoyaleServer.GetIdentityLogName(sender));
 			}
 		}
+	}
+
+	//--- Send the heatmap to every client, at most once per HEATMAP_MIN_INTERVAL_MS. A pick inside
+	//--- the interval stays pending and Update() sends it once the interval has passed.
+	protected void FlushHeatMap()
+	{
+		if ( !b_HeatMapDirty )
+			return;
+
+		int now = GetGame().GetTime();
+		if ( now < i_NextHeatMapMs )
+			return;
+
+		b_HeatMapDirty = false;
+		i_NextHeatMapMs = now + HEATMAP_MIN_INTERVAL_MS;
+
+		array<vector> heatmap_points = new array<vector>;
+		foreach (string id, vector point : spawnpoints)
+		{
+			heatmap_points.Insert(point);
+		}
+		GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "UpdateHeatMap", new Param1<array<vector>>(heatmap_points), true );
+	}
+
+	override void Update(float timeslice)
+	{
+		super.Update(timeslice);
+
+		if ( IsActive() )
+			FlushHeatMap();
 	}
 
 	/**
