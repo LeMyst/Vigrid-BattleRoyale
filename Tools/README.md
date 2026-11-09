@@ -47,7 +47,7 @@ they cost.
 | `menu-ids` | no two `MENU_*` constants share an id |
 | `rpc` | every `AddRPC` name has a matching CF handler method |
 | `version` | `BATTLEROYALE_VERSION` and `mod.cpp` agree |
-| `configs` | `CfgPatches` names unique, `requiredAddons` resolve, no stripped vanilla parents, no missing array commas |
+| `configs` | `CfgPatches` names unique, `requiredAddons` resolve to a built addon (never a `config.cpp.disabled` one), no stripped vanilla parents, no missing array commas |
 | `data` | tracked JSON parses; no UTF-8 BOM on any data file |
 | `extra-index` | every `Extra/` addon has a README, an index entry and a config |
 | `enfusion` | no ternary operator, no multi-line `if`/`while` conditions |

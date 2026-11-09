@@ -5,13 +5,12 @@
  *
  *    - a config with no CfgPatches, or two configs claiming the same addon name (addon names are
  *      one flat namespace, exactly like menu ids);
- *    - a requiredAddons entry naming an in-repo addon that no longer exists, which does not fail
- *      the build - it just stops constraining load order, and this mod depends on that ordering
- *      (Scripts_Server requires Scripts_Client so that server code can `modded class` over
- *      client-declared classes);
- *    - a requiredAddons entry naming an OPTIONAL mod's addon, which is the one entry in this list
- *      that does not merely misbehave: the server refuses to start. See the second-lock note
- *      below and Tools/allowlists/optional_addons.txt;
+ *    - a requiredAddons entry naming an in-repo addon that no longer exists, or one that is parked
+ *      as config.cpp.disabled and so never built. The build accepts it; the game refuses to start
+ *      ("Addon 'X' requires addon 'Y'");
+ *    - a requiredAddons entry naming an OPTIONAL mod's addon, which resolves wherever that mod is
+ *      loaded, so only a server without it refuses to start. See the second-lock note below and
+ *      Tools/allowlists/optional_addons.txt;
  *    - two adjacent array entries with no comma between them, which is a rapify syntax error that
  *      only surfaces when the game loads the module - the documented MOVING_ZONE trap in
  *      Scripts/Client/config.cpp's defines[];
@@ -129,6 +128,7 @@ def required_addons(text: str) -> list[tuple[str, int]]:
 def run() -> list[Finding]:
     findings: list[Finding] = []
     declared: dict[str, str] = {}
+    live: set[str] = set()          # declared by a config.cpp that is actually built
     external = allowlist("external_addons")
     optional = allowlist("optional_addons")
     parents = {
@@ -167,6 +167,8 @@ def run() -> list[Finding]:
                 path,
             ))
         for name, line in names:
+            if path in configs:
+                live.add(name)
             if name in declared:
                 findings.append(error(
                     f"CfgPatches class `{name}` is also declared in {declared[name]} - addon "
@@ -229,12 +231,23 @@ def run() -> list[Finding]:
                     path, line,
                 ))
                 continue
-            if entry in declared or entry in external:
+            #  A live addon resolves only against live ones. A parked addon may still name another
+            #  parked one: neither loads today.
+            resolved = live if path in configs else declared
+            if entry in resolved or entry in external:
+                continue
+            if entry in declared:
+                findings.append(error(
+                    f"requiredAddons names `{entry}`, which is declared only in the parked "
+                    f"{declared[entry]} - that addon is not built, so the game refuses to start "
+                    f"with \"Addon '...' requires addon '{entry}'\"",
+                    path, line,
+                ))
                 continue
             findings.append(error(
                 f"requiredAddons names `{entry}`, which is neither declared in this repo nor "
-                f"listed in Tools/allowlists/external_addons.txt - a stale entry stops "
-                f"constraining load order without failing the build",
+                f"listed in Tools/allowlists/external_addons.txt - the build accepts it, and the "
+                f"game refuses to start",
                 path, line,
             ))
 

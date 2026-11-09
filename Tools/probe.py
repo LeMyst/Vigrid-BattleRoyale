@@ -171,6 +171,11 @@ PROBES = [
     ("configs: requiredAddons names something undeclared", "configs",
      "Extra/SpawnCarFull/config.cpp", replace('"DZ_Scripts"', '"DZ_Scriptz"')),
 
+    #  Declared only in a config.cpp.disabled, so never built: the game refuses to start.
+    ("configs: requiredAddons names a parked addon", "configs",
+     "Extra/SpawnCarFull/config.cpp",
+     replace('"DZ_Scripts"', '"DZ_Scripts", "Dump_Item_Heights"')),
+
     ("configs: missing comma between array entries", "configs",
      "Extra/MapSatellite/config.cpp",
      replace('"DZ_Data",\n            "DZ_Gear_Navigation"',
