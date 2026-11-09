@@ -185,6 +185,15 @@ PROBES = [
      "Extra/MapSatellite/config.cpp",
      append("\nclass RscMapControl\n{\n    maxSatelliteAlpha = 1;\n};\n")),
 
+    #  The 2026-08-22 outage, re-allowlisted the way it was first let in. The second lock
+    #  (optional_addons.txt) must still fire.
+    ("configs: optional mod's addon required, even when re-allowlisted", "configs",
+     [("Scripts/Client/config.cpp",
+       replace('"DZ_Scripts"', '"DZ_Scripts",\n            "DayZExpansion_Scripts"')),
+      ("Tools/allowlists/external_addons.txt",
+       append("DayZExpansion_Scripts   # probe\n"))],
+     None),
+
     ("data: UTF-8 BOM on a JSON file", "data",
      "Data/hints.json", lambda b: b"\xef\xbb\xbf" + b),
 
@@ -201,6 +210,25 @@ PROBES = [
 
     ("extra-index: addon dropped from the index", "extra-index",
      "Extra/README.md", replace("](SpawnCarFull/README.md)", "](SpawnCarFullX/README.md)")),
+
+    ("client-only-types: server file names a #ifndef SERVER class", "client-only-types",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\nclass BRProbeCOT { void F() { BattleRoyaleRPC.GetInstance(); } }\n")),
+
+    #  The BR_DiagTeleport outage: a shipping caller of a method declared under DIAG_DEVELOPER.
+    ("diag-guards: unguarded call to a diag-only method", "diag-guards",
+     "Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleVoice.c",
+     append("\nclass BRProbeDiag { void F(BattleRoyaleState s) "
+            "{ s.BR_DiagTeleportRing(null, \"0 0 0\", 1); } }\n")),
+
+    ("inputs: declared keybind missing from <preset>", "inputs",
+     "Data/Inputs.xml",
+     replace('        <input name="UADayZBRLeaderboard">\n            <btn name="kF4" />\n'
+             '        </input>\n', '')),
+
+    ("inputs: loc= with a leading '#'", "inputs",
+     "Extra/AutoRun/Data/Inputs.xml",
+     replace('loc="STR_AUTORUN_KEYBIND_TOGGLE"', 'loc="#STR_AUTORUN_KEYBIND_TOGGLE"')),
 
     ("enfusion: ternary operator", "enfusion",
      "Scripts/Client/3_Game/BattleRoyaleUtils.c",
