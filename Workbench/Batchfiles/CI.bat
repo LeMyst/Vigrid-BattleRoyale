@@ -2,7 +2,6 @@
 setlocal enabledelayedexpansion
 
 set skipPboCleanup=0
-set skipEnumSpecialPaths=0
 set killGame=1
 set killWorkbench=0
 
@@ -16,12 +15,13 @@ if /I "%~1"=="rebuildAll" (
 	set skipPboCleanup=1
 ) else if /I "%~1"=="noIgnore" (
 	REM handled by CI1.bat
-) else if /I "%~1"=="skipEnumSpecialPaths" (
-	echo Command line option skipEnumSpecialPaths found - skipping check for changed "special" file paths
-	set skipEnumSpecialPaths=1
 ) else if /I "%~1"=="killGame" (
 	echo Command line option killGame found - will close all instances of game ^(client/server^) if running
 	set killGame=1
+) else if /I "%~1"=="noKillGame" (
+	REM killGame is the default because a running game holds the PBOs open and the build cannot replace them.
+	echo Command line option noKillGame found - leaving any running game ^(client/server^) alone
+	set killGame=0
 ) else if /I "%~1"=="killWorkbench" (
 	echo Command line option killWorkbench found - will close all instances of Workbench if running
 	set killWorkbench=1
@@ -46,18 +46,6 @@ if not exist "P:\" (
 call "%~dp0_Config.bat" CI
 if errorlevel 1 exit /b 1
 
-pushd "%srcRoot%\"
-
-echo %date% %time% Getting config paths...
-call "%~dp0_EnumPaths.bat" config.cpp "%workDrive%Temp\%PrefixLinkRoot%-ALL-configpaths-unfiltered.list"
-echo %date% %time% ...got config paths
-
-if %skipEnumSpecialPaths% NEQ 1 (
-	call "%~dp0CI0_EnumSpecialPaths.bat" "%PrefixLinkRoot%-ALL"
-)
-
-popd
-
 REM Logs\ is gitignored, so it does not exist in a fresh checkout - create it
 REM before writing the marker files.
 if not exist "%~dp0..\Logs" mkdir "%~dp0..\Logs"
@@ -73,7 +61,7 @@ if not exist CI_Build.bat (
 )
 echo !date! !time! CI_Build.bat is starting
 echo %time% > "%~dp0..\Logs\Build.tmp"
-start "%%a" CI_Build.bat skipEnumPaths exitCmd %*
+start "CI_Build" CI_Build.bat exitCmd %*
 
 :loop
 echo Waiting 1 seconds
@@ -91,10 +79,8 @@ if exist "%~dp0..\Logs\Build.failure" (
 	set success=0
 )
 if exist "%~dp0..\Logs\Build.failure" (
-    echo %success%
 	echo /////////////////////////////////////////////////////////////>>"%~dp0..\Logs\Build.log"
-	echo %date% %time% Something went wrong, check logs. Failed builds:>>"%~dp0..\Logs\Build.log"
-	if exist Build.failure echo %%a>>"%~dp0..\Logs\Build.log"
+	echo %date% %time% Something went wrong, check the log above.>>"%~dp0..\Logs\Build.log"
 	echo /////////////////////////////////////////////////////////////>>"%~dp0..\Logs\Build.log"
 ) else (
 	if not exist "%~dp0..\Logs\Build.success" (
