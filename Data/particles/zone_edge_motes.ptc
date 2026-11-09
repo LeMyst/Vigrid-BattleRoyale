@@ -17,7 +17,7 @@ EffectDef {
    AirResistanceRND 0.1
    GravityMultiply -0.02
    GravityMultiplyRND 0.01
-   Wind 0.2
+   Wind 0
    LifeTime 5
    LifeTimeRND 2
    Color {
@@ -44,7 +44,7 @@ EffectDef {
    VelocityRND 0.2
    AirResistance 0.3
    GravityMultiply -0.02
-   Wind 0.2
+   Wind 0
    LifeTime 4
    LifeTimeRND 1
    Color {
