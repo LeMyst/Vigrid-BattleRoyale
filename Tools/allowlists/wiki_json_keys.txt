@@ -1,0 +1,3 @@
+# Top-level keys of wiki ```json blocks that are not a field of this mod's settings classes.
+# Used by Tools/wiki_check.py. One key per line, `key  # reason`.
+Roles  # Admin-Guide quotes a Community-Online-Tools permissions file, not one of ours
