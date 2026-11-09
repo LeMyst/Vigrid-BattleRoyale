@@ -1,8 +1,8 @@
 modded class ParticleList
 {
-    //--- Blue motes rising off the current zone edge (BattleRoyaleZoneMotes). Plain-text .ptc in the Data PBO,
-    //--- identical but for the motes' alpha peak: an additive emissive sprite washes out to white when too bright.
-    static const int BR_ZONE_EDGE_MOTES_BRIGHT = RegisterParticle( "Vigrid-BattleRoyale/Data/particles/", "zone_edge_motes_bright" );
-    static const int BR_ZONE_EDGE_MOTES_MID = RegisterParticle( "Vigrid-BattleRoyale/Data/particles/", "zone_edge_motes_mid" );
-    static const int BR_ZONE_EDGE_MOTES_DIM = RegisterParticle( "Vigrid-BattleRoyale/Data/particles/", "zone_edge_motes_dim" );
+    //--- Blue motes rising off the current zone edge (BattleRoyaleZoneMotes). Colour is baked into
+    //--- zone_mote.edds: vanilla's particle materials ignore the tint. Two copies until one is proven
+    //--- to load: the material referenced by plain path, and by {GUID}path with .meta files.
+    static const int BR_ZONE_EDGE_MOTES = RegisterParticle( "Vigrid-BattleRoyale/Data/particles/", "zone_edge_motes" );
+    static const int BR_ZONE_EDGE_MOTES_GUID = RegisterParticle( "Vigrid-BattleRoyale/Data/particles/", "zone_edge_motes_guid" );
 }

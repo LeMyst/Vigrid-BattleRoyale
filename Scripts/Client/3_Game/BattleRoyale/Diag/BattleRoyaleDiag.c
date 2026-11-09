@@ -95,7 +95,7 @@ class BattleRoyaleDiag
     //--- BattleRoyaleZoneMotes birth rate scale. Match BR_ZONE_MOTES_DENSITY.
     static float zone_motes_density = 1.0;
     static float zone_motes_size = 1.0;
-    static int zone_motes_variant = 1;  // Bright, Mid, Dim
+    static int zone_motes_variant = 0;  // Plain path, GUID path
 
     //--- ADMIN SPECTATE OVERLAY. Fabricates the whole SetAdminPlayerList / SetAdminDeadList payload
     //--- client-side, which is the only way any of #276-#279 can be seen without a three-client MP
@@ -202,7 +202,7 @@ class BattleRoyaleDiag
         zone_ring_next_alpha = 0.25;
         zone_motes_density = 1.0;
         zone_motes_size = 1.0;
-        zone_motes_variant = 1;
+        zone_motes_variant = 0;
 
         admin_fake = false;
         admin_fake_players = 12;

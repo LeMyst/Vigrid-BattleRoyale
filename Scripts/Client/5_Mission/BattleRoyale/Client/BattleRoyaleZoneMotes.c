@@ -3,7 +3,7 @@
 static const float BR_ZONE_MOTES_DENSITY = 1.0;
 
 /**
- *  Blue motes rising slowly off the current zone edge: Data/particles/zone_edge_motes_*.ptc,
+ *  Blue motes rising slowly off the current zone edge: Data/particles/zone_edge_motes.ptc,
  *  client-side particles only. Each emitter is a 10 m strip turned along the circle.
  */
 class BattleRoyaleZoneMotes: BattleRoyaleRingArc
@@ -12,7 +12,7 @@ class BattleRoyaleZoneMotes: BattleRoyaleRingArc
 
     protected float m_Density;
     protected float m_Size = 1.0;
-    protected int m_ParticleId = ParticleList.BR_ZONE_EDGE_MOTES_MID;
+    protected int m_ParticleId = ParticleList.BR_ZONE_EDGE_MOTES;
     protected ref map<int, ParticleSource> m_Emitters = new map<int, ParticleSource>();
 
     void BattleRoyaleZoneMotes(float density)

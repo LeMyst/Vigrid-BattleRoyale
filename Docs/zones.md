@@ -162,11 +162,16 @@ Both circles are also drawn on the terrain, client-side only, coloured as on the
 
 ### The motes on the current edge
 
-The **current** circle only also gets small blue lights rising slowly off the line. They come from `BattleRoyaleZoneMotes` and our own `Data/particles/zone_edge_motes_{bright,mid,dim}.ptc`, registered as `ParticleList.BR_ZONE_EDGE_MOTES_*`. The three files are identical but for the motes' alpha peak (1, 0.35, 0.12), switchable live under **Map & Zones → Zone Motes Variant**; Mid is the default. A `.ptc` is plain text: the effect is tuned by editing those files and rebuilding, and its tint lives there too, since `EmitorParam` has no colour. The effect is built as follows:
+The **current** circle only also gets small blue lights rising slowly off the line. They come from `BattleRoyaleZoneMotes` and our own `Data/particles/zone_edge_motes.ptc`, registered as `ParticleList.BR_ZONE_EDGE_MOTES`. Its material, `zone_mote.emat`, is a copy of vanilla's `glow1.emat` pointing at `zone_mote.edds`, which is vanilla's white `glow.edds` with its RGB set to blue and its alpha kept (written with `Tools/edds.py`'s parser). A `_guid` twin references the same files by `{GUID}path` with `.meta` files, switchable under **Map & Zones → Zone Motes Variant**, until one of the two is proven to load. A `.ptc` is plain text: the effect is tuned by editing those files and rebuilding, and its tint lives there too, since `EmitorParam` has no colour. The effect is built as follows:
 
 - each emitter is a 10 m strip turned along the tangent, one per 10 m;
-- there are two emitters per strip: `flare_light.emat` motes (a soft round light), plus a few faint `glow1.emat` halos;
+- there are two emitters per strip: blue `zone_mote.emat` motes, plus a few faint halos in the same material;
 - the motes drift up 3 to 4 m and fade out.
 
 A vanilla contaminated-area gas was tried first. Myst rejected it on 2026-11-09 because the smoke did not render well. The motes use about 50 emitters out of the shared 10 000-particle pool; if the pool runs dry, the rest of the arc waits for the next re-cut. They share the `show_ground_rings` switch with the quads. Live sliders: **Map & Zones → Zone Motes Density** (birth rate) and **Zone Motes Size**.
-- ⚠️ **The spark materials cannot be tinted.** `sparks1.emat` rendered white, and `sparks_05.emat` at vanilla's blue-flare values still rendered as orange fire sparks (Myst, 2026-11-09): their colour is baked into the texture. The way to tell is a material vanilla reuses with *different* colours. `glow/flare_light.emat` is the one: the red, green, blue and yellow flares each tint it their own colour, because it is a white sprite with `Emissive 1 1 1 1`. The motes use it now, with no stretch.
+- ⚠️ **No vanilla particle material we tried takes a blue tint, so the colour is baked into the texture.** The particle `Color` did not turn any of these blue (Myst, 2026-11-09):
+  - `sparks1.emat`: rendered white;
+  - `sparks_05.emat`: still orange fire sparks;
+  - `flare_light.emat`: white at every alpha from 0.12 to 1. The flares' colour comes from their smoke, not from this light sprite.
+  
+  Texture colour does show, which is why the sparks stay orange.

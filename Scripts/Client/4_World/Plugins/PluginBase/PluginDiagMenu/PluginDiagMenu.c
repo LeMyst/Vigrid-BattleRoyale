@@ -416,8 +416,7 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterRange(m_BRDiagZoneRingNextAlphaID, "", "Zone Ring Opacity: White", m_BRDiagZoneMenuID, "0.05, 1, 0.25, 0.05");
 				DiagMenu.RegisterRange(m_BRDiagZoneMotesDensityID, "", "Zone Motes Density", m_BRDiagZoneMenuID, "0, 3, 1, 0.1");
 				DiagMenu.RegisterRange(m_BRDiagZoneMotesSizeID, "", "Zone Motes Size", m_BRDiagZoneMenuID, "0.25, 4, 1, 0.25");
-				DiagMenu.RegisterItem(m_BRDiagZoneMotesVariantID, "", "Zone Motes Variant", m_BRDiagZoneMenuID, "Bright,Mid,Dim");
-				DiagMenu.SetValue(m_BRDiagZoneMotesVariantID, 1);
+				DiagMenu.RegisterItem(m_BRDiagZoneMotesVariantID, "", "Zone Motes Variant", m_BRDiagZoneMenuID, "Plain path,GUID path");
 				//--- Ground ring probe: flat vanilla quads laid round the player. Defaults match BattleRoyaleDiag.
 				DiagMenu.RegisterRange(m_BRDiagGroundRingRadiusID, "", "Ground Ring Radius", m_BRDiagZoneMenuID, "10, 200, 30, 5");
 				DiagMenu.RegisterItem(m_BRDiagGroundRingModelID, "", "Ground Ring Model", m_BRDiagZoneMenuID, "SnowSpot,Blood,Band");
