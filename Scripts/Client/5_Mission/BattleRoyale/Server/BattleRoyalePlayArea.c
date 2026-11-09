@@ -40,7 +40,7 @@ class BattleRoyalePlayArea
         float r2 = other.GetRadius();
 
         // Calculate the distance between the centers of the two circles
-        int d = Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((z2 - z1), 2));
+        float d = Math.Sqrt(Math.Pow((x2 - x1), 2) + Math.Pow((z2 - z1), 2));
 
         // Check if one circle is completely inside the other
         if(((d + r2) <= r1) || ((d + r1) <= r2))
