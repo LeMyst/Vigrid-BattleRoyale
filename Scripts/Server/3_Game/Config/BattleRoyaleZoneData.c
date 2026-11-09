@@ -21,7 +21,8 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     bool restrict_final_zone = false;  // Whether to restrict the final zone to a polygon
     ref array<string> final_zone_polygon = {}; // Array of vectors defining polygon for the final zone
 
-    // Deprecated, kept so a version 1 config still deserializes and can be migrated by Upgrade().
+    // Deprecated, kept so a version 1 config still deserializes and can be migrated: by Upgrade() for
+    // the profile, by MigrateMissionDeprecatedKeys() for the mission file.
     // These always restricted the FINAL zone despite the name; do not read them, use the pair above.
     bool restrict_first_zone = false;
     ref array<string> first_zone_polygon = {};
@@ -269,7 +270,6 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			ref array<string> keptAvoidType = CopyStrings(end_avoid_type);
 			ref array<string> keptAvoidCity = CopyStrings(end_avoid_city);
 			ref array<string> keptFinalPolygon = CopyStrings(final_zone_polygon);
-			ref array<string> keptFirstPolygon = CopyStrings(first_zone_polygon);
 			ref array<float> keptStaticSizes = CopyFloats(static_sizes);
 			ref array<int> keptStaticTimers = CopyInts(static_timers);
 			ref array<int> keptMinPlayers = CopyInts(min_players);
@@ -277,8 +277,24 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			ref array<string> keptHotCenters = CopyStrings(hot_zone_centers);
 			ref array<float> keptHotRadii = CopyFloats(hot_zone_radii);
 
+			//--- Upgrade() already settled the profile's schema, so the mission's "version" only says
+			//--- what the mission file was written for; 0 after the read means it has no version key.
+			int keptVersion = version;
+			int missionVersion;
+			version = 0;
+
+			//--- Cleared so a deprecated value seen after the read can only have come from the mission.
+			restrict_first_zone = false;
+			first_zone_polygon = new array<string>();
+
 			if (!JsonFileLoader<BattleRoyaleZoneData>.LoadFile(GetMissionPath(), this, errorMessage))
 				ErrorEx(errorMessage);
+
+			missionVersion = version;
+			version = keptVersion;
+
+			//--- Before the restores below, so it can tell whether the mission set final_zone_polygon itself.
+			MigrateMissionDeprecatedKeys(missionVersion);
 
 			if (!zone_notification_minutes || zone_notification_minutes.Count() == 0)
 				zone_notification_minutes = keptNotifyMinutes;
@@ -294,9 +310,6 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
 			if (!final_zone_polygon || final_zone_polygon.Count() == 0)
 				final_zone_polygon = keptFinalPolygon;
-
-			if (!first_zone_polygon || first_zone_polygon.Count() == 0)
-				first_zone_polygon = keptFirstPolygon;
 
 			if (!static_sizes || static_sizes.Count() == 0)
 				static_sizes = keptStaticSizes;
@@ -320,6 +333,43 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			if (!hot_zone_radii || hot_zone_radii.Count() == 0)
 				hot_zone_radii = keptHotRadii;
 		}
+	}
+
+	//--- Upgrade()'s v1 -> v2 rename, applied to the mission file: Upgrade() runs inside Load(), before
+	//--- the mission pass, so a v1 mission's keys would otherwise land in fields nothing reads.
+	protected void MigrateMissionDeprecatedKeys(int mission_version)
+	{
+		bool has_polygon = (first_zone_polygon && first_zone_polygon.Count() > 0);
+		string line;
+
+		if (!restrict_first_zone && !has_polygon)
+			return;
+
+		line = "[BattleRoyaleZoneData] the mission zone_settings.json sets restrict_first_zone/first_zone_polygon";
+
+		//--- From version 2 on these keys are inert in the profile too, so a mission gets the same rule.
+		if (mission_version >= 2)
+		{
+			line = line + ", deprecated since version 2 - IGNORED. Use restrict_final_zone/final_zone_polygon.";
+			BattleRoyaleUtils.Warn(line);
+		}
+		else
+		{
+			//--- Only a true or a non-empty value can be told apart from an absent key.
+			if (restrict_first_zone)
+				restrict_final_zone = true;
+
+			//--- A final_zone_polygon the mission sets itself wins over the deprecated one.
+			if (has_polygon && (!final_zone_polygon || final_zone_polygon.Count() == 0))
+				final_zone_polygon = CopyStrings(first_zone_polygon);
+
+			line = line + ", renamed restrict_final_zone/final_zone_polygon in version 2 - migrated for this boot.";
+			line = line + " Rename the keys in the mission file.";
+			BattleRoyaleUtils.Warn(line);
+		}
+
+		restrict_first_zone = false;
+		first_zone_polygon = new array<string>();
 	}
 
 	override void Save()
