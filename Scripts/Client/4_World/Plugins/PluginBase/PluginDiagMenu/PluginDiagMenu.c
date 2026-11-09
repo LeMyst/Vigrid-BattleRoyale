@@ -408,8 +408,8 @@ modded class PluginDiagMenu
 				//--- Band only, both applied live to the ring already on the ground. Order = GetColorTexture().
 				DiagMenu.RegisterItem(m_BRDiagGroundRingColorID, "", "Ground Ring Color", m_BRDiagZoneMenuID, "Red,Orange,Yellow,White,Blue,Light Blue,Cyan,Purple,Black");
 				DiagMenu.SetValue(m_BRDiagGroundRingColorID, 4);
-				DiagMenu.RegisterRange(m_BRDiagGroundRingAlphaID, "", "Ground Ring Opacity", m_BRDiagZoneMenuID, "0.1, 1, 0.55, 0.05");
-				DiagMenu.RegisterRange(m_BRDiagGroundRingScaleID, "", "Ground Ring Scale", m_BRDiagZoneMenuID, "0.1, 5, 0.25, 0.05");
+				DiagMenu.RegisterRange(m_BRDiagGroundRingAlphaID, "", "Ground Ring Opacity", m_BRDiagZoneMenuID, "0.1, 1, 0.5, 0.05");
+				DiagMenu.RegisterRange(m_BRDiagGroundRingScaleID, "", "Ground Ring Scale", m_BRDiagZoneMenuID, "0.25, 5, 1, 0.25");
 				DiagMenu.RegisterBool(m_BRDiagGroundRingFlipID, "", "Ground Ring: Flip", m_BRDiagZoneMenuID);
 				DiagMenu.RegisterBool(m_BRDiagGroundRingSpawnID, "", "Ground Ring: Spawn", m_BRDiagZoneMenuID);
 				DiagMenu.RegisterBool(m_BRDiagGroundRingClearID, "", "Ground Ring: Clear", m_BRDiagZoneMenuID);

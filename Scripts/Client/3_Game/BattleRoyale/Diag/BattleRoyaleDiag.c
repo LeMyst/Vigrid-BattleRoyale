@@ -83,8 +83,8 @@ class BattleRoyaleDiag
     static int ground_ring_radius = 30;
     static int ground_ring_model = 2;
     static int ground_ring_color = 4;
-    static float ground_ring_alpha = 0.55;
-    static float ground_ring_scale = 0.25;
+    static float ground_ring_alpha = 0.5;
+    static float ground_ring_scale = 1.0;
     static bool ground_ring_flip = false;
     static int req_ground_ring_spawn = 0;
     static int req_ground_ring_clear = 0;
@@ -185,8 +185,8 @@ class BattleRoyaleDiag
         ground_ring_radius = 30;
         ground_ring_model = 2;
         ground_ring_color = 4;
-        ground_ring_alpha = 0.55;
-        ground_ring_scale = 0.25;
+        ground_ring_alpha = 0.5;
+        ground_ring_scale = 1.0;
         ground_ring_flip = false;
         req_ground_ring_spawn = 0;
         req_ground_ring_clear = 0;

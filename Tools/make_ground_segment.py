@@ -1,8 +1,10 @@
 """Write Models/Shapes/ground_segment.p3d: one flat MLOD quad for the on-ground zone ring.
 
-2 m along +Z (the ring's tangent), 1 m along X, at y = 0, visible from above, all of it in a
+2 m along +Z (the ring's tangent), 0.25 m along X, at y = 0, visible from above, all of it in a
 "camo" named selection so script can recolour it through hiddenSelections. No geometry LOD, so
-it has no collision and raycasts pass through it.
+it has no collision and raycasts pass through it. 0.25 m is the width Myst picked in game.
+
+The selection is only retexturable because Models/Shapes/model.cfg lists it in sections[].
 
 Conventions read from Models/Shapes/zone.p3d: the visible side is the one cross(p1-p0, p2-p0)
 points AWAY from, and the stored normal points away from it too.
@@ -13,9 +15,9 @@ import struct
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "Models", "Shapes", "ground_segment.p3d")
 
-HALF_WIDTH = 0.5
+HALF_WIDTH = 0.125
 HALF_LENGTH = 1.0
-TEXTURE = "#(argb,8,8,3)color(1,0,0,0.35,ca)"
+TEXTURE = "#(argb,8,8,3)color(0.05,0.25,1,0.5,ca)"
 
 #--- Counter-clockwise seen from above (+Y), so cross(p1-p0, p2-p0) is -Y: visible from above.
 POINTS = [

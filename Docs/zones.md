@@ -150,3 +150,11 @@ Within a round, the new circle only becomes the damaging boundary at `BR_ZONE_LO
 With dynamic starting zones the rounds ahead of the starting one are **skipped**, but they were still constructed and still hold a fully generated circle. `BattleRoyaleState.b_WasSkipped` (set by `BattleRoyaleServer.GetNextStateIndex()`) is what keeps that never-played circle out of the damage tick and off the wire. Note the two distinct meanings of "previous round" in `6_BattleRoyaleRound.c`: `GetChainedPreviousRound()` is the construction-time chain and is deliberately **not** skip-aware (it is how a round derives its own zone number), while `GetPreviousZone()` is skip-aware and answers "the circle actually in play".
 
 `BattleRoyaleZone.OnActivate(array<PlayerBase>)` is an intentionally empty hook for player-count-driven zone sizing.
+
+## The circles drawn on the ground
+
+Both circles are also drawn on the terrain, client-side only, coloured as on the map: blue current, white next, 50 % opacity, 25 cm wide (Myst's pick, 2026-11-09). `BattleRoyaleGroundRing` lays local `BR_GroundSegment` quads (`Models/Shapes`, written by `Tools/make_ground_segment.py`) at `SurfaceY`, 5 cm up and tilted to the terrain normal; 2 cm z-fought. Only the arc within 250 m of the **camera** exists, re-cut every 10 m, so spectators get it too and nothing goes on the wire. A changed circle is rebuilt from scratch, which is fine for static rounds and will not be for a continuously moving zone.
+
+- ⚠️ **`model.cfg` is load-bearing.** Without `CfgModels.ground_segment.sections[] = {"camo"}` binarize drops the selection and `SetObjectTexture` runs and changes nothing.
+- **Engine decals were tried and are a dead end:** no terrain entity is reachable from script, `CreateDecal(NULL, ...)` is an access violation, and on a real object it rejects rvmats. The quads also do not climb rocks: a flat segment cannot follow a rock's curve.
+- Tuning is in the diag menu, **Map & Zones → Ground Ring**, which lays a test ring around the player with live colour and opacity. Offline, set `Zone Radius` to ~150 **before** `Fake Zones`, since the default 1500 m circle is beyond the 250 m draw radius.
