@@ -20,7 +20,7 @@ static const string KILLFEED_PREFIX = "Vigrid-BattleRoyale/Extra/KillFeed/";
 #ifdef KILLFEED_TRACE_ENABLED
     static const int KILLFEED_LOG_LEVEL = 4; // Trace
 #else
-    static const int KILLFEED_LOG_LEVEL = 0; // Error only
+    static const int KILLFEED_LOG_LEVEL = 1; // Warn
 #endif
 
 //--- Settings. The addon's own profile folder, deliberately not the host mod's, so that
