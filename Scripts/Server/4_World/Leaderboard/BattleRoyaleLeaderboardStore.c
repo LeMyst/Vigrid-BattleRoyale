@@ -60,7 +60,7 @@ class BattleRoyaleLeaderboardStore
 
         if (!store)
         {
-            //--- Losing the ladder beats refusing to start. The next flush overwrites the file.
+            //--- Losing the ladder beats refusing to start. ParseStoreFile copied both originals aside.
             BattleRoyaleUtils.Warn("[Leaderboard] Neither leaderboard.json nor its backup could be read, starting empty");
             return result;
         }
@@ -149,8 +149,13 @@ class BattleRoyaleLeaderboardStore
             store.entries.Insert(entry);
         }
 
+        //--- On failure the write still goes ahead: skipping it would drop every match since the last
+        //--- flush, while the older .bak still stands.
         if (FileExist(BATTLEROYALE_LEADERBOARD_FILE))
-            CopyFile(BATTLEROYALE_LEADERBOARD_FILE, BATTLEROYALE_LEADERBOARD_BACKUP);
+        {
+            if (!CopyFile(BATTLEROYALE_LEADERBOARD_FILE, BATTLEROYALE_LEADERBOARD_BACKUP))
+                BattleRoyaleUtils.Warn("[Leaderboard] Failed to back up leaderboard.json to " + BATTLEROYALE_LEADERBOARD_BACKUP);
+        }
 
         string error_message;
         if (!JsonFileLoader<BattleRoyaleLeaderboardFile>.SaveFile(BATTLEROYALE_LEADERBOARD_FILE, store, error_message))
@@ -270,10 +275,26 @@ class BattleRoyaleLeaderboardStore
         if (!JsonFileLoader<BattleRoyaleLeaderboardFile>.LoadFile(path, store, error_message))
         {
             BattleRoyaleUtils.Warn("[Leaderboard] " + path + " could not be read: " + error_message);
+            SetAside(path);
             return NULL;
         }
 
         return store;
+    }
+
+    //--- The next flush copies the primary over the backup and then rewrites it, so without this an
+    //--- unreadable file - often a hand-edit with one typo - is gone for good.
+    private static void SetAside(string path)
+    {
+        string aside = path + "." + BattleRoyaleTime.NowSeconds() + ".corrupt";
+
+        if (!CopyFile(path, aside))
+        {
+            BattleRoyaleUtils.Warn("[Leaderboard] Failed to copy unreadable " + path + " aside to " + aside);
+            return;
+        }
+
+        BattleRoyaleUtils.Warn("[Leaderboard] Copied unreadable " + path + " aside to " + aside);
     }
 
     //--- Copy the finished ladder aside under its season number. Best-effort: if the copy fails the
