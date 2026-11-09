@@ -1,7 +1,8 @@
 #ifndef SERVER
-//--- Colours as on the map (VIGRID_MAP_COLOR_CURRENT_ZONE / _NEXT_ZONE), at the opacity picked in game.
+//--- Colours as on the map (VIGRID_MAP_COLOR_CURRENT_ZONE / _NEXT_ZONE), at the opacity picked in game:
+//--- white reads far stronger than blue on terrain, hence half the alpha.
 static const string BR_GROUND_RING_TEXTURE_CURRENT = "#(argb,8,8,3)color(0.05,0.25,1,0.5,ca)";
-static const string BR_GROUND_RING_TEXTURE_NEXT = "#(argb,8,8,3)color(1,1,1,0.5,ca)";
+static const string BR_GROUND_RING_TEXTURE_NEXT = "#(argb,8,8,3)color(1,1,1,0.25,ca)";
 
 /**
  *  One zone circle drawn on the terrain as a band of flat local quads (BR_GroundSegment).
@@ -72,6 +73,21 @@ class BattleRoyaleGroundRing
 
         string circle_text = center.ToString() + " r=" + radius;
         BattleRoyaleUtils.Debug( "[GroundRing] circle " + circle_text + " segments=" + m_Count );
+    }
+
+    //! Recolour the segments already on the ground.
+    void SetTexture(string texture)
+    {
+        if ( texture == m_Texture )
+            return;
+
+        m_Texture = texture;
+        foreach ( int idx, Object seg : m_Segments )
+        {
+            EntityAI entity = EntityAI.Cast( seg );
+            if ( entity )
+                entity.SetObjectTexture( 0, m_Texture );
+        }
     }
 
     //! No circle any more (cleared by the server, or the match reset).

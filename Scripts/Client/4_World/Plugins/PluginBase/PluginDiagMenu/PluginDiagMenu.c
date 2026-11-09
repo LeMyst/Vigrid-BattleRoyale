@@ -100,6 +100,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagGroundRingScaleID;
 	protected int m_BRDiagGroundRingColorID;
 	protected int m_BRDiagGroundRingAlphaID;
+	protected int m_BRDiagZoneRingCurrentAlphaID;
+	protected int m_BRDiagZoneRingNextAlphaID;
 	protected int m_BRDiagGroundRingFlipID;
 	protected int m_BRDiagGroundRingSpawnID;
 	protected int m_BRDiagGroundRingClearID;
@@ -202,6 +204,8 @@ modded class PluginDiagMenu
 		m_BRDiagGroundRingScaleID = GetModdedDiagID();
 		m_BRDiagGroundRingColorID = GetModdedDiagID();
 		m_BRDiagGroundRingAlphaID = GetModdedDiagID();
+		m_BRDiagZoneRingCurrentAlphaID = GetModdedDiagID();
+		m_BRDiagZoneRingNextAlphaID = GetModdedDiagID();
 		m_BRDiagGroundRingFlipID = GetModdedDiagID();
 		m_BRDiagGroundRingSpawnID = GetModdedDiagID();
 		m_BRDiagGroundRingClearID = GetModdedDiagID();
@@ -401,6 +405,9 @@ modded class PluginDiagMenu
 #ifdef VIGRID_MAP
 				DiagMenu.RegisterBool(m_BRDiagClearMarkersID, "", "Clear Map Markers", m_BRDiagZoneMenuID);
 #endif
+				//--- The real zone rings on the ground, applied live. Defaults match BattleRoyaleDiag.
+				DiagMenu.RegisterRange(m_BRDiagZoneRingCurrentAlphaID, "", "Zone Ring Opacity: Blue", m_BRDiagZoneMenuID, "0.05, 1, 0.5, 0.05");
+				DiagMenu.RegisterRange(m_BRDiagZoneRingNextAlphaID, "", "Zone Ring Opacity: White", m_BRDiagZoneMenuID, "0.05, 1, 0.25, 0.05");
 				//--- Ground ring probe: flat vanilla quads laid round the player. Defaults match BattleRoyaleDiag.
 				DiagMenu.RegisterRange(m_BRDiagGroundRingRadiusID, "", "Ground Ring Radius", m_BRDiagZoneMenuID, "10, 200, 30, 5");
 				DiagMenu.RegisterItem(m_BRDiagGroundRingModelID, "", "Ground Ring Model", m_BRDiagZoneMenuID, "SnowSpot,Blood,Band");

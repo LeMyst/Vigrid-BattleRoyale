@@ -3,6 +3,9 @@ class BattleRoyaleHud
 {
     protected Widget m_Root;
 
+    //--- Throttle for the per-frame SetDistance debug line.
+    protected int m_NextDistanceLogMs;
+
     protected Widget m_PlayerCountPanel;
     protected Widget m_GroupCountPanel;
     protected Widget m_ZoneDistancePanel;
@@ -205,9 +208,14 @@ class BattleRoyaleHud
 			//--- Gated so the string is not even BUILT at production log levels. This runs once per
 			//--- frame for as long as a player is outside the circle, which used to mean the tail end
 			//--- of a round and now means the whole pre-lock phase too - measured at ~60 lines/second
-			//--- per client, and string.Format runs before Debug() can reject it.
-			if (BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+			//--- per client, and string.Format runs before Debug() can reject it. Also capped at one
+			//--- line per second: at 60/s it buried every other line of a diag log.
+			int distance_log_now = GetGame().GetTime();
+			if (distance_log_now >= m_NextDistanceLogMs && BattleRoyaleUtils.CheckLogLevel(BattleRoyaleUtils.DEBUG))
+			{
+				m_NextDistanceLogMs = distance_log_now + 1000;
 				BattleRoyaleUtils.Debug(string.Format("SetDistance: distExt=%1 secondsToZone=%2 speedNeededToReachZone=%3", distExt, secondsToZone, speedNeededToReachZone));
+			}
 
 			// Convert m/min thresholds to m/s for comparison (divide by 60)
 			float fastThreshold = 400.0 / 60.0;    // 6.67 m/s

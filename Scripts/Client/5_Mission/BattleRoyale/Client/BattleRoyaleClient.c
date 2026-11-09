@@ -1906,12 +1906,27 @@ class BattleRoyaleClient: BattleRoyaleBase
     {
         vector anchor = GetGame().GetCurrentCameraPosition();
 
+#ifdef DIAG_DEVELOPER
+        //--- Live per-circle opacity from Map & Zones; a no-op unless a slider moved.
+        m_GroundRingCurrent.SetTexture( "#(argb,8,8,3)color(0.05,0.25,1," + BattleRoyaleDiag.zone_ring_current_alpha + ",ca)" );
+        m_GroundRingNext.SetTexture( "#(argb,8,8,3)color(1,1,1," + BattleRoyaleDiag.zone_ring_next_alpha + ",ca)" );
+#endif
+
         if ( m_CurrentPlayArea )
             m_GroundRingCurrent.SetCircle( m_CurrentPlayArea.GetCenter(), m_CurrentPlayArea.GetRadius() );
         else
             m_GroundRingCurrent.Clear();
 
-        if ( m_FuturePlayArea )
+        //--- After LockNewZone the server sends the SAME circle as current and next; drawing both would
+        //--- stack white on blue. Until the next round advertises a new circle, only the blue one shows.
+        bool next_is_current = false;
+        if ( m_CurrentPlayArea && m_FuturePlayArea )
+        {
+            if ( m_CurrentPlayArea.GetCenter() == m_FuturePlayArea.GetCenter() && m_CurrentPlayArea.GetRadius() == m_FuturePlayArea.GetRadius() )
+                next_is_current = true;
+        }
+
+        if ( m_FuturePlayArea && !next_is_current )
             m_GroundRingNext.SetCircle( m_FuturePlayArea.GetCenter(), m_FuturePlayArea.GetRadius() );
         else
             m_GroundRingNext.Clear();

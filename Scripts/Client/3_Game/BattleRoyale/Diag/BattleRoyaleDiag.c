@@ -89,6 +89,10 @@ class BattleRoyaleDiag
     static int req_ground_ring_spawn = 0;
     static int req_ground_ring_clear = 0;
 
+    //--- Opacity of the REAL zone rings (BattleRoyaleGroundRing), applied live. Match the range defaults.
+    static float zone_ring_current_alpha = 0.5;
+    static float zone_ring_next_alpha = 0.25;
+
     //--- ADMIN SPECTATE OVERLAY. Fabricates the whole SetAdminPlayerList / SetAdminDeadList payload
     //--- client-side, which is the only way any of #276-#279 can be seen without a three-client MP
     //--- session plus an admin steamid: every existing Spectate diag entry is SERVER-side, and SERVER
@@ -190,6 +194,8 @@ class BattleRoyaleDiag
         ground_ring_flip = false;
         req_ground_ring_spawn = 0;
         req_ground_ring_clear = 0;
+        zone_ring_current_alpha = 0.5;
+        zone_ring_next_alpha = 0.25;
 
         admin_fake = false;
         admin_fake_players = 12;
