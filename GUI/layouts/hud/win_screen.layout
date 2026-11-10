@@ -25,7 +25,7 @@ FrameWidgetClass WinRoot {
   FrameWidgetClass Content {
    ignorepointer 1
    position 0 0
-   size 1200 520
+   size 1800 520
    halign center_ref
    valign center_ref
    hexactpos 1
@@ -37,7 +37,7 @@ FrameWidgetClass WinRoot {
      ignorepointer 1
      inheritalpha 0
      position 0 0
-     size 1200 30
+     size 1800 30
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -82,7 +82,7 @@ FrameWidgetClass WinRoot {
      ignorepointer 1
      inheritalpha 0
      position 0 40
-     size 1200 180
+     size 1800 180
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -92,7 +92,7 @@ FrameWidgetClass WinRoot {
      font "gui/fonts/sdf_metronbook72"
      "bold text" 1
      "exact text" 1
-     "exact text size" 128
+     "exact text size" 112
      "text halign" center
      "text valign" center
     }
@@ -100,7 +100,7 @@ FrameWidgetClass WinRoot {
      ignorepointer 1
      inheritalpha 0
      position 0 230
-     size 1200 36
+     size 1800 36
      hexactpos 1
      vexactpos 1
      hexactsize 1
@@ -325,7 +325,7 @@ FrameWidgetClass WinRoot {
      ignorepointer 1
      inheritalpha 0
      position 0 488
-     size 1200 30
+     size 1800 30
      hexactpos 1
      vexactpos 1
      hexactsize 1

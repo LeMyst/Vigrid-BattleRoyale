@@ -211,7 +211,7 @@ class BattleRoyaleWinScreen
         m_PlaceText.GetScreenSize( place_w, place_h );
 
         //--- Design lengths in 1920 units, scaled the way declared geometry is.
-        float scale = content_w / 1200.0;
+        float scale = content_w / 1800.0;
         float line_w = 60.0 * scale;
         float line_h = Math.Max( 1.0, 2.0 * scale );
         float gap = 21.0 * scale;
