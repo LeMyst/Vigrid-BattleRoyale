@@ -99,11 +99,13 @@ class BattleRoyaleWinScreen
             string place = "";
             if ( br_rpc.win_field_size > 0 )
             {
-                string place_key = "#STR_BR_LASTMATCH_PLACE_PLAYERS";
+                //--- An ordinal, not "#1": a TextWidget swallows every '#' as a stringtable token,
+                //--- whatever the escaping. Placement is always 1 here, so no plural rules are needed.
+                string place_key = "#STR_BR_WIN_PLACE_PLAYERS";
                 if ( br_rpc.win_grouped )
-                    place_key = "#STR_BR_LASTMATCH_PLACE_SQUADS";
+                    place_key = "#STR_BR_WIN_PLACE_SQUADS";
 
-                place = string.Format( Widget.TranslateString( place_key ), 1, br_rpc.win_field_size );
+                place = string.Format( Widget.TranslateString( place_key ), br_rpc.win_field_size );
             }
 
             m_PlaceText.SetText( place );
