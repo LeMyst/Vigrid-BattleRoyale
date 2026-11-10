@@ -133,7 +133,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token, m_ServerData.server_password );
 			match_uuid = "";
 			b_MatchRegistrationPending = true;
-			i_MatchRegistrationDeadlineMs = GetGame().GetTime() + MATCH_REGISTRATION_TIMEOUT_MS;
+			i_MatchRegistrationDeadlineMs = 0;
 			i_MatchRegistrationId = createMatchWebhook.Request();
 			BattleRoyaleUtils.Info("Registering the match with the Vigrid API (request " + i_MatchRegistrationId + "); the lobby will not start until it answers.");
         } else {
@@ -263,6 +263,11 @@ class BattleRoyaleServer: BattleRoyaleBase
             FinishMatchRegistration( CreateMatchWebhook.GetResponse(), true );
             return;
         }
+
+        //--- Started on the first poll, not in Init: a boot can outlast the whole timeout before any
+        //--- REST callback is dispatched (measured ~40 s on a diag boot).
+        if ( i_MatchRegistrationDeadlineMs == 0 )
+            i_MatchRegistrationDeadlineMs = GetGame().GetTime() + MATCH_REGISTRATION_TIMEOUT_MS;
 
         if ( GetGame().GetTime() < i_MatchRegistrationDeadlineMs )
             return;
