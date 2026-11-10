@@ -144,6 +144,10 @@ class BattleRoyaleDiag
     static int req_open_spawn_menu = 0;
     static int req_open_leaderboard = 0;
     static int req_open_death_screen = 0;
+    static int req_open_win_screen = 0;
+
+    //--- Which win screen the fixture fakes: 0 squad, 1 solo, 2 next match (in-place reset), 3 no stats.
+    static int win_variant = 0;
 
     //--- Raise a burst of test toasts. The notification stack is otherwise unreachable offline:
     //--- every real toast is a server push, and the one client-raised toast (NotifyLocal, on the F6
@@ -218,6 +222,8 @@ class BattleRoyaleDiag
         req_open_spawn_menu = 0;
         req_open_leaderboard = 0;
         req_open_death_screen = 0;
+        req_open_win_screen = 0;
+        win_variant = 0;
         req_push_toasts = 0;
         lastmatch_cause = BattleRoyaleKillCause.FIREARM;
         lastmatch_not_played = false;

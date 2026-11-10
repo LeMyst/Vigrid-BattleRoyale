@@ -155,6 +155,7 @@ class BattleRoyaleRPC
 		b_ArtillerySound = false;
 		top_position = 0;
 		winner_screen = false;
+		ClearWinStats();
 		lb_solo.Clear();
 		lb_group.Clear();
 		lb_season = 1;
@@ -268,6 +269,7 @@ class BattleRoyaleRPC
 		b_ArtillerySound = false;
 		top_position = 0;
 		winner_screen = false;
+		ClearWinStats();
 		lb_solo.Clear();
 		lb_group.Clear();
 		leaderboard_seq++;
@@ -1192,13 +1194,64 @@ class BattleRoyaleRPC
 
 	bool winner_screen = false;
 
+	//--- The winner's own figures, from the same server tallies as the Last Match card. win_valid is
+	//--- false when the payload failed to read: the screen still shows, without its stat strip.
+	bool win_valid = false;
+	int win_field_size = 0;
+	bool win_grouped = false;
+	int win_kills = 0;
+	int win_damage = 0;
+	int win_hits = 0;
+	int win_survived_s = 0;
+	string win_squad_names = "";
+	bool win_next_match = false;
+
+	//! GetGame().GetTime() at which the server disconnects the winner. Latched at arrival, like
+	//! countdown_deadline_ms. 0 = unknown.
+	int win_kick_deadline_ms = 0;
+
 	void ShowWinScreen(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
-		if ( type == CallType.Client )
+		if ( type != CallType.Client )
+			return;
+
+		BattleRoyaleUtils.Trace("ShowWinScreen");
+
+		Param9<int, bool, int, int, int, int, string, bool, int> data;
+		if ( ctx.Read( data ) )
 		{
-			BattleRoyaleUtils.Trace("ShowWinScreen");
-			winner_screen = true;
+			win_field_size = data.param1;
+			win_grouped = data.param2;
+			win_kills = data.param3;
+			win_damage = data.param4;
+			win_hits = data.param5;
+			win_survived_s = data.param6;
+			win_squad_names = data.param7;
+			win_next_match = data.param8;
+			win_kick_deadline_ms = GetGame().GetTime() + data.param9;
+			win_valid = true;
 		}
+		else
+		{
+			ReadFailed("ShowWinScreen");
+			ClearWinStats();
+		}
+
+		winner_screen = true;
+	}
+
+	void ClearWinStats()
+	{
+		win_valid = false;
+		win_field_size = 0;
+		win_grouped = false;
+		win_kills = 0;
+		win_damage = 0;
+		win_hits = 0;
+		win_survived_s = 0;
+		win_squad_names = "";
+		win_next_match = false;
+		win_kick_deadline_ms = 0;
 	}
 
 	// The leaderboard, one ladder at a time

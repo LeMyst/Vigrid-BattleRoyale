@@ -69,6 +69,8 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagLastMatchCauseID, CBBRDiagLastMatchCause);
 		DiagMenu.BindCallback(m_BRDiagLastMatchNotPlayedID, CBBRDiagLastMatchNotPlayed);
 		DiagMenu.BindCallback(m_BRDiagOpenDeathScreenID, CBBRDiagOpenDeathScreen);
+		DiagMenu.BindCallback(m_BRDiagOpenWinScreenID, CBBRDiagOpenWinScreen);
+		DiagMenu.BindCallback(m_BRDiagWinVariantID, CBBRDiagWinVariant);
 		DiagMenu.BindCallback(m_BRDiagPushToastsID, CBBRDiagPushToasts);
 		DiagMenu.BindCallback(m_BRDiagFadeID, CBBRDiagFade);
 
@@ -482,6 +484,20 @@ modded class PluginDiagMenuClient
 		BattleRoyaleDiag.suppress_alive_close = true;
 		BattleRoyaleDiag.req_open_death_screen = BattleRoyaleDiag.req_open_death_screen + 1;
 		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagOpenWinScreen(bool enabled, int id)
+	{
+		if ( !enabled )
+			return;
+
+		BattleRoyaleDiag.req_open_win_screen = BattleRoyaleDiag.req_open_win_screen + 1;
+		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagWinVariant(int value)
+	{
+		BattleRoyaleDiag.win_variant = value;
 	}
 
 	static void CBBRDiagPushToasts(bool enabled, int id)
