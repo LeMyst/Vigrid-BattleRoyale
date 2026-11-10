@@ -55,13 +55,12 @@ class BattleRoyaleWinScreen
         m_StatusText = TextWidget.Cast( m_Root.FindAnyWidget("StatusText") );
 
         //--- A renamed widget fails silently; this line is the only way to tell.
-        string line = "[Win] Init: content=" + (m_Content != NULL);
-        line = line + " place=" + (m_PlaceText != NULL);
-        line = line + " lines=" + (m_LineLeft != NULL && m_LineRight != NULL);
-        line = line + " subtitle=" + (m_SubtitleText != NULL);
-        line = line + " stats=" + (m_StatsGrid != NULL);
-        line = line + " status=" + (m_StatusText != NULL);
-        BattleRoyaleUtils.Trace(line);
+        bool has_lines = false;
+        if ( m_LineLeft && m_LineRight )
+            has_lines = true;
+
+        BattleRoyaleUtils.Trace(string.Format("[Win] Init: content=%1 place=%2 lines=%3 subtitle=%4 stats=%5 status=%6",
+            m_Content != NULL, m_PlaceText != NULL, has_lines, m_SubtitleText != NULL, m_StatsGrid != NULL, m_StatusText != NULL));
 
         Apply();
         m_Root.Show( true );
