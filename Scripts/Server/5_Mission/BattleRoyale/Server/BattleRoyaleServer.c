@@ -27,6 +27,13 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     string match_uuid;
 
+    //--- The async CreateMatchWebhook request this server is waiting on. The lobby will not start
+    //--- while it is pending; UpdateMatchRegistration settles it from the 10 Hz tick.
+    static const int MATCH_REGISTRATION_TIMEOUT_MS = 60000;
+    protected bool b_MatchRegistrationPending;
+    protected int i_MatchRegistrationId;
+    protected int i_MatchRegistrationDeadlineMs;
+
     //--- Players connected after the lobby ended, each with their own deadline. This used to be one
     //--- shared `ref Timer` on which every late joiner scheduled the same "Disconnect" callback, so a
     //--- second one inside the window silently replaced the first and the first was never kicked.
@@ -122,25 +129,13 @@ class BattleRoyaleServer: BattleRoyaleBase
 		if ( m_ServerData.enable_vigrid_api )
 		{
 			//--- Never log server_password: on DIAG, Trace is mirrored to every client.
+			//--- Asynchronous: Init no longer blocks on the API, at boot or on an in-place reset.
 			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token, m_ServerData.server_password );
-			match_uuid = createMatchWebhook.getMatchUUID();
-
-			if ( match_uuid.Length() != 36 )
-			{
-				//--- Warn, not Trace: an operator needs to see why the server exits or runs unregistered.
-				if( m_ServerData.force_match_uuid )
-				{
-					BattleRoyaleUtils.Warn("Error getting match uuid (force_match_uuid is on), restarting. Got: " + match_uuid);
-					GetGame().RequestExit(0);
-				}
-				else
-				{
-					//--- Logged before it is cleared, or the line can only ever print an empty response.
-					BattleRoyaleUtils.Warn("Error getting match uuid, continuing unregistered. Got: " + match_uuid);
-					match_uuid = "";
-				}
-			}
-			BattleRoyaleUtils.Trace("Match UUID: " + match_uuid);
+			match_uuid = "";
+			b_MatchRegistrationPending = true;
+			i_MatchRegistrationDeadlineMs = GetGame().GetTime() + MATCH_REGISTRATION_TIMEOUT_MS;
+			i_MatchRegistrationId = createMatchWebhook.Request();
+			BattleRoyaleUtils.Info("Registering the match with the Vigrid API (request " + i_MatchRegistrationId + "); the lobby will not start until it answers.");
         } else {
         	match_uuid = "";  // No API, no match to register
         }
@@ -252,6 +247,73 @@ class BattleRoyaleServer: BattleRoyaleBase
 		return m_Instance;
 	}
 
+    bool IsMatchRegistrationPending()
+    {
+        return b_MatchRegistrationPending;
+    }
+
+    //--- Called at 10 Hz. Settles the registration once the webhook answers, or after the deadline.
+    protected void UpdateMatchRegistration()
+    {
+        if ( !b_MatchRegistrationPending )
+            return;
+
+        if ( CreateMatchWebhook.IsAnswered( i_MatchRegistrationId ) )
+        {
+            FinishMatchRegistration( CreateMatchWebhook.GetResponse(), true );
+            return;
+        }
+
+        if ( GetGame().GetTime() < i_MatchRegistrationDeadlineMs )
+            return;
+
+        BattleRoyaleUtils.Warn("Match registration got no final answer within " + (MATCH_REGISTRATION_TIMEOUT_MS / 1000) + " s - giving up on it.");
+        CreateMatchWebhook.Cancel();
+        FinishMatchRegistration( "", true );
+    }
+
+    //--- The match is starting with registration still pending, which only an admin-forced start can
+    //--- do: run it unregistered rather than restart the server under the players.
+    void AbandonPendingMatchRegistration()
+    {
+        if ( !b_MatchRegistrationPending )
+            return;
+
+        BattleRoyaleUtils.Warn("The match started before its registration answered - running it unregistered.");
+        CreateMatchWebhook.Cancel();
+        FinishMatchRegistration( "", false );
+    }
+
+    protected void FinishMatchRegistration(string result, bool allow_exit)
+    {
+        BattleRoyaleServerData server_data = BattleRoyaleConfig.GetConfig().GetServerData();
+
+        b_MatchRegistrationPending = false;
+
+        if ( result.Length() == 36 )
+        {
+            match_uuid = result;
+            BattleRoyaleUtils.Info("Match registered: " + match_uuid);
+            return;
+        }
+
+        match_uuid = "";
+
+        //--- Warn, not Trace: an operator needs to see why the server exits or runs unregistered.
+        if ( server_data.force_match_uuid && allow_exit )
+        {
+            BattleRoyaleUtils.Warn("Error getting match uuid (force_match_uuid is on), restarting. Got: " + result);
+            GetGame().RequestExit(0);
+            return;
+        }
+
+        BattleRoyaleUtils.Warn("Error getting match uuid, continuing unregistered. Got: " + result);
+
+        //--- Players who joined while it was pending were not warned at connect.
+        if ( server_data.warning_no_uuid && GetCurrentState() )
+            GetCurrentState().MessagePlayersUntranslated( "STR_BR_MM_ERROR_REGISTERING_MATCH" );
+    }
+
     /**
      *  Drop every call-queue entry that targets one of this server's states, before an in-place
      *  reset (BattleRoyaleInPlaceReset) releases it. What the engine does with a queued call whose
@@ -350,6 +412,8 @@ class BattleRoyaleServer: BattleRoyaleBase
 					GetCurrentState().Deactivate();
 			}
 #endif
+			UpdateMatchRegistration();
+
 			//--- The ONLY driver for spectating: liveness sweep, deferred entry, retarget and the
 			//--- 1 Hz keepalive push. Returns immediately when nobody is spectating, and only ever
 			//--- touches uid strings, so it cannot fire against a freed player object.
@@ -519,7 +583,8 @@ class BattleRoyaleServer: BattleRoyaleBase
         // only add player if they connect during debug
         GetCurrentState().AddPlayer(player);
 
-        if( m_ServerData.enable_vigrid_api && m_ServerData.warning_no_uuid && match_uuid == "" )
+        //--- Not while pending: FinishMatchRegistration warns everyone in the lobby if it fails.
+        if( m_ServerData.enable_vigrid_api && m_ServerData.warning_no_uuid && match_uuid == "" && !b_MatchRegistrationPending )
         	GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
     }
 

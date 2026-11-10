@@ -97,6 +97,16 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         return b_ManualStart;
     }
 
+    //--- Holds both automatic starts until the async match registration has answered.
+    protected bool IsWaitingForRegistration()
+    {
+        BattleRoyaleServer server = BattleRoyaleServer.GetInstance();
+        if ( !server )
+            return false;
+
+        return server.IsMatchRegistrationPending();
+    }
+
     /**
      *  Hold the lobby open, or release it.
      *
@@ -642,6 +652,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
         line2 += " notfull_secs_left=" + GetNotFullSecondsLeft();
         line2 += " vote_system=" + vote_system;
         line2 += " load_hold_running=" + hold_running;
+        line2 += " registration_pending=" + IsWaitingForRegistration();
         BattleRoyaleUtils.Info( line2 );
     }
 #endif
@@ -668,7 +679,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
             //--- may be ("Formula too complex" is a hard compile error that only surfaces when the
             //--- module loads, not when the PBO packs).
             //--- !IsPaused(): Deactivate() below bypasses IsComplete(), so it must honour the pause itself.
-            bool automatic_start_allowed = !b_ManualStart && !IsPaused();
+            bool automatic_start_allowed = !b_ManualStart && !IsPaused() && !IsWaitingForRegistration();
 
             bool start_wanted = IsActive() && automatic_start_allowed && enough_players && waited_long_enough;
             start_wanted = start_wanted && enough_groups && IsNotFullWaitSatisfied();
@@ -810,7 +821,7 @@ class BattleRoyaleDebug: BattleRoyaleDebugState
 			//--- IsComplete() true on the very next 10 Hz poll, transitioning instantly with the
 			//--- roster already grouped and frozen at a moment the admin never chose. Pause was
 			//--- arm-and-hold rather than hold.
-			bool automatic_start_allowed = !b_ManualStart && !IsPaused();
+			bool automatic_start_allowed = !b_ManualStart && !IsPaused() && !IsWaitingForRegistration();
 
 			bool vote_start = IsActive() && automatic_start_allowed && IsVoteReady() && IsNotFullWaitSatisfied();
 
