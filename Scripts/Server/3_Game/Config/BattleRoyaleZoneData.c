@@ -1,7 +1,7 @@
 #ifdef SERVER
 class BattleRoyaleZoneData: BattleRoyaleDataBase
 {
-	int version = 9;  // Config version
+	int version = 10;  // Config version
 
     int num_zones = 6;  // number of zones
 
@@ -16,6 +16,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
     bool end_in_villages = true;  // The final zone will end in a village/city/town
     ref array<string> end_avoid_type = {"DeerStand", "FeedShack", "Marine"};  // Types to avoid in the final zone (Only if end_in_villages is true)
     ref array<string> end_avoid_city = {"Camp_Shkolnik", "Ruin_Voron", "Settlement_Skalisty"};  // Cities to avoid in the final zone (Only if end_in_villages is true)
+    // CfgWorlds `type` values the final circle may seed on (v10). Without it ~3 in 4 ChernarusPlus seeds were
+    // a Hill/ViewPoint/Local marker. Empty = no type filter; if none of these is chain-feasible, all POIs are used.
+    ref array<string> end_village_types = {"Capital", "City", "Village"};
 
     // Final zone polygon restriction
     bool restrict_final_zone = false;  // Whether to restrict the final zone to a polygon
@@ -267,6 +270,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			ref array<int> keptNotifySeconds = CopyInts(zone_notification_seconds);
 			ref array<string> keptAvoidType = CopyStrings(end_avoid_type);
 			ref array<string> keptAvoidCity = CopyStrings(end_avoid_city);
+			array<string> keptVillageTypes = CopyStrings(end_village_types);
 			ref array<string> keptFinalPolygon = CopyStrings(final_zone_polygon);
 			ref array<float> keptStaticSizes = CopyFloats(static_sizes);
 			ref array<int> keptStaticTimers = CopyInts(static_timers);
@@ -305,6 +309,9 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 
 			if (!end_avoid_city || end_avoid_city.Count() == 0)
 				end_avoid_city = keptAvoidCity;
+
+			if (!end_village_types || end_village_types.Count() == 0)
+				end_village_types = keptVillageTypes;
 
 			if (!final_zone_polygon || final_zone_polygon.Count() == 0)
 				final_zone_polygon = keptFinalPolygon;
@@ -496,6 +503,22 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			version = 9;
 			Save();  // Save the upgraded config
 		}
+
+		if (version < 10)
+		{
+			// v10 added end_village_types, a ref array: a missing key loads it EMPTY, which means "no
+			// type filter" - the very behaviour it replaces. Refill only here, so a later clear sticks.
+			if (!end_village_types || end_village_types.Count() == 0)
+			{
+				end_village_types = new array<string>();
+				end_village_types.Insert("Capital");
+				end_village_types.Insert("City");
+				end_village_types.Insert("Village");
+			}
+
+			version = 10;
+			Save();  // Save the upgraded config
+		}
 	}
 
 	//--- Clamp anything internally inconsistent so a misconfiguration degrades into a shorter but
@@ -521,6 +544,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		int c_notify_min = 0;
 		int c_notify_sec = 0;
 		int c_avoid_type = 0;
+		int c_village_types = 0;
 		int c_avoid_surface = 0;
 		int c_hot = 0;
 
@@ -530,6 +554,8 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 			c_notify_sec = zone_notification_seconds.Count();
 		if (end_avoid_type)
 			c_avoid_type = end_avoid_type.Count();
+		if (end_village_types)
+			c_village_types = end_village_types.Count();
 		if (avoid_surface_types)
 			c_avoid_surface = avoid_surface_types.Count();
 		if (hot_zone_centers)
@@ -539,6 +565,7 @@ class BattleRoyaleZoneData: BattleRoyaleDataBase
 		counts = counts + c_notify_min.ToString();
 		counts = counts + ", notify_sec " + c_notify_sec.ToString();
 		counts = counts + ", avoid_type " + c_avoid_type.ToString();
+		counts = counts + ", village_types " + c_village_types.ToString();
 		counts = counts + ", avoid_surface " + c_avoid_surface.ToString();
 		counts = counts + ", hot_zones " + c_hot.ToString();
 		BattleRoyaleUtils.Info(counts);

@@ -31,6 +31,7 @@ class BattleRoyaleZone
 
     protected ref array<string> a_avoidType;
     protected ref array<string> a_avoidCity;
+    protected ref array<string> a_villageTypes;
 
     protected int i_RoundDurationMinutes;
 
@@ -110,6 +111,7 @@ class BattleRoyaleZone
         b_EndInVillages = m_ZoneSettings.end_in_villages;
         a_avoidType = m_ZoneSettings.end_avoid_type;
         a_avoidCity = m_ZoneSettings.end_avoid_city;
+        a_villageTypes = m_ZoneSettings.end_village_types;
         f_MinLandFraction = m_ZoneSettings.zone_min_land_fraction;
 
         b_DeriveLadder = m_ZoneSettings.derive_zone_ladder;
@@ -905,7 +907,10 @@ class BattleRoyaleZone
     {
         int i;
         int rejected;
+        int all_feasible;
+        string seed_line;
         vector probe = "0 0 0";
+        array<ref array<float>> feasible_all;
 
         if(s_FeasiblePOI)
             return;
@@ -916,6 +921,8 @@ class BattleRoyaleZone
 
         if(!s_POI || !a_StaticSizes || a_StaticSizes.Count() == 0)
             return;
+
+        feasible_all = new array<ref array<float>>();
 
         for(i = 0; i < s_POI.Count(); i++)
         {
@@ -932,12 +939,33 @@ class BattleRoyaleZone
             if(!CanChainComplete(probe, 0))
                 continue;
 
-            s_FeasiblePOI.Insert(poi);
+            feasible_all.Insert(poi);
         }
 
-        rejected = s_POI.Count() - s_FeasiblePOI.Count();
+        all_feasible = feasible_all.Count();
 
-        BattleRoyaleUtils.Info("[BattleRoyaleZone] POIs: " + s_POIRawCount + " in CfgWorlds, " + s_POI.Count() + " after the avoid lists, " + s_FeasiblePOI.Count() + " chain-feasible (usable disc r=" + GetSeedDiscRadius() + " m around " + m_MapCenter[0] + " " + m_MapCenter[2] + ").");
+        //--- Keep only end_village_types seeds. Find() matches by reference: s_SeedPOI holds s_POI's own arrays.
+        for(i = 0; i < all_feasible; i++)
+        {
+            array<float> seed_poi = feasible_all.Get(i);
+            if(s_SeedPOI && s_SeedPOI.Find(seed_poi) != -1)
+                s_FeasiblePOI.Insert(seed_poi);
+        }
+
+        //--- A map whose types differ from Chernarus's would otherwise lose end_in_villages entirely.
+        if(s_FeasiblePOI.Count() == 0 && all_feasible > 0)
+        {
+            BattleRoyaleUtils.Warn("[BattleRoyaleZone] no chain-feasible POI has an end_village_types type on this map - seeding the final circle on any of the " + all_feasible + " feasible POIs instead. Edit end_village_types for this map's CfgWorlds types.");
+            s_FeasiblePOI = feasible_all;
+        }
+
+        rejected = s_POI.Count() - all_feasible;
+
+        BattleRoyaleUtils.Info("[BattleRoyaleZone] POIs: " + s_POIRawCount + " in CfgWorlds, " + s_POI.Count() + " after the avoid lists, " + all_feasible + " chain-feasible (usable disc r=" + GetSeedDiscRadius() + " m around " + m_MapCenter[0] + " " + m_MapCenter[2] + ").");
+
+        seed_line = "[BattleRoyaleZone] final-circle seeds: " + s_FeasiblePOI.Count() + " of the " + all_feasible + " feasible POIs";
+        seed_line = seed_line + " (" + s_SeedPOI.Count() + " of an end_village_types type before the feasibility test).";
+        BattleRoyaleUtils.Info(seed_line);
 
         if(rejected > 0)
             BattleRoyaleUtils.Warn("[BattleRoyaleZone] " + rejected + " POIs are too far from the map centre for a " + a_StaticSizes[i_NumRounds - 1] + " m opening circle to still fit this " + f_WorldSize + " m world. Lower static_sizes for this map (or set scale_sizes_to_world), or raise num_zones to buy more reach.");
@@ -2699,6 +2727,9 @@ class BattleRoyaleZone
 	}
 
     static ref set<ref array<float>> s_POI;
+    //--- The subset of s_POI whose CfgWorlds type is in end_village_types: what the final circle seeds on.
+    //--- s_POI stays whole because the derived ladder's POI counts and density fallback read it.
+    static ref array<ref array<float>> s_SeedPOI;
 
 	// Initialize the POIs if they haven't been loaded already
 	void InitializePOIs()
@@ -2707,6 +2738,7 @@ class BattleRoyaleZone
 			return; // POIs already initialized
 
 		s_POI = new set<ref array<float>>;
+		s_SeedPOI = new array<ref array<float>>;
 		string cfg = "CfgWorlds " + GetGame().GetWorldName() + " Names";
 
 		BattleRoyaleUtils.Trace("Initializing POIs");
@@ -2781,9 +2813,13 @@ class BattleRoyaleZone
 				BattleRoyaleUtils.Trace("cfg "+city+" "+GetGame().ConfigGetTextOut(string.Format("%1 %2 name", cfg, city))+" "+city_position+" "+poi_type);
 
 			s_POI.Insert(city_position);
+
+			//--- Same array object as in s_POI, so BuildFeasiblePOIList can match it by reference.
+			if(!a_villageTypes || a_villageTypes.Count() == 0 || a_villageTypes.Find(poi_type) != -1)
+				s_SeedPOI.Insert(city_position);
 		}
 
-		BattleRoyaleUtils.Trace("Loaded " + s_POI.Count() + " POIs");
+		BattleRoyaleUtils.Trace("Loaded " + s_POI.Count() + " POIs, " + s_SeedPOI.Count() + " of an end_village_types type");
 	}
 
 	bool IsPointInPolygon(vector point, array<vector> polygon)
