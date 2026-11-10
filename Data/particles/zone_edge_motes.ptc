@@ -1,0 +1,58 @@
+EffectDef {
+ Emitors {
+  EmitorDef motes {
+   ShapeType Box
+   ShapeSize 0.3 0 10
+   ConeAngle 20 0 20
+   MaxNum 80
+   BirthRate 10
+   BirthRateRND 3
+   Material "Vigrid-BattleRoyale/Data/particles/zone_mote.emat"
+   SizeMultiplier 0.075
+   SizeRND 0.1
+   StretchMultiplier 0
+   Velocity 0.4
+   VelocityRND 0.3
+   AirResistance 0.3
+   AirResistanceRND 0.1
+   GravityMultiply -0.02
+   GravityMultiplyRND 0.01
+   Wind 0
+   LifeTime 5
+   LifeTimeRND 2
+   Color {
+    0 1 1 1 1 1 1 1
+   }
+   Alpha {
+    0 0 0.15 0.9 0.7 0.7 1 0
+   }
+   Size {
+    0 0.5 0.4 1 1 0.3
+   }
+  }
+  EmitorDef glows {
+   ShapeType Box
+   ShapeSize 0.3 0 10
+   ConeAngle 20 0 20
+   MaxNum 10
+   BirthRate 1
+   BirthRateRND 0.5
+   Material "Vigrid-BattleRoyale/Data/particles/zone_mote.emat"
+   SizeMultiplier 0.15
+   SizeRND 0.2
+   Velocity 0.3
+   VelocityRND 0.2
+   AirResistance 0.3
+   GravityMultiply -0.02
+   Wind 0
+   LifeTime 4
+   LifeTimeRND 1
+   Color {
+    0 1 1 1 1 1 1 1
+   }
+   Alpha {
+    0 0 0.2 0.25 1 0
+   }
+  }
+ }
+}

@@ -7,6 +7,8 @@ class BattleRoyaleClient: BattleRoyaleBase
     //--- The two circles drawn on the ground, coloured as on the map: blue current, white next.
     protected ref BattleRoyaleGroundRing m_GroundRingCurrent;
     protected ref BattleRoyaleGroundRing m_GroundRingNext;
+    //--- Motes rising off the current (lethal) edge only.
+    protected ref BattleRoyaleZoneMotes m_ZoneMotes;
 
     protected bool b_MatchStarted;
 
@@ -145,6 +147,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 		m_Toasts = new BattleRoyaleToasts();
 		m_GroundRingCurrent = new BattleRoyaleGroundRing( BR_GROUND_RING_TEXTURE_CURRENT );
 		m_GroundRingNext = new BattleRoyaleGroundRing( BR_GROUND_RING_TEXTURE_NEXT );
+		m_ZoneMotes = new BattleRoyaleZoneMotes( BR_ZONE_MOTES_DENSITY );
 
 		BattleRoyaleUtils.Trace("BattleRoyaleClient::Init - Done");
     }
@@ -1887,6 +1890,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         {
             m_GroundRingCurrent.Clear();
             m_GroundRingNext.Clear();
+            m_ZoneMotes.Clear();
             return;
         }
 
@@ -1896,12 +1900,20 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- Live per-circle opacity from Map & Zones; a no-op unless a slider moved.
         m_GroundRingCurrent.SetTexture( "#(argb,8,8,3)color(0.05,0.25,1," + BattleRoyaleDiag.zone_ring_current_alpha + ",ca)" );
         m_GroundRingNext.SetTexture( "#(argb,8,8,3)color(1,1,1," + BattleRoyaleDiag.zone_ring_next_alpha + ",ca)" );
+        m_ZoneMotes.SetDensity( BattleRoyaleDiag.zone_motes_density );
+        m_ZoneMotes.SetSize( BattleRoyaleDiag.zone_motes_size );
 #endif
 
         if ( m_CurrentPlayArea )
+        {
             m_GroundRingCurrent.SetCircle( m_CurrentPlayArea.GetCenter(), m_CurrentPlayArea.GetRadius() );
+            m_ZoneMotes.SetCircle( m_CurrentPlayArea.GetCenter(), m_CurrentPlayArea.GetRadius() );
+        }
         else
+        {
             m_GroundRingCurrent.Clear();
+            m_ZoneMotes.Clear();
+        }
 
         //--- After LockNewZone the server sends the SAME circle as current and next; drawing both would
         //--- stack white on blue. Until the next round advertises a new circle, only the blue one shows.
@@ -1919,6 +1931,7 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         m_GroundRingCurrent.Update( anchor );
         m_GroundRingNext.Update( anchor );
+        m_ZoneMotes.Update( anchor );
     }
 
     protected void ResetForNewMatch()
@@ -1953,6 +1966,8 @@ class BattleRoyaleClient: BattleRoyaleBase
             m_GroundRingCurrent.Clear();
         if ( m_GroundRingNext )
             m_GroundRingNext.Clear();
+        if ( m_ZoneMotes )
+            m_ZoneMotes.Clear();
         br_previous_current_play_area_center = "0 0 0";
         br_previous_current_play_area_radius = 0;
         br_previous_future_play_area_center = "0 0 0";

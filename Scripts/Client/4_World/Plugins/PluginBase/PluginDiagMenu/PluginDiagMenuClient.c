@@ -106,6 +106,8 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagGroundRingAlphaID, CBBRDiagGroundRingAlpha);
 		DiagMenu.BindCallback(m_BRDiagZoneRingCurrentAlphaID, CBBRDiagZoneRingCurrentAlpha);
 		DiagMenu.BindCallback(m_BRDiagZoneRingNextAlphaID, CBBRDiagZoneRingNextAlpha);
+		DiagMenu.BindCallback(m_BRDiagZoneMotesDensityID, CBBRDiagZoneMotesDensity);
+		DiagMenu.BindCallback(m_BRDiagZoneMotesSizeID, CBBRDiagZoneMotesSize);
 		DiagMenu.BindCallback(m_BRDiagGroundRingFlipID, CBBRDiagGroundRingFlip);
 		DiagMenu.BindCallback(m_BRDiagGroundRingSpawnID, CBBRDiagGroundRingSpawn);
 		DiagMenu.BindCallback(m_BRDiagGroundRingClearID, CBBRDiagGroundRingClear);
@@ -763,6 +765,16 @@ modded class PluginDiagMenuClient
 	static void CBBRDiagZoneRingNextAlpha(float value)
 	{
 		BattleRoyaleDiag.zone_ring_next_alpha = value;
+	}
+
+	static void CBBRDiagZoneMotesDensity(float value)
+	{
+		BattleRoyaleDiag.zone_motes_density = value;
+	}
+
+	static void CBBRDiagZoneMotesSize(float value)
+	{
+		BattleRoyaleDiag.zone_motes_size = value;
 	}
 
 	static void CBBRDiagGroundRingFlip(bool enabled)

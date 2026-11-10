@@ -104,6 +104,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagGroundRingAlphaID;
 	protected int m_BRDiagZoneRingCurrentAlphaID;
 	protected int m_BRDiagZoneRingNextAlphaID;
+	protected int m_BRDiagZoneMotesDensityID;
+	protected int m_BRDiagZoneMotesSizeID;
 	protected int m_BRDiagGroundRingFlipID;
 	protected int m_BRDiagGroundRingSpawnID;
 	protected int m_BRDiagGroundRingClearID;
@@ -210,6 +212,8 @@ modded class PluginDiagMenu
 		m_BRDiagGroundRingAlphaID = GetModdedDiagID();
 		m_BRDiagZoneRingCurrentAlphaID = GetModdedDiagID();
 		m_BRDiagZoneRingNextAlphaID = GetModdedDiagID();
+		m_BRDiagZoneMotesDensityID = GetModdedDiagID();
+		m_BRDiagZoneMotesSizeID = GetModdedDiagID();
 		m_BRDiagGroundRingFlipID = GetModdedDiagID();
 		m_BRDiagGroundRingSpawnID = GetModdedDiagID();
 		m_BRDiagGroundRingClearID = GetModdedDiagID();
@@ -414,6 +418,8 @@ modded class PluginDiagMenu
 				//--- The real zone rings on the ground, applied live. Defaults match BattleRoyaleDiag.
 				DiagMenu.RegisterRange(m_BRDiagZoneRingCurrentAlphaID, "", "Zone Ring Opacity: Blue", m_BRDiagZoneMenuID, "0.05, 1, 0.5, 0.05");
 				DiagMenu.RegisterRange(m_BRDiagZoneRingNextAlphaID, "", "Zone Ring Opacity: White", m_BRDiagZoneMenuID, "0.05, 1, 0.25, 0.05");
+				DiagMenu.RegisterRange(m_BRDiagZoneMotesDensityID, "", "Zone Motes Density", m_BRDiagZoneMenuID, "0, 3, 1, 0.1");
+				DiagMenu.RegisterRange(m_BRDiagZoneMotesSizeID, "", "Zone Motes Size", m_BRDiagZoneMenuID, "0.25, 4, 1, 0.25");
 				//--- Ground ring probe: flat vanilla quads laid round the player. Defaults match BattleRoyaleDiag.
 				DiagMenu.RegisterRange(m_BRDiagGroundRingRadiusID, "", "Ground Ring Radius", m_BRDiagZoneMenuID, "10, 200, 30, 5");
 				DiagMenu.RegisterItem(m_BRDiagGroundRingModelID, "", "Ground Ring Model", m_BRDiagZoneMenuID, "SnowSpot,Blood,Band");
