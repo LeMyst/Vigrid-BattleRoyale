@@ -63,13 +63,14 @@ Join our Discord server for discussions: https://discord.gg/egJWhJAf8b
 - **Logging:** with the Diag executable, trace logging is on by default. The `-br-*` launch parameters
   set the level ([Logs & troubleshooting](https://github.com/LeMyst/Vigrid-BattleRoyale/wiki/Logs-and-Troubleshooting#turning-up-the-log-level)).
 
-## Matchmaking and Vigrid Network
+## Matchmaking
 
-The Vigrid Network provides matchmaking services for this mod. It's an **optional feature** that allows players to join matches directly from the main menu without searching the server browser.
+Matchmaking is an **optional feature**: players join an open lobby straight from the main menu instead of searching the server browser. It is served by the stats site's API, for servers registered there with matchmaking turned on.
 
 ### How it works:
 
-- **Your own server:** When players join your non-Vigrid server, the client automatically falls back to default behavior.
-- **Vigrid servers:** When players join a Vigrid server (either through matchmaking or the server browser), the client connects to the Vigrid API for match information.
+- **Any other server:** the Play button simply joins the server the client was launched for. No request ever blocks the menu, so a slow or unreachable API costs nothing.
+- **A matchmaking-enabled server:** the Play button becomes MATCHMAKING. It searches for an open lobby in the same shard as that server, can be cancelled, and falls back to the launch server if the search fails.
+- **No server at all** (started straight from Steam): Play opens the server browser.
 
-Currently, the matchmaking service is limited to the Vigrid Network.
+The API contract the client expects is in [`Docs/matchmaking.md`](Docs/matchmaking.md).

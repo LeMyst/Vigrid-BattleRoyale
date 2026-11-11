@@ -5,7 +5,7 @@
  *  never fires on this path and the gear would otherwise stay put.
  *
  *  This chains cleanly onto the mod's own `modded class MainMenu`
- *  (Scripts/Client/5_Mission/Mission/MainMenu.c) - that one does not override OnShow().
+ *  (Scripts/Client/5_Mission/Mission/MainMenu.c): both OnShow() overrides call super.
  */
 modded class MainMenu
 {

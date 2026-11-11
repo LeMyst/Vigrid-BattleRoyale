@@ -1,11 +1,10 @@
 # Main-menu matchmaking
 
-> **Status (2026-11-11):** the API contract below is current. The async client, its states and the testing section describe branch `worktree-matchmaking-ux`, not yet merged: on `main` the menu still uses the blocking `GET_now`/`POST_now`, and `Tools/mm_stub.py` and `-br-mm-endpoint` do not exist yet.
-
 The client half lives in two files: `Scripts/Client/3_Game/BattleRoyale/Webhook/MatchMakingWebhook.c`
 (requests, reply parsing) and `Scripts/Client/5_Mission/Mission/MainMenu.c` (the Play button). The
-backend is the Vigrid API at `BATTLEROYALE_API_ENDPOINT` (`https://api.vigrid.ovh/`). Everything here
-is optional: with the API down, the Play button behaves like plain PLAY.
+backend is the stats site's `/api/v2/matchmaking` (repo `LeMyst/br-hub`), reached at the compiled
+`BATTLEROYALE_API_ENDPOINT`. Everything here is optional: with the API down, the Play button behaves
+like plain PLAY.
 
 ## What the player sees
 
@@ -23,7 +22,7 @@ is optional: with the API down, the Play button behaves like plain PLAY.
 - Coming back after a connect that did not stick (`OnShow`) hands the button back.
 - `-connect=ip:port` is split. `-port` defaults to 2302.
 
-**Nothing blocks.** Both requests are async (`RestContext.GET`/`POST` with a `MatchMakingRequest`
+**Nothing blocks.** Both requests are async (`RestContext.POST` with a `MatchMakingRequest`
 callback), and `MainMenu.Update()` polls the latched result. The old code used `GET_now`/`POST_now`.
 That froze the whole client for up to the engine's 10 s + 10 s timeouts on every menu build, which is
 what players saw whenever the API was down. The timeout is the menu's own watchdog
@@ -31,66 +30,77 @@ what players saw whenever the API was down. The timeout is the menu's own watchd
 change every other mod's REST calls too. A reply that arrives after a cancel or a timeout lands in a
 request nobody holds any more, and is ignored.
 
-## The API contract (v1)
+## The API contract (v2)
 
-This is what the client expects. A replacement backend has to answer exactly this, or bump `version`
-and teach the client.
+**br-hub's `CLAUDE.md` (*v2 API contract*, decision D18) is the source of truth; this is what the
+client relies on.** A change the client needs goes in as a br-hub issue. Both calls are `POST
+<endpoint>api/v2/matchmaking/<route>` with a JSON body, a JSON reply and no token. The site rate-limits
+them to 60 a minute per client IP.
 
-### `GET matches/matchmaking/<ip>:<port>?version=1&tick=<float>`
+### `available`
 
-"Is this `-connect` server part of the Vigrid network?"
-
-| Reply | Client |
-|---|---|
-| body `true` (trimmed) | shows MATCHMAKING |
-| anything else, any HTTP error, or nothing within 6 s | stays on PLAY |
-
-⚠️ **This route exists in neither `LeMyst/Vigrid-API` (full history) nor `LeMyst/Vigrid-Web` (current
-tree)**, checked 2026-11-11. The client has called it since #64 (2025-02-07), after the API's last push, so the
-MATCHMAKING button could never appear. The new backend has to implement it.
-
-### `POST matches/matchmaking?version=1&tick=<float>`
-
-The body is JSON, the client's whole `GetModInfos()` list:
-
-```json
-{ "mod_list": { "DZ": "1.30", "Vigrid-BattleRoyale": "0.2.1-Vigrid", "CF": "..." } }
-```
+Body `{"server": "ip:port"}`, the `-connect` target.
 
 | Reply | Client |
 |---|---|
-| `ip;port;password`, where the password may be empty or `null` | connects (`ConnectFromServerBrowser`) |
-| a positive integer | retry in that many ms, clamped to 3–60 s |
-| anything else (the old API sends `none`) | retry in 10 s |
-| any HTTP error, or nothing within 6 s | **falls back to the `-connect` server**, showing *Matchmaking unavailable* |
+| `{"available": true}` | shows MATCHMAKING |
+| `false`, an unreadable body, any HTTP error, or nothing within 6 s | stays on PLAY |
+
+`true` means the server is verified on the site and has matchmaking turned on.
+
+### `search`
+
+Body `{"server": "ip:port", "mods": {"<name>": "<version>", ...}}`. `mods` is `GetModInfos()` minus
+the entries with `GetDefault()` or `GetIsDLC()` set, the same filter the server's match registration
+uses. The site ignores vanilla and DLC names too.
+
+| Reply | Client |
+|---|---|
+| `{"status": "found", "ip", "port", "password"}` | connects (`ConnectFromServerBrowser`); a `null` password is read as empty |
+| `{"status": "wait", "retry_ms"}` | retries after `retry_ms`, clamped to 3-60 s; 10 s if it is missing |
+| a 404 (the `-connect` server is not enabled), any other HTTP error, an unreadable body, or nothing within 6 s | **falls back to the `-connect` server**, showing *Matchmaking unavailable* |
 | still no match once a retry would pass 180 s | falls back, showing *No match found* |
 
-`tick` is a cache-buster, not data. The constants are in `BattleRoyaleConstants.c` (`BR_MATCHMAKING_*`).
+The site only offers verified, matchmaking-enabled servers in **the same shard** as the `-connect`
+server, with a heartbeat under 90 s old, in state `lobby` with an open match, whose mods the client
+carries at the same version. It picks the fullest lobby. The constants are in
+`BattleRoyaleConstants.c` (`BR_MATCHMAKING_*`).
 
-### What the old backend gets wrong
+`BATTLEROYALE_API_ENDPOINT` is still `https://api.vigrid.ovh/`, which does not serve v2, so until it
+points at the new site every call errors and the button stays on PLAY. The client has no settings
+file, so the URL can only change in a build.
 
-`Matches::matchmaking` in `LeMyst/Vigrid-API` (`app/Controllers/Matches.php`):
-- **It does not `return` after `echo "none"`.** It goes on into `array_rand([])`, which throws, so "no
-  match" reaches the client as an HTTP 500, and the client falls back straight away instead of retrying.
-- **A match is eligible while `started_at` is null, however old it is.** A server that crashed in its
-  lobby attracts players forever. It needs a heartbeat or a `created_at` window.
-- **Eligibility is an exact JSON match of the mod list.** Only `DZ` and `DayZ Frostline` are stripped,
-  so any other DLC entry, or one version mismatch between the client and the server's registration
-  (`CreateMatchWebhook`), means no match.
-- **The reply carries the server password in plain text**, to any caller. That is inherent to this
-  design, so it is worth knowing about before reusing it.
+### Why v1 was replaced
 
-## Testing without the API
+v1 was `GET matches/matchmaking/<ip>:<port>` (reply `true`) and `POST matches/matchmaking` (reply
+`ip;port;password`, a number, or `none`), served by `Matches::matchmaking` in the archived
+`LeMyst/Vigrid-API`:
+- **The availability GET existed in neither `Vigrid-API` nor `Vigrid-Web`**, so the MATCHMAKING button
+  could never appear.
+- **It did not `return` after `echo "none"`.** It went on into `array_rand([])`, which throws, so "no
+  match" reached the client as an HTTP 500 and the client gave up instead of retrying.
+- **A match was eligible while `started_at` was null, however old it was.** A server that crashed in
+  its lobby attracted players forever. v2 requires a heartbeat under 90 s old.
+- **Eligibility was an exact JSON match of the mod list**, with only `DZ` and `DayZ Frostline` stripped.
+  v2 asks only that the client carries every server mod at the same version.
+- **The reply carries the server password in plain text**, to any caller. v2 still does, by design.
 
-`Tools/mm_stub.py` is a stdlib stand-in for both routes. A **diag** client can be pointed at it with
-`-br-mm-endpoint=http://127.0.0.1:8765/`, which is read in `MatchMakingWebhook.GetContext()` under
-`#ifdef DIAG` and is absent from retail builds.
+## Testing
+
+A **diag** client can be pointed at another endpoint with `-br-mm-endpoint=http://host:port/`, read in
+`MatchMakingWebhook.GetContext()` under `#ifdef DIAG` and absent from retail builds.
+
+- **The happy path: a local br-hub** (`http://127.0.0.1:8765/`). The local diag server has to be
+  registered, verified and matchmaking-enabled on it, and sending heartbeats (mod PR #423).
+- **The failure modes: `Tools/mm_stub.py`**, a stdlib stand-in on `127.0.0.1:8766`:
 
 ```bash
-python Tools/mm_stub.py                      # available, "none" twice, then 127.0.0.1;2302;
+python Tools/mm_stub.py                      # available, "wait" twice, then found 127.0.0.1:2302
+python Tools/mm_stub.py --search refused     # HTTP 404 -> fallback
 python Tools/mm_stub.py --search error       # HTTP 500 -> fallback
+python Tools/mm_stub.py --search garbage     # unreadable body -> fallback
 python Tools/mm_stub.py --search hang        # watchdog -> fallback
-python Tools/mm_stub.py --search none        # budget -> fallback after ~3 min
+python Tools/mm_stub.py --search wait        # budget -> fallback after ~3 min
 python Tools/mm_stub.py --available false    # plain PLAY
 ```
 
