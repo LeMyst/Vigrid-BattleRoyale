@@ -630,6 +630,11 @@ class DeathScreenMenu extends UIScriptedMenu
         super.OnShow();
         m_InputLock.Take();
 
+        //--- Vanilla hides its HUD only at spectate entry; a corpse's hotbar and vitals add nothing here.
+        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if( gameplay )
+            gameplay.SetVanillaHudVisible( false );
+
         SetFocus( layoutRoot );
 
         //--- Force the cursor on. super.OnShow() -> LockControls() already asks for it, but under
@@ -650,6 +655,13 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- super does the whole focus release.
         super.OnHide();
         m_InputLock.Release();
+
+        //--- Back only for a living player (diag fixture, respawn, reset body). Into spectate the
+        //--- player is dead or already NULL, and EnterSpectate keeps it hidden.
+        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if( gameplay && player && player.IsAlive() )
+            gameplay.SetVanillaHudVisible( true );
 
         if( s_Instance == this )
             s_Instance = NULL;
