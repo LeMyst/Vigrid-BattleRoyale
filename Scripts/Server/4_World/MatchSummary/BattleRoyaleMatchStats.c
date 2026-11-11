@@ -284,6 +284,12 @@ class BattleRoyaleMatchStats
         return m_Grouped;
     }
 
+    //! Seconds since BeginMatch, i.e. a survivor's time alive. 0 before any match.
+    int GetElapsedSeconds()
+    {
+        return SurvivalSeconds(NULL);
+    }
+
     array<ref BattleRoyaleLastMatchRow> GetRows()
     {
         return m_Rows;

@@ -35,6 +35,8 @@ class BattleRoyaleWin: BattleRoyaleState
 
 		if(GetPlayers().Count() > 0)
 		{
+			string squad_names = BuildWinnerNames();
+
 			for ( int k = 0; k < GetPlayers().Count(); k++ )
 			{
 				PlayerBase winner = GetPlayers()[k];
@@ -50,7 +52,7 @@ class BattleRoyaleWin: BattleRoyaleState
 					BattleRoyaleUtils.Trace(identity.GetId());
 					BattleRoyaleUtils.Trace(identity.GetPlainId());
 				}
-				HandleWinner(winner);
+				HandleWinner(winner, squad_names);
 			}
 		}
 
@@ -94,7 +96,58 @@ class BattleRoyaleWin: BattleRoyaleState
         return super.IsComplete(); //go to restart state when player disconnects
     }
 
-    void HandleWinner(PlayerBase player_winner)
+    //! Every surviving winner's name, comma-separated, for the win screen's subtitle.
+    protected string BuildWinnerNames()
+    {
+        string names = "";
+
+        for ( int i = 0; i < GetPlayers().Count(); i++ )
+        {
+            PlayerBase p = GetPlayers()[i];
+            if ( !p )
+                continue;
+
+            string name = BattleRoyaleKillAttribution.NameOfPlayer( p );
+            if ( name == "" )
+                continue;
+
+            if ( names != "" )
+                names = names + ", ";
+
+            names = names + name;
+        }
+
+        return names;
+    }
+
+    //! The win screen's payload. Same figures the Last Match card books for this player at KickWinner.
+    protected void SendWinScreen(PlayerBase player_winner, PlayerIdentity winner_identity, string squad_names)
+    {
+        BattleRoyaleMatchStats stats = BattleRoyaleMatchStats.GetInstance();
+
+        string uid = player_winner.player_steamid;
+        if ( uid == "" )
+            uid = winner_identity.GetPlainId();
+
+        int kills = BattleRoyaleKillLedger.GetInstance().GetKills( uid );
+        int damage = stats.GetDamage( uid );
+        int hits = stats.GetHits( uid );
+        int survived_s = stats.GetElapsedSeconds();
+        bool next_match = BattleRoyaleInPlaceReset.KeepsPlayersConnected();
+        int kick_ms = i_SecondsTillKick * 1000;
+
+        Param9<int, bool, int, int, int, int, string, bool, int> data = new Param9<int, bool, int, int, int, int, string, bool, int>( stats.GetFieldSize(), stats.IsGrouped(), kills, damage, hits, survived_s, squad_names, next_match, kick_ms );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", data, true, winner_identity );
+
+        string line = "[Win State] win screen kills=" + kills;
+        line = line + " dmg=" + damage;
+        line = line + " hits=" + hits;
+        line = line + " alive=" + survived_s + "s";
+        line = line + " field=" + stats.GetFieldSize();
+        BattleRoyaleUtils.Info( line );
+    }
+
+    void HandleWinner(PlayerBase player_winner, string squad_names)
     {
         BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
@@ -106,8 +159,7 @@ class BattleRoyaleWin: BattleRoyaleState
         PlayerIdentity winner_identity = player_winner.GetIdentity();
         if ( winner_identity )
         {
-            // Show win screen
-            GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "ShowWinScreen", NULL, true, winner_identity );
+            SendWinScreen( player_winner, winner_identity, squad_names );
 
             if ( m_ServerData.enable_vigrid_api )
             {

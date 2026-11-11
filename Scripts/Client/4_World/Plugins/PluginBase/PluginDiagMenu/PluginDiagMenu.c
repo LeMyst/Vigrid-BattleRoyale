@@ -67,6 +67,8 @@ modded class PluginDiagMenu
 	protected int m_BRDiagLastMatchCauseID;
 	protected int m_BRDiagLastMatchNotPlayedID;
 	protected int m_BRDiagOpenDeathScreenID;
+	protected int m_BRDiagOpenWinScreenID;
+	protected int m_BRDiagWinVariantID;
 	protected int m_BRDiagPushToastsID;
 	protected int m_BRDiagFadeID;
 
@@ -178,6 +180,8 @@ modded class PluginDiagMenu
 		m_BRDiagLastMatchCauseID = GetModdedDiagID();
 		m_BRDiagLastMatchNotPlayedID = GetModdedDiagID();
 		m_BRDiagOpenDeathScreenID = GetModdedDiagID();
+		m_BRDiagOpenWinScreenID = GetModdedDiagID();
+		m_BRDiagWinVariantID = GetModdedDiagID();
 		m_BRDiagPushToastsID = GetModdedDiagID();
 		m_BRDiagFadeID = GetModdedDiagID();
 
@@ -337,6 +341,8 @@ modded class PluginDiagMenu
 				DiagMenu.SetValue(m_BRDiagLastMatchCauseID, BattleRoyaleKillCause.FIREARM);
 				DiagMenu.RegisterBool(m_BRDiagLastMatchNotPlayedID, "", "Did Not Play", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenDeathScreenID, "", "Open Death Screen", m_BRDiagHudMenuID);
+				DiagMenu.RegisterBool(m_BRDiagOpenWinScreenID, "", "Open Win Screen", m_BRDiagHudMenuID);
+				DiagMenu.RegisterItem(m_BRDiagWinVariantID, "", "Win Variant", m_BRDiagHudMenuID, "Squad,Solo,Next Match,No Stats");
 				//--- Toasts, which are otherwise unreachable offline - every real one is a server
 				//--- push. Raises a RANDOM 1-3 from a pool of deliberately uneven lengths, because
 				//--- the things most likely to be wrong only show with more than one and with a

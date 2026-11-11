@@ -156,7 +156,7 @@ PanelWidgetClass LeaderboardRoot {
      {
       TextWidgetClass HeaderRank {
        position 32 116
-       size 50 24
+       size 58 24
        hexactpos 1
        vexactpos 1
        hexactsize 1

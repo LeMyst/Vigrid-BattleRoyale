@@ -288,7 +288,7 @@ class LeaderboardMenu extends UIScriptedMenu
             TextWidget damage_widget = TextWidget.Cast(row.FindAnyWidget("RowDamage"));
             TextWidget survived_widget = TextWidget.Cast(row.FindAnyWidget("RowSurvived"));
 
-            place_widget.SetText("#" + data.places.Get(i).ToString());
+            place_widget.SetText(data.places.Get(i).ToString());
             name_widget.SetText(data.names.Get(i));
             kills_widget.SetText(data.kills.Get(i).ToString());
             damage_widget.SetText(data.damage.Get(i).ToString());
@@ -347,7 +347,7 @@ class LeaderboardMenu extends UIScriptedMenu
 
         m_CardRecap.Show(true);
 
-        //--- "#4 of 12" versus "#4 of 12 squads" - the second is only true when parties were really
+        //--- "4 of 12" versus "4 of 12 squads" (never "#4": a TextWidget swallows every '#') - the second is only true when parties were really
         //--- in play. With the party manager disabled the field size IS the player count, and calling
         //--- it a squad count is the mistake behind issue #158.
         string place_key = "STR_BR_LASTMATCH_PLACE_PLAYERS";
@@ -423,7 +423,7 @@ class LeaderboardMenu extends UIScriptedMenu
 
         m_CardSquadKillsValue.SetText(squad_kills.ToString());
         m_CardSquadDamageValue.SetText(squad_damage.ToString());
-        m_CardSquadBestValue.SetText("#" + squad_best.ToString());
+        m_CardSquadBestValue.SetText(squad_best.ToString());
         m_CardSquadMembers.SetText(members);
     }
 

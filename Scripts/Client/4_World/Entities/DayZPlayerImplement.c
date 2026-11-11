@@ -49,7 +49,7 @@ modded class DayZPlayerImplement
 				funny_string = funny_strings.GetRandomElement();
 
 				//--- Translated HERE because string.Format has to run on the TRANSLATED text - the
-				//--- key carries the "#%1" and only the localized string has a %1 to substitute
+				//--- key carries the "%1" and only the localized string has a %1 to substitute
 				//--- into. Not because SetText cannot resolve a key: it can, and it resolves every
 				//--- "#token" in a string, not just a leading one (vanilla ships
 				//--- "#server_browser_show / #server_browser_hide" as one literal, and

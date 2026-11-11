@@ -581,7 +581,7 @@ class BRMasterControlsForm: JMFormBase
 
             string line = "";
             if ( row.place > 0 )
-                line += "#" + row.place.ToString() + "  ";
+                line += row.place.ToString() + ".  ";
             else
                 line += "--  ";
 

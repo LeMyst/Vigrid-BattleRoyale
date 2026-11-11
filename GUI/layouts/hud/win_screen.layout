@@ -1,30 +1,344 @@
-FrameWidgetClass rootFrame {
+// The win screen. Painted by BattleRoyaleWinScreen from BattleRoyaleRPC's win_* fields.
+// Every length is in 1920-wide reference units: declared geometry is scaled by viewport/1920.
+// Nothing here takes input - the winner keeps playing (and watching the chickens) underneath.
+FrameWidgetClass WinRoot {
+ ignorepointer 1
  position 0 0
  size 1 1
  hexactpos 1
  vexactpos 1
  hexactsize 0
  vexactsize 0
+ priority 850
  {
-  TextWidgetClass win_text {
+  PanelWidgetClass Scrim {
    ignorepointer 1
-   color 0.502 0 0 1
    position 0 0
    size 1 1
    hexactpos 1
    vexactpos 1
    hexactsize 0
    vexactsize 0
-   scaled 1
-   text "#STR_BR_WIN_SURVIVED"
-   font "gui/fonts/sdf_metronbook72"
-   "bold text" 1
-   "exact text" 1
-   "exact text size" 150
-   "size to text h" 0
-   "size to text v" 0
-   "text halign" center
-   "text valign" center
+   color 0.024 0.031 0.039 0.55
+   style rover_sim_colorable
+  }
+  FrameWidgetClass Content {
+   ignorepointer 1
+   position 0 0
+   size 1800 520
+   halign center_ref
+   valign center_ref
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   {
+    TextWidgetClass PlaceText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1800 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.941 0.722 0.29 1
+     text ""
+     font "gui/fonts/metron-bold22"
+     "exact text" 1
+     "exact text size" 22
+     "text halign" center
+     "text valign" center
+    }
+    // The two rules either side of PlaceText. Placed from script once the text is measured,
+    // because their offset depends on the localized string's width; hidden until then.
+    PanelWidgetClass PlaceLineLeft {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 14
+     size 60 2
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.851 0.62 0.161 1
+     style rover_sim_colorable
+    }
+    PanelWidgetClass PlaceLineRight {
+     visible 0
+     ignorepointer 1
+     inheritalpha 0
+     position 0 14
+     size 60 2
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.851 0.62 0.161 1
+     style rover_sim_colorable
+    }
+    TextWidgetClass TitleText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 40
+     size 1800 180
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.925 0.929 0.933 1
+     text "#STR_BR_WIN_SURVIVED"
+     font "gui/fonts/sdf_metronbook72"
+     "bold text" 1
+     "exact text" 1
+     "exact text size" 112
+     "text halign" center
+     "text valign" center
+    }
+    TextWidgetClass SubtitleText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 230
+     size 1800 36
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.788 0.804 0.82 1
+     text ""
+     font "gui/fonts/metron28"
+     "exact text" 1
+     "exact text size" 28
+     "text halign" center
+     "text valign" center
+    }
+    // 1-unit gutters of the 8% white backdrop between four opaque cells read as hairlines.
+    // Cells sit at 2 + 227*i, 225 wide, inside a 910-wide grid.
+    PanelWidgetClass StatsGrid {
+     ignorepointer 1
+     position 0 314
+     size 910 126
+     halign center_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 1 1 1 0.08
+     style rover_sim_colorable
+     {
+      PanelWidgetClass StatCell0 {
+       ignorepointer 1
+       inheritalpha 0
+       position 2 2
+       size 225 122
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.92
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatValue0 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 18
+         size 225 56
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "0"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" center
+         "text valign" center
+        }
+        TextWidgetClass StatLabel0 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 80
+         size 225 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_KILLS"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      PanelWidgetClass StatCell1 {
+       ignorepointer 1
+       inheritalpha 0
+       position 229 2
+       size 225 122
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.92
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatValue1 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 18
+         size 225 56
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "0"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" center
+         "text valign" center
+        }
+        TextWidgetClass StatLabel1 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 80
+         size 225 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_DAMAGE"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      PanelWidgetClass StatCell2 {
+       ignorepointer 1
+       inheritalpha 0
+       position 456 2
+       size 225 122
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.92
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatValue2 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 18
+         size 225 56
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "0"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" center
+         "text valign" center
+        }
+        TextWidgetClass StatLabel2 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 80
+         size 225 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_HITS"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      PanelWidgetClass StatCell3 {
+       ignorepointer 1
+       inheritalpha 0
+       position 683 2
+       size 225 122
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.92
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatValue3 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 18
+         size 225 56
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "0:00"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" center
+         "text valign" center
+        }
+        TextWidgetClass StatLabel3 {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 80
+         size 225 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_TIME"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+     }
+    }
+    TextWidgetClass StatusText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 488
+     size 1800 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.608 0.631 0.651 1
+     text ""
+     font "gui/fonts/metron22"
+     "exact text" 1
+     "exact text size" 22
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
  }
 }

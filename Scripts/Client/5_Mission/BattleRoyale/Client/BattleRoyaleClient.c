@@ -23,8 +23,8 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected ref BattleRoyaleToasts m_Toasts;
 
     //--- The "YOU SURVIVED" overlay. Created straight into the workspace, so it is owned by nobody
-    //--- else and has to be unlinked here - see the creation site in Update().
-    protected Widget m_WinScreen;
+    //--- else and has to be destroyed here - see the creation site in Update().
+    protected ref BattleRoyaleWinScreen m_WinScreen;
 
     //--- The admin spectator's floating player tags. Built lazily on first use, so an ordinary
     //--- player never creates the widget tree at all.
@@ -110,7 +110,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         // who ever sees it.
         if ( m_WinScreen )
         {
-            m_WinScreen.Unlink();
+            m_WinScreen.Destroy();
             m_WinScreen = NULL;
         }
 
@@ -178,6 +178,7 @@ class BattleRoyaleClient: BattleRoyaleBase
     protected int br_diag_req_spawn_menu = 0;
     protected int br_diag_req_leaderboard = 0;
     protected int br_diag_req_death_screen = 0;
+    protected int br_diag_req_win_screen = 0;
     protected int br_diag_req_toasts = 0;
     protected int br_diag_req_ground_spawn = 0;
     protected int br_diag_req_ground_clear = 0;
@@ -406,6 +407,36 @@ class BattleRoyaleClient: BattleRoyaleBase
         br_diag_zone_no_current = BattleRoyaleDiag.zones_fake_no_current;
     }
 
+    //! Fake a ShowWinScreen arrival and let the real edge in Update() build the screen.
+    protected void BR_DiagOpenWinScreen()
+    {
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if ( !br_rpc )
+            return;
+
+        if ( m_WinScreen )
+        {
+            m_WinScreen.Destroy();
+            m_WinScreen = NULL;
+        }
+        br_previous_win_screen = false;
+
+        int variant = BattleRoyaleDiag.win_variant;
+
+        br_rpc.ClearWinStats();
+        br_rpc.win_valid = ( variant != 3 );
+        br_rpc.win_field_size = 24;
+        br_rpc.win_grouped = ( variant != 1 );
+        br_rpc.win_kills = 6;
+        br_rpc.win_damage = 874;
+        br_rpc.win_hits = 31;
+        br_rpc.win_survived_s = 1450;
+        br_rpc.win_squad_names = "Wanderer, Pike, Survivor With A Long Name";
+        br_rpc.win_next_match = ( variant == 2 );
+        br_rpc.win_kick_deadline_ms = GetGame().GetTime() + 15000;
+        br_rpc.winner_screen = true;
+    }
+
     //! Drain the diag menu's one-shot requests. Counters, so a press is never lost or double-fired.
     protected void BR_DiagHandleRequests()
     {
@@ -436,6 +467,12 @@ class BattleRoyaleClient: BattleRoyaleBase
 
             GetGame().GetUIManager().CloseAll();
             GetGame().GetUIManager().EnterScriptedMenu( MENU_BR_DEAD, NULL );
+        }
+
+        if ( br_diag_req_win_screen != BattleRoyaleDiag.req_open_win_screen )
+        {
+            br_diag_req_win_screen = BattleRoyaleDiag.req_open_win_screen;
+            BR_DiagOpenWinScreen();
         }
 
         if ( br_diag_req_toasts != BattleRoyaleDiag.req_push_toasts )
@@ -1169,11 +1206,14 @@ class BattleRoyaleClient: BattleRoyaleBase
 			// to leave "YOU SURVIVED" painted over the main menu for the rest of the session.
 			if( br_rpc.winner_screen && !br_previous_win_screen )
 			{
-				m_WinScreen = GetGame().GetWorkspace().CreateWidgets("Vigrid-BattleRoyale/GUI/layouts/hud/win_screen.layout");
-				if( m_WinScreen )
-					m_WinScreen.Show( true );
+				m_WinScreen = new BattleRoyaleWinScreen();
+				if( !m_WinScreen.Create() )
+					m_WinScreen = NULL;
 				br_previous_win_screen = true;
 			}
+
+			if( m_WinScreen )
+				m_WinScreen.Tick();
 		}
     }
 
@@ -1948,7 +1988,7 @@ class BattleRoyaleClient: BattleRoyaleBase
         //--- "YOU SURVIVED", parented to the workspace, so nothing else would ever take it down.
         if ( m_WinScreen )
         {
-            m_WinScreen.Unlink();
+            m_WinScreen.Destroy();
             m_WinScreen = NULL;
         }
         br_previous_win_screen = false;
