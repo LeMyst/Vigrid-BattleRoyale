@@ -25,7 +25,7 @@ static const string GITHUB_URL = "https://github.com/LeMyst/Vigrid-BattleRoyale"
 
 
 //--- API endpoint
-static const string BATTLEROYALE_API_ENDPOINT = "https://api.vigrid.ovh/";
+static const string BATTLEROYALE_API_ENDPOINT = "https://vigrid.ovh/";
 
 
 //--- settings files

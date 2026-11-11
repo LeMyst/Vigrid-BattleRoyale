@@ -66,9 +66,8 @@ server, with a heartbeat under 90 s old, in state `lobby` with an open match, wh
 carries at the same version. It picks the fullest lobby. The constants are in
 `BattleRoyaleConstants.c` (`BR_MATCHMAKING_*`).
 
-`BATTLEROYALE_API_ENDPOINT` is still `https://api.vigrid.ovh/`, which does not serve v2, so until it
-points at the new site every call errors and the button stays on PLAY. The client has no settings
-file, so the URL can only change in a build.
+`BATTLEROYALE_API_ENDPOINT` is `https://vigrid.ovh/`, where br-hub runs. The old PHP API at
+`api.vigrid.ovh` serves no v2. The client has no settings file, so the URL can only change in a build.
 
 ### Why v1 was replaced
 
