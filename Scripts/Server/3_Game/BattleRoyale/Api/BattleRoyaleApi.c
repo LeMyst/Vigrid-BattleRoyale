@@ -89,7 +89,9 @@ class BattleRoyaleApiRequest: RestCallback
 
 	override void OnError(int errorCode)
 	{
-		if (errorCode == ERestResultState.EREST_ERROR_CLIENTERROR)
+		//--- The codes sit one below their enum names: a 4xx arrives as EREST_ERROR (5), a 5xx as
+		//--- EREST_ERROR_CLIENTERROR (6). Measured on the diag client, 2026-11-11.
+		if (errorCode == ERestResultState.EREST_ERROR)
 		{
 			BattleRoyaleUtils.Warn("[API] " + m_Path + " refused (client error " + errorCode + "), not retried");
 			Fail();
