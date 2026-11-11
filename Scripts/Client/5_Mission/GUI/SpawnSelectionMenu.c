@@ -1007,6 +1007,19 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SelectSpawnPoint: click %1 -> spawn %2", tempPosition, spawnPosition));
 
+		//--- Offline there is no server to answer with ShowSpawnPoint, so place the marker here.
+		if (!GetGame().IsMultiplayer())
+		{
+			string self_id = m_SelfId;
+			if (self_id == "")
+				self_id = "local";
+			string self_name = "You";
+			if (m_TeammateNames.Contains(self_id))
+				self_name = m_TeammateNames.Get(self_id);
+			SetSpawnMarker(self_id, self_name, spawnPosition, true);
+			return;
+		}
+
 		//--- No target: the server resolves the subject from the RPC sender identity and re-runs the
 		//--- checks above. Sending one would be ignored - it was how a client could set another
 		//--- player's spawn point.
