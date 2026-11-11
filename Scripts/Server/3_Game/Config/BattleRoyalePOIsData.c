@@ -56,8 +56,8 @@ class BattleRoyalePOIsData: BattleRoyaleDataBase
 	// non-settlements - Hill_Kikimora moved 580 m, Hill_Kopyto 510 m onto a completely different
 	// coastal town, ViewPoint_47 483 m onto a hamlet.
 	//
-	// That is not cosmetic. The zone side's end_in_villages walks the FULL POI list, so an unfiltered
-	// run makes a hill and a real town resolve to nearly the same coordinates - duplicate seeds, which
+	// That is not cosmetic. The zone side's end_in_villages seeds on every POI of an end_village_types
+	// type, so if both lists admit hills, a hill and a real town resolve to nearly the same coordinates - duplicate seeds, which
 	// collapses final-circle spread. BattleRoyaleZone's own self test warns about exactly that, so the
 	// symptom would surface far from its cause.
 	//
