@@ -54,6 +54,7 @@ class BattleRoyalePrepare: BattleRoyaleState
 		{
 			StartMatchWebhook matchWebhook = new StartMatchWebhook( m_ServerData.webhook_jwt_token );
 			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
+			br_instance.AbandonPendingMatchRegistration();
 			matchWebhook.startMatch( br_instance.match_uuid );
 		}
 
