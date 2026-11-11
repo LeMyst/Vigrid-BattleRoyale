@@ -125,8 +125,12 @@ class DeathScreenMenu extends UIScriptedMenu
     private int m_QuitAtMs;
     private bool m_QuitArmed;
 
+    //--- Focus alone leaves mouse look live, so the corpse camera turned behind the menu.
+    private ref BattleRoyaleMenuInputLock m_InputLock;
+
     void DeathScreenMenu()
     {
+        m_InputLock = new BattleRoyaleMenuInputLock();
         m_Requested = false;
         m_SpectateShown = -1;
         m_AdminShown = -1;
@@ -624,6 +628,7 @@ class DeathScreenMenu extends UIScriptedMenu
     {
         //--- super does the whole focus acquire. Nothing else here - see the class comment.
         super.OnShow();
+        m_InputLock.Take();
 
         SetFocus( layoutRoot );
 
@@ -644,6 +649,7 @@ class DeathScreenMenu extends UIScriptedMenu
     {
         //--- super does the whole focus release.
         super.OnHide();
+        m_InputLock.Release();
 
         if( s_Instance == this )
             s_Instance = NULL;

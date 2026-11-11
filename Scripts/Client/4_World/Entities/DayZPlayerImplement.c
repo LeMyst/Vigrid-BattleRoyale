@@ -7,7 +7,7 @@ modded class DayZPlayerImplement
 	//--- The world dims behind the death screen and stays dimmed. Vanilla ramps exposure to black
 	//--- over 2.5 s and then RELEASES it, relying on its own black fade, which this mod replaces.
 	static const float BR_DEATH_DIM_SECONDS = 1.5;
-	static const float BR_DEATH_DIM_HOLD = 0.55;	//!< darkening progress; exposure -10*EaseInCubic(p), ~-1.7 EV
+	static const float BR_DEATH_DIM_HOLD = 0.75;	//!< darkening progress; exposure -10*EaseInCubic(p), ~-4.2 EV
 	protected ref Timer m_BRDeathDimTimer;
 	protected ref Param1<float> m_BRDeathDimParam;
 	protected float m_BRDeathDimTime;
