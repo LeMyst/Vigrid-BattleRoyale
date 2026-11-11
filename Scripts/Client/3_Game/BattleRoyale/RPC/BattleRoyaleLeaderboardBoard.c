@@ -21,7 +21,9 @@ class BattleRoyaleLeaderboardBoard
 
     //! The viewing player's own standing. rank 0 means "not on this ladder".
     int self_rank;
+    int self_matches;
     int self_wins;
+    int self_kills;
     int self_points;
 
     //! False until the server has answered at least once. Drives the "loading" state, and is what
@@ -48,7 +50,9 @@ class BattleRoyaleLeaderboardBoard
         points.Clear();
 
         self_rank = 0;
+        self_matches = 0;
         self_wins = 0;
+        self_kills = 0;
         self_points = 0;
         valid = false;
     }

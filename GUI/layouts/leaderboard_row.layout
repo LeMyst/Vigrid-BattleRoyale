@@ -1,90 +1,149 @@
+// One ladder row. Colours (stripe, own row, medals) and the badge position are set by
+// LeaderboardMenu; the row itself is laid out by the WrapSpacer and never positioned.
 PanelWidgetClass LeaderboardRowRoot {
  visible 1
+ ignorepointer 1
+ inheritalpha 0
  position 0 0
- size 820 26
+ size 1348 60
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 1 1 1 0.16
- style DayZDefaultPanel
+ color 1 1 1 0
+ style rover_sim_colorable
  {
   TextWidgetClass RowRank {
-   position 8 0
-   size 50 26
+   ignorepointer 1
+   inheritalpha 0
+   position 42 0
+   size 96 60
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "1"
-   font "gui/fonts/metron"
-   "exact text" 0
+   color 0.502 0.525 0.549 1
+   text ""
+   font "gui/fonts/metron-bold28"
+   "exact text" 1
+   "exact text size" 28
    "text halign" left
    "text valign" center
   }
   TextWidgetClass RowName {
-   position 66 0
-   size 320 26
+   ignorepointer 1
+   inheritalpha 0
+   position 138 0
+   size 618 60
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "Survivor"
-   font "gui/fonts/metron"
-   "exact text" 0
+   color 0.925 0.929 0.933 1
+   text ""
+   font "gui/fonts/metron22"
+   "exact text" 1
+   "exact text size" 22
    "text halign" left
    "text valign" center
   }
-  TextWidgetClass RowMatches {
-   position 396 0
-   size 94 26
+  PanelWidgetClass RowBadge {
+   ignorepointer 1
+   inheritalpha 0
+   position 0 16
+   size 60 28
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "0"
-   font "gui/fonts/metron"
-   "exact text" 0
-   "text halign" center
+   color 0.851 0.62 0.161 0.18
+   style rover_sim_colorable
+   visible 0
+   {
+    TextWidgetClass RowBadgeText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 60 28
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.941 0.722 0.29 1
+     text "#STR_BR_LB_YOU"
+     font "gui/fonts/metron-bold16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass RowMatches {
+   ignorepointer 1
+   inheritalpha 0
+   position 756 0
+   size 144 60
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.608 0.631 0.651 1
+   text ""
+   font "gui/fonts/metron22"
+   "exact text" 1
+   "exact text size" 22
+   "text halign" right
    "text valign" center
   }
   TextWidgetClass RowWins {
-   position 494 0
-   size 94 26
+   ignorepointer 1
+   inheritalpha 0
+   position 900 0
+   size 120 60
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "0"
-   font "gui/fonts/metron"
-   "exact text" 0
-   "text halign" center
+   color 0.925 0.929 0.933 1
+   text ""
+   font "gui/fonts/metron22"
+   "exact text" 1
+   "exact text size" 22
+   "text halign" right
    "text valign" center
   }
   TextWidgetClass RowKills {
-   position 592 0
-   size 94 26
+   ignorepointer 1
+   inheritalpha 0
+   position 1020 0
+   size 120 60
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "0"
-   font "gui/fonts/metron"
-   "exact text" 0
-   "text halign" center
+   color 0.925 0.929 0.933 1
+   text ""
+   font "gui/fonts/metron22"
+   "exact text" 1
+   "exact text size" 22
+   "text halign" right
    "text valign" center
   }
   TextWidgetClass RowPoints {
-   position 690 0
-   size 122 26
+   ignorepointer 1
+   inheritalpha 0
+   position 1140 0
+   size 168 60
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   style Bold
-   text "0"
-   font "gui/fonts/metron"
-   "exact text" 0
+   color 0.925 0.929 0.933 1
+   text ""
+   font "gui/fonts/metron-bold22"
+   "exact text" 1
+   "exact text size" 22
    "text halign" right
    "text valign" center
   }

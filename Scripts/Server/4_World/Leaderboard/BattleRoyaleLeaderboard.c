@@ -434,10 +434,10 @@ class BattleRoyaleLeaderboard
         }
 
         //--- The requester's own standing, so someone outside the visible rows still sees where they
-        //--- are. Rank 0 means "not on this ladder yet".
+        //--- are. Rank 0 means "not on this ladder yet". The stats ride one array, in the row's column
+        //--- order (matches, wins, kills, points): Param10 is the widest Param there is.
         int self_rank = 0;
-        int self_wins = 0;
-        int self_points = 0;
+        array<int> self_stats = new array<int>();
 
         int total = sorted.Count();
         for (int j = 0; j < total; j++)
@@ -447,12 +447,14 @@ class BattleRoyaleLeaderboard
                 continue;
 
             self_rank = j + 1;
-            self_wins = BattleRoyaleLeaderboardStore.EntryWins(candidate, requested_board);
-            self_points = Math.Round(BattleRoyaleLeaderboardStore.EntryPoints(candidate, requested_board));
+            self_stats.Insert(BattleRoyaleLeaderboardStore.EntryMatches(candidate, requested_board));
+            self_stats.Insert(BattleRoyaleLeaderboardStore.EntryWins(candidate, requested_board));
+            self_stats.Insert(BattleRoyaleLeaderboardStore.EntryKills(candidate, requested_board));
+            self_stats.Insert(Math.Round(BattleRoyaleLeaderboardStore.EntryPoints(candidate, requested_board)));
             break;
         }
 
-        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLeaderboard", new Param10<array<string>, array<int>, array<int>, array<int>, array<int>, int, int, int, int, int>( names, matches, wins, kills, points, requested_board, self_rank, self_wins, self_points, m_Settings.season ), true, sender );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetLeaderboard", new Param9<array<string>, array<int>, array<int>, array<int>, array<int>, int, int, array<int>, int>( names, matches, wins, kills, points, requested_board, self_rank, self_stats, m_Settings.season ), true, sender );
     }
 
     protected BattleRoyaleLeaderboardEntry GetOrCreate(string uid)
