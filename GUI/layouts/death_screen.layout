@@ -1,3 +1,6 @@
+// The death screen. Generated layout, painted by DeathScreenMenu.
+// Lengths in 1920-wide reference units: declared geometry is scaled by viewport/1920. Column
+// children below the killer card are re-placed from script when the card shrinks.
 PanelWidgetClass DeathRoot {
  keepsafezone 0
  position -0.02 -0.02
@@ -7,138 +10,809 @@ PanelWidgetClass DeathRoot {
  hexactsize 0
  vexactsize 0
  priority 900
- color 0.157 0.008 0.008 1
- style DayZDefaultPanel
+ color 0.078 0.024 0.031 0.7
+ style rover_sim_colorable
  {
-  PanelWidgetClass Dialog {
+  PanelWidgetClass SidePanel {
+   ignorepointer 1
    inheritalpha 0
    position 0 0
-   // 404 rather than 340: the recap block below adds 64px. Dialog is center_ref, so growing it
-   // re-centres itself and DeathRoot is untouched.
-   size 1000 404
-   halign center_ref
-   valign center_ref
+   size 0.4 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   color 0.031 0.035 0.043 0.85
+   style rover_sim_colorable
+  }
+  PanelWidgetClass SideFade0 {
+   ignorepointer 1
+   inheritalpha 0
+   position 0.4 0
+   size 0.035 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   color 0.031 0.035 0.043 0.68
+   style rover_sim_colorable
+  }
+  PanelWidgetClass SideFade1 {
+   ignorepointer 1
+   inheritalpha 0
+   position 0.435 0
+   size 0.035 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   color 0.031 0.035 0.043 0.5
+   style rover_sim_colorable
+  }
+  PanelWidgetClass SideFade2 {
+   ignorepointer 1
+   inheritalpha 0
+   position 0.47 0
+   size 0.035 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   color 0.031 0.035 0.043 0.32
+   style rover_sim_colorable
+  }
+  PanelWidgetClass SideFade3 {
+   ignorepointer 1
+   inheritalpha 0
+   position 0.505 0
+   size 0.035 1
+   hexactpos 0
+   vexactpos 0
+   hexactsize 0
+   vexactsize 0
+   color 0.031 0.035 0.043 0.14
+   style rover_sim_colorable
+  }
+  FrameWidgetClass Column {
+   ignorepointer 1
+   position 180 0
+   size 780 800
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   color 0 0 0 0
+   valign center_ref
    {
-    TextWidgetClass PlacementText {
+    PanelWidgetClass EyebrowLine {
+     ignorepointer 1
      inheritalpha 0
-     position 0 0
-     size 1000 52
+     position 0 12
+     size 36 3
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 1 1 1 1
-     style Bold
+     color 0.898 0.282 0.302 1
+     style rover_sim_colorable
+    }
+    TextWidgetClass EyebrowText {
+     ignorepointer 1
+     inheritalpha 0
+     position 51 0
+     size 700 27
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.949 0.467 0.482 1
+     text "#STR_BR_DEAD_ELIMINATED"
+     font "gui/fonts/metron-bold16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" left
+     "text valign" center
+    }
+    TextWidgetClass PlacementText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 33
+     size 400 162
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.925 0.929 0.933 1
      text ""
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" center
+     font "gui/fonts/sdf_metronbook72"
+     "exact text" 1
+     "exact text size" 180
+     "text halign" left
+     "text valign" center
+     "bold text" 1
+    }
+    TextWidgetClass FieldText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 126
+     size 500 54
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.608 0.631 0.651 1
+     text ""
+     font "gui/fonts/metron48"
+     "exact text" 1
+     "exact text size" 48
+     "text halign" left
      "text valign" center
     }
     MultilineTextWidgetClass FlavourText {
+     ignorepointer 1
      inheritalpha 0
-     position 0 60
-     size 1000 80
+     position 0 204
+     size 780 60
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 0.85 0.85 0.85 1
+     color 0.608 0.631 0.651 1
      text ""
-     font "gui/fonts/metron"
-     "exact text" 0
+     font "gui/fonts/metron-italic22"
+     "exact text" 1
+     "exact text size" 22
      "size to text h" 0
      "size to text v" 0
-     "text halign" center
-     "text valign" center
+     "text halign" left
+     "text valign" top
      wrap 1
     }
-    // Who killed you, with what, at what range - plus how they were left and what you had already
-    // taken off them. Painted from DeathScreenMenu.Tick(), NOT from Init(): the recap is pushed by
-    // the server while the menu is opened locally the instant the death command starts, so it is
-    // structurally late, not merely occasionally late.
-    // Empty when there is nothing to say. Dialog is fully transparent, so an empty widget here
-    // leaves no visible gap and nothing has to be repositioned at runtime.
-    MultilineTextWidgetClass RecapText {
+    PanelWidgetClass KillerCard {
+     ignorepointer 1
      inheritalpha 0
-     position 0 146
-     size 1000 56
+     position 0 306
+     size 780 183
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 0.85 0.78 0.62 1
-     text ""
-     font "gui/fonts/metron"
-     "exact text" 0
-     "size to text h" 0
-     "size to text v" 0
-     "text halign" center
-     "text valign" center
-     wrap 1
+     color 1 1 1 0.08
+     style rover_sim_colorable
+     visible 0
+     {
+      PanelWidgetClass KillerCardInner {
+       ignorepointer 1
+       inheritalpha 0
+       position 1 1
+       size 778 181
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.9
+       style rover_sim_colorable
+       {
+        PanelWidgetClass KillerIconBox {
+         ignorepointer 1
+         inheritalpha 0
+         position 29 26
+         size 60 60
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.898 0.282 0.302 0.16
+         style rover_sim_colorable
+         {
+          ImageWidgetClass KillerIcon {
+           ignorepointer 1
+           inheritalpha 0
+           position 15 15
+           size 30 30
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.949 0.467 0.482 1
+           image0 "set:dayz_crosshairs image:cross_32x32"
+           mode blend
+           "src alpha" 1
+           "no wrap" 1
+           stretch 1
+          }
+         }
+        }
+        TextWidgetClass KillerLabel {
+         ignorepointer 1
+         inheritalpha 0
+         position 107 28
+         size 640 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text ""
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass KillerName {
+         ignorepointer 1
+         inheritalpha 0
+         position 107 52
+         size 640 36
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text ""
+         font "gui/fonts/metron-bold28"
+         "exact text" 1
+         "exact text size" 28
+         "text halign" left
+         "text valign" center
+        }
+        PanelWidgetClass WeaponChip {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 120 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.06
+         style rover_sim_colorable
+         visible 0
+         {
+          TextWidgetClass WeaponChipText {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 0
+           size 120 33
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.788 0.804 0.82 1
+           text ""
+           font "gui/fonts/metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
+        }
+        PanelWidgetClass DistanceChip {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 120 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.06
+         style rover_sim_colorable
+         visible 0
+         {
+          TextWidgetClass DistanceChipText {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 0
+           size 120 33
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.788 0.804 0.82 1
+           text ""
+           font "gui/fonts/metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" center
+           "text valign" center
+          }
+         }
+        }
+        TextWidgetClass DetailLeft {
+         ignorepointer 1
+         inheritalpha 0
+         position 29 107
+         size 360 27
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text ""
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass DetailRight {
+         ignorepointer 1
+         inheritalpha 0
+         position 389 107
+         size 360 27
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text ""
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" right
+         "text valign" center
+        }
+        PanelWidgetClass BarBack {
+         ignorepointer 1
+         inheritalpha 0
+         position 29 143
+         size 720 12
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.06
+         style rover_sim_colorable
+        }
+        PanelWidgetClass BarHealth {
+         ignorepointer 1
+         inheritalpha 0
+         position 29 143
+         size 0 12
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         style rover_sim_colorable
+        }
+        PanelWidgetClass BarDealt {
+         ignorepointer 1
+         inheritalpha 0
+         position 29 143
+         size 0 12
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.898 0.282 0.302 0.6
+         style rover_sim_colorable
+        }
+       }
+      }
+     }
+    }
+    PanelWidgetClass StatsGrid {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 531
+     size 780 104
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 1 1 1 0.06
+     style rover_sim_colorable
+     {
+      PanelWidgetClass StatCell0 {
+       ignorepointer 1
+       inheritalpha 0
+       position 1 1
+       size 258 102
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.9
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatLabel0 {
+         ignorepointer 1
+         inheritalpha 0
+         position 24 18
+         size 210 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_KILLS"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass StatValue0 {
+         ignorepointer 1
+         inheritalpha 0
+         position 24 44
+         size 210 50
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "-"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" left
+         "text valign" center
+        }
+       }
+      }
+      PanelWidgetClass StatCell1 {
+       ignorepointer 1
+       inheritalpha 0
+       position 260 1
+       size 258 102
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.9
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatLabel1 {
+         ignorepointer 1
+         inheritalpha 0
+         position 24 18
+         size 210 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_DAMAGE"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass StatValue1 {
+         ignorepointer 1
+         inheritalpha 0
+         position 24 44
+         size 210 50
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "-"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" left
+         "text valign" center
+        }
+       }
+      }
+      PanelWidgetClass StatCell2 {
+       ignorepointer 1
+       inheritalpha 0
+       position 519 1
+       size 260 102
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.9
+       style rover_sim_colorable
+       {
+        TextWidgetClass StatLabel2 {
+         ignorepointer 1
+         inheritalpha 0
+         position 24 18
+         size 212 24
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text "#STR_BR_LASTMATCH_TIME"
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" left
+         "text valign" center
+        }
+        TextWidgetClass StatValue2 {
+         ignorepointer 1
+         inheritalpha 0
+         position 24 44
+         size 212 50
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "-"
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" left
+         "text valign" center
+        }
+       }
+      }
+     }
+    }
+    FrameWidgetClass ButtonRow {
+     ignorepointer 1
+     position 0 677
+     size 780 78
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     {
+      ButtonWidgetClass SpectateButton {
+       position 0 0
+       size 525 78
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0 0 0 0
+       style Empty
+       "no focus" 0
+       {
+        PanelWidgetClass SpectateBg {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 525 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.851 0.62 0.161 1
+         style rover_sim_colorable
+        }
+        TextWidgetClass SpectateLabel {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 525 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.067 0.078 0.09 1
+         text "#STR_BR_DEAD_SPECTATE"
+         font "gui/fonts/metron-bold22"
+         "exact text" 1
+         "exact text size" 22
+         "text halign" center
+         "text valign" center
+        }
+        PanelWidgetClass SpectateProgress {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 72
+         size 525 6
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.067 0.078 0.09 0.45
+         style rover_sim_colorable
+        }
+       }
+      }
+      ButtonWidgetClass AdminButton {
+       position 285 0
+       size 240 78
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0 0 0 0
+       style Empty
+       "no focus" 0
+       {
+        PanelWidgetClass AdminButtonBg {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 240 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0
+         style rover_sim_colorable
+        }
+        PanelWidgetClass AdminButtonTop {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 240 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        PanelWidgetClass AdminButtonBottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 76
+         size 240 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        PanelWidgetClass AdminButtonLeft {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 2 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        PanelWidgetClass AdminButtonRight {
+         ignorepointer 1
+         inheritalpha 0
+         position 238 0
+         size 2 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        TextWidgetClass AdminButtonLabel {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 240 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         text "#STR_BR_DEAD_ADMIN"
+         font "gui/fonts/metron-bold22"
+         "exact text" 1
+         "exact text size" 22
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      ButtonWidgetClass QuitButton {
+       position 540 0
+       size 240 78
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0 0 0 0
+       style Empty
+       "no focus" 0
+       {
+        PanelWidgetClass QuitButtonBg {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 240 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0
+         style rover_sim_colorable
+        }
+        PanelWidgetClass QuitButtonTop {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 240 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        PanelWidgetClass QuitButtonBottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 76
+         size 240 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        PanelWidgetClass QuitButtonLeft {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 2 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        PanelWidgetClass QuitButtonRight {
+         ignorepointer 1
+         inheritalpha 0
+         position 238 0
+         size 2 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.2
+         style rover_sim_colorable
+        }
+        TextWidgetClass QuitButtonLabel {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 240 78
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         text "#STR_BR_DEAD_QUIT"
+         font "gui/fonts/metron-bold22"
+         "exact text" 1
+         "exact text size" 22
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+     }
     }
     TextWidgetClass StatusText {
+     ignorepointer 1
      inheritalpha 0
-     position 0 216
-     size 1000 32
+     position 0 770
+     size 780 30
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 0.75 0.75 0.75 1
+     color 0.608 0.631 0.651 1
      text ""
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" center
+     font "gui/fonts/metron22"
+     "exact text" 1
+     "exact text size" 22
+     "text halign" left
      "text valign" center
-    }
-    ButtonWidgetClass SpectateButton {
-     inheritalpha 0
-     position 140 284
-     size 220 48
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_DEAD_SPECTATE"
-     text_proportion 0.6
-     font "gui/fonts/metron"
-    }
-    // Admin only, and hidden unless BattleRoyaleRPC.is_admin says so. Sends the same
-    // AdminSpectateToggle the F3 key does - the server reads that as "respawn, then spectate",
-    // because this player is dead. Three 220px buttons at 140/390/640 fit the 1000px dialog, which
-    // is why the two originals moved off 260/520.
-    ButtonWidgetClass AdminButton {
-     inheritalpha 0
-     position 390 284
-     size 220 48
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_DEAD_ADMIN"
-     text_proportion 0.6
-     font "gui/fonts/metron"
-    }
-    ButtonWidgetClass QuitButton {
-     inheritalpha 0
-     position 640 284
-     size 220 48
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_DEAD_QUIT"
-     text_proportion 0.6
-     font "gui/fonts/metron"
     }
    }
   }

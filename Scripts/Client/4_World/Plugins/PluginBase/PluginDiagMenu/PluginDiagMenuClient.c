@@ -71,6 +71,7 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagOpenDeathScreenID, CBBRDiagOpenDeathScreen);
 		DiagMenu.BindCallback(m_BRDiagOpenWinScreenID, CBBRDiagOpenWinScreen);
 		DiagMenu.BindCallback(m_BRDiagWinVariantID, CBBRDiagWinVariant);
+		DiagMenu.BindCallback(m_BRDiagDeathVariantID, CBBRDiagDeathVariant);
 		DiagMenu.BindCallback(m_BRDiagPushToastsID, CBBRDiagPushToasts);
 		DiagMenu.BindCallback(m_BRDiagFadeID, CBBRDiagFade);
 
@@ -482,6 +483,48 @@ modded class PluginDiagMenuClient
 		//--- IsAlive(). Without this the screen shuts on its first tick and looks like a layout that
 		//--- failed to load.
 		BattleRoyaleDiag.suppress_alive_close = true;
+
+		//--- Everything the screen paints, written exactly as ShowDeadScreen, SetLastMatchRecap and
+		//--- SetDeathStats would. The cause comes from "Recap Cause", shared with the Last Match fixture.
+		BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+		int cause = BattleRoyaleDiag.lastmatch_cause;
+		bool named = ( cause == BattleRoyaleKillCause.FIREARM || cause == BattleRoyaleKillCause.MELEE || cause == BattleRoyaleKillCause.BAREHANDS || cause == BattleRoyaleKillCause.EXPLOSIVE );
+
+		br_rpc.dead_place = 7;
+		br_rpc.dead_placement = "7";
+		br_rpc.dead_flavour = "You thought he was aiming at the sky? Nope, it was at you.";
+
+		br_rpc.recap_cause = cause;
+		br_rpc.recap_killer_name = "";
+		br_rpc.recap_weapon_type = "";
+		br_rpc.recap_distance_m = -1;
+		br_rpc.recap_killer_health_pct = -1;
+		br_rpc.recap_damage_to_killer = 0;
+		if ( named )
+		{
+			br_rpc.recap_killer_name = "Kestrel";
+			br_rpc.recap_killer_health_pct = 64;
+			br_rpc.recap_damage_to_killer = 37;
+			if ( cause == BattleRoyaleKillCause.FIREARM )
+			{
+				br_rpc.recap_weapon_type = "M4A1";
+				br_rpc.recap_distance_m = 212;
+			}
+		}
+		br_rpc.recap_valid = true;
+		br_rpc.recap_seq = br_rpc.recap_seq + 1;
+
+		br_rpc.death_field_size = 24;
+		br_rpc.death_grouped = true;
+		br_rpc.death_kills = 2;
+		br_rpc.death_damage = 238;
+		br_rpc.death_survived_s = 846;
+		br_rpc.death_stats_valid = true;
+		br_rpc.death_stats_seq = br_rpc.death_stats_seq + 1;
+
+		br_rpc.spectate_offered = ( BattleRoyaleDiag.death_variant != 1 );
+		br_rpc.is_admin = ( BattleRoyaleDiag.death_variant == 2 );
+
 		BattleRoyaleDiag.req_open_death_screen = BattleRoyaleDiag.req_open_death_screen + 1;
 		DiagMenu.SetValue(id, false);
 	}
@@ -493,6 +536,11 @@ modded class PluginDiagMenuClient
 
 		BattleRoyaleDiag.req_open_win_screen = BattleRoyaleDiag.req_open_win_screen + 1;
 		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagDeathVariant(int value)
+	{
+		BattleRoyaleDiag.death_variant = value;
 	}
 
 	static void CBBRDiagWinVariant(int value)

@@ -68,6 +68,9 @@ modded class DayZPlayerImplement
 			{
 				br_rpc.dead_placement = placement;
 				br_rpc.dead_flavour = funny_string;
+				br_rpc.dead_place = 0;
+				if (placement != "")
+					br_rpc.dead_place = position_top;
 
 				//--- Record that the DEATH path locked input, travelling by the same route and for
 				//--- the same stage-ordering reason as the two strings above.
