@@ -140,6 +140,28 @@ python Tools/wiki_check.py --self-test   # finds the clone itself; --wiki PATH f
 version passed a wiki where nothing was checked at all: it walked the disk instead of `git ls-files`,
 skipped every path containing `.claude`, and a worktree lives under `.claude\worktrees\`.
 
+## `layouts/` — generated `.layout` files
+
+The redesigned screens are not hand-written: each layout below is the output of a Python script,
+and the script is the source to edit. Lengths are in the layout's 1920-wide reference units, which
+is the Claude Design board (1280 wide) times 1.5.
+
+| Script | Writes |
+|---|---|
+| `gen_death_screen.py` | `death_screen.layout` |
+| `gen_spawn_selection.py` | `spawn_selection.layout` |
+| `gen_leaderboard.py` | `leaderboard.layout`, `leaderboard_row.layout`, `match_summary_row.layout` |
+
+```bash
+python Tools/layouts/gen_leaderboard.py           # rewrite the layouts
+python Tools/layouts/gen_leaderboard.py --check   # exit 1 if a layout no longer matches its script
+```
+
+`--check` is the guard against the one way this goes wrong: a fix made by hand in the `.layout`,
+which the next run of the script silently reverts. Fix the script instead and regenerate. Output is
+CRLF UTF-8, like the rest of the tree. `win_screen.layout` predates this folder and is still
+hand-written.
+
 ## Allowlists
 
 `Tools/allowlists/*.txt`, one entry per line as `entry  # reason`. They are documentation as much

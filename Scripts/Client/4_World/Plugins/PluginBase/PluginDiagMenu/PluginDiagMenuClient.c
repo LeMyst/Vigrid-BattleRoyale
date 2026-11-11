@@ -388,7 +388,7 @@ modded class PluginDiagMenuClient
 		//--- ladder rendered "-38 wins" and read as a formatting bug rather than as fake data.
 		for ( int i = 0; i < rows; i++ )
 		{
-			board.names.Insert("Fake Player " + (i + 1));
+			board.names.Insert(BRDiagFakeName(i));
 			board.matches.Insert(Math.Max(1, 120 - (i * 2)));
 			board.wins.Insert(Math.Max(0, 40 - i));
 			board.kills.Insert(Math.Max(0, 620 - (i * 14)));
@@ -396,10 +396,24 @@ modded class PluginDiagMenuClient
 		}
 
 		//--- Mid-table on purpose: a self rank of 1 hides every bug in how the row is highlighted.
-		board.self_rank = 5;
-		board.self_wins = 3;
-		board.self_points = 900;
+		//--- The pinned row repeats that row's figures, as the server would.
+		int self_index = 4;
+		board.self_rank = self_index + 1;
+		board.self_matches = board.matches.Get(self_index);
+		board.self_wins = board.wins.Get(self_index);
+		board.self_kills = board.kills.Get(self_index);
+		board.self_points = board.points.Get(self_index);
 		board.valid = true;
+	}
+
+	//! Fixture names with the lengths and casing real ones have; a suffix past the list.
+	static string BRDiagFakeName(int i)
+	{
+		array<string> names = {"Ragnvald", "Kestrel", "hollowpoint", "Ironbark", "Myrk", "Sable_Fox", "Tundra", "Oskar.V", "Lindqvist", "Wanderer", "Pike", "grimward", "Halvard"};
+		string name = names.Get(i % names.Count());
+		if ( i >= names.Count() )
+			name = name + " " + (i / names.Count() + 1);
+		return name;
 	}
 
 	/**
@@ -426,8 +440,9 @@ modded class PluginDiagMenuClient
 		//--- is how the leaderboard's own scroll bug survived two diagnoses.
 		for ( int i = 0; i < 40; i++ )
 		{
-			data.names.Insert("Fake Player " + (i + 1));
-			data.places.Insert(i + 1);
+			data.names.Insert(BRDiagFakeName(i));
+			//--- Grouped, so a squad shares its place: 40 players in squads of three are 14 places.
+			data.places.Insert(i / 3 + 1);
 			data.kills.Insert(Math.Max(0, 12 - (i / 3)));
 			data.damage.Insert(Math.Max(0, 940 - (i * 21)));
 			data.survived.Insert(Math.Max(0, 1450 - (i * 33)));

@@ -1332,7 +1332,7 @@ class BattleRoyaleRPC
 
 	void SetLeaderboard(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
 	{
-		Param10<array<string>, array<int>, array<int>, array<int>, array<int>, int, int, int, int, int> data;
+		Param9<array<string>, array<int>, array<int>, array<int>, array<int>, int, int, array<int>, int> data;
 		if( !ctx.Read( data ) )
 		{
 			ReadFailed("SetLeaderboard");
@@ -1360,11 +1360,18 @@ class BattleRoyaleRPC
 				target_board.points.Copy( data.param5 );
 
 			target_board.self_rank = data.param7;
-			target_board.self_wins = data.param8;
-			target_board.self_points = data.param9;
+			//--- matches, wins, kills, points - empty when unranked.
+			array<int> self_stats = data.param8;
+			if ( self_stats && self_stats.Count() >= 4 )
+			{
+				target_board.self_matches = self_stats.Get(0);
+				target_board.self_wins = self_stats.Get(1);
+				target_board.self_kills = self_stats.Get(2);
+				target_board.self_points = self_stats.Get(3);
+			}
 			target_board.valid = true;
 
-			lb_season = data.param10;
+			lb_season = data.param9;
 
 			leaderboard_seq = leaderboard_seq + 1;
 

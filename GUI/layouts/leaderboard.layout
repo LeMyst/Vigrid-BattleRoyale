@@ -1,768 +1,1794 @@
+// The leaderboard (F4). Generated layout, driven by LeaderboardMenu.
+// Lengths in 1920-wide reference units: declared geometry is scaled by viewport/1920.
+// Grouping nodes are FrameWidgets with ignorepointer 1: a full-size panel with the default
+// ignorepointer 0 eats every click on the tabs declared before it (Docs/ui.md).
 PanelWidgetClass LeaderboardRoot {
+ inheritalpha 0
  position 0 0
  size 1 1
  hexactpos 0
  vexactpos 0
  hexactsize 0
  vexactsize 0
- color 0 0 0 0.69
- style DayZDefaultPanel
+ color 0.024 0.031 0.039 0.62
+ style rover_sim_colorable
  {
-  PanelWidgetClass Dialog {
+  FrameWidgetClass Shell {
+   ignorepointer 1
    position 0 0
-   // 840 rather than 700: the Last Match tab needs a card above its table. The ladder tab uses the
-   // extra height for a taller scroll rather than leaving a gap.
-   size 920 840
-   halign center_ref
-   valign center_ref
+   size 1350 939
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   color 0.102 0.102 0.102 0.94
-   style DayZDefaultPanel
+   halign center_ref
+   valign center_ref
    {
-    TextWidgetClass Title {
-     position 24 16
-     size 520 40
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Bold
-     text "#STR_BR_LEADERBOARD_TITLE"
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" left
-     "text valign" center
-    }
-    TextWidgetClass SeasonText {
-     position 560 16
-     size 336 40
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     text ""
-     font "gui/fonts/metron"
-     "exact text" 0
-     "text halign" right
-     "text valign" center
-    }
-    ButtonWidgetClass SoloTabButton {
-     position 24 64
-     size 160 36
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_LEADERBOARD_SOLO"
-     text_proportion 0.6
-     font "gui/fonts/metron"
-    }
-    ButtonWidgetClass GroupTabButton {
-     position 192 64
-     size 160 36
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_LEADERBOARD_GROUP"
-     text_proportion 0.6
-     font "gui/fonts/metron"
-    }
-    // The third tab is not a ladder at all - it is the PREVIOUS match, read back from
-    // last_match.json by this server process. It shares this menu and nothing else: its own request
-    // RPC, its own client cache and its own sequence counter.
-    ButtonWidgetClass LastMatchTabButton {
-     position 360 64
-     size 160 36
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_LASTMATCH_TAB"
-     text_proportion 0.6
-     font "gui/fonts/metron"
-    }
-    PanelWidgetClass SoloTabAccent {
-     visible 1
-     position 24 100
-     size 160 4
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     color 0.85 0.62 0.16 1
-     style DayZDefaultPanel
-    }
-    PanelWidgetClass GroupTabAccent {
-     visible 0
-     position 192 100
-     size 160 4
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     color 0.85 0.62 0.16 1
-     style DayZDefaultPanel
-    }
-    PanelWidgetClass LastMatchTabAccent {
-     visible 0
-     position 360 100
-     size 160 4
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     color 0.85 0.62 0.16 1
-     style DayZDefaultPanel
-    }
-
-    // ---------------------------------------------------------------------------------------
-    // Two grouping containers, swapped by the tab. Both sit at 0,0 at the dialog's full size, so
-    // every child keeps the exact coordinates it would have had as a direct child of Dialog and
-    // nothing has to be repositioned from script - which matters, because DECLARED geometry is
-    // scaled by viewport/1920 while SetPos takes real pixels, and mixing the two shifts a whole
-    // group while its spacing stays correct.
-    //
-    // Neither container carries a `style` line, and that is what makes them free: a PanelWidget
-    // with no style paints nothing at all, so these are pure grouping nodes. They must NOT be
-    // transparent either - widget alpha multiplies through parents, so `color 0 0 0 0` here would
-    // make every inheritalpha child invisible with a completely clean .rpt.
-    //
-    // ⚠ BOTH need `ignorepointer 1`, and leaving it off is a silent, total input failure. These are
-    // full dialog size and declared AFTER the tab buttons, so with the default ignorepointer 0 they
-    // sit over Solo / Group / Last Match and swallow every click on them - no error, no log line,
-    // the buttons simply stop responding while CloseButton (declared after these) keeps working.
-    // ignorepointer does NOT propagate to children: vanilla's own day_z_respawn_dialogue.layout
-    // stacks it on three nested parents and its ButtonWidgets inside them work fine. So the
-    // ScrollWidget below keeps its mouse input.
-    // ---------------------------------------------------------------------------------------
-
-    PanelWidgetClass LadderPanel {
-     visible 1
+    PanelWidgetClass DialogEdge {
      ignorepointer 1
+     inheritalpha 0
      position 0 0
-     size 920 840
+     size 1350 888
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 1 1 1 1
+     color 1 1 1 0.08
+     style rover_sim_colorable
      {
-      TextWidgetClass HeaderRank {
-       position 32 116
-       size 58 24
+      PanelWidgetClass Dialog {
+       ignorepointer 1
+       inheritalpha 0
+       position 1 1
+       size 1348 886
        hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
-       style Bold
-       text "#STR_BR_LEADERBOARD_RANK"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" left
-       "text valign" center
-      }
-      TextWidgetClass HeaderPlayer {
-       position 90 116
-       size 320 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LEADERBOARD_PLAYER"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" left
-       "text valign" center
-      }
-      TextWidgetClass HeaderMatches {
-       position 420 116
-       size 94 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LEADERBOARD_MATCHES"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
-       "text valign" center
-      }
-      TextWidgetClass HeaderWins {
-       position 518 116
-       size 94 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LEADERBOARD_WINS"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
-       "text valign" center
-      }
-      TextWidgetClass HeaderKills {
-       position 616 116
-       size 94 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LEADERBOARD_KILLS"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
-       "text valign" center
-      }
-      TextWidgetClass HeaderPoints {
-       position 714 116
-       size 122 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LEADERBOARD_POINTS"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" right
-       "text valign" center
-      }
-      ScrollWidgetClass LeaderboardScroll {
-       position 24 144
-       size 872 560
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       "Scrollbar V" 1
+       color 0.067 0.078 0.09 0.96
+       style rover_sim_colorable
        {
-        WrapSpacerWidgetClass LeaderboardRows {
-         position 0 0
-         size 1 26
-         hexactpos 1
-         vexactpos 1
-         hexactsize 0
-         vexactsize 1
-         "Size To Content V" 1
-        }
-       }
-      }
-      TextWidgetClass EmptyText {
-       visible 0
-       position 24 340
-       size 872 40
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       text "#STR_BR_LEADERBOARD_EMPTY"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
-       "text valign" center
-      }
-      PanelWidgetClass SelfBanner {
-       position 24 736
-       size 872 44
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       color 0.188 0.188 0.188 0.94
-       style DayZDefaultPanel
-       {
-        TextWidgetClass SelfText {
-         position 12 0
-         size 848 44
+        PanelWidgetClass TitleMark {
+         ignorepointer 1
+         inheritalpha 0
+         position 42 33
+         size 6 48
          hexactpos 1
          vexactpos 1
          hexactsize 1
          vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
+         color 0.851 0.62 0.161 1
+         style rover_sim_colorable
+        }
+        TextWidgetClass Title {
+         ignorepointer 1
+         inheritalpha 0
+         position 66 24
+         size 900 39
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.925 0.929 0.933 1
+         text "#STR_BR_LEADERBOARD_TITLE"
+         font "gui/fonts/metron-bold28"
+         "exact text" 1
+         "exact text size" 28
          "text halign" left
          "text valign" center
+        }
+        TextWidgetClass SeasonText {
+         ignorepointer 1
+         inheritalpha 0
+         position 66 63
+         size 1000 27
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.608 0.631 0.651 1
+         text ""
+         font "gui/fonts/metron16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" left
+         "text valign" center
+        }
+        ButtonWidgetClass CloseButton {
+         position 1108 24
+         size 210 66
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0 0 0 0
+         style Empty
+         "no focus" 0
+         {
+          PanelWidgetClass CloseEdgeTop {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 0
+           size 210 2
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.1
+           style rover_sim_colorable
+          }
+          PanelWidgetClass CloseEdgeBottom {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 64
+           size 210 2
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.1
+           style rover_sim_colorable
+          }
+          PanelWidgetClass CloseEdgeLeft {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 0
+           size 2 66
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.1
+           style rover_sim_colorable
+          }
+          PanelWidgetClass CloseEdgeRight {
+           ignorepointer 1
+           inheritalpha 0
+           position 208 0
+           size 2 66
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.1
+           style rover_sim_colorable
+          }
+          PanelWidgetClass CloseKey {
+           ignorepointer 1
+           inheritalpha 0
+           position 21 18
+           size 54 30
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.07
+           style rover_sim_colorable
+           {
+            PanelWidgetClass CloseKeyBase {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1 3
+             halign left_ref
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             color 1 1 1 0.18
+             style rover_sim_colorable
+            }
+            TextWidgetClass CloseKeyText {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1 1
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 0
+             color 0.788 0.804 0.82 1
+             text "F4"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" center
+             "text valign" center
+            }
+           }
+          }
+          TextWidgetClass CloseLabel {
+           ignorepointer 1
+           inheritalpha 0
+           position 90 0
+           size 105 66
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.788 0.804 0.82 1
+           text "#STR_BR_LEADERBOARD_CLOSE"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" left
+           "text valign" center
+          }
+         }
+        }
+        PanelWidgetClass HeaderLine {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 114
+         size 1348 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.06
+         style rover_sim_colorable
+        }
+        FrameWidgetClass TabBar {
+         ignorepointer 1
+         position 0 116
+         size 1348 72
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         {
+          ButtonWidgetClass SoloTabButton {
+           position 30 0
+           size 150 72
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0 0 0 0
+           style Empty
+           "no focus" 0
+           {
+            TextWidgetClass SoloTabLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 150 69
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LEADERBOARD_SOLO"
+             font "gui/fonts/metron-bold22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" center
+             "text valign" center
+            }
+            PanelWidgetClass SoloTabAccent {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 69
+             size 150 3
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.851 0.62 0.161 1
+             style rover_sim_colorable
+             visible 0
+            }
+           }
+          }
+          ButtonWidgetClass GroupTabButton {
+           position 186 0
+           size 150 72
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0 0 0 0
+           style Empty
+           "no focus" 0
+           {
+            TextWidgetClass GroupTabLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 150 69
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LEADERBOARD_GROUP"
+             font "gui/fonts/metron-bold22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" center
+             "text valign" center
+            }
+            PanelWidgetClass GroupTabAccent {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 69
+             size 150 3
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.851 0.62 0.161 1
+             style rover_sim_colorable
+             visible 0
+            }
+           }
+          }
+          ButtonWidgetClass LastMatchTabButton {
+           position 342 0
+           size 270 72
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0 0 0 0
+           style Empty
+           "no focus" 0
+           {
+            TextWidgetClass LastMatchTabLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 270 69
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LASTMATCH_TAB"
+             font "gui/fonts/metron-bold22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" center
+             "text valign" center
+            }
+            PanelWidgetClass LastMatchTabAccent {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 69
+             size 270 3
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.851 0.62 0.161 1
+             style rover_sim_colorable
+             visible 0
+            }
+           }
+          }
+          PanelWidgetClass TabKeyQ {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 21
+           size 36 30
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.07
+           style rover_sim_colorable
+           {
+            PanelWidgetClass TabKeyQBase {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1 3
+             halign left_ref
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             color 1 1 1 0.18
+             style rover_sim_colorable
+            }
+            TextWidgetClass TabKeyQText {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1 1
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 0
+             color 0.788 0.804 0.82 1
+             text "Q"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" center
+             "text valign" center
+            }
+           }
+          }
+          PanelWidgetClass TabKeyE {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 21
+           size 36 30
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.07
+           style rover_sim_colorable
+           {
+            PanelWidgetClass TabKeyEBase {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1 3
+             halign left_ref
+             valign bottom_ref
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             color 1 1 1 0.18
+             style rover_sim_colorable
+            }
+            TextWidgetClass TabKeyEText {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1 1
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 0
+             color 0.788 0.804 0.82 1
+             text "E"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" center
+             "text valign" center
+            }
+           }
+          }
+          TextWidgetClass TabHint {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 21
+           size 300 30
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_LB_SWITCH_TAB"
+           font "gui/fonts/metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" left
+           "text valign" center
+          }
+         }
+        }
+        PanelWidgetClass TabLine {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 188
+         size 1348 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.06
+         style rover_sim_colorable
+        }
+        FrameWidgetClass LadderPanel {
+         ignorepointer 1
+         position 0 190
+         size 1348 696
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         {
+          TextWidgetClass HeaderRank {
+           ignorepointer 1
+           inheritalpha 0
+           position 42 0
+           size 96 54
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_LEADERBOARD_RANK"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" left
+           "text valign" center
+          }
+          TextWidgetClass HeaderPlayer {
+           ignorepointer 1
+           inheritalpha 0
+           position 138 0
+           size 618 54
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_LEADERBOARD_PLAYER"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" left
+           "text valign" center
+          }
+          TextWidgetClass HeaderMatches {
+           ignorepointer 1
+           inheritalpha 0
+           position 756 0
+           size 144 54
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_LEADERBOARD_MATCHES"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" right
+           "text valign" center
+          }
+          TextWidgetClass HeaderWins {
+           ignorepointer 1
+           inheritalpha 0
+           position 900 0
+           size 120 54
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_LEADERBOARD_WINS"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" right
+           "text valign" center
+          }
+          TextWidgetClass HeaderKills {
+           ignorepointer 1
+           inheritalpha 0
+           position 1020 0
+           size 120 54
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_LEADERBOARD_KILLS"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" right
+           "text valign" center
+          }
+          TextWidgetClass HeaderPoints {
+           ignorepointer 1
+           inheritalpha 0
+           position 1140 0
+           size 168 54
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.788 0.804 0.82 1
+           text "#STR_BR_LEADERBOARD_POINTS"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" right
+           "text valign" center
+          }
+          PanelWidgetClass LadderHeaderLine {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 54
+           size 1348 2
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.06
+           style rover_sim_colorable
+          }
+          ScrollWidgetClass LeaderboardScroll {
+           position 0 56
+           size 1348 568
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           "Scrollbar V" 1
+           {
+            WrapSpacerWidgetClass LeaderboardRows {
+             ignorepointer 1
+             position 0 0
+             size 1 60
+             hexactpos 1
+             vexactpos 1
+             hexactsize 0
+             vexactsize 1
+             "Size To Content V" 1
+            }
+           }
+          }
+          TextWidgetClass EmptyText {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 56
+           size 1348 568
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.608 0.631 0.651 1
+           text "#STR_BR_LEADERBOARD_EMPTY"
+           font "gui/fonts/metron22"
+           "exact text" 1
+           "exact text size" 22
+           "text halign" center
+           "text valign" center
+           visible 0
+          }
+          PanelWidgetClass SelfBanner {
+           ignorepointer 1
+           inheritalpha 0
+           position 0 624
+           size 1348 72
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.851 0.62 0.161 0.12
+           style rover_sim_colorable
+           {
+            PanelWidgetClass SelfBannerLine {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 1348 2
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.851 0.62 0.161 0.4
+             style rover_sim_colorable
+            }
+            TextWidgetClass SelfRank {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 0
+             size 96 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.941 0.722 0.29 1
+             text ""
+             font "gui/fonts/metron-bold28"
+             "exact text" 1
+             "exact text size" 28
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass SelfName {
+             ignorepointer 1
+             inheritalpha 0
+             position 138 0
+             size 618 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.925 0.929 0.933 1
+             text ""
+             font "gui/fonts/metron-bold22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" left
+             "text valign" center
+            }
+            PanelWidgetClass SelfBadge {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 22
+             size 60 28
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.851 0.62 0.161 0.22
+             style rover_sim_colorable
+             {
+              TextWidgetClass SelfBadgeText {
+               ignorepointer 1
+               inheritalpha 0
+               position 0 0
+               size 60 28
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               color 0.941 0.722 0.29 1
+               text "#STR_BR_LB_YOU"
+               font "gui/fonts/metron-bold16"
+               "exact text" 1
+               "exact text size" 16
+               "text halign" center
+               "text valign" center
+              }
+             }
+            }
+            TextWidgetClass SelfMatches {
+             ignorepointer 1
+             inheritalpha 0
+             position 756 0
+             size 144 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.788 0.804 0.82 1
+             text ""
+             font "gui/fonts/metron22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" right
+             "text valign" center
+            }
+            TextWidgetClass SelfWins {
+             ignorepointer 1
+             inheritalpha 0
+             position 900 0
+             size 120 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.925 0.929 0.933 1
+             text ""
+             font "gui/fonts/metron22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" right
+             "text valign" center
+            }
+            TextWidgetClass SelfKills {
+             ignorepointer 1
+             inheritalpha 0
+             position 1020 0
+             size 120 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.925 0.929 0.933 1
+             text ""
+             font "gui/fonts/metron22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" right
+             "text valign" center
+            }
+            TextWidgetClass SelfPoints {
+             ignorepointer 1
+             inheritalpha 0
+             position 1140 0
+             size 168 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.941 0.722 0.29 1
+             text ""
+             font "gui/fonts/metron-bold28"
+             "exact text" 1
+             "exact text size" 28
+             "text halign" right
+             "text valign" center
+            }
+            TextWidgetClass SelfText {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 0
+             size 1264 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.788 0.804 0.82 1
+             text ""
+             font "gui/fonts/metron22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" left
+             "text valign" center
+            }
+           }
+          }
+         }
+        }
+        FrameWidgetClass LastMatchPanel {
+         ignorepointer 1
+         position 0 190
+         size 1348 696
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         visible 0
+         {
+          FrameWidgetClass CardSelf {
+           ignorepointer 1
+           position 0 0
+           size 480 696
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           {
+            TextWidgetClass PlaceLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 36
+             size 402 24
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_PLACEMENT"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass PlaceNumber {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 60
+             size 200 102
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.941 0.722 0.29 1
+             text ""
+             font "gui/fonts/sdf_metronbook72"
+             "exact text" 1
+             "exact text size" 96
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass PlaceOf {
+             ignorepointer 1
+             inheritalpha 0
+             position 142 108
+             size 302 42
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text ""
+             font "gui/fonts/metron28"
+             "exact text" 1
+             "exact text size" 28
+             "text halign" left
+             "text valign" center
+            }
+            PanelWidgetClass CardStats {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 189
+             size 402 199
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 1 1 1 0.06
+             style rover_sim_colorable
+             {
+              PanelWidgetClass CardKillsCell {
+               ignorepointer 1
+               inheritalpha 0
+               position 1 1
+               size 199 98
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               color 0.082 0.094 0.106 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass CardKillsLabel {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 15
+                 size 157 24
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.608 0.631 0.651 1
+                 text "#STR_BR_LASTMATCH_KILLS"
+                 font "gui/fonts/metron16"
+                 "exact text" 1
+                 "exact text size" 16
+                 "text halign" left
+                 "text valign" center
+                }
+                TextWidgetClass CardKillsValue {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 42
+                 size 157 42
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.925 0.929 0.933 1
+                 text "-"
+                 font "gui/fonts/metron-bold28"
+                 "exact text" 1
+                 "exact text size" 28
+                 "text halign" left
+                 "text valign" center
+                }
+               }
+              }
+              PanelWidgetClass CardDamageCell {
+               ignorepointer 1
+               inheritalpha 0
+               position 201 1
+               size 200 98
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               color 0.082 0.094 0.106 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass CardDamageLabel {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 15
+                 size 158 24
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.608 0.631 0.651 1
+                 text "#STR_BR_LASTMATCH_DAMAGE"
+                 font "gui/fonts/metron16"
+                 "exact text" 1
+                 "exact text size" 16
+                 "text halign" left
+                 "text valign" center
+                }
+                TextWidgetClass CardDamageValue {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 42
+                 size 158 42
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.925 0.929 0.933 1
+                 text "-"
+                 font "gui/fonts/metron-bold28"
+                 "exact text" 1
+                 "exact text size" 28
+                 "text halign" left
+                 "text valign" center
+                }
+               }
+              }
+              PanelWidgetClass CardHitsCell {
+               ignorepointer 1
+               inheritalpha 0
+               position 1 100
+               size 199 98
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               color 0.082 0.094 0.106 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass CardHitsLabel {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 15
+                 size 157 24
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.608 0.631 0.651 1
+                 text "#STR_BR_LASTMATCH_HITS"
+                 font "gui/fonts/metron16"
+                 "exact text" 1
+                 "exact text size" 16
+                 "text halign" left
+                 "text valign" center
+                }
+                TextWidgetClass CardHitsValue {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 42
+                 size 157 42
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.925 0.929 0.933 1
+                 text "-"
+                 font "gui/fonts/metron-bold28"
+                 "exact text" 1
+                 "exact text size" 28
+                 "text halign" left
+                 "text valign" center
+                }
+               }
+              }
+              PanelWidgetClass CardTimeCell {
+               ignorepointer 1
+               inheritalpha 0
+               position 201 100
+               size 200 98
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               color 0.082 0.094 0.106 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass CardTimeLabel {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 15
+                 size 158 24
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.608 0.631 0.651 1
+                 text "#STR_BR_LASTMATCH_TIME"
+                 font "gui/fonts/metron16"
+                 "exact text" 1
+                 "exact text size" 16
+                 "text halign" left
+                 "text valign" center
+                }
+                TextWidgetClass CardTimeValue {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 42
+                 size 158 42
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.925 0.929 0.933 1
+                 text "-"
+                 font "gui/fonts/metron-bold28"
+                 "exact text" 1
+                 "exact text size" 28
+                 "text halign" left
+                 "text valign" center
+                }
+               }
+              }
+             }
+            }
+            PanelWidgetClass CardRecap {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 417
+             size 402 237
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.898 0.282 0.302 0.28
+             style rover_sim_colorable
+             {
+              PanelWidgetClass CardRecapInner {
+               ignorepointer 1
+               inheritalpha 0
+               position 1 1
+               size 400 235
+               hexactpos 1
+               vexactpos 1
+               hexactsize 1
+               vexactsize 1
+               color 0.133 0.094 0.106 1
+               style rover_sim_colorable
+               {
+                TextWidgetClass RecapHeader {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 18
+                 size 358 24
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.949 0.467 0.482 1
+                 text "#STR_BR_LASTMATCH_RECAP"
+                 font "gui/fonts/metron-bold16"
+                 "exact text" 1
+                 "exact text size" 16
+                 "text halign" left
+                 "text valign" center
+                }
+                TextWidgetClass RecapLine {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 48
+                 size 358 33
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.925 0.929 0.933 1
+                 text ""
+                 font "gui/fonts/metron-bold22"
+                 "exact text" 1
+                 "exact text size" 22
+                 "text halign" left
+                 "text valign" center
+                }
+                PanelWidgetClass WeaponChip {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 0 0
+                 size 120 33
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 1 1 1 0.07
+                 style rover_sim_colorable
+                 visible 0
+                 {
+                  TextWidgetClass WeaponChipText {
+                   ignorepointer 1
+                   inheritalpha 0
+                   position 0 0
+                   size 120 33
+                   hexactpos 1
+                   vexactpos 1
+                   hexactsize 1
+                   vexactsize 1
+                   color 0.788 0.804 0.82 1
+                   text ""
+                   font "gui/fonts/metron16"
+                   "exact text" 1
+                   "exact text size" 16
+                   "text halign" center
+                   "text valign" center
+                  }
+                 }
+                }
+                PanelWidgetClass DistanceChip {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 0 0
+                 size 120 33
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 1 1 1 0.07
+                 style rover_sim_colorable
+                 visible 0
+                 {
+                  TextWidgetClass DistanceChipText {
+                   ignorepointer 1
+                   inheritalpha 0
+                   position 0 0
+                   size 120 33
+                   hexactpos 1
+                   vexactpos 1
+                   hexactsize 1
+                   vexactsize 1
+                   color 0.788 0.804 0.82 1
+                   text ""
+                   font "gui/fonts/metron16"
+                   "exact text" 1
+                   "exact text size" 16
+                   "text halign" center
+                   "text valign" center
+                  }
+                 }
+                }
+                MultilineTextWidgetClass RecapDetail {
+                 ignorepointer 1
+                 inheritalpha 0
+                 position 21 135
+                 size 358 90
+                 hexactpos 1
+                 vexactpos 1
+                 hexactsize 1
+                 vexactsize 1
+                 color 0.608 0.631 0.651 1
+                 text ""
+                 font "gui/fonts/metron16"
+                 "exact text" 1
+                 "exact text size" 16
+                 "size to text h" 0
+                 "size to text v" 0
+                 "text halign" left
+                 "text valign" top
+                 wrap 1
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+          MultilineTextWidgetClass AsideNote {
+           ignorepointer 1
+           inheritalpha 0
+           position 42 36
+           size 402 150
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.608 0.631 0.651 1
+           text "#STR_BR_LASTMATCH_NOT_PLAYED"
+           font "gui/fonts/metron22"
+           "exact text" 1
+           "exact text size" 22
+           "size to text h" 0
+           "size to text v" 0
+           "text halign" left
+           "text valign" top
+           wrap 1
+          }
+          PanelWidgetClass AsideLine {
+           ignorepointer 1
+           inheritalpha 0
+           position 480 0
+           size 2 696
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 1 1 1 0.06
+           style rover_sim_colorable
+          }
+          FrameWidgetClass CardSquad {
+           ignorepointer 1
+           position 482 0
+           size 866 72
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           {
+            TextWidgetClass SquadHeader {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 0
+             size 300 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_YOUR_SQUAD"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass SquadKillsLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 200 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LASTMATCH_SQUAD_KILLS"
+             font "gui/fonts/metron16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass CardSquadKillsValue {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 80 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.925 0.929 0.933 1
+             text ""
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass SquadDamageLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 200 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LASTMATCH_SQUAD_DAMAGE"
+             font "gui/fonts/metron16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass CardSquadDamageValue {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 80 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.925 0.929 0.933 1
+             text ""
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass SquadBestLabel {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 200 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LASTMATCH_SQUAD_BEST"
+             font "gui/fonts/metron16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass CardSquadBestValue {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 0
+             size 80 72
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.925 0.929 0.933 1
+             text ""
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            PanelWidgetClass SquadLine {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 72
+             size 866 2
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 1 1 1 0.06
+             style rover_sim_colorable
+            }
+           }
+          }
+          FrameWidgetClass Standings {
+           ignorepointer 1
+           position 482 74
+           size 866 622
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           {
+            TextWidgetClass LastMatchHeaderPlace {
+             ignorepointer 1
+             inheritalpha 0
+             position 42 0
+             size 96 54
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_COL_PLACE"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass LastMatchHeaderPlayer {
+             ignorepointer 1
+             inheritalpha 0
+             position 138 0
+             size 314 54
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_COL_PLAYER"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" left
+             "text valign" center
+            }
+            TextWidgetClass LastMatchHeaderKills {
+             ignorepointer 1
+             inheritalpha 0
+             position 452 0
+             size 108 54
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_COL_KILLS"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" right
+             "text valign" center
+            }
+            TextWidgetClass LastMatchHeaderDamage {
+             ignorepointer 1
+             inheritalpha 0
+             position 560 0
+             size 132 54
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_COL_DAMAGE"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" right
+             "text valign" center
+            }
+            TextWidgetClass LastMatchHeaderSurvived {
+             ignorepointer 1
+             inheritalpha 0
+             position 692 0
+             size 132 54
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.502 0.525 0.549 1
+             text "#STR_BR_LASTMATCH_COL_SURVIVED"
+             font "gui/fonts/metron-bold16"
+             "exact text" 1
+             "exact text size" 16
+             "text halign" right
+             "text valign" center
+            }
+            PanelWidgetClass StandingsHeaderLine {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 54
+             size 866 2
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 1 1 1 0.06
+             style rover_sim_colorable
+            }
+            ScrollWidgetClass LastMatchScroll {
+             position 0 56
+             size 866 566
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             "Scrollbar V" 1
+             {
+              WrapSpacerWidgetClass LastMatchRows {
+               ignorepointer 1
+               position 0 0
+               size 1 57
+               hexactpos 1
+               vexactpos 1
+               hexactsize 0
+               vexactsize 1
+               "Size To Content V" 1
+              }
+             }
+            }
+            TextWidgetClass LastMatchEmpty {
+             ignorepointer 1
+             inheritalpha 0
+             position 0 56
+             size 866 200
+             hexactpos 1
+             vexactpos 1
+             hexactsize 1
+             vexactsize 1
+             color 0.608 0.631 0.651 1
+             text "#STR_BR_LASTMATCH_EMPTY"
+             font "gui/fonts/metron22"
+             "exact text" 1
+             "exact text size" 22
+             "text halign" center
+             "text valign" center
+             visible 0
+            }
+           }
+          }
+         }
         }
        }
       }
      }
     }
-
-    PanelWidgetClass LastMatchPanel {
-     visible 0
+    FrameWidgetClass Hints {
      ignorepointer 1
-     position 0 0
-     size 920 840
+     position 0 906
+     size 1350 33
      hexactpos 1
      vexactpos 1
      hexactsize 1
      vexactsize 1
-     color 1 1 1 1
      {
-      // The personal card. Hidden WHOLESALE when self_index is -1 - which is the common case in a
-      // lobby, since most people there connected after the restart and never played this match. A
-      // zeroed card would claim they placed #0 with no kills.
-      PanelWidgetClass CardRecap {
-       position 24 116
-       size 872 88
+      PanelWidgetClass HintSquadSwatch {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 10
+       size 12 12
        hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
-       color 0.14 0.04 0.04 0.55
-       style DayZDefaultPanel
+       color 0.239 0.725 0.651 1
+       style rover_sim_colorable
+       visible 0
+      }
+      TextWidgetClass HintSquadText {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 0
+       size 300 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_SPAWN_LEGEND_PARTY"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+       visible 0
+      }
+      PanelWidgetClass HintWheelKey {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 0
+       size 90 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 1 1 1 0.07
+       style rover_sim_colorable
        {
-        TextWidgetClass CardRecapHeader {
-         position 12 6
-         size 848 22
+        PanelWidgetClass HintWheelKeyBase {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 3
+         halign left_ref
+         valign bottom_ref
          hexactpos 1
          vexactpos 1
-         hexactsize 1
+         hexactsize 0
          vexactsize 1
-         style Bold
-         text "#STR_BR_LASTMATCH_RECAP"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
+         color 1 1 1 0.18
+         style rover_sim_colorable
         }
-        MultilineTextWidgetClass CardRecapText {
-         position 12 30
-         size 848 54
+        TextWidgetClass HintWheelKeyText {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 1
          hexactpos 1
          vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         color 0.85 0.78 0.62 1
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "size to text h" 0
-         "size to text v" 0
+         hexactsize 0
+         vexactsize 0
+         color 0.788 0.804 0.82 1
+         text "#STR_BR_SPAWN_KEY_WHEEL"
+         font "gui/fonts/metron-bold16"
+         "exact text" 1
+         "exact text size" 16
          "text halign" center
          "text valign" center
-         wrap 1
         }
        }
       }
-      PanelWidgetClass CardStats {
-       position 24 212
-       size 430 140
+      TextWidgetClass HintWheelText {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 0
+       size 200 33
        hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
-       color 0.08 0.08 0.08 0.55
-       style DayZDefaultPanel
-       {
-        TextWidgetClass CardStatsHeader {
-         position 12 6
-         size 406 22
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text "#STR_BR_LASTMATCH_YOUR_MATCH"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardPlacementLabel {
-         position 12 32
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_PLACEMENT"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardPlacementValue {
-         position 254 32
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardKillsLabel {
-         position 12 54
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_KILLS"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardKillsValue {
-         position 254 54
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardDamageLabel {
-         position 12 76
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_DAMAGE"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardDamageValue {
-         position 254 76
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardHitsLabel {
-         position 12 98
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_HITS"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardHitsValue {
-         position 254 98
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardTimeLabel {
-         position 12 116
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_TIME"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardTimeValue {
-         position 254 116
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-       }
-      }
-      // Hidden unless parties were actually in play AND the table arrived complete. The squad
-      // totals are summed client-side from the table, so a truncated table would silently produce a
-      // smaller, wrong figure - no figure beats a wrong one.
-      PanelWidgetClass CardSquad {
-       visible 0
-       position 466 212
-       size 430 140
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       color 0.08 0.08 0.08 0.55
-       style DayZDefaultPanel
-       {
-        TextWidgetClass CardSquadHeader {
-         position 12 6
-         size 406 22
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text "#STR_BR_LASTMATCH_YOUR_SQUAD"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardSquadKillsLabel {
-         position 12 36
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_SQUAD_KILLS"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardSquadKillsValue {
-         position 254 36
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardSquadDamageLabel {
-         position 12 62
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_SQUAD_DAMAGE"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardSquadDamageValue {
-         position 254 62
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardSquadBestLabel {
-         position 12 88
-         size 240 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         text "#STR_BR_LASTMATCH_SQUAD_BEST"
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-        TextWidgetClass CardSquadBestValue {
-         position 254 88
-         size 164 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         style Bold
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" right
-         "text valign" center
-        }
-        TextWidgetClass CardSquadMembers {
-         position 12 112
-         size 406 20
-         hexactpos 1
-         vexactpos 1
-         hexactsize 1
-         vexactsize 1
-         color 0.75 0.75 0.75 1
-         text ""
-         font "gui/fonts/metron"
-         "exact text" 0
-         "text halign" left
-         "text valign" center
-        }
-       }
-      }
-
-      TextWidgetClass LastMatchHeaderPlace {
-       position 32 366
-       size 60 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LASTMATCH_COL_PLACE"
-       font "gui/fonts/metron"
-       "exact text" 0
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_LB_SCROLL"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
        "text halign" left
        "text valign" center
       }
-      TextWidgetClass LastMatchHeaderPlayer {
-       position 100 366
-       size 300 24
+      PanelWidgetClass HintF4Key {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 0
+       size 54 33
        hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
-       style Bold
-       text "#STR_BR_LASTMATCH_COL_PLAYER"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" left
-       "text valign" center
-      }
-      TextWidgetClass LastMatchHeaderKills {
-       position 412 366
-       size 100 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LASTMATCH_COL_KILLS"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
-       "text valign" center
-      }
-      TextWidgetClass LastMatchHeaderDamage {
-       position 520 366
-       size 120 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LASTMATCH_COL_DAMAGE"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
-       "text valign" center
-      }
-      TextWidgetClass LastMatchHeaderSurvived {
-       position 650 366
-       size 186 24
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       style Bold
-       text "#STR_BR_LASTMATCH_COL_SURVIVED"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" right
-       "text valign" center
-      }
-      ScrollWidgetClass LastMatchScroll {
-       position 24 394
-       size 872 342
-       hexactpos 1
-       vexactpos 1
-       hexactsize 1
-       vexactsize 1
-       "Scrollbar V" 1
+       color 1 1 1 0.07
+       style rover_sim_colorable
        {
-        WrapSpacerWidgetClass LastMatchRows {
+        PanelWidgetClass HintF4KeyBase {
+         ignorepointer 1
+         inheritalpha 0
          position 0 0
-         size 1 26
+         size 1 3
+         halign left_ref
+         valign bottom_ref
          hexactpos 1
          vexactpos 1
          hexactsize 0
          vexactsize 1
-         "Size To Content V" 1
+         color 1 1 1 0.18
+         style rover_sim_colorable
+        }
+        TextWidgetClass HintF4KeyText {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 0
+         color 0.788 0.804 0.82 1
+         text "F4"
+         font "gui/fonts/metron-bold16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
         }
        }
       }
-      TextWidgetClass LastMatchEmpty {
-       visible 0
-       position 24 480
-       size 872 40
+      PanelWidgetClass HintEscKey {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 0
+       size 60 33
        hexactpos 1
        vexactpos 1
        hexactsize 1
        vexactsize 1
-       text "#STR_BR_LASTMATCH_EMPTY"
-       font "gui/fonts/metron"
-       "exact text" 0
-       "text halign" center
+       color 1 1 1 0.07
+       style rover_sim_colorable
+       {
+        PanelWidgetClass HintEscKeyBase {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 3
+         halign left_ref
+         valign bottom_ref
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 1
+         color 1 1 1 0.18
+         style rover_sim_colorable
+        }
+        TextWidgetClass HintEscKeyText {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 0
+         vexactsize 0
+         color 0.788 0.804 0.82 1
+         text "Esc"
+         font "gui/fonts/metron-bold16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      TextWidgetClass HintCloseText {
+       ignorepointer 1
+       inheritalpha 0
+       position 0 0
+       size 200 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_LEADERBOARD_CLOSE"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
        "text valign" center
       }
      }
-    }
-
-    ButtonWidgetClass CloseButton {
-     position 766 792
-     size 130 36
-     hexactpos 1
-     vexactpos 1
-     hexactsize 1
-     vexactsize 1
-     style Editor
-     text "#STR_BR_LEADERBOARD_CLOSE"
-     text_proportion 0.6
-     font "gui/fonts/metron"
     }
    }
   }
