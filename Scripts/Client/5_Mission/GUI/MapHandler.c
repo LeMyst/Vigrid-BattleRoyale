@@ -44,6 +44,11 @@ class BRMapHandler : ScriptedWidgetEventHandler
 		if (button != MouseState.LEFT)
 			return super.OnMouseButtonUp(w, x, y, button);
 
+		//--- The timer and side panel are children of the map, so their clicks bubble up here too.
+		//--- Only a click on the map itself selects.
+		if (w != m_Root)
+			return super.OnMouseButtonUp(w, x, y, button);
+
 		if (GetGame().GetTime() - last_click_on_map < BR_MAP_CLICK_DEBOUNCE_MS || v_StartClickPos != Vector(x, y, 0))
 		{
 			return super.OnMouseButtonUp(w, x, y, button);

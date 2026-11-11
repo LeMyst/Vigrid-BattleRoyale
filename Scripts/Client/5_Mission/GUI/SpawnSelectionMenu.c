@@ -23,7 +23,43 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	protected ref BRMapHandler m_MapMenuHandler;
 
 	protected MapWidget m_MapWidget;
-	protected TextWidget m_CountdownText;
+
+	//--- Timer: the number and its label are centred together by LayoutTimer, the bar drains.
+	protected Widget m_TimerInner;
+	protected TextWidget m_TimerNumber;
+	protected TextWidget m_TimerLabel;
+	protected Widget m_TimerBar;
+	protected int i_CountdownTotalMs;
+	protected int i_TimerLayoutFrames;
+
+	//--- "Your pick" card.
+	protected TextWidget m_PickName;
+	protected TextWidget m_PickCoords;
+
+	//--- Party member name tags, placed beside their markers.
+	protected ref array<Widget> m_MateTags = new array<Widget>();
+	protected ref array<TextWidget> m_MateTagTexts = new array<TextWidget>();
+
+	//--- Marker colours follow the role, not the server's per-slot colour: you, or a party member.
+	static const int BR_SPAWN_SELF_COLOR = 0xFFD99E29;
+	static const int BR_SPAWN_MATE_COLOR = 0xFF3DB9A6;
+	static const int BR_SPAWN_INK_COLOR = 0xFF111417;
+	static const int BR_SPAWN_ZONE_COLOR = 0xFF6E9BF5;
+
+	static const int BR_SPAWN_MATE_TAGS = 6;				//!< MateTag0..5 in the layout
+	static const float BR_SPAWN_TIMER_INNER_W = 598.0;		//!< TimerInner's declared width
+	static const int BR_OVAL_DASHED_MIN_SEGMENTS = 64;
+
+	//--- Other players' picks, one hue so it never reads as a hot zone (red) or the play area (blue).
+	static const int BR_HEAT_R = 176;
+	static const int BR_HEAT_G = 124;
+	static const int BR_HEAT_B = 240;
+
+	//--- Named places for the pick card, read once per world from CfgWorlds.
+	protected static ref array<string> s_PlaceNames;
+	protected static ref array<vector> s_PlacePos;
+	protected static ref array<float> s_PlaceRadius;
+	protected static string s_PlaceWorld;
 
 	protected CanvasWidget m_SpawnCanvas;
 
@@ -34,8 +70,10 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	protected vector v_FirstZoneCenter = "0 0 0";
 	protected float f_FirstZoneRadius = 0;
 
+	//--- Every confirmed pick this client is told about, its own included (m_SelfId).
 	protected ref map<string, vector> m_TeammateSpawnPoints = new map<string, vector>();
-	protected ref map<string, int> m_TeammateSpawnPointsColor = new map<string, int>();
+	protected ref map<string, string> m_TeammateNames = new map<string, string>();
+	protected string m_SelfId = "";
 
 	protected CanvasWidget m_HeatMapCanvas;
 	protected ref array<vector> m_HeatMapSpawnPoints = new array<vector>();
@@ -126,7 +164,24 @@ class SpawnSelectionMenu extends UIScriptedMenu
 
 		m_MapWidget = MapWidget.Cast(layoutRoot.FindAnyWidget("SpawnMap"));
 
-		m_CountdownText = TextWidget.Cast(layoutRoot.FindAnyWidget("CountdownText"));
+		m_TimerInner = layoutRoot.FindAnyWidget("TimerInner");
+		m_TimerNumber = TextWidget.Cast(layoutRoot.FindAnyWidget("TimerNumber"));
+		m_TimerLabel = TextWidget.Cast(layoutRoot.FindAnyWidget("TimerLabel"));
+		m_TimerBar = layoutRoot.FindAnyWidget("TimerBar");
+		m_PickName = TextWidget.Cast(layoutRoot.FindAnyWidget("PickName"));
+		m_PickCoords = TextWidget.Cast(layoutRoot.FindAnyWidget("PickCoords"));
+
+		for (int tag_index = 0; tag_index < BR_SPAWN_MATE_TAGS; tag_index++)
+		{
+			Widget mate_tag = layoutRoot.FindAnyWidget("MateTag" + tag_index);
+			if (!mate_tag)
+				break;
+
+			m_MateTags.Insert(mate_tag);
+			m_MateTagTexts.Insert(TextWidget.Cast(layoutRoot.FindAnyWidget("MateTag" + tag_index + "Text")));
+		}
+
+		BuildPlaceCache();
 
 		if (m_MapWidget)
 		{
@@ -153,6 +208,14 @@ class SpawnSelectionMenu extends UIScriptedMenu
         super.Update(timeslice);
 
 		UpdateCountdownText();
+		UpdateTimerBar();
+
+		//--- GetTextSize lags a SetText, so the centring runs for a few frames after each change.
+		if (i_TimerLayoutFrames > 0)
+		{
+			i_TimerLayoutFrames--;
+			LayoutTimer();
+		}
 
 		if (!m_MapWidget || !m_SpawnCanvas)
 			return;
@@ -236,13 +299,11 @@ class SpawnSelectionMenu extends UIScriptedMenu
 #endif
 
 	/**
-	 * Refreshes the countdown label, but only when the displayed second actually
-	 * changes -- the original rebuilt a StringLocaliser and re-set the text on
-	 * every frame for a value that ticks once a second.
+	 * Refreshes the number and its label, but only when the displayed second changes.
 	 */
 	protected void UpdateCountdownText()
 	{
-		if (!m_CountdownText)
+		if (!m_TimerNumber || !m_TimerLabel)
 			return;
 
 		//--- 1000.0, not 1000: int division truncates before Ceil sees it, losing up to 999 ms.
@@ -258,50 +319,203 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			return;
 
 		i_PreviousDisplayedSecond = displayed_second;
+		i_TimerLayoutFrames = 4;
 
-		StringLocaliser message;
 		if (time_left >= 1)
 		{
+			m_TimerNumber.Show(true);
+			m_TimerNumber.SetText(displayed_second.ToString());
+
 			if (time_left > 1)
-			{
-				message = new StringLocaliser("STR_BR_TIMER_SPAWN_SELECTION_SECONDS");
-			} else {
-				message = new StringLocaliser("STR_BR_TIMER_SPAWN_SELECTION_SECOND");
-			}
-			message.Set(0, time_left);  // replace the first parameter with the time left in seconds
-			m_CountdownText.SetText(message.Format());
-		} else {
-			message = new StringLocaliser("STR_BR_TIME_TO_DEPLOY");
-			m_CountdownText.SetText(message.Format());
+				m_TimerLabel.SetText("#STR_BR_TIMER_SPAWN_SELECTION_SECONDS");
+			else
+				m_TimerLabel.SetText("#STR_BR_TIMER_SPAWN_SELECTION_SECOND");
+		}
+		else
+		{
+			m_TimerNumber.Show(false);
+			m_TimerLabel.SetText("#STR_BR_TIME_TO_DEPLOY");
 		}
 	}
 
+	//! The bar under the timer, as the share of the window still left. Every frame: it is one SetSize.
+	protected void UpdateTimerBar()
+	{
+		if (!m_TimerBar || !m_TimerInner)
+			return;
+
+		float inner_w, inner_h;
+		m_TimerInner.GetScreenSize(inner_w, inner_h);
+		if (inner_w <= 0)
+			return;
+
+		float frac = 0;
+		if (i_CountdownTotalMs > 0)
+			frac = Math.Clamp((i_CountdownEnd - GetGame().GetTime()) / (float)i_CountdownTotalMs, 0, 1);
+
+		float s = inner_w / BR_SPAWN_TIMER_INNER_W;
+		m_TimerBar.SetSize(inner_w * frac, 6 * s);
+	}
+
+	//! Centre the number and the label as one group: their widths change with the second and the language.
+	protected void LayoutTimer()
+	{
+		if (!m_TimerInner || !m_TimerNumber || !m_TimerLabel)
+			return;
+
+		float inner_w, inner_h;
+		m_TimerInner.GetScreenSize(inner_w, inner_h);
+		if (inner_w <= 0)
+			return;
+
+		float s = inner_w / BR_SPAWN_TIMER_INNER_W;
+
+		int number_w = 0;
+		int number_h = 0;
+		int label_w = 0;
+		int label_h = 0;
+		m_TimerNumber.GetTextSize(number_w, number_h);
+		m_TimerLabel.GetTextSize(label_w, label_h);
+
+		float gap = 18 * s;
+		if (!m_TimerNumber.IsVisible() || number_w <= 0)
+		{
+			number_w = 0;
+			gap = 0;
+		}
+
+		float x = (inner_w - (number_w + gap + label_w)) / 2;
+		if (x < 0)
+			x = 0;
+
+		m_TimerNumber.SetPos(x, 8 * s);
+		m_TimerNumber.SetSize(number_w + 2, 72 * s);
+		m_TimerLabel.SetPos(x + number_w + gap, 8 * s);
+		m_TimerLabel.SetSize(label_w + 2, 72 * s);
+	}
+
 	/**
-	 * Draws the teammate spawn markers and the first zone onto the marker canvas.
-	 * Only ever a handful of ovals, so this still converts through MapToScreen.
+	 * Draws the hot zones, the play area and every pick onto the marker canvas, and places the party
+	 * name tags. Only ever a handful of shapes, so this still converts through MapToScreen.
 	 */
 	protected void RenderMarkers()
 	{
 		m_SpawnCanvas.Clear();
 
-		// Hot zones first, so the teammate markers and the first-zone ring draw over
-		// them. They are the only filled shape on this canvas, and a fill laid over a
-		// marker would swallow it.
+		// Hot zones first, so the markers and the play-area ring draw over them. They are the only
+		// filled world shape on this canvas, and a fill laid over a marker would swallow it.
 		RenderHotZones();
 
-		// Show the teammates zones
+		if(v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
+			WorldRenderOval(m_SpawnCanvas, m_MapWidget, v_FirstZoneCenter[0], v_FirstZoneCenter[2], f_FirstZoneRadius, f_FirstZoneRadius, BR_SPAWN_ZONE_COLOR, 0, true, 3);
+
+		float root_w, root_h;
+		layoutRoot.GetScreenSize(root_w, root_h);
+		float s = 1;
+		if (root_w > 0)
+			s = root_w / 1920.0;
+
+		float map_x, map_y;
+		m_MapWidget.GetScreenPos(map_x, map_y);
+
+		int used_tags = 0;
 		foreach (string playerId, vector spawn_point : m_TeammateSpawnPoints)
 		{
-			if (playerId)
+			if (!playerId)
+				continue;
+
+			bool is_self = (playerId == m_SelfId);
+			int color = BR_SPAWN_MATE_COLOR;
+			if (is_self)
+				color = BR_SPAWN_SELF_COLOR;
+
+			// The area the server scatters the spawn over, then a fixed-size marker that stays
+			// visible at any zoom.
+			WorldRenderOval(m_SpawnCanvas, m_MapWidget, spawn_point[0], spawn_point[2], spawn_size, spawn_size, color);
+
+			vector marker_screen = m_MapWidget.MapToScreen(Vector(spawn_point[0], 0, spawn_point[2]));
+			float cx = marker_screen[0] - map_x;
+			float cy = marker_screen[1] - map_y;
+
+			if (is_self)
 			{
-				WorldRenderOval(m_SpawnCanvas, m_MapWidget, spawn_point[0], spawn_point[2], spawn_size, spawn_size, m_TeammateSpawnPointsColor.Get(playerId));
+				RenderFilledDisc(m_SpawnCanvas, cx, cy, 12 * s, BR_SPAWN_INK_COLOR);
+				RenderFilledDisc(m_SpawnCanvas, cx, cy, 9 * s, color);
+				RenderFilledDisc(m_SpawnCanvas, cx, cy, 3 * s, BR_SPAWN_INK_COLOR);
+				continue;
+			}
+
+			RenderFilledRect(m_SpawnCanvas, cx - (9 * s), cy - (9 * s), cx + (9 * s), cy + (9 * s), BR_SPAWN_INK_COLOR);
+			RenderFilledRect(m_SpawnCanvas, cx - (6 * s), cy - (6 * s), cx + (6 * s), cy + (6 * s), color);
+
+			if (used_tags < m_MateTags.Count())
+			{
+				PlaceMateTag(used_tags, m_TeammateNames.Get(playerId), cx + (15 * s), cy - (15 * s), s);
+				used_tags++;
 			}
 		}
 
-		// Show the first zone
-		if(v_FirstZoneCenter != "0 0 0" && f_FirstZoneRadius > 0)
+		for (int i = used_tags; i < m_MateTags.Count(); i++)
 		{
-			WorldRenderOval(m_SpawnCanvas, m_MapWidget, v_FirstZoneCenter[0], v_FirstZoneCenter[2], f_FirstZoneRadius, f_FirstZoneRadius, ARGB(255, 255, 255, 255));
+			Widget unused_tag = m_MateTags[i];
+			if (unused_tag)
+				unused_tag.Show(false);
+		}
+	}
+
+	//! A party member's name beside their marker, in SpawnMap's own coordinates (the tags are its
+	//! children). Sized from the text, which lags a SetText by a frame - the repaint watchdog
+	//! corrects the first width.
+	protected void PlaceMateTag(int slot, string mate_name, float x, float y, float s)
+	{
+		Widget mate_tag = m_MateTags[slot];
+		TextWidget mate_text = m_MateTagTexts[slot];
+		if (!mate_tag || !mate_text)
+			return;
+
+		mate_text.SetText(mate_name);
+
+		int text_w = 0;
+		int text_h = 0;
+		mate_text.GetTextSize(text_w, text_h);
+
+		float tag_w = 160 * s;
+		if (text_w > 0)
+			tag_w = text_w + (18 * s);
+
+		mate_tag.SetPos(x, y);
+		mate_tag.SetSize(tag_w, 30 * s);
+		mate_text.SetPos(9 * s, 0);
+		mate_text.SetSize(text_w + 2, 30 * s);
+		mate_tag.Show(true);
+	}
+
+	//! A screen-space filled disc, in bands like RenderFilledRect.
+	protected void RenderFilledDisc(CanvasWidget canvas, float cx, float cy, float radius, int color)
+	{
+		if (radius <= 0)
+			return;
+
+		float height = 2 * radius;
+		float step = height;
+		if (HEATMAP_FILL_MAX_STROKE > 0)
+			step = Math.Min(height, HEATMAP_FILL_MAX_STROKE);
+
+		int rows = Math.Ceil(height / step);
+		if (rows < 1)
+			rows = 1;
+
+		float band = height / rows;
+		for (int r = 0; r < rows; r++)
+		{
+			float y = (cy - radius) + (band * (r + 0.5));
+			float dy = (y - cy) / radius;
+			float span = 1 - (dy * dy);
+			if (span <= 0)
+				continue;
+
+			float half_w = radius * Math.Sqrt(span);
+			canvas.DrawLine(cx - half_w, y, cx + half_w, y, band, color);
 		}
 	}
 
@@ -460,7 +674,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		int grid_x, grid_z, packed_key, existing_density;
 		float world_x, world_z;
 		float intensity, surroundIntensity;
-		int capped_density, r, b, alpha, color, surroundColor;
+		int capped_density, alpha, color, surroundColor;
 		int offset, dx, dz;
 
 		// Create a grid data structure to count spawn points in each cell
@@ -511,16 +725,10 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			// Add degraded effect to surrounding cells
 			for (offset = 2; offset >= 1; offset--)
 			{
-				// Calculate alpha for surrounding cells (50-100 based on offset)
-				alpha = 50 * (3 - offset);
-
-				// Calculate color intensity for surrounding (reduced by distance)
+				// Density fades with distance from the cell, and the ring further out is fainter still.
 				surroundIntensity = intensity * (1 - (offset * 0.3));
-
-				// Calculate RGB values - blue (low) to red (high) gradient
-				r = Math.Round(surroundIntensity * 255);
-				b = Math.Round((1 - surroundIntensity) * 255);
-				surroundColor = ARGB(alpha, r, 0, b);
+				alpha = Math.Round((25 + (75 * surroundIntensity)) * (3 - offset) / 2.0);
+				surroundColor = ARGB(alpha, BR_HEAT_R, BR_HEAT_G, BR_HEAT_B);
 
 				// Queue surrounding cells in a ring pattern
 				for (dx = -offset; dx <= offset; dx++)
@@ -557,10 +765,9 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			// Calculate color intensity (0.0 to 1.0)
 			intensity = capped_density / (float)HEATMAP_MAX_DENSITY;
 
-			// Calculate RGB values - blue (low) to red (high) gradient
-			r = Math.Round(intensity * 255);
-			b = Math.Round((1 - intensity) * 255);
-			color = ARGB(150, r, 0, b);
+			// One hue, as the legend's ramp: alpha carries the density.
+			alpha = 60 + Math.Round(intensity * 140);
+			color = ARGB(alpha, BR_HEAT_R, BR_HEAT_G, BR_HEAT_B);
 
 			// Queue the primary cell
 			m_HeatMapCells.Insert(new BRHeatCell(world_x, world_z, color));
@@ -595,6 +802,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 	void SetInitialCountdown(int countdown)
 	{
 		i_CountdownEnd = GetGame().GetTime() + (countdown * 1000);
+		i_CountdownTotalMs = countdown * 1000;
 
 		// Force the label to repaint on the next frame rather than waiting for the
 		// second to roll over, in case the countdown is pushed mid-window.
@@ -805,7 +1013,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		GetRPCManager().SendRPC( RPC_DAYZBRSERVER_NAMESPACE, "OnPlayerSpawnSelected", new Param1<vector>( spawnPosition ), true );
 	}
 
-	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1, int fill_color = 0)
+	void WorldRenderOval(CanvasWidget canvas, MapWidget world_map, float world_x, float world_z, float radius_x, float radius_z, int color = -1, int fill_color = 0, bool dashed = false, float line_width = 2)
 	{
 		if (!world_map || radius_x <= 0 || radius_z <= 0 || !canvas)
 		{
@@ -883,10 +1091,17 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		if (segments > BR_OVAL_MAX_SEGMENTS)
 			segments = BR_OVAL_MAX_SEGMENTS;
 
+		//--- Dashed: every other segment, with enough of them that a dash stays short.
+		if (dashed && segments < BR_OVAL_DASHED_MIN_SEGMENTS)
+			segments = BR_OVAL_DASHED_MIN_SEGMENTS;
+
 		float angleIncrement = 360.0 / segments;
 
 		for(int i = 0; i < segments; i++)
 		{
+			if (dashed && (i % 2) == 1)
+				continue;
+
 			float angle1 = i * angleIncrement;
 			float angle2 = (i + 1) * angleIncrement;
 
@@ -896,7 +1111,7 @@ class SpawnSelectionMenu extends UIScriptedMenu
 			float x2 = cx + (screenWidth * Math.Cos(angle2 * Math.DEG2RAD));
 			float y2 = cy + (screenHeight * Math.Sin(angle2 * Math.DEG2RAD));
 
-			canvas.DrawLine(x1, y1, x2, y2, 2, color);
+			canvas.DrawLine(x1, y1, x2, y2, line_width, color);
 		}
 	}
 
@@ -907,25 +1122,127 @@ class SpawnSelectionMenu extends UIScriptedMenu
 		b_HeatMapCacheDirty = true;
 	}
 
+	//! The server's ShowSpawnPoint. Its colour is the party slot's; this screen colours by role instead.
 	void SetTeammateSpawnPoint(PlayerBase player, vector pos, int color)
 	{
-		BattleRoyaleUtils.Trace("SpawnSelectionMenu::SetTeammateSpawnPoint");
-		if (player && player.GetIdentity() && player.GetIdentity().GetId())
+		if (!player || !player.GetIdentity() || !player.GetIdentity().GetId())
+			return;
+
+		bool is_self = (player == GetGame().GetPlayer());
+		SetSpawnMarker(player.GetIdentity().GetId(), player.GetIdentity().GetName(), pos, is_self);
+	}
+
+	void SetSpawnMarker(string id, string display_name, vector pos, bool is_self)
+	{
+		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu::SetSpawnMarker %1 self=%2 %3", display_name, is_self, pos));
+
+		m_TeammateSpawnPoints.Set(id, pos);
+		m_TeammateNames.Set(id, display_name);
+
+		if (is_self)
 		{
-			string playerId = player.GetIdentity().GetId();
-
-			BattleRoyaleUtils.Trace(string.Format("Player: %1", player.GetIdentity().GetName()));
-			if (m_TeammateSpawnPoints.Contains(playerId))
-			{
-				BattleRoyaleUtils.Trace(string.Format("Player already in map: %1", player.GetIdentity().GetName()));
-				m_TeammateSpawnPoints.Set(playerId, pos);
-			} else {
-				BattleRoyaleUtils.Trace(string.Format("Player not in map: %1", player.GetIdentity().GetName()));
-				m_TeammateSpawnPoints.Insert(playerId, pos);
-			}
-			m_TeammateSpawnPointsColor.Set(playerId, color);
-
-			b_RenderDirty = true;
+			m_SelfId = id;
+			UpdatePickCard(pos);
 		}
+
+		b_RenderDirty = true;
+	}
+
+	protected void UpdatePickCard(vector pos)
+	{
+		if (m_PickName)
+			m_PickName.SetText(DescribePlace(pos));
+
+		if (m_PickCoords)
+		{
+			int grid_x = Math.Round(pos[0]);
+			int grid_z = Math.Round(pos[2]);
+			m_PickCoords.SetText(string.Format("%1 / %2", grid_x, grid_z));
+		}
+	}
+
+	//! The nearest named place whose reach covers pos, or "open ground".
+	string DescribePlace(vector pos)
+	{
+		BuildPlaceCache();
+
+		string best = "#STR_BR_SPAWN_OPEN_GROUND";
+		float best_ratio = 1;
+
+		for (int i = 0; i < s_PlaceNames.Count(); i++)
+		{
+			vector place = s_PlacePos[i];
+			float reach = s_PlaceRadius[i];
+
+			float dx = pos[0] - place[0];
+			float dz = pos[2] - place[2];
+			float ratio = Math.Sqrt((dx * dx) + (dz * dz)) / reach;
+
+			if (ratio < best_ratio)
+			{
+				best_ratio = ratio;
+				best = s_PlaceNames[i];
+			}
+		}
+
+		return best;
+	}
+
+	protected static void BuildPlaceCache()
+	{
+		string world = GetGame().GetWorldName();
+		if (s_PlaceNames && s_PlaceWorld == world)
+			return;
+
+		s_PlaceWorld = world;
+		s_PlaceNames = new array<string>();
+		s_PlacePos = new array<vector>();
+		s_PlaceRadius = new array<float>();
+
+		string cfg = "CfgWorlds " + world + " Names";
+		int total = GetGame().ConfigGetChildrenCount(cfg);
+		for (int i = 0; i < total; i++)
+		{
+			string child;
+			GetGame().ConfigGetChildName(cfg, i, child);
+
+			string path = cfg + " " + child;
+			float reach = PlaceReach(GetGame().ConfigGetTextOut(path + " type"));
+			if (reach <= 0)
+				continue;
+
+			TFloatArray raw = {};
+			GetGame().ConfigGetFloatArray(path + " position", raw);
+			if (raw.Count() < 2)
+				continue;
+
+			string place_name = GetGame().ConfigGetTextOut(path + " name");
+			if (place_name == "")
+				continue;
+
+			//--- A stringtable reference in config is "$STR_..."; widgets want "#STR_...".
+			if (place_name.IndexOf("$") == 0)
+				place_name = Widget.TranslateString("#" + place_name.Substring(1, place_name.Length() - 1));
+
+			s_PlaceNames.Insert(place_name);
+			s_PlacePos.Insert(Vector(raw.Get(0), 0, raw.Get(1)));
+			s_PlaceRadius.Insert(reach);
+		}
+
+		BattleRoyaleUtils.Trace(string.Format("SpawnSelectionMenu: %1 named places on %2", s_PlaceNames.Count(), world));
+	}
+
+	//! How far a place's name carries, by CfgWorlds type. 0 = never named (hills, viewpoints, offices).
+	protected static float PlaceReach(string place_type)
+	{
+		if (place_type == "Capital")
+			return 900;
+		if (place_type == "City")
+			return 700;
+		if (place_type == "Village")
+			return 450;
+		if (place_type == "Local" || place_type == "Camp" || place_type == "Ruin" || place_type == "Marine" || place_type == "RailroadStation")
+			return 300;
+		return 0;
 	}
 }

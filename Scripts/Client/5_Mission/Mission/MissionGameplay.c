@@ -256,6 +256,21 @@ modded class MissionGameplay
 		diag_menu.SetInitialCountdown(45);
 		diag_menu.SetSpawnSize(50);
 		diag_menu.SetFirstZone(Vector(6000, 0, 7777), 1500);
+
+		//--- A pick of our own, two party members and a few clusters of other picks, as the server
+		//--- would push them (ShowSpawnPoint, UpdateHeatMap).
+		diag_menu.SetSpawnMarker("diag_self", "You", Vector(6070, 0, 7720), true);
+		diag_menu.SetSpawnMarker("diag_mate1", "Kestrel", Vector(6260, 0, 7560), false);
+		diag_menu.SetSpawnMarker("diag_mate2", "Pike", Vector(7050, 0, 7650), false);
+
+		array<vector> diag_heat = new array<vector>();
+		for (int h = 0; h < 6; h++)
+			diag_heat.Insert(Vector(6100 + (h * 30), 0, 7700 - (h * 20)));
+		for (h = 0; h < 4; h++)
+			diag_heat.Insert(Vector(7100 + (h * 40), 0, 7640));
+		for (h = 0; h < 2; h++)
+			diag_heat.Insert(Vector(5300, 0, 8200 + (h * 60)));
+		diag_menu.UpdateHeatMap(diag_heat);
 	}
 #endif
 
