@@ -70,6 +70,7 @@ modded class PluginDiagMenu
 	protected int m_BRDiagOpenWinScreenID;
 	protected int m_BRDiagWinVariantID;
 	protected int m_BRDiagDeathVariantID;
+	protected int m_BRDiagDeathKillID;
 	protected int m_BRDiagPushToastsID;
 	protected int m_BRDiagFadeID;
 
@@ -184,6 +185,7 @@ modded class PluginDiagMenu
 		m_BRDiagOpenWinScreenID = GetModdedDiagID();
 		m_BRDiagWinVariantID = GetModdedDiagID();
 		m_BRDiagDeathVariantID = GetModdedDiagID();
+		m_BRDiagDeathKillID = GetModdedDiagID();
 		m_BRDiagPushToastsID = GetModdedDiagID();
 		m_BRDiagFadeID = GetModdedDiagID();
 
@@ -344,6 +346,7 @@ modded class PluginDiagMenu
 				DiagMenu.RegisterBool(m_BRDiagLastMatchNotPlayedID, "", "Did Not Play", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenDeathScreenID, "", "Open Death Screen", m_BRDiagHudMenuID);
 				DiagMenu.RegisterItem(m_BRDiagDeathVariantID, "", "Death Variant", m_BRDiagHudMenuID, "Spectate Offer,No Offer,Offer + Admin");
+				DiagMenu.RegisterBool(m_BRDiagDeathKillID, "", "Death: Real Kill", m_BRDiagHudMenuID);
 				DiagMenu.RegisterBool(m_BRDiagOpenWinScreenID, "", "Open Win Screen", m_BRDiagHudMenuID);
 				DiagMenu.RegisterItem(m_BRDiagWinVariantID, "", "Win Variant", m_BRDiagHudMenuID, "Squad,Solo,Next Match,No Stats");
 				//--- Toasts, which are otherwise unreachable offline - every real one is a server

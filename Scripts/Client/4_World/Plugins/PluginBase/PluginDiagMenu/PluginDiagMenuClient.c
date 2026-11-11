@@ -72,6 +72,7 @@ modded class PluginDiagMenuClient
 		DiagMenu.BindCallback(m_BRDiagOpenWinScreenID, CBBRDiagOpenWinScreen);
 		DiagMenu.BindCallback(m_BRDiagWinVariantID, CBBRDiagWinVariant);
 		DiagMenu.BindCallback(m_BRDiagDeathVariantID, CBBRDiagDeathVariant);
+		DiagMenu.BindCallback(m_BRDiagDeathKillID, CBBRDiagDeathKill);
 		DiagMenu.BindCallback(m_BRDiagPushToastsID, CBBRDiagPushToasts);
 		DiagMenu.BindCallback(m_BRDiagFadeID, CBBRDiagFade);
 
@@ -481,8 +482,9 @@ modded class PluginDiagMenuClient
 
 		//--- Offline the local player never dies, and DeathScreenMenu.Tick() closes itself on
 		//--- IsAlive(). Without this the screen shuts on its first tick and looks like a layout that
-		//--- failed to load.
-		BattleRoyaleDiag.suppress_alive_close = true;
+		//--- failed to load. A real kill needs the guard live again.
+		bool real_kill = BattleRoyaleDiag.death_kill_player;
+		BattleRoyaleDiag.suppress_alive_close = !real_kill;
 
 		//--- Everything the screen paints, written exactly as ShowDeadScreen, SetLastMatchRecap and
 		//--- SetDeathStats would. The cause comes from "Recap Cause", shared with the Last Match fixture.
@@ -525,7 +527,18 @@ modded class PluginDiagMenuClient
 		br_rpc.spectate_offered = ( BattleRoyaleDiag.death_variant != 1 );
 		br_rpc.is_admin = ( BattleRoyaleDiag.death_variant == 2 );
 
-		BattleRoyaleDiag.req_open_death_screen = BattleRoyaleDiag.req_open_death_screen + 1;
+		//--- Real kill: ShowDeadScreen rewrites the placement (from position_top) and the flavour,
+		//--- then opens the menu itself, death darkening and muted sound included.
+		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+		if ( real_kill && player && player.IsAlive() )
+		{
+			player.position_top = 7;
+			player.SetHealth( "", "", 0 );
+		}
+		else
+		{
+			BattleRoyaleDiag.req_open_death_screen = BattleRoyaleDiag.req_open_death_screen + 1;
+		}
 		DiagMenu.SetValue(id, false);
 	}
 
@@ -536,6 +549,11 @@ modded class PluginDiagMenuClient
 
 		BattleRoyaleDiag.req_open_win_screen = BattleRoyaleDiag.req_open_win_screen + 1;
 		DiagMenu.SetValue(id, false);
+	}
+
+	static void CBBRDiagDeathKill(bool enabled)
+	{
+		BattleRoyaleDiag.death_kill_player = enabled;
 	}
 
 	static void CBBRDiagDeathVariant(int value)
