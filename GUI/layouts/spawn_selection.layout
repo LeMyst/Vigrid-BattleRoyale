@@ -1,46 +1,32 @@
+// Spawn selection. Generated layout, driven by SpawnSelectionMenu.
+// Lengths in 1920-wide reference units: declared geometry is scaled by viewport/1920.
+// Everything drawn over the map is DECLARED as a child of SpawnMap: nothing else renders over a
+// MapWidget (Docs/map.md).
 FrameWidgetClass ContainerWidget {
  clipchildren 0
- color 0.7843 0.7843 0.7843 1
  position 0 0
  size 1 1
- halign center_ref
- valign center_ref
  hexactpos 0
  vexactpos 0
  hexactsize 0
  vexactsize 0
  priority 50
  {
-  WindowWidgetClass WindowWidget {
+  MapWidgetClass SpawnMap {
    visible 1
-   color 1 0.7843 1 1
+   clipchildren 1
+   inheritalpha 0
    position 0 0
    size 1 1
-   halign center_ref
-   valign center_ref
    hexactpos 0
    vexactpos 0
    hexactsize 0
    vexactsize 0
-   style rover_sim_black
+   scriptclass ""
    {
-    PanelWidgetClass Background {
+    CanvasWidgetClass CanvasSpawnMap {
      visible 1
-     clipchildren 0
-     color 0.2549 0.502 0.0118 0
-     position 0 0
-     size 1 1
-     hexactpos 1
-     vexactpos 1
-     hexactsize 0
-     vexactsize 0
-     draggable 0
-     style rover_sim_colorable
-    }
-    PanelWidgetClass BackPanelWidget {
-     visible 1
-     disabled 0
-     color 0.4706 0.4706 0.4706 1
+     ignorepointer 1
      position 0 0
      size 1 1
      halign center_ref
@@ -49,61 +35,1094 @@ FrameWidgetClass ContainerWidget {
      vexactpos 0
      hexactsize 0
      vexactsize 0
-     style rover_sim_black
+     priority 1000
+    }
+    CanvasWidgetClass CanvasHeatmap {
+     visible 1
+     ignorepointer 1
+     position 0 0
+     size 1 1
+     halign center_ref
+     valign center_ref
+     hexactpos 0
+     vexactpos 0
+     hexactsize 0
+     vexactsize 0
+     priority 999
+    }
+    PanelWidgetClass MateTag0 {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 160 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.067 0.078 0.09 0.85
+     style rover_sim_colorable
+     visible 0
+     priority 1100
      {
-      TextWidgetClass CountdownText {
+      TextWidgetClass MateTag0Text {
        ignorepointer 1
-       position 0 0.02
-       size 0.96 0.048
-       halign center_ref
-       hexactpos 0
-       vexactpos 0
-       hexactsize 0
-       vexactsize 0
-       text "#STR_BR_TIMER_SPAWN_SELECTION_SECONDS"
-       "size to text h" 1
-       "size to text v" 0
-      }
-      MapWidgetClass SpawnMap {
-       visible 1
-       clipchildren 1
        inheritalpha 0
-       position 0 0.1
-       size 0.96 0.86
-       halign center_ref
-       hexactpos 0
-       vexactpos 0
-       hexactsize 0
-       vexactsize 0
-       scriptclass ""
+       position 9 0
+       size 142 30
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.361 0.827 0.753 1
+       text ""
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass MateTag1 {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 160 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.067 0.078 0.09 0.85
+     style rover_sim_colorable
+     visible 0
+     priority 1100
+     {
+      TextWidgetClass MateTag1Text {
+       ignorepointer 1
+       inheritalpha 0
+       position 9 0
+       size 142 30
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.361 0.827 0.753 1
+       text ""
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass MateTag2 {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 160 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.067 0.078 0.09 0.85
+     style rover_sim_colorable
+     visible 0
+     priority 1100
+     {
+      TextWidgetClass MateTag2Text {
+       ignorepointer 1
+       inheritalpha 0
+       position 9 0
+       size 142 30
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.361 0.827 0.753 1
+       text ""
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass MateTag3 {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 160 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.067 0.078 0.09 0.85
+     style rover_sim_colorable
+     visible 0
+     priority 1100
+     {
+      TextWidgetClass MateTag3Text {
+       ignorepointer 1
+       inheritalpha 0
+       position 9 0
+       size 142 30
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.361 0.827 0.753 1
+       text ""
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass MateTag4 {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 160 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.067 0.078 0.09 0.85
+     style rover_sim_colorable
+     visible 0
+     priority 1100
+     {
+      TextWidgetClass MateTag4Text {
+       ignorepointer 1
+       inheritalpha 0
+       position 9 0
+       size 142 30
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.361 0.827 0.753 1
+       text ""
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass MateTag5 {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 160 30
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     color 0.067 0.078 0.09 0.85
+     style rover_sim_colorable
+     visible 0
+     priority 1100
+     {
+      TextWidgetClass MateTag5Text {
+       ignorepointer 1
+       inheritalpha 0
+       position 9 0
+       size 142 30
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.361 0.827 0.753 1
+       text ""
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+     }
+    }
+    PanelWidgetClass TimerPanel {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 36
+     size 600 96
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 1
+     halign center_ref
+     priority 1200
+     color 1 1 1 0.08
+     style rover_sim_colorable
+     {
+      PanelWidgetClass TimerInner {
+       ignorepointer 1
+       inheritalpha 0
+       position 1 1
+       size 598 94
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.067 0.078 0.09 0.94
+       style rover_sim_colorable
        {
-        CanvasWidgetClass CanvasSpawnMap {
-         visible 1
+        TextWidgetClass TimerNumber {
          ignorepointer 1
-         position 0 0
-         size 1 1
-         halign center_ref
-         valign center_ref
-         hexactpos 0
-         vexactpos 0
-         hexactsize 0
-         vexactsize 0
-         priority 1000
+         inheritalpha 0
+         position 0 8
+         size 120 72
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.941 0.722 0.29 1
+         text ""
+         font "gui/fonts/metron-bold48"
+         "exact text" 1
+         "exact text size" 48
+         "text halign" left
+         "text valign" center
         }
-        CanvasWidgetClass CanvasHeatmap {
-         visible 1
+        TextWidgetClass TimerLabel {
          ignorepointer 1
-         position 0 0
-         size 1 1
-         halign center_ref
-         valign center_ref
-         hexactpos 0
-         vexactpos 0
-         hexactsize 0
-         vexactsize 0
-         priority 999
+         inheritalpha 0
+         position 0 8
+         size 560 72
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         text ""
+         font "gui/fonts/metron22"
+         "exact text" 1
+         "exact text size" 22
+         "text halign" left
+         "text valign" center
+        }
+        PanelWidgetClass TimerBarBack {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 88
+         size 598 6
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.08
+         style rover_sim_colorable
+        }
+        PanelWidgetClass TimerBar {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 88
+         size 598 6
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.851 0.62 0.161 1
+         style rover_sim_colorable
         }
        }
+      }
+     }
+    }
+    PanelWidgetClass SidePanel {
+     ignorepointer 0
+     inheritalpha 0
+     position 36 0.0333
+     size 450 0.9333
+     hexactpos 1
+     vexactpos 0
+     hexactsize 1
+     vexactsize 0
+     priority 1200
+     color 0.067 0.078 0.09 0.94
+     style rover_sim_colorable
+     {
+      TextWidgetClass SpawnTitle {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 33
+       size 384 36
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.925 0.929 0.933 1
+       text "#STR_BR_SPAWN_TITLE"
+       font "gui/fonts/metron-bold28"
+       "exact text" 1
+       "exact text size" 28
+       "text halign" left
+       "text valign" center
+      }
+      MultilineTextWidgetClass SpawnHint {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 81
+       size 384 96
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_SPAWN_HINT"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "size to text h" 0
+       "size to text v" 0
+       "text halign" left
+       "text valign" top
+       wrap 1
+      }
+      PanelWidgetClass PickCard {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 195
+       size 384 111
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 1 1 1 0.06
+       style rover_sim_colorable
+       {
+        PanelWidgetClass PickCardInner {
+         ignorepointer 1
+         inheritalpha 0
+         position 1 1
+         size 382 109
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.082 0.094 0.106 1
+         style rover_sim_colorable
+         {
+          TextWidgetClass PickLabel {
+           ignorepointer 1
+           inheritalpha 0
+           position 20 14
+           size 342 24
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.502 0.525 0.549 1
+           text "#STR_BR_SPAWN_YOUR_PICK"
+           font "gui/fonts/metron-bold16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" left
+           "text valign" center
+          }
+          TextWidgetClass PickName {
+           ignorepointer 1
+           inheritalpha 0
+           position 20 40
+           size 342 32
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.925 0.929 0.933 1
+           text "#STR_BR_SPAWN_NO_PICK"
+           font "gui/fonts/metron-bold22"
+           "exact text" 1
+           "exact text size" 22
+           "text halign" left
+           "text valign" center
+          }
+          TextWidgetClass PickCoords {
+           ignorepointer 1
+           inheritalpha 0
+           position 20 74
+           size 342 24
+           hexactpos 1
+           vexactpos 1
+           hexactsize 1
+           vexactsize 1
+           color 0.608 0.631 0.651 1
+           text ""
+           font "gui/fonts/metron16"
+           "exact text" 1
+           "exact text size" 16
+           "text halign" left
+           "text valign" center
+          }
+         }
+        }
+       }
+      }
+      TextWidgetClass LegendLabel {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 336
+       size 384 24
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.502 0.525 0.549 1
+       text "#STR_BR_SPAWN_LEGEND"
+       font "gui/fonts/metron-bold16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      PanelWidgetClass YouSwatch {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 375
+       size 21 21
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.851 0.62 0.161 1
+       style rover_sim_colorable
+      }
+      TextWidgetClass YouText {
+       ignorepointer 1
+       inheritalpha 0
+       position 69 372
+       size 348 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.788 0.804 0.82 1
+       text "#STR_BR_SPAWN_LEGEND_YOU"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      PanelWidgetClass PartySwatch {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 411
+       size 21 21
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.239 0.725 0.651 1
+       style rover_sim_colorable
+      }
+      TextWidgetClass PartyText {
+       ignorepointer 1
+       inheritalpha 0
+       position 69 408
+       size 348 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.788 0.804 0.82 1
+       text "#STR_BR_SPAWN_LEGEND_PARTY"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      FrameWidgetClass ZoneSwatch {
+       ignorepointer 1
+       position 33 447
+       size 21 21
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       {
+        PanelWidgetClass LegendZoneTop {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 21 3
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.431 0.608 0.961 1
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendZoneBottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 18
+         size 21 3
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.431 0.608 0.961 1
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendZoneLeft {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 3 21
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.431 0.608 0.961 1
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendZoneRight {
+         ignorepointer 1
+         inheritalpha 0
+         position 18 0
+         size 3 21
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.431 0.608 0.961 1
+         style rover_sim_colorable
+        }
+       }
+      }
+      TextWidgetClass ZoneText {
+       ignorepointer 1
+       inheritalpha 0
+       position 69 444
+       size 348 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.788 0.804 0.82 1
+       text "#STR_BR_SPAWN_LEGEND_ZONE"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      FrameWidgetClass HotSwatch {
+       ignorepointer 1
+       position 33 483
+       size 21 21
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       {
+        PanelWidgetClass LegendHotFill {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 21 21
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 0.196 0.196 0.24
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendHotTop {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 21 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 0.196 0.196 0.78
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendHotBottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 19
+         size 21 2
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 0.196 0.196 0.78
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendHotLeft {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 2 21
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 0.196 0.196 0.78
+         style rover_sim_colorable
+        }
+        PanelWidgetClass LegendHotRight {
+         ignorepointer 1
+         inheritalpha 0
+         position 19 0
+         size 2 21
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 0.196 0.196 0.78
+         style rover_sim_colorable
+        }
+       }
+      }
+      TextWidgetClass HotText {
+       ignorepointer 1
+       inheritalpha 0
+       position 69 480
+       size 348 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.788 0.804 0.82 1
+       text "#STR_BR_SPAWN_LEGEND_HOT"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      TextWidgetClass LegendPicksText {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 516
+       size 384 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.788 0.804 0.82 1
+       text "#STR_BR_SPAWN_LEGEND_PICKS"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      TextWidgetClass LegendFew {
+       ignorepointer 1
+       inheritalpha 0
+       position 33 552
+       size 66 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.502 0.525 0.549 1
+       text "#STR_BR_SPAWN_LEGEND_FEW"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      PanelWidgetClass LegendRamp0 {
+       ignorepointer 1
+       inheritalpha 0
+       position 105 560
+       size 57 12
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.69 0.486 0.941 0.14
+       style rover_sim_colorable
+      }
+      PanelWidgetClass LegendRamp1 {
+       ignorepointer 1
+       inheritalpha 0
+       position 162 560
+       size 57 12
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.69 0.486 0.941 0.3
+       style rover_sim_colorable
+      }
+      PanelWidgetClass LegendRamp2 {
+       ignorepointer 1
+       inheritalpha 0
+       position 219 560
+       size 57 12
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.69 0.486 0.941 0.5
+       style rover_sim_colorable
+      }
+      PanelWidgetClass LegendRamp3 {
+       ignorepointer 1
+       inheritalpha 0
+       position 276 560
+       size 57 12
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.69 0.486 0.941 0.75
+       style rover_sim_colorable
+      }
+      TextWidgetClass LegendMany {
+       ignorepointer 1
+       inheritalpha 0
+       position 342 552
+       size 90 27
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       color 0.502 0.525 0.549 1
+       text "#STR_BR_SPAWN_LEGEND_MANY"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      FrameWidgetClass KeyCap0 {
+       ignorepointer 1
+       position 33 117
+       size 132 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       valign bottom_ref
+       {
+        PanelWidgetClass KeyCap0Top {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 132 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap0Bottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 32
+         size 132 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap0Left {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap0Right {
+         ignorepointer 1
+         inheritalpha 0
+         position 131 0
+         size 1 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap0Base {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 30
+         size 132 3
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        TextWidgetClass KeyCap0Text {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 132 31
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         text "#STR_BR_SPAWN_KEY_LMB"
+         font "gui/fonts/metron-bold16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      TextWidgetClass KeyAction0 {
+       ignorepointer 1
+       inheritalpha 0
+       position 180 117
+       size 237 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       valign bottom_ref
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_SPAWN_ACT_PLACE"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      FrameWidgetClass KeyCap1 {
+       ignorepointer 1
+       position 33 75
+       size 132 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       valign bottom_ref
+       {
+        PanelWidgetClass KeyCap1Top {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 132 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap1Bottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 32
+         size 132 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap1Left {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap1Right {
+         ignorepointer 1
+         inheritalpha 0
+         position 131 0
+         size 1 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap1Base {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 30
+         size 132 3
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        TextWidgetClass KeyCap1Text {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 132 31
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         text "#STR_BR_SPAWN_KEY_WHEEL"
+         font "gui/fonts/metron-bold16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      TextWidgetClass KeyAction1 {
+       ignorepointer 1
+       inheritalpha 0
+       position 180 75
+       size 237 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       valign bottom_ref
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_SPAWN_ACT_ZOOM"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
+      }
+      FrameWidgetClass KeyCap2 {
+       ignorepointer 1
+       position 33 33
+       size 132 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       valign bottom_ref
+       {
+        PanelWidgetClass KeyCap2Top {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 132 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap2Bottom {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 32
+         size 132 1
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap2Left {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 1 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap2Right {
+         ignorepointer 1
+         inheritalpha 0
+         position 131 0
+         size 1 33
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        PanelWidgetClass KeyCap2Base {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 30
+         size 132 3
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 1 1 1 0.16
+         style rover_sim_colorable
+        }
+        TextWidgetClass KeyCap2Text {
+         ignorepointer 1
+         inheritalpha 0
+         position 0 0
+         size 132 31
+         hexactpos 1
+         vexactpos 1
+         hexactsize 1
+         vexactsize 1
+         color 0.788 0.804 0.82 1
+         text "#STR_BR_SPAWN_KEY_DRAG"
+         font "gui/fonts/metron-bold16"
+         "exact text" 1
+         "exact text size" 16
+         "text halign" center
+         "text valign" center
+        }
+       }
+      }
+      TextWidgetClass KeyAction2 {
+       ignorepointer 1
+       inheritalpha 0
+       position 180 33
+       size 237 33
+       hexactpos 1
+       vexactpos 1
+       hexactsize 1
+       vexactsize 1
+       valign bottom_ref
+       color 0.608 0.631 0.651 1
+       text "#STR_BR_SPAWN_ACT_PAN"
+       font "gui/fonts/metron16"
+       "exact text" 1
+       "exact text size" 16
+       "text halign" left
+       "text valign" center
       }
      }
     }
