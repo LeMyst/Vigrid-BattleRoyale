@@ -412,9 +412,23 @@ Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUns
 
 ⚠️ **"Unbound in vanilla" is a stronger claim than it looks, and only K, O and P actually qualify.** The two letters this mod took beyond those — `Z` for auto-run and `J` for ear plugs — are both bound in `P:\bin\preset_keymouseprimary.xml`, and both are safe for the same reason: their bindings sit under blocks that are unreachable in normal gameplay. `kZ` is `UAMoveDown` under **DEBUG SPECIFIC / Freefly Camera**; `kJ` is `UABuldSlow` under **BULDOZER SPECIFIC**, whose only script reference is the suppression list at `scriptconsole.c:531`. Check that file rather than assuming a letter is free — grep for `name="kX"` and read which comment block it falls under.
 
-### Vigrid API / webhooks
+### Stats API (`/api/v2`)
 
-`Scripts/Server/3_Game/BattleRoyale/Webhook/` — REST via `GetRestApi().GetRestContext(BATTLEROYALE_API_ENDPOINT)`. Every call site is gated on `BattleRoyaleConfig.GetConfig().GetServerData().enable_vigrid_api`; `use_autolock` is a separate, independent gate that is *not* covered by it. Each webhook pairs with a `RestCallback` subclass that retries from `i_TryLeft`.
+The server reports to the stats site (repo [`LeMyst/br-hub`](https://github.com/LeMyst/br-hub), whose `CLAUDE.md` is the contract and the decision log) through `BattleRoyaleApi` (`Scripts/Server/3_Game/BattleRoyale/Api/`). It replaced the nine `Webhook/` classes of the archived Vigrid API with five calls:
+
+| Call | Sent from |
+|---|---|
+| `heartbeat` (lobby / countdown / in_match / ended, players, world) | `BattleRoyaleApiReport.Tick`, at 10 Hz from `BattleRoyaleServer.Update`: on every state change and every `BR_API_HEARTBEAT_MS` |
+| `matches` → `{match_id}` | `BattleRoyaleApiMatchRegistration`, polled by `BattleRoyaleServer` (the 60 s registration gate from #417) |
+| `matches/<id>/start` (one entry per player with its group index) | `4_BattleRoyalePrepare`, after the teleport |
+| `matches/<id>/finish` (every `last_match.json` row, uncapped) | `9_BattleRoyaleRestart`, right after `BattleRoyaleMatchStats.EndMatch()`; its budget is the 10 s before `RequestExit` |
+| `servers/rcon` lock / unlock | `2_BattleRoyaleCountReached` (lock) and `BattleRoyaleServer.Init` after an in-place reset (unlock), when `use_autolock` |
+
+Four rules:
+- **The key travels in the JSON body as `token`.** `RestContext.SetHeader` sets only the Content-Type, so the engine cannot send an `Authorization` header.
+- **Gated on `BattleRoyaleApi.IsEnabled()`** = `enable_api` + `api_url` + `api_key`, set once by `Configure` in `BattleRoyaleServer.Init`. `use_autolock` additionally needs the API.
+- **A client error is final, anything else retries** (`BR_API_TRIES`), because every v2 write is idempotent on the site. Positions, kills and wins no longer have calls of their own: they ride `finish`.
+- **A body field is the wire key**, so it cannot be named after an EnfusionScript type: the heartbeat sends `world`, not `map`.
 
 Client-side matchmaking is `MatchMakingWebhook` (`Scripts/Client/3_Game/BattleRoyale/Webhook/`), used by the modded `MainMenu`.
 

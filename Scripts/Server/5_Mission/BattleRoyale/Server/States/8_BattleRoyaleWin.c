@@ -149,9 +149,6 @@ class BattleRoyaleWin: BattleRoyaleState
 
     void HandleWinner(PlayerBase player_winner, string squad_names)
     {
-        BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
-        BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
-
         // Send notification
         MessagePlayerUntranslated(player_winner, "STR_BR_ANNOUNCEMENT_WINNER");
 
@@ -160,19 +157,6 @@ class BattleRoyaleWin: BattleRoyaleState
         if ( winner_identity )
         {
             SendWinScreen( player_winner, winner_identity, squad_names );
-
-            if ( m_ServerData.enable_vigrid_api )
-            {
-                // Send win webhook
-                BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-                WinWebhook winWebhook = new WinWebhook( m_ServerData.webhook_jwt_token );
-                winWebhook.Send( br_instance.match_uuid, winner_identity.GetPlainId() );
-
-                // Send score webhook
-                BattleRoyaleUtils.Trace("ScoreWebhook: Sending winner score");
-                ScoreWebhook scoreWebhook = new ScoreWebhook( m_ServerData.webhook_jwt_token );
-                scoreWebhook.Send( br_instance.match_uuid, winner_identity.GetPlainId(), player_winner.GetBRPosition() );
-            }
         }
 
         //--- Spawn chickens. Winner winner. The ring, the water rejection, the surface drop and

@@ -27,6 +27,10 @@ static const string GITHUB_URL = "https://github.com/LeMyst/Vigrid-BattleRoyale"
 //--- API endpoint
 static const string BATTLEROYALE_API_ENDPOINT = "https://api.vigrid.ovh/";
 
+//--- Server-side stats API (/api/v2, see BattleRoyaleApi). Its base URL is server_settings.json api_url.
+static const int BR_API_TRIES = 3;              // attempts per call; a 4xx reply is never retried
+static const int BR_API_HEARTBEAT_MS = 30000;   // the API asks for 30 s; state changes send at once
+
 
 //--- settings files
 static const string BATTLEROYALE_SETTINGS_FOLDER = "$profile:Vigrid-BattleRoyale\\";

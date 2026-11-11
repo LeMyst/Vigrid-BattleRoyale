@@ -269,6 +269,12 @@ class BattleRoyaleMatchStats
         return m_HasMatch;
     }
 
+    //! Every row of this match in exit order, uncapped: BR_LASTMATCH_MAX_ROWS is for the lobby card.
+    array<ref BattleRoyaleLastMatchRow> GetRows()
+    {
+        return m_Rows;
+    }
+
     bool IsRecording()
     {
         return m_Recording;

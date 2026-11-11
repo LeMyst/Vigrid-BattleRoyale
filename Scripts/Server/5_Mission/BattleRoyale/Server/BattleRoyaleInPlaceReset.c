@@ -78,10 +78,6 @@ class BattleRoyaleInPlaceReset
 		if ( !BattleRoyaleNativeRefill.IsAvailable() )
 			return "the dzhooks ce_refill module is not loaded (DZHOOK_CE_REFILL)";
 
-		//--- AutoLockWebhook has no unlock call, so the lobby could never reopen.
-		if ( settings.use_autolock )
-			return "use_autolock is on and has no unlock";
-
 		//--- Skipped by LogMode: the first BattleRoyaleServer is built in MissionServer.OnInit, before
 		//--- the mission's Central Economy exists, so GetCEApi() is still NULL at boot (measured).
 		if ( check_ce && !GetCEApi() )
@@ -94,6 +90,12 @@ class BattleRoyaleInPlaceReset
 			return "in_place_reset_max_matches (" + settings.in_place_reset_max_matches + ") reached";
 
 		return "";
+	}
+
+	//! In-place resets done by this process; 0 on a freshly booted server.
+	static int GetResetsDone()
+	{
+		return s_ResetsDone;
 	}
 
 	static bool CanRun()

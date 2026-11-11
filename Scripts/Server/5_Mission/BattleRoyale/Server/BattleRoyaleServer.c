@@ -27,7 +27,7 @@ class BattleRoyaleServer: BattleRoyaleBase
 
     string match_uuid;
 
-    //--- The async CreateMatchWebhook request this server is waiting on. The lobby will not start
+    //--- The async BattleRoyaleApiMatchRegistration request this server is waiting on. The lobby will not start
     //--- while it is pending; UpdateMatchRegistration settles it from the 10 Hz tick.
     static const int MATCH_REGISTRATION_TIMEOUT_MS = 60000;
     protected bool b_MatchRegistrationPending;
@@ -109,11 +109,12 @@ class BattleRoyaleServer: BattleRoyaleBase
 		//--- an in-place reset (BattleRoyaleInPlaceReset) costs nothing.
 		BattleRoyaleNameService.Init();
 
-		if ( m_ServerData.enable_vigrid_api )
-		{
-			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
-			serverWebhook.UnlockServer();
-		}
+		BattleRoyaleApi.Configure( m_ServerData.enable_api, m_ServerData.api_url, m_ServerData.api_key );
+
+		//--- The countdown locked it over RCon. Only an in-place reset needs reopening: a fresh process
+		//--- boots unlocked, and BattlEye RCon may not be listening yet this early in a boot.
+		if ( m_ServerData.use_autolock && BattleRoyaleInPlaceReset.GetResetsDone() > 0 )
+			BattleRoyaleApiCalls.Rcon( m_ServerData.autolock_rcon_password, false );
 
 		//--- The previous match left '1' in the dzhooks sentinel file (it locks at the countdown and
 		//--- exits locked), so this is not optional once the hook is watching it: skip it and the
@@ -126,16 +127,15 @@ class BattleRoyaleServer: BattleRoyaleBase
 		BattleRoyaleNativeRefill.LogMode();
 		BattleRoyaleInPlaceReset.LogMode();
 
-		if ( m_ServerData.enable_vigrid_api )
+		if ( BattleRoyaleApi.IsEnabled() )
 		{
 			//--- Never log server_password: on DIAG, Trace is mirrored to every client.
 			//--- Asynchronous: Init no longer blocks on the API, at boot or on an in-place reset.
-			CreateMatchWebhook createMatchWebhook = new CreateMatchWebhook( m_ServerData.webhook_jwt_token, m_ServerData.server_password );
 			match_uuid = "";
 			b_MatchRegistrationPending = true;
 			i_MatchRegistrationDeadlineMs = 0;
-			i_MatchRegistrationId = createMatchWebhook.Request();
-			BattleRoyaleUtils.Info("Registering the match with the Vigrid API (request " + i_MatchRegistrationId + "); the lobby will not start until it answers.");
+			i_MatchRegistrationId = BattleRoyaleApiMatchRegistration.Request( m_ServerData.server_password );
+			BattleRoyaleUtils.Info("Registering the match with the stats API (request " + i_MatchRegistrationId + "); the lobby will not start until it answers.");
         } else {
         	match_uuid = "";  // No API, no match to register
         }
@@ -258,9 +258,9 @@ class BattleRoyaleServer: BattleRoyaleBase
         if ( !b_MatchRegistrationPending )
             return;
 
-        if ( CreateMatchWebhook.IsAnswered( i_MatchRegistrationId ) )
+        if ( BattleRoyaleApiMatchRegistration.IsAnswered( i_MatchRegistrationId ) )
         {
-            FinishMatchRegistration( CreateMatchWebhook.GetResponse(), true );
+            FinishMatchRegistration( BattleRoyaleApiMatchRegistration.GetResponse(), true );
             return;
         }
 
@@ -273,7 +273,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             return;
 
         BattleRoyaleUtils.Warn("Match registration got no final answer within " + (MATCH_REGISTRATION_TIMEOUT_MS / 1000) + " s - giving up on it.");
-        CreateMatchWebhook.Cancel();
+        BattleRoyaleApiMatchRegistration.Cancel();
         FinishMatchRegistration( "", true );
     }
 
@@ -285,7 +285,7 @@ class BattleRoyaleServer: BattleRoyaleBase
             return;
 
         BattleRoyaleUtils.Warn("The match started before its registration answered - running it unregistered.");
-        CreateMatchWebhook.Cancel();
+        BattleRoyaleApiMatchRegistration.Cancel();
         FinishMatchRegistration( "", false );
     }
 
@@ -418,6 +418,9 @@ class BattleRoyaleServer: BattleRoyaleBase
 			}
 #endif
 			UpdateMatchRegistration();
+
+			//--- Stats API heartbeat: on every state change, and every 30 s. Returns at once when the API is off.
+			BattleRoyaleApiReport.Tick( this );
 
 			//--- The ONLY driver for spectating: liveness sweep, deferred entry, retarget and the
 			//--- 1 Hz keepalive push. Returns immediately when nobody is spectating, and only ever
@@ -589,7 +592,7 @@ class BattleRoyaleServer: BattleRoyaleBase
         GetCurrentState().AddPlayer(player);
 
         //--- Not while pending: FinishMatchRegistration warns everyone in the lobby if it fails.
-        if( m_ServerData.enable_vigrid_api && m_ServerData.warning_no_uuid && match_uuid == "" && !b_MatchRegistrationPending )
+        if( BattleRoyaleApi.IsEnabled() && m_ServerData.warning_no_uuid && match_uuid == "" && !b_MatchRegistrationPending )
         	GetCurrentState().MessagePlayerUntranslated( player, "STR_BR_MM_ERROR_REGISTERING_MATCH");
     }
 
