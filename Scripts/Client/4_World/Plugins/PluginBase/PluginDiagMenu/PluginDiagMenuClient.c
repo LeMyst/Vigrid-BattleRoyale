@@ -503,7 +503,7 @@ modded class PluginDiagMenuClient
 		if ( named )
 		{
 			br_rpc.recap_killer_name = "Kestrel";
-			br_rpc.recap_killer_health_pct = 64;
+			br_rpc.recap_killer_health_pct = 41;
 			br_rpc.recap_damage_to_killer = 37;
 			if ( cause == BattleRoyaleKillCause.FIREARM )
 			{
