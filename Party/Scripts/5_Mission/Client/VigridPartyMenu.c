@@ -71,8 +71,6 @@ class VigridPartyMenu extends UIScriptedMenu
     private ButtonWidget m_CloseButton;
     private Widget m_CloseKey;
     private TextWidget m_CloseKeyText;
-    private ButtonWidget m_CreateButton;
-    private TextWidget m_CreateLabel;
     private ButtonWidget m_LeaveButton;
     private TextWidget m_LeaveLabel;
     private ButtonWidget m_DisbandButton;
@@ -91,10 +89,14 @@ class VigridPartyMenu extends UIScriptedMenu
     private ref map<Widget, string> m_InviteTargets;
     private ref map<Widget, string> m_KickTargets;
     private ref map<Widget, string> m_PromoteTargets;
+    private ref map<Widget, string> m_CancelTargets;
 
     //--- Invites sent from this menu, shown as pending at once rather than after the next list reply.
     //--- Cleared whenever a reply lands: from then on the server's own flag is the truth.
     private ref map<string, bool> m_SentInvites;
+
+    //--- Invites withdrawn from this menu, no longer shown as pending even before the list says so.
+    private ref map<string, bool> m_CancelledInvites;
 
     //--- The search, lowered. Empty shows everyone.
     private string m_Filter;
@@ -105,6 +107,7 @@ class VigridPartyMenu extends UIScriptedMenu
     private int m_RefreshDueMs;
     private int m_LastTimerSecond;
     private int m_LayoutFrames;
+    private bool m_RestoreHud;
 
     private ref VigridPartyMenuInputLock m_InputLock;
 
@@ -117,6 +120,8 @@ class VigridPartyMenu extends UIScriptedMenu
         m_KickTargets = new map<Widget, string>();
         m_PromoteTargets = new map<Widget, string>();
         m_SentInvites = new map<string, bool>();
+        m_CancelledInvites = new map<string, bool>();
+        m_CancelTargets = new map<Widget, string>();
         m_Filter = "";
 
         m_LastListSeq = -1;
@@ -160,8 +165,6 @@ class VigridPartyMenu extends UIScriptedMenu
         m_CloseButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("CloseButton"));
         m_CloseKey = layoutRoot.FindAnyWidget("CloseKey");
         m_CloseKeyText = FindText("CloseKeyText");
-        m_CreateButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("CreateButton"));
-        m_CreateLabel = FindText("CreateButtonLabel");
         m_LeaveButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("LeaveButton"));
         m_LeaveLabel = FindText("LeaveButtonLabel");
         m_DisbandButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("DisbandButton"));
@@ -207,6 +210,12 @@ class VigridPartyMenu extends UIScriptedMenu
         //--- VigridPartyMenuInputLock.
         m_InputLock.Take();
 
+        //--- The vanilla hotbar draws over the footer.
+        m_RestoreHud = false;
+        MissionGameplay mission = MissionGameplay.Cast(GetGame().GetMission());
+        if (mission)
+            m_RestoreHud = mission.VigridParty_SetHudPanelVisible(false);
+
         //--- Force a full repaint: sequence numbers may not have moved while the menu was closed.
         m_LastListSeq = -1;
         m_LastRosterSeq = -1;
@@ -222,6 +231,14 @@ class VigridPartyMenu extends UIScriptedMenu
         //--- super.OnHide -> UnlockControls releases exactly what LockControls took and hides the
         //--- cursor; the exclude groups are ours to give back.
         m_InputLock.Release();
+
+        //--- Only what this menu hid, and never onto a corpse.
+        Man player = GetGame().GetPlayer();
+        MissionGameplay mission = MissionGameplay.Cast(GetGame().GetMission());
+        if (m_RestoreHud && mission && player && player.IsAlive())
+            mission.VigridParty_SetHudPanelVisible(true);
+
+        m_RestoreHud = false;
     }
 
     //! True while the search box has the keyboard: the menu key must type, not close the menu.
@@ -266,7 +283,10 @@ class VigridPartyMenu extends UIScriptedMenu
 
         //--- A fresh list replaces the invites this menu was remembering: the server's flag says.
         if (rpc.list_seq != m_LastListSeq)
+        {
             m_SentInvites.Clear();
+            m_CancelledInvites.Clear();
+        }
 
         //--- The roster decides who is invitable and the list decides which invites are pending, so
         //--- either one repaints both columns.
@@ -357,7 +377,6 @@ class VigridPartyMenu extends UIScriptedMenu
 
         //--- Everything is refused server-side while a match is running; hiding the buttons just
         //--- avoids inviting a rejection the player cannot act on.
-        m_CreateButton.Show(!in_party && !rpc.locked);
         m_LeaveButton.Show(in_party && !rpc.locked);
         m_DisbandButton.Show(in_party && is_leader && !rpc.locked);
     }
@@ -564,18 +583,44 @@ class VigridPartyMenu extends UIScriptedMenu
 
     private bool IsInvitePending(VigridPartyRPC rpc, int list_index)
     {
+        string uid = rpc.list_uids.Get(list_index);
+        if (m_CancelledInvites.Contains(uid))
+            return false;
+
         if ((rpc.list_flags.Get(list_index) & VIGRID_PARTY_LIST_INVITED) != 0)
             return true;
 
-        string uid = rpc.list_uids.Get(list_index);
         return m_SentInvites.Contains(uid);
+    }
+
+    //! Invitations out that are still waiting, to players not in a party yet.
+    private int CountPendingInvites(VigridPartyRPC rpc)
+    {
+        int pending = 0;
+        int count = rpc.list_uids.Count();
+        for (int i = 0; i < count; i++)
+        {
+            if ((rpc.list_flags.Get(i) & VIGRID_PARTY_LIST_IN_PARTY) != 0)
+                continue;
+            if (IsInvitePending(rpc, i))
+                pending = pending + 1;
+        }
+
+        return pending;
     }
 
     private void RefreshOnline(VigridPartyRPC rpc)
     {
         m_InviteTargets.Clear();
 
-        bool full = rpc.roster_uids.Count() > 0 && rpc.roster_uids.Count() >= rpc.max_party_size;
+        //--- An invitation out holds a seat, as it does on the server: inviting past the size would
+        //--- only get the late acceptors refused. With no party yet, you are the first seat.
+        int seats = rpc.roster_uids.Count();
+        int pending_count = CountPendingInvites(rpc);
+        if (seats == 0 && pending_count > 0)
+            seats = 1;
+        seats = seats + pending_count;
+        bool full = seats > 0 && seats >= rpc.max_party_size;
 
         bool can_invite = !rpc.locked && !full;
         if (rpc.roster_uids.Count() > 0 && rpc.self_index != rpc.leader_index)
@@ -686,6 +731,7 @@ class VigridPartyMenu extends UIScriptedMenu
     {
         m_KickTargets.Clear();
         m_PromoteTargets.Clear();
+        m_CancelTargets.Clear();
 
         bool is_leader = rpc.self_index >= 0 && rpc.self_index == rpc.leader_index;
 
@@ -716,6 +762,7 @@ class VigridPartyMenu extends UIScriptedMenu
             initial_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowInitial"));
             ButtonWidget promote_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowPromoteButton"));
             ButtonWidget kick_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowKickButton"));
+            row.FindAnyWidget("MemberRowCancelButton").Show(false);
 
             if (!name_widget || !status_widget || !initial_widget || !promote_button || !kick_button)
             {
@@ -762,10 +809,12 @@ class VigridPartyMenu extends UIScriptedMenu
             shown = shown + 1;
         }
 
-        //--- Invitations on their way take the next cards, then open slots fill the party's size.
-        //--- No slots at all while the formation is locked: nobody can be invited then.
+        //--- Invitations on their way take the next cards, then open slots fill the party's size -
+        //--- but only for someone who can fill them: not while the formation is locked, and not for
+        //--- a member who is not the leader, since only the leader may invite.
+        bool can_grow = !rpc.locked && (rpc.roster_uids.Count() == 0 || is_leader);
         int capacity = rpc.max_party_size;
-        if (rpc.locked)
+        if (!can_grow)
             capacity = shown;
 
         int list_count = rpc.list_uids.Count();
@@ -790,6 +839,12 @@ class VigridPartyMenu extends UIScriptedMenu
             status_widget.SetText("#STR_PARTY_STATUS_PENDING");
             initial_widget.SetText(Initial(pending_name));
             HideCardExtras(row);
+
+            //--- Only the inviter sees their invitations, so the button is always theirs to press.
+            ButtonWidget cancel_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowCancelButton"));
+            cancel_button.Show(true);
+            string pending_uid = rpc.list_uids.Get(i);
+            m_CancelTargets.Set(cancel_button, pending_uid);
 
             shown = shown + 1;
         }
@@ -816,6 +871,7 @@ class VigridPartyMenu extends UIScriptedMenu
         row.FindAnyWidget("MemberRowBadge").Show(false);
         row.FindAnyWidget("MemberRowPromoteButton").Show(false);
         row.FindAnyWidget("MemberRowKickButton").Show(false);
+        row.FindAnyWidget("MemberRowCancelButton").Show(false);
     }
 
     //------------------------------------------------------------------------------------------
@@ -879,7 +935,6 @@ class VigridPartyMenu extends UIScriptedMenu
     private void LayoutFooter(float s)
     {
         float x = 42 * s;
-        x = PlaceFooterButton(m_CreateButton, m_CreateLabel, x, s);
         x = PlaceFooterButton(m_LeaveButton, m_LeaveLabel, x, s);
         PlaceFooterButton(m_DisbandButton, m_DisbandLabel, x, s);
 
@@ -930,10 +985,13 @@ class VigridPartyMenu extends UIScriptedMenu
             Widget badge = row.FindAnyWidget("MemberRowBadge");
             TextWidget badge_text = TextWidget.Cast(row.FindAnyWidget("MemberRowBadgeText"));
             Widget promote = row.FindAnyWidget("MemberRowPromoteButton");
+            Widget cancel = row.FindAnyWidget("MemberRowCancelButton");
 
             float name_max = CARD_W - 99;
             if (promote.IsVisible())
                 name_max = CARD_W - 84 - 15 - 249 - 12;
+            else if (cancel.IsVisible())
+                name_max = CARD_W - 84 - 15 - 120 - 12;
 
             name_widget.SetSize(name_max * s, 36 * s);
 
@@ -1043,12 +1101,6 @@ class VigridPartyMenu extends UIScriptedMenu
             return true;
         }
 
-        if (w == m_CreateButton)
-        {
-            client.CreateParty();
-            return true;
-        }
-
         if (w == m_LeaveButton)
         {
             client.Leave();
@@ -1082,6 +1134,18 @@ class VigridPartyMenu extends UIScriptedMenu
 
             //--- Pending at once; the next list reply confirms it or takes it back.
             m_SentInvites.Set(invited_uid, true);
+            RefreshAll(VigridPartyRPC.GetInstance());
+            return true;
+        }
+
+        if (m_CancelTargets.Contains(w))
+        {
+            string cancelled_uid = m_CancelTargets.Get(w);
+            client.CancelInvite(cancelled_uid);
+
+            //--- Gone at once; the next list reply confirms it.
+            m_SentInvites.Remove(cancelled_uid);
+            m_CancelledInvites.Set(cancelled_uid, true);
             RefreshAll(VigridPartyRPC.GetInstance());
             return true;
         }

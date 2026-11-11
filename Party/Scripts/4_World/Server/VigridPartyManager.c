@@ -23,6 +23,10 @@ class VigridPartyManager
     private ref map<string, string> m_MemberIndex;
     private ref array<ref VigridPartyInvite> m_Invites;
     private ref map<string, int> m_LastInviteMs;
+
+    //--- "inviter>invitee" -> when the inviter last cancelled an invite to them. See
+    //--- VIGRID_PARTY_REINVITE_AFTER_CANCEL_MS; pruned by SweepInvites.
+    private ref map<string, int> m_CancelledInviteMs;
     private ref map<string, int> m_LastPlayerListMs;
     private ref map<string, int> m_LastPingMs;
 
@@ -86,6 +90,7 @@ class VigridPartyManager
         m_MemberIndex = new map<string, string>();
         m_Invites = new array<ref VigridPartyInvite>();
         m_LastInviteMs = new map<string, int>();
+        m_CancelledInviteMs = new map<string, int>();
         m_LastPlayerListMs = new map<string, int>();
         m_LastPingMs = new map<string, int>();
         m_HashedToPlain = new map<string, string>();
@@ -106,9 +111,9 @@ class VigridPartyManager
 
         //--- The registered name and the method name must match exactly: CF dispatches by calling
         //--- the method whose name equals the registered string.
-        GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_CREATE, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE_RESPOND, this);
+        GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE_CANCEL, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_KICK, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_LEAVE, this);
         GetRPCManager().AddRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_DISBAND, this);
@@ -648,11 +653,21 @@ class VigridPartyManager
      *  Remove one member and settle the consequences: promote a new leader when the leader left,
      *  and dissolve a party that has decayed to a single member. Sends the updated roster to
      *  whoever is left and an empty roster to the departing player.
+     *
+     *  A departing leader hands over to the first member who is ONLINE, like a disconnecting one
+     *  does (FirstOnlineOther). VigridParty.Remove alone picks the oldest member, who can be
+     *  offline - membership survives a disconnect - and would leave nobody connected able to invite,
+     *  kick or promote. The invitations the leaver sent are withdrawn: an invitee accepting would
+     *  otherwise join a party their inviter has already left.
      */
     private void RemoveMemberInternal(VigridParty party, string uid, string notify_key)
     {
+        bool was_leader = party.IsLeader(uid);
+
         if (!party.Remove(uid))
             return;
+
+        CancelInvitesMatching(uid, "");
 
         DropMemberIndex(uid);
         party.roster_version = NextRosterVersion();
@@ -683,6 +698,7 @@ class VigridPartyManager
                 }
             }
 
+            CancelInvitesMatching("", party.id);
             DeleteParty(party);
             MarkDirty(true);
             return;
@@ -690,6 +706,15 @@ class VigridPartyManager
 
         if (notify_key != "")
             NotifyParty(party, notify_key, NameOfUid(uid), "");
+
+        if (was_leader)
+        {
+            string online_leader = FirstOnlineOther(party, uid);
+            if (online_leader != "")
+                party.SetLeader(online_leader);
+
+            NotifyParty(party, "STR_PARTY_NEW_LEADER", NameOfUid(party.leader_uid), "");
+        }
 
         BroadcastRoster(party);
         BroadcastPings(party);
@@ -983,6 +1008,31 @@ class VigridPartyManager
         m_Invites.Clear();
     }
 
+    /**
+     *  Withdraw every pending invite sent by `inviter_uid`, or on behalf of `party_id` (either may be
+     *  ""), closing the banner on each invitee's screen. Backwards, since it removes as it goes.
+     */
+    private void CancelInvitesMatching(string inviter_uid, string party_id)
+    {
+        for (int i = m_Invites.Count() - 1; i >= 0; i--)
+        {
+            VigridPartyInvite invite = m_Invites.Get(i);
+            if (!invite)
+                continue;
+
+            bool by_inviter = inviter_uid != "" && invite.inviter_uid == inviter_uid;
+            bool by_party = party_id != "" && invite.party_id == party_id;
+            if (!by_inviter && !by_party)
+                continue;
+
+            PlayerBase invitee = GetPlayerByUid(invite.invitee_uid);
+            if (invitee && invitee.GetIdentity())
+                SendInviteCancelled(invitee.GetIdentity(), invite.invite_id);
+
+            m_Invites.RemoveOrdered(i);
+        }
+    }
+
     private VigridPartyInvite FindInvite(string invite_id)
     {
         int count = m_Invites.Count();
@@ -1011,6 +1061,36 @@ class VigridPartyManager
         {
             VigridPartyInvite invite = m_Invites.Get(i);
             if (invite && invite.invitee_uid == invitee_uid)
+                total = total + 1;
+        }
+
+        return total;
+    }
+
+    private VigridPartyInvite FindInviteBetween(string inviter_uid, string invitee_uid)
+    {
+        int count = m_Invites.Count();
+        for (int i = 0; i < count; i++)
+        {
+            VigridPartyInvite invite = m_Invites.Get(i);
+            if (!invite)
+                continue;
+            if (invite.inviter_uid == inviter_uid && invite.invitee_uid == invitee_uid)
+                return invite;
+        }
+
+        return null;
+    }
+
+    //! Invitations out on behalf of `party_id`. They hold a seat: see VP_Invite.
+    private int CountInvitesForParty(string party_id)
+    {
+        int total = 0;
+        int count = m_Invites.Count();
+        for (int i = 0; i < count; i++)
+        {
+            VigridPartyInvite invite = m_Invites.Get(i);
+            if (invite && invite.party_id == party_id)
                 total = total + 1;
         }
 
@@ -1061,6 +1141,23 @@ class VigridPartyManager
                 SendNotify(inviter.GetIdentity(), "STR_PARTY_INVITE_EXPIRED", NameOfUid(invite.invitee_uid), "");
 
             m_Invites.Remove(i);
+        }
+
+        //--- Forget cancellations once their re-invite cooldown is over.
+        array<string> stale = new array<string>();
+        int cancel_count = m_CancelledInviteMs.Count();
+        for (int c = 0; c < cancel_count; c++)
+        {
+            int cancelled_at = m_CancelledInviteMs.GetElement(c);
+            if (now_ms - cancelled_at >= VIGRID_PARTY_REINVITE_AFTER_CANCEL_MS)
+                stale.Insert(m_CancelledInviteMs.GetKey(c));
+        }
+
+        int stale_count = stale.Count();
+        for (int k = 0; k < stale_count; k++)
+        {
+            string stale_key = stale.Get(k);
+            m_CancelledInviteMs.Remove(stale_key);
         }
     }
 
@@ -1681,30 +1778,6 @@ class VigridPartyManager
         return false;
     }
 
-    void VP_Create(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
-    {
-        if (type != CallType.Server)
-            return;
-        if (!sender)
-            return;
-        if (RejectIfUnavailable(sender))
-            return;
-
-        string uid = sender.GetPlainId();
-        if (GetPartyByUid(uid))
-        {
-            SendNotify(sender, "STR_PARTY_ALREADY_IN_PARTY", "", "");
-            return;
-        }
-
-        VigridParty party = CreatePartyFor(uid);
-        SendRosterTo(party, sender, uid);
-
-        //--- Not persisted yet on purpose: a party of one is dropped by the store anyway. It
-        //--- becomes durable the moment a second member accepts.
-        VigridPartyLog.Debug("VP_Create by " + uid);
-    }
-
     void VP_Invite(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
     {
         Param1<string> data;
@@ -1767,6 +1840,23 @@ class VigridPartyManager
         if (HasInviteBetween(inviter_uid, invitee_uid))
             return; //!< already pending, silently ignore the double click
 
+        //--- A cancelled invite cannot be re-sent to the same player straight away, or
+        //--- invite-cancel-invite would put a fresh invitation on their screen every second.
+        string cancel_key = inviter_uid + ">" + invitee_uid;
+        if (m_CancelledInviteMs.Contains(cancel_key) && (now_ms - m_CancelledInviteMs.Get(cancel_key)) < VIGRID_PARTY_REINVITE_AFTER_CANCEL_MS)
+        {
+            SendNotify(sender, "STR_PARTY_INVITE_COOLDOWN", "", "");
+            return;
+        }
+
+        //--- An invitation out holds a seat, or a leader could invite more players than fit and
+        //--- leave the late acceptors refused at the door.
+        if (party.Count() + CountInvitesForParty(party.id) >= m_Settings.max_party_size)
+        {
+            SendNotify(sender, "STR_PARTY_FULL", "", "");
+            return;
+        }
+
         if (CountInvitesFor(invitee_uid) >= VIGRID_PARTY_MAX_PENDING_INVITES)
             return; //!< protects the invitee from being spammed by a crowd
 
@@ -1785,6 +1875,38 @@ class VigridPartyManager
             true, invitee.GetIdentity());
 
         SendNotify(sender, "STR_PARTY_INVITE_SENT", NameOf(invitee), "");
+    }
+
+    /**
+     *  Withdraw an invitation the sender sent. Only the inviter can: the invite is looked up by the
+     *  sender's own uid, so naming somebody else's invitee finds nothing.
+     */
+    void VP_InviteCancel(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+    {
+        Param1<string> data;
+        if (!ctx.Read(data))
+            return;
+        if (type != CallType.Server)
+            return;
+        if (!sender)
+            return;
+
+        string inviter_uid = sender.GetPlainId();
+        string invitee_uid = data.param1;
+
+        VigridPartyInvite invite = FindInviteBetween(inviter_uid, invitee_uid);
+        if (!invite)
+            return;
+
+        PlayerBase invitee = GetPlayerByUid(invitee_uid);
+        if (invitee && invitee.GetIdentity())
+            SendInviteCancelled(invitee.GetIdentity(), invite.invite_id);
+
+        DropInvite(invite);
+        m_CancelledInviteMs.Set(inviter_uid + ">" + invitee_uid, VigridPartyTime.NowMs());
+
+        SendNotify(sender, "STR_PARTY_INVITE_CANCELLED", NameOfUid(invitee_uid), "");
+        VigridPartyLog.Debug("VP_InviteCancel " + inviter_uid + " -> " + invitee_uid);
     }
 
     void VP_InviteRespond(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)

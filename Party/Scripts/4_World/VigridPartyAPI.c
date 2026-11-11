@@ -1090,7 +1090,7 @@ class VigridPartyAPI
         VigridPartyLog.Debug("DebugSetPlayerList " + count + " fake players");
     }
 
-    //! Start a party of one, as the Create button does.
+    //! Start a party of one, as the server does for a player who invites with no party yet.
     static void DebugCreateParty()
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
@@ -1222,6 +1222,22 @@ class VigridPartyAPI
         DebugRebuildState();
 
         VigridPartyLog.Debug("DebugRespondToInvite accepted, you are not the leader");
+    }
+
+    //! Withdraw a fabricated pending invite: clear the server's bit1 on that player's list entry.
+    static void DebugCancelInvite(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int list_index = DebugFindListIndex(uid);
+        if (list_index < 0)
+            return;
+
+        int flags = rpc.list_flags.Get(list_index);
+        rpc.list_flags.Set(list_index, flags & ~VIGRID_PARTY_LIST_INVITED);
+        rpc.list_seq = rpc.list_seq + 1;
+
+        VigridPartyLog.Debug("DebugCancelInvite " + uid);
     }
 
     //! Remove a teammate and hand them back to the online list. Dissolves the party below two

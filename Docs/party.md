@@ -60,8 +60,25 @@ things in the menu are not obvious from the screen:
 - **The search box has to beat the menu key.** `PartyMissionGameplay.HandlePartyClose` would close the
   menu on a typed "p", so it asks `VigridPartyMenu.IsTyping()` (the edit box has keyboard focus) before
   treating the bind as a close. Esc still closes.
-- **Open slots fill the party up to `max_party_size`** and disappear while the formation is locked,
-  because nobody can be invited then.
+- **Open slots fill the party up to `max_party_size`** and show only to someone who can fill them:
+  not while the formation is locked, and not to a member who is not the leader.
+- **An invitation out holds a seat, on both sides.** `VP_Invite` refuses with `STR_PARTY_FULL` once
+  members plus the party's pending invites reach `max_party_size`, and the menu shows "Party full"
+  from the same count. Before, a leader could invite more players than fit, and the late acceptors
+  were refused at the door.
+- **A leader can withdraw an invitation** (`VP_InviteCancel`, the Cancel button on a pending card). The
+  invite is looked up by the sender's own uid, so nobody can cancel someone else's. ⚠️ **Re-inviting the
+  same player is then refused for `VIGRID_PARTY_REINVITE_AFTER_CANCEL_MS` (30 s)**: without it,
+  invite-cancel-invite puts a fresh invitation on the target's screen once a second, which the 1 s
+  per-inviter cooldown alone allows. `SweepInvites` prunes the bookkeeping.
+- **A leader who leaves hands over to the first member who is ONLINE** (`RemoveMemberInternal`,
+  through `FirstOnlineOther`, the same pick a disconnecting leader gets) and the party is told with
+  `STR_PARTY_NEW_LEADER`. `VigridParty.Remove` on its own promotes the oldest member, who can be
+  offline since membership survives a disconnect; that left nobody connected able to invite, kick or
+  promote. The leaver's pending invitations are withdrawn too, and a party that dissolves withdraws
+  all of its own, so nobody accepts their way into a party their inviter has left. ⚠️ The diag
+  fake-session rig does not model any of this (`DebugLeaveParty` simply dissolves the party); it needs
+  `LaunchLocalMP.bat 3`.
 
 ## Party menu sort order
 

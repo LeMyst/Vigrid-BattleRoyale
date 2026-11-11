@@ -46,9 +46,9 @@ static const string VP_RPC_PING_SETTINGS = "VP_PingSettings";
 static const string VP_RPC_PING_SET = "VP_PingSet";
 
 //--- Client -> server message names.
-static const string VP_RPC_CREATE = "VP_Create";
 static const string VP_RPC_INVITE = "VP_Invite";
 static const string VP_RPC_INVITE_RESPOND = "VP_InviteRespond";
+static const string VP_RPC_INVITE_CANCEL = "VP_InviteCancel";
 static const string VP_RPC_KICK = "VP_Kick";
 static const string VP_RPC_LEAVE = "VP_Leave";
 static const string VP_RPC_DISBAND = "VP_Disband";
@@ -114,6 +114,9 @@ static const float VIGRID_PARTY_DEF_NAMETAG_MIN_ALPHA = 0.35;
 //--- Invite anti-spam.
 static const int VIGRID_PARTY_MAX_PENDING_INVITES = 5;
 static const int VIGRID_PARTY_INVITE_COOLDOWN_MS = 1000;
+//--- After a leader cancels an invite, how long before they may invite that same player again.
+//--- Without it, invite-cancel-invite raises a notification on the target once a second.
+static const int VIGRID_PARTY_REINVITE_AFTER_CANCEL_MS = 30000;
 static const int VIGRID_PARTY_PLAYERLIST_COOLDOWN_MS = 1000;
 
 //--- Persistence write debounce.
