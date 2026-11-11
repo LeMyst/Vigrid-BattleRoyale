@@ -168,6 +168,19 @@ modded class MissionGameplay
 		m_HudRootWidget.Show( visible );
 	}
 
+	//! Mirrors SetVanillaHudVisible, so a menu can put back only what it took away.
+	bool IsVanillaHudVisible()
+	{
+		if( !m_HudRootWidget )
+			return false;
+
+		Widget hud_panel = m_HudRootWidget.FindAnyWidget( "HudPanel" );
+		if( hud_panel )
+			return hud_panel.IsVisible();
+
+		return m_HudRootWidget.IsVisible();
+	}
+
 	override void OnUpdate( float timeslice )
 	{
 		super.OnUpdate( timeslice ); //no more using fade out because it causes way to much compatibility issues, instead we'll use widgets

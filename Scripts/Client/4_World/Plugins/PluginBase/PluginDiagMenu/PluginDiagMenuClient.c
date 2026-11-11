@@ -441,7 +441,8 @@ modded class PluginDiagMenuClient
 		for ( int i = 0; i < 40; i++ )
 		{
 			data.names.Insert(BRDiagFakeName(i));
-			data.places.Insert(i + 1);
+			//--- Grouped, so a squad shares its place: 40 players in squads of three are 14 places.
+			data.places.Insert(i / 3 + 1);
 			data.kills.Insert(Math.Max(0, 12 - (i / 3)));
 			data.damage.Insert(Math.Max(0, 940 - (i * 21)));
 			data.survived.Insert(Math.Max(0, 1450 - (i * 33)));

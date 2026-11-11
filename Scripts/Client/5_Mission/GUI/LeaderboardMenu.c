@@ -128,6 +128,7 @@ class LeaderboardMenu extends UIScriptedMenu
     private bool m_AnySquadMark;
     private bool m_QHeld;
     private bool m_EHeld;
+    private bool m_RestoreHud;
 
     private ref BattleRoyaleMenuInputLock m_InputLock;
 
@@ -144,6 +145,7 @@ class LeaderboardMenu extends UIScriptedMenu
         m_AnySquadMark = false;
         m_QHeld = false;
         m_EHeld = false;
+        m_RestoreHud = false;
     }
 
     private TextWidget FindText(string name)
@@ -246,6 +248,15 @@ class LeaderboardMenu extends UIScriptedMenu
         //--- push-to-talk. See BattleRoyaleMenuInputLock.
         m_InputLock.Take();
 
+        //--- The hint row sits where the vanilla hotbar is drawn, and draws under it.
+        m_RestoreHud = false;
+        MissionGameplay gameplay = MissionGameplay.Cast(GetGame().GetMission());
+        if (gameplay && gameplay.IsVanillaHudVisible())
+        {
+            gameplay.SetVanillaHudVisible(false);
+            m_RestoreHud = true;
+        }
+
         //--- Repaint from whatever is cached, immediately. -1 forces it even though the sequence
         //--- number has not moved while the menu was closed.
         m_LastSeq = -1;
@@ -276,6 +287,15 @@ class LeaderboardMenu extends UIScriptedMenu
         //--- (SimulateDeath +1, death screen +1), press F4 twice - and dropped the counter to 0 with
         //--- the death screen still up; the Spectate button's releases then drove it NEGATIVE.
         m_InputLock.Release();
+
+        //--- Only what this menu hid, and never onto a corpse: dying with the board open leaves the
+        //--- HUD to the death screen and spectate.
+        PlayerBase player = PlayerBase.Cast(GetGame().GetPlayer());
+        MissionGameplay gameplay = MissionGameplay.Cast(GetGame().GetMission());
+        if (m_RestoreHud && gameplay && player && player.IsAlive())
+            gameplay.SetVanillaHudVisible(true);
+
+        m_RestoreHud = false;
     }
 
     private BattleRoyaleClient GetClient()
