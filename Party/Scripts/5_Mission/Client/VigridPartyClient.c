@@ -219,19 +219,6 @@ class VigridPartyClient
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_REQUEST_PLAYERLIST, NULL, true);
     }
 
-    void CreateParty()
-    {
-#ifdef DIAG_DEVELOPER
-        if (IsFakeSession())
-        {
-            VigridPartyAPI.DebugCreateParty();
-            return;
-        }
-#endif
-
-        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_CREATE, NULL, true);
-    }
-
     void Invite(string uid)
     {
 #ifdef DIAG_DEVELOPER
@@ -243,6 +230,20 @@ class VigridPartyClient
 #endif
 
         GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE, new Param1<string>(uid), true);
+    }
+
+    //! Withdraw the invitation this player sent to `uid`.
+    void CancelInvite(string uid)
+    {
+#ifdef DIAG_DEVELOPER
+        if (IsFakeSession())
+        {
+            VigridPartyAPI.DebugCancelInvite(uid);
+            return;
+        }
+#endif
+
+        GetRPCManager().SendRPC(RPC_VIGRIDPARTY_SERVER_NAMESPACE, VP_RPC_INVITE_CANCEL, new Param1<string>(uid), true);
     }
 
     void RespondToInvite(bool accept)

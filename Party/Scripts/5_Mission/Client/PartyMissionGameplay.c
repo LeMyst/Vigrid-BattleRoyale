@@ -110,6 +110,11 @@ modded class MissionGameplay
         if (!close_input.LocalPress())
             return false;
 
+        //--- A "p" typed into the search box is a letter, not the menu key. Esc above still closes.
+        VigridPartyMenu party_menu = VigridPartyMenu.Cast(m_UIManager.FindMenu(MENU_VIGRID_PARTY));
+        if (party_menu && party_menu.IsTyping())
+            return false;
+
         m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
         return true;
     }
@@ -161,6 +166,27 @@ modded class MissionGameplay
         UAInput clear_input = GetUApi().GetInputByName(VIGRID_PARTY_INPUT_PING_CLEAR);
         if (clear_input && clear_input.LocalPress())
             m_VigridParty.ClearPings();
+    }
+
+    /**
+     *  Show or hide vanilla's vitals and hotbar, which draw over the party menu's footer. Returns
+     *  whether they were visible, so the menu puts back only what it hid.
+     *
+     *  "HudPanel" is what vanilla hands to m_Hud.Init; the chat frame is its sibling and stays. Party
+     *  keeps its own copy rather than calling the host's equivalent, which it may not name.
+     */
+    bool VigridParty_SetHudPanelVisible(bool visible)
+    {
+        if (!m_HudRootWidget)
+            return false;
+
+        Widget hud_panel = m_HudRootWidget.FindAnyWidget("HudPanel");
+        if (!hud_panel)
+            return false;
+
+        bool was_visible = hud_panel.IsVisible();
+        hud_panel.Show(visible);
+        return was_visible;
     }
 }
 #endif

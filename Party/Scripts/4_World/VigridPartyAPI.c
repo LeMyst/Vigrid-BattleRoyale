@@ -1073,9 +1073,13 @@ class VigridPartyAPI
             rpc.list_uids.Insert(DEBUG_ONLINE_PREFIX + i);
             rpc.list_names.Insert(DebugPoolName(pool, i));
 
+            //--- Every third entry is in somebody's party, sized 2 or 3 as the server would say, and
+            //--- every seventh has an invite from you pending - the server's two other bits.
             int entry_flags = 0;
             if ((i % 3) == 2)
-                entry_flags = 1;
+                entry_flags = VIGRID_PARTY_LIST_IN_PARTY | ((2 + (i % 2)) << VIGRID_PARTY_LIST_SIZE_SHIFT);
+            else if ((i % 7) == 4)
+                entry_flags = VIGRID_PARTY_LIST_INVITED;
 
             rpc.list_flags.Insert(entry_flags);
         }
@@ -1086,7 +1090,7 @@ class VigridPartyAPI
         VigridPartyLog.Debug("DebugSetPlayerList " + count + " fake players");
     }
 
-    //! Start a party of one, as the Create button does.
+    //! Start a party of one, as the server does for a player who invites with no party yet.
     static void DebugCreateParty()
     {
         VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
@@ -1218,6 +1222,22 @@ class VigridPartyAPI
         DebugRebuildState();
 
         VigridPartyLog.Debug("DebugRespondToInvite accepted, you are not the leader");
+    }
+
+    //! Withdraw a fabricated pending invite: clear the server's bit1 on that player's list entry.
+    static void DebugCancelInvite(string uid)
+    {
+        VigridPartyRPC rpc = VigridPartyRPC.GetInstance();
+
+        int list_index = DebugFindListIndex(uid);
+        if (list_index < 0)
+            return;
+
+        int flags = rpc.list_flags.Get(list_index);
+        rpc.list_flags.Set(list_index, flags & ~VIGRID_PARTY_LIST_INVITED);
+        rpc.list_seq = rpc.list_seq + 1;
+
+        VigridPartyLog.Debug("DebugCancelInvite " + uid);
     }
 
     //! Remove a teammate and hand them back to the online list. Dissolves the party below two
