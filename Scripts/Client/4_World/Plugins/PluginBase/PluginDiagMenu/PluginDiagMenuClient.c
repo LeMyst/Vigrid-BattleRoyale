@@ -532,7 +532,8 @@ modded class PluginDiagMenuClient
 		PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
 		if ( real_kill && player && player.IsAlive() )
 		{
-			player.position_top = 7;
+			//--- Not player.position_top: BattleRoyaleClient copies this into it every frame.
+			br_rpc.top_position = 7;
 			player.SetHealth( "", "", 0 );
 		}
 		else
