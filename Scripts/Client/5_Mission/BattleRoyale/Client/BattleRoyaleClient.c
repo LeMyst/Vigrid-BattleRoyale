@@ -2058,6 +2058,11 @@ class BattleRoyaleClient: BattleRoyaleBase
 
         b_AwaitingResetBody = false;
 
+        //--- The death screen hid it; a menu closed before this body arrived could not bring it back.
+        MissionGameplay reset_gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if ( reset_gameplay )
+            reset_gameplay.SetVanillaHudVisible( true );
+
         BattleRoyaleUtils.Info("[InPlace] the new lobby body is ours, death lock to release: " + b_ReleaseDeathLockOnBody);
 
         if ( b_ReleaseDeathLockOnBody )

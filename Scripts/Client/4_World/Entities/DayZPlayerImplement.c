@@ -4,6 +4,14 @@ modded class DayZPlayerImplement
 {
 	int position_top = -1;
 
+	//--- The world dims behind the death screen and stays dimmed. Vanilla ramps exposure to black
+	//--- over 2.5 s and then RELEASES it, relying on its own black fade, which this mod replaces.
+	static const float BR_DEATH_DIM_SECONDS = 1.5;
+	static const float BR_DEATH_DIM_HOLD = 0.75;	//!< darkening progress; exposure -10*EaseInCubic(p), ~-4.2 EV
+	protected ref Timer m_BRDeathDimTimer;
+	protected ref Param1<float> m_BRDeathDimParam;
+	protected float m_BRDeathDimTime;
+
 	override void ShowDeadScreen(bool show, float duration)
 	{
         array<string> funny_strings = {
@@ -68,6 +76,9 @@ modded class DayZPlayerImplement
 			{
 				br_rpc.dead_placement = placement;
 				br_rpc.dead_flavour = funny_string;
+				br_rpc.dead_place = 0;
+				if (placement != "")
+					br_rpc.dead_place = position_top;
 
 				//--- Record that the DEATH path locked input, travelling by the same route and for
 				//--- the same stage-ordering reason as the two strings above.
@@ -92,9 +103,14 @@ modded class DayZPlayerImplement
 			//--- inline either - every one of its own ShowDeadScreen calls goes through the GUI call
 			//--- queue (ingamemenu.c:354, missiongameplay.c:1623).
 			GetGame().GetCallQueue(CALL_CATEGORY_GUI).Call(OpenDeathScreen);
+
+			BR_StartDeathDim();
 		}
 		else
 		{
+			if (!show)
+				BR_StopDeathDim();
+
 			super.ShowDeadScreen(show, duration);
 		}
 
@@ -134,6 +150,49 @@ modded class DayZPlayerImplement
 
 		if (!ui_manager.EnterScriptedMenu(MENU_BR_DEAD, NULL))
 			BattleRoyaleUtils.Warn("Failed to open MENU_BR_DEAD");
+	}
+
+	//! Replace vanilla's ramp-to-black-then-release with a ramp to BR_DEATH_DIM_HOLD that holds.
+	//! Spectate entry and the in-place reset clear it with their GAMEPLAY_EFFECTS sweep.
+	void BR_StartDeathDim()
+	{
+		//--- SimulateDeath started vanilla's timer just before calling ShowDeadScreen.
+		StopDeathDarkeningEffect();
+
+		if (!m_BRDeathDimTimer)
+			m_BRDeathDimTimer = new Timer(CALL_CATEGORY_GUI);
+		if (!m_BRDeathDimParam)
+			m_BRDeathDimParam = new Param1<float>(0);
+
+		m_BRDeathDimTime = 0;
+		m_BRDeathDimTimer.Run(0.05, this, "BR_DeathDimStep", NULL, true);
+	}
+
+	void BR_DeathDimStep()
+	{
+		//--- Spectate can start inside the ramp; one more Start would undo its sweep.
+		if (GetGame().GetPlayer() != this)
+		{
+			BR_StopDeathDim();
+			return;
+		}
+
+		m_BRDeathDimTime += 0.05;
+		float t = Math.Clamp(m_BRDeathDimTime / BR_DEATH_DIM_SECONDS, 0, 1);
+
+		m_BRDeathDimParam.param1 = BR_DEATH_DIM_HOLD * t;
+		PPERequesterBank.GetRequester(PPERequester_DeathDarkening).Start(m_BRDeathDimParam);
+
+		if (t >= 1)
+			m_BRDeathDimTimer.Stop();
+	}
+
+	void BR_StopDeathDim()
+	{
+		if (m_BRDeathDimTimer)
+			m_BRDeathDimTimer.Stop();
+
+		PPERequesterBank.GetRequester(PPERequester_DeathDarkening).Stop();
 	}
 
 	//--- LeaveServer() is gone: nothing queues it any more. The death screen's Quit button calls

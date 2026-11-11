@@ -1941,6 +1941,13 @@ class BattleRoyaleServer: BattleRoyaleBase
                 BattleRoyaleMatchStats.GetInstance().GetGroupIndex(record.victim_uid),
                 BattleRoyaleMatchStats.GetInstance().GetHits(record.victim_uid) ),
             true, victim.GetIdentity() );
+
+        //--- The death screen's "of N" and stat strip. Its own RPC: SetLastMatchRecap is also the
+        //--- lobby's answer, which has no business carrying a live field size.
+        BattleRoyaleMatchStats stats = BattleRoyaleMatchStats.GetInstance();
+        int kills = BattleRoyaleKillLedger.GetInstance().GetKills(record.victim_uid);
+        Param5<int, bool, int, int, int> death_stats = new Param5<int, bool, int, int, int>( stats.GetFieldSize(), stats.IsGrouped(), kills, stats.GetDamage(record.victim_uid), stats.GetElapsedSeconds() );
+        GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetDeathStats", death_stats, true, victim.GetIdentity() );
     }
 
     //TODO: This will need a rework!

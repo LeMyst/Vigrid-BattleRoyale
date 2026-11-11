@@ -63,6 +63,7 @@ class BattleRoyaleRPC
 
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchTable", this );
 		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetLastMatchRecap", this );
+		GetRPCManager().AddRPC( RPC_DAYZBR_NAMESPACE, "SetDeathStats", this );
 
 		last_match = new BattleRoyaleLastMatch();
 
@@ -172,6 +173,7 @@ class BattleRoyaleRPC
 		speaking_seq = 0;
 		dead_placement = "";
 		dead_flavour = "";
+		ClearDeathStats();
 		spectate_offered = false;
 		spectate_active = false;
 		spectate_seq = 0;
@@ -278,6 +280,7 @@ class BattleRoyaleRPC
 		speaking_seq++;
 		dead_placement = "";
 		dead_flavour = "";
+		ClearDeathStats();
 		spectate_offered = false;
 		spectate_active = false;
 		spectate_seq++;
@@ -542,6 +545,51 @@ class BattleRoyaleRPC
 	// rather than BattleRoyaleClient.
 	string dead_placement = "";
 	string dead_flavour = "";
+
+	//! The finishing place as a number, beside the formatted line above. 0 = unknown.
+	int dead_place = 0;
+
+	//--- The death screen's "of N" and stat strip, pushed by the server with the recap (SendDeathRecap).
+	//--- Kills ride here too rather than reusing player_kills, so the strip is one consistent snapshot.
+	bool death_stats_valid = false;
+	int death_field_size = 0;
+	bool death_grouped = false;
+	int death_kills = 0;
+	int death_damage = 0;
+	int death_survived_s = 0;
+	int death_stats_seq = 0;
+
+	void SetDeathStats(CallType type, ParamsReadContext ctx, PlayerIdentity sender, Object target)
+	{
+		Param5<int, bool, int, int, int> data;
+		if ( !ctx.Read( data ) )
+		{
+			ReadFailed("SetDeathStats");
+			return;
+		}
+		if ( type != CallType.Client )
+			return;
+
+		death_field_size = data.param1;
+		death_grouped = data.param2;
+		death_kills = data.param3;
+		death_damage = data.param4;
+		death_survived_s = data.param5;
+		death_stats_valid = true;
+		death_stats_seq++;
+	}
+
+	void ClearDeathStats()
+	{
+		dead_place = 0;
+		death_stats_valid = false;
+		death_field_size = 0;
+		death_grouped = false;
+		death_kills = 0;
+		death_damage = 0;
+		death_survived_s = 0;
+		death_stats_seq++;
+	}
 
 	//! Did the death path take an input-focus lock? Written by ShowDeadScreen, read by
 	//! BattleRoyaleClient before it releases one. Travels here for the same stage-ordering reason as

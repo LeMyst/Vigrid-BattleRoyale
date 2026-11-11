@@ -47,9 +47,45 @@ class DeathScreenMenu extends UIScriptedMenu
     }
 
     private TextWidget m_PlacementText;
+    private TextWidget m_FieldText;
     private TextWidget m_FlavourText;
-    private TextWidget m_RecapText;
     private TextWidget m_StatusText;
+
+    //--- The killer card. Hidden until the server's recap arrives, which is structurally after the
+    //--- menu opens (see ApplyRecap).
+    private Widget m_Column;
+    private Widget m_KillerCard;
+    private Widget m_KillerCardInner;
+    private TextWidget m_KillerLabel;
+    private TextWidget m_KillerName;
+    private Widget m_WeaponChip;
+    private TextWidget m_WeaponText;
+    private Widget m_DistanceChip;
+    private TextWidget m_DistanceText;
+    private TextWidget m_DetailLeft;
+    private TextWidget m_DetailRight;
+    private Widget m_BarBack;
+    private Widget m_BarHealth;
+    private Widget m_BarDealt;
+    private Widget m_StatsGrid;
+    private Widget m_ButtonRow;
+    private Widget m_SpectateBg;
+    private Widget m_SpectateProgress;
+    private Widget m_QuitBg;
+    private Widget m_AdminBg;
+
+    //--- Card state the per-frame layout reads: does the card carry the detail line and bar.
+    private bool m_CardHasDetail;
+    private bool m_CardHasChips;
+    private int m_BarHealthPct;
+    private int m_BarDealtPct;
+
+    //--- Last stats sequence painted, same edge rule as m_RecapSeq.
+    private int m_StatsSeq;
+
+    //--- Set whenever something that moves widgets changed; Relayout() runs on the next Tick.
+    private bool m_LayoutDirty;
+    private int m_LayoutFrames;
 
     //--- Last recap sequence painted. -1 so the first arrival always counts as a change.
     private int m_RecapSeq;
@@ -89,8 +125,12 @@ class DeathScreenMenu extends UIScriptedMenu
     private int m_QuitAtMs;
     private bool m_QuitArmed;
 
+    //--- Focus alone leaves mouse look live, so the corpse camera turned behind the menu.
+    private ref BattleRoyaleMenuInputLock m_InputLock;
+
     void DeathScreenMenu()
     {
+        m_InputLock = new BattleRoyaleMenuInputLock();
         m_Requested = false;
         m_SpectateShown = -1;
         m_AdminShown = -1;
@@ -100,6 +140,12 @@ class DeathScreenMenu extends UIScriptedMenu
         m_QuitAtMs = 0;
         m_QuitArmed = false;
         m_RecapSeq = -1;
+        m_StatsSeq = -1;
+        m_LayoutDirty = true;
+        m_CardHasDetail = true;
+        m_CardHasChips = false;
+        m_BarHealthPct = 0;
+        m_BarDealtPct = 0;
     }
 
     override Widget Init()
@@ -114,12 +160,33 @@ class DeathScreenMenu extends UIScriptedMenu
         }
 
         m_PlacementText = TextWidget.Cast( layoutRoot.FindAnyWidget("PlacementText") );
+        m_FieldText = TextWidget.Cast( layoutRoot.FindAnyWidget("FieldText") );
         m_FlavourText = TextWidget.Cast( layoutRoot.FindAnyWidget("FlavourText") );
-        m_RecapText = TextWidget.Cast( layoutRoot.FindAnyWidget("RecapText") );
         m_StatusText = TextWidget.Cast( layoutRoot.FindAnyWidget("StatusText") );
         m_SpectateButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("SpectateButton") );
         m_QuitButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("QuitButton") );
         m_AdminButton = ButtonWidget.Cast( layoutRoot.FindAnyWidget("AdminButton") );
+
+        m_Column = layoutRoot.FindAnyWidget("Column");
+        m_KillerCard = layoutRoot.FindAnyWidget("KillerCard");
+        m_KillerCardInner = layoutRoot.FindAnyWidget("KillerCardInner");
+        m_KillerLabel = TextWidget.Cast( layoutRoot.FindAnyWidget("KillerLabel") );
+        m_KillerName = TextWidget.Cast( layoutRoot.FindAnyWidget("KillerName") );
+        m_WeaponChip = layoutRoot.FindAnyWidget("WeaponChip");
+        m_WeaponText = TextWidget.Cast( layoutRoot.FindAnyWidget("WeaponChipText") );
+        m_DistanceChip = layoutRoot.FindAnyWidget("DistanceChip");
+        m_DistanceText = TextWidget.Cast( layoutRoot.FindAnyWidget("DistanceChipText") );
+        m_DetailLeft = TextWidget.Cast( layoutRoot.FindAnyWidget("DetailLeft") );
+        m_DetailRight = TextWidget.Cast( layoutRoot.FindAnyWidget("DetailRight") );
+        m_BarBack = layoutRoot.FindAnyWidget("BarBack");
+        m_BarHealth = layoutRoot.FindAnyWidget("BarHealth");
+        m_BarDealt = layoutRoot.FindAnyWidget("BarDealt");
+        m_StatsGrid = layoutRoot.FindAnyWidget("StatsGrid");
+        m_ButtonRow = layoutRoot.FindAnyWidget("ButtonRow");
+        m_SpectateBg = layoutRoot.FindAnyWidget("SpectateBg");
+        m_SpectateProgress = layoutRoot.FindAnyWidget("SpectateProgress");
+        m_QuitBg = layoutRoot.FindAnyWidget("QuitButtonBg");
+        m_AdminBg = layoutRoot.FindAnyWidget("AdminButtonBg");
 
         //--- Hidden until Tick decides otherwise, so an ordinary player never sees it flash on the
         //--- frame the menu opens.
@@ -128,10 +195,11 @@ class DeathScreenMenu extends UIScriptedMenu
 
         //--- Which widgets resolved. Kept because a layout that loads but renames a widget fails
         //--- silently and invisibly - the screen just quietly stops doing one of its jobs.
-        BattleRoyaleUtils.Trace(string.Format("[Spectate] death screen Init: placement=%1 flavour=%2 status=%3 spectate=%4 quit=%5 recap=%6",
-            m_PlacementText != NULL, m_FlavourText != NULL, m_StatusText != NULL, m_SpectateButton != NULL, m_QuitButton != NULL, m_RecapText != NULL));
+        BattleRoyaleUtils.Trace(string.Format("[Spectate] death screen Init: placement=%1 flavour=%2 status=%3 spectate=%4 quit=%5 card=%6 stats=%7 row=%8",
+            m_PlacementText != NULL, m_FlavourText != NULL, m_StatusText != NULL, m_SpectateButton != NULL, m_QuitButton != NULL, m_KillerCardInner != NULL, m_StatsGrid != NULL, m_ButtonRow != NULL));
 
         ApplyText();
+        ApplyStats();
 
         s_Instance = this;
 
@@ -164,11 +232,75 @@ class DeathScreenMenu extends UIScriptedMenu
         if( !br_rpc )
             return;
 
+        //--- The big number. Never "#7": a TextWidget swallows every '#'.
+        string place = "";
+        if( br_rpc.dead_place > 0 )
+            place = br_rpc.dead_place.ToString();
+
         if( m_PlacementText )
-            m_PlacementText.SetText( br_rpc.dead_placement );
+            m_PlacementText.SetText( place );
 
         if( m_FlavourText )
             m_FlavourText.SetText( br_rpc.dead_flavour );
+
+        ApplyField();
+    }
+
+    //! "of 24" / "of 24 squads" beside the number. Needs the server's field size, so it is re-run
+    //! when SetDeathStats lands.
+    protected void ApplyField()
+    {
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc || !m_FieldText )
+            return;
+
+        string field = "";
+        if( br_rpc.dead_place > 0 && br_rpc.death_field_size > 0 )
+        {
+            string field_key = "#STR_BR_DEAD_OF_PLAYERS";
+            if( br_rpc.death_grouped )
+                field_key = "#STR_BR_DEAD_OF_SQUADS";
+
+            field = string.Format( Widget.TranslateString( field_key ), br_rpc.death_field_size );
+        }
+
+        m_FieldText.SetText( field );
+        m_LayoutDirty = true;
+    }
+
+    //! The stat strip. "-" until the server's SetDeathStats arrives.
+    protected void ApplyStats()
+    {
+        BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
+        if( !br_rpc )
+            return;
+        if( br_rpc.death_stats_seq == m_StatsSeq )
+            return;
+
+        m_StatsSeq = br_rpc.death_stats_seq;
+
+        string kills = "-";
+        string damage = "-";
+        string alive = "-";
+        if( br_rpc.death_stats_valid )
+        {
+            kills = br_rpc.death_kills.ToString();
+            damage = br_rpc.death_damage.ToString();
+            alive = BattleRoyaleRecapText.FormatDuration( br_rpc.death_survived_s );
+        }
+
+        SetStat( 0, kills );
+        SetStat( 1, damage );
+        SetStat( 2, alive );
+
+        ApplyField();
+    }
+
+    protected void SetStat(int index, string value)
+    {
+        TextWidget w = TextWidget.Cast( layoutRoot.FindAnyWidget("StatValue" + index) );
+        if( w )
+            w.SetText( value );
     }
 
     /**
@@ -187,7 +319,7 @@ class DeathScreenMenu extends UIScriptedMenu
         BattleRoyaleRPC br_rpc = BattleRoyaleRPC.GetInstance();
         if( !br_rpc )
             return;
-        if( !m_RecapText )
+        if( !m_KillerCard || !m_KillerName || !m_KillerLabel )
             return;
         if( !br_rpc.recap_valid )
             return;
@@ -196,28 +328,312 @@ class DeathScreenMenu extends UIScriptedMenu
 
         m_RecapSeq = br_rpc.recap_seq;
 
-        //--- Built in steps. See BattleRoyaleRecapText for why concatenating this in one expression
-        //--- is a compile error rather than a style preference.
-        string line = BattleRoyaleRecapText.BuildRecapLine( br_rpc.recap_cause, br_rpc.recap_killer_name, br_rpc.recap_weapon_type, br_rpc.recap_distance_m );
-        string detail = BattleRoyaleRecapText.BuildRecapDetail( br_rpc.recap_killer_health_pct, br_rpc.recap_damage_to_killer );
+        int cause = br_rpc.recap_cause;
+        string killer = br_rpc.recap_killer_name;
+        string weapon = BattleRoyaleRecapText.WeaponDisplayName( br_rpc.recap_weapon_type );
 
-        if( detail != "" )
+        //--- A named killer: "Eliminated by" over the name, weapon and range as chips. Anything else
+        //--- (zone, environment, infected, unknown): the cause over the recap sentence, no chips.
+        if( killer != "" )
         {
-            if( line != "" )
-                line = line + "\n";
-
-            line = line + detail;
+            m_KillerLabel.SetText( "#STR_BR_DEAD_ELIMINATED_BY" );
+            m_KillerName.SetText( killer );
+        }
+        else
+        {
+            m_KillerLabel.SetText( BattleRoyaleRecapText.CauseLabel( cause ) );
+            m_KillerName.SetText( BattleRoyaleRecapText.BuildRecapLine( cause, killer, br_rpc.recap_weapon_type, br_rpc.recap_distance_m ) );
+            weapon = "";
         }
 
-        m_RecapText.SetText( line );
+        bool has_weapon = ( weapon != "" );
+        bool has_distance = ( killer != "" && br_rpc.recap_distance_m >= 0 );
 
-        BattleRoyaleUtils.Trace("[Spectate] death screen recap: " + line);
+        if( m_WeaponText )
+            m_WeaponText.SetText( weapon );
+        if( m_DistanceText )
+            m_DistanceText.SetText( br_rpc.recap_distance_m.ToString() + " m" );
+        if( m_WeaponChip )
+            m_WeaponChip.Show( has_weapon );
+        if( m_DistanceChip )
+            m_DistanceChip.Show( has_distance );
+
+        m_CardHasChips = has_weapon || has_distance;
+
+        //--- Detail line and bar: only for a killer whose state is known.
+        int health = br_rpc.recap_killer_health_pct;
+        int dealt = br_rpc.recap_damage_to_killer;
+        m_CardHasDetail = ( killer != "" && (health >= 0 || dealt > 0) );
+
+        string left = "";
+        string right = "";
+        if( health >= 0 )
+            left = string.Format( Widget.TranslateString("#STR_BR_DEAD_RECAP_HEALTH"), health );
+        if( dealt > 0 )
+            right = string.Format( Widget.TranslateString("#STR_BR_DEAD_RECAP_DEALT"), dealt );
+
+        if( m_DetailLeft )
+            m_DetailLeft.SetText( left );
+        if( m_DetailRight )
+            m_DetailRight.SetText( right );
+
+        //--- The bar: what they had left, then what you had taken off them, as shares of one
+        //--- full player (100). Dealt is a match total and can exceed what remains, so it is clamped.
+        m_BarHealthPct = health;
+        if( m_BarHealthPct < 0 )
+            m_BarHealthPct = 0;
+        if( m_BarHealthPct > 100 )
+            m_BarHealthPct = 100;
+
+        m_BarDealtPct = dealt;
+        if( m_BarDealtPct < 0 )
+            m_BarDealtPct = 0;
+        if( m_BarDealtPct > 100 - m_BarHealthPct )
+            m_BarDealtPct = 100 - m_BarHealthPct;
+
+        m_KillerCard.Show( true );
+        m_LayoutDirty = true;
+
+        string line = "[Spectate] death screen recap: cause=" + cause;
+        line = line + " killer=" + killer;
+        line = line + " weapon=" + weapon;
+        line = line + " detail=" + m_CardHasDetail;
+        BattleRoyaleUtils.Trace( line );
+    }
+
+    //------------------------------------------------------------------------------------------
+    //--- Layout. Script works in real pixels (SetPos/SetSize), the layout in 1920 reference
+    //--- units, so every design length is multiplied by the column's measured scale.
+    //------------------------------------------------------------------------------------------
+
+    protected float ColumnScale()
+    {
+        if( !m_Column )
+            return 1.0;
+
+        float w;
+        float h;
+        m_Column.GetScreenSize( w, h );
+        if( w <= 0 )
+            return 1.0;
+
+        return w / 780.0;
+    }
+
+    //! Everything that moves: the card's height, the blocks below it, the chips, the bar, the button
+    //! row and the "of N" beside the number. Cheap, but only run when something changed.
+    protected void Relayout()
+    {
+        float s = ColumnScale();
+
+        //--- The card is 183 units with its detail line and bar, 114 without; the blocks below
+        //--- follow it up. Reserved at full height until the recap arrives.
+        float card_h = 183;
+        if( m_KillerCard && m_KillerCard.IsVisible() && !m_CardHasDetail )
+            card_h = 114;
+
+        if( m_KillerCard )
+            m_KillerCard.SetSize( 780 * s, card_h * s );
+        if( m_KillerCardInner )
+            m_KillerCardInner.SetSize( 778 * s, (card_h - 2) * s );
+
+        bool show_detail = m_CardHasDetail;
+        if( m_DetailLeft )
+            m_DetailLeft.Show( show_detail );
+        if( m_DetailRight )
+            m_DetailRight.Show( show_detail );
+        if( m_BarBack )
+            m_BarBack.Show( show_detail );
+        if( m_BarHealth )
+        {
+            m_BarHealth.Show( show_detail );
+            m_BarHealth.SetPos( 29 * s, 143 * s );
+            m_BarHealth.SetSize( 7.2 * m_BarHealthPct * s, 12 * s );
+        }
+        if( m_BarDealt )
+        {
+            m_BarDealt.Show( show_detail );
+            m_BarDealt.SetPos( (29 + 7.2 * m_BarHealthPct) * s, 143 * s );
+            m_BarDealt.SetSize( 7.2 * m_BarDealtPct * s, 12 * s );
+        }
+
+        float below = 306 + card_h + 42;
+        if( m_StatsGrid )
+            m_StatsGrid.SetPos( 0, below * s );
+        if( m_ButtonRow )
+            m_ButtonRow.SetPos( 0, (below + 104 + 42) * s );
+        if( m_StatusText )
+            m_StatusText.SetPos( 0, (below + 104 + 42 + 78 + 15) * s );
+
+        LayoutChips( s );
+        LayoutButtons( s );
+        LayoutField( s );
+    }
+
+    //! Chips sized to their text, right-aligned in the card; the name stops short of them.
+    protected void LayoutChips(float s)
+    {
+        float right = 749 * s;
+        float pad = 15 * s;
+        float gap = 9 * s;
+        float chip_h = 33 * s;
+        float chip_y = (26 + 30) * s - chip_h * 0.5;
+
+        if( m_DistanceChip && m_DistanceChip.IsVisible() )
+            right = PlaceChip( m_DistanceChip, m_DistanceText, right, chip_y, chip_h, pad ) - gap;
+
+        if( m_WeaponChip && m_WeaponChip.IsVisible() )
+            right = PlaceChip( m_WeaponChip, m_WeaponText, right, chip_y, chip_h, pad ) - gap;
+
+        if( m_KillerName )
+        {
+            float name_w = right - 107 * s;
+            if( !m_CardHasChips )
+                name_w = 640 * s;
+
+            m_KillerName.SetSize( name_w, 36 * s );
+        }
+    }
+
+    //! Returns the chip's left edge.
+    protected float PlaceChip(Widget chip, TextWidget label, float right, float y, float h, float pad)
+    {
+        int tw = 0;
+        int th = 0;
+        if( label )
+            label.GetTextSize( tw, th );
+
+        float w = tw + pad * 2;
+        float x = right - w;
+
+        chip.SetPos( x, y );
+        chip.SetSize( w, h );
+        if( label )
+        {
+            label.SetPos( 0, 0 );
+            label.SetSize( w, h );
+        }
+
+        return x;
+    }
+
+    //! Spectate takes the width the others leave; Admin and Quit are fixed. Hidden ones take none.
+    protected void LayoutButtons(float s)
+    {
+        float gap = 15 * s;
+        float fixed_w = 240 * s;
+        float row_w = 780 * s;
+        float x = 0;
+
+        int fixed_count = 1;
+        if( m_AdminButton && m_AdminButton.IsVisible() )
+            fixed_count++;
+
+        if( m_SpectateButton && m_SpectateButton.IsVisible() )
+        {
+            float spectate_w = row_w - fixed_count * (fixed_w + gap);
+            m_SpectateButton.SetPos( x, 0 );
+            m_SpectateButton.SetSize( spectate_w, 78 * s );
+            if( m_SpectateBg )
+                m_SpectateBg.SetSize( spectate_w, 78 * s );
+
+            TextWidget spectate_label = TextWidget.Cast( layoutRoot.FindAnyWidget("SpectateLabel") );
+            if( spectate_label )
+                spectate_label.SetSize( spectate_w, 78 * s );
+
+            x = x + spectate_w + gap;
+        }
+
+        if( m_AdminButton && m_AdminButton.IsVisible() )
+        {
+            m_AdminButton.SetPos( x, 0 );
+            x = x + fixed_w + gap;
+        }
+
+        if( m_QuitButton )
+            m_QuitButton.SetPos( x, 0 );
+    }
+
+    //! "of 24" just after the big number, from the number's measured width.
+    protected void LayoutField(float s)
+    {
+        if( !m_PlacementText || !m_FieldText )
+            return;
+
+        int tw = 0;
+        int th = 0;
+        m_PlacementText.GetTextSize( tw, th );
+
+        m_FieldText.SetPos( tw + 21 * s, 126 * s );
+    }
+
+    //! The strip at the foot of the Spectate button: what is left of the automatic entry countdown.
+    protected void UpdateProgress()
+    {
+        if( !m_SpectateProgress || !m_SpectateButton )
+            return;
+
+        float frac = 0;
+        if( m_AutoEnterArmed && !m_Requested )
+        {
+            frac = (m_AutoEnterAtMs - GetGame().GetTime()) / (float)BR_SPECTATE_ENTRY_DELAY_MS;
+            frac = Math.Clamp( frac, 0, 1 );
+        }
+
+        float bw;
+        float bh;
+        m_SpectateButton.GetScreenSize( bw, bh );
+        float strip_h = 6 * ColumnScale();
+
+        m_SpectateProgress.SetPos( 0, bh - strip_h );
+        m_SpectateProgress.SetSize( bw * frac, strip_h );
+    }
+
+    //! Hover: the primary brightens, the outlined ones gain a faint fill.
+    override bool OnMouseEnter(Widget w, int x, int y)
+    {
+        SetHover( w, true );
+        return super.OnMouseEnter( w, x, y );
+    }
+
+    override bool OnMouseLeave(Widget w, Widget enterW, int x, int y)
+    {
+        SetHover( w, false );
+        return super.OnMouseLeave( w, enterW, x, y );
+    }
+
+    protected void SetHover(Widget w, bool on)
+    {
+        if( w == m_SpectateButton && m_SpectateBg )
+        {
+            if( on )
+                m_SpectateBg.SetColor( ARGB(255, 240, 184, 74) );
+            else
+                m_SpectateBg.SetColor( ARGB(255, 217, 158, 41) );
+            return;
+        }
+
+        int fill = 0;
+        if( on )
+            fill = 15;
+
+        if( w == m_QuitButton && m_QuitBg )
+            m_QuitBg.SetColor( ARGB(fill, 255, 255, 255) );
+
+        if( w == m_AdminButton && m_AdminBg )
+            m_AdminBg.SetColor( ARGB(fill, 255, 255, 255) );
     }
 
     override void OnShow()
     {
         //--- super does the whole focus acquire. Nothing else here - see the class comment.
         super.OnShow();
+        m_InputLock.Take();
+
+        //--- Vanilla hides its HUD only at spectate entry; a corpse's hotbar and vitals add nothing here.
+        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if( gameplay )
+            gameplay.SetVanillaHudVisible( false );
 
         SetFocus( layoutRoot );
 
@@ -238,6 +654,14 @@ class DeathScreenMenu extends UIScriptedMenu
     {
         //--- super does the whole focus release.
         super.OnHide();
+        m_InputLock.Release();
+
+        //--- Back only for a living player (diag fixture, respawn, reset body). Into spectate the
+        //--- player is dead or already NULL, and EnterSpectate keeps it hidden.
+        PlayerBase player = PlayerBase.Cast( GetGame().GetPlayer() );
+        MissionGameplay gameplay = MissionGameplay.Cast( GetGame().GetMission() );
+        if( gameplay && player && player.IsAlive() )
+            gameplay.SetVanillaHudVisible( true );
 
         if( s_Instance == this )
             s_Instance = NULL;
@@ -304,6 +728,7 @@ class DeathScreenMenu extends UIScriptedMenu
         //--- Above the button work, so a recap that lands while the player is reading gets painted
         //--- even on a frame that changes nothing else.
         ApplyRecap();
+        ApplyStats();
 
         bool offered = br_rpc.spectate_offered;
         bool offer = offered && !m_Requested;
@@ -327,6 +752,8 @@ class DeathScreenMenu extends UIScriptedMenu
 
             if( m_SpectateButton )
                 m_SpectateButton.Show( offer );
+
+            m_LayoutDirty = true;
         }
 
         //--- The admin route out of the death screen: respawn into a non-participant body and open
@@ -344,6 +771,8 @@ class DeathScreenMenu extends UIScriptedMenu
 
             if( m_AdminButton )
                 m_AdminButton.Show( admin_state == 1 );
+
+            m_LayoutDirty = true;
         }
 
         //--- The deadline is armed EXACTLY ONCE and never recomputed. Deriving it inside the edge
@@ -384,6 +813,21 @@ class DeathScreenMenu extends UIScriptedMenu
         }
 
         UpdateStatus( offered );
+
+        //--- Relayout only after a change, then for a few frames more: GetTextSize lags a SetText,
+        //--- and moving the buttons every frame would eat clicks like Show() does.
+        if( m_LayoutDirty )
+        {
+            m_LayoutDirty = false;
+            m_LayoutFrames = 4;
+        }
+        if( m_LayoutFrames > 0 )
+        {
+            m_LayoutFrames--;
+            Relayout();
+        }
+
+        UpdateProgress();
 
         //--- The diag open also suppresses the quit countdown: with no spectate offer standing it
         //--- would abort the mission fifteen seconds into looking at the layout.
@@ -489,6 +933,7 @@ class DeathScreenMenu extends UIScriptedMenu
 
             if( m_SpectateButton )
                 m_SpectateButton.Show( false );
+            m_LayoutDirty = true;
 
             if( m_StatusText )
                 m_StatusText.SetText( "#STR_BR_DEAD_ENTERING" );
@@ -514,6 +959,7 @@ class DeathScreenMenu extends UIScriptedMenu
                 m_AdminButton.Show( false );
             if( m_SpectateButton )
                 m_SpectateButton.Show( false );
+            m_LayoutDirty = true;
 
             if( m_StatusText )
                 m_StatusText.SetText( "#STR_BR_DEAD_ENTERING" );
