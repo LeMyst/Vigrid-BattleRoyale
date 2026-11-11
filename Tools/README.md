@@ -151,6 +151,7 @@ is the Claude Design board (1280 wide) times 1.5.
 | `gen_death_screen.py` | `death_screen.layout` |
 | `gen_spawn_selection.py` | `spawn_selection.layout` |
 | `gen_leaderboard.py` | `leaderboard.layout`, `leaderboard_row.layout`, `match_summary_row.layout` |
+| `gen_party_menu.py` | `Party/GUI/layouts/party_menu.layout`, `party_menu_member_row.layout`, `party_menu_player_row.layout` |
 
 ```bash
 python Tools/layouts/gen_leaderboard.py           # rewrite the layouts

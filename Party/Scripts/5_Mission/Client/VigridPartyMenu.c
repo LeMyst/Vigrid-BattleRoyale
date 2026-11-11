@@ -2,15 +2,15 @@
 /**
  *  Vigrid Party - the party management screen.
  *
- *  Left column: players connected to the server, each with an Invite button. Right column: the
- *  current party, with Promote/Kick on each member when you are the leader.
+ *  Left column: your party as cards - the members, the invitations you have out, then the open
+ *  slots - with Promote/Kick on each member when you are the leader. Right column: players connected
+ *  to the server, filtered by the search box, each with an Invite button or the reason there is none.
+ *  An incoming invitation is a banner across the top with its own countdown.
  *
  *  The online list is server-authoritative rather than read from ClientData.m_PlayerList: vanilla's
  *  own preprocessing skips entries whose identity has not synchronised yet, and it has no idea who
  *  is already in a party. Asking the server gets both right, and it is the server that will have
  *  to validate the invite anyway.
- *
- *  Rows are pooled and positioned manually; surplus rows are hidden rather than destroyed.
  *
  *  BOTH COLUMNS ARE SORTED BY DISPLAYED NAME - see BuildOnlineOrder / BuildMemberOrder. The sort is
  *  a DISPLAY ORDER ONLY: nothing here reorders rpc.list_* or rpc.roster_*, because a roster slot
@@ -19,36 +19,70 @@
  *  is an array of DATA indices, walked in order while the pooled rows keep their own creation
  *  order - which is also why no row has to be relinked: the WrapSpacer's children never move, only
  *  the content written into them does.
+ *
+ *  Everything sized to its text (buttons, badges, key caps) is laid out by Relayout() for a few
+ *  frames after a change, because GetTextSize lags SetText. Script works in real pixels and the
+ *  layout in 1920 reference units, so every length is multiplied by Scale().
  */
 class VigridPartyMenu extends UIScriptedMenu
 {
-    //--- Row name colours. The grey matches VigridPartyHud.COLOR_INACTIVE, so a member reads the
-    //--- same way in the panel and in this list; the white is the layout's own default, restated
-    //--- here because rows are pooled and a recycled row keeps whatever colour it was last given.
-    private static const int COLOR_MEMBER = 0xFFFFFFFF;
-    private static const int COLOR_MEMBER_OFFLINE = 0xFF787878;
+    //--- Inner width of the dialog in layout units, and how many frames a relayout runs for.
+    private static const float LAYOUT_DIALOG_W = 1438.0;
+    private static const int LAYOUT_FRAMES = 4;
 
-    //--- Left-column accent bar. Availability only - these players are not in YOUR party, so they
-    //--- have no slot colour to show. Members get theirs from VigridPartyPalette instead.
-    private static const int COLOR_ACCENT_FREE = 0xFF8CA3B0;
-    private static const int COLOR_ACCENT_TAKEN = 0xFF4A4A4A;
+    //--- Layout lengths the script moves things by, in layout units (see gen_party_menu.py).
+    private static const float BODY_TOP = 116.0;
+    private static const float BODY_TOP_BANNER = 236.0;
+    private static const float FOOTER_TOP = 782.0;
+    private static const float CARD_W = 492.0;
 
-    //--- There is no ROW_HEIGHT any more. The WrapSpacer in party_menu.layout derives the pitch from
-    //--- the rows' own declared height, which is what keeps it correct at every resolution - see
-    //--- EnsureRow.
+    private static const int COLOR_TEXT = 0xFFECEDEE;
+    private static const int COLOR_MUTED = 0xFF9BA1A6;
+    private static const int COLOR_DIM = 0xFF80868C;
+    private static const int COLOR_WINDOW = 0xFF111417;
+    private static const int COLOR_CARD = 0xFF171B1E;
+    private static const int COLOR_CARD_EDGE = 0x14FFFFFF;
+    private static const int COLOR_PENDING_EDGE = 0x663DB9A6;
+    private static const int COLOR_OPEN_EDGE = 0x1AFFFFFF;
+    private static const int COLOR_AVATAR_NEUTRAL = 0xFF22272C;
+    private static const int COLOR_AVATAR_OPEN = 0x0FFFFFFF;
 
+    private Widget m_Dialog;
+    private Widget m_Body;
+    private Widget m_OnlineColumn;
+    private Widget m_ColumnLine;
     private Widget m_OnlineRows;
     private Widget m_MemberRows;
     private ScrollWidget m_OnlineScroll;
     private ScrollWidget m_PartyScroll;
+    private TextWidget m_Subtitle;
+    private TextWidget m_OnlineLabel;
+    private TextWidget m_OnlineEmpty;
+
     private Widget m_InviteBanner;
     private TextWidget m_InviteText;
+    private TextWidget m_InviteTimer;
     private ButtonWidget m_InviteAccept;
     private ButtonWidget m_InviteDecline;
-    private ButtonWidget m_CreateButton;
-    private ButtonWidget m_LeaveButton;
-    private ButtonWidget m_DisbandButton;
+
+    private EditBoxWidget m_SearchEdit;
+    private TextWidget m_SearchPlaceholder;
+
     private ButtonWidget m_CloseButton;
+    private Widget m_CloseKey;
+    private TextWidget m_CloseKeyText;
+    private ButtonWidget m_CreateButton;
+    private TextWidget m_CreateLabel;
+    private ButtonWidget m_LeaveButton;
+    private TextWidget m_LeaveLabel;
+    private ButtonWidget m_DisbandButton;
+    private TextWidget m_DisbandLabel;
+    private Widget m_PingKey;
+    private TextWidget m_PingKeyText;
+    private TextWidget m_PingHint;
+    private Widget m_PingClearKey;
+    private TextWidget m_PingClearKeyText;
+    private TextWidget m_PingClearHint;
 
     private ref array<Widget> m_OnlineRowPool;
     private ref array<Widget> m_MemberRowPool;
@@ -58,10 +92,19 @@ class VigridPartyMenu extends UIScriptedMenu
     private ref map<Widget, string> m_KickTargets;
     private ref map<Widget, string> m_PromoteTargets;
 
+    //--- Invites sent from this menu, shown as pending at once rather than after the next list reply.
+    //--- Cleared whenever a reply lands: from then on the server's own flag is the truth.
+    private ref map<string, bool> m_SentInvites;
+
+    //--- The search, lowered. Empty shows everyone.
+    private string m_Filter;
+
     private int m_LastListSeq;
     private int m_LastRosterSeq;
     private int m_LastInviteSeq;
     private int m_RefreshDueMs;
+    private int m_LastTimerSecond;
+    private int m_LayoutFrames;
 
     private ref VigridPartyMenuInputLock m_InputLock;
 
@@ -73,31 +116,77 @@ class VigridPartyMenu extends UIScriptedMenu
         m_InviteTargets = new map<Widget, string>();
         m_KickTargets = new map<Widget, string>();
         m_PromoteTargets = new map<Widget, string>();
+        m_SentInvites = new map<string, bool>();
+        m_Filter = "";
 
         m_LastListSeq = -1;
         m_LastRosterSeq = -1;
         m_LastInviteSeq = -1;
         m_RefreshDueMs = 0;
+        m_LastTimerSecond = -1;
+        m_LayoutFrames = 0;
+    }
+
+    private TextWidget FindText(string name)
+    {
+        return TextWidget.Cast(layoutRoot.FindAnyWidget(name));
     }
 
     override Widget Init()
     {
         layoutRoot = GetGame().GetWorkspace().CreateWidgets(VIGRID_PARTY_PREFIX + "GUI/layouts/party_menu.layout");
 
+        m_Dialog = layoutRoot.FindAnyWidget("Dialog");
+        m_Body = layoutRoot.FindAnyWidget("Body");
+        m_OnlineColumn = layoutRoot.FindAnyWidget("OnlineColumn");
+        m_ColumnLine = layoutRoot.FindAnyWidget("ColumnLine");
         m_OnlineRows = layoutRoot.FindAnyWidget("OnlineRows");
         m_MemberRows = layoutRoot.FindAnyWidget("MemberRows");
         m_OnlineScroll = ScrollWidget.Cast(layoutRoot.FindAnyWidget("OnlineScroll"));
         m_PartyScroll = ScrollWidget.Cast(layoutRoot.FindAnyWidget("PartyScroll"));
+        m_Subtitle = FindText("Subtitle");
+        m_OnlineLabel = FindText("OnlineLabel");
+        m_OnlineEmpty = FindText("OnlineEmpty");
+
         m_InviteBanner = layoutRoot.FindAnyWidget("InviteBanner");
-        m_InviteText = TextWidget.Cast(layoutRoot.FindAnyWidget("InviteText"));
+        m_InviteText = FindText("InviteText");
+        m_InviteTimer = FindText("InviteTimer");
         m_InviteAccept = ButtonWidget.Cast(layoutRoot.FindAnyWidget("InviteAcceptButton"));
         m_InviteDecline = ButtonWidget.Cast(layoutRoot.FindAnyWidget("InviteDeclineButton"));
-        m_CreateButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("CreateButton"));
-        m_LeaveButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("LeaveButton"));
-        m_DisbandButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("DisbandButton"));
+
+        m_SearchEdit = EditBoxWidget.Cast(layoutRoot.FindAnyWidget("SearchEdit"));
+        m_SearchPlaceholder = FindText("SearchPlaceholder");
+
         m_CloseButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("CloseButton"));
+        m_CloseKey = layoutRoot.FindAnyWidget("CloseKey");
+        m_CloseKeyText = FindText("CloseKeyText");
+        m_CreateButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("CreateButton"));
+        m_CreateLabel = FindText("CreateButtonLabel");
+        m_LeaveButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("LeaveButton"));
+        m_LeaveLabel = FindText("LeaveButtonLabel");
+        m_DisbandButton = ButtonWidget.Cast(layoutRoot.FindAnyWidget("DisbandButton"));
+        m_DisbandLabel = FindText("DisbandButtonLabel");
+        m_PingKey = layoutRoot.FindAnyWidget("PingKey");
+        m_PingKeyText = FindText("PingKeyText");
+        m_PingHint = FindText("PingHint");
+        m_PingClearKey = layoutRoot.FindAnyWidget("PingClearKey");
+        m_PingClearKeyText = FindText("PingClearKeyText");
+        m_PingClearHint = FindText("PingClearHint");
+
+        //--- The keys as the player has them bound, not as shipped.
+        m_CloseKeyText.SetText(KeyName(VIGRID_PARTY_INPUT_MENU));
+        m_PingKeyText.SetText(KeyName(VIGRID_PARTY_INPUT_PING));
+        m_PingClearKeyText.SetText(KeyName(VIGRID_PARTY_INPUT_PING_CLEAR));
 
         return layoutRoot;
+    }
+
+    private static string KeyName(string input_name)
+    {
+        if (!GetUApi().GetInputByName(input_name))
+            return "";
+
+        return InputUtils.GetButtonNameFromInput(input_name, EInputDeviceType.MOUSE_AND_KEYBOARD);
     }
 
     override void OnShow()
@@ -123,6 +212,7 @@ class VigridPartyMenu extends UIScriptedMenu
         m_LastRosterSeq = -1;
         m_LastInviteSeq = -1;
         m_RefreshDueMs = 0;
+        m_LayoutFrames = LAYOUT_FRAMES;
     }
 
     override void OnHide()
@@ -132,6 +222,12 @@ class VigridPartyMenu extends UIScriptedMenu
         //--- super.OnHide -> UnlockControls releases exactly what LockControls took and hides the
         //--- cursor; the exclude groups are ours to give back.
         m_InputLock.Release();
+    }
+
+    //! True while the search box has the keyboard: the menu key must type, not close the menu.
+    bool IsTyping()
+    {
+        return m_SearchEdit && GetFocus() == m_SearchEdit;
     }
 
     private VigridPartyClient GetClient()
@@ -166,33 +262,92 @@ class VigridPartyMenu extends UIScriptedMenu
             RefreshInviteBanner(rpc);
         }
 
-        //--- The roster changes which players are invitable, so it repaints both columns.
-        if (rpc.roster_seq != m_LastRosterSeq)
+        UpdateInviteTimer(rpc, now_ms);
+
+        //--- A fresh list replaces the invites this menu was remembering: the server's flag says.
+        if (rpc.list_seq != m_LastListSeq)
+            m_SentInvites.Clear();
+
+        //--- The roster decides who is invitable and the list decides which invites are pending, so
+        //--- either one repaints both columns.
+        if (rpc.roster_seq != m_LastRosterSeq || rpc.list_seq != m_LastListSeq)
         {
             m_LastRosterSeq = rpc.roster_seq;
-            m_LastListSeq = -1;
-            RefreshMembers(rpc);
-            RefreshButtons(rpc);
+            m_LastListSeq = rpc.list_seq;
+            RefreshAll(rpc);
         }
 
-        if (rpc.list_seq != m_LastListSeq)
+        if (m_LayoutFrames > 0)
         {
-            m_LastListSeq = rpc.list_seq;
-            RefreshOnline(rpc);
+            m_LayoutFrames = m_LayoutFrames - 1;
+            Relayout();
         }
+    }
+
+    private void RefreshAll(VigridPartyRPC rpc)
+    {
+        RefreshMembers(rpc);
+        RefreshOnline(rpc);
+        RefreshButtons(rpc);
+        RefreshSubtitle(rpc);
+        m_LayoutFrames = LAYOUT_FRAMES;
+    }
+
+    private void RefreshSubtitle(VigridPartyRPC rpc)
+    {
+        int members = rpc.roster_uids.Count();
+
+        if (rpc.locked)
+        {
+            m_Subtitle.SetText("#STR_PARTY_LOCKED");
+            return;
+        }
+
+        if (members == 0)
+        {
+            m_Subtitle.SetText("#STR_PARTY_NO_PARTY_YET");
+            return;
+        }
+
+        StringLocaliser count = new StringLocaliser("STR_PARTY_MEMBER_COUNT", members.ToString(), rpc.max_party_size.ToString());
+        m_Subtitle.SetText(count.Format());
     }
 
     private void RefreshInviteBanner(VigridPartyRPC rpc)
     {
-        if (!rpc.HasInvite())
-        {
-            m_InviteBanner.Show(false);
+        bool shown = rpc.HasInvite();
+        m_InviteBanner.Show(shown);
+        m_LastTimerSecond = -1;
+        m_LayoutFrames = LAYOUT_FRAMES;
+
+        if (!shown)
             return;
-        }
 
         StringLocaliser prompt = new StringLocaliser("STR_PARTY_INVITE_PROMPT", rpc.invite_inviter_name);
         m_InviteText.SetText(prompt.Format());
-        m_InviteBanner.Show(true);
+    }
+
+    //! The invitation's time left, repainted once a second.
+    private void UpdateInviteTimer(VigridPartyRPC rpc, int now_ms)
+    {
+        if (!m_InviteBanner.IsVisible())
+            return;
+
+        int left_s = (rpc.invite_expires_ms - now_ms + 999) / 1000;
+        if (left_s < 0)
+            left_s = 0;
+        if (left_s == m_LastTimerSecond)
+            return;
+
+        m_LastTimerSecond = left_s;
+
+        int minutes = left_s / 60;
+        int seconds = left_s % 60;
+        string seconds_text = seconds.ToString();
+        if (seconds < 10)
+            seconds_text = "0" + seconds_text;
+
+        m_InviteTimer.SetText(minutes.ToString() + ":" + seconds_text);
     }
 
     private void RefreshButtons(VigridPartyRPC rpc)
@@ -200,7 +355,7 @@ class VigridPartyMenu extends UIScriptedMenu
         bool in_party = rpc.roster_uids.Count() > 0;
         bool is_leader = rpc.self_index >= 0 && rpc.self_index == rpc.leader_index;
 
-        //--- Everything is refused server-side while a match is running; greying the buttons just
+        //--- Everything is refused server-side while a match is running; hiding the buttons just
         //--- avoids inviting a rejection the player cannot act on.
         m_CreateButton.Show(!in_party && !rpc.locked);
         m_LeaveButton.Show(in_party && !rpc.locked);
@@ -211,12 +366,9 @@ class VigridPartyMenu extends UIScriptedMenu
      *  The `index`-th row, created if the pool is not that long yet.
      *
      *  DELIBERATELY DOES NOT SetPos THE ROW. The rows hang off a WrapSpacer, which lays its own
-     *  children out in creation order; positioning them by hand fights it. The previous version did
-     *  `SetPos(0, index * ROW_HEIGHT)`, and that was wrong twice over - it fought a spacer that was
-     *  not there yet, and it mixed unit systems. SetPos takes REAL SCREEN PIXELS while a layout's
-     *  declared geometry is scaled by viewport/1920, so on any client that was not 1920 wide the
-     *  44 px pitch and the ~30 px rendered row height disagreed and the list spread out or
-     *  overlapped. That is the "bad scaling": the spacing was right only at one resolution.
+     *  children out in creation order; positioning them by hand fights it, and SetPos takes REAL
+     *  SCREEN PIXELS while a layout's declared geometry is scaled by viewport/1920, so the pitch
+     *  would only be right at one resolution.
      */
     private Widget EnsureRow(array<Widget> pool, Widget parent, string layout_name, int index)
     {
@@ -225,6 +377,11 @@ class VigridPartyMenu extends UIScriptedMenu
             Widget created = GetGame().GetWorkspace().CreateWidgets(VIGRID_PARTY_PREFIX + "GUI/layouts/" + layout_name, parent);
             if (!created)
                 return null;
+
+            //--- The invite label carries a "+", which the stringtable entry does not.
+            TextWidget invite_label = TextWidget.Cast(created.FindAnyWidget("PlayerRowInviteButtonLabel"));
+            if (invite_label)
+                invite_label.SetText("+ " + Widget.TranslateString("#STR_PARTY_INVITE"));
 
             pool.Insert(created);
         }
@@ -237,13 +394,12 @@ class VigridPartyMenu extends UIScriptedMenu
     /**
      *  Destroy every pooled row from `first` on.
      *
-     *  Unlink, not Show(false), which is what this used to do: a spacer lays out the children it
-     *  HAS, so a hidden row still reserves its slot - leaving a gap in the middle of the list and a
-     *  scroll range longer than the content. Unlink() destroys the widget and all its children.
+     *  Unlink, not Show(false): a spacer lays out the children it HAS, so a hidden row still reserves
+     *  its slot - leaving a gap in the middle of the list and a scroll range longer than the content.
      *
      *  Walked backwards so each removal is of the last element and cannot renumber an index still to
-     *  be visited. RemoveOrdered rather than Remove for the same reason it is used everywhere else
-     *  here: vanilla's Remove() fills the hole with the LAST element.
+     *  be visited. RemoveOrdered rather than Remove: vanilla's Remove() fills the hole with the LAST
+     *  element.
      */
     private void TrimPool(array<Widget> pool, int first)
     {
@@ -258,16 +414,14 @@ class VigridPartyMenu extends UIScriptedMenu
      *  Byte-wise lexical comparison of two strings. <0, 0 or >0, like every other compare.
      *
      *  Written out rather than using an operator because EnfusionScript's `string` exposes no
-     *  comparison at all - no Compare, no relational operator worth depending on. The one native
-     *  sort there is (array<string>.Sort, "strings alphabetically") sorts the array IN PLACE, which
-     *  is exactly what must not happen here: the whole point is to leave the source arrays alone and
-     *  produce an order over them. Packing "name + index" into a throwaway array to borrow that sort
-     *  would need a separator no player name can contain, and there is no such character.
+     *  comparison at all. The one native sort there is (array<string>.Sort) sorts the array IN
+     *  PLACE, which is exactly what must not happen here: the point is to leave the source arrays
+     *  alone and produce an order over them.
      *
      *  Bytes, not characters. Masked to 0..255 so a UTF-8 lead byte compares as unsigned and a
      *  non-ASCII name sorts after an ASCII one instead of before it. That is byte order rather than
-     *  collation order - it will not put E after E for a French reader - but it is deterministic and
-     *  identical on every client, which is the property this sort is actually for.
+     *  collation order, but it is deterministic and identical on every client, which is the property
+     *  this sort is actually for.
      */
     private static int CompareStrings(string a, string b)
     {
@@ -297,17 +451,12 @@ class VigridPartyMenu extends UIScriptedMenu
      *  Order `order` (a list of data indices) by `keys`, tie-broken on `uids`.
      *
      *  The tie-break is not decoration. Two players called `Survivor` is the NORMAL case on a server
-     *  with enable_steam_name_lookup off - the engine only disambiguates the second one, and the
-     *  third onwards share the name outright. A merely stable sort would leave them in arrival
-     *  order, i.e. exactly the churn this issue exists to remove, and only for the players hardest to
-     *  tell apart. Sorting them by uid pins them.
+     *  with enable_steam_name_lookup off, and a merely stable sort would leave them in arrival order -
+     *  churning, and only for the players hardest to tell apart. Sorting them by uid pins them.
      *
-     *  Insertion sort: n is a party (single digits) or the connected player list (capped at the
-     *  server's slot count), and this runs once per repaint edge, not per frame.
-     *
-     *  Every array element is read into a local before it is passed anywhere, per the container
-     *  aliasing rule - an array read sharing an expression with a call has been measured to return
-     *  another array's contents.
+     *  Insertion sort: n is a party or the connected player list, and this runs once per repaint
+     *  edge, not per frame. Every array element is read into a local before it is passed anywhere,
+     *  per the container aliasing rule.
      */
     private static void SortOrder(array<int> order, array<string> keys, array<string> uids)
     {
@@ -342,12 +491,10 @@ class VigridPartyMenu extends UIScriptedMenu
     }
 
     /**
-     *  Display order for the left column: every connected player, by name.
+     *  Display order for the online column: every connected player matching the search, by name.
      *
-     *  Sorted on rpc.list_names, which is what the row actually shows - so a player wearing a
-     *  BattleRoyaleNameService override sorts under the name on screen rather than under the
-     *  `Survivor` they connected as. That falls out for free because the correction is applied
-     *  server-side, before this list is built; there is nothing to resolve on this side.
+     *  Sorted on rpc.list_names, which is what the row actually shows - the BattleRoyaleNameService
+     *  correction is applied server-side, before this list is built.
      */
     private void BuildOnlineOrder(VigridPartyRPC rpc, array<int> order)
     {
@@ -362,29 +509,23 @@ class VigridPartyMenu extends UIScriptedMenu
             lowered.ToLower();
 
             keys.Insert(lowered);
-            order.Insert(i);
+
+            if (m_Filter == "" || lowered.IndexOf(m_Filter) >= 0)
+                order.Insert(i);
         }
 
         SortOrder(order, keys, rpc.list_uids);
     }
 
     /**
-     *  Display order for the right column: THE LEADER FIRST, then the rest by name.
+     *  Display order for the party column: THE LEADER FIRST, then the rest by name.
      *
-     *  The open question in #283 was whether to pin the leader, and this is the answer. A party is
-     *  a handful of people, so "findable" is not really what the member column needs; what it needs
-     *  is the one row that is not interchangeable with the others. The leader is who every Invite
-     *  has to come from, who Promote and Kick belong to, and the only member whose identity changes
-     *  what the buttons on YOUR row do. Pinned at the top it is answered by position; sorted into
-     *  the middle it has to be found by reading the tag on each row.
+     *  A party is a handful of people, so what that column needs is not findability but the one row
+     *  that is not interchangeable: the leader is who every Invite has to come from, who Promote and
+     *  Kick belong to, and the only member whose identity changes what the buttons do.
      *
      *  Sorted on GetMemberName, never rpc.roster_names: an offline member's name can arrive as a
-     *  stringtable key and only that accessor resolves it. Sorting the raw value would file every
-     *  such member under `#`.
-     *
-     *  Names are lowered once, into a key array parallel to the ROSTER (so it is indexed by roster
-     *  slot, including the leader's, and stays aligned with roster_uids), rather than lowered inside
-     *  the comparison - which would be O(n log n) proto calls for no reason.
+     *  stringtable key and only that accessor resolves it.
      */
     private void BuildMemberOrder(VigridPartyRPC rpc, array<int> order)
     {
@@ -410,15 +551,39 @@ class VigridPartyMenu extends UIScriptedMenu
             order.InsertAt(rpc.leader_index, 0);
     }
 
+    //! The first character of a name, capitalised, for the avatar square. UTF-8 aware.
+    private static string Initial(string name)
+    {
+        if (name == "")
+            return "";
+
+        string first = name.SubstringUtf8(0, 1);
+        first.ToUpper();
+        return first;
+    }
+
+    private bool IsInvitePending(VigridPartyRPC rpc, int list_index)
+    {
+        if ((rpc.list_flags.Get(list_index) & VIGRID_PARTY_LIST_INVITED) != 0)
+            return true;
+
+        string uid = rpc.list_uids.Get(list_index);
+        return m_SentInvites.Contains(uid);
+    }
+
     private void RefreshOnline(VigridPartyRPC rpc)
     {
         m_InviteTargets.Clear();
 
-        bool can_invite = !rpc.locked;
+        bool full = rpc.roster_uids.Count() > 0 && rpc.roster_uids.Count() >= rpc.max_party_size;
+
+        bool can_invite = !rpc.locked && !full;
         if (rpc.roster_uids.Count() > 0 && rpc.self_index != rpc.leader_index)
             can_invite = false; //!< only the leader may grow an existing party
-        if (rpc.roster_uids.Count() >= rpc.max_party_size && rpc.roster_uids.Count() > 0)
-            can_invite = false;
+
+        int online_count = rpc.list_uids.Count();
+        string heading = Widget.TranslateString("#STR_PARTY_ONLINE_PLAYERS");
+        m_OnlineLabel.SetText(heading + " · " + online_count.ToString());
 
         //--- Display order only - `index` is the data index, `shown` is the row slot it is painted
         //--- into. Everything below reads rpc.list_* with `index` and never with the loop counter.
@@ -438,44 +603,54 @@ class VigridPartyMenu extends UIScriptedMenu
 
             TextWidget name_widget = TextWidget.Cast(row.FindAnyWidget("PlayerRowName"));
             TextWidget status_widget = TextWidget.Cast(row.FindAnyWidget("PlayerRowStatus"));
-            Widget accent_widget = row.FindAnyWidget("PlayerRowAccent");
+            TextWidget initial_widget = TextWidget.Cast(row.FindAnyWidget("PlayerRowInitial"));
             ButtonWidget invite_button = ButtonWidget.Cast(row.FindAnyWidget("PlayerRowInviteButton"));
+            Widget sent_widget = row.FindAnyWidget("PlayerRowSent");
 
             //--- A broken layout skips the row rather than throwing out of the whole refresh; the
             //--- slot is reused by the next index and trimmed at the end.
-            if (!name_widget || !status_widget || !accent_widget || !invite_button)
+            if (!name_widget || !status_widget || !initial_widget || !invite_button || !sent_widget)
             {
                 VigridPartyLog.Warn("Party menu: player row is missing a widget, skipped");
                 continue;
             }
 
             string row_name = rpc.list_names.Get(index);
+            int flags = rpc.list_flags.Get(index);
+            bool in_party = (flags & VIGRID_PARTY_LIST_IN_PARTY) != 0;
+            int their_size = (flags >> VIGRID_PARTY_LIST_SIZE_SHIFT) & 0xFF;
+            bool pending = IsInvitePending(rpc, index);
+
             name_widget.SetText(row_name);
+            initial_widget.SetText(Initial(row_name));
 
-            //--- bit0 means the server already has them in a party.
-            bool already_in_party = (rpc.list_flags.Get(index) & 1) != 0;
-
-            //--- The button and the status label share the right-hand cell and are mutually
-            //--- exclusive. Saying WHY there is no button is the point: a row that simply lost its
-            //--- button reads as a rendering fault, not as "this player already has a party".
-            invite_button.Show(can_invite && !already_in_party);
-            status_widget.Show(already_in_party);
-
-            if (already_in_party)
+            //--- Saying WHY there is no button is the point: a row that simply lost its button reads
+            //--- as a rendering fault, not as "this player already has a party".
+            if (in_party && their_size > 0)
+            {
+                StringLocaliser sized = new StringLocaliser("STR_PARTY_IN_PARTY_COUNT", their_size.ToString());
+                status_widget.SetText(sized.Format());
+            }
+            else if (in_party)
             {
                 status_widget.SetText("#STR_PARTY_IN_PARTY");
-                accent_widget.SetColor(COLOR_ACCENT_TAKEN);
+            }
+            else if (full && !pending)
+            {
+                status_widget.SetText("#STR_PARTY_FULL_STATUS");
             }
             else
             {
-                accent_widget.SetColor(COLOR_ACCENT_FREE);
+                status_widget.SetText("#STR_PARTY_SOLO");
             }
 
-            //--- Set on both branches, like every other per-row property here: rows are pooled, so
-            //--- one left tinted by an earlier refresh keeps that tint otherwise.
-            name_widget.SetColor(COLOR_MEMBER);
-            if (already_in_party)
-                name_widget.SetColor(COLOR_MEMBER_OFFLINE);
+            if (in_party)
+                status_widget.SetColor(COLOR_MUTED);
+            else
+                status_widget.SetColor(COLOR_DIM);
+
+            invite_button.Show(can_invite && !in_party && !pending);
+            sent_widget.Show(pending && !in_party);
 
             string row_uid = rpc.list_uids.Get(index);
             m_InviteTargets.Set(invite_button, row_uid);
@@ -484,6 +659,27 @@ class VigridPartyMenu extends UIScriptedMenu
         }
 
         TrimPool(m_OnlineRowPool, shown);
+
+        //--- Only a search can empty the list on purpose; an empty server says nothing.
+        bool no_match = shown == 0 && m_Filter != "";
+        m_OnlineEmpty.Show(no_match);
+        if (no_match)
+        {
+            StringLocaliser none = new StringLocaliser("STR_PARTY_NO_MATCH", m_Filter);
+            m_OnlineEmpty.SetText(none.Format());
+        }
+    }
+
+    //! Card colours and which parts of the card show, for the three modes.
+    private void PaintCard(Widget row, int edge, int fill, int avatar, int initial_colour, bool named)
+    {
+        row.FindAnyWidget("MemberRowEdge").SetColor(edge);
+        row.FindAnyWidget("MemberRowFill").SetColor(fill);
+        row.FindAnyWidget("MemberRowAvatar").SetColor(avatar);
+        row.FindAnyWidget("MemberRowInitial").SetColor(initial_colour);
+        row.FindAnyWidget("MemberRowName").Show(named);
+        row.FindAnyWidget("MemberRowStatus").Show(named);
+        row.FindAnyWidget("MemberRowOpen").Show(!named);
     }
 
     private void RefreshMembers(VigridPartyRPC rpc)
@@ -501,57 +697,58 @@ class VigridPartyMenu extends UIScriptedMenu
 
         int shown = 0;
         int count = order.Count();
+        int i = 0;
+        Widget row = null;
+        TextWidget name_widget = null;
+        TextWidget status_widget = null;
+        TextWidget initial_widget = null;
 
-        for (int i = 0; i < count; i++)
+        for (i = 0; i < count; i++)
         {
             int index = order.Get(i);
 
-            Widget row = EnsureRow(m_MemberRowPool, m_MemberRows, "party_menu_member_row.layout", shown);
+            row = EnsureRow(m_MemberRowPool, m_MemberRows, "party_menu_member_row.layout", shown);
             if (!row)
                 break;
 
-            TextWidget name_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowName"));
-            TextWidget status_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowStatus"));
-            Widget accent_widget = row.FindAnyWidget("MemberRowAccent");
+            name_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowName"));
+            status_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowStatus"));
+            initial_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowInitial"));
             ButtonWidget promote_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowPromoteButton"));
             ButtonWidget kick_button = ButtonWidget.Cast(row.FindAnyWidget("MemberRowKickButton"));
 
-            if (!name_widget || !status_widget || !accent_widget || !promote_button || !kick_button)
+            if (!name_widget || !status_widget || !initial_widget || !promote_button || !kick_button)
             {
                 VigridPartyLog.Warn("Party menu: member row is missing a widget, skipped");
                 continue;
             }
 
+            //--- The avatar takes the member's party slot colour - the same palette entry their
+            //--- nametag, HUD row, map marker and pings use. Asked for by SLOT, which is why the
+            //--- sort had to stay a display order.
+            PaintCard(row, COLOR_CARD_EDGE, COLOR_CARD, VigridPartyAPI.GetMemberColour(index, 0.18), VigridPartyAPI.GetMemberColour(index, 1.0), true);
+
             //--- Through the API, not rpc.roster_names: an offline member's name can arrive as a
             //--- stringtable key and only GetMemberName resolves it.
-            name_widget.SetText(VigridPartyAPI.GetMemberName(index));
+            string member_name = VigridPartyAPI.GetMemberName(index);
+            name_widget.SetText(member_name);
+            initial_widget.SetText(Initial(member_name));
 
-            //--- The member's party slot colour - the same palette entry their nametag, HUD row, map
-            //--- marker and pings use, so identity is one glance in every surface. Asked for by SLOT,
-            //--- which is why the sort had to stay a display order: reordering the roster itself
-            //--- would repaint every teammate a different colour in five other surfaces at once.
-            accent_widget.SetColor(VigridPartyAPI.GetMemberColour(index, 1.0));
-
-            //--- Leader and Offline now live on their own line rather than being appended to the
-            //--- name. Appending had to happen after GetMemberName had already localised the name,
-            //--- could not be styled apart from it, and lengthened the tightest cell in the row.
-            //--- Offline wins when a member is both: it is the more actionable of the two.
             bool online = VigridPartyAPI.IsMemberOnline(index);
-            bool is_row_leader = (index == rpc.leader_index);
+            row.FindAnyWidget("MemberRowBadge").Show(index == rpc.leader_index);
 
-            status_widget.Show(!online || is_row_leader);
-
-            if (!online)
+            if (index == rpc.self_index)
+                status_widget.SetText("#STR_PARTY_STATUS_YOU");
+            else if (!online)
                 status_widget.SetText("#STR_PARTY_HUD_OFFLINE");
-            else if (is_row_leader)
-                status_widget.SetText("#STR_PARTY_LEADER_TAG");
-
-            //--- The colour is set on BOTH branches on purpose: rows are pooled, so a row left grey
-            //--- by an earlier refresh stays grey otherwise.
-            if (online)
-                name_widget.SetColor(COLOR_MEMBER);
             else
-                name_widget.SetColor(COLOR_MEMBER_OFFLINE);
+                status_widget.SetText("#STR_PARTY_STATUS_ONLINE");
+
+            //--- Both branches, on purpose: rows are pooled and keep their last colour otherwise.
+            if (online)
+                name_widget.SetColor(COLOR_TEXT);
+            else
+                name_widget.SetColor(COLOR_MUTED);
 
             //--- Never offer to promote or kick yourself; leaving is what that button is for.
             bool actionable = is_leader && !rpc.locked && index != rpc.self_index;
@@ -565,28 +762,226 @@ class VigridPartyMenu extends UIScriptedMenu
             shown = shown + 1;
         }
 
+        //--- Invitations on their way take the next cards, then open slots fill the party's size.
+        //--- No slots at all while the formation is locked: nobody can be invited then.
+        int capacity = rpc.max_party_size;
+        if (rpc.locked)
+            capacity = shown;
+
+        int list_count = rpc.list_uids.Count();
+        for (i = 0; i < list_count && shown < capacity; i++)
+        {
+            if (!IsInvitePending(rpc, i))
+                continue;
+            if ((rpc.list_flags.Get(i) & VIGRID_PARTY_LIST_IN_PARTY) != 0)
+                continue;
+
+            row = EnsureRow(m_MemberRowPool, m_MemberRows, "party_menu_member_row.layout", shown);
+            if (!row)
+                break;
+
+            string pending_name = rpc.list_names.Get(i);
+            PaintCard(row, COLOR_PENDING_EDGE, COLOR_WINDOW, COLOR_AVATAR_NEUTRAL, COLOR_MUTED, true);
+            name_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowName"));
+            status_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowStatus"));
+            initial_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowInitial"));
+            name_widget.SetText(pending_name);
+            name_widget.SetColor(COLOR_TEXT);
+            status_widget.SetText("#STR_PARTY_STATUS_PENDING");
+            initial_widget.SetText(Initial(pending_name));
+            HideCardExtras(row);
+
+            shown = shown + 1;
+        }
+
+        while (shown < capacity)
+        {
+            row = EnsureRow(m_MemberRowPool, m_MemberRows, "party_menu_member_row.layout", shown);
+            if (!row)
+                break;
+
+            PaintCard(row, COLOR_OPEN_EDGE, COLOR_WINDOW, COLOR_AVATAR_OPEN, COLOR_DIM, false);
+            initial_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowInitial"));
+            initial_widget.SetText("+");
+            HideCardExtras(row);
+
+            shown = shown + 1;
+        }
+
         TrimPool(m_MemberRowPool, shown);
+    }
+
+    private void HideCardExtras(Widget row)
+    {
+        row.FindAnyWidget("MemberRowBadge").Show(false);
+        row.FindAnyWidget("MemberRowPromoteButton").Show(false);
+        row.FindAnyWidget("MemberRowKickButton").Show(false);
+    }
+
+    //------------------------------------------------------------------------------------------
+    //--- Layout. Script works in real pixels, the layout in 1920 reference units.
+    //------------------------------------------------------------------------------------------
+
+    private float Scale()
+    {
+        if (!m_Dialog)
+            return 0;
+
+        float w;
+        float h;
+        m_Dialog.GetScreenSize(w, h);
+        return w / LAYOUT_DIALOG_W;
+    }
+
+    private float TextWidth(TextWidget t)
+    {
+        int w = 0;
+        int h = 0;
+        if (t)
+            t.GetTextSize(w, h);
+        return w;
+    }
+
+    private void Relayout()
+    {
+        float s = Scale();
+        if (s <= 0)
+            return;
+
+        //--- The close key cap fits whatever the menu key is bound to.
+        float cap_w = TextWidth(m_CloseKeyText) + 24 * s;
+        if (cap_w < 54 * s)
+            cap_w = 54 * s;
+        m_CloseKey.SetSize(cap_w, 30 * s);
+
+        LayoutBody(s);
+        LayoutFooter(s);
+        LayoutCards(s);
+    }
+
+    //! The columns start under the invitation banner while there is one.
+    private void LayoutBody(float s)
+    {
+        float top = BODY_TOP;
+        if (m_InviteBanner.IsVisible())
+            top = BODY_TOP_BANNER;
+
+        float h = FOOTER_TOP - top;
+        m_Body.SetPos(0, top * s);
+        m_Body.SetSize(LAYOUT_DIALOG_W * s, h * s);
+        m_ColumnLine.SetSize(2 * s, h * s);
+        m_OnlineColumn.SetSize(866 * s, h * s);
+        m_PartyScroll.SetSize((CARD_W + 18) * s, (h - 66 - 24) * s);
+        m_OnlineScroll.SetSize(806 * s, (h - 86 - 24) * s);
+    }
+
+    //! Buttons sized to their labels from the left; the ping hints right-aligned.
+    private void LayoutFooter(float s)
+    {
+        float x = 42 * s;
+        x = PlaceFooterButton(m_CreateButton, m_CreateLabel, x, s);
+        x = PlaceFooterButton(m_LeaveButton, m_LeaveLabel, x, s);
+        PlaceFooterButton(m_DisbandButton, m_DisbandLabel, x, s);
+
+        float right = (LAYOUT_DIALOG_W - 42) * s;
+        right = PlaceHint(m_PingClearKey, m_PingClearKeyText, m_PingClearHint, right, s) - 30 * s;
+        PlaceHint(m_PingKey, m_PingKeyText, m_PingHint, right, s);
+    }
+
+    private float PlaceFooterButton(ButtonWidget button, TextWidget label, float x, float s)
+    {
+        if (!button.IsVisible())
+            return x;
+
+        float w = TextWidth(label) + 48 * s;
+        if (w < 150 * s)
+            w = 150 * s;
+
+        button.SetPos(x, 21 * s);
+        button.SetSize(w, 60 * s);
+        return x + w + 15 * s;
+    }
+
+    //! [key] hint, ending at `right`. Returns its left edge.
+    private float PlaceHint(Widget cap, TextWidget cap_text, TextWidget hint, float right, float s)
+    {
+        float hint_w = TextWidth(hint);
+        hint.SetPos(right - hint_w, 36 * s);
+        hint.SetSize(hint_w, 30 * s);
+
+        float cap_w = TextWidth(cap_text) + 18 * s;
+        if (cap_w < 36 * s)
+            cap_w = 36 * s;
+
+        float cap_x = right - hint_w - 12 * s - cap_w;
+        cap.SetPos(cap_x, 36 * s);
+        cap.SetSize(cap_w, 30 * s);
+        return cap_x;
+    }
+
+    //! The leader badge just after the name, and the name stopping short of the buttons.
+    private void LayoutCards(float s)
+    {
+        int count = m_MemberRowPool.Count();
+        for (int i = 0; i < count; i++)
+        {
+            Widget row = m_MemberRowPool.Get(i);
+            TextWidget name_widget = TextWidget.Cast(row.FindAnyWidget("MemberRowName"));
+            Widget badge = row.FindAnyWidget("MemberRowBadge");
+            TextWidget badge_text = TextWidget.Cast(row.FindAnyWidget("MemberRowBadgeText"));
+            Widget promote = row.FindAnyWidget("MemberRowPromoteButton");
+
+            float name_max = CARD_W - 99;
+            if (promote.IsVisible())
+                name_max = CARD_W - 84 - 15 - 249 - 12;
+
+            name_widget.SetSize(name_max * s, 36 * s);
+
+            if (!badge.IsVisible())
+                continue;
+
+            float badge_w = TextWidth(badge_text) + 18 * s;
+            float name_w = TextWidth(name_widget);
+            if (name_w > name_max * s - badge_w - 12 * s)
+                name_w = name_max * s - badge_w - 12 * s;
+
+            badge.SetPos(84 * s + name_w + 12 * s, 18 * s);
+            badge.SetSize(badge_w, 27 * s);
+        }
+    }
+
+    //------------------------------------------------------------------------------------------
+    //--- Input
+    //------------------------------------------------------------------------------------------
+
+    override bool OnChange(Widget w, int x, int y, bool finished)
+    {
+        if (w != m_SearchEdit)
+            return super.OnChange(w, x, y, finished);
+
+        string filter = m_SearchEdit.GetText();
+        filter.TrimInPlace();
+        filter.ToLower();
+
+        m_SearchPlaceholder.Show(m_SearchEdit.GetText() == "");
+
+        if (filter == m_Filter)
+            return true;
+
+        m_Filter = filter;
+        RefreshOnline(VigridPartyRPC.GetInstance());
+        return true;
     }
 
     /**
      *  Scroll whichever column the pointer is over.
      *
      *  A ScrollWidget does NOT scroll itself on the mouse wheel - nothing in the engine converts the
-     *  wheel into a scroll, and no vanilla script calls VScrollStep at all. Vanilla's own
-     *  ScrollBarContainer implements the wheel by hand (scrollbarcontainer.c:220) and that is the
-     *  precedent being followed here.
-     *
-     *  This is a SEPARATE defect from the one that made the list clip, and fixing that one is what
-     *  exposed it: with a correct WrapSpacer the content really is taller than the viewport and the
-     *  scrollbar really does appear, so the list looks scrollable and simply is not. Both halves are
-     *  needed. `GetContentHeight()` and `IsScrollbarVisible()` cannot see this - they were already
-     *  reporting 556 px against a 360 px viewport with the bar shown.
+     *  wheel into a scroll. Vanilla's own ScrollBarContainer implements it by hand
+     *  (scrollbarcontainer.c:220) and that is the precedent being followed here.
      *
      *  Which column is decided from the pointer's screen rect rather than from `w`, because `w` is
-     *  whatever child happens to be under the cursor - a row, a text cell, a button, or the empty
-     *  spacer below the last row - and walking its parents is one more thing to get wrong.
-     *
-     *  Sign follows vanilla's convention in the same method: a positive wheel scrolls UP.
+     *  whatever child happens to be under the cursor. Sign follows vanilla: a positive wheel scrolls UP.
      */
     override bool OnMouseWheel(Widget w, int x, int y, int wheel)
     {
@@ -682,7 +1077,12 @@ class VigridPartyMenu extends UIScriptedMenu
 
         if (m_InviteTargets.Contains(w))
         {
-            client.Invite(m_InviteTargets.Get(w));
+            string invited_uid = m_InviteTargets.Get(w);
+            client.Invite(invited_uid);
+
+            //--- Pending at once; the next list reply confirms it or takes it back.
+            m_SentInvites.Set(invited_uid, true);
+            RefreshAll(VigridPartyRPC.GetInstance());
             return true;
         }
 

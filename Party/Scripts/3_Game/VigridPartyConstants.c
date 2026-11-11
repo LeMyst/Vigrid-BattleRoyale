@@ -78,6 +78,11 @@ static const int VIGRID_PARTY_FLAG_ONLINE = 1;      // bit0
 static const int VIGRID_PARTY_FLAG_ALIVE = 2;       // bit1
 static const int VIGRID_PARTY_FLAG_UNCONSCIOUS = 4; // bit2 - populated but unstyled in v1
 
+//--- Per-player flags carried by VP_PlayerList.
+static const int VIGRID_PARTY_LIST_IN_PARTY = 1;     // bit0: already in a party
+static const int VIGRID_PARTY_LIST_INVITED = 2;      // bit1: the requester has an invite pending to them
+static const int VIGRID_PARTY_LIST_SIZE_SHIFT = 8;   // bits 8-15: the size of their party, 0 if none
+
 /**
  *  What VigridPartyAPI.AutoGroup does with the players left over once it has formed as many parties
  *  of min_size as the pool allows. There are always fewer than min_size of them, so by definition

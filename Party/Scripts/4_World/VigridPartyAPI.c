@@ -1073,9 +1073,13 @@ class VigridPartyAPI
             rpc.list_uids.Insert(DEBUG_ONLINE_PREFIX + i);
             rpc.list_names.Insert(DebugPoolName(pool, i));
 
+            //--- Every third entry is in somebody's party, sized 2 or 3 as the server would say, and
+            //--- every seventh has an invite from you pending - the server's two other bits.
             int entry_flags = 0;
             if ((i % 3) == 2)
-                entry_flags = 1;
+                entry_flags = VIGRID_PARTY_LIST_IN_PARTY | ((2 + (i % 2)) << VIGRID_PARTY_LIST_SIZE_SHIFT);
+            else if ((i % 7) == 4)
+                entry_flags = VIGRID_PARTY_LIST_INVITED;
 
             rpc.list_flags.Insert(entry_flags);
         }

@@ -110,6 +110,11 @@ modded class MissionGameplay
         if (!close_input.LocalPress())
             return false;
 
+        //--- A "p" typed into the search box is a letter, not the menu key. Esc above still closes.
+        VigridPartyMenu party_menu = VigridPartyMenu.Cast(m_UIManager.FindMenu(MENU_VIGRID_PARTY));
+        if (party_menu && party_menu.IsTyping())
+            return false;
+
         m_UIManager.CloseMenu(MENU_VIGRID_PARTY);
         return true;
     }

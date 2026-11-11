@@ -1,120 +1,330 @@
-// One party member in the menu's right column.
-//
-// Same construct and the same reasoning as party_menu_player_row.layout - read that header, and
-// party_hud_row.layout's, before changing anything about the panels or the fonts.
-//
-// Two lines, matching the HUD panel: the name, then the member's state underneath it. That is what
-// replaced appending " *" and " (Offline)" to the name string - suffixes that had to be built after
-// GetMemberName() had already localised the name, could not be styled separately from it, and grew
-// the one cell that was already the tightest.
-//
-// The accent bar carries the member's PARTY SLOT COLOUR, from the same VigridPartyPalette entry
-// their nametag, their HUD row, their map marker and their pings use. It is what makes "who is who"
-// one glance in every surface rather than a name comparison in each.
+// One card in the party column: a member, a pending invite or an open slot. Mode, colours and
+// the badge and button positions are set by VigridPartyMenu. Generated - see Tools/layouts.
 PanelWidgetClass MemberRowRoot {
  visible 1
+ ignorepointer 1
+ inheritalpha 0
  position 0 0
- size 384 44
+ size 492 93
  hexactpos 1
  vexactpos 1
  hexactsize 1
  vexactsize 1
- color 1 1 1 1
+ color 1 1 1 0
+ style rover_sim_colorable
  {
-  PanelWidgetClass MemberRowBackdrop {
-   visible 1
+  PanelWidgetClass MemberRowEdge {
    ignorepointer 1
-   inheritalpha 1
+   inheritalpha 0
    position 0 0
-   size 384 40
+   size 492 84
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   color 1 1 1 0.07
+   color 1 1 1 0.08
    style rover_sim_colorable
   }
-  PanelWidgetClass MemberRowAccent {
-   visible 1
+  PanelWidgetClass MemberRowFill {
    ignorepointer 1
-   inheritalpha 1
-   position 0 0
-   size 3 40
+   inheritalpha 0
+   position 2 2
+   size 488 80
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   color 1 1 1 1
+   color 0.09 0.106 0.118 1
    style rover_sim_colorable
+  }
+  PanelWidgetClass MemberRowAvatar {
+   ignorepointer 1
+   inheritalpha 0
+   position 15 15
+   size 54 54
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.239 0.725 0.651 0.18
+   style rover_sim_colorable
+   {
+    TextWidgetClass MemberRowInitial {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     color 0.361 0.827 0.753 1
+     text ""
+     font "gui/fonts/metron-bold22"
+     "exact text" 1
+     "exact text size" 22
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
   TextWidgetClass MemberRowName {
-   inheritalpha 1
    ignorepointer 1
-   position 12 2
-   size 152 22
+   inheritalpha 0
+   position 84 12
+   size 393 36
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   text "Survivor"
+   color 0.925 0.929 0.933 1
+   text ""
    font "gui/fonts/metron-bold22"
-   "shadow size" 3
-   "shadow color" 0 0 0 1
-   "shadow offset" 1 1
    "exact text" 1
-   "exact text size" 18
-   "size to text h" 0
-   "size to text v" 0
+   "exact text size" 22
    "text halign" left
    "text valign" center
   }
-  // Leader / Offline. Empty and invisible for an ordinary online member, so a plain row is a single
-  // line of name with nothing under it rather than a blank reserved strip.
-  TextWidgetClass MemberRowStatus {
-   visible 0
-   inheritalpha 1
+  PanelWidgetClass MemberRowBadge {
    ignorepointer 1
-   position 12 22
-   size 152 16
+   inheritalpha 0
+   position 0 18
+   size 75 27
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
+   color 0.239 0.725 0.651 0.16
+   style rover_sim_colorable
+   visible 0
+   {
+    TextWidgetClass MemberRowBadgeText {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     color 0.361 0.827 0.753 1
+     text "#STR_PARTY_LEADER_TAG"
+     font "gui/fonts/metron-bold16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
+  }
+  TextWidgetClass MemberRowStatus {
+   ignorepointer 1
+   inheritalpha 0
+   position 84 45
+   size 393 27
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0.608 0.631 0.651 1
    text ""
    font "gui/fonts/metron16"
-   "shadow size" 3
-   "shadow color" 0 0 0 1
-   "shadow offset" 1 1
    "exact text" 1
-   "exact text size" 14
-   "size to text h" 0
-   "size to text v" 0
+   "exact text size" 16
    "text halign" left
    "text valign" center
   }
-  ButtonWidgetClass MemberRowPromoteButton {
-   position 170 4
-   size 100 32
+  TextWidgetClass MemberRowOpen {
+   ignorepointer 1
+   inheritalpha 0
+   position 84 0
+   size 393 84
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   style Editor
-   text "#STR_PARTY_PROMOTE"
-   text_proportion 0.6
-   font "gui/fonts/metron"
+   color 0.502 0.525 0.549 1
+   text "#STR_PARTY_OPEN_SLOT"
+   font "gui/fonts/metron16"
+   "exact text" 1
+   "exact text size" 16
+   "text halign" left
+   "text valign" center
+   visible 0
+  }
+  ButtonWidgetClass MemberRowPromoteButton {
+   position 228 21
+   size 120 42
+   hexactpos 1
+   vexactpos 1
+   hexactsize 1
+   vexactsize 1
+   color 0 0 0 0
+   style Empty
+   "no focus" 0
+   visible 0
+   {
+    PanelWidgetClass MemberRowPromoteButtonEdgeTop {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 2
+     halign left_ref
+     valign top_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     color 1 1 1 0.16
+     style rover_sim_colorable
+    }
+    PanelWidgetClass MemberRowPromoteButtonEdgeBottom {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 2
+     halign left_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     color 1 1 1 0.16
+     style rover_sim_colorable
+    }
+    PanelWidgetClass MemberRowPromoteButtonEdgeLeft {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 2 1
+     halign left_ref
+     valign top_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 0
+     color 1 1 1 0.16
+     style rover_sim_colorable
+    }
+    PanelWidgetClass MemberRowPromoteButtonEdgeRight {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 2 1
+     halign right_ref
+     valign top_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 0
+     color 1 1 1 0.16
+     style rover_sim_colorable
+    }
+    TextWidgetClass MemberRowPromoteButtonLabel {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     color 0.788 0.804 0.82 1
+     text "#STR_PARTY_PROMOTE"
+     font "gui/fonts/metron-bold16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
   ButtonWidgetClass MemberRowKickButton {
-   position 276 4
-   size 100 32
+   position 357 21
+   size 120 42
    hexactpos 1
    vexactpos 1
    hexactsize 1
    vexactsize 1
-   style Editor
-   text "#STR_PARTY_KICK"
-   text_proportion 0.6
-   font "gui/fonts/metron"
+   color 0 0 0 0
+   style Empty
+   "no focus" 0
+   visible 0
+   {
+    PanelWidgetClass MemberRowKickButtonEdgeTop {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 2
+     halign left_ref
+     valign top_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     color 0.898 0.282 0.302 0.45
+     style rover_sim_colorable
+    }
+    PanelWidgetClass MemberRowKickButtonEdgeBottom {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 2
+     halign left_ref
+     valign bottom_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 1
+     color 0.898 0.282 0.302 0.45
+     style rover_sim_colorable
+    }
+    PanelWidgetClass MemberRowKickButtonEdgeLeft {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 2 1
+     halign left_ref
+     valign top_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 0
+     color 0.898 0.282 0.302 0.45
+     style rover_sim_colorable
+    }
+    PanelWidgetClass MemberRowKickButtonEdgeRight {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 2 1
+     halign right_ref
+     valign top_ref
+     hexactpos 1
+     vexactpos 1
+     hexactsize 1
+     vexactsize 0
+     color 0.898 0.282 0.302 0.45
+     style rover_sim_colorable
+    }
+    TextWidgetClass MemberRowKickButtonLabel {
+     ignorepointer 1
+     inheritalpha 0
+     position 0 0
+     size 1 1
+     hexactpos 1
+     vexactpos 1
+     hexactsize 0
+     vexactsize 0
+     color 0.949 0.467 0.482 1
+     text "#STR_PARTY_KICK"
+     font "gui/fonts/metron-bold16"
+     "exact text" 1
+     "exact text size" 16
+     "text halign" center
+     "text valign" center
+    }
+   }
   }
  }
 }

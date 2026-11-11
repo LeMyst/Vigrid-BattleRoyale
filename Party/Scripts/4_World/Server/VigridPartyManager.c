@@ -2038,7 +2038,22 @@ class VigridPartyManager
             //--- letting the player fire an invite the server will only reject.
             int entry_flags = 0;
             if (m_MemberIndex.Contains(uid))
-                entry_flags = entry_flags | 1;
+                entry_flags = entry_flags | VIGRID_PARTY_LIST_IN_PARTY;
+
+            //--- bit1: the requester already invited them, so the row says so instead of offering
+            //--- an Invite the server would silently ignore.
+            if (HasInviteBetween(requester_uid, uid))
+                entry_flags = entry_flags | VIGRID_PARTY_LIST_INVITED;
+
+            //--- bits 8-15: the size of the party they are in, for "In a party (3)".
+            VigridParty their_party = GetPartyByUid(uid);
+            if (their_party)
+            {
+                int their_size = their_party.Count();
+                if (their_size > 255)
+                    their_size = 255;
+                entry_flags = entry_flags | (their_size << VIGRID_PARTY_LIST_SIZE_SHIFT);
+            }
 
             flags.Insert(entry_flags);
         }
