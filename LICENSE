@@ -7,3 +7,9 @@ Attribution - You must attribute the material in the manner specified by the aut
 Noncommercial - You may not use this material for any commercial purposes.
 DayZ SA Only - You may not convert or adapt this material to be used in other games than DayZ SA.
 Share Alike - If you adapt, or build upon this material, you may distribute the resulting material only under the same license.
+
+THIRD-PARTY FILES - EXCEPTION
+
+This license applies only to the material built from the source of Vigrid-BattleRoyale, including its own extra_*.pbo sub-addons.
+
+It does not apply to the third-party PBOs a build of this mod may bundle into its addons folder, nor to their .bisign signatures or to their .bikey keys in the keys folder. Those files are not part of this mod's material: they remain the property of their respective authors and are distributed under their own terms, not under this license. Where such a PBO carries its own licence text, that licence applies to it.

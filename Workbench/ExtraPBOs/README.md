@@ -35,6 +35,10 @@ mod's name**, together with their signing keys. That is a licensing question, no
 - `slowzombies` ships **no licence at all**, so no redistribution right can be assumed from the
   file. Ask Munghard, or list it as a separate server-side mod instead of bundling it.
 
+The mod's `LICENSE` (copied into the built mod by `CI1.bat`) carries a *third-party files*
+exception saying these PBOs stay their authors' and are not under DSPL-SA. That states ownership;
+it grants no redistribution right, so the `slowzombies` caveat above still stands.
+
 The alternative that needs no permission from anybody is to stop bundling: leave `CopyExtraPBOs`
 off and install each as its own `@Mod` in the server's mod list, which is how their authors publish
 them.
