@@ -26,7 +26,7 @@ Of the composer's modules, **the lock, the spectator bubble and the server-brows
 
 Without `serverlock`, `BattleRoyaleNativeLock` (`Scripts/Server/4_World/NativeHooks/`) writes **`$profile:Vigrid-BattleRoyale\server_lock.txt`**:
 
-- **`1` in `2_BattleRoyaleCountReached.Activate`**, beside the Vigrid API and autolock webhooks, i.e. the moment the match countdown starts and the roster freezes.
+- **`1` in `2_BattleRoyaleCountReached.Activate`**, beside the RCon autolock call, i.e. the moment the match countdown starts and the roster freezes.
 - **`0` in `BattleRoyaleServer.Init`**, on every boot.
 
 `server_settings.json` → `write_lock_file` (default `true`) turns the writes off. Writing the file without the hook costs nothing, so the opt-in is the hook's own environment variable: point one module at the file.

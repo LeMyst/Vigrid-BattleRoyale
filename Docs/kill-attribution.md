@@ -4,7 +4,7 @@
 
 **One resolver answers "whose kill was this": `BattleRoyaleKillAttribution`
 (`Scripts/Server/4_World/Entities/`).** Four consumers used to derive it independently and disagreed
-— the spectator killer chain, the `player.kill` webhook, the kill credit, and
+— the spectator killer chain, the old `player.kill` webhook (removed), the kill credit, and
 `PlayerBase.EEHitBy`'s `last_unconscious_source`. Two facts drive it, and both have caused bugs:
 
 - **`EEKilled`'s `source` is the WEAPON** for every gun and melee kill. `ResolvePlayerSource` does
@@ -44,8 +44,8 @@ across, called before `super` because `super` starts the fuse. Same handoff appl
 grenades attached (`ImprovisedExplosive.OnActivatedByItem` activates its own attachments).
 
 **Kill credit lives in `BattleRoyaleKillLedger`, a uid → kills map, and `br_kills` is now a mirror
-of it.** The explosive branch of `0_BattleRoyaleState.OnPlayerKilled` wrote the webhook JSON and then
-fell out of the `if`, so **no grenade or mine kill had ever scored** — not on the HUD counter, the
+of it.** The explosive branch of `0_BattleRoyaleState.OnPlayerKilled` used to write the webhook JSON and then
+fall out of the `if`, so **no grenade or mine kill had ever scored** — not on the HUD counter, the
 admin spectator tags, or the ladder. Both branches funnel through `CreditKill` now, which is a no-op
 on an empty uid. A **corpse** still resolves through `FindPlayerByUid` (the mod never deletes bodies),
 so a dead-but-connected killer watches their own counter tick.

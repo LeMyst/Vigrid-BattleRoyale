@@ -24,6 +24,10 @@ class BattleRoyaleRestart: BattleRoyaleState
         //--- one, and any latch protecting it would then refuse this good one.
         BattleRoyaleMatchStats.GetInstance().EndMatch();
 
+        //--- The stats API's finish call: every row of the match in one POST, so the 10 s before
+        //--- RequestExit below is its whole budget (BR_API_TRIES tries). A no-op with the API off.
+        BattleRoyaleApiReport.Finish( BattleRoyaleServer.GetInstance().match_uuid );
+
         //--- Same reasoning for spectators: 8_BattleRoyaleWin normally gets here first, but this
         //--- state is reached by every match end. EndAll() latches, so the second call is a no-op.
         //--- Nothing here can delay the shutdown - IsComplete() is unconditionally false and the

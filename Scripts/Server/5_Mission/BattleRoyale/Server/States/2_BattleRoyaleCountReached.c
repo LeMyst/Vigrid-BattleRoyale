@@ -26,18 +26,9 @@ class BattleRoyaleCountReached: BattleRoyaleDebugState
 
     	BattleRoyaleConfig m_Config = BattleRoyaleConfig.GetConfig();
         BattleRoyaleServerData m_ServerData = m_Config.GetServerData();
-		if ( m_ServerData.enable_vigrid_api )
-		{
-			// Lock the server via webhook
-			LockServerWebhook serverWebhook = new LockServerWebhook( m_ServerData.webhook_jwt_token );
-			serverWebhook.LockServer();
-		}
-
-		if ( m_ServerData.use_autolock && m_ServerData.autolock_url != "" && m_ServerData.autolock_ip != "" && m_ServerData.autolock_port > 0 && m_ServerData.autolock_rcon_password != "" )
-		{
-			AutoLockWebhook autoLockWebhook = new AutoLockWebhook( m_ServerData.autolock_url, m_ServerData.autolock_ip, m_ServerData.autolock_port, m_ServerData.autolock_rcon_password );
-			autoLockWebhook.LockServer();
-		}
+		//--- RCon lock through the stats API. The heartbeat reports the countdown on its own.
+		if ( m_ServerData.use_autolock )
+			BattleRoyaleApiCalls.Rcon( m_ServerData.autolock_rcon_password, true );
 
 		//--- Native lock through the dzhooks sentinel file - a no-op without the hook. Cleared again
 		//--- by BattleRoyaleServer.Init on the next boot, never at match end: see BattleRoyaleNativeLock.

@@ -16,9 +16,8 @@ finds you). That last property is why the uid must stay in the file.
 existing `ResolveKillerUid` and for the same reason that class exists — weapon-and-range already had
 *two* independent derivations in the tree (`Extra/KillFeed/KillFeedDeath.c` and the webhook JSON block
 in `0_BattleRoyaleState.OnPlayerKilled`), and a third inline copy would repeat the original mistake. It
-is 4_World because `PlayerBase` and `BattleRoyaleMatchStats` both need it. The webhook's own copy is
-deliberately **not** refactored onto it: that is an external Vigrid API contract and a
-behaviour-preserving change there is not locally verifiable.
+is 4_World because `PlayerBase` and `BattleRoyaleMatchStats` both need it. The webhook's copy is gone:
+the stats API now takes kills and causes from the `last_match.json` rows in its `finish` call.
 
 `BattleRoyaleKillCause` (2_GameLib, unguarded) is **BR-owned and numerically independent of
 `KillFeedCause`** — that addon is optional by contract and can be deleted from the build. Do not

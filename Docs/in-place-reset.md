@@ -13,7 +13,7 @@ Without its native hook, or when anything goes wrong, the server restarts exactl
   only when the hook injects `DZHOOK_CE_REFILL`, so a server without it builds and restarts as before.
 - **`CleanupLifetimeLimit` 5000** in the mission's `db/globals.xml`. At the stock 50 the old loot takes
   over an hour to drain, and the next match starts on a mostly un-drained map.
-- **`use_autolock` off.** `AutoLockWebhook` has no unlock, so the lobby could never reopen.
+- **`use_autolock` is fine.** The old `AutoLockWebhook` had no unlock and blocked the reset; the stats API's `servers/rcon` unlocks again when the new `BattleRoyaleServer` starts.
 
 ## Settings (`server_settings.json`, version 6)
 

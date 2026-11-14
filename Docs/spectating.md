@@ -10,7 +10,7 @@ death *screen* itself replaces the engine fade unconditionally — see below.
 
 Two earlier attempts entered spectate on *reconnect* (the system removed in `e6a0e1b`, and the
 unmerged `test-vpp-spectate` branch). That can never work here: `2_BattleRoyaleCountReached` locks
-the server through the autolock webhook, and vanilla `MissionServer` calls `InvokeOnConnect` only
+the server through RCon autolock, and vanilla `MissionServer` calls `InvokeOnConnect` only
 from `ClientNewEvent`/`ClientReadyEvent`, never from `ClientRespawnEvent`.
 
 The mechanism is DayZ's own **`GetGame().SelectSpectator(identity, "BattleRoyaleSpectatorCamera", pos)`**

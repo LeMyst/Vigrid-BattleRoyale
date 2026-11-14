@@ -1,35 +1,33 @@
 #ifdef SERVER
 class BattleRoyaleServerData: BattleRoyaleDataBase
 {
-	int version = 6;  // Config version
+	int version = 7;  // Config version
 
-	// Enable Vigrid API support
-	bool enable_vigrid_api = false;
+	// Report this server to the stats site's API (/api/v2): server list, leaderboards, Discord
+	// notifications, matchmaking. Also needs api_url and api_key. See BattleRoyaleApi.
+	bool enable_api = false;
 
-	// Server password (to pass it to the Vigrid API)
+	// Base URL of the stats site, e.g. "https://example.org/". Empty = no API call is made.
+	string api_url = "";
+
+	// This server's API key, from the site's dashboard ("srv_..."). Never logged.
+	string api_key = "";
+
+	// Server password, handed to the players matchmaking sends here.
 	// Must be the same as the one in the serverDZ.cfg
 	string server_password = "changeme";
 
-	// JWT Token for the Vigrid API webhook
-    string webhook_jwt_token = "changeme";
-
-    // Force getting a match UUID from the webhook, otherwise restart the server
+    // Force getting a match id from the API, otherwise restart the server
     bool force_match_uuid = false;
 
-    // If the server should warn the players if no UUID is received
-    // Only has an effect when enable_vigrid_api is true
+    // If the server should warn the players if no match id is received
+    // Only has an effect when the API is enabled
     bool warning_no_uuid = true;
 
-	// Autolock the server when a match starts
-	// Gonna make a POST request to the autolock URL at the start of the match
-	// Alternative to using the Vigrid API to lock the server
-	// Autolock URL MUST BE in the format http(s)://<autolock_url>/autolock/<autolock_ip>/<autolock_port> and the payload must be a JSON object with the rcon_password field
-	// Example: { "rcon_password": "mypassword" }
+	// Lock the server over BattlEye RCon when the countdown starts, and unlock it at the next lobby.
+	// Goes through the API, which only ever targets the IP and RCon port registered for this server
+	// on the site. Needs the API enabled. The password is sent with each call, never stored there.
 	bool use_autolock = false;
-
-	string autolock_url = "https://api.vigrid.ovh/";  // Autolock API URL (mandatory if use_autolock is true)
-	string autolock_ip = "";  // Server RCon IP (mandatory if use_autolock is true)
-	int autolock_port = 2305;  // Server RCon Port (mandatory if use_autolock is true)
 	string autolock_rcon_password = "";  // Server RCon Password (mandatory if use_autolock is true)
 
 	// Write $profile:Vigrid-BattleRoyale\server_lock.txt: "1" when the match countdown starts, "0" at boot.
@@ -129,6 +127,16 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 
 	override void Upgrade()
 	{
+		//--- First, while the file on disk is still the old one: every branch below Save()s.
+		bool old_enable_api = false;
+		if (version < 7 && FileExist(GetProfilePath()))
+		{
+			BattleRoyaleServerDataV6 old_data = new BattleRoyaleServerDataV6();
+			string old_error;
+			if (JsonFileLoader<BattleRoyaleServerDataV6>.LoadFile(GetProfilePath(), old_data, old_error))
+				old_enable_api = old_data.enable_vigrid_api;
+		}
+
 		if (version < 2)
 		{
 			// warning_no_uuid was never read before v2, the warning was always shown.
@@ -184,6 +192,24 @@ class BattleRoyaleServerData: BattleRoyaleDataBase
 			version = 6;
 			Save();  // Save the upgraded config
 		}
+
+		if (version < 7)
+		{
+			// v7 moved to the new stats API. enable_vigrid_api became enable_api (read above, before
+			// any older branch's Save() rewrote the file without it). webhook_jwt_token, autolock_url,
+			// autolock_ip and autolock_port are dropped: the old token is not valid on the new API, and
+			// the site knows the server's own RCon address. Nothing is sent until api_url and api_key are set.
+			enable_api = old_enable_api;
+
+			version = 7;
+			Save();  // Save the upgraded config
+		}
 	}
+};
+
+//! The v6 keys v7 renamed, read once by Upgrade().
+class BattleRoyaleServerDataV6
+{
+	bool enable_vigrid_api = false;
 };
 #endif

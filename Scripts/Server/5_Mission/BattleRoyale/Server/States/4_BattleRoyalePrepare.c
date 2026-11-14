@@ -50,13 +50,8 @@ class BattleRoyalePrepare: BattleRoyaleState
         //--- because a refill after this point would put loot back in houses being looted.
         BattleRoyaleInPlaceReset.OnPrepareStarted();
 
-		if ( m_ServerData.enable_vigrid_api )
-		{
-			StartMatchWebhook matchWebhook = new StartMatchWebhook( m_ServerData.webhook_jwt_token );
-			BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-			br_instance.AbandonPendingMatchRegistration();
-			matchWebhook.startMatch( br_instance.match_uuid );
-		}
+		//--- An admin-forced start can get here with the registration still pending: run unregistered.
+		BattleRoyaleServer.GetInstance().AbandonPendingMatchRegistration();
 
         //TODO: spawn & setup drop plane
         GetRPCManager().SendRPC( RPC_DAYZBR_NAMESPACE, "SetFade", new Param1<bool>(true), true); //fade out screen
@@ -909,7 +904,6 @@ class BattleRoyalePrepare: BattleRoyaleState
         BattleRoyaleUtils.Trace("Gave starting items");
 
         BattleRoyaleServer br_instance = BattleRoyaleServer.GetInstance();
-        array<ref map<string, string>> parties_list = new array<ref map<string, string>> ();
 
 		if (b_EnableSpawnSelectionMenu)
 		{
@@ -1017,55 +1011,9 @@ class BattleRoyalePrepare: BattleRoyaleState
 		}
         BattleRoyaleUtils.Trace("Teleported players");
 
-		if ( m_ServerData.enable_vigrid_api )
-		{
-			//--- One map per group, keyed by SteamID64. Without parties every group holds one
-			//--- player, which reproduces exactly what the non-party branch used to send - so the
-			//--- payload shape is identical either way and there is a single encoding loop.
-			array<ref array<PlayerBase>> api_groups = BuildPartyGroups();
-			int apiGroupCount = api_groups.Count();
-
-			for (i = 0; i < apiGroupCount; i++) {
-				array<PlayerBase> api_group = api_groups.Get(i);
-				map<string, string> party = new map<string, string>();
-
-				int tmpNbPlayers = api_group.Count();
-				for(int j = 0; j < tmpNbPlayers; j++)
-				{
-					process_player = api_group.Get(j);
-
-					//--- The identity guard used to be missing on the non-party path, where a
-					//--- player disconnecting mid-preparation would dereference null.
-					if ( !process_player )
-						continue;
-					if ( !process_player.GetIdentity() )
-						continue;
-
-					BattleRoyaleUtils.Trace( process_player.GetIdentity().GetPlainId() );
-
-					// Encode player name to Base16
-					//--- ResolveUid rather than ResolveIdentity so the unresolved case still falls back
-					//--- to GetPlainName() exactly as it did: this payload never carried the engine's
-					//--- " (2)" duplicate suffix and should not start now.
-					string payload_name = BattleRoyaleNameService.ResolveUid( process_player.GetIdentity().GetPlainId(), process_player.GetIdentity().GetPlainName() );
-					CF_StringStream string_stream = CF_StringStream( payload_name );
-					CF_Base16Stream base16_stream = CF_Base16Stream();
-					string_stream.CopyTo( base16_stream );
-					party.Insert( process_player.GetIdentity().GetPlainId(), base16_stream.Encode() );
-				}
-
-				if ( party.Count() > 0 )
-					parties_list.Insert( party );
-			}
-
-#ifdef BR_TRACE_ENABLED
-			Print( parties_list );
-#endif
-
-			PartiesWebhook partiesWebhook = new PartiesWebhook( m_ServerData.webhook_jwt_token );
-			partiesWebhook.postParties( br_instance.match_uuid, parties_list );
-			BattleRoyaleUtils.Trace("Parties list sent");
-		}
+		//--- The roster as it lands: one entry per player with its group index. Positions, kills and
+		//--- wins all come later, in the one finish call (9_BattleRoyaleRestart).
+		BattleRoyaleApiReport.Start( br_instance.match_uuid, BuildPartyGroups() );
 
         // plz fix this
         Sleep(1000);
