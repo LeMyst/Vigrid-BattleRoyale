@@ -269,6 +269,7 @@ The tree was swept clean in #76 / #309 — **120 removals across 29 files** (110
 | [`Docs/map.md`](Docs/map.md) | `Extra/Map/`, `Extra/MapSatellite/`, and every `VigridMapAPI` call |
 | [`Docs/earplugs.md`](Docs/earplugs.md) | `Extra/EarPlugs/` |
 | [`Docs/native-hooks.md`](Docs/native-hooks.md) | the optional dzhooks native hook library, `BattleRoyaleNativeLock`, `server_lock.txt`, `write_lock_file`, `BattleRoyaleNativeBubble`, `BattleRoyaleNativeAnnounce`, `BattleRoyaleNativeRefill` and the server-browser name |
+| [`Docs/matchmaking.md`](Docs/matchmaking.md) | the main-menu Play button, `MatchMakingWebhook`, the Vigrid API matchmaking contract, `Tools/mm_stub.py` |
 | [`Docs/in-place-reset.md`](Docs/in-place-reset.md) | `BattleRoyaleInPlaceReset`, the `in_place_reset*` settings, `9_BattleRoyaleRestart`, `BattleRoyaleCorpses`, any `ResetForNewMatch`, and any new static that holds match state |
 
 What stays in this file is what nearly every change needs: build and test, the EnfusionScript rules, the script-module split, the match state machine, networking, settings, localization and the key map. When a new subsystem note outgrows a few paragraphs here, give it a file in `Docs/` and a row above.
@@ -416,7 +417,7 @@ Keybinds are declared in `Data/Inputs.xml` (`UADayZBRReadyUp` = F1, `UADayZBRUns
 
 `Scripts/Server/3_Game/BattleRoyale/Webhook/` — REST via `GetRestApi().GetRestContext(BATTLEROYALE_API_ENDPOINT)`. Every call site is gated on `BattleRoyaleConfig.GetConfig().GetServerData().enable_vigrid_api`; `use_autolock` is a separate, independent gate that is *not* covered by it. Each webhook pairs with a `RestCallback` subclass that retries from `i_TryLeft`.
 
-Client-side matchmaking is `MatchMakingWebhook` (`Scripts/Client/3_Game/BattleRoyale/Webhook/`), used by the modded `MainMenu`.
+Client-side matchmaking is `MatchMakingWebhook` (`Scripts/Client/3_Game/BattleRoyale/Webhook/`), used by the modded `MainMenu`. Its requests are async and polled from `MainMenu.Update()`; never reintroduce `GET_now`/`POST_now` there, since they freeze the whole client while the API is down. Contract and states: [`Docs/matchmaking.md`](Docs/matchmaking.md).
 
 ## Asset paths
 

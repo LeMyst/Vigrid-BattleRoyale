@@ -4,30 +4,31 @@ modded class MainMenu
 	protected ImageWidget m_Logo;
 	protected ref array<ref ModInfo> modList = new array<ref ModInfo>();
 	protected TextWidget m_PlayButtonLabel;
-	protected bool b_MatchMakingAvailable;
+	protected TextWidget m_PlayStatus;
 
-	protected BattleRoyaleMatchMakingState m_MatchMakingState;
+	//--- -connect / -port / -password, with "-connect=ip:port" split. Empty address = no target.
+	protected string m_ConnectAddress;
+	protected string m_ConnectPort;
+	protected string m_ConnectPassword;
 
-	protected int m_MatchMakingTryCount;
+	//--- All matchmaking runs from Update() off these: no call queue, so nothing outlives the menu.
+	protected BattleRoyaleMatchMakingState m_MatchMakingState = BattleRoyaleMatchMakingState.None;
+	protected bool m_MatchMakingAvailable;
+	protected ref MatchMakingRequest m_MMRequest;
+	protected float m_MMRequestSentAt;
+	protected float m_MMSearchStartedAt;
+	protected float m_MMNextAttemptAt;
+	protected float m_MMFallbackAt;
+	protected int m_MMAttempt;
 
-	//--- What Update() last painted on the Play label, so it writes only on a change.
-	protected BattleRoyaleMatchMakingState m_PlayLabelState = BattleRoyaleMatchMakingState.INVALID;
-	protected int m_PlayLabelTry;
+	//--- What was last painted on the Play label, so the searching clock writes once a second.
+	protected int m_PlayLabelSecond = -1;
 
 #ifdef DIAG
 	//--- one-shot for the whole client process, not per menu instance - see TryAutoConnect.
 	protected static bool s_AutoConnectDone;
+	protected float m_AutoConnectAt;
 #endif
-
-	void ~MainMenu()
-	{
-		//--- A "come back later" response queues StartMatchMaking on the SYSTEM call queue, which
-		//--- lives for the whole process. Without this the pending retry outlives the menu it
-		//--- belongs to and re-enters the blocking POST_now against a torn-down widget tree.
-		//--- GetGame() is checked because a destructor can run on the way out.
-		if ( GetGame() )
-			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).RemoveByName( this, "StartMatchMaking" );
-	}
 
 	override Widget Init()
 	{
@@ -35,6 +36,7 @@ modded class MainMenu
 
 		m_Play						= layoutRoot.FindAnyWidget("play");
 		m_PlayButtonLabel			= TextWidget.Cast(m_Play.FindAnyWidget("play_label"));
+		m_PlayStatus				= TextWidget.Cast(layoutRoot.FindAnyWidget("play_status"));
 		m_ChooseServer				= layoutRoot.FindAnyWidget("choose_server");
 		m_CustomizeCharacter		= layoutRoot.FindAnyWidget("customize_character");
 		m_PlayVideo					= layoutRoot.FindAnyWidget("play_video");
@@ -158,17 +160,10 @@ modded class MainMenu
 
 		BR_OverrideUI();
 
-		m_MatchMakingState = BattleRoyaleMatchMakingState.None;
-		m_MatchMakingTryCount = 0;
-
-		if (IsMatchMakingAvailable())
-		{
-			m_PlayButtonLabel.SetText("#STR_BR_MM_MATCHMAKING");
-		}
-		else
-		{
-			m_PlayButtonLabel.SetText("#main_menu_play");
-		}
+		//--- The button is usable at once as PLAY; MATCHMAKING replaces it only if the API says so.
+		ReadConnectTarget();
+		SetMatchMakingState(BattleRoyaleMatchMakingState.None);
+		StartAvailabilityCheck();
 
 #ifdef DIAG
 		TryAutoConnect();
@@ -188,35 +183,57 @@ modded class MainMenu
 			m_DisplayedDlcHandler.ShowInfoPanel(false);
 	}
 
-	private bool IsMatchMakingAvailable()
+	void ReadConnectTarget()
 	{
-		// Change the play button text
-		m_PlayButtonLabel.SetText("#STR_BR_MM_LOGIN");
-
-		// MatchMaking Webhook
-		MatchMakingWebhook matchMakingWebhook = new MatchMakingWebhook();
-		// Check if the matchmaking is available by checking if the IP and port is part of Vigrid hive
-		// Get server host and port from CLI arguments
-		string m_ConnectAddress;
-		string m_ConnectPort;
+		m_ConnectAddress = "";
+		m_ConnectPort = "";
+		m_ConnectPassword = "";
 		GetCLIParam("connect", m_ConnectAddress);
 		GetCLIParam("port", m_ConnectPort);
+		GetCLIParam("password", m_ConnectPassword);
 
 		if (m_ConnectAddress.Contains(":"))
 		{
-			array<string> connectParts = new array<string>;
-			m_ConnectAddress.Split(":", connectParts);
-			if (connectParts.Count() >= 2)
+			array<string> connect_parts = new array<string>;
+			m_ConnectAddress.Split(":", connect_parts);
+			if (connect_parts.Count() >= 2)
 			{
-				m_ConnectAddress = connectParts[0];
-				m_ConnectPort = connectParts[1];
+				m_ConnectAddress = connect_parts[0];
+				m_ConnectPort = connect_parts[1];
 			}
 		}
 
-		b_MatchMakingAvailable = matchMakingWebhook.isMatchMakingAvailable( m_ConnectAddress, m_ConnectPort );
-		BattleRoyaleUtils.Trace("MatchMaking Available: " + b_MatchMakingAvailable);
+		m_ConnectAddress = m_ConnectAddress.Trim();
+		if (m_ConnectPort == "")
+			m_ConnectPort = "2302";
+	}
 
-		return b_MatchMakingAvailable;
+	bool HasConnectTarget()
+	{
+		return m_ConnectAddress != "";
+	}
+
+	//! "ip:port" of the -connect target: the site matches within that server's shard.
+	string GetConnectServer()
+	{
+		return m_ConnectAddress + ":" + m_ConnectPort;
+	}
+
+	//! Matchmaking is keyed on the -connect target, so with none there is nothing to ask.
+	void StartAvailabilityCheck()
+	{
+		if (!HasConnectTarget())
+		{
+			BattleRoyaleUtils.Info("[MatchMaking] no -connect target: PLAY opens the server browser");
+			return;
+		}
+
+		m_MMRequest = MatchMakingWebhook.CheckAvailability(GetConnectServer());
+		if (!m_MMRequest)
+			return;
+
+		m_MMRequestSentAt = GetGame().GetTickTime();
+		SetMatchMakingState(BattleRoyaleMatchMakingState.Checking);
 	}
 
 	//--- FilterDlcs and ShowDlcFrame used to be overridden here. Both are [Obsolete("No replacement")]
@@ -235,14 +252,8 @@ modded class MainMenu
 	}
 #endif
 
-	// Disable the play button
+	//--- Vanilla's Play() joins the last session or the "best" server; ours is OnPlayPressed().
 	override void Play()
-	{
-
-	}
-
-	// Disable the server browser button
-	override void OpenMenuServerBrowser()
 	{
 
 	}
@@ -287,21 +298,9 @@ modded class MainMenu
 		{
 			if (w == m_Play)
 			{
-				if ( b_MatchMakingAvailable )
-				{
-					m_LastFocusedButton = m_Play;
-					//--- A press is a FRESH search, so the attempt budget restarts here rather than
-					//--- inside StartMatchMaking - which is also the automatic re-queue's entry
-					//--- point, and must keep counting.
-					m_MatchMakingTryCount = 0;
-					StartMatchMaking();
-
-					return true;
-				} else {
-					ConnectFromCLI();
-
-					return true;
-				}
+				m_LastFocusedButton = m_Play;
+				OnPlayPressed();
+				return true;
 			}
 		}
 
@@ -324,20 +323,57 @@ modded class MainMenu
 	}
 
 	/**
-	 *  Connect straight to whatever -connect/-port/-password the client was launched with. This is
-	 *  the non-matchmaking half of the Play button, factored out so -br-autoconnect goes through the
-	 *  exact same call the button does rather than a parallel copy of it.
+	 *  What the Play button does, in every state. -br-autoconnect calls this too, so a diag run
+	 *  goes through the exact path a click does.
 	 */
+	void OnPlayPressed()
+	{
+		switch (m_MatchMakingState)
+		{
+			case BattleRoyaleMatchMakingState.Available:
+				StartSearch();
+				break;
+
+			case BattleRoyaleMatchMakingState.Searching:
+				CancelSearch();
+				break;
+
+			case BattleRoyaleMatchMakingState.Fallback:
+				//--- The reason is on screen already; a click skips the wait.
+				ConnectFromCLI();
+				break;
+
+			case BattleRoyaleMatchMakingState.Connecting:
+				break;
+
+			default:
+				//--- None, or Checking: an unanswered check must not hold the button hostage.
+				m_MMRequest = NULL;
+				if (HasConnectTarget())
+				{
+					ConnectFromCLI();
+				}
+				else
+				{
+					OpenMenuServerBrowser();
+				}
+				break;
+		}
+	}
+
+	//! Connect straight to the -connect target: plain PLAY, and the matchmaking fallback.
 	void ConnectFromCLI()
 	{
-		string connect_address;
-		string connect_port;
-		string connect_password;
-		GetCLIParam("connect", connect_address);
-		GetCLIParam("port", connect_port);
-		GetCLIParam("password", connect_password);
+		if (!HasConnectTarget())
+		{
+			BattleRoyaleUtils.Warn("[MatchMaking] no -connect target to join");
+			SetMatchMakingState(BattleRoyaleMatchMakingState.None);
+			return;
+		}
 
-		g_Game.ConnectFromServerBrowser( connect_address, connect_port.ToInt(), connect_password );
+		BattleRoyaleUtils.Info("[MatchMaking] joining " + m_ConnectAddress + ":" + m_ConnectPort);
+		SetMatchMakingState(BattleRoyaleMatchMakingState.Connecting);
+		g_Game.ConnectFromServerBrowser( m_ConnectAddress, m_ConnectPort.ToInt(), m_ConnectPassword );
 	}
 
 #ifdef DIAG
@@ -346,11 +382,12 @@ modded class MainMenu
 	 *  input. Diag-only on purpose: a retail client that reconnected on its own could never reach
 	 *  its own main menu.
 	 *
-	 *  The latch is the whole point, and it is what the TODO this replaces warned about. Init() runs
-	 *  again every time the menu is rebuilt - including the return from a disconnect - so firing on
-	 *  each Init() would bounce the client back into the server the instant it left, with no way out
-	 *  but killing the process. Static, so it survives the menu object and means "once per client
-	 *  process" rather than "once per menu instance".
+	 *  The latch is the whole point. Init() runs again every time the menu is rebuilt - including the
+	 *  return from a disconnect - so firing on each Init() would bounce the client back into the
+	 *  server the instant it left. Static, so it means "once per client process".
+	 *
+	 *  The press waits for the availability check, so it searches when matchmaking is up and joins
+	 *  -connect directly when it is not - the same choice a player's click would get.
 	 */
 	void TryAutoConnect()
 	{
@@ -360,156 +397,304 @@ modded class MainMenu
 		if (!IsCLIParam("br-autoconnect"))
 			return;
 
-		//--- Matchmaking owns the button when it is available, and it resolves its own address, so
-		//--- there is nothing here to skip past - let the normal path run.
-		if (b_MatchMakingAvailable)
-			return;
-
-		//--- Nothing to connect TO. The flag can outlive the -connect it was paired with, in a
-		//--- ClientLaunchParams line shared with LaunchOffline.bat, and firing anyway would hand
-		//--- ConnectFromServerBrowser an empty address instead of leaving the menu alone.
-		string autoconnect_address;
-		if (!GetCLIParam("connect", autoconnect_address) || autoconnect_address == "")
+		//--- Nothing to connect TO: the flag can outlive the -connect it was paired with.
+		if (!HasConnectTarget())
 		{
 			BattleRoyaleUtils.Warn("[AutoConnect] -br-autoconnect set but no -connect address; staying on the menu");
 			return;
 		}
 
+		m_AutoConnectAt = GetGame().GetTickTime() + BR_AUTOCONNECT_DELAY_MS / 1000.0;
+	}
+
+	void UpdateAutoConnect()
+	{
+		if (m_AutoConnectAt <= 0 || s_AutoConnectDone)
+			return;
+
+		if (GetGame().GetTickTime() < m_AutoConnectAt)
+			return;
+
+		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Checking)
+			return;
+
 		s_AutoConnectDone = true;
-
-		BattleRoyaleUtils.Info("[AutoConnect] -br-autoconnect set, connecting without the Play button");
-
-		GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "ConnectFromCLI", BR_AUTOCONNECT_DELAY_MS, false);
+		m_AutoConnectAt = 0;
+		BattleRoyaleUtils.Info("[AutoConnect] -br-autoconnect set, pressing Play");
+		OnPlayPressed();
 	}
 #endif
 
-	void StartMatchMaking()
+	void StartSearch()
 	{
-		m_MatchMakingTryCount = m_MatchMakingTryCount + 1;
+		BattleRoyaleUtils.Info("[MatchMaking] search started");
+		m_MMSearchStartedAt = GetGame().GetTickTime();
+		m_MMAttempt = 0;
+		m_PlayLabelSecond = -1;
+		SetMatchMakingState(BattleRoyaleMatchMakingState.Searching);
+		SendSearch();
+	}
 
-		// Change the play button text
-		m_MatchMakingState = BattleRoyaleMatchMakingState.Searching;
-		m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING");
-		m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
-		ColorDisable(m_Play);
+	void SendSearch()
+	{
+		m_MMAttempt = m_MMAttempt + 1;
+		m_MMNextAttemptAt = 0;
+		m_MMRequest = MatchMakingWebhook.Search(GetConnectServer(), modList);
+		m_MMRequestSentAt = GetGame().GetTickTime();
 
-		// MatchMaking Webhook
-		MatchMakingWebhook matchMakingWebhook = new MatchMakingWebhook();
-		array<string> server_info = matchMakingWebhook.searchGame( modList );
+		if (!m_MMRequest)
+			StartFallback("#STR_BR_MM_UNAVAILABLE", "no REST context");
+	}
 
-		// TODO: Enable when find a way to re-enable the button
-//		m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
-//		ColorDisable(m_Play);
-
-		// Connect to the server
-		if( server_info.Count() == 3 )
-		{
-			// Disable the button state
-			m_MatchMakingState = BattleRoyaleMatchMakingState.Connecting;
-			m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
-			ColorDisable(m_Play);
-
-			// Format : [IP, Port, Password]
-			string ip = server_info[0];
-			int port = server_info[1].ToInt();
-			string password = server_info[2];
-
-			// If password is null, set it to empty
-			if ( password == "null" )
-			{
-				password = "";
-			}
-
-			g_Game.ConnectFromServerBrowser( ip, port, password );
-
-			// Reset the button state
-			m_MatchMakingState = BattleRoyaleMatchMakingState.None;
-			m_Play.ClearFlags(WidgetFlags.IGNOREPOINTER);
-			ColorNormal(m_Play);
-
-			if (IsMatchMakingAvailable())
-			{
-				m_PlayButtonLabel.SetText("#STR_BR_MM_MATCHMAKING");
-			}
-			else
-			{
-				m_PlayButtonLabel.SetText("#main_menu_play");
-			}
-		}
-		else if ( server_info.Count() == 1 )
-		{
-			//--- "Come back later." Bounded, because it used to re-queue forever: nothing ever
-			//--- compared m_MatchMakingTryCount against anything, so a matchmaker that is up but
-			//--- never allocating kept the Play button disabled for as long as the client ran.
-			if ( m_MatchMakingTryCount >= BR_MATCHMAKING_MAX_ATTEMPTS )
-			{
-				FailMatchMaking("no server allocated after " + m_MatchMakingTryCount + " attempts");
-				return;
-			}
-
-			int sleep = server_info[0].ToInt();
-			if( sleep < 1000 )
-				sleep = 10000;  // If the sleep is anomalously low, set it to 10 seconds
-
-			// Sleep before retrying
-			BattleRoyaleUtils.Trace("Sleeping for " + sleep + " milliseconds before retrying");
-			GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLaterByName(this, "StartMatchMaking", sleep, false);
-		}
-		else
-		{
-			//--- Count() == 0 is the network failure / empty body case, and it matched NEITHER
-			//--- branch above - so the state stayed Searching with Play permanently
-			//--- IGNOREPOINTER-disabled and no retry queued. Any other count is a response shape
-			//--- this client does not understand, which is the same dead end.
-			FailMatchMaking("matchmaker returned " + server_info.Count() + " field(s)");
-		}
+	void CancelSearch()
+	{
+		BattleRoyaleUtils.Info("[MatchMaking] search cancelled after " + m_MMAttempt + " attempt(s)");
+		//--- A late reply lands in a request nobody holds any more, and is ignored.
+		m_MMRequest = NULL;
+		SetMatchMakingState(BattleRoyaleMatchMakingState.Available);
 	}
 
 	/**
-	 *  Every dead end in StartMatchMaking funnels through here: hand the Play button back and say so.
-	 *
-	 *  The point is that the player is never left looking at a disabled button with no way forward.
-	 *  BattleRoyaleMatchMakingState.Failed has existed in the enum since the beginning and was never
-	 *  reached; Update() paints the label only while Searching or Connecting, so this text sticks.
+	 *  Matchmaking gave up: say why, then join the -connect server the client was launched for. The
+	 *  pause is only so the reason is readable before the connect screen replaces the menu.
 	 */
-	void FailMatchMaking(string reason)
+	void StartFallback(string reason_key, string log_reason)
 	{
-		BattleRoyaleUtils.Warn("[MatchMaking] giving up: " + reason);
+		m_MMRequest = NULL;
 
-		m_MatchMakingState = BattleRoyaleMatchMakingState.Failed;
-		//--- The next press is a fresh search with a fresh budget.
-		m_MatchMakingTryCount = 0;
+		if (!HasConnectTarget())
+		{
+			BattleRoyaleUtils.Warn("[MatchMaking] giving up (" + log_reason + "), and no -connect to fall back to");
+			SetMatchMakingState(BattleRoyaleMatchMakingState.Available);
+			SetPlayStatus(reason_key);
+			return;
+		}
 
-		m_Play.ClearFlags(WidgetFlags.IGNOREPOINTER);
-		ColorNormal(m_Play);
-		m_PlayButtonLabel.SetText("#STR_BR_MM_FAILED");
+		BattleRoyaleUtils.Warn("[MatchMaking] giving up (" + log_reason + "), joining -connect directly");
+		m_MMFallbackAt = GetGame().GetTickTime() + BR_MATCHMAKING_FALLBACK_DELAY_MS / 1000.0;
+		SetMatchMakingState(BattleRoyaleMatchMakingState.Fallback);
+		SetPlayStatus(reason_key);
+	}
+
+	//! The request's outcome, with the menu's own timeout applied on top of the engine's.
+	int PollRequest()
+	{
+		if (!m_MMRequest)
+			return MatchMakingRequestStatus.MM_ERROR;
+
+		int status = m_MMRequest.GetStatus();
+		if (status == MatchMakingRequestStatus.MM_PENDING)
+		{
+			if (GetGame().GetTickTime() - m_MMRequestSentAt > BR_MATCHMAKING_TIMEOUT_S)
+				return MatchMakingRequestStatus.MM_TIMEOUT;
+		}
+
+		return status;
+	}
+
+	void UpdateAvailabilityCheck()
+	{
+		int status = PollRequest();
+		if (status == MatchMakingRequestStatus.MM_PENDING)
+			return;
+
+		m_MatchMakingAvailable = false;
+		if (status == MatchMakingRequestStatus.MM_SUCCESS)
+			m_MatchMakingAvailable = MatchMakingWebhook.ParseAvailable(m_MMRequest.GetData());
+
+		m_MMRequest = NULL;
+		BattleRoyaleUtils.Info("[MatchMaking] available: " + m_MatchMakingAvailable + " (status " + status + ")");
+
+		if (m_MatchMakingAvailable)
+		{
+			SetMatchMakingState(BattleRoyaleMatchMakingState.Available);
+		}
+		else
+		{
+			SetMatchMakingState(BattleRoyaleMatchMakingState.None);
+		}
+	}
+
+	void UpdateSearch()
+	{
+		float now = GetGame().GetTickTime();
+
+		if (m_MMRequest)
+		{
+			int status = PollRequest();
+			if (status == MatchMakingRequestStatus.MM_PENDING)
+			{
+				PaintSearchClock(now);
+				return;
+			}
+
+			if (status != MatchMakingRequestStatus.MM_SUCCESS)
+			{
+				StartFallback("#STR_BR_MM_UNAVAILABLE", "attempt " + m_MMAttempt + " status " + status);
+				return;
+			}
+
+			string reply = m_MMRequest.GetData();
+			m_MMRequest = NULL;
+
+			string ip;
+			int port;
+			string password;
+			if (MatchMakingWebhook.ParseServer(reply, ip, port, password))
+			{
+				BattleRoyaleUtils.Info("[MatchMaking] attempt " + m_MMAttempt + " found " + ip + ":" + port);
+				SetMatchMakingState(BattleRoyaleMatchMakingState.Connecting);
+				g_Game.ConnectFromServerBrowser(ip, port, password);
+				return;
+			}
+
+			int retry_ms = MatchMakingWebhook.ParseRetryMs(reply);
+			float retry_s = retry_ms / 1000.0;
+			if (now + retry_s - m_MMSearchStartedAt > BR_MATCHMAKING_SEARCH_BUDGET_S)
+			{
+				StartFallback("#STR_BR_MM_NO_MATCH", "no match after " + m_MMAttempt + " attempt(s)");
+				return;
+			}
+
+			BattleRoyaleUtils.Debug("[MatchMaking] attempt " + m_MMAttempt + " no match, retrying in " + retry_ms + " ms");
+			m_MMNextAttemptAt = now + retry_s;
+		}
+		else if (now >= m_MMNextAttemptAt)
+		{
+			SendSearch();
+			if (m_MatchMakingState != BattleRoyaleMatchMakingState.Searching)
+				return;
+		}
+
+		PaintSearchClock(now);
 	}
 
 	override void Update(float timeslice)
 	{
 		super.Update(timeslice);
 
-		//--- Any other state hands the label to whoever set it, so the next search must repaint.
-		if (m_MatchMakingState != BattleRoyaleMatchMakingState.Searching && m_MatchMakingState != BattleRoyaleMatchMakingState.Connecting)
+		switch (m_MatchMakingState)
 		{
-			m_PlayLabelState = BattleRoyaleMatchMakingState.INVALID;
-			return;
+			case BattleRoyaleMatchMakingState.Checking:
+				UpdateAvailabilityCheck();
+				break;
+
+			case BattleRoyaleMatchMakingState.Searching:
+				UpdateSearch();
+				break;
+
+			case BattleRoyaleMatchMakingState.Fallback:
+				if (GetGame().GetTickTime() >= m_MMFallbackAt)
+					ConnectFromCLI();
+				break;
 		}
 
-		if (m_MatchMakingState == m_PlayLabelState && m_MatchMakingTryCount == m_PlayLabelTry)
-			return;
+#ifdef DIAG
+		UpdateAutoConnect();
+#endif
+	}
 
-		m_PlayLabelState = m_MatchMakingState;
-		m_PlayLabelTry = m_MatchMakingTryCount;
+	override void OnShow()
+	{
+		super.OnShow();
 
-		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
+		//--- Back from a connect that did not stick (refused, kicked, cancelled): hand the button back.
+		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Connecting || m_MatchMakingState == BattleRoyaleMatchMakingState.Fallback)
 		{
-			m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING " + m_MatchMakingTryCount);
+			if (m_MatchMakingAvailable)
+			{
+				SetMatchMakingState(BattleRoyaleMatchMakingState.Available);
+			}
+			else
+			{
+				SetMatchMakingState(BattleRoyaleMatchMakingState.None);
+			}
+		}
+	}
+
+	override void OnHide()
+	{
+		super.OnHide();
+
+		//--- A match found while the player is in Options must not yank them out of it.
+		if (m_MatchMakingState == BattleRoyaleMatchMakingState.Searching)
+			CancelSearch();
+	}
+
+	//! Sets the state and repaints the button and its status line to match it.
+	void SetMatchMakingState(BattleRoyaleMatchMakingState state)
+	{
+		m_MatchMakingState = state;
+		m_PlayLabelSecond = -1;
+
+		bool clickable = true;
+		switch (state)
+		{
+			case BattleRoyaleMatchMakingState.Available:
+				m_PlayButtonLabel.SetText("#STR_BR_MM_MATCHMAKING");
+				SetPlayStatus("");
+				break;
+
+			case BattleRoyaleMatchMakingState.Searching:
+				PaintSearchClock(GetGame().GetTickTime());
+				SetPlayStatus("#STR_BR_MM_CANCEL_HINT");
+				break;
+
+			case BattleRoyaleMatchMakingState.Connecting:
+				m_PlayButtonLabel.SetText("#STR_BR_MM_CONNECTING");
+				SetPlayStatus("");
+				clickable = false;
+				break;
+
+			case BattleRoyaleMatchMakingState.Fallback:
+				//--- The caller sets the status line: it carries the reason.
+				m_PlayButtonLabel.SetText("#STR_BR_MM_CONNECTING");
+				break;
+
+			default:
+				m_PlayButtonLabel.SetText("#main_menu_play");
+				SetPlayStatus("");
+				break;
+		}
+
+		if (clickable)
+		{
+			m_Play.ClearFlags(WidgetFlags.IGNOREPOINTER);
+			ColorNormal(m_Play);
 		}
 		else
 		{
-			m_PlayButtonLabel.SetText("#STR_BR_MM_CONNECTING");
+			m_Play.SetFlags(WidgetFlags.IGNOREPOINTER);
+			ColorDisable(m_Play);
 		}
+	}
+
+	//! "SEARCHING... 1:07", written only when the second changes.
+	void PaintSearchClock(float now)
+	{
+		int elapsed = now - m_MMSearchStartedAt;
+		if (elapsed < 0)
+			elapsed = 0;
+
+		if (elapsed == m_PlayLabelSecond)
+			return;
+
+		m_PlayLabelSecond = elapsed;
+
+		int minutes = elapsed / 60;
+		int seconds = elapsed % 60;
+		string clock = minutes.ToString() + ":" + seconds.ToStringLen(2);
+		m_PlayButtonLabel.SetText("#STR_BR_MM_SEARCHING " + clock);
+	}
+
+	//! The small line under the Play label. Empty hides it.
+	void SetPlayStatus(string text)
+	{
+		if (!m_PlayStatus)
+			return;
+
+		m_PlayStatus.SetText(text);
+		m_PlayStatus.Show(text != "");
 	}
 
 	void ColorDisable(Widget w)
@@ -518,14 +703,9 @@ modded class MainMenu
 		SetFocus(null);
 		#endif
 
-		if (w)
-		{
-			ButtonWidget button = ButtonWidget.Cast(w);
-			if (button)
-			{
-				button.SetTextColor(ColorManager.COLOR_DISABLED_TEXT);
-			}
-		}
+		//--- ButtonSetTextColor reaches the "play_label" child; the ButtonWidget's own text is unused.
+		ButtonSetColor(w, ARGB(0, 0, 0, 0));
+		ButtonSetTextColor(w, ColorManager.COLOR_DISABLED_TEXT);
 	}
 
 	override void ColorNormal(Widget w)
@@ -542,3 +722,4 @@ modded class MainMenu
 		ImagenSetColor(w, color_img);
 	}
 };
+#endif

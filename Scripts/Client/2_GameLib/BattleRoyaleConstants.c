@@ -25,7 +25,7 @@ static const string GITHUB_URL = "https://github.com/LeMyst/Vigrid-BattleRoyale"
 
 
 //--- API endpoint
-static const string BATTLEROYALE_API_ENDPOINT = "https://api.vigrid.ovh/";
+static const string BATTLEROYALE_API_ENDPOINT = "https://vigrid.ovh/";
 
 
 //--- settings files
@@ -260,13 +260,16 @@ static const string BATTLEROYALE_LOGO_IMAGE = "set:battleroyale_gui image:DayZBR
 //later frame - so it is short enough to feel instant. DIAG-only, like the flag it serves.
 static const int BR_AUTOCONNECT_DELAY_MS = 500;
 
-//--- how many times the main menu asks the matchmaker for a server before it gives up and hands the
-//Play button back. There was no cap at all: StartMatchMaking re-queued itself forever on the
-//"come back later" response, and since each attempt is a SYNCHRONOUS POST that freezes the menu for
-//its round trip, a matchmaker that is up but never allocating held the player hostage indefinitely.
-//The retry interval has a 10 s floor already, so twenty attempts is a few minutes of trying - long
-//enough to ride out a queue, short enough that the player gets their menu back.
-static const int BR_MATCHMAKING_MAX_ATTEMPTS = 20;
+//--- main-menu matchmaking. Requests are asynchronous; the menu gives up on one after TIMEOUT itself
+//rather than through RestApi.SetOption, which is process-wide. Past the search BUDGET the menu falls
+//back to the -connect server.
+static const float BR_MATCHMAKING_TIMEOUT_S = 6;
+static const float BR_MATCHMAKING_SEARCH_BUDGET_S = 180;
+static const int BR_MATCHMAKING_RETRY_DEFAULT_MS = 10000;
+static const int BR_MATCHMAKING_RETRY_MIN_MS = 3000;
+static const int BR_MATCHMAKING_RETRY_MAX_MS = 60000;
+//--- how long the fallback reason stays readable before the direct connect replaces the menu.
+static const int BR_MATCHMAKING_FALLBACK_DELAY_MS = 2000;
 
 
 //--- game values

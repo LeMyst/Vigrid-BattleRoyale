@@ -120,6 +120,14 @@ produce. A codec verified only against its own output proves nothing — that is
 
 `bc1` is the one command that needs numpy, imported lazily; everything else is stdlib.
 
+## `mm_stub.py` — a fake matchmaking API
+
+`Tools/mm_stub.py` serves br-hub's two `/api/v2/matchmaking` routes on `127.0.0.1:8766` (a local
+br-hub takes 8765), for the failure modes a real instance will not produce on demand. Point a diag
+client at it with `-br-mm-endpoint=http://127.0.0.1:8766/`. `--search` picks the reply: `found` (the
+default, after `--wait-count` "wait" replies), `wait`, `refused` (404), `error` (500), `garbage` or
+`hang`. Stdlib only. See [`Docs/matchmaking.md`](../Docs/matchmaking.md).
+
 ## `wiki_check.py` — the wiki against the code
 
 The GitHub wiki is a separate repo, cloned beside the primary checkout as `..\Vigrid-BattleRoyale.wiki`,

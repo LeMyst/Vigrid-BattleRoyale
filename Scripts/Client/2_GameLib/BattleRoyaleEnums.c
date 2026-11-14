@@ -173,9 +173,10 @@ enum BattleRoyaleMatchMakingState
 {
 	INVALID = -1, //Do not move this
 
-	None,
-	Searching,
-	Connecting,
-	Failed,
-	Success
+	None,       //!< plain PLAY: direct connect, or the server browser when there is no -connect
+	Checking,   //!< availability request in flight; the button still reads PLAY and works as PLAY
+	Available,  //!< MATCHMAKING
+	Searching,  //!< a search request in flight, or waiting out the retry hint; a click cancels
+	Connecting, //!< handed to ConnectFromServerBrowser
+	Fallback    //!< matchmaking gave up; showing why, then connecting to -connect
 }

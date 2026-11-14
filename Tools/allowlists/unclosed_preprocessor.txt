@@ -6,14 +6,12 @@
 #   <repo-relative path>   # why it is still open
 
 Scripts/Client/3_Game/BattleRoyale/RPC/BattleRoyaleRPC.c   # pending: file-level #ifndef SERVER
-Scripts/Client/3_Game/BattleRoyale/Webhook/MatchMakingWebhook.c   # pending: file-level guard
 Scripts/Client/3_Game/Systems/DynamicMusicPlayer/DynamicMusicPlayerRegistry.c   # pending: file-level guard
 Scripts/Client/3_Game/VONManager.c   # pending: file-level guard
 Scripts/Client/4_World/Entities/DayZPlayerImplement.c   # pending: #ifndef SERVER and #ifndef NO_GUI
 Scripts/Client/5_Mission/GUI/HUD/BattleRoyaleHud.c   # pending: file-level guard
 Scripts/Client/5_Mission/GUI/MapHandler.c   # pending: file-level guard
 Scripts/Client/5_Mission/GUI/SpawnSelectionMenu.c   # pending: file-level guard
-Scripts/Client/5_Mission/Mission/MainMenu.c   # pending: file-level guard
 Scripts/Client/5_Mission/Mission/MissionBase.c   # pending: file-level guard
 Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleServer.c   # pending: file-level #ifdef SERVER
 Scripts/Server/5_Mission/BattleRoyale/Server/BattleRoyaleZone.c   # pending: file-level #ifdef SERVER
