@@ -4,8 +4,8 @@
 be lifted out of this repository and shipped on its own; none is required for the Battle Royale mod to
 function.
 
-**19 folders, 17 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
-parked.
+**20 folders, 18 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
+parked. One is third-party code under its own licence: `ReduceCarDamage` (Apache 2.0).
 
 ## How this folder works
 
@@ -41,6 +41,7 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [PreventPlayerModifiers](PreventPlayerModifiers/README.md) | `extra_preventplayermodifiers.pbo` | both | Disables hunger, thirst, broken legs and four diseases |
 | [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | both | Stops the weapon being forced up against walls |
 | [RandomMenuGear](RandomMenuGear/README.md) | `extra_randommenugear.pbo` | client | Re-dresses the main-menu character randomly on every menu show |
+| [ReduceCarDamage](ReduceCarDamage/README.md) | `extra_reducecardamage.pbo` | both | Scales down crash damage to cars and their crew. **Third-party** (DaemonForge, Apache 2.0) |
 | [SafeZone](SafeZone/README.md) | `extra_safezone.pbo` | both | Lobby truce — no firing, no player-inflicted damage |
 | [SpawnCarFull](SpawnCarFull/README.md) | `extra_spawncarfull.pbo` | server | Vehicles spawn with 30–100 % fuel, plus full coolant and oil |
 | [SpawnWeaponChambered](SpawnWeaponChambered/README.md) | `extra_spawnweaponchambered.pbo` | server | Weapons spawn with a round chambered and a magazine where possible |
@@ -58,6 +59,7 @@ Most of these have no settings at all. The ones that do:
 | KillFeed | `$profile:KillFeed\killfeed_settings.json` — 4 options |
 | Map | `$profile:Vigrid-Map\map_settings.json` (server) and `map_client.json` (per player) |
 | MapSatellite | none, and it cannot have any — `MapWidget` exposes no satellite API, so the `config.cpp` rename is the whole control surface |
+| ReduceCarDamage | `$profile:ReduceCarDamage\config.json` — 5 options, written with defaults on first start |
 | SpawnWithAmmoAndMagazine | `serverDZ.cfg`: `BRDisableSpawnWithAmmo`, `BRMinSpawnAmmo`, `BRMaxSpawnAmmo` |
 | LimitUnconsciousTime | `serverDZ.cfg`: `BRDisableUnconsciousness`, or `-br-disable-unconsciousness` on the command line |
 | PreventWeaponRaise | `serverDZ.cfg`: `BRDisablePreventWeaponRaise` — server-read, mirrored to each client as a netsync bool |
