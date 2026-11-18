@@ -5,7 +5,7 @@ be lifted out of this repository and shipped on its own; none is required for th
 function.
 
 **19 folders, 17 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
-parked.
+parked. One is third-party code under its own licence: `ReduceCarDamage` (Apache 2.0).
 
 ## How this folder works
 
@@ -41,12 +41,12 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [PreventPlayerModifiers](PreventPlayerModifiers/README.md) | `extra_preventplayermodifiers.pbo` | both | Disables hunger, thirst, broken legs and four diseases |
 | [PreventWeaponRaise](PreventWeaponRaise/README.md) | `extra_preventweaponraise.pbo` | both | Stops the weapon being forced up against walls |
 | [RandomMenuGear](RandomMenuGear/README.md) | `extra_randommenugear.pbo` | client | Re-dresses the main-menu character randomly on every menu show |
+| [ReduceCarDamage](ReduceCarDamage/README.md) | `extra_reducecardamage.pbo` | both | Scales down crash damage to cars and their crew. **Third-party** (DaemonForge, Apache 2.0) |
 | [SafeZone](SafeZone/README.md) | `extra_safezone.pbo` | both | Lobby truce — no firing, no player-inflicted damage |
 | [SpawnCarFull](SpawnCarFull/README.md) | `extra_spawncarfull.pbo` | server | Vehicles spawn with 30–100 % fuel, plus full coolant and oil |
 | [SpawnWeaponChambered](SpawnWeaponChambered/README.md) | `extra_spawnweaponchambered.pbo` | server | Weapons spawn with a round chambered and a magazine where possible |
 | [SpawnWithAmmoAndMagazine](SpawnWithAmmoAndMagazine/README.md) | `extra_spawnwithammoandmagazine.pbo` | server | Loot firearms spawn with magazines on the ground beside them. **Not standalone** |
 | [SpawnWithBattery](SpawnWithBattery/README.md) | `extra_spawnwithbattery.pbo` | server | Battery-powered loot spawns with a battery fitted |
-| [Vehicle3PPDefaultFix](Vehicle3PPDefaultFix/README.md) | `extra_vehicle3ppdefaultfix.pbo` | both | Forces common vehicles into the third-party Vehicle3PP whitelist |
 
 ## Runtime configuration
 
@@ -58,6 +58,7 @@ Most of these have no settings at all. The ones that do:
 | KillFeed | `$profile:KillFeed\killfeed_settings.json` — 4 options |
 | Map | `$profile:Vigrid-Map\map_settings.json` (server) and `map_client.json` (per player) |
 | MapSatellite | none, and it cannot have any — `MapWidget` exposes no satellite API, so the `config.cpp` rename is the whole control surface |
+| ReduceCarDamage | `$profile:ReduceCarDamage\config.json` — 5 options, written with defaults on first start |
 | SpawnWithAmmoAndMagazine | `serverDZ.cfg`: `BRDisableSpawnWithAmmo`, `BRMinSpawnAmmo`, `BRMaxSpawnAmmo` |
 | LimitUnconsciousTime | `serverDZ.cfg`: `BRDisableUnconsciousness`, or `-br-disable-unconsciousness` on the command line |
 | PreventWeaponRaise | `serverDZ.cfg`: `BRDisablePreventWeaponRaise` — server-read, mirrored to each client as a netsync bool |

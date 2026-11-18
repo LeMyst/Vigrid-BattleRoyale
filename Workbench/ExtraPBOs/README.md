@@ -22,16 +22,18 @@ exactly like the mod's own.
 
 | File | Author | What it does |
 |---|---|---|
-| `ReduceCarDamage.pbo` + `.daemonforge.bisign`, `daemonforge.bikey` | DaemonForge | `modded class` under `ReduceCarDamage/scripts/4_world` reducing vehicle damage. Ships an **Apache License 2.0** text inside the PBO. |
 | `slowzombies.pbo` + `.munghard.bisign`, `Munghard.bikey` | Munghard | Config-only patch of `DZ_Characters_Zombies` — `CfgAIBehaviours` / `CfgNoises` movement and alert tuning. No licence text included. Built 2019-06-28. |
+
+`ReduceCarDamage` (DaemonForge, Apache 2.0) used to be here as a prebuilt PBO. Since 2026-11-18 it
+is built from source in `Extra/ReduceCarDamage`, because DayZ 1.30 stopped compiling the PBO. The
+original `ReduceCarDamage.pbo`, its `.daemonforge.bisign` and `daemonforge.bikey` sit in
+`replaced\`, which the copy does not reach: loading both would define every class twice.
 
 ## ⚠️ Before turning this on for a public release
 
 Copying these files into `@Vigrid-BattleRoyale` **redistributes another author's work under this
 mod's name**, together with their signing keys. That is a licensing question, not a build question:
 
-- `ReduceCarDamage` carries Apache-2.0, which permits redistribution provided the licence and
-  attribution travel with it — so the PBO's own embedded `LICENSE` must not be stripped.
 - `slowzombies` ships **no licence at all**, so no redistribution right can be assumed from the
   file. Ask Munghard, or list it as a separate server-side mod instead of bundling it.
 
