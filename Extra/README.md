@@ -4,7 +4,7 @@
 be lifted out of this repository and shipped on its own; none is required for the Battle Royale mod to
 function.
 
-**20 folders, 18 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
+**19 folders, 17 of which build** — `DisableFogChernarusPlus` and `DumpItemHeights` are currently
 parked. One is third-party code under its own licence: `ReduceCarDamage` (Apache 2.0).
 
 ## How this folder works
@@ -47,7 +47,6 @@ own PBO automatically. See the root `CLAUDE.md` for the script-module and stage 
 | [SpawnWeaponChambered](SpawnWeaponChambered/README.md) | `extra_spawnweaponchambered.pbo` | server | Weapons spawn with a round chambered and a magazine where possible |
 | [SpawnWithAmmoAndMagazine](SpawnWithAmmoAndMagazine/README.md) | `extra_spawnwithammoandmagazine.pbo` | server | Loot firearms spawn with magazines on the ground beside them. **Not standalone** |
 | [SpawnWithBattery](SpawnWithBattery/README.md) | `extra_spawnwithbattery.pbo` | server | Battery-powered loot spawns with a battery fitted |
-| [Vehicle3PPDefaultFix](Vehicle3PPDefaultFix/README.md) | `extra_vehicle3ppdefaultfix.pbo` | both | Forces common vehicles into the third-party Vehicle3PP whitelist |
 
 ## Runtime configuration
 
